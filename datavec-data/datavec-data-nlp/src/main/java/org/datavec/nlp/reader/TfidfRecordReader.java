@@ -42,6 +42,7 @@ public class TfidfRecordReader extends FileRecordReader  {
     private Iterator<Integer> labelIter;
     private Iterator<List<Writable>> recordIter;
     private int numFeatures;
+    private boolean initialized = false;
 
 
     @Override
@@ -89,12 +90,28 @@ public class TfidfRecordReader extends FileRecordReader  {
                     recordLabels.add(new IntWritable(getCurrentLabel()).toInt());
                 records.add(RecordConverter.toRecord(tfidfVectorizer.transform(fileContents)));
             }
-            
+
             labelIter = recordLabels.iterator();
             recordIter = records.iterator();
         }
 
+        if(appendLabel){
+            Iterator<List<Writable>> rIter = records.iterator();
+            Iterator<Integer> lIter = recordLabels.iterator();
+            while(rIter.hasNext()){
+                List<Writable> record = rIter.next();
+                Integer label = lIter.next();
+                record.add(new IntWritable(label));
+            }
+        }
+        this.initialized = true;
+    }
 
+    @Override
+    public void reset() {
+        if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
+        labelIter = recordLabels.iterator();
+        recordIter = records.iterator();
     }
 
     @Override
@@ -102,9 +119,6 @@ public class TfidfRecordReader extends FileRecordReader  {
         if(recordIter == null)
             return super.next();
         List<Writable> record = recordIter.next();
-        if(appendLabel) {
-            record.add(new IntWritable(labelIter.next()));
-        }
         return record;
     }
 
@@ -136,11 +150,23 @@ public class TfidfRecordReader extends FileRecordReader  {
     }
 
     public void setTfidfVectorizer(TfidfVectorizer tfidfVectorizer) {
+        if(initialized){
+            throw new IllegalArgumentException("Setting TfidfVectorizer after TfidfRecordReader initialization doesn't have an effect");
+        }
         this.tfidfVectorizer = tfidfVectorizer;
     }
 
     public int getNumFeatures() {
         return numFeatures;
+    }
+
+    public void shuffle(){
+        this.shuffle(new Random());
+    }
+
+    public void shuffle(Random random){
+        Collections.shuffle(this.records, random);
+        this.reset();
     }
 }
 

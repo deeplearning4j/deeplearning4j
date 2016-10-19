@@ -21,11 +21,11 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.vector.Vectorizer;
 import org.datavec.api.writable.Writable;
-import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 import org.datavec.nlp.metadata.DefaultVocabCache;
 import org.datavec.nlp.metadata.VocabCache;
 import org.datavec.nlp.stopwords.StopWords;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
+import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -45,6 +45,7 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     public final static String MIN_WORD_FREQUENCY = "org.nd4j.nlp.minwordfrequency";
     public final static String STOP_WORDS = "org.nd4j.nlp.stopwords";
     public final static String TOKENIZER = "org.datavec.nlp.tokenizerfactory";
+    public final static String VOCAB_CACHE = "org.datavec.nlp.vocabcache";
     protected Collection<String> stopWords;
     protected VocabCache cache;
 
@@ -55,8 +56,15 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
         stopWords = conf.getStringCollection(STOP_WORDS);
         if(stopWords == null || stopWords.isEmpty())
             stopWords = StopWords.getStopWords();
-        cache = new DefaultVocabCache(minWordFrequency);
 
+        String clazz = conf.get(VOCAB_CACHE,DefaultVocabCache.class.getName());
+        try {
+            Class<? extends VocabCache> tokenizerFactoryClazz = (Class<? extends VocabCache>) Class.forName(clazz);
+            cache = tokenizerFactoryClazz.newInstance();
+            cache.initialize(conf);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
