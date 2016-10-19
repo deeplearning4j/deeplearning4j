@@ -165,18 +165,28 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (array.isView())
             throw new UnsupportedOperationException("It's impossible to replicate View");
 
-        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        int[] shape = array.shape();
+        int[] stride = array.stride();
+        int elementWiseStride = array.elementWiseStride();
+        char ordering = array.ordering();
+        int length = array.length();
+
+
+        int currentDeviceId = getDeviceForCurrentThread();
+
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+        attachThreadToDevice(Thread.currentThread().getId(), deviceId);
 
-        DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
 
-        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(array.shape(), array.stride(), 0, array.elementWiseStride(), array.ordering());
-
+        DataBuffer newDataBuffer =  replicateToDevice(deviceId, array.data());
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, elementWiseStride, ordering);
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
+//        INDArray result = Nd4j.create(length);
+
+        attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+
 
         return result;
     }
@@ -194,14 +204,18 @@ public class CudaAffinityManager extends BasicAffinityManager {
             return null;
 
         int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+        if (currentDeviceId != deviceId) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+        }
 
         DataBuffer dstBuffer = Nd4j.createBuffer(buffer.length(), false);
         AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+        if (currentDeviceId != deviceId) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+        }
 
         return dstBuffer;
     }

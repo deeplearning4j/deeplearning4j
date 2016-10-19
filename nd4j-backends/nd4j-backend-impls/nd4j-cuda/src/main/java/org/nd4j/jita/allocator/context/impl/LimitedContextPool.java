@@ -11,6 +11,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -87,16 +88,16 @@ public class LimitedContextPool extends BasicContextPool {
 
     @Override
     public CudaContext acquireContextForDevice(Integer deviceId) {
-        CudaContext context = null;
         long threadIdx = Thread.currentThread().getId();
-        if (acquired.containsKey(threadIdx)) {
-            context = acquired.get(threadIdx);
+        CudaContext context = acquired.get(threadIdx);
+        if (context != null && deviceId == context.getDeviceId()) {
             return context;
         }
 
         nativeOps.setDevice(new CudaPointer(deviceId));
 
         context = pool.get(deviceId).poll();
+        context.setDeviceId(deviceId);
         if (context != null) {
             int col = RandomUtils.nextInt(0, collectors.size());
             collectors.get(col);

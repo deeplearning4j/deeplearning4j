@@ -51,6 +51,8 @@ public class CudaContext {
     private Pointer bufferSpecial;
     private GarbageResourceReference reference;
 
+    private int deviceId = -1;
+
     private int laneId = 0;
 
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();

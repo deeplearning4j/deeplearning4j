@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -31,6 +33,7 @@ import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SporadicTests {
 
     @Before
@@ -227,5 +230,50 @@ public class SporadicTests {
         INDArray array = Nd4j.zeros(100, 100);
 
         assertFalse(array.isView());
+    }
+
+
+    @Test
+    public void testReplicate1() throws Exception {
+        INDArray array = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f});
+
+        log.error("Array length: {}", array.length());
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    locals.get().addi(1f);
+                    locals.get().addi(0f);
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            exp.addi(0.0f);
+            assertEquals(exp, locals.get(t));
+        }
+    }
+
+    @Test
+    public void testReplicate2() throws Exception {
+        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 1f, 1f, 1f, 1f});
+
+        DataBuffer buffer2 = Nd4j.getAffinityManager().replicateToDevice(1, buffer);
+
+        assertEquals(1f, buffer2.getFloat(0), 0.001f);
     }
 }
