@@ -167,6 +167,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
 
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
 
@@ -175,6 +176,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
 
         return result;
     }
@@ -193,11 +195,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
 
         DataBuffer dstBuffer = Nd4j.createBuffer(buffer.length(), false);
         AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
 
         return dstBuffer;
     }
