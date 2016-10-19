@@ -31,20 +31,20 @@
             <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
     </repositories>
-	<!-- we'll change this to something more valid later, just prototyping for now -->
-	<properties>
+        <!-- we'll change this to something more valid later, just prototyping for now -->
+        <properties>
         <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
     </properties>
-    
+
     <dependencies>
-    
+
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-    
-    
+
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
@@ -66,12 +66,6 @@
             <version>${commons-io.version}</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
@@ -82,8 +76,8 @@
             <version>3.2.5.RELEASE</version>
             <scope>test</scope>
         </dependency>
-        
- 		<dependency>
+
+                <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
@@ -111,7 +105,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
             <version>${hadoop.version}</version>
-        </dependency>        
+        </dependency>
 
     </dependencies>
 
