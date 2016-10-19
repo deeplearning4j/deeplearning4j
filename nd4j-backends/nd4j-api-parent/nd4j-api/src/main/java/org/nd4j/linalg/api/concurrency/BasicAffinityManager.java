@@ -1,5 +1,8 @@
 package org.nd4j.linalg.api.concurrency;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * @author raver119@gmail.com
  */
@@ -32,5 +35,29 @@ public abstract class BasicAffinityManager implements AffinityManager {
     @Override
     public int getNumberOfDevices() {
         return 1;
+    }
+
+    /**
+     * This method replicates given INDArray, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param array    INDArray to replicate
+     * @return
+     */
+    @Override
+    public INDArray replicateToDevice(Integer deviceId, INDArray array) {
+        return null;
+    }
+
+    /**
+     * This method replicates given DataBuffer, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
+        return null;
     }
 }

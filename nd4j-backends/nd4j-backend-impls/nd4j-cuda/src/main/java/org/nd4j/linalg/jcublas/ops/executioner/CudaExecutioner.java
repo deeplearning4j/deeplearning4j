@@ -1868,7 +1868,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     protected <T extends Aggregate> DataBuffer getBuffer(Batch<T> batch) {
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() , false);
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() * 4 , false);
 
         return buffer;
     }
@@ -1889,11 +1889,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int maxArraySize = batch.getSample().maxIntArraySize();
 
 
-        int indexPos = maxTypes * (Batch.getBatchLimit() * 4);
-        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * (Batch.getBatchLimit() * 4));
-        int realPos = intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 4));
-        int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 4))) / 2;
-        int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 4));
+        int indexPos = maxTypes * (Batch.getBatchLimit() * 16);
+        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * (Batch.getBatchLimit() * 16));
+        int realPos = intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 16));
+        int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 16))) / 2;
+        int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 16));
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
 
@@ -1954,13 +1954,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        // trigger write
+        // trigger write, so getPointer request will force relocation to GPU
         surfacePoint.tickHostWrite();
 
         PointerPointer extraArgs = new PointerPointer(32);
         extraArgs.put(0, null);
         extraArgs.put(1, context.getOldStream());
-        extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
+        //extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
+        extraArgs.put(2, new CudaPointer(8192));
         extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
@@ -1973,10 +1974,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(),
                     batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context) // we force
+            );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
 
         }
+        surfacePoint.tickHostWrite();
     }
 
     @Override
@@ -1984,7 +1987,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (batch.size() == 0)
             return;
 
-        List<Batch<Aggregate>> batches = Batch.getBatches(batch, 2048);
+        List<Batch<Aggregate>> batches = Batch.getBatches(batch, 8192);
         for (Batch<Aggregate> single: batches) {
             this.exec(single);
         }

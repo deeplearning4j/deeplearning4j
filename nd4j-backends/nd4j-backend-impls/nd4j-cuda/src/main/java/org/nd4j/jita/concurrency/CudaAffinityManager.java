@@ -149,4 +149,56 @@ public class CudaAffinityManager extends BasicAffinityManager {
             AtomicAllocator.getInstance().getMemoryHandler().relocateObject(buffer);
         }
     }
+
+    /**
+     * This method replicates given INDArray, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param array    INDArray to replicate
+     * @return
+     */
+    @Override
+    public synchronized INDArray replicateToDevice(Integer deviceId, INDArray array) {
+        if (array == null)
+            return null;
+
+        if (array.isView())
+            throw new UnsupportedOperationException("It's impossible to replicate View");
+
+        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+
+        DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
+
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(array.shape(), array.stride(), 0, array.elementWiseStride(), array.ordering());
+
+        INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+
+        return result;
+    }
+
+    /**
+     * This method replicates given DataBuffer, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
+        if (buffer == null)
+            return null;
+
+        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+
+        DataBuffer dstBuffer = Nd4j.createBuffer(buffer.length(), false);
+        AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+
+        return dstBuffer;
+    }
 }

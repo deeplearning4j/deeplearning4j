@@ -25,6 +25,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
 
 /**
@@ -219,5 +220,12 @@ public class SporadicTests {
             INDArray array = Nd4j.rand(shape);
             BooleanIndexing.applyWhere(array, Conditions.lessThan(rnd.nextDouble()), rnd.nextDouble());
         }
+    }
+
+    @Test
+    public void testIsView() {
+        INDArray array = Nd4j.zeros(100, 100);
+
+        assertFalse(array.isView());
     }
 }
