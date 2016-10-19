@@ -123,7 +123,7 @@ public class WeightInitUtil {
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0]));
                 break;
             case XAVIER_TORCH:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / shape[0] + shape[1]));
+                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (shape[0] + shape[1])));
                 break;
             case ZERO:
                 ret = Nd4j.create(shape, order);
