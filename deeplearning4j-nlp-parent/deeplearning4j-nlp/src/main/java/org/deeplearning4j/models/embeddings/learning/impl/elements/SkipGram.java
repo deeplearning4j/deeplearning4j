@@ -10,9 +10,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
@@ -30,9 +28,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
     protected VectorsConfiguration configuration;
-
-    protected static double MAX_EXP = 6;
-    //protected double[] expTable;
 
     protected int window;
     protected boolean useAdaGrad;
@@ -78,9 +73,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
         this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
-
-        log.info("Is View: {}", ((InMemoryLookupTable<T>) lookupTable).getSyn1Neg().isView());
-
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
@@ -116,7 +108,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 double numWords = vocabCache.totalWordOccurrences();
                 double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1) * (sampling * numWords) / element.getElementFrequency();
 
-                nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
                 if (ran < (nextRandom.get() & 0xFFFF) / (double) 65536) {
                     continue;
@@ -241,6 +233,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             batches.set(new ArrayList<Aggregate>());
 
         org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), w2.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
+        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+
 
         batches.get().add(sg);
 
