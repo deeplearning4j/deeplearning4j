@@ -1868,7 +1868,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     protected <T extends Aggregate> DataBuffer getBuffer(Batch<T> batch) {
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() * 5 , false);
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() * 4 , false);
         batch.setParamsSurface(buffer);
         return buffer;
     }
@@ -1960,8 +1960,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extraArgs = new PointerPointer(32);
         extraArgs.put(0, null);
         extraArgs.put(1, context.getOldStream());
-        //extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
-        extraArgs.put(2, new CudaPointer(8192));
+        extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
+        //extraArgs.put(2, new CudaPointer(8192));
         extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
