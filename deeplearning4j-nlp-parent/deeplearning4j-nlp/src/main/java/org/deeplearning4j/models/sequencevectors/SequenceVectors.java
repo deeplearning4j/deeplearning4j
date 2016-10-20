@@ -24,6 +24,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -934,7 +935,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         @Override
         public void run() {
-            while ( digitizer.hasMoreLines()) {
+            Nd4j.getAffinityManager().getDeviceForCurrentThread();
+             while ( digitizer.hasMoreLines()) {
                 try {
                     // get current sentence as list of VocabularyWords
                     List<Sequence<T>> sequences = new ArrayList<>();
