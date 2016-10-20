@@ -17,6 +17,8 @@
  */
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.nn.conf.module.FeedForwardModule;
+import org.deeplearning4j.nn.conf.module.Module;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
@@ -524,6 +526,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
             layer.setLayerName(layerName);
             return this;
+        }
+
+      /**
+       * Specify an input module. Usually for generating configurations of layers.
+       *
+       * @param module
+       * @param inputs
+       * @return
+       */
+        public GraphBuilder addModule(Module module, String... inputs) {
+
         }
 
         /**
