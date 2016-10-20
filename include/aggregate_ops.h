@@ -172,11 +172,9 @@ namespace aggregateOps {
     public:
 
         aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
-            int idxSyn0 = indexArguments[0];
-            int idxSyn1 = indexArguments[1];
-            int vectorLength = indexArguments[2];
-            int expLength = indexArguments[3];
-            int code = indexArguments[4];
+            int vectorLength = indexArguments[0];
+            int expLength = indexArguments[1];
+            int code = indexArguments[2];
 
             T *syn0 = arguments[0]; // we pass row pointer here
             T *syn1Neg = arguments[1]; // we pass row pointer here
@@ -204,6 +202,9 @@ namespace aggregateOps {
 
                 g = (code - expTable[idx]) * alpha;
             }
+
+
+            //printf("dot: [%f]; g: [%f]; syn1Neg[0]: [%f]; syn0[0]: [%f]\n", dot, g, syn1Neg[0], syn0[0]);
 
             // axpy1
 #pragma omp simd
@@ -417,12 +418,13 @@ namespace aggregateOps {
 
             T *syn0 = arguments[0] + (syn0Row * vectorLength);
 
+            T *syn1Neg = arguments[3];
             T *negTable = arguments[4];
 
             int *idxSyn1 = intArrays[0];
             int *codes = intArrays[1];
 
-            unsigned long long next_random = (long) realArguments[1];
+            unsigned long long next_random = (unsigned long long) realArguments[1];
 
             if (hsRounds > 0)
                 for (int r = 0; r < hsRounds; r++) {
@@ -440,8 +442,7 @@ namespace aggregateOps {
             if (ngRounds > 0)
                 for (int r = 0; r < ngRounds + 1; r++) {
                     if (r == 0) {
-                        idxArgs[1] = ngStarter;
-                        idxArgs[4] = 1;
+                        idxArgs[2] = 1;
                     } else {
                         next_random = next_random * (unsigned long long)25214903917 + 11;
                         target = negTable[(next_random >> 16) % negTableLength];
@@ -450,11 +451,10 @@ namespace aggregateOps {
                         if (target == ngStarter)
                             continue;
 
-                        idxArgs[1] = target;
-                        idxArgs[4] = 0;
+                        idxArgs[2] = 0;
                     }
 
-                    args[1] = arguments[3] + (target * vectorLength); // syn1Neg instead of syn1
+                    args[1] = syn1Neg + (target * vectorLength); // syn1Neg instead of syn1
 
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
@@ -593,6 +593,7 @@ namespace aggregateOps {
             int ngStarter = indexArguments[5];
             int negTableLength = indexArguments[6];
             int idxSyn0Length = indexArguments[7];
+            int initialIdx = indexArguments[8];
 
 
             int *idxSyn0 = intArrays[0];
@@ -617,6 +618,8 @@ namespace aggregateOps {
             idxArgs[0] = vectorLength; // vectorLength
             idxArgs[1] = expLength; // expLength
 
+            unsigned long long next_random = (unsigned long long) realArguments[1];
+
             // building neu1 for current window
             for (int c = 0; c < idxSyn0Length; c++) {
                 T *syn0word = syn0 + (idxSyn0[c] * vectorLength);
@@ -628,9 +631,11 @@ namespace aggregateOps {
             }
 
             // average neu1
+            if (idxSyn0Length > 0) {
 #pragma omp simd
-            for (int i = 0; i < vectorLength; i++) {
-                neu1[i] /= idxSyn0Length;
+                for (int i = 0; i < vectorLength; i++) {
+                    neu1[i] /= idxSyn0Length;
+                }
             }
 
             args[0] = neu1;
@@ -642,16 +647,33 @@ namespace aggregateOps {
                     args[1] = syn1 + (idxSyn1[i] * vectorLength);
                     idxArgs[2] = codes[i];
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr,0, realArguments, 2);
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
                 }
 
+            int target = ngStarter;
             if (ngRounds > 0)
                 for (int i = 0; i < ngRounds + 1; i++) {
+                    if (i == 0) {
+                        idxArgs[2] = 1;
+                    } else {
+                        next_random = next_random * (unsigned long long) 25214903917 + 11;
+                        target = negTable[(next_random >> 16) % negTableLength];
 
-                    //NegativeSampling<T>::executeAggregate(args, 5, nullptr, 0, idxArgs, 4, nullptr,0, realArguments, 2);
+                        if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
+                        if (target == ngStarter)
+                            continue;
+
+                        idxArgs[2] = 0;
+                    }
+
+                    args[1] = syn1Neg + (target * vectorLength); // syn1Neg instead of syn1
+
+                    //printf("Negative round: target: [%i]; code: [%i]; neu1e[0]: [%f]\n", target, idxArgs[4], neu1e[0]);
+
+                    NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
                 }
 
-            // propagate
+            // propagate neu1e -> syn0
             for (int c = 0; c < idxSyn0Length; c++) {
                 T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
 #pragma omp simd
