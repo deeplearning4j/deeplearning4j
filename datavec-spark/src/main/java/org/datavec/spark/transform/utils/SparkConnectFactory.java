@@ -22,6 +22,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 /**
  * Factory to create spark connections
  */
+@Deprecated
 public class SparkConnectFactory {
 
     public static String name = "SparkConnectFactory";
