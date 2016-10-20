@@ -18,7 +18,9 @@ package org.datavec.nlp.vectorizer;
 
 import org.datavec.api.berkeley.Counter;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.vector.Vectorizer;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.metadata.DefaultVocabCache;
@@ -68,15 +70,15 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     }
 
     @Override
-    public void fit(RecordReader reader) {
+    public void fit(RecordReaderMeta reader) {
         fit(reader,null);
     }
 
     @Override
-    public void fit(RecordReader reader, RecordCallBack callBack) {
+    public void fit(RecordReaderMeta reader, RecordCallBack callBack) {
         while(reader.hasNext()) {
-            Collection<Writable> record = reader.next();
-            String s = toString(record);
+            Record record = reader.nextRecord();
+            String s = toString(record.getRecord());
             Tokenizer tokenizer = tokenizerFactory.create(s);
             cache.incrementNumDocs(1);
             doWithTokens(tokenizer);

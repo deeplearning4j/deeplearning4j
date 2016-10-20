@@ -18,15 +18,17 @@ package org.datavec.nlp.vectorizer;
 
 
 import org.datavec.api.berkeley.Counter;
-import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Writable;
+import org.datavec.common.data.NDArrayWritable;
 import org.datavec.nlp.reader.TfidfRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,19 +50,19 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     }
 
     @Override
-    public INDArray fitTransform(RecordReader reader) {
+    public INDArray fitTransform(RecordReaderMeta reader) {
         return fitTransform(reader,null);
     }
 
     @Override
-    public INDArray fitTransform(final RecordReader reader, RecordCallBack callBack) {
-        final List<Collection<Writable>> records = new ArrayList<>();
+    public INDArray fitTransform(final RecordReaderMeta reader, RecordCallBack callBack) {
+        final List<Record> records = new ArrayList<>();
         final TfidfRecordReader reader2 = (TfidfRecordReader) reader;
         fit(reader,new RecordCallBack() {
             @Override
-            public void onRecord(Collection<Writable> record) {
+            public void onRecord(Record record) {
                 if(reader.getConf().get(TfidfRecordReader.APPEND_LABEL).equals("true")) {
-                    record.add(new IntWritable(reader2.getCurrentLabel()));
+                    record.getRecord().add(new IntWritable(reader2.getCurrentLabel()));
                 }
                 records.add(record);
             }
@@ -70,10 +72,15 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
             throw new IllegalStateException("No records found!");
         INDArray ret = Nd4j.create(records.size(),cache.vocabWords().size());
         int i = 0;
-        for(Collection<Writable> record : records) {
-            ret.putRow(i++, transform(record));
+        for(Record record : records) {
+            INDArray transformed = transform(record);
+            org.datavec.api.records.impl.Record transformedRecord = new org.datavec.api.records.impl.Record(Arrays.asList(
+                    new NDArrayWritable(transformed),
+                    record.getRecord().get(1)
+            ), new RecordMetaDataURI(record.getMetaData().getURI(), reader.getClass()));
+            ret.putRow(i++, transformed);
             if(callBack != null) {
-                callBack.onRecord(record);
+                callBack.onRecord(transformedRecord);
             }
         }
 
@@ -81,9 +88,8 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     }
 
     @Override
-    public INDArray transform(Collection<Writable> record) {
-        Counter<String> wordFrequencies = wordFrequenciesForRecord(record);
+    public INDArray transform(Record record) {
+        Counter<String> wordFrequencies = wordFrequenciesForRecord(record.getRecord());
         return createVector(new Object[]{wordFrequencies});
-
     }
 }
