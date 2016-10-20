@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
 import org.nd4j.linalg.api.ops.aggregates.impl.SkipGram;
 import org.nd4j.linalg.factory.Nd4j;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * This tests pack covers simple gradient checks for SkipGram, CBOW and HierarchicSoftmax
@@ -53,7 +55,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         double lr = 0.001;
 
-        HierarchicSoftmax op = new HierarchicSoftmax(syn0, syn1, expTable, neu1e, idxSyn0, idxSyn1, code, lr);
+        HierarchicSoftmax op = new HierarchicSoftmax(syn0.getRow(idxSyn0), syn1.getRow(idxSyn1), expTable, neu1e, code, lr);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -192,6 +194,61 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         // we expect syn0 to be equal, since 2 rounds with +- gradients give the same output value for neu1e
         assertEquals(expSyn0, syn0.getRow(idxSyn0));
+    }
+
+
+    @Test
+    public void testCBOWGradient1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+
+        double lr = 0.025;
+
+        INDArray syn0row_before_0 = syn0.getRow(0).dup();
+        INDArray syn0row_before_1 = syn0.getRow(1).dup();
+        INDArray syn0row_before_2 = syn0.getRow(2).dup();
+
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, null, expTable, null, new int[]{0, 1, 2}, new int[]{4, 5}, new int[]{1, 1}, 0, 0, 10, lr, 2L, 10);
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray syn0row_0 = syn0.getRow(0);
+        INDArray syn0row_1 = syn0.getRow(1);
+        INDArray syn0row_2 = syn0.getRow(2);
+
+        INDArray syn1row_4 = syn1.getRow(4);
+        INDArray syn1row_5 = syn1.getRow(5);
+        INDArray syn1row_6 = syn1.getRow(6);
+
+        INDArray expSyn0row_0 = Nd4j.create(10).assign(0.0095f);
+        INDArray expSyn1row_4 = Nd4j.create(10).assign(0.019875f);
+        INDArray expSyn1row_6 = Nd4j.create(10).assign(0.02f);
+
+        assertNotEquals(syn0row_before_0, syn0row_0);
+        assertNotEquals(syn0row_before_1, syn0row_1);
+        assertNotEquals(syn0row_before_2, syn0row_2);
+
+        // neu1 is expected to be 0.01
+        // dot is expected to be 0.002
+        // g is expected -0.0125 for both rounds: both codes are 1, so (1 - 1 - 0.5) * 0.025 = -0.0125
+        // neu1e is expected to be -0.00025 after first round ( g * syn1 + neu1e) (-0.0125 * 0.02 + 0.000)
+        // neu1e is expected to be -0.00050 after second round (-0.0125 * 0.02 + -0.00025)
+        // syn1 is expected to be 0.019875 after first round (g * neu1 + syn1)  (-0.0125 * 0.01 + 0.02 )
+        // syn1 is expected to be 0.019875 after second round (g * neu1 + syn1)  (-0.0125 * 0.01 + 0.02 ) NOTE: each of round uses it's own syn1 index
+
+        // syn0 is expected to be 0.0095f after op (syn0 += neu1e) (0.01 += -0.0005)
+
+        log.info("syn1row4[0]: {}", syn1row_4.getFloat(0));
+
+        assertEquals(expSyn0row_0, syn0row_0);
+        assertEquals(expSyn0row_0, syn0row_1);
+        assertEquals(expSyn0row_0, syn0row_2);
+
+        assertEquals(expSyn1row_4, syn1row_4);
+        assertEquals(expSyn1row_4, syn1row_5);
+        assertEquals(expSyn1row_6, syn1row_6);
+
     }
 
     @Override
