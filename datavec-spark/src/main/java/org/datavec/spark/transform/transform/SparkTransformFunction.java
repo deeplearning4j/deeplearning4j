@@ -17,22 +17,34 @@
 package org.datavec.spark.transform.transform;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
+import org.datavec.spark.transform.SparkTransformExecutor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
+@Slf4j
 public class SparkTransformFunction implements Function<List<Writable>,List<Writable>> {
 
     private final Transform transform;
 
     @Override
     public List<Writable> call(List<Writable> v1) throws Exception {
+        if(SparkTransformExecutor.isTryCatch()) {
+          try {
+              return transform.map(v1);
+          }catch (Exception e) {
+              log.warn("Error occurred " + e + " on record " + v1);
+              return new ArrayList<>();
+          }
+        }
         return transform.map(v1);
     }
 }

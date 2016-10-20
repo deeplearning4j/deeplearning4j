@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.util.StringUtils;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
@@ -92,8 +93,12 @@ public class RemoveColumnsTransform extends BaseTransform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
+            List<String> list = new ArrayList<>();
+            for(Writable w : writables)
+                list.add(w.toString());
+            String toString = StringUtils.join(",",list);
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
-                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
+                    "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString() + " and record " + toString);
         }
 
         List<Writable> outList = new ArrayList<>(writables.size() - columnsToRemove.length);

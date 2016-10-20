@@ -16,6 +16,8 @@
 
 package org.datavec.spark.transform;
 
+import org.datavec.spark.SequenceEmptyRecordFunction;
+import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
 import org.datavec.spark.transform.misc.ColumnAsKeyPairFunction;
 import org.datavec.spark.transform.reduce.MapToPairForReducerFunction;
@@ -52,9 +54,20 @@ import scala.Tuple2;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Execute a datavec
+ * transform process
+ * on spark rdds.
+ *
+ * @author Alex Black
+ */
 public class SparkTransformExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(SparkTransformExecutor.class);
+    //a boolean jvm argument that when the system property is true
+    //will cause some functions to invoke a try catch block and just log errors
+    //returning empty records
+    public final static String LOG_ERROR_PROPERTY = "org.datavec.spark.transform.logerrors";
 
     /**
      * @deprecated Use static methods instead of instance methods on SparkTransformExecutor
@@ -131,6 +144,14 @@ public class SparkTransformExecutor {
         return execute(null, inputSequence, transformProcess).getSecond();
     }
 
+    /**
+     * Returns true if the executor
+     * is in try catch mode.
+     * @return
+     */
+    public static boolean isTryCatch() {
+        return Boolean.getBoolean(LOG_ERROR_PROPERTY);
+    }
 
     private static Pair<JavaRDD<List<Writable>>, JavaRDD<List<List<Writable>>>>
     execute(JavaRDD<List<Writable>> inputWritables, JavaRDD<List<List<Writable>>> inputSequence,
@@ -148,11 +169,19 @@ public class SparkTransformExecutor {
                 Transform t = d.getTransform();
                 if (currentWritables != null) {
                     Function<List<Writable>, List<Writable>> function = new SparkTransformFunction(t);
-                    currentWritables = currentWritables.map(function);
+                    if(isTryCatch())
+                        currentWritables = currentWritables.map(function).filter(new EmptyRecordFunction());
+                    else
+                        currentWritables = currentWritables.map(function);
                 } else {
                     Function<List<List<Writable>>, List<List<Writable>>> function =
                             new SparkSequenceTransformFunction(t);
-                    currentSequence = currentSequence.map(function);
+                    if(isTryCatch())
+                        currentSequence = currentSequence.map(function).filter(new SequenceEmptyRecordFunction());
+                    else
+                        currentSequence = currentSequence.map(function);
+
+
                 }
             } else if (d.getFilter() != null) {
                 //Filter
