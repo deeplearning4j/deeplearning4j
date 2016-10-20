@@ -35,14 +35,12 @@ namespace aggregateOps {
         public:
 
         aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
-            int idxSyn0 = indexArguments[0];
-            int idxSyn1 = indexArguments[1];
-            int vectorLength = indexArguments[2];
-            int expLength = indexArguments[3];
-            int code = indexArguments[4];
+            int vectorLength = indexArguments[0];
+            int expLength = indexArguments[1];
+            int code = indexArguments[2];
 
-            T *syn0 = arguments[0] + (idxSyn0 * vectorLength);
-            T *syn1 = arguments[1] + (idxSyn1 * vectorLength);
+            T *syn0 = arguments[0]; // we pass row pointer here
+            T *syn1 = arguments[1]; // we pass row pointer here
             T *expTable = arguments[2];
             T *neu1e = arguments[3];
 
@@ -180,8 +178,8 @@ namespace aggregateOps {
             int expLength = indexArguments[3];
             int code = indexArguments[4];
 
-            T *syn0 = arguments[0] + (idxSyn0 * vectorLength);
-            T *syn1Neg = arguments[1] + (idxSyn1 * vectorLength);
+            T *syn0 = arguments[0]; // we pass row pointer here
+            T *syn1Neg = arguments[1]; // we pass row pointer here
             T *expTable = arguments[2];
             T *neu1e = arguments[3];
 
@@ -390,8 +388,7 @@ namespace aggregateOps {
     class SkipGram {
     public:
 
-        aggregate_def void
-        executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int syn0Row = indexArguments[0];
             int vectorLength = indexArguments[1];
             int hsRounds = indexArguments[2];
@@ -408,16 +405,15 @@ namespace aggregateOps {
             std::memset(neu1e, 0, sizeof(T) * vectorLength);
 
             T **args = new T *[4];
-            int *idxArgs = new int[5];
-            args[0] = arguments[0]; // syn0
+            int *idxArgs = new int[3];
+            args[0] = arguments[0] + (syn0Row * vectorLength); // syn0
             args[1] = arguments[1]; // syn1
             args[2] = arguments[2]; // expTable
             args[3] = neu1e;
 
 
-            idxArgs[0] = indexArguments[0]; // syn0 row
-            idxArgs[2] = indexArguments[1]; // vectorLength
-            idxArgs[3] = indexArguments[4]; // expLength
+            idxArgs[0] = vectorLength; // vectorLength
+            idxArgs[1] = expLength; // expLength
 
             T *syn0 = arguments[0] + (syn0Row * vectorLength);
 
@@ -430,15 +426,15 @@ namespace aggregateOps {
 
             if (hsRounds > 0)
                 for (int r = 0; r < hsRounds; r++) {
-                    idxArgs[1] = idxSyn1[r]; // syn1 row
-                    idxArgs[4] = codes[r];  // code for row
+                    args[1] = arguments[1] + (idxSyn1[r] * vectorLength); // syn1 row
+                    idxArgs[2] = codes[r];  // code for row
 
                     //printf("idx syn1: [%i]; code: [%i]\n", idxArgs[1], idxArgs[4]);
 
                     HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
 
-            args[1] = arguments[3]; // syn1Neg instead of syn1
+
 
             int target = ngStarter;
             if (ngRounds > 0)
@@ -457,6 +453,8 @@ namespace aggregateOps {
                         idxArgs[1] = target;
                         idxArgs[4] = 0;
                     }
+
+                    args[1] = arguments[3] + (target * vectorLength); // syn1Neg instead of syn1
 
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
@@ -579,6 +577,102 @@ namespace aggregateOps {
         }
 #endif
     };
+
+    template<typename T>
+    class CBOW {
+    public:
+
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments,
+                         int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
+                         T *realArguments, int numRealArguments) {
+            int vectorLength = indexArguments[0];
+            int hsRounds = indexArguments[1];
+            int ngRounds = indexArguments[2];
+            int expLength = indexArguments[3];
+            int vocabSize = indexArguments[4];
+            int ngStarter = indexArguments[5];
+            int negTableLength = indexArguments[6];
+            int idxSyn0Length = indexArguments[7];
+
+
+            int *idxSyn0 = intArrays[0];
+            int *idxSyn1 = intArrays[1];
+            int *codes = intArrays[2];
+
+
+            T *neu1 = new T[vectorLength];
+            T *neu1e = new T[vectorLength];
+            std::memset(neu1, 0, sizeof(T) * vectorLength);
+            std::memset(neu1e, 0, sizeof(T) * vectorLength);
+
+            T *syn0 = arguments[0];
+            T *syn1 = arguments[1];
+            T *expTable = arguments[2];
+            T *syn1Neg = arguments[3];
+            T *negTable = arguments[4];
+
+            T *args[5];
+
+            int *idxArgs = new int[3];
+            idxArgs[0] = vectorLength; // vectorLength
+            idxArgs[1] = expLength; // expLength
+
+            // building neu1 for current window
+            for (int c = 0; c < idxSyn0Length; c++) {
+                T *syn0word = syn0 + (idxSyn0[c] * vectorLength);
+
+#pragma omp simd
+                for (int i = 0; i < vectorLength; i++) {
+                    neu1[i] += syn0word[i];
+                }
+            }
+
+            // average neu1
+#pragma omp simd
+            for (int i = 0; i < vectorLength; i++) {
+                neu1[i] /= idxSyn0Length;
+            }
+
+            args[0] = neu1;
+            args[2] = expTable;
+            args[3] = neu1e;
+
+            if (hsRounds > 0)
+                for (int i = 0; i < hsRounds; i++) {
+                    args[1] = syn1 + (idxSyn1[i] * vectorLength);
+                    idxArgs[2] = codes[i];
+
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr,0, realArguments, 2);
+                }
+
+            if (ngRounds > 0)
+                for (int i = 0; i < ngRounds + 1; i++) {
+
+                    //NegativeSampling<T>::executeAggregate(args, 5, nullptr, 0, idxArgs, 4, nullptr,0, realArguments, 2);
+                }
+
+            // propagate
+            for (int c = 0; c < idxSyn0Length; c++) {
+                T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
+#pragma omp simd
+                for (int i = 0; i < vectorLength; i++) {
+                    syn0word[i] += neu1e[i];
+                }
+            }
+
+            delete[] neu1;
+            delete[] neu1e;
+        }
+
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments,
+                         int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
+                         T *realArguments, int numRealArguments) {
+        }
+#endif
+    };
+
 }
 
 #endif //LIBND4J_AGGREGATE_OPS_H

@@ -12,7 +12,8 @@
         (0, aggregateOps::HierarchicSoftmax) ,\
         (1, aggregateOps::Dot) ,\
         (2, aggregateOps::Axpy) ,\
-        (3, aggregateOps::SkipGram)
+        (3, aggregateOps::SkipGram) ,\
+        (4, aggregateOps::CBOW)
 
 
 namespace functions {
