@@ -22,6 +22,7 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
@@ -114,6 +115,8 @@ public class FileRecordReader extends BaseRecordReader implements RecordReaderMe
         List<Writable> ret = new ArrayList<>();
         try {
             ret.add(new Text(FileUtils.readFileToString(next)));
+            if(appendLabel)
+                ret.add(new IntWritable(labels.indexOf(next.getParentFile().getName())));
         } catch (IOException e) {
             e.printStackTrace();
         }
