@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ public class Batch<T extends Aggregate> {
      * This batchLimit should be equal to its counterpart at helper_ptrmap.h
      *
      */
+    @Getter @Setter private DataBuffer paramsSurface;
+
     @Getter private static final int batchLimit = 512;
 
     // all aggregates within this batch
