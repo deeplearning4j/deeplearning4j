@@ -25,7 +25,8 @@ import org.datavec.api.writable.Writable;
 import java.util.List;
 
 /**
- * FilterInvalidValues: a filter operation that removes any examples (or sequences) if the examples/sequences contains
+ * FilterInvalidValues: a filter operation that removes any examples (or sequences)
+ * if the examples/sequences contains
  * invalid values in any of a specified set of columns.
  * Invalid values are determined with respect to the schema
  */
