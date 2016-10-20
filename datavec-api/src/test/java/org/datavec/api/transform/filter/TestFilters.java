@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -38,8 +39,29 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestFilters {
 
+
     @Test
-    public void testFilterInvalidValues(){
+    public void testFilterNumColumns() {
+        List<List<Writable>> list = new ArrayList<>();
+        list.add(Collections.singletonList((Writable)new IntWritable(-1)));
+        list.add(Collections.singletonList((Writable)new IntWritable(0)));
+        list.add(Collections.singletonList((Writable)new IntWritable(2)));
+
+        Schema schema = new Schema.Builder()
+                .addColumnInteger("intCol",0,10)        //Only values in the range 0 to 10 are ok
+                .addColumnDouble("doubleCol",-100.0,100.0)  //-100 to 100 only; no NaN or infinite
+                .build();
+        Filter numColumns = new InvalidNumColumns(schema);
+        for(int i = 0; i < list.size(); i++)
+            assertTrue(numColumns.removeExample(list.get(i)));
+
+        List<Writable> correct = Arrays.<Writable>asList(new IntWritable(0),new DoubleWritable(2));
+        assertFalse(numColumns.removeExample(correct));
+
+    }
+
+    @Test
+    public void testFilterInvalidValues() {
 
         List<List<Writable>> list = new ArrayList<>();
         list.add(Collections.singletonList((Writable)new IntWritable(-1)));
@@ -55,16 +77,16 @@ public class TestFilters {
         filter.setInputSchema(schema);
 
         //Test valid examples:
-        assertFalse(filter.removeExample(Arrays.asList((Writable)new IntWritable(0),new DoubleWritable(0))));
-        assertFalse(filter.removeExample(Arrays.asList((Writable)new IntWritable(10),new DoubleWritable(0))));
-        assertFalse(filter.removeExample(Arrays.asList((Writable)new IntWritable(0),new DoubleWritable(-100))));
-        assertFalse(filter.removeExample(Arrays.asList((Writable)new IntWritable(0),new DoubleWritable(100))));
+        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(0))));
+        assertFalse(filter.removeExample(asList((Writable)new IntWritable(10),new DoubleWritable(0))));
+        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(-100))));
+        assertFalse(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(100))));
 
         //Test invalid:
-        assertTrue(filter.removeExample(Arrays.asList((Writable)new IntWritable(-1),new DoubleWritable(0))));
-        assertTrue(filter.removeExample(Arrays.asList((Writable)new IntWritable(11),new DoubleWritable(0))));
-        assertTrue(filter.removeExample(Arrays.asList((Writable)new IntWritable(0),new DoubleWritable(-101))));
-        assertTrue(filter.removeExample(Arrays.asList((Writable)new IntWritable(0),new DoubleWritable(101))));
+        assertTrue(filter.removeExample(asList((Writable)new IntWritable(-1),new DoubleWritable(0))));
+        assertTrue(filter.removeExample(asList((Writable)new IntWritable(11),new DoubleWritable(0))));
+        assertTrue(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(-101))));
+        assertTrue(filter.removeExample(asList((Writable)new IntWritable(0),new DoubleWritable(101))));
     }
 
     @Test
