@@ -209,7 +209,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         INDArray syn0row_before_1 = syn0.getRow(1).dup();
         INDArray syn0row_before_2 = syn0.getRow(2).dup();
 
-        AggregateCBOW op = new AggregateCBOW(syn0, syn1, null, expTable, null, new int[]{0, 1, 2}, new int[]{4, 5}, new int[]{1, 1}, 0, 0, 10, lr, 2L, 10);
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, null, expTable, null, 0, new int[]{0, 1, 2}, new int[]{4, 5}, new int[]{1, 1}, 0, 0, 10, lr, 2L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -249,6 +249,57 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         assertEquals(expSyn1row_4, syn1row_5);
         assertEquals(expSyn1row_6, syn1row_6);
 
+    }
+
+    @Test
+    public void testCBOWGradientNoOp1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = Nd4j.create(100000);
+
+        double lr = 0.025;
+
+        INDArray expSyn0 = syn0.dup();
+        INDArray expSyn1 = syn1.dup();
+        INDArray expSyn1Neg = syn1Neg.dup();
+
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[]{}, new int[]{}, new int[]{}, 0, 0, 10, lr, 2L, 10);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(expSyn0, syn0);
+        assertEquals(expSyn1, syn1);
+        assertEquals(expSyn1Neg, syn1Neg);
+    }
+
+    @Test
+    public void testCBOWGradientNegative1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = Nd4j.create(100000);
+
+        double lr = 0.025;
+
+        INDArray syn0dup = syn0.dup();
+        INDArray syn1dup = syn1.dup();
+        INDArray syn1NegDup = syn1Neg.dup();
+
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[]{0, 1, 2}, new int[]{}, new int[]{}, 2, 2, 10, lr, 2L, 10);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertNotEquals(syn0dup, syn0);
+        assertNotEquals(syn1NegDup, syn1Neg);
+        assertEquals(syn1dup, syn1);
+
+        // dot is expeced to be 0.003 (dot += 0.01 * 0.03)
+        // g is expected to be 0.0125 for the first round (code is 1)
+        // g is expected to be -0.0125 for the second round (code is 0)
+        // g is expected to be -0.0125 for the third round (code is 0)
     }
 
     @Override

@@ -10,7 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class AggregateCBOW extends BaseAggregate {
     private int vectorLength;
 
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);
         indexingArguments.add(negativeRounds);
@@ -19,6 +19,7 @@ public class AggregateCBOW extends BaseAggregate {
         indexingArguments.add(ngStarter);
         indexingArguments.add(negTable == null ? 0 : negTable.length());
         indexingArguments.add(idxSyn0.length);
+        indexingArguments.add(wordIdx);
 
         arguments.add(syn0);
         arguments.add(syn1);
@@ -68,7 +69,7 @@ public class AggregateCBOW extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 8;
+        return 9;
     }
 
     @Override
