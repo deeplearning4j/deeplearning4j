@@ -43,6 +43,6 @@ To provide a little context about the state-of-the-art, both Google and Yahoo op
 
 Deeplearning4j considers distributed run-times to be interchangeable (but not necessarily equal); they are all simply a directory in a larger modular architecture that can be swapped in or out. This allows the overall project to evolve at different speeds, and separate run-times from other modules devoted to neural net algorithms on the one hand, and hardware on the other. Deeplearning4j users are also able to build a standalone distributed architecture via Akka, spinning out nodes on AWS.
 
-Every form of scaleout including Hadoop and Spark is included in our [scaleout respository](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout).
+Every form of scaleout including Hadoop and Spark is included in our [scaleout repository](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout).
 
 Lines of Deeplearning4j code can be intermixed with Spark, for example, and DL4J operations will be distributed like any other. 
