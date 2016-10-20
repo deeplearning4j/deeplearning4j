@@ -5136,9 +5136,11 @@ int NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int
 	}
 
 	cudaError_t result = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
-	checkCudaErrors(result);
 	if (result != 0) {
+        checkCudaErrors(result);
 		printf("Failed on [%lu] -> [%lu], size: [%i], direction: [%i], result: [%i]\n", src, dst, size, flags, (int) result );
+        fflush(stdout);
+        fflush(stderr);
 		return 0L;
 	}
 	else return 1;
