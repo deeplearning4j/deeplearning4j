@@ -21,9 +21,7 @@ import org.datavec.api.berkeley.Counter;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.RecordReaderMeta;
-import org.datavec.api.writable.IntWritable;
 import org.datavec.common.data.NDArrayWritable;
-import org.datavec.nlp.reader.TfidfRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -57,13 +55,9 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     @Override
     public INDArray fitTransform(final RecordReaderMeta reader, RecordCallBack callBack) {
         final List<Record> records = new ArrayList<>();
-        final TfidfRecordReader reader2 = (TfidfRecordReader) reader;
         fit(reader,new RecordCallBack() {
             @Override
             public void onRecord(Record record) {
-                if(reader.getConf().get(TfidfRecordReader.APPEND_LABEL).equals("true")) {
-                    record.getRecord().add(new IntWritable(reader2.getCurrentLabel()));
-                }
                 records.add(record);
             }
         });
@@ -76,7 +70,7 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
             INDArray transformed = transform(record);
             org.datavec.api.records.impl.Record transformedRecord = new org.datavec.api.records.impl.Record(Arrays.asList(
                     new NDArrayWritable(transformed),
-                    record.getRecord().get(1)
+                    record.getRecord().get(record.getRecord().size() - 1)
             ), new RecordMetaDataURI(record.getMetaData().getURI(), reader.getClass()));
             ret.putRow(i++, transformed);
             if(callBack != null) {

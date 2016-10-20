@@ -23,7 +23,6 @@ import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.vector.Vectorizer;
-import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
@@ -84,11 +83,11 @@ public class TfidfRecordReader extends FileRecordReader  {
                 INDArray transform = tfidfVectorizer.transform(fileContents);
 
                 org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
-                        Collections.<Writable>singletonList(new NDArrayWritable(transform)),
+                        new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
                         new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
 
                 if(appendLabel)
-                    record.getRecord().add(new IntWritable(super.getCurrentLabel()));
+                    record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
 
                 records.add(record);
             }
@@ -177,11 +176,11 @@ public class TfidfRecordReader extends FileRecordReader  {
             INDArray transform = tfidfVectorizer.transform(fileContents);
 
             org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
-                    Collections.<Writable>singletonList(new NDArrayWritable(transform)),
+                    new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
                     new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
 
             if(appendLabel)
-                record.getRecord().add(new IntWritable(super.getCurrentLabel()));
+                record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
             out.add(record);
         }
 
