@@ -26,14 +26,16 @@ package org.deeplearning4j.nn.weights;
  * Uniform: Sample weights from bound uniform distribution (specify min and max)
  * VI: Sample weights from variance normalized initialization (Glorot)
  * Zeros: Generate weights as zeros
- * Xavier:
- * RELU: N(0,2/nIn): He et al. (2015), Delving Deep into Rectifiers
+ * XAVIER: As per Glorot and Bengio 2010: Gaussian distribution with mean 0, variance 2.0/(fanIn + fanOut)
+ * XAVIER_FAN_IN: Similar to Xavier, but 1/fanIn -> Caffe originally used this.
+ * XAVIER_LEGACY: Xavier weight init in DL4J up to 0.6.0. XAVIER should be preferred.
+ * RELU: He et al. (2015), "Delving Deep into Rectifiers". Normal distribution with variance 2.0/nIn
  * @author Adam Gibson
  */
 public enum WeightInit {
     /*
         TBD: Sparse initialization (SI) (Martens)
      */
-    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER,XAVIER_CAFFE, XAVIER_TORCH, RELU
+    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER,XAVIER_FAN_IN, XAVIER_LEGACY, RELU
 
 }
