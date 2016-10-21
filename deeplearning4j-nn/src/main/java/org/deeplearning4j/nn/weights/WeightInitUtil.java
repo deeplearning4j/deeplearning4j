@@ -39,22 +39,6 @@ public class WeightInitUtil {
 
     private WeightInitUtil() {
     }
-
-//    /**
-//     * Generate a random matrix with respect to the number of inputs and outputs.
-//     * This is a bound uniform distribution with the specified minimum and maximum
-//     *
-//     * @param shape the shape of the matrix
-//     * @param nIn   the number of inputs
-//     * @param nOut  the number of outputs
-//     * @return {@link INDArray}
-//     */
-//    public static INDArray uniformBasedOnInAndOut(int[] shape, int nIn, int nOut) {
-//        double min = -4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
-//        double max = 4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
-//        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(min, max));
-//    }
-
     public static INDArray initWeights(int[] shape, float min, float max) {
         return Nd4j.rand(shape, min, max, Nd4j.getRandom());
     }
@@ -102,15 +86,6 @@ public class WeightInitUtil {
                 double a = 1.0 / Math.sqrt(fanIn);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
                 break;
-//            case VI:
-//                ret = Nd4j.rand(order, shape);
-//                int len = 0;
-//                for (int aShape : shape) {
-//                    len += aShape;
-//                }
-//                double r = Math.sqrt(6) / Math.sqrt(len + 1);
-//                ret.muli(2 * r).subi(r);
-//                break;
             case XAVIER:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
