@@ -288,7 +288,11 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         INDArray syn1dup = syn1.dup();
         INDArray syn1NegDup = syn1Neg.dup();
 
-        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[]{0, 1, 2}, new int[]{}, new int[]{}, 2, 2, 10, lr, 2L, 10);
+        INDArray expSyn0_row0 = Nd4j.create(10).assign(0.0096265625);
+        INDArray expSyn0_row3 = Nd4j.create(10).assign(0.01f);
+        INDArray expSyn1Neg_row6 = Nd4j.create(10).assign(0.030125f);
+
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[]{0, 1, 2}, new int[]{}, new int[]{}, 2, 6, 10, lr, 2L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -296,10 +300,37 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         assertNotEquals(syn1NegDup, syn1Neg);
         assertEquals(syn1dup, syn1);
 
-        // dot is expeced to be 0.003 (dot += 0.01 * 0.03)
+        // neu1 is expected to be 0.01
+        // dot is expected to be 0.003 (dot += 0.01 * 0.03) for round 1 & 2.
+        // dot is expected to be 0.002987 for round 3 (because syn1Neg for idx 8 is modified at round 2)
         // g is expected to be 0.0125 for the first round (code is 1)
         // g is expected to be -0.0125 for the second round (code is 0)
         // g is expected to be -0.0125 for the third round (code is 0)
+        // neu1e is expected to be 0.000375 after first round (0.0125 * 0.03 + 0.00)
+        // neu1e is expected to be 0.00 after second round (-0.0125 * 0.03 + 0.000375)
+        // neu1e is expected to be -0.0003734375 after third round (-0.0125 * 0.029875 + 0.00)
+        // syn1Neg idx6 is expected to be 0.030125 after first round (0.0125 * 0.01 + 0.03)
+        // syn1Neg idx8 is expected to be 0.029875 after second round (-0.0125 * 0.01 + 0.03)
+        // syn1Neg idx8 is expected to be 0.02975 after third round (-0.0125 * 0.01 + 0.029875)
+        // syn0 idx0 is expected to be 0.00 after training (0.01 += -0.0003734375)
+
+        // checking target first
+        assertEquals(expSyn1Neg_row6, syn1Neg.getRow(6));
+
+        assertEquals(expSyn0_row0, syn0.getRow(0));
+        assertEquals(expSyn0_row0, syn0.getRow(1));
+        assertEquals(expSyn0_row0, syn0.getRow(2));
+
+        // these rows shouldn't change
+        assertEquals(expSyn0_row3, syn0.getRow(3));
+        assertEquals(expSyn0_row3, syn0.getRow(4));
+        assertEquals(expSyn0_row3, syn0.getRow(5));
+        assertEquals(expSyn0_row3, syn0.getRow(6));
+        assertEquals(expSyn0_row3, syn0.getRow(7));
+        assertEquals(expSyn0_row3, syn0.getRow(8));
+        assertEquals(expSyn0_row3, syn0.getRow(9));
+
+
     }
 
     @Override
