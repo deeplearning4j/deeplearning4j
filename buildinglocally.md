@@ -245,13 +245,15 @@ copy mkl_rt.dll libblas3.dll
 
 A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
-Use the build script as follows for CPU architectures:
+OK, now read the following section carefully. 
+
+Use the build script below for CPU architectures:
 
 ```
 ./build-dl4j-stack.sh
 ```
 
-If you are using a GPU backend:
+If you are using a GPU backend, use this instead:
 
 ```
 ./build-dl4j-stack.sh -c cuda
@@ -273,7 +275,7 @@ If you prefer, you can build each piece in the DL4J stack by hand. The procedure
 2. Build
 3. Install
 
-The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for.
+The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for. You need to follow these instructions in the order they're given. If you don't, you'll run into errors. The GPU-specific instructions below have been commented out, but should be substituted for the CPU-specific commands when building for a GPU backend. 
 
 ``` shell
 # removes any existing repositories to ensure a clean build
@@ -287,7 +289,7 @@ git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
 ./buildnativeoperations.sh
 # or when using GPU
-#./buildnativeoperations.sh -c cuda
+# ./buildnativeoperations.sh -c cuda
 export LIBND4J_HOME=`pwd`
 cd ..
 
@@ -296,7 +298,7 @@ git clone https://github.com/deeplearning4j/nd4j.git
 cd nd4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-cuda-7.5-platform,!:nd4j-tests'
 # or when using GPU
-#mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
+# mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
 
 # build and install datavec
@@ -314,10 +316,9 @@ git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
-#./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+# ./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 ```
-
 
 ## Using Local Dependencies
 
