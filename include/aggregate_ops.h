@@ -87,34 +87,24 @@ namespace aggregateOps {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
-
-            __shared__ int idxSyn0;
-            __shared__ int idxSyn1;
             __shared__ int vectorLength;
             __shared__ int expLength;
             __shared__ int code;
 
-            __shared__ T *syn0;
-            __shared__ T *syn1;
-            __shared__ T *expTable;
+            T *syn0 = arguments[0];
+            T *syn1 = arguments[1];
+            T *expTable = arguments[2];
+            T *neu1e = arguments[3];
 
-            __shared__ T *neu1e;
             __shared__ T dot;
             __shared__ T g;
             __shared__ T f;
             __shared__ T alpha;
 
             if (threadIdx.x == 0) {
-                idxSyn0 = indexArguments[0];
-                idxSyn1 = indexArguments[1];
-                vectorLength = indexArguments[2];
-                expLength = indexArguments[3];
-                code = indexArguments[4];
-
-                syn0 = arguments[0] + (idxSyn0 * vectorLength);
-                syn1 = arguments[1] + (idxSyn1 * vectorLength);
-                expTable = arguments[2];
-                neu1e = arguments[3];
+                vectorLength = indexArguments[0];
+                expLength = indexArguments[1];
+                code = indexArguments[2];
 
                 dot = (T) 0.0f;
 
@@ -224,34 +214,24 @@ namespace aggregateOps {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
-
-            __shared__ int idxSyn0;
-            __shared__ int idxSyn1;
             __shared__ int vectorLength;
             __shared__ int expLength;
             __shared__ int code;
 
-            __shared__ T *syn0;
-            __shared__ T *syn1Neg;
-            __shared__ T *expTable;
+            T *syn0 = arguments[0];
+            T *syn1Neg = arguments[1];
+            T *expTable = arguments[2];
+            T *neu1e = arguments[3];
 
-            __shared__ T *neu1e;
             __shared__ T dot;
             __shared__ T g;
             __shared__ T f;
             __shared__ T alpha;
 
             if (threadIdx.x == 0) {
-                idxSyn0 = indexArguments[0];
-                idxSyn1 = indexArguments[1];
-                vectorLength = indexArguments[2];
-                expLength = indexArguments[3];
-                code = indexArguments[4];
-
-                syn0 = arguments[0] + (idxSyn0 * vectorLength);
-                syn1Neg = arguments[1] + (idxSyn1 * vectorLength);
-                expTable = arguments[2];
-                neu1e = arguments[3];
+                vectorLength = indexArguments[0];
+                expLength = indexArguments[1];
+                code = indexArguments[2];
 
                 dot = (T) 0.0f;
 
@@ -271,21 +251,29 @@ namespace aggregateOps {
             // gradient
             __syncthreads();
 
-            if (dot < - (T) HS_MAX_EXP || dot >= (T) HS_MAX_EXP)
-                return;
 
             int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
-
-            if (idx >= expLength)
+            if (idx >= expLength && dot <= HS_MAX_EXP && dot >= -HS_MAX_EXP)
                 return;
 
 
             if (threadIdx.x == 0) {
                 // gradient calculation
-                f = expTable[idx];
-                g = ((T) 1.0f - (T) code - f) * alpha;
+                if (dot > HS_MAX_EXP)
+                    g = (code - 1) * alpha;
+                else if (dot < - HS_MAX_EXP)
+                    g = (code - 0) * alpha;
+                else {
+
+
+                    g = (code - expTable[idx]) * alpha;
+                }
+
+            //    printf("dot: [%f]; g: [%f]\n", dot, g);
             }
             __syncthreads();
+
+           // printf("before syn1Neg[%i]: [%f], dot: [%f]; g: [%f]; vectorLength: [%i]\n", threadIdx.x, syn1Neg[threadIdx.x], dot, g, vectorLength);
 
             // axpy1
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
@@ -298,6 +286,8 @@ namespace aggregateOps {
                 syn1Neg[x] = g * syn0[x] + syn1Neg[x];
             }
             __syncthreads();
+
+        //    printf("after syn1Neg[%i]: [%f]\n", threadIdx.x, syn1Neg[threadIdx.x]);
 
         }
 #endif
@@ -400,8 +390,6 @@ namespace aggregateOps {
             int negTableLength = indexArguments[7];
 
 
-
-
             T *neu1e = new T[vectorLength];
             std::memset(neu1e, 0, sizeof(T) * vectorLength);
 
@@ -481,12 +469,15 @@ namespace aggregateOps {
             __shared__ int negTableLength;
 
             __shared__ T *neu1e;
+
             __shared__ T *args[4];
-            __shared__ int idxArgs[5];
+            __shared__ int idxArgs[3];
+
 
             __shared__ unsigned long long next_random;
 
             __shared__ T *negTable;
+            T *syn1Neg = arguments[3];
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
@@ -503,16 +494,15 @@ namespace aggregateOps {
 
                 next_random = (unsigned long long) realArguments[1];
 
-                args[0] = arguments[0]; // syn0
+                args[0] = arguments[0] + (syn0Row * vectorLength);; // syn0
                 args[1] = arguments[1]; // syn1
                 args[2] = arguments[2]; // expTable
                 args[3] = neu1e;
 
                 negTable = arguments[4];
 
-                idxArgs[0] = syn0Row; // syn0 row
-                idxArgs[2] = vectorLength; // vectorLength
-                idxArgs[3] = expLength; // expLength
+                idxArgs[0] = vectorLength; // vectorLength
+                idxArgs[1] = expLength; // expLength
             }
             __syncthreads();
 
@@ -528,17 +518,15 @@ namespace aggregateOps {
 
             for (int r = 0; r < hsRounds; r++) {
                 if (threadIdx.x == 0) {
-                    idxArgs[1] = idxSyn1[r]; // syn1 row
-                    idxArgs[4] = codes[r];  // code for row
+                    args[1] = arguments[1] + (idxSyn1[r] * vectorLength);// syn1 row
+                    idxArgs[2] = codes[r];  // code for row
                 }
                 __syncthreads();
 
-                HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0,  realArguments, 1);
+                HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0,  realArguments, 1);
             }
             __syncthreads();
 
-            if (threadIdx.x == 0)
-                args[1] = arguments[3]; // syn1Neg instead of syn1
 
             __shared__ int target;
             if (ngRounds > 0)
@@ -546,26 +534,27 @@ namespace aggregateOps {
                     if (threadIdx.x == 0) {
                         if (r == 0) {
                             // this line isn't a mistake
-                            target = ngStarter + 1;
+                            target = ngStarter;
 
-                            idxArgs[1] = ngStarter;
-                            idxArgs[4] = 1;
+                            idxArgs[2] = 1;
                         } else {
                             next_random = next_random * (unsigned long long)25214903917 + 11 + blockIdx.x;
                             target = negTable[(next_random >> 16) % negTableLength];
 
                             if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
 
-                            idxArgs[1] = target; // should be random here
-                            idxArgs[4] = 0;
+                            idxArgs[2] = 0;
                         }
+
+                        args[1] = syn1Neg + (target * vectorLength);
                     }
                     __syncthreads;
 
-                    if (target == ngStarter)
-                            continue;
+                    // we put it here, to make sure all threads pick up continue call
+                    if (r != 0 && target == ngStarter)
+                        continue;
 
-                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
+                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 1);
                 }
 
 
@@ -691,6 +680,126 @@ namespace aggregateOps {
         aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments,
                          int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
                          T *realArguments, int numRealArguments) {
+            __shared__ int vectorLength;
+            __shared__ int hsRounds;
+            __shared__ int ngRounds;
+            __shared__ int expLength;
+            __shared__ int vocabSize;
+            __shared__ int ngStarter;
+            __shared__ int negTableLength;
+            __shared__ int idxSyn0Length;
+            __shared__ int initialIdx;
+
+            int *idxSyn0 = intArrays[0];
+            int *idxSyn1 = intArrays[1];
+            int *codes = intArrays[2];
+
+            __shared__ T *neu1;
+            __shared__ T *neu1e;
+
+            __shared__ T *args[5];
+            __shared__ int idxArgs[3];
+
+            T *syn0 = arguments[0];
+            T *syn1 = arguments[1];
+            T *expTable = arguments[2];
+            T *syn1Neg = arguments[3];
+            T *negTable = arguments[4];
+
+            if (threadIdx.x == 0) {
+                vectorLength = indexArguments[0];
+                hsRounds = indexArguments[1];
+                ngRounds = indexArguments[2];
+                expLength = indexArguments[3];
+                vocabSize = indexArguments[4];
+                ngStarter = indexArguments[5];
+                negTableLength = indexArguments[6];
+                idxSyn0Length = indexArguments[7];
+                initialIdx = indexArguments[8];
+
+                extern __shared__ unsigned char shmem[];
+                neu1 = (T *) shmem;
+                neu1e = neu1 + vectorLength;
+
+                args[0] = neu1;
+                args[2] = arguments[2]; //expTable
+                args[3] = neu1e;
+
+                idxArgs[0] = vectorLength; // vectorLength
+                idxArgs[1] = expLength; // expLength
+            }
+            __syncthreads();
+
+            for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                neu1[i] = (T) 0.0f;
+                neu1e[i] = (T) 0.0f;
+            }
+
+            unsigned long long next_random = (unsigned long long) realArguments[1];
+            for (int c = 0; c < idxSyn0Length; c++) {
+                T *syn0word = syn0 + (idxSyn0[c] * vectorLength);
+
+                for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                    neu1[i] += syn0word[i];
+                }
+            }
+
+            // average neu1
+            if (idxSyn0Length > 0) {
+                for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                    neu1[i] /= idxSyn0Length;
+                }
+            }
+            __syncthreads();
+
+
+
+            if (hsRounds > 0)
+                for (int i = 0; i < hsRounds; i++) {
+                    if (threadIdx.x == 0) {
+                        args[1] = syn1 + (idxSyn1[i] * vectorLength);
+                        idxArgs[2] = codes[i];
+                    }
+                    __syncthreads();
+
+                    HierarchicSoftmax<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
+                }
+
+            __shared__ int target;
+            if (ngRounds > 0)
+                for (int i = 0; i < ngRounds + 1; i++) {
+                    if (threadIdx.x == 0) {
+                        if (i == 0) {
+                            target = ngStarter;
+                        } else {
+                            next_random = next_random * (unsigned long long) 25214903917 + 11;
+                            target = negTable[(next_random >> 16) % negTableLength];
+
+                            if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
+                        }
+
+                        args[1] = syn1Neg + (target * vectorLength); // syn1Neg instead of syn1
+                        idxArgs[2] = i == 0 ? 1 : 0;
+                    }
+                    __syncthreads();
+
+                    if (i != 0 && target == ngStarter)
+                            continue;
+
+
+                    NegativeSampling<T>::executeAggregateCuda(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
+
+                    //printf("Negative round: target: [%i]; code: [%i]; neu1[%i]: [%f]; neu1e[%i]: [%f]\n", target, idxArgs[2], threadIdx.x, neu1[threadIdx.x], threadIdx.x, neu1e[threadIdx.x]);
+                }
+
+
+            for (int c = 0; c < idxSyn0Length; c++) {
+                T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
+
+                for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                    syn0word[i] += neu1e[i];
+                }
+            }
         }
 #endif
     };

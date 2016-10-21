@@ -5936,6 +5936,8 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     // TODO: proper launch dims required here
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
+    printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
+
     DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
