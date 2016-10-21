@@ -95,7 +95,7 @@ public class WeightInitUtil {
                 break;
             case SIZE:
             case SIGMOID_UNIFORM:
-                double r = -4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
+                double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
                 break;
             case UNIFORM:
