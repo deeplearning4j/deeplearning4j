@@ -126,7 +126,17 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         if(initializeParams) {
             Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
             int[] kernel = layerConf.getKernelSize();
-            return WeightInitUtil.initWeights(new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]},
+            int[] stride = layerConf.getStride();
+
+            int inputDepth = layerConf.getNIn();
+            int outputDepth = layerConf.getNOut();
+
+            double fanIn = inputDepth * kernel[0] * kernel[1];
+            double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
+
+            int[] weightsShape = new int[]{outputDepth, inputDepth, kernel[0], kernel[1]};
+
+            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape,
                     layerConf.getWeightInit(), dist, 'c', weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
