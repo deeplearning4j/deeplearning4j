@@ -18,10 +18,10 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
-import org.deeplearning4j.berkeley.Iterators;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
+import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -293,44 +292,40 @@ public class RBMTests {
     }
 
     @Test
-    public void testPropUpBinary(){
+    public void testPropUpDownBinary(){
         INDArray input = Nd4j.linspace(1,10,10);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(10).nOut(1)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(HiddenUnit.BINARY, VisibleUnit.BINARY)
+                        .nIn(10).nOut(5)
                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
-        INDArray params = Nd4j.create(new double[] {
-                1,2,3,4,5,6,7,8,9,10,1,1,1,1,1,1,1,1,1,1,1
-        });
+        INDArray params = Nd4j.hstack(
+                Nd4j.linspace(1,50,50), Nd4j.create(new double[] {
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1} ));
 
         RBM rbm = (RBM)conf.getLayer().instantiate(conf,null,0,params,false);
         INDArray actualParams = rbm.params();
         assertEquals(params, actualParams);
 
-        INDArray expectedOut = Transforms.sigmoid(Nd4j.create(new double[] {386.}));
+        // propUp
+        INDArray expectedHOut = Transforms.sigmoid(Nd4j.create(new double[] {
+                386.,   936.,  1486.,  2036.,  2586.
+        }));
 
-        INDArray actualOut = rbm.propUp(input);
-        assertEquals(expectedOut, actualOut);
+        INDArray actualHOut = rbm.propUp(input);
+        assertEquals(expectedHOut, actualHOut);
+
+        // propDown
+        INDArray expectedVOut = Transforms.sigmoid(Nd4j.create(new double[] {
+                106.,  111.,  116.,  121.,  126.,  131.,  136.,  141.,  146.,  151.
+        }));
+
+        INDArray actualVOut = rbm.propDown(actualHOut);
+        assertEquals(expectedVOut, actualVOut);
+
     }
-
-    // TODO remove after confim Gaussian to use
-//    @Test
-//    public void testGaussian() {
-//        INDArray input = Nd4j.linspace(1,10,10);
-//        INDArray add = Nd4j.randn(input.rows(), input.columns(), 42);
-//        Distribution add2 = Nd4j.getDistributions().createNormal(input, 1);
-//        add2.reseedRandomGenerator(42);
-//        INDArray t = add2.sample(input.shape());
-//        Distribution add3 = Nd4j.getDistributions().createNormal(input, 1);
-//        add3.reseedRandomGenerator(42);
-//        INDArray s = add3.sample(input.shape());
-//        assertEquals(add, add2);
-//    }
-
-
 
 }
