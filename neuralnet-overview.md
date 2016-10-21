@@ -24,9 +24,11 @@ Neural networks are a set of algorithms, modeled loosely after the human brain, 
 
 Neural networks help us cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They help to group unlabeled data according to similarities among the example inputs, and they classify data when they have a labeled dataset to train on. (To be more precise, neural networks extract features that are fed to other algorithms for clustering and classification; so you can think of deep neural networks as components of larger machine-learning applications involving algorithms for [reinforcement learning](./reinforcementlearning.html), classification and [regression](./linear-regression.html).)
 
+
 <p align="center">
-<a href="http://deeplearning4j.org/quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">Get Started With Deeplearning4j</a>
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
+
 
 What kind of problems does deep learning solve, and more importantly, can it solve yours? To know the answer, you need to [ask yourself a few questions](/questions): What outcomes do I care about? Those outcomes are labels that could be applied to data: for example, `spam` or `not_spam` in an email filter, `good_guy` or `bad_guy` in fraud detection, `angry_customer` or `happy_customer` in customer relationship management. Then ask: Do I have the data to accompany those labels? That is, can I find labeled data, or can I create a labeled dataset (with a service like Mechanical Turk or Crowdflower) where spam has been labeled as spam, in order to teach an algorithm the correlation between labels and inputs? 
 
