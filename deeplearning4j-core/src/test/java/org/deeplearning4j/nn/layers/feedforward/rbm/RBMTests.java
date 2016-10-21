@@ -105,7 +105,7 @@ public class RBMTests {
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(
                         org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .nIn(d.numInputs()).nOut(3)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -127,7 +127,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .nIn(d.numInputs()).nOut(3)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -157,7 +157,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -208,7 +208,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -241,7 +241,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
@@ -276,7 +276,7 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf,true);
