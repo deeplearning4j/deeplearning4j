@@ -87,7 +87,7 @@ public class WeightInitUtil {
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
                 break;
             case XAVIER:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
             case VI:
             case XAVIER_UNIFORM:
