@@ -128,11 +128,11 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         neu1.divi(cw);
 
-        INDArray neu1e = cbow.iterateSample(currentWord, neu1, nextRandom, alpha, isInference);
+        //INDArray neu1e = cbow.iterateSample(currentWord, null, nextRandom, alpha, isInference);
 
-        for (INDArray label: labels) {
-            Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, label);
-        }
+        //for (INDArray label: labels) {
+        //    Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, label);
+        //}
 
     }
 
