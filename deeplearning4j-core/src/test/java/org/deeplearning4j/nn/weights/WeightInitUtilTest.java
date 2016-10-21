@@ -83,23 +83,8 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        double a = 1/(double) shape[0];
-        INDArray weightsExpected = Nd4j.rand('f',shape).muli(2*a).subi(a);
-
-        assertEquals(weightsExpected, weightsActual);
-    }
-
-    @Test
-    public void testVI(){
-        INDArray params = Nd4j.create(shape,'f');
-        INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.VI, dist, params);
-
-        // expected calculation
-        Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = Nd4j.rand('f',shape);
-        int numValues = shape[0] + shape[1];
-        double r = Math.sqrt(6) / Math.sqrt(numValues + 1);
-        weightsExpected.muli(2).muli(r).subi(r);
+        double a = 1.0/Math.sqrt(fanIn);
+        INDArray weightsExpected = Nd4j.rand(shape,Nd4j.getDistributions().createUniform(-a,a));
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -112,33 +97,33 @@ public class WeightInitUtilTest {
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         INDArray weightsExpected = Nd4j.randn('f',shape);
-        weightsExpected.divi(FastMath.sqrt(shape[0] + shape[1]));
+        weightsExpected.divi(FastMath.sqrt(2.0 / (fanIn + fanOut)));
 
         assertEquals(weightsExpected, weightsActual);
     }
 
     @Test
-    public void testXavierCaffe(){
+    public void testXavierFanIn(){
         INDArray params = Nd4j.create(shape,'f');
-        INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.XAVIER_CAFFE, dist, params);
+        INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.XAVIER_FAN_IN, dist, params);
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         INDArray weightsExpected = Nd4j.randn('f',shape);
-        weightsExpected.divi(FastMath.sqrt(shape[0]));
+        weightsExpected.divi(FastMath.sqrt(fanIn));
 
         assertEquals(weightsExpected, weightsActual);
     }
 
     @Test
-    public void testXavierTorch(){
+    public void testXavierLegacy(){
         INDArray params = Nd4j.create(shape,'f');
-        INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.XAVIER_TORCH, dist, params);
+        INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.XAVIER_LEGACY, dist, params);
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         INDArray weightsExpected = Nd4j.randn('f',shape);
-        weightsExpected.muli(FastMath.sqrt(2.0 / (shape[0] + shape[1])));
+        weightsExpected.muli(FastMath.sqrt(1.0 / (fanIn + fanOut)));
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -146,7 +131,7 @@ public class WeightInitUtilTest {
     @Test
     public void testZero(){
         INDArray params = Nd4j.create(shape,'f');
-        INDArray weightsActual = WeightInitUtil.initWeights(shape, WeightInit.ZERO, dist, params);
+        INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.ZERO, dist, params);
 
         // expected calculation
         INDArray weightsExpected = Nd4j.create(shape,'f');
