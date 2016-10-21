@@ -16,11 +16,9 @@
 
 package org.datavec.api.vector;
 
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.conf.Configuration;
-
-import java.util.Collection;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.reader.RecordReaderMeta;
 
 /**
  * Vectorizer of a particular type.
@@ -49,35 +47,35 @@ public interface Vectorizer<VECTOR_TYPE> {
      * Fit based on a record reader
      * @param reader
      */
-    void fit(RecordReader reader);
+    void fit(RecordReaderMeta reader);
 
     /**
      * Fit based on a record reader
      * @param reader
      */
-    VECTOR_TYPE fitTransform(RecordReader reader);
+    VECTOR_TYPE fitTransform(RecordReaderMeta reader);
 
-
-    /**
-     * Fit based on a record reader
-     * @param reader
-     * @param callBack
-     */
-    void fit(RecordReader reader,RecordCallBack callBack);
 
     /**
      * Fit based on a record reader
      * @param reader
      * @param callBack
      */
-    VECTOR_TYPE fitTransform(RecordReader reader,RecordCallBack callBack);
+    void fit(RecordReaderMeta reader, RecordCallBack callBack);
+
+    /**
+     * Fit based on a record reader
+     * @param reader
+     * @param callBack
+     */
+    VECTOR_TYPE fitTransform(RecordReaderMeta reader,RecordCallBack callBack);
 
     /**
      * Transform a record in to a vector
      * @param record the record to write
      * @return
      */
-    VECTOR_TYPE transform(Collection<Writable> record);
+    VECTOR_TYPE transform(Record record);
 
 
     /**
@@ -90,7 +88,7 @@ public interface Vectorizer<VECTOR_TYPE> {
          * The record callback
          * @param record
          */
-        void onRecord(Collection<Writable> record);
+        void onRecord(Record record);
     }
 
 

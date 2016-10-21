@@ -17,12 +17,14 @@
 package org.datavec.nlp.reader;
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.IntWritable;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.vector.Vectorizer;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
+import org.datavec.common.data.NDArrayWritable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -37,10 +39,8 @@ import java.util.*;
  */
 public class TfidfRecordReader extends FileRecordReader  {
     private TfidfVectorizer tfidfVectorizer;
-    private List<List<Writable>> records = new ArrayList<>();
-    private List<Integer> recordLabels = new ArrayList<>();
-    private Iterator<Integer> labelIter;
-    private Iterator<List<Writable>> recordIter;
+    private List<Record> records = new ArrayList<>();
+    private Iterator<Record> recordIter;
     private int numFeatures;
     private boolean initialized = false;
 
@@ -57,25 +57,19 @@ public class TfidfRecordReader extends FileRecordReader  {
         if(tfidfVectorizer == null) {
             tfidfVectorizer = new TfidfVectorizer();
             tfidfVectorizer.initialize(conf);
-            INDArray ret = tfidfVectorizer.fitTransform(this, new Vectorizer.RecordCallBack() {
-                @Override
-                public void onRecord(Collection<Writable> record) {
-                    Iterator<Writable> writableIterator = record.iterator();
-                    //skip the string
-                    writableIterator.next();
-                    recordLabels.add(writableIterator.next().toInt());
-                }
-            });
 
             //clear out old strings
             records.clear();
-            for(int i = 0; i< ret.rows(); i++) {
-                records.add(RecordConverter.toRecord(ret.getRow(i)));
-            }
+
+            INDArray ret = tfidfVectorizer.fitTransform(this, new Vectorizer.RecordCallBack() {
+                @Override
+                public void onRecord(Record fullRecord) {
+                    records.add(fullRecord);
+                }
+            });
 
             //cache the number of features used for each document
             numFeatures = ret.columns();
-            labelIter = recordLabels.iterator();
             recordIter = records.iterator();
         }
         else {
@@ -84,42 +78,42 @@ public class TfidfRecordReader extends FileRecordReader  {
             //the record reader has 2 phases, we are skipping the
             //document frequency phase and just using the super() to get the file contents
             //and pass it to the already existing vectorizer.
-            while(hasNext()) {
-                Collection<Writable> fileContents = next();
+            while(super.hasNext()) {
+                Record fileContents = super.nextRecord();
+                INDArray transform = tfidfVectorizer.transform(fileContents);
+
+                org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
+                        new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
+                        new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
+
                 if(appendLabel)
-                    recordLabels.add(new IntWritable(getCurrentLabel()).toInt());
-                records.add(RecordConverter.toRecord(tfidfVectorizer.transform(fileContents)));
+                    record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
+
+                records.add(record);
             }
 
-            labelIter = recordLabels.iterator();
             recordIter = records.iterator();
         }
 
-        if(appendLabel){
-            Iterator<List<Writable>> rIter = records.iterator();
-            Iterator<Integer> lIter = recordLabels.iterator();
-            while(rIter.hasNext()){
-                List<Writable> record = rIter.next();
-                Integer label = lIter.next();
-                record.add(new IntWritable(label));
-            }
-        }
         this.initialized = true;
     }
 
     @Override
     public void reset() {
         if(inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
-        labelIter = recordLabels.iterator();
         recordIter = records.iterator();
     }
 
     @Override
-    public List<Writable> next() {
+    public Record nextRecord(){
         if(recordIter == null)
-            return super.next();
-        List<Writable> record = recordIter.next();
-        return record;
+            return super.nextRecord();
+        return recordIter.next();
+    }
+
+    @Override
+    public List<Writable> next() {
+        return nextRecord().getRecord();
     }
 
     @Override
@@ -167,6 +161,30 @@ public class TfidfRecordReader extends FileRecordReader  {
     public void shuffle(Random random){
         Collections.shuffle(this.records, random);
         this.reset();
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<Record> out = new ArrayList<>();
+
+        for (Record fileContents : super.loadFromMetaData(recordMetaDatas)) {
+            INDArray transform = tfidfVectorizer.transform(fileContents);
+
+            org.datavec.api.records.impl.Record record = new org.datavec.api.records.impl.Record(
+                    new ArrayList<>(Collections.<Writable>singletonList(new NDArrayWritable(transform))),
+                    new RecordMetaDataURI(fileContents.getMetaData().getURI(), TfidfRecordReader.class));
+
+            if(appendLabel)
+                record.getRecord().add(fileContents.getRecord().get(fileContents.getRecord().size() - 1));
+            out.add(record);
+        }
+
+        return out;
     }
 }
 

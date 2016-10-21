@@ -17,20 +17,22 @@
 package org.datavec.nlp.reader;
 
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
-import org.datavec.nlp.reader.TfidfRecordReader;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 /**
  * @author Adam Gibson
  */
@@ -60,4 +62,42 @@ public class TfidfRecordReaderTest {
         assertEquals(3,count);
     }
 
+    @Test
+    public void testRecordMetaData() throws Exception {
+        TfidfVectorizer vectorizer = new TfidfVectorizer();
+        Configuration conf = new Configuration();
+        conf.setInt(TfidfVectorizer.MIN_WORD_FREQUENCY, 1);
+        conf.setBoolean(RecordReader.APPEND_LABEL, true);
+        vectorizer.initialize(conf);
+        TfidfRecordReader reader = new TfidfRecordReader();
+        reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
+
+        while(reader.hasNext()) {
+            Record record = reader.nextRecord();
+            assertNotNull(record.getMetaData().getURI());
+            assertEquals(record.getMetaData().getReaderClass(), TfidfRecordReader.class);
+        }
+    }
+
+
+    @Test
+    public void testReadRecordFromMetaData() throws Exception {
+        TfidfVectorizer vectorizer = new TfidfVectorizer();
+        Configuration conf = new Configuration();
+        conf.setInt(TfidfVectorizer.MIN_WORD_FREQUENCY, 1);
+        conf.setBoolean(RecordReader.APPEND_LABEL, true);
+        vectorizer.initialize(conf);
+        TfidfRecordReader reader = new TfidfRecordReader();
+        reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
+
+        Record record = reader.nextRecord();
+
+        Record reread = reader.loadFromMetaData(record.getMetaData());
+
+        assertEquals(record.getRecord().size(), 2);
+        assertEquals(reread.getRecord().size(), 2);
+        assertEquals(record.getRecord().get(0), reread.getRecord().get(0));
+        assertEquals(record.getRecord().get(1), reread.getRecord().get(1));
+        assertEquals(record.getMetaData(), reread.getMetaData());
+    }
 }
