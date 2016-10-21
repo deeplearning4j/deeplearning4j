@@ -112,8 +112,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha, boolean isInference) {
-        INDArray neu1e = Nd4j.zeros(lookupTable.layerSize());
-
         int [] idxSyn1 = null;
         int [] codes = null;
 
@@ -157,7 +155,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         int end =  window * 2 + 1 - b;
-        INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
 
         T currentWord = sentence.get(i);
 
@@ -184,27 +181,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
-
-        /*
-
-        if (cw == 0)
-            return;
-
-        neu1.divi(cw);
-
-        INDArray neu1e = iterateSample(currentWord, neu1, nextRandom, alpha, false);
-
-        for(int a = b; a < end; a++) {
-            if(a != window) {
-                int c = i - window + a;
-                if(c >= 0 && c < sentence.size()) {
-                    T lastWord = sentence.get(c);
-                    INDArray syn0row = syn0.getRow(lastWord.getIndex());
-                    Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, syn0row);
-                }
-            }
-        }
-        */
     }
 
     public Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
