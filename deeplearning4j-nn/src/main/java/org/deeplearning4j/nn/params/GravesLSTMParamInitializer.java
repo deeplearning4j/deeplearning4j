@@ -90,9 +90,14 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nParamsIn+nParamsRecurrent, nParamsIn+nParamsRecurrent+nBias));
 
         if(initializeParams) {
-            params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, inputWeightView));
-            params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, recurrentWeightView));
-            biasView.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)}, Nd4j.ones(1, nL).muli(forgetGateInit));   //Order: input, forget, output, input modulation, i.e., IFOG}
+            int fanIn = nL;
+            int fanOut = nLast + nL;
+            int[] inputWShape = new int[]{nLast, 4 * nL};
+            int[] recurrentWShape = new int[]{nL, 4 * nL + 3};
+
+            params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape, layerConf.getWeightInit(), dist, inputWeightView));
+            params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape, layerConf.getWeightInit(), dist, recurrentWeightView));
+            biasView.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)}, Nd4j.valueArrayOf(1, nL, forgetGateInit));   //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.
              * See Sutskever PhD thesis, pg19:
              * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,

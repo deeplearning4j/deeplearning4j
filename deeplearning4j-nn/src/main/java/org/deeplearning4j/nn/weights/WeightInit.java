@@ -18,24 +18,40 @@
 
 package org.deeplearning4j.nn.weights;
 
-/**Weight initialization scheme
+/**
+ * Weight initialization scheme
+ * <p>
+ * <b>DISTRIBUTION</b>: Sample weights from a provided distribution<br>
+ * <p>
+ * <b>ZERO</b>: Generate weights as zeros<br>
+ * <p>
+ * <b>SIGMOID_UNIFORM</b>: A version of XAVIER_UNIFORM for sigmoid activation functions. U(-r,r) with r=4*sqrt(6/(fanIn + fanOut))
+ * <p>
+ * <b>UNIFORM</b>: Uniform U[-a,a] with a=1/sqrt(fanIn). "Commonly used heuristic" as per Glorot and Bengio 2010
+ * <p>
+ * <b>XAVIER</b>: As per Glorot and Bengio 2010: Gaussian distribution with mean 0, variance 2.0/(fanIn + fanOut)
+ * <p>
+ * <b>XAVIER_UNIFORM</b>: As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
+ * <p>
+ * <b>XAVIER_FAN_IN</b>: Similar to Xavier, but 1/fanIn -> Caffe originally used this.
+ * <p>
+ * <b>XAVIER_LEGACY</b>: Xavier weight init in DL4J up to 0.6.0. XAVIER should be preferred.
+ * <p>
+ * <b>RELU</b>: He et al. (2015), "Delving Deep into Rectifiers". Normal distribution with variance 2.0/nIn
+ * <p>
+ * <b>RELU_UNIFORM</b>: He et al. (2015), "Delving Deep into Rectifiers". Uniform distribution U(-s,s) with s = sqrt(6/fanIn)
+ * <p>
  *
- * Distribution: Sample weights from a distribution based on shape of input
- * Normalized: Normalize sample weights
- * Size: Sample weights from bound uniform distribution using shape for min and max
- * Uniform: Sample weights from bound uniform distribution (specify min and max)
- * VI: Sample weights from variance normalized initialization (Glorot)
- * Zeros: Generate weights as zeros
- * XAVIER: As per Glorot and Bengio 2010: Gaussian distribution with mean 0, variance 2.0/(fanIn + fanOut)
- * XAVIER_FAN_IN: Similar to Xavier, but 1/fanIn -> Caffe originally used this.
- * XAVIER_LEGACY: Xavier weight init in DL4J up to 0.6.0. XAVIER should be preferred.
- * RELU: He et al. (2015), "Delving Deep into Rectifiers". Normal distribution with variance 2.0/nIn
  * @author Adam Gibson
  */
 public enum WeightInit {
-    /*
-        TBD: Sparse initialization (SI) (Martens)
-     */
-    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER,XAVIER_FAN_IN, XAVIER_LEGACY, RELU
-
+    DISTRIBUTION, ZERO,
+    SIGMOID_UNIFORM, UNIFORM,
+    XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM,
+    @Deprecated
+    VI,     //Use XAVIER_UNIFORM
+    @Deprecated
+    SIZE,   //Use SIGMOID_UNIFORM
+    @Deprecated
+    NORMALIZED
 }
