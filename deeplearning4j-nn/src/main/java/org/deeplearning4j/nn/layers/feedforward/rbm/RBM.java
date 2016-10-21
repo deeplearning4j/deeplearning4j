@@ -30,6 +30,7 @@ import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
@@ -162,8 +163,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 nvSamples.transpose().mmul(nhMeans)
         );
 
-
-
         INDArray hBiasGradient;
 
         if(layerConf().getSparsity() != 0)
@@ -210,6 +209,20 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         return r;
     }
 
+    /**
+     * Gibbs sampling step: hidden ---> visible ---> hidden
+     * @param h the hidden input
+     * @return the expected values and samples of both the visible samples given the hidden
+     * and the new hidden input and expected values
+     */
+    public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
+        Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
+        INDArray vSample = v1MeanAndSample.getSecond();
+
+        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
+        return new Pair<>(v1MeanAndSample,h1MeanAndSample);
+    }
+
 
     /**
      * Binomial sampling of the hidden values given visible
@@ -254,21 +267,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     }
 
     /**
-     * Gibbs sampling step: hidden ---> visible ---> hidden
-     * @param h the hidden input
-     * @return the expected values and samples of both the visible samples given the hidden
-     * and the new hidden input and expected values
-     */
-    public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
-        Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
-        INDArray vSample = v1MeanAndSample.getSecond();
-
-        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
-        return new Pair<>(v1MeanAndSample,h1MeanAndSample);
-    }
-
-
-    /**
      * Guess the visible values given the hidden
      * @param h the hidden units
      * @return a visible mean and sample relative to the hidden states
@@ -280,12 +278,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray v1Sample;
 
         switch (layerConf().getVisibleUnit()) {
-            case GAUSSIAN: {
-                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
-                break;
-            }
+            case GAUSSIAN:
             case LINEAR: {
-                v1Sample = Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
+                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
+                // this also works but needs reseedRnadomGenerator applied before sampling: Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
                 break;
             }
             case SOFTMAX: {
@@ -293,7 +289,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 break;
             }
             case BINARY: {
-                v1Sample = Nd4j.getDistributions().createBinomial(1, v1Mean).sample(v1Mean.shape());
+                Distribution dist = Nd4j.getDistributions().createBinomial(1, v1Mean);
+                dist.reseedRandomGenerator(rng.getSeed());
+                v1Sample = dist.sample(v1Mean.shape());
                 break;
             }
             default: {
@@ -364,8 +362,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         switch (layerConf().getVisibleUnit()) {
             case GAUSSIAN:
-                INDArray sample = Nd4j.getDistributions().createNormal(vMean, 1).sample(vMean.shape());
-                vMean.addi(sample);
+                vMean.addi(Nd4j.randn(vMean.rows(), vMean.columns(), rng));
                 return vMean;
             case LINEAR:
                 return vMean;
