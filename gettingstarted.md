@@ -12,16 +12,12 @@ This is a multistep install. We highly recommend you join our [Gitter Live Chat]
 
 After following the steps in the [Quick Start Guide](http://deeplearning4j.org/quickstart), please read the following:
 
-1. Accelerating CPU Training: Installing Native BLAS Libraries
-    * <a href="#linux">Linux</a>
-    * <a href="#osx">OSX</a>
-    * <a href="#windows">Windows</a>
-2. [GitHub](http://nd4j.org/getstarted.html#github)
-3. <a href="#eclipse">Eclipse</a>
-4. <a href="#cli">Command-Line Interface</a>
-5. <a href="#trouble">Troubleshooting</a>
-6. <a href="#results">Reproducible Results</a>
-7. <a href="#next">Next Steps</a>
+1. <a href="#walk">Detailed Walkthrough</a>
+2. <a href="#eclipse">DL4J Examples In Eclipse</a>
+3. <a href="#trouble">Troubleshooting</a>
+4. <a href="#results">Reproducible Results</a>
+5. <a href="#scala">Scala Version</a>
+5. <a href="#next">Next Steps</a>
 
 
 ## <a name="walk">DL4J Examples: A Detailed Walkthrough</a>
@@ -93,6 +89,14 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 * There is a bug in fork-join in Java 7. Updating to Java 8 fixes it. If you get an OutofMemory error that looks like this, fork join is the problem: `java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
 .... `java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:536)`
 
+### Managed Environments
+
+If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to take an additional step. After you've followed the local setup above, just run 
+
+		mvn clean package
+
+in the command line from within the examples directory. Then you can upload the JAR file to the managed environment you've chosen.
+
 ### <a name="results">Reproducible Results</a>
 
 Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight using the following method:
@@ -101,17 +105,10 @@ Neural net weights are initialized randomly, which means the model begins learni
       MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
             .seed(seed)
       
-## Scala 
+### <a name='scala'>Scala</a> 
 
 Our  [Scala version](https://github.com/deeplearning4j/Scalnet) is here This is a port of keras to scala (a work in progress).
       
-### Managed Environments
-
-If you are working in a managed environment like Databricks, Domino or Sense.io, you'll need to take an additional step. After you've followed the local setup above, just run 
-
-		mvn clean package
-
-in the command line from within the examples directory. Then you can upload the JAR file to the managed environment you've chosen.
 
 ## Advanced: Using the Command Line on AWS
 
