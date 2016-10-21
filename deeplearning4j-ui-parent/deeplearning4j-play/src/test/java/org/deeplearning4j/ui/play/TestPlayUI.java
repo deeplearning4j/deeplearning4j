@@ -12,18 +12,15 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
-import org.deeplearning4j.ui.module.training.TrainModule;
 import org.deeplearning4j.ui.module.training.TrainModuleUtils;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by Alex on 08/10/2016.
@@ -94,7 +91,7 @@ public class TestPlayUI {
                 .build();
 
         System.out.println("------------------");
-        ModelInfo mi2 = TrainModuleUtils.buildModelInfo2(graph);
+        ModelInfo mi2 = TrainModuleUtils.buildModelInfo(graph);
         for(LayerInfo li : mi2.getLayers()){
             System.out.println(li);
         }
