@@ -95,9 +95,11 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 
 ### <a name="results">Reproducible Results</a>
 
-Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight with this line:
+Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight using the following method:
 
-      Nd4j.getRandom().setSeed(123);
+	long seed = 6;
+      MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(seed)
       
 ## Scala 
 
