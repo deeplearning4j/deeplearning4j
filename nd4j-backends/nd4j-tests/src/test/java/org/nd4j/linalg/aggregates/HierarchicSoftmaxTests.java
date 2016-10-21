@@ -314,6 +314,8 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         // syn1Neg idx8 is expected to be 0.02975 after third round (-0.0125 * 0.01 + 0.029875)
         // syn0 idx0 is expected to be 0.00 after training (0.01 += -0.0003734375)
 
+        log.info("syn1neg_row6 after: {}", Arrays.toString(syn1Neg.getRow(6).dup().data().asFloat()));
+
         // checking target first
         assertEquals(expSyn1Neg_row6, syn1Neg.getRow(6));
 

@@ -79,7 +79,7 @@ public class AggregateCBOW extends BaseAggregate {
 
     @Override
     public int getSharedMemorySize() {
-        return (vectorLength * Nd4j.sizeOfDataType()) + 512;
+        return (vectorLength * Nd4j.sizeOfDataType() * 2) + 512;
     }
 
     @Override
