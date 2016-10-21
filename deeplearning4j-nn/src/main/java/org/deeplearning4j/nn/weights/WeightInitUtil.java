@@ -40,20 +40,20 @@ public class WeightInitUtil {
     private WeightInitUtil() {
     }
 
-    /**
-     * Generate a random matrix with respect to the number of inputs and outputs.
-     * This is a bound uniform distribution with the specified minimum and maximum
-     *
-     * @param shape the shape of the matrix
-     * @param nIn   the number of inputs
-     * @param nOut  the number of outputs
-     * @return {@link INDArray}
-     */
-    public static INDArray uniformBasedOnInAndOut(int[] shape, int nIn, int nOut) {
-        double min = -4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
-        double max = 4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
-        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(min, max));
-    }
+//    /**
+//     * Generate a random matrix with respect to the number of inputs and outputs.
+//     * This is a bound uniform distribution with the specified minimum and maximum
+//     *
+//     * @param shape the shape of the matrix
+//     * @param nIn   the number of inputs
+//     * @param nOut  the number of outputs
+//     * @return {@link INDArray}
+//     */
+//    public static INDArray uniformBasedOnInAndOut(int[] shape, int nIn, int nOut) {
+//        double min = -4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
+//        double max = 4.0 * Math.sqrt(6.0 / (double) (nOut + nIn));
+//        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(min, max));
+//    }
 
     public static INDArray initWeights(int[] shape, float min, float max) {
         return Nd4j.rand(shape, min, max, Nd4j.getRandom());
@@ -70,11 +70,11 @@ public class WeightInitUtil {
      * @return a matrix of the specified dimensions with the specified
      * distribution based on the initialization scheme
      */
-    public static INDArray initWeights(int fanIn, int fanOut, int[] shape, WeightInit initScheme, Distribution dist, INDArray paramView) {
+    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme, Distribution dist, INDArray paramView) {
         return initWeights(fanIn, fanOut, shape, initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER, paramView);
     }
 
-    public static INDArray initWeights(int fanIn, int fanOut, int[] shape, WeightInit initScheme, Distribution dist, char order, INDArray paramView) {
+    public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme, Distribution dist, char order, INDArray paramView) {
         //Note: using f order here as params get flattened to f order
 
         INDArray ret;
@@ -89,24 +89,37 @@ public class WeightInitUtil {
             case RELU:
                 ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn));   //N(0, 2/nIn)
                 break;
+            case RELU_UNIFORM:
+                double u = Math.sqrt(6.0/fanIn);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
+                break;
             case SIZE:
-                ret = uniformBasedOnInAndOut(shape, shape[0], shape[1]);
+            case SIGMOID_UNIFORM:
+                double r = -4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
                 break;
             case UNIFORM:
-                double a = 1 / (double) shape[0];
-                ret = Nd4j.rand(order, shape).muli(2 * a).subi(a);
+                double a = 1.0 / Math.sqrt(fanIn);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
                 break;
-            case VI:
-                ret = Nd4j.rand(order, shape);
-                int len = 0;
-                for (int aShape : shape) {
-                    len += aShape;
-                }
-                double r = Math.sqrt(6) / Math.sqrt(len + 1);
-                ret.muli(2 * r).subi(r);
-                break;
+//            case VI:
+//                ret = Nd4j.rand(order, shape);
+//                int len = 0;
+//                for (int aShape : shape) {
+//                    len += aShape;
+//                }
+//                double r = Math.sqrt(6) / Math.sqrt(len + 1);
+//                ret.muli(2 * r).subi(r);
+//                break;
             case XAVIER:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+                break;
+            case VI:
+            case XAVIER_UNIFORM:
+                //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
+                //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
+                double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
                 break;
             case XAVIER_FAN_IN:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
@@ -117,6 +130,7 @@ public class WeightInitUtil {
             case ZERO:
                 ret = Nd4j.create(shape, order);
                 break;
+
             default:
                 throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
