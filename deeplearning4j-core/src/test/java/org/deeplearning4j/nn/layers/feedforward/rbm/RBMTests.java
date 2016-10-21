@@ -80,7 +80,7 @@ public class RBMTests {
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .nIn(d.numInputs()).nOut(nOut)
                         .weightInit(WeightInit.VI)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .build())
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(1e-3f)
