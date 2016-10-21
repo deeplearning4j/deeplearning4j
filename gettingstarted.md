@@ -17,7 +17,8 @@ After following the steps in the [Quick Start Guide](http://deeplearning4j.org/q
 3. <a href="#trouble">Troubleshooting</a>
 4. <a href="#results">Reproducible Results</a>
 5. <a href="#scala">Scala Version</a>
-5. <a href="#next">Next Steps</a>
+6. <a href="native">CPU/GPU Optimizations</a>
+7. <a href="#next">Next Steps</a>
 
 
 ## <a name="walk">DL4J Examples: A Detailed Walkthrough</a>
@@ -127,6 +128,17 @@ That is, there are two wild cards that will change as we update and you go throu
     java -cp target/*.jar org.deeplearning4j.*
 
 To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
+
+###<a name="native">Native CPU and GPU Optimizations </a>
+
+To make best use of your hardware see this page for CPU optimizations.
+
+<a href="https://deeplearning4j.org/native">Native CPU Optimization for DeepLearning4J and ND4J</a>
+
+To make best use of your GPU's, see this page to configure our data processing Library ND4J for GPU's.
+
+<a href="http://nd4j.org/gpu_native_backends.html"> GPU Native Backends for ND4J</a>
+
 
 ### <a name="next">Next Steps: IRIS Example & Building NNs</a>
 
