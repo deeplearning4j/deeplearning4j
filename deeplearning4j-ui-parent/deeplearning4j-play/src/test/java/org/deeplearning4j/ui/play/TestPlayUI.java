@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.module.training.TrainModule;
 import org.deeplearning4j.ui.module.training.TrainModuleUtils;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -74,17 +76,28 @@ public class TestPlayUI {
 
         ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
 
-        System.out.println(mi);
-        System.out.println();
+        List<LayerInfo> layerInfos = mi.getLayers();
+        for(LayerInfo li : layerInfos){
+            System.out.println(li);
+        }
+//        System.out.println(mi.getLayers());
+//        System.out.println();
 
 
         ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build(), "in")
-                .addLayer("1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build(), "0")
+                .addLayer("L0", new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build(), "in")
+                .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build(), "L0")
                 .pretrain(false).backprop(true)
+                .setOutputs("L1")
                 .build();
+
+        System.out.println("------------------");
+        ModelInfo mi2 = TrainModuleUtils.buildModelInfo2(graph);
+        for(LayerInfo li : mi2.getLayers()){
+            System.out.println(li);
+        }
     }
 
 }
