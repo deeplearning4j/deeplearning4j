@@ -1,6 +1,5 @@
 package org.deeplearning4j.ui.module.training;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -20,6 +19,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
+import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.Histogram;
@@ -56,7 +56,8 @@ public class TrainModule implements UIModule {
         Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
         Route r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
         Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
-        Route r3a = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
+        Route r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
+        Route r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
         Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
         Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
         Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
@@ -65,7 +66,7 @@ public class TrainModule implements UIModule {
         Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo );
         Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession );
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r4, r4a, r5, r6, r6a, r6b, r6c);
+        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c);
     }
 
     @Override
@@ -280,6 +281,37 @@ public class TrainModule implements UIModule {
         result.put("model", modelInfo);
 
         return Results.ok(Json.toJson(result));
+    }
+
+    private Result getModelGraph(){
+
+
+        boolean noData = currentSessionID == null;
+        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+
+        if(allStatic.size() == 0){
+            return ok();
+        }
+
+        //TODO type check
+        StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
+
+        String modelClass = p.getModelClassName();
+        String config = p.getModelConfigJson();
+        if(modelClass.endsWith("MultiLayerNetwork")){
+            MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
+            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+
+            return ok(Json.toJson(mi));
+        } else if(modelClass.endsWith("ComputationGraph")){
+            ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
+            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+
+            return ok(Json.toJson(mi));
+        } else {
+            return ok();
+        }
     }
 
 

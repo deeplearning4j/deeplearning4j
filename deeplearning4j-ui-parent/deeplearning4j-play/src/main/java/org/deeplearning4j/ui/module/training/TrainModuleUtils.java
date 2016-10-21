@@ -85,7 +85,7 @@ public class TrainModuleUtils {
         return modelInfo;
     }
 
-    public static ModelInfo buildModelInfo2(ComputationGraphConfiguration conf){
+    public static ModelInfo buildModelInfo(ComputationGraphConfiguration conf){
         Map<String,GraphVertex> gv = conf.getVertices();
 
         ModelInfo mi = new ModelInfo();
