@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -66,22 +65,23 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  */
 public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.RBM> {
 
-    private transient Random rng;
+    private long seed;
 
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
-        this.rng = Nd4j.getRandom();
+        this.seed = conf.getSeed();
     }
 
     public RBM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
-        this.rng = Nd4j.getRandom();
+        this.seed = conf.getSeed();
     }
 
     /**
      *
      */
     //variance matrices for gaussian visible/hidden units
+    @Deprecated
     protected INDArray sigma,hiddenSigma;
 
 
@@ -97,6 +97,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
 
      */
+    @Deprecated
     public void contrastiveDivergence() {
         Gradient gradient = gradient();
         getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).subi(gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
@@ -248,7 +249,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 break;
             }
             case GAUSSIAN: {
-                h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
+                Distribution dist = Nd4j.getDistributions().createNormal(h1Mean, 1);
+                dist.reseedRandomGenerator(seed);
+                h1Sample = dist.sample(h1Mean.shape());
                 break;
             }
             case SOFTMAX: {
@@ -280,7 +283,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         switch (layerConf().getVisibleUnit()) {
             case GAUSSIAN:
             case LINEAR: {
-                v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
+                Distribution dist = Nd4j.getDistributions().createNormal(v1Mean, 1);
+                dist.reseedRandomGenerator(seed);
+                v1Sample = dist.sample(v1Mean.shape());
                 // this also works but needs reseedRnadomGenerator applied before sampling: Nd4j.getDistributions().createNormal(v1Mean, 1).sample(v1Mean.shape());
                 break;
             }
@@ -290,7 +295,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             }
             case BINARY: {
                 Distribution dist = Nd4j.getDistributions().createBinomial(1, v1Mean);
-                dist.reseedRandomGenerator(rng.getSeed());
+                dist.reseedRandomGenerator(seed);
                 v1Sample = dist.sample(v1Mean.shape());
                 break;
             }
@@ -326,8 +331,8 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
-        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-            this.sigma = v.var(0).divi(input.rows());
+//        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+//            this.sigma = v.var(0).divi(input.rows());
 
         INDArray preSig = v.mmul(W).addiRowVector(hBias);
 
@@ -336,7 +341,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                preSig.addi(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
+                Distribution dist = Nd4j.getDistributions().createNormal(preSig, 1);
+                dist.reseedRandomGenerator(seed);
+                preSig = dist.sample(preSig.shape());
                 return preSig;
             case BINARY:
                 return sigmoid(preSig);
@@ -362,7 +369,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         switch (layerConf().getVisibleUnit()) {
             case GAUSSIAN:
-                vMean.addi(Nd4j.randn(vMean.rows(), vMean.columns(), rng));
+                Distribution dist = Nd4j.getDistributions().createNormal(vMean, 1);
+                dist.reseedRandomGenerator(seed);
+                vMean = dist.sample(vMean.shape());
                 return vMean;
             case LINEAR:
                 return vMean;
@@ -408,6 +417,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
 
 
+    @Deprecated
     @Override
     public void iterate(INDArray input) {
         if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
