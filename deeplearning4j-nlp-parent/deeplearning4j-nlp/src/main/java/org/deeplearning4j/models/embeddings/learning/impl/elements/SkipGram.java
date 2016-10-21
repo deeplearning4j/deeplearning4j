@@ -193,8 +193,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return score;
     }
 
-    public double iterateSample(T w1, T w2,AtomicLong nextRandom,double alpha) {
-        if(w1 == null || w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP") || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
+    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom,double alpha) {
+        if(w1 == null || lastWord == null || lastWord.getIndex() < 0 || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP") || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || lastWord.getLabel().equals("UNK"))
             return 0.0;
 
 
@@ -232,7 +232,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), w2.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
+        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
 
