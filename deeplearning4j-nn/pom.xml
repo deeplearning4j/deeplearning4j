@@ -18,13 +18,6 @@
     </properties>
 
     <dependencies>
-        <!-- TODO: Do we want this here? Used only in Evaluation metadata...-->
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-api</artifactId>
-            <version>${datavec.version}</version>
-        </dependency>
-
         <!-- ND4J API -->
         <dependency>
             <groupId>org.nd4j</groupId>
