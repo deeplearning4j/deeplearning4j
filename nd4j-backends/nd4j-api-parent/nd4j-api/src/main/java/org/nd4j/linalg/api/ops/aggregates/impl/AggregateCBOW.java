@@ -31,11 +31,13 @@ public class AggregateCBOW extends BaseAggregate {
      * @param numLabels
      * @param trainWords
      */
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels, boolean trainWords) {
+    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels, boolean trainWords, INDArray inferenceVector) {
         this(syn0, syn1, syn1Neg, expTable, negTable, wordIdx, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength, alpha, nextRandom, vocabSize);
 
         indexingArguments.set(9, numLabels);
         indexingArguments.set(10, trainWords ? 1 : 0);
+
+        arguments.set(5, inferenceVector);
     }
 
     /**
@@ -75,6 +77,7 @@ public class AggregateCBOW extends BaseAggregate {
         arguments.add(expTable);
         arguments.add(syn1Neg);
         arguments.add(negTable);
+        arguments.add(null);
 
         intArrayArguments.add(idxSyn0);
         intArrayArguments.add(idxSyn1);
@@ -98,7 +101,7 @@ public class AggregateCBOW extends BaseAggregate {
 
     @Override
     public int maxArguments() {
-        return 5;
+        return 6;
     }
 
     @Override
