@@ -30,6 +30,7 @@
         <module>datavec-hadoop</module>
         <module>datavec-spark</module>
         <module>datavec-camel</module>
+        <module>datavec-dataframe</module>
     </modules>
     <name>DataVec</name>
 
