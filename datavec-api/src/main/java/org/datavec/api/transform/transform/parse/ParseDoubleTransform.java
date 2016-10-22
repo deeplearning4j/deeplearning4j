@@ -44,9 +44,11 @@ public class ParseDoubleTransform extends BaseTransform {
     @Override
     public List<Writable> map(List<Writable> writables) {
         List<Writable> transform = new ArrayList<>();
-        for(int i = 0; i < writables.size(); i++) {
-            if(writables.get(i) instanceof Text) {
-                transform.add(new DoubleWritable(Double.parseDouble(writables.get(i).toString())));
+        for(Writable w : writables){
+            if(w instanceof Text){
+                transform.add(new DoubleWritable(w.toDouble()));
+            } else {
+                transform.add(w);
             }
         }
         return transform;
