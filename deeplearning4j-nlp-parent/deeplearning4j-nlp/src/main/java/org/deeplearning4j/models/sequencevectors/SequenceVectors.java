@@ -8,8 +8,10 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
@@ -129,7 +131,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
-            if (trainElementsVectors && elementsLearningAlgorithm != null) {
+            if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
                 log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
                 elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
                 elementsLearningAlgorithm.pretrain(iterator);
@@ -138,6 +140,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 log.info("          building SequenceLearningAlgorithm: [" + sequenceLearningAlgorithm.getCodeName() + "]");
                 sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
                 sequenceLearningAlgorithm.pretrain(this.iterator);
+
+                // we'll use the ELA compatible with selected SLA
+                if (trainElementsVectors) {
+                    elementsLearningAlgorithm = sequenceLearningAlgorithm.getElementsLearningAlgorithm();
+                    log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
+                }
             }
             configured = true;
         }
@@ -230,7 +238,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         if (sequence.getElements().isEmpty()) return;
 
-        if (trainElementsVectors) {
+        /*
+            we do NOT train elements separately if sequnceLearningAlgorithm isn't CBOW
+            we skip that, because PV-DM includes CBOW
+          */
+        if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!elementsLearningAlgorithm.isEarlyTerminationHit()) scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
@@ -959,6 +971,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
+
+                        // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 

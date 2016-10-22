@@ -372,7 +372,7 @@ public class ParagraphVectorsTest {
                 .tokenizerFactory(t)
                 .negativeSample(0)
                 .sampling(0)
-                .elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .workers(2)
                 .sequenceLearningAlgorithm(new DM<VocabWord>())
                 .build();
 
