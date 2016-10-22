@@ -53,7 +53,7 @@ public class NormalizationTests extends BaseSparkTest {
         Normalization.zeromeanUnitVariance(dataFrame).show();
         Normalization.normalize(dataFrame).show();
 
-        //asert equivalent to the ndarray pre processing
+        //assert equivalent to the ndarray pre processing
         DataNormalization standardScaler = new NormalizerStandardize();
         standardScaler.fit(new DataSet(arr.dup(),arr.dup()));
         INDArray standardScalered = arr.dup();

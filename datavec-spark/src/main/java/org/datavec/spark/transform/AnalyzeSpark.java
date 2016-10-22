@@ -483,7 +483,7 @@ public class AnalyzeSpark {
 
                     break;
                 case Time:
-                    LongAnalysisCounter lac2 = (LongAnalysisCounter)counters.get(i);
+                    LongAnalysisCounter lac2 = (LongAnalysisCounter) counters.get(i);
 
                     TimeAnalysis la2 = new TimeAnalysis.Builder()
                             .min(lac2.getMinValueSeen())
@@ -506,7 +506,7 @@ public class AnalyzeSpark {
 
                     break;
                 case Bytes:
-                    BytesAnalysisCounter bac = (BytesAnalysisCounter)counters.get(i);
+                    BytesAnalysisCounter bac = (BytesAnalysisCounter) counters.get(i);
                     list.add(new BytesAnalysis.Builder()
                             .countTotal(bac.getCountTotal())
                             .build());
@@ -557,7 +557,6 @@ public class AnalyzeSpark {
      * @return              A list of random samples
      */
     public static List<Writable> sampleFromColumn(int count, String columnName, Schema schema, JavaRDD<List<Writable>> data){
-
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
 
@@ -591,7 +590,6 @@ public class AnalyzeSpark {
     public static List<Writable> getUnique(String columnName, Schema schema, JavaRDD<List<Writable>> data){
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
-
         return ithColumn.distinct().collect();
     }
 
@@ -631,10 +629,7 @@ public class AnalyzeSpark {
 
 
 
-
-
-    private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn){
-
+    private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn) {
         switch(meta.getColumnType()) {
             case String:
                 ithColumn.cache();
@@ -665,6 +660,13 @@ public class AnalyzeSpark {
         }
     }
 
+
+    /**
+     *
+     * @param schema
+     * @param data
+     * @return
+     */
     public static DataQualityAnalysis analyzeQualitySequence(Schema schema, JavaRDD<List<List<Writable>>> data){
         JavaRDD<List<Writable>> fmSeq = data.flatMap(new SequenceFlatMapFunction());
         return analyzeQuality(schema, fmSeq);
@@ -678,14 +680,13 @@ public class AnalyzeSpark {
      * @return
      */
     public static DataQualityAnalysis analyzeQuality(final Schema schema, final JavaRDD<List<Writable>> data) {
-
         data.cache();
         int nColumns = schema.numColumns();
 
         //This is inefficient, but it's easy to implement. Good enough for now!
         List<ColumnQuality> list = new ArrayList<>(nColumns);
 
-        for( int i = 0; i < nColumns; i++ ) {
+        for( int i = 0; i < nColumns; i++) {
             ColumnMetaData meta = schema.getMetaData(i);
             JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(i));
             list.add(analyze(meta, ithColumn));
@@ -757,7 +758,6 @@ public class AnalyzeSpark {
      * @return                 List of the most frequently occurring Writable objects in that column, along with their counts
      */
     public static Map<Writable,Long> sampleMostFrequentFromColumn(int nMostFrequent, String columnName, Schema schema, JavaRDD<List<Writable>> data){
-
         int columnIdx = schema.getIndexOfColumn(columnName);
 
         JavaPairRDD<Writable,Long> keyedByWritable = data.mapToPair(new ColumnToKeyPairTransform(columnIdx));
