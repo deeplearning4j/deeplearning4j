@@ -996,6 +996,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (trainElementsVectors) {
                 elementsLearningAlgorithm.finish();
             }
+
+            if (trainSequenceVectors) {
+                sequenceLearningAlgorithm.finish();
+            }
         }
     }
 }

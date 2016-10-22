@@ -180,4 +180,13 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         return ret;
     }
+
+
+    @Override
+    public void finish() {
+        if (cbow.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(cbow.getBatch());
+            cbow.getBatch().clear();
+        }
+    }
 }

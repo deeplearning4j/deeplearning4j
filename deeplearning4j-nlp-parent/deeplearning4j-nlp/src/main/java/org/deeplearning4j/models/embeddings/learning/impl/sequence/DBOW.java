@@ -10,6 +10,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
+        this.configuration = configuration;
 
         skipGram.configure(vocabCache, lookupTable, configuration);
     }
@@ -68,9 +70,10 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
-//        for(int i = 0; i < sequence.getElements().size(); i++) {
-            dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
-//        }
+
+        // we just pass data to dbow, and loop over sequence there
+        dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
+
 
         return 0;
     }
@@ -101,8 +104,16 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             for (T word:  sentence) {
                 if (word == null) continue;
 
-                skipGram.iterateSample(word, lastWord,nextRandom,alpha);
+                skipGram.iterateSample(word, lastWord, nextRandom,alpha);
             }
+        }
+
+        if (skipGram.getBatch() == null)
+            throw new RuntimeException("batch is null");
+
+        if (skipGram.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(skipGram.getBatch());
+            skipGram.getBatch().clear();
         }
     }
 
@@ -117,5 +128,13 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations) {
         throw new UnsupportedOperationException("not implemented for DBOW, please use DM instead");
+    }
+
+    @Override
+    public void finish() {
+        if (skipGram.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(skipGram.getBatch());
+            skipGram.getBatch().clear();
+        }
     }
 }

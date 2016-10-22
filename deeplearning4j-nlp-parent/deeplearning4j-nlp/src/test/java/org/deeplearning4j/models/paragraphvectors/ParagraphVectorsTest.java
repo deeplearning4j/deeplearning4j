@@ -180,6 +180,7 @@ public class ParagraphVectorsTest {
                 .trainWordVectors(true)
                 .vocabCache(cache)
                 .tokenizerFactory(t)
+                .workers(4)
                 .sampling(0)
                 .build();
 
