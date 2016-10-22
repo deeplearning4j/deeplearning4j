@@ -583,6 +583,8 @@ namespace aggregateOps {
             int negTableLength = indexArguments[6];
             int idxSyn0Length = indexArguments[7];
             int initialIdx = indexArguments[8];
+            int numLabels = indexArguments[9];
+            int trainWords = indexArguments[10];
 
 
             int *idxSyn0 = intArrays[0];
@@ -662,8 +664,12 @@ namespace aggregateOps {
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
                 }
 
+
+            // if we don't train words - we skip start of idxSyn0
+            int starter = trainWords == 1 ? 0 : idxSyn0Length - numLabels;
+
             // propagate neu1e -> syn0
-            for (int c = 0; c < idxSyn0Length; c++) {
+            for (int c = starter; c < idxSyn0Length; c++) {
                 T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
 #pragma omp simd
                 for (int i = 0; i < vectorLength; i++) {
@@ -689,6 +695,8 @@ namespace aggregateOps {
             __shared__ int negTableLength;
             __shared__ int idxSyn0Length;
             __shared__ int initialIdx;
+            __shared__ int numLabels;
+            __shared__ int trainWords;
 
             int *idxSyn0 = intArrays[0];
             int *idxSyn1 = intArrays[1];
@@ -716,6 +724,8 @@ namespace aggregateOps {
                 negTableLength = indexArguments[6];
                 idxSyn0Length = indexArguments[7];
                 initialIdx = indexArguments[8];
+                numLabels = indexArguments[9];
+                trainWords = indexArguments[10];
 
                 extern __shared__ unsigned char shmem[];
                 neu1 = (T *) shmem;
@@ -793,7 +803,10 @@ namespace aggregateOps {
                 }
 
 
-            for (int c = 0; c < idxSyn0Length; c++) {
+            // if we don't train words - we skip start of idxSyn0
+            int starter = trainWords == 1 ? 0 : idxSyn0Length - numLabels;
+
+            for (int c = starter; c < idxSyn0Length; c++) {
                 T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
 
                 for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
