@@ -6,7 +6,13 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.normalize.Normalize;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.common.RecordConverter;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +41,8 @@ public class NormalizationTests extends BaseSparkTest {
 
         }
 
+        INDArray arr = RecordConverter.toMatrix(data);
+
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
         assertEquals(schema,DataFrames.fromStructType(DataFrames.fromSchema(schema)));
@@ -44,6 +52,21 @@ public class NormalizationTests extends BaseSparkTest {
         dataFrame.show();
         Normalization.zeromeanUnitVariance(dataFrame).show();
         Normalization.normalize(dataFrame).show();
+
+        //asert equivalent to the ndarray pre processing
+        DataNormalization standardScaler = new NormalizerStandardize();
+        standardScaler.fit(new DataSet(arr.dup(),arr.dup()));
+        INDArray standardScalered = arr.dup();
+        standardScaler.transform(new DataSet(standardScalered,standardScalered));
+        DataNormalization zeroToOne = new NormalizerMinMaxScaler();
+        zeroToOne.fit(new DataSet(arr.dup(),arr.dup()));
+        INDArray zeroToOnes = arr.dup();
+        zeroToOne.transform(new DataSet(zeroToOnes,zeroToOnes));
+
+        INDArray zeroMeanUnitVarianceDataFrame = RecordConverter.toMatrix(Normalization.zeromeanUnitVariance(schema,rdd).collect());
+        INDArray zeroMeanUnitVarianceDataFrameZeroToOne = RecordConverter.toMatrix(Normalization.normalize(schema,rdd).collect());
+        assertEquals(standardScalered,zeroMeanUnitVarianceDataFrame);
+        assertEquals(zeroToOnes,zeroMeanUnitVarianceDataFrameZeroToOne);
 
     }
 

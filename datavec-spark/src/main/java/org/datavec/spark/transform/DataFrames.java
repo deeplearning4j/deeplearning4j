@@ -31,7 +31,7 @@ public class DataFrames {
      * @param dataFrame the dataframe to
      *                  get the column from
      * @param columnName the name of the column to get the standard
-     *                   deviationfor
+     *                   deviation for
      * @return the column that represents the standard deviation
      */
     public static Column std(DataFrame dataFrame, String columnName) {
@@ -107,9 +107,10 @@ public class DataFrames {
 
 
     /**
-     *
-     * @param structType
-     * @return
+     * Create a datavec schema
+     * from a struct type
+     * @param structType the struct type to create the schema from
+     * @return the created schema
      */
     public static Schema fromStructType(StructType structType) {
         Schema.Builder builder = new Schema.Builder();

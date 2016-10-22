@@ -55,8 +55,20 @@ public class RecordConverter {
 
             return vector;
         }
+    }
 
+    /**
+     * Convert a set of records in to a matrix
+     * @param records the records ot convert
+     * @return the matrix for the records
+     */
+    public static INDArray toMatrix(List<List<Writable>> records) {
+        INDArray arr = Nd4j.create(records.size(),records.get(0).size());
+        for(int i = 0; i < arr.rows(); i++) {
+            arr.putRow(i,toArray(records.get(i)));
+        }
 
+        return arr;
     }
 
     /**
