@@ -160,6 +160,8 @@ public class SparkTransformExecutor {
         JavaRDD<List<List<Writable>>> currentSequence = inputSequence;
 
         List<DataAction> list = sequence.getActionList();
+        if(inputWritables.first().size() != sequence.getInitialSchema().numColumns())
+            throw new IllegalStateException("Input sequence does not match the number of columns for the transform process");
 
         int count = 1;
         for (DataAction d : list) {
@@ -254,6 +256,8 @@ public class SparkTransformExecutor {
         }
 
         log.info("Completed {} of {} execution steps", count - 1, list.size());
+        if(currentWritables.first().size() != sequence.getFinalSchema().numColumns())
+            throw new IllegalStateException("Output number of columns is wrong. Supposed to be " + sequence.getFinalSchema().numColumns() + " but was " + currentWritables.first().size());
 
         return new Pair<>(currentWritables, currentSequence);
     }
