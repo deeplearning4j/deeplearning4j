@@ -26,7 +26,7 @@
     <artifactId>datavec-spark_2.10</artifactId>
 
     <properties>
-        <spark.version>1.5.1</spark.version>
+        <spark.version>1.6.2</spark.version>
     </properties>
 
     <dependencies>

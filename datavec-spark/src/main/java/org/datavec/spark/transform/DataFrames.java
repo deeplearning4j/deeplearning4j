@@ -2,10 +2,7 @@ package org.datavec.spark.transform;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -16,6 +13,9 @@ import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.sparkfunction.ToRecord;
 import org.datavec.spark.transform.sparkfunction.ToRow;
 import java.util.List;
+import org.apache.spark.sql.functions;
+import static org.apache.spark.sql.functions.avg;
+
 
 
 /**
@@ -35,7 +35,20 @@ public class DataFrames {
      * @return the column that represents the standard deviation
      */
     public static Column std(DataFrame dataFrame, String columnName) {
-        return dataFrame.col(columnName).desc().getItem("stddev");
+        return functions.sqrt(var(dataFrame,columnName));
+    }
+
+
+    /**
+     * Standard deviation for a column
+     * @param dataFrame the dataframe to
+     *                  get the column from
+     * @param columnName the name of the column to get the standard
+     *                   deviationfor
+     * @return the column that represents the standard deviation
+     */
+    public static Column var(DataFrame dataFrame, String columnName) {
+        return dataFrame.groupBy(columnName).agg(functions.variance(columnName)).col(columnName);
     }
 
     /**
@@ -46,7 +59,7 @@ public class DataFrames {
      * @return the column that represents the mean
      */
     public static Column min(DataFrame dataFrame, String columnName) {
-        return dataFrame.col(columnName).desc().getItem("min");
+        return dataFrame.groupBy(columnName).agg(functions.min(columnName)).col(columnName);
     }
 
     /**
@@ -57,7 +70,7 @@ public class DataFrames {
      * @return the column that represents the mean
      */
     public static Column max(DataFrame dataFrame, String columnName) {
-        return dataFrame.col(columnName).desc().getItem("max");
+        return dataFrame.groupBy(columnName).agg(functions.max(columnName)).col(columnName);
     }
 
     /**
@@ -68,7 +81,7 @@ public class DataFrames {
      * @return the column that represents the mean
      */
     public static Column mean(DataFrame dataFrame, String columnName) {
-        return dataFrame.col(columnName).desc().getItem("mean");
+        return dataFrame.groupBy(columnName).agg(avg(columnName)).col(columnName);
     }
 
     /**

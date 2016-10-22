@@ -3,13 +3,12 @@ package org.datavec.spark.transform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.RowFactory;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-
+import static org.apache.spark.sql.functions.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,16 +44,26 @@ public class DataFrameTests extends BaseSparkTest {
         assertEquals(rdd.collect(),DataFrames.toRecords(DataFrames.toDataFrame(schema,rdd)).getSecond().collect());
 
         DataFrame dataFrame = DataFrames.toDataFrame(schema,rdd);
-        DataFrame desc = dataFrame.describe(dataFrame.columns());
-        desc.show();
-        System.out.println(desc.col("0").minus(DataFrames.mean(desc,"0")).desc())   ;
+        dataFrame.show();
+        Column mean = DataFrames.mean(dataFrame,"0");
+        Column std = DataFrames.std(dataFrame,"0");
+        dataFrame.withColumn("0",dataFrame.col("0").minus(mean)).show();
+        dataFrame.withColumn("0",dataFrame.col("0").divide(std)).show();
+
+        /*   DataFrame desc = dataFrame.describe(dataFrame.columns());
+        dataFrame.show();
+        System.out.println(dataFrame.agg(avg("0"), dataFrame.col("0")));
+        dataFrame.withColumn("0",dataFrame.col("0").minus(avg(dataFrame.col("0"))));
+        dataFrame.show();
+
+
         for(String column : dataFrame.columns()) {
             System.out.println(DataFrames.mean(desc,column));
             System.out.println(DataFrames.min(desc,column));
             System.out.println(DataFrames.max(desc,column));
             System.out.println(DataFrames.std(desc,column));
 
-        }
+        }*/
 
 
     }
