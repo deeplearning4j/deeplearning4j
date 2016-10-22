@@ -84,21 +84,16 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(seq.isEmpty() || labels.isEmpty())
             return 0;
 
-        List<INDArray> labelArrays = new ArrayList<>();
-
-        for (T label:labels) {
-            labelArrays.add(syn0.getRow(label.getIndex()));
-        }
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labelArrays, false);
+            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labels, false);
         }
 
         return 0;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<INDArray> labels, boolean isInference) {
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels, boolean isInference) {
         int end =  window * 2 + 1 - b;
         int cw = 0;
         INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
@@ -106,34 +101,36 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         T currentWord = sequence.getElementByIndex(i);
 
+        List<Integer> intsList = new ArrayList<>();
+
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
                 if(c >= 0 && c < sequence.size()) {
                     T lastWord = sequence.getElementByIndex(c);
 
-                    neu1.addiRowVector(syn0.getRow(lastWord.getIndex()));
-                    cw++;
+                    intsList.add(lastWord.getIndex());
                 }
             }
         }
 
-        for (INDArray label: labels) {
-            neu1.addiRowVector(label);
-            cw++;
+        // appending labels indexes
+        for (T label: labels) {
+            intsList.add(label.getIndex());
         }
 
-        if (cw == 0)
-            return;
+        int[] windowWords = new int[intsList.size()];
+        for (int x = 0; x < windowWords.length; x++) {
+            windowWords[x] = intsList.get(x);
+        }
 
-        neu1.divi(cw);
+        // pass for underlying
+        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, false, labels.size(), configuration.isTrainElementsVectors());
 
-        //INDArray neu1e = cbow.iterateSample(currentWord, null, nextRandom, alpha, isInference);
-
-        //for (INDArray label: labels) {
-        //    Nd4j.getBlasWrapper().level1().axpy(lookupTable.layerSize(), 1.0, neu1e, label);
-        //}
-
+        if (cbow.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(cbow.getBatch());
+            cbow.getBatch().clear();
+        }
     }
 
     @Override
@@ -154,6 +151,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         AtomicLong nextRandom = new AtomicLong(nr);
       //  Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
+        if (1 > 0)
+            throw new UnsupportedOperationException("Inference is temporary disabled");
 
 //        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
@@ -172,7 +171,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, labelArrays, true);
+              //  dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, labelArrays, true);
             }
             learningRate -= stepDecay;
         }
