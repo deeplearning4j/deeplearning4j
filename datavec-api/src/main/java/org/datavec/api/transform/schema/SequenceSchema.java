@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
+import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -114,5 +115,65 @@ public class SequenceSchema extends Schema {
         public SequenceSchema build() {
             return new SequenceSchema(this);
         }
+
+
+    }
+
+
+    /**
+     * Infers a sequence schema based
+     * on the record
+     * @param record the record to infer the schema based on
+     * @return the inferred sequence schema
+     *
+     */
+    public static SequenceSchema inferSequenceMulti(List<List<List<Writable>>> record) {
+        SequenceSchema.Builder builder = new SequenceSchema.Builder();
+        int minSequenceLength = record.get(0).size();
+        int maxSequenceLength = record.get(0).size();
+        for(int i= 0; i < record.size(); i++) {
+            if(record.get(i) instanceof DoubleWritable)
+                builder.addColumnDouble(String.valueOf(i));
+            else if(record.get(i) instanceof IntWritable)
+                builder.addColumnInteger(String.valueOf(i));
+            else if(record.get(i) instanceof LongWritable)
+                builder.addColumnLong(String.valueOf(i));
+            else if(record.get(i) instanceof FloatWritable)
+                builder.addColumnFloat(String.valueOf(i));
+
+            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString());
+            builder.minSequenceLength(Math.min(record.get(i).size(),minSequenceLength));
+            builder.maxSequenceLength(Math.max(record.get(i).size(),maxSequenceLength));
+        }
+
+
+        return builder.build();
+    }
+
+    /**
+     * Infers a sequence schema based
+     * on the record
+     * @param record the record to infer the schema based on
+     * @return the inferred sequence schema
+     *
+     */
+    public static SequenceSchema inferSequence(List<List<Writable>> record) {
+        SequenceSchema.Builder builder = new SequenceSchema.Builder();
+        for(int i= 0; i < record.size(); i++) {
+            if(record.get(i) instanceof DoubleWritable)
+                builder.addColumnDouble(String.valueOf(i));
+            else if(record.get(i) instanceof IntWritable)
+                builder.addColumnInteger(String.valueOf(i));
+            else if(record.get(i) instanceof LongWritable)
+                builder.addColumnLong(String.valueOf(i));
+            else if(record.get(i) instanceof FloatWritable)
+                builder.addColumnFloat(String.valueOf(i));
+
+            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString());
+        }
+
+        builder.minSequenceLength(record.size());
+        builder.maxSequenceLength(record.size());
+        return builder.build();
     }
 }

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.schema;
 
+import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.*;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -565,6 +566,39 @@ public class Schema implements Serializable {
         public Schema build() {
             return new Schema(this);
         }
+    }
+
+    /**
+     * Infers a schema based on the record.
+     * The column names are based on indexing.
+     * @param record the record to infer from
+     * @return the infered schema
+     */
+    public static Schema inferMultiple(List<List<Writable>> record) {
+        return infer(record.get(0));
+    }
+
+    /**
+     * Infers a schema based on the record.
+     * The column names are based on indexing.
+     * @param record the record to infer from
+     * @return the infered schema
+     */
+    public static Schema infer(List<Writable> record) {
+        Schema.Builder builder = new Schema.Builder();
+        for(int i= 0; i < record.size(); i++) {
+            if(record.get(i) instanceof DoubleWritable)
+                builder.addColumnDouble(String.valueOf(i));
+            else if(record.get(i) instanceof IntWritable)
+                builder.addColumnInteger(String.valueOf(i));
+            else if(record.get(i) instanceof LongWritable)
+                builder.addColumnLong(String.valueOf(i));
+            else if(record.get(i) instanceof FloatWritable)
+                builder.addColumnFloat(String.valueOf(i));
+            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString());
+        }
+
+        return builder.build();
     }
 
 }
