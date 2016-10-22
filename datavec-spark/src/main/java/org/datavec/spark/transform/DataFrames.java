@@ -44,7 +44,7 @@ public class DataFrames {
      * @param dataFrame the dataframe to
      *                  get the column from
      * @param columnName the name of the column to get the standard
-     *                   deviationfor
+     *                   deviation for
      * @return the column that represents the standard deviation
      */
     public static Column var(DataFrame dataFrame, String columnName) {
@@ -56,7 +56,7 @@ public class DataFrames {
      * @param dataFrame the dataframe to
      *                  get the column from
      * @param columnName the name of the column to get the min for
-     * @return the column that represents the mean
+     * @return the column that represents the min
      */
     public static Column min(DataFrame dataFrame, String columnName) {
         return dataFrame.groupBy(columnName).agg(functions.min(columnName)).col(columnName);
@@ -65,9 +65,10 @@ public class DataFrames {
     /**
      * Max for a column
      * @param dataFrame the dataframe to
-     *                  get the column fron
-     * @param columnName the name of the column to get the max for
-     * @return the column that represents the mean
+     *                  get the column from
+     * @param columnName the name of the column
+     *                   to get the max for
+     * @return the column that represents the max
      */
     public static Column max(DataFrame dataFrame, String columnName) {
         return dataFrame.groupBy(columnName).agg(functions.max(columnName)).col(columnName);
