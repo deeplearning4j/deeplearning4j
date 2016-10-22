@@ -52,6 +52,10 @@ public class Normalization {
         return DataFrames.toRecords(zeromeanUnitVariance(frame)).getSecond();
     }
 
+    public static JavaRDD<List<List<Writable>>> zeroMeanUnitVarianceSequence(Schema schema, JavaRDD<List<List<Writable>>> sequence){
+        DataFrame frame = DataFrames.sequenceToDataFrame(schema, sequence);
+    }
+
     /**
      * Scale based on min,max
      * @param dataFrame the dataframe to scale
