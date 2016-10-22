@@ -47,6 +47,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     }
 
+    public List<Aggregate> getBatch() {
+        return batches.get();
+    }
+
     /**
      * Returns implementation code name
      *
@@ -229,8 +233,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             }
         }
 
-        if (batches.get() == null)
+        if (batches.get() == null) {
             batches.set(new ArrayList<Aggregate>());
+        }
 
         org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
