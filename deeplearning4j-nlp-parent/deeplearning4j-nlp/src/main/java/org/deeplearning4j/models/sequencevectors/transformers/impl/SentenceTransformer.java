@@ -75,9 +75,13 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
                 if  (document.getContent() == null) return new Sequence<>();
                 Sequence<VocabWord> sequence = SentenceTransformer.this.transformToSequence(document.getContent());
 
+                for (String label: document.getLabels()) {
+                    sequence.addSequenceLabel(new VocabWord(1.0, label));
+                }
+                /*
                 if (document.getLabel() != null && !document.getLabel().isEmpty()) {
                     sequence.setSequenceLabel(new VocabWord(1.0, document.getLabel()));
-                }
+                }*/
 
                 return sequence;
             }
