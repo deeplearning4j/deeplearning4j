@@ -45,6 +45,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
+    public List<Aggregate> getBatch() {
+        return batches.get();
+    }
+
     @Override
     public String getCodeName() {
         return "CBOW";
