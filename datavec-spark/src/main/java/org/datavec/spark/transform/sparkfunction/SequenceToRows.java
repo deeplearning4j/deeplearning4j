@@ -77,6 +77,8 @@ public class SequenceToRows implements FlatMapFunction<List<List<Writable>>,Row>
 
             Row row = new GenericRowWithSchema(values,structType);
             out.add(row);
+
+            System.out.println("ROW: " + row);
         }
 
 

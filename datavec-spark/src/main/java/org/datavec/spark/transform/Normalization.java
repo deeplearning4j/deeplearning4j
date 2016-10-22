@@ -3,6 +3,7 @@ package org.datavec.spark.transform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
@@ -71,11 +72,29 @@ public class Normalization {
             if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
             if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
             System.out.println("****** COLUMN: " + columnName + "*****");
-            Column min2 = DataFrames.min(dataFrame,columnName);
-            Column max2 = DataFrames.max(dataFrame,columnName);
+//            Column min2 = DataFrames.min(dataFrame,columnName);
+//            Column max2 = DataFrames.max(dataFrame,columnName);
+//            Column min2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.min(columnName)).col("min(" + columnName + ")");
+//            Column max2 = dataFrame.groupBy().agg(dataFrame.col(columnName), org.apache.spark.sql.functions.max(columnName)).col(columnName);
+//            Column max2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.max(columnName)).col(columnName);
+//            Column max2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.max(columnName)).col("max(" + columnName + ")");
+//            Column maxMinusMin = max2.minus(min2);
+
+            Column min2 = dataFrame.select(org.apache.spark.sql.functions.min(columnName)).col("min(" + columnName + ")");
+            Column max2 = dataFrame.select(org.apache.spark.sql.functions.max(columnName)).col("max(" + columnName + ")");
             Column maxMinusMin = max2.minus(min2);
-            dataFrame = dataFrame.withColumn(columnName,dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min));
+
+            
+
+            Column newCol = dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min);
+            dataFrame = dataFrame.withColumn(columnName,newCol);
             System.out.println("+++++ DONE COLUMN: " + columnName + " ++++++");
+        }
+
+        Row[] rows = dataFrame.collect();
+        System.out.println("POST NORMALIZATION");
+        for(Row r : rows){
+            System.out.println(r);
         }
 
         return dataFrame;

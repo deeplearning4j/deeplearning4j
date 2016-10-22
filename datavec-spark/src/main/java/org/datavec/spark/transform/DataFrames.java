@@ -239,8 +239,8 @@ public class DataFrames {
                             default:
                                 throw new IllegalStateException("Illegal type");
                         }
-
                     }
+                    System.out.println("CONVERTED FROM ROW: " + ret + "\t ORIG ROW: " + v1);
                     retSeq.add(ret);
                 }
                 System.out.println("///////// END - CREATE COMBINER ////////////");
