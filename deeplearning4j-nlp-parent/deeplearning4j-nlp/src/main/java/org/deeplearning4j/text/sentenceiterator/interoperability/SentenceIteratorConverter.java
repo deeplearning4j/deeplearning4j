@@ -41,9 +41,9 @@ public class SentenceIteratorConverter implements LabelAwareIterator {
         document.setContent(backendIterator.nextSentence());
         if (backendIterator instanceof LabelAwareSentenceIterator) {
             String currentLabel = ((LabelAwareSentenceIterator) backendIterator).currentLabel();
-            document.setLabel(currentLabel);
+            document.addLabel(currentLabel);
             generator.storeLabel(currentLabel);
-        } else if (generator != null) document.setLabel(generator.nextLabel());
+        } else if (generator != null) document.addLabel(generator.nextLabel());
 
         return document;
     }
