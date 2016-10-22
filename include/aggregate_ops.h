@@ -602,6 +602,7 @@ namespace aggregateOps {
             T *expTable = arguments[2];
             T *syn1Neg = arguments[3];
             T *negTable = arguments[4];
+            T *inferenceVector = arguments[5];
 
             T *args[5];
 
@@ -621,11 +622,20 @@ namespace aggregateOps {
                 }
             }
 
+            // for inference we use additional inference vector
+            if (inferenceVector != nullptr) {
+#pragma omp simd
+                for (int i = 0; i < vectorLength; i++) {
+                    neu1[i] += inferenceVector[i];
+                }
+            }
+
+
             // average neu1
             if (idxSyn0Length > 0) {
 #pragma omp simd
                 for (int i = 0; i < vectorLength; i++) {
-                    neu1[i] /= idxSyn0Length;
+                    neu1[i] /= idxSyn0Length + (inferenceVector == nullptr ? 0 : 1);
                 }
             }
 
@@ -669,13 +679,22 @@ namespace aggregateOps {
             int starter = trainWords == 1 ? 0 : idxSyn0Length - numLabels;
 
             // propagate neu1e -> syn0
-            for (int c = starter; c < idxSyn0Length; c++) {
-                T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
+            if (inferenceVector == nullptr)
+                for (int c = starter; c < idxSyn0Length; c++) {
+                    T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
+#pragma omp simd
+                    for (int i = 0; i < vectorLength; i++) {
+                        syn0word[i] += neu1e[i];
+                    }
+                }
+            else  {
 #pragma omp simd
                 for (int i = 0; i < vectorLength; i++) {
-                    syn0word[i] += neu1e[i];
+                    inferenceVector[i] += neu1e[i];
                 }
             }
+
+
 
             delete[] neu1;
             delete[] neu1e;
@@ -713,6 +732,7 @@ namespace aggregateOps {
             T *expTable = arguments[2];
             T *syn1Neg = arguments[3];
             T *negTable = arguments[4];
+            T *inferenceVector = arguments[5];
 
             if (threadIdx.x == 0) {
                 vectorLength = indexArguments[0];
@@ -754,10 +774,15 @@ namespace aggregateOps {
                 }
             }
 
+            if (inferenceVector != nullptr)
+                for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                    neu1[i] += inferenceVector[i];
+                }
+
             // average neu1
             if (idxSyn0Length > 0) {
                 for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
-                    neu1[i] /= idxSyn0Length;
+                    neu1[i] /= idxSyn0Length + (inferenceVector == nullptr ? 0 : 1);
                 }
             }
             __syncthreads();
@@ -806,13 +831,20 @@ namespace aggregateOps {
             // if we don't train words - we skip start of idxSyn0
             int starter = trainWords == 1 ? 0 : idxSyn0Length - numLabels;
 
-            for (int c = starter; c < idxSyn0Length; c++) {
-                T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
+            if (inferenceVector == nullptr)
+                for (int c = starter; c < idxSyn0Length; c++) {
+                    T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
 
+                    for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
+                        syn0word[i] += neu1e[i];
+                    }
+                }
+            else {
                 for (int i = threadIdx.x; i < vectorLength; i += blockDim.x) {
-                    syn0word[i] += neu1e[i];
+                        inferenceVector[i] += neu1e[i];
                 }
             }
+
         }
 #endif
     };
