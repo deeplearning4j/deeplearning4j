@@ -221,6 +221,15 @@ public class Schema implements Serializable {
          *
          * @param name Name of the column
          */
+        public Builder addColumnFloat(String name) {
+            return addColumn(new FloatMetaData(name));
+        }
+
+        /**
+         * Add a Double column with no restrictions on the allowable values, except for no NaN/infinite values allowed
+         *
+         * @param name Name of the column
+         */
         public Builder addColumnDouble(String name) {
             return addColumn(new DoubleMetaData(name));
         }

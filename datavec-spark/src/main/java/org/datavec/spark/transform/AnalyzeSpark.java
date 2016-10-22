@@ -17,6 +17,16 @@
 package org.datavec.spark.transform;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.SequenceDataAnalysis;
@@ -64,12 +74,15 @@ import org.datavec.spark.transform.quality.time.TimeQualityMergeFunction;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.transform.sparkfunction.ToRow;
 import scala.Tuple2;
 
 import java.util.*;
 
 /**
- * AnalizeSpark: static methods for analyzing and processing {@code RDD<List<Writable>>} and {@code RDD<List<List<Writable>>}
+ * AnalizeSpark: static methods for
+ * analyzing and
+ * processing {@code RDD<List<Writable>>} and {@code RDD<List<List<Writable>>}
  *
  * @author Alex Black
  */
@@ -81,6 +94,13 @@ public class AnalyzeSpark {
         return analyzeSequence(schema,data,DEFAULT_HISTOGRAM_BUCKETS);
     }
 
+    /**
+     *
+     * @param schema
+     * @param data
+     * @param maxHistogramBuckets
+     * @return
+     */
     public static SequenceDataAnalysis analyzeSequence(Schema schema, JavaRDD<List<List<Writable>>> data, int maxHistogramBuckets) {
         data.cache();
         JavaRDD<List<Writable>> fmSeq = data.flatMap(new SequenceFlatMapFunction());
@@ -373,7 +393,7 @@ public class AnalyzeSpark {
         int nColumns = schema.numColumns();
         List<ColumnAnalysis> list = new ArrayList<>(nColumns);
 
-        for( int i=0; i<nColumns; i++ ){
+        for( int i = 0; i<nColumns; i++ ){
             ColumnType ct = columnTypes.get(i);
 
             switch(ct){
@@ -615,7 +635,7 @@ public class AnalyzeSpark {
 
     private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn){
 
-        switch(meta.getColumnType()){
+        switch(meta.getColumnType()) {
             case String:
                 ithColumn.cache();
                 long countUnique = ithColumn.distinct().count();
@@ -650,7 +670,14 @@ public class AnalyzeSpark {
         return analyzeQuality(schema, fmSeq);
     }
 
-    public static DataQualityAnalysis analyzeQuality(Schema schema, JavaRDD<List<Writable>> data){
+
+    /**
+     *
+     * @param schema
+     * @param data
+     * @return
+     */
+    public static DataQualityAnalysis analyzeQuality(final Schema schema, final JavaRDD<List<Writable>> data) {
 
         data.cache();
         int nColumns = schema.numColumns();
@@ -658,13 +685,14 @@ public class AnalyzeSpark {
         //This is inefficient, but it's easy to implement. Good enough for now!
         List<ColumnQuality> list = new ArrayList<>(nColumns);
 
-        for( int i=0; i<nColumns; i++ ) {
+        for( int i = 0; i < nColumns; i++ ) {
             ColumnMetaData meta = schema.getMetaData(i);
             JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(i));
             list.add(analyze(meta, ithColumn));
         }
 
         return new DataQualityAnalysis(schema,list);
+
     }
 
     /**
