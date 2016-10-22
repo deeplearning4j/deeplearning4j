@@ -54,6 +54,9 @@ public class VectorsConfiguration implements Serializable {
     // overall model info
     private int vocabSize;
 
+    // paravec-specific option
+    private boolean trainElementsVectors = true;
+
     private static ObjectMapper mapper;
     private static final Object lock = new Object();
 

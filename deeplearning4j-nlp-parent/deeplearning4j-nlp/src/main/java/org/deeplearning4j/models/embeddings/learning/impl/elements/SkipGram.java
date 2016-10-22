@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -36,7 +38,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected int[] variableWindows;
     protected int vectorLength;
 
-    protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
+    @Getter @Setter protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 

@@ -1,5 +1,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
+import lombok.Setter;
+import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -41,7 +43,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double sampling;
     protected int[] variableWindows;
 
-    protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
+    @Getter @Setter protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
@@ -115,7 +117,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-    public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha, boolean isInference) {
+    public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha, boolean isInference, int numLabels, boolean trainWords) {
         int [] idxSyn1 = null;
         int [] codes = null;
 
@@ -150,7 +152,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(), lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords());
+        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(), lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
         batches.get().add(cbow);
@@ -179,7 +181,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             windowWords[x] = intsList.get(x);
         }
 
-        iterateSample(currentWord, windowWords, nextRandom, alpha, false);
+        iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true);
 
         if (batches.get().size() >= configuration.getBatchSize()){
             Nd4j.getExecutioner().exec(batches.get());

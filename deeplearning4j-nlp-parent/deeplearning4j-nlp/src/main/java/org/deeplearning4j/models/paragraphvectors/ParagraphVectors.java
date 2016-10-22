@@ -736,6 +736,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+            this.configuration.setTrainElementsVectors(this.trainElementsVectors);
 
             ret.configuration = this.configuration;
 

@@ -22,6 +22,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Iterators;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -371,6 +372,7 @@ public class ParagraphVectorsTest {
                 .tokenizerFactory(t)
                 .negativeSample(0)
                 .sampling(0)
+                .elementsLearningAlgorithm(new CBOW<VocabWord>())
                 .sequenceLearningAlgorithm(new DM<VocabWord>())
                 .build();
 
@@ -383,6 +385,9 @@ public class ParagraphVectorsTest {
         assertNotEquals(1, cnt1);
         assertNotEquals(1, cnt2);
         assertNotEquals(cnt1, cnt2);
+
+        double simDN = vec.similarity("day", "night");
+        log.info("day/night similariry: {}", simDN );
 
         double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
         log.info("9835/12492 similarity: " + similarity1);
