@@ -29,9 +29,9 @@ public class ToRow implements Function<List<Writable>,Row> {
         for(int i = 0; i < values.length; i++) {
             switch (schema.getColumnTypes().get(i)) {
                 case Double: values[i] = v1.get(i).toDouble(); break;
-                case Integer: v1.get(i).toInt(); break;
-                case Long: v1.get(i).toLong(); break;
-                case Float: v1.get(i).toFloat(); break;
+                case Integer: values[i] = v1.get(i).toInt(); break;
+                case Long: values[i] = v1.get(i).toLong(); break;
+                case Float: values[i] = v1.get(i).toFloat(); break;
                 default: throw new IllegalStateException("This api should not be used with strings , binary dataor ndarrays. This is only for columnar data");
             }
         }
