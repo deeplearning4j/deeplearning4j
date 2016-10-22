@@ -6,6 +6,10 @@ import org.datavec.dataframe.io.csv.CsvWriter;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.io.csv.CsvReader;
 
+import static org.datavec.dataframe.api.ColumnType.CATEGORY;
+import static org.datavec.dataframe.api.ColumnType.FLOAT;
+import static org.datavec.dataframe.api.ColumnType.INTEGER;
+
 /**
  * Some example code using the API
  */

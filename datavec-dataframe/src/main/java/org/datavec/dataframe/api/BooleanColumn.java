@@ -26,6 +26,9 @@ import it.unimi.dsi.fastutil.ints.IntIterator;
 import java.util.Iterator;
 import java.util.Map;
 
+import static org.datavec.dataframe.columns.BooleanColumnUtils.isMissing;
+import static org.datavec.dataframe.columns.BooleanColumnUtils.isNotMissing;
+
 /**
  * A column in a base table that contains float values
  */

@@ -26,6 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.out;
+import static org.datavec.dataframe.api.QueryHelper.both;
+import static org.datavec.dataframe.api.QueryHelper.column;
 
 /**
  * Tests manipulation of large (but not big) data sets

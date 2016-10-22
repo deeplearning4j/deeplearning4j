@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
+import static org.datavec.dataframe.api.ColumnType.*;
+
 /**
  *
  */

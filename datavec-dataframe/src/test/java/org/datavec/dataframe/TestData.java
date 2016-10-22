@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.datavec.dataframe.api.ColumnType.*;
+
 /**
  * This class setup tablesaw Table from test data sources.
  * It purpose is to make easy for tests or example code get data to work with.

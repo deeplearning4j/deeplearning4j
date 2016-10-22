@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoField;
 
+import static org.datavec.dataframe.columns.packeddata.PackedLocalDateTime.*;
 import static org.junit.Assert.*;
 
 /**

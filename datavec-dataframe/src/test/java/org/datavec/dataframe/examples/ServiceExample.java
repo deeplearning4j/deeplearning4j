@@ -5,6 +5,9 @@ import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.api.Table;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 
+import static org.datavec.dataframe.api.QueryHelper.column;
+import static org.datavec.dataframe.filtering.AllOf.allOf;
+
 /**
  * Usage example using a Tornado dataset
  */
