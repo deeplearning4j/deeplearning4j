@@ -45,6 +45,7 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
      */
     INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations);
 
+    ElementsLearningAlgorithm<T> getElementsLearningAlgorithm();
 
     void finish();
 }

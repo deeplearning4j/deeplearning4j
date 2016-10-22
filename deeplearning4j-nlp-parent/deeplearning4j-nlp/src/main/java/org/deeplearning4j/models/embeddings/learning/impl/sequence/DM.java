@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -41,6 +42,11 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     protected INDArray syn0, syn1, syn1Neg, table;
 
     private CBOW<T> cbow = new CBOW<>();
+
+    @Override
+    public ElementsLearningAlgorithm<T> getElementsLearningAlgorithm() {
+        return cbow;
+    }
 
     @Override
     public String getCodeName() {

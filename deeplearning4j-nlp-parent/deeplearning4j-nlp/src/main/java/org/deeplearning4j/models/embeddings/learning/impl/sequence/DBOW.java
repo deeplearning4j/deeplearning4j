@@ -2,6 +2,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.sequence;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -33,8 +34,12 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     protected SkipGram<T> skipGram = new SkipGram<>();
 
-
     private static final Logger log = LoggerFactory.getLogger(DBOW.class);
+
+    @Override
+    public ElementsLearningAlgorithm<T> getElementsLearningAlgorithm() {
+        return skipGram;
+    }
 
     public DBOW() {
 
