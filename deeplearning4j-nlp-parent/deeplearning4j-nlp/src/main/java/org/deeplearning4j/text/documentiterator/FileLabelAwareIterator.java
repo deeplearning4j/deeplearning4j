@@ -56,7 +56,7 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
             reader.close();
 
             document.setContent(builder.toString());
-            document.setLabel(label);
+            document.addLabel(label);
 
             try {
                 reader.close();
