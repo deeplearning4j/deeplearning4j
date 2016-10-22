@@ -1,15 +1,16 @@
 ---
-title: Deeplearning4j Models
+title: Deeplearning4j Model Zoo
 layout: default
 ---
 
-# Preconfigured Deeplearning4j Models
+# DL4J Model Zoo
 
-The Deeplearning4j community has built a number of preconfigured neural networks for image recognition:
+Similar to Caffe's model zoo, this repository provides common model configurations. Currently, it contains computer vision configurations:
 
-* [AlexNet](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/AlexNet.java)
-* [LeNet](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/LeNet.java)
-* [VGGNetA](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/VGGNetA.java)
-* [VGGNetD](https://github.com/deeplearning4j/model-configurations/blob/master/src/main/java/org/deeplearning4j/VGGNetD.java)
+* [AlexNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/AlexNet.java)
+* [LeNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/LeNet.java)
+* [VGGNetA](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/VGGNetA.java)
+* [VGGNetD](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/VGGNetD.java)
+* [GoogleLeNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/GoogleLeNet.java)
 
-While this is not exactly Caffe's model zoo, it will give you a headstart when creating models for image recognition. We'll be adding to this page as we have pretrained parameters to offer.
+The configurations will give you a headstart when creating models for image recognition. The plans are to also add pretrained models to our model zoo, and we welcome contributions.
