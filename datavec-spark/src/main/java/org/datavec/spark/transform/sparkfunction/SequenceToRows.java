@@ -55,8 +55,8 @@ public class SequenceToRows implements FlatMapFunction<List<List<Writable>>,Row>
         for(List<Writable> step : sequence ) {
             Object[] values = new Object[step.size() + 2];
             values[0] = sequenceUUID;
-            values[1] = stepCount;
-            for (int i = 0; i < values.length; i++) {
+            values[1] = stepCount++;
+            for (int i = 0; i < step.size(); i++) {
                 switch (schema.getColumnTypes().get(i)) {
                     case Double:
                         values[i+2] = step.get(i).toDouble();
@@ -71,7 +71,7 @@ public class SequenceToRows implements FlatMapFunction<List<List<Writable>>,Row>
                         values[i+2] = step.get(i).toFloat();
                         break;
                     default:
-                        throw new IllegalStateException("This api should not be used with strings , binary dataor ndarrays. This is only for columnar data");
+                        throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
                 }
             }
 

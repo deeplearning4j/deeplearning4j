@@ -54,6 +54,8 @@ public class Normalization {
 
     public static JavaRDD<List<List<Writable>>> zeroMeanUnitVarianceSequence(Schema schema, JavaRDD<List<List<Writable>>> sequence){
         DataFrame frame = DataFrames.sequenceToDataFrame(schema, sequence);
+        zeromeanUnitVariance(frame);
+        return DataFrames.toRecordsSequence(frame).getSecond();
     }
 
     /**
@@ -66,10 +68,14 @@ public class Normalization {
     public static DataFrame normalize(DataFrame dataFrame,double min,double max) {
         String[] columnNames = dataFrame.columns();
         for(String columnName : columnNames) {
+            if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
+            if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
+            System.out.println("****** COLUMN: " + columnName + "*****");
             Column min2 = DataFrames.min(dataFrame,columnName);
             Column max2 = DataFrames.max(dataFrame,columnName);
             Column maxMinusMin = max2.minus(min2);
             dataFrame = dataFrame.withColumn(columnName,dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min));
+            System.out.println("+++++ DONE COLUMN: " + columnName + " ++++++");
         }
 
         return dataFrame;
@@ -88,6 +94,10 @@ public class Normalization {
         return DataFrames.toRecords(normalize(frame,min,max)).getSecond();
     }
 
+    public static JavaRDD<List<List<Writable>>> normalizeSequence(Schema schema, JavaRDD<List<List<Writable>>> data, double min, double max){
+        DataFrame frame = DataFrames.sequenceToDataFrame(schema,data);
+        return DataFrames.toRecordsSequence(normalize(frame,min,max)).getSecond();
+    }
 
 
     /**
