@@ -119,7 +119,8 @@ public class DataFrames {
                 case "double": builder.addColumnDouble(structType.fieldNames()[i]); break;
                 case "float": builder.addColumnFloat(structType.fieldNames()[i]); break;
                 case "long": builder.addColumnLong(structType.fieldNames()[i]); break;
-                case "int": builder.addColumnInteger(structType.fieldNames()[i]); break;
+                case "integer": builder.addColumnInteger(structType.fieldNames()[i]); break;
+                default: throw new IllegalArgumentException("Illegal struct type " + structType.fields()[i].name() + ". Type name was " + structType.fields()[i].dataType().typeName());
             }
         }
 

@@ -94,6 +94,8 @@ public class Schema implements Serializable {
     }
 
     public ColumnType getType(int column) {
+        if(column < 0 || column >= columnMetaData.size())
+            throw new IllegalArgumentException("Invalid column number. " + column + "only " + columnMetaData.size() + "present.");
         return columnMetaData.get(column).getColumnType();
     }
 

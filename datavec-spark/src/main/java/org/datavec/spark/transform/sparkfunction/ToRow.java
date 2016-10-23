@@ -25,6 +25,8 @@ public class ToRow implements Function<List<Writable>,Row> {
 
     @Override
     public Row call(List<Writable> v1) throws Exception {
+        if(v1.size() != schema.numColumns())
+            throw new IllegalStateException("Illegal record of size " + v1 + ". Should have been " + schema.numColumns());
         Object[] values = new Object[v1.size()];
         for(int i = 0; i < values.length; i++) {
             switch (schema.getColumnTypes().get(i)) {
@@ -32,7 +34,7 @@ public class ToRow implements Function<List<Writable>,Row> {
                 case Integer: values[i] = v1.get(i).toInt(); break;
                 case Long: values[i] = v1.get(i).toLong(); break;
                 case Float: values[i] = v1.get(i).toFloat(); break;
-                default: throw new IllegalStateException("This api should not be used with strings , binary dataor ndarrays. This is only for columnar data");
+                default: throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
             }
         }
 
