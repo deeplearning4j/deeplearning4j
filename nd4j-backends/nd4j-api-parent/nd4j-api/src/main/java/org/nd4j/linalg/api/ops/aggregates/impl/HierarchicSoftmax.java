@@ -22,6 +22,7 @@ public class HierarchicSoftmax extends BaseAggregate {
         indexingArguments.add(neu1e.length());
         indexingArguments.add(expTable.length());
         indexingArguments.add(code);
+        indexingArguments.add(0); // set isInference to false
 
         realArguments.add(lr);
 
