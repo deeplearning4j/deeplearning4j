@@ -350,7 +350,6 @@ public class ParagraphVectorsTest {
         File file = resource.getFile();
         SentenceIterator iter = new BasicLineIterator(file);
 
-//        InMemoryLookupCache cache = new InMemoryLookupCache(false);
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -404,6 +403,19 @@ public class ParagraphVectorsTest {
         double similarityX = vec.similarity("DOC_3720", "DOC_9852");
         log.info("3720/9852 similarity: " + similarityX);
         assertTrue(similarityX < 0.5d);
+
+
+        // testing DM inference now
+
+        INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
+        INDArray inferredA1 = vec.inferVector("This is my world .");
+        INDArray inferredB1 = vec.inferVector("This is my world .");
+
+        double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
+        double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
+
+        log.info("Cos O/A: {}", cosAO1);
+        log.info("Cos A/B: {}", cosAB1);
 
     }
 
