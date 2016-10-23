@@ -38,6 +38,7 @@ namespace aggregateOps {
             int vectorLength = indexArguments[0];
             int expLength = indexArguments[1];
             int code = indexArguments[2];
+            int isInference = indexArguments[3];
 
             T *syn0 = arguments[0]; // we pass row pointer here
             T *syn1 = arguments[1]; // we pass row pointer here
@@ -76,9 +77,11 @@ namespace aggregateOps {
             }
 
             // axpy2
+            if (!isInference) {
 #pragma omp simd
-            for (int x = 0; x < vectorLength; x++) {
-                syn1[x] = g * syn0[x] + syn1[x];
+                for (int x = 0; x < vectorLength; x++) {
+                    syn1[x] = g * syn0[x] + syn1[x];
+                }
             }
         }
 
@@ -165,6 +168,7 @@ namespace aggregateOps {
             int vectorLength = indexArguments[0];
             int expLength = indexArguments[1];
             int code = indexArguments[2];
+            int isInference = indexArguments[3];
 
             T *syn0 = arguments[0]; // we pass row pointer here
             T *syn1Neg = arguments[1]; // we pass row pointer here
@@ -203,9 +207,11 @@ namespace aggregateOps {
             }
 
             // axpy2
+            if (!isInference) {
 #pragma omp simd
-            for (int x = 0; x < vectorLength; x++) {
-                syn1Neg[x] = g * syn0[x] + syn1Neg[x];
+                for (int x = 0; x < vectorLength; x++) {
+                    syn1Neg[x] = g * syn0[x] + syn1Neg[x];
+                }
             }
         }
 
@@ -394,7 +400,7 @@ namespace aggregateOps {
             std::memset(neu1e, 0, sizeof(T) * vectorLength);
 
             T **args = new T *[4];
-            int *idxArgs = new int[3];
+            int *idxArgs = new int[4];
             args[0] = arguments[0] + (syn0Row * vectorLength); // syn0
             args[1] = arguments[1]; // syn1
             args[2] = arguments[2]; // expTable
@@ -403,6 +409,7 @@ namespace aggregateOps {
 
             idxArgs[0] = vectorLength; // vectorLength
             idxArgs[1] = expLength; // expLength
+            idxArgs[3] = 0; // we hardcode false for now
 
             T *syn0 = arguments[0] + (syn0Row * vectorLength);
 
@@ -607,9 +614,10 @@ namespace aggregateOps {
 
             T *args[5];
 
-            int *idxArgs = new int[3];
+            int *idxArgs = new int[4];
             idxArgs[0] = vectorLength; // vectorLength
             idxArgs[1] = expLength; // expLength
+            idxArgs[3] = isInference;
 
             unsigned long long next_random = (unsigned long long) realArguments[1];
 
@@ -636,7 +644,7 @@ namespace aggregateOps {
             if (idxSyn0Length > 0) {
 #pragma omp simd
                 for (int i = 0; i < vectorLength; i++) {
-                    neu1[i] /= idxSyn0Length + (isInference ? 1 : 0);
+                    neu1[i] /= idxSyn0Length + isInference;
                 }
             }
 
