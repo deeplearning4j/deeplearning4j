@@ -36,6 +36,7 @@ public class AggregateCBOW extends BaseAggregate {
 
         indexingArguments.set(9, numLabels);
         indexingArguments.set(10, trainWords ? 1 : 0);
+        indexingArguments.set(11, inferenceVector == null ? 0 : 1); // set inference to true
 
         arguments.set(5, inferenceVector);
     }
@@ -68,8 +69,9 @@ public class AggregateCBOW extends BaseAggregate {
         indexingArguments.add(negTable == null ? 0 : negTable.length());
         indexingArguments.add(idxSyn0.length);
         indexingArguments.add(wordIdx);
-        indexingArguments.add(0);
-        indexingArguments.add(1);
+        indexingArguments.add(0); // number of labels. 0 by default
+        indexingArguments.add(1); // trainWords? true by default
+        indexingArguments.add(0); // is inference? false by default
 
 
         arguments.add(syn0);
@@ -121,7 +123,7 @@ public class AggregateCBOW extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 11;
+        return 12;
     }
 
     @Override
