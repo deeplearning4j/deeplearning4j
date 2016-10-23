@@ -93,17 +93,14 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labels, false);
+            dm(i, seq,  (int) nextRandom.get() % window ,nextRandom, learningRate, labels, false, null);
         }
 
         return 0;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels, boolean isInference) {
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels, boolean isInference, INDArray inferenceVector) {
         int end =  window * 2 + 1 - b;
-        int cw = 0;
-        INDArray neu1 = Nd4j.zeros(lookupTable.layerSize());
-
 
         T currentWord = sequence.getElementByIndex(i);
 
@@ -121,9 +118,10 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         }
 
         // appending labels indexes
-        for (T label: labels) {
-            intsList.add(label.getIndex());
-        }
+        if (labels != null)
+            for (T label: labels) {
+                intsList.add(label.getIndex());
+            }
 
         int[] windowWords = new int[intsList.size()];
         for (int x = 0; x < windowWords.length; x++) {
@@ -131,7 +129,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         }
 
         // pass for underlying
-        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, false, labels.size(), configuration.isTrainElementsVectors());
+        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(), configuration.isTrainElementsVectors(), inferenceVector);
 
         if (cbow.getBatch().size() >= configuration.getBatchSize()){
             Nd4j.getExecutioner().exec(cbow.getBatch());
@@ -157,9 +155,6 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         AtomicLong nextRandom = new AtomicLong(nr);
       //  Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
-        if (1 > 0)
-            throw new UnsupportedOperationException("Inference is temporary disabled");
-
 //        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         double stepDecay = Math.abs(learningRate - minLearningRate) / iterations;
@@ -167,17 +162,14 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(sequence.isEmpty())
             return null;
 
-        List<INDArray> labelArrays = new ArrayList<>();
 
         INDArray ret = Nd4j.rand(nr, new int[]{1 ,lookupTable.layerSize()}).subi(0.5).divi(lookupTable.layerSize());
-
-        labelArrays.add(ret);
 
 
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-              //  dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, labelArrays, true);
+                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret);
             }
             learningRate -= stepDecay;
         }
