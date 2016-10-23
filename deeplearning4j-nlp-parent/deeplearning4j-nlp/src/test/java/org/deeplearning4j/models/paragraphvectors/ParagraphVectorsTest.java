@@ -359,7 +359,7 @@ public class ParagraphVectorsTest {
 
         ParagraphVectors vec = new ParagraphVectors.Builder()
                 .minWordFrequency(1)
-                .iterations(3)
+                .iterations(5)
                 .epochs(1)
                 .layerSize(100)
                 .learningRate(0.025)
@@ -371,7 +371,7 @@ public class ParagraphVectorsTest {
                 .tokenizerFactory(t)
                 .negativeSample(0)
                 .sampling(0)
-                .workers(2)
+                .workers(1)
                 .sequenceLearningAlgorithm(new DM<VocabWord>())
                 .build();
 
