@@ -153,9 +153,10 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate, double minLearningRate, int iterations) {
         AtomicLong nextRandom = new AtomicLong(nr);
-      //  Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
-//        if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+        // we probably don't want subsampling here
+        // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
+        // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         double stepDecay = Math.abs(learningRate - minLearningRate) / iterations;
 
