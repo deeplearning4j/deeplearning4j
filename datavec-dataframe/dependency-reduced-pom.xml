@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>datavec-parent</artifactId>
+    <groupId>org.datavec</groupId>
+    <version>0.6.1-SNAPSHOT</version>
+  </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.github.lwhite1</groupId>
-  <artifactId>tablesaw</artifactId>
-  <name>Tablesaw</name>
-  <version>0.7.6.3</version>
-  <description>High-performance Java Dataframe with integrated columnar storage</description>
-  <url>https://jtablesaw.wordpress.com</url>
+  <artifactId>datavec-tablesaw</artifactId>
+  <name>datavec-dataframe</name>
+  <description>High-performance Java Dataframe with integrated columnar storage (fork of tablesaw)</description>
   <developers>
     <developer>
       <name>Larry White</name>
@@ -20,14 +22,11 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <scm>
-    <url>https://github.com/lwhite1/tablesaw</url>
-  </scm>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
+        <version>3.5.1</version>
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
@@ -68,17 +67,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.3</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -150,6 +138,7 @@
       </exclusions>
     </dependency>
   </dependencies>
+  <dependencyManagement />
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
