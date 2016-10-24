@@ -1,69 +1,229 @@
 @(i18n: org.deeplearning4j.ui.api.I18N)
-<div class="modelOuterDiv">
-    <div class="modelGraphDiv" id="modelGraph">
-        <p>View of network goes here - from the current FlowIterationListener</p>
-        <p>User clicks on one of the nodes, and it loads the relevant data on the right</p>
-    </div>
-    <div class="modelContentDiv" id="modelLayerInfo">
-        <p>
-            Layer info table here
-        </p>
-        <p>
-            Layer info available as a 2d array at /train/model/data/layerId -> "layerInfo"
-        </p>
-    </div>
-    <div class="modelContentDiv" id="modelMeanMagnitudes">
-        <p>Mean magnitudes multi line chart</p>
-        <p>
-            For now: multi-line chart of ratio of (mean(abs(updates))/mean(abs(parameters))) vs. time.
-            One line for each parameter (weights, biases)
-        </p>
-        <p>
-            /train/model/data/layerId -> "meanMagRatio"
-            Contents:
-            "layerParamNames": Names of the parameters for each parameter
-            "iterCounts": iteration numbers (x axis values) for the ratio data points
-            "someParamName": (key by contents of layerParamNames): y-axis values for ratios
-        </p>
-        <p>Maybe later, add the 'pre ratio' information: parameters mean magnitudes (1 per param type), updates mean magnitude (1 per param type)</p>
-    </div>
-    <div class="modelContentDiv" id="modelActivations">
-        <p>Activations line chart</p>
-        <p>Shows mean activations value over time +/- 2 standard deviations</p>
-        <p>
-            /train/model/data/layerId -> "activations"
-            Properties:
-            "iterCount": iterations at which the corresponding mean/stdev values occur (x axis values)
-            "mean": mean values (y axis values)
-            "stdev": standard deviation values
-            Note that the mean + 2*stdev and mean - 2*stdev need to be calculated from these
-        </p>
-    </div>
-    <div class="modelContentDiv" id="modelLearningRates">
-        <p>Learning rates multi-line chart</p>
-        <p>Shows learning rates (by parameter type) over time</p>
-        <p>
-            /train/model/data/layerId -> "learningRates"
-            "paramNames" - names of parameters for the layer (order will be consistent between calls)
-            "iterCounts" - x axis values
-            "lrs": map with array of learning rate values, one per paramName. y-axis values
-        </p>
-    </div>
-    <div class="modelContentDiv" id="modelParamHistogram">
-        <p>Parameters histogram</p>
-        <p>Histogram of the parameters in the network</p>
-        <p>
-            /train/model/data/layerId -> "paramHist"
-            "paramNames": names of parameters
-            one key for each param name: min,max,bins,counts fields. This defines the histogram content.
-            i.e., each histogram has "bins" entries of size (max-min)/bins.
-        </p>
-    </div>
-    <div class="modelContentDiv" id="modelParamHistogram">
-        <p>Updates histogram</p>
-        <p>Histogram of the updates in the network</p>
-        <p>
-            As per params histograms, but "updateHist"
-        </p>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+	<meta charset="utf-8">
+	<title>System Page Demo</title>
+	<!-- start: Mobile Specific -->
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- end: Mobile Specific -->
+
+	<link id="bootstrap-style" href="/assets/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/css/bootstrap-responsive.min.css" rel="stylesheet">
+	<link id="base-style" href="/assets/css/style.css" rel="stylesheet">
+	<link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&subset=latin,cyrillic-ext,latin-ext' rel='stylesheet' type='text/css'>
+	<link rel="shortcut icon" href="/assets/img/favicon.ico">
+
+	<!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
+	<!--[if lt IE 9]>
+	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet">
+	<![endif]-->
+
+	<!--[if IE 9]>
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+	<![endif]-->
+</head>
+
+<body>
+		<!-- Start Header -->
+	<div class="navbar">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".top-nav.nav-collapse,.sidebar-nav.nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html"><span>DL4J Training UI</span></a>
+			</div>
+		</div>
+	</div>
+	<!-- End Header -->
+
+		<div class="container-fluid-full">
+		<div class="row-fluid">
+
+			<!-- Start Main Menu -->
+			<div id="sidebar-left" class="span2">
+				<div class="nav-collapse sidebar-nav">
+					<ul class="nav nav-tabs nav-stacked main-menu">
+						<li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> Overview</span></a></li>
+						<li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i><span class="hidden-tablet"> Model</span></a></li>
+						<li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> System</span></a></li>
+						<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> User Guide</span></a></li>
+					</ul>
+				</div>
+			</div>
+			<!-- End Main Menu -->
+
+			<noscript>
+				<div class="alert alert-block span10">
+					<h4 class="alert-heading">Warning!</h4>
+					<p>You need to have <a href="http://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a> enabled to use this site.</p>
+				</div>
+			</noscript>
+
+			<!-- Start Content -->
+			<div id="content" class="span10">
+
+			<div class="row-fluid">
+
+				<div class="box blue span12">
+					<div class="box-header">
+						<h2>Network View</h2>
+					</div>
+					<div class="box-content">
+
+						<a class="quick-button span2">
+							<i class="glyphicons-icon database_plus"></i>
+							<p>Input</p>
+						</a>
+						<a class="quick-button span2">
+							<i class="glyphicons-icon picture"></i>
+							<p>Convolution</p>
+						</a>
+						<a class="quick-button span2">
+							<i class="glyphicons-icon cogwheels"></i>
+							<p>Subsampling</p>
+						</a>
+						<a class="quick-button span2">
+							<i class="glyphicons-icon picture"></i>
+							<p>Convolution</p>
+						</a>
+						<a class="quick-button span2">
+							<i class="glyphicons-icon cogwheels"></i>
+							<p>Dense</p>
+						</a>
+						<a class="quick-button span2">
+							<i class="glyphicons-icon check"></i>
+							<p>Output</p>
+						</a>
+						<div class="clearfix"></div>
+					</div>
+				</div><!--/span-->
+
+			</div><!--/row-->
+
+			<div class="row-fluid sortable">
+				<div class="box span12">
+					<div class="box-header">
+						<h2><b>Layer Information</b></h2>
+					</div>
+					<div class="box-content">
+						<table class="table table-bordered table-striped table-condensed">
+							  <thead>
+								  <tr>
+									  <th>Name</th>
+									  <th>Type</th>
+									  <th>Inputs</th>
+									  <th>Outputs</th>
+									  <th>Activation Function</th>
+									  <th>Learning Rate</th>
+								  </tr>
+							  </thead>
+							  <tbody>
+								<tr>
+									<td>Input</td>
+									<td>Dense</td>
+									<td>800</td>
+									<td>500</td>
+									<td>relu</td>
+									<td>0.01</td>
+								</tr>
+							  </tbody>
+						 </table>
+					</div>
+				</div><!--/span-->
+			</div><!--/row-->
+
+			<div class="box">
+				<div class="box-header">
+					<h2><b>Mean Magnitudes</b></h2>
+				</div>
+				<div class="box-content">
+					<div id="sincos"  class="center" style="height:300px;" ></div>
+					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
+				</div>
+			</div>
+
+			<div class="box">
+				<div class="box-header">
+					<h2><b>Activations</b></h2>
+				</div>
+				<div class="box-content">
+					<div id="sincos2"  class="center" style="height:300px;" ></div>
+					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
+				</div>
+			</div>
+
+			<div class="box">
+				<div class="box-header">
+					<h2><b>Learning Rate</b></h2>
+				</div>
+				<div class="box-content">
+					<div id="sincos3"  class="center" style="height:300px;" ></div>
+					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
+				</div>
+			</div>
+
+			<div class="box">
+				<div class="box-header">
+					<h2><b>Parameters vs Updates</b></h2>
+				</div>
+				<div class="box-content">
+					 <div id="stackchart" class="center" style="height:300px;"></div>
+
+					<p class="stackControls center">
+						<input class="btn" type="button" value="With stacking">
+						<input class="btn" type="button" value="Without stacking">
+					</p>
+
+					<p class="graphControls center">
+						<input class="btn-primary" type="button" value="Bars">
+						<input class="btn-primary" type="button" value="Lines">
+						<input class="btn-primary" type="button" value="Lines with steps">
+					</p>
+				</div>
+			</div>
+
+		<!-- End Content -->
+		</div><!-- End Container -->
+	</div><!-- End Row Fluid-->
+
+		<!-- Start JavaScript-->
+		<script src="/assets/js/jquery-1.9.1.min.js"></script>
+		<script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
+		<script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
+		<script src="/assets/js/jquery.ui.touch-punch.js"></script>
+		<script src="/assets/js/modernizr.js"></script>
+		<script src="/assets/js/bootstrap.min.js"></script>
+		<script src="/assets/js/jquery.cookie.js"></script>
+		<script src="/assets/js/fullcalendar.min.js"></script>
+		<script src="/assets/js/jquery.dataTables.min.js"></script>
+		<script src="/assets/js/excanvas.js"></script>
+		<script src="/assets/js/jquery.flot.js"></script>
+		<script src="/assets/js/jquery.flot.pie.js"></script>
+		<script src="/assets/js/jquery.flot.stack.js"></script>
+		<script src="/assets/js/jquery.flot.resize.min.js"></script>
+		<script src="/assets/js/jquery.chosen.min.js"></script>
+		<script src="/assets/js/jquery.uniform.min.js"></script>
+		<script src="/assets/js/jquery.cleditor.min.js"></script>
+		<script src="/assets/js/jquery.noty.js"></script>
+		<script src="/assets/js/jquery.elfinder.min.js"></script>
+		<script src="/assets/js/jquery.raty.min.js"></script>
+		<script src="/assets/js/jquery.iphone.toggle.js"></script>
+		<script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
+		<script src="/assets/js/jquery.gritter.min.js"></script>
+		<script src="/assets/js/jquery.imagesloaded.js"></script>
+		<script src="/assets/js/jquery.masonry.min.js"></script>
+		<script src="/assets/js/jquery.knob.modified.js"></script>
+		<script src="/assets/js/jquery.sparkline.min.js"></script>
+		<script src="/assets/js/counter.js"></script>
+		<script src="/assets/js/retina.js"></script>
+		<script src="/assets/js/custom.js"></script>
+		<!-- End JavaScript-->
+</body>
+</html>
