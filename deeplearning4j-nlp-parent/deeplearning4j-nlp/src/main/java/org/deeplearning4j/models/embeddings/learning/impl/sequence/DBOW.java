@@ -47,7 +47,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public String getCodeName() {
-        return "DBOW";
+        return "PV-DBOW";
     }
 
     @Override
