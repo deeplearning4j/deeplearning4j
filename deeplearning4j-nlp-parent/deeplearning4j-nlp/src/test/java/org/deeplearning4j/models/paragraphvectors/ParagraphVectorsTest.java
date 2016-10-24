@@ -359,9 +359,9 @@ public class ParagraphVectorsTest {
 
         ParagraphVectors vec = new ParagraphVectors.Builder()
                 .minWordFrequency(1)
-                .iterations(5)
+                .iterations(2)
                 .seed(119)
-                .epochs(1)
+                .epochs(3)
                 .layerSize(100)
                 .learningRate(0.025)
                 .labelsSource(source)
