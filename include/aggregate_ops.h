@@ -93,6 +93,7 @@ namespace aggregateOps {
             __shared__ int vectorLength;
             __shared__ int expLength;
             __shared__ int code;
+            __shared__ int isInference;
 
             T *syn0 = arguments[0];
             T *syn1 = arguments[1];
@@ -108,6 +109,7 @@ namespace aggregateOps {
                 vectorLength = indexArguments[0];
                 expLength = indexArguments[1];
                 code = indexArguments[2];
+                isInference = indexArguments[3];
 
                 dot = (T) 0.0f;
 
@@ -149,9 +151,10 @@ namespace aggregateOps {
             }
 
             // axpy2
-            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
-                syn1[x] = g * syn0[x] + syn1[x];
-            }
+            if (!isInference)
+                for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                    syn1[x] = g * syn0[x] + syn1[x];
+                }
         }
 #endif
     };
@@ -223,6 +226,7 @@ namespace aggregateOps {
             __shared__ int vectorLength;
             __shared__ int expLength;
             __shared__ int code;
+            __shared__ int isInference;
 
             T *syn0 = arguments[0];
             T *syn1Neg = arguments[1];
@@ -238,6 +242,7 @@ namespace aggregateOps {
                 vectorLength = indexArguments[0];
                 expLength = indexArguments[1];
                 code = indexArguments[2];
+                isInference = indexArguments[3];
 
                 dot = (T) 0.0f;
 
@@ -285,12 +290,12 @@ namespace aggregateOps {
             for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                 neu1e[x] = g * syn1Neg[x] + neu1e[x];
             }
-            __syncthreads();
 
             // axpy2
-            for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
-                syn1Neg[x] = g * syn0[x] + syn1Neg[x];
-            }
+            if (!isInference)
+                for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
+                    syn1Neg[x] = g * syn0[x] + syn1Neg[x];
+                }
             __syncthreads();
 
         //    printf("after syn1Neg[%i]: [%f]\n", threadIdx.x, syn1Neg[threadIdx.x]);
@@ -478,7 +483,7 @@ namespace aggregateOps {
             __shared__ T *neu1e;
 
             __shared__ T *args[4];
-            __shared__ int idxArgs[3];
+            __shared__ int idxArgs[4];
 
 
             __shared__ unsigned long long next_random;
@@ -510,6 +515,7 @@ namespace aggregateOps {
 
                 idxArgs[0] = vectorLength; // vectorLength
                 idxArgs[1] = expLength; // expLength
+                idxArgs[3] = 0;
             }
             __syncthreads();
 
@@ -688,7 +694,7 @@ namespace aggregateOps {
             int starter = trainWords == 1 ? 0 : idxSyn0Length - numLabels;
 
             // propagate neu1e -> syn0
-            if (!isInference)
+            if (!isInference) {
                 for (int c = starter; c < idxSyn0Length; c++) {
                     T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
 #pragma omp simd
@@ -696,7 +702,7 @@ namespace aggregateOps {
                         syn0word[i] += neu1e[i];
                     }
                 }
-            else  {
+            } else {
 #pragma omp simd
                 for (int i = 0; i < vectorLength; i++) {
                     inferenceVector[i] += neu1e[i];
@@ -735,7 +741,7 @@ namespace aggregateOps {
             __shared__ T *neu1e;
 
             __shared__ T *args[5];
-            __shared__ int idxArgs[3];
+            __shared__ int idxArgs[4];
 
             T *syn0 = arguments[0];
             T *syn1 = arguments[1];
@@ -768,6 +774,7 @@ namespace aggregateOps {
 
                 idxArgs[0] = vectorLength; // vectorLength
                 idxArgs[1] = expLength; // expLength
+                idxArgs[3] = isInference;
             }
             __syncthreads();
 
