@@ -108,9 +108,9 @@ public class DataFrames {
         for(int i = 0; i < structFields.length; i++) {
             switch (schema.getColumnTypes().get(i)) {
                 case Double: structFields[i] = new StructField(schema.getName(i), DataTypes.DoubleType,false,Metadata.empty()); break;
-                case Integer: new StructField(schema.getName(i), DataTypes.IntegerType,false,Metadata.empty()); break;
-                case Long: new StructField(schema.getName(i), DataTypes.LongType,false,Metadata.empty()); break;
-                case Float: new StructField(schema.getName(i), DataTypes.FloatType,false,Metadata.empty()); break;
+                case Integer: structFields[i] = new StructField(schema.getName(i), DataTypes.IntegerType,false,Metadata.empty()); break;
+                case Long: structFields[i] = new StructField(schema.getName(i), DataTypes.LongType,false,Metadata.empty()); break;
+                case Float: structFields[i] = new StructField(schema.getName(i), DataTypes.FloatType,false,Metadata.empty()); break;
                 default: throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
             }
         }

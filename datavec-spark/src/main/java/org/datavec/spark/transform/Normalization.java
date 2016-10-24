@@ -4,10 +4,12 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
+import static org.apache.spark.sql.functions.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -68,25 +70,35 @@ public class Normalization {
      */
     public static DataFrame normalize(DataFrame dataFrame,double min,double max) {
         String[] columnNames = dataFrame.columns();
+
+
+        List<String> toProcess = new ArrayList<>();
+        for(String columnName : columnNames){
+            if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
+            if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
+
+            toProcess.add(columnName);
+        }
+
+        dataFrame.show();
+
         for(String columnName : columnNames) {
             if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
             if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
-            System.out.println("****** COLUMN: " + columnName + "*****");
-//            Column min2 = DataFrames.min(dataFrame,columnName);
-//            Column max2 = DataFrames.max(dataFrame,columnName);
-//            Column min2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.min(columnName)).col("min(" + columnName + ")");
-//            Column max2 = dataFrame.groupBy().agg(dataFrame.col(columnName), org.apache.spark.sql.functions.max(columnName)).col(columnName);
-//            Column max2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.max(columnName)).col(columnName);
-//            Column max2 = dataFrame.groupBy().agg(org.apache.spark.sql.functions.max(columnName)).col("max(" + columnName + ")");
-//            Column maxMinusMin = max2.minus(min2);
+            DataFrame minMax = dataFrame.select(columnName).agg(min(columnName), max(columnName));
+            Row r = minMax.collect()[0];
+            double dMin = ((Number)r.get(0)).doubleValue();
+            double dMax = ((Number)r.get(1)).doubleValue();
 
-            Column min2 = dataFrame.select(org.apache.spark.sql.functions.min(columnName)).col("min(" + columnName + ")");
-            Column max2 = dataFrame.select(org.apache.spark.sql.functions.max(columnName)).col("max(" + columnName + ")");
-            Column maxMinusMin = max2.minus(min2);
+            double maxSubMin = dMax - dMin;
+            if(maxSubMin == 0) maxSubMin = 1;
 
-            
+            System.out.println(dMin + "\t" + dMax);
 
-            Column newCol = dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min);
+
+//            Column newCol = dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min);
+            Column newCol = dataFrame.col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);
+            newCol.explain(true);
             dataFrame = dataFrame.withColumn(columnName,newCol);
             System.out.println("+++++ DONE COLUMN: " + columnName + " ++++++");
         }

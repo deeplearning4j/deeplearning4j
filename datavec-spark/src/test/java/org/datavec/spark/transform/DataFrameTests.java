@@ -69,6 +69,32 @@ public class DataFrameTests extends BaseSparkTest {
         }*/
     }
 
+    @Test
+    public void testNormalize(){
+
+        List<List<Writable>> data = new ArrayList<>();
+
+        data.add(Arrays.<Writable>asList(new IntWritable(1), new DoubleWritable(10)));
+        data.add(Arrays.<Writable>asList(new IntWritable(2), new DoubleWritable(20)));
+        data.add(Arrays.<Writable>asList(new IntWritable(3), new DoubleWritable(30)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(data);
+
+        Schema schema = new Schema.Builder()
+                .addColumnInteger("c0")
+                .addColumnDouble("c1")
+                .build();
+
+
+        JavaRDD<List<Writable>> normalized = Normalization.normalize(schema, rdd);
+        JavaRDD<List<Writable>> standardize = Normalization.zeromeanUnitVariance(schema, rdd);
+
+        System.out.println("Normalized:");
+        System.out.println(normalized.collect());
+        System.out.println("Standardized:");
+        System.out.println(standardize.collect());
+    }
+
 
     @Test
     public void testDataFrameSequenceNormalization(){
