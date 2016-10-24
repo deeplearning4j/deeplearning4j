@@ -88,7 +88,7 @@ public class StatsListener implements RoutingIterationListener {
             this.initConfig = initConfig;
         }
         if(updateConfig == null){
-            this.updateConfig = DefaultStatsUpdateConfiguration.builder().build();
+            this.updateConfig = new DefaultStatsUpdateConfiguration.Builder().build();
         } else {
             this.updateConfig = updateConfig;
         }
