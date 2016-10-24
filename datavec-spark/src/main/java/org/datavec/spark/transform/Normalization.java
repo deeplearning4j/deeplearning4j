@@ -10,6 +10,8 @@ import org.datavec.api.writable.Writable;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -34,7 +36,7 @@ public class Normalization {
      * rdd
      */
     public static DataFrame zeromeanUnitVariance(DataFrame frame) {
-        return zeromeanUnitVariance(frame,new ArrayList<String>());
+        return zeromeanUnitVariance(frame, Collections.<String>emptyList());
     }
 
     /**
@@ -46,7 +48,7 @@ public class Normalization {
      * rdd
      */
     public static JavaRDD<List<Writable>> zeromeanUnitVariance(Schema schema, JavaRDD<List<Writable>> data) {
-        return zeromeanUnitVariance(schema,data,new ArrayList<String>());
+        return zeromeanUnitVariance(schema,data,Collections.<String>emptyList());
     }
 
     /**
@@ -57,7 +59,7 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame,double min,double max) {
-        return normalize(dataFrame,min,max,new ArrayList<String>());
+        return normalize(dataFrame,min,max,Collections.<String>emptyList());
     }
 
     /**
@@ -70,7 +72,7 @@ public class Normalization {
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data,double min,double max) {
         DataFrame frame = DataFrames.toDataFrame(schema,data);
-        return DataFrames.toRecords(normalize(frame,min,max,new ArrayList<String>())).getSecond();
+        return DataFrames.toRecords(normalize(frame,min,max,Collections.<String>emptyList())).getSecond();
     }
 
 
@@ -81,7 +83,7 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame) {
-        return normalize(dataFrame,0,1,new ArrayList<String>());
+        return normalize(dataFrame,0,1,Collections.<String>emptyList());
     }
 
     /**
@@ -91,7 +93,7 @@ public class Normalization {
      * @return the normalized ata
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data) {
-        return normalize(schema,data,0,1,new ArrayList<String>());
+        return normalize(schema,data,0,1,Collections.<String>emptyList());
     }
 
 
@@ -111,15 +113,15 @@ public class Normalization {
     public static DataFrame zeromeanUnitVariance(DataFrame frame,List<String> skipColumns) {
         String[] columnNames = frame.columns();
         for(String columnName : columnNames) {
-            if(skipColumns.contains(columnName)) {
-                frame = frame.withColumn(columnName,frame.col(columnName));
-            }
-            else {
-                Column mean = DataFrames.mean(frame,columnName);
-                Column std = DataFrames.std(frame,columnName);
-                frame = frame.withColumn(columnName,frame.col(columnName).minus(mean).divide(std.plus(1e-6)));
-            }
+            if(skipColumns.contains(columnName)) continue;
 
+            DataFrame meanStd = frame.select(columnName).agg(mean(columnName), stddev(columnName));
+            Row r = meanStd.collect()[0];
+            double mean = ((Number)r.get(0)).doubleValue();
+            double std = ((Number)r.get(1)).doubleValue();
+            if(std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
+
+            frame = frame.withColumn(columnName,frame.col(columnName).minus(mean).divide(std));
         }
 
         return frame;
@@ -140,7 +142,7 @@ public class Normalization {
 
     public static JavaRDD<List<List<Writable>>> zeroMeanUnitVarianceSequence(Schema schema, JavaRDD<List<List<Writable>>> sequence){
         DataFrame frame = DataFrames.sequenceToDataFrame(schema, sequence);
-        zeromeanUnitVariance(frame);
+        frame = zeromeanUnitVariance(frame, Arrays.asList(DataFrames.SEQUENCE_UUID_COLUMN, DataFrames.SEQUENCE_INDEX_COLUMN));
         return DataFrames.toRecordsSequence(frame).getSecond();
     }
 
@@ -154,20 +156,9 @@ public class Normalization {
     public static DataFrame normalize(DataFrame dataFrame,double min,double max,List<String> skipColumns) {
         String[] columnNames = dataFrame.columns();
 
-
-        List<String> toProcess = new ArrayList<>();
-        for(String columnName : columnNames){
-            if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
-            if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
-
-            toProcess.add(columnName);
-        }
-
-        dataFrame.show();
-
         for(String columnName : columnNames) {
-            if(DataFrames.SEQUENCE_UUID_COLUMN.equals(columnName)) continue;
-            if(DataFrames.SEQUENCE_INDEX_COLUMN.equals(columnName)) continue;
+            if(skipColumns.contains(columnName))
+                continue;
             DataFrame minMax = dataFrame.select(columnName).agg(min(columnName), max(columnName));
             Row r = minMax.collect()[0];
             double dMin = ((Number)r.get(0)).doubleValue();
@@ -176,17 +167,9 @@ public class Normalization {
             double maxSubMin = dMax - dMin;
             if(maxSubMin == 0) maxSubMin = 1;
 
-            System.out.println(dMin + "\t" + dMax);
-
-
-//            Column newCol = dataFrame.col(columnName).minus(min2).divide(maxMinusMin.plus(1e-6)).multiply(max - min).plus(min);
             Column newCol = dataFrame.col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);
-            newCol.explain(true);
             dataFrame = dataFrame.withColumn(columnName,newCol);
-            System.out.println("+++++ DONE COLUMN: " + columnName + " ++++++");
 
-//            if(skipColumns.contains(columnName))
-//                continue;
 //            Column min2 = DataFrames.min(dataFrame,columnName);
 //            Column max2 = DataFrames.max(dataFrame,columnName);
 //            Column maxMinusMin = max2.minus(min2);
@@ -211,7 +194,7 @@ public class Normalization {
 
     public static JavaRDD<List<List<Writable>>> normalizeSequence(Schema schema, JavaRDD<List<List<Writable>>> data, double min, double max){
         DataFrame frame = DataFrames.sequenceToDataFrame(schema,data);
-        return DataFrames.toRecordsSequence(normalize(frame,min,max)).getSecond();
+        return DataFrames.toRecordsSequence(normalize(frame,min,max, Arrays.asList(DataFrames.SEQUENCE_UUID_COLUMN, DataFrames.SEQUENCE_INDEX_COLUMN))).getSecond();
     }
 
 
