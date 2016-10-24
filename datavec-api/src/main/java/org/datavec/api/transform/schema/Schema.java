@@ -94,6 +94,8 @@ public class Schema implements Serializable {
     }
 
     public ColumnType getType(int column) {
+        if(column < 0 || column >= columnMetaData.size())
+            throw new IllegalArgumentException("Invalid column number. " + column + "only " + columnMetaData.size() + "present.");
         return columnMetaData.get(column).getColumnType();
     }
 
@@ -595,7 +597,8 @@ public class Schema implements Serializable {
                 builder.addColumnLong(String.valueOf(i));
             else if(record.get(i) instanceof FloatWritable)
                 builder.addColumnFloat(String.valueOf(i));
-            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString());
+
+            else throw new IllegalStateException("Illegal writable for infering schema of type " + record.get(i).getClass().toString() + " with record " + record);
         }
 
         return builder.build();

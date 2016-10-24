@@ -144,7 +144,6 @@ public class DataFrames {
      */
     public static Schema fromStructType(StructType structType) {
         Schema.Builder builder = new Schema.Builder();
-
         StructField[] fields = structType.fields();
         String[] fieldNames = structType.fieldNames();
         for (int i = 0; i < fields.length; i++) {

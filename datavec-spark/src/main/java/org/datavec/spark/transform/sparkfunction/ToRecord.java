@@ -10,7 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 10/21/16.
+ * Converts a row to a record
+ *
+ * @author Adam Gibson
  */
 @AllArgsConstructor
 public class ToRecord  implements Function<Row,List<Writable>> {
@@ -19,7 +21,11 @@ public class ToRecord  implements Function<Row,List<Writable>> {
     @Override
     public List<Writable> call(Row v1) throws Exception {
         List<Writable> ret = new ArrayList<>();
+        if(v1.size() != schema.numColumns())
+            throw new IllegalArgumentException("Invalid number of columns for row " + v1.size() + " should have matched schema columns "  + schema.numColumns());
         for(int i = 0; i < v1.size(); i++) {
+            if(v1.get(i) == null)
+                throw new IllegalStateException("Row item " + i + " is null");
             switch(schema.getType(i)) {
                 case Double: ret.add(new DoubleWritable(v1.getDouble(i))); break;
                 case Float: ret.add(new FloatWritable(v1.getFloat(i))); break;
@@ -27,6 +33,7 @@ public class ToRecord  implements Function<Row,List<Writable>> {
                 case Long: ret.add(new LongWritable(v1.getLong(i))); break;
                 default: throw new IllegalStateException("Illegal type");
             }
+
         }
         return ret;
     }
