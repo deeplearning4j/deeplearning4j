@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -239,6 +240,7 @@ public class CNNGradientCheckTest {
                             .regularization(false)
                             .learningRate(1.0)
                             .updater(Updater.SGD)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
                             .list()
                             .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(inputDepth).nOut(3)
@@ -299,6 +301,7 @@ public class CNNGradientCheckTest {
                             .regularization(false)
                             .learningRate(1.0)
                             .updater(Updater.SGD)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
                             .list()
                             .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(inputDepth).nOut(3)
