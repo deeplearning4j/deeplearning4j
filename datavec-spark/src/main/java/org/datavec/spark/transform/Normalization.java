@@ -9,7 +9,6 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -141,7 +140,7 @@ public class Normalization {
     }
 
     public static JavaRDD<List<List<Writable>>> zeroMeanUnitVarianceSequence(Schema schema, JavaRDD<List<List<Writable>>> sequence){
-        DataFrame frame = DataFrames.sequenceToDataFrame(schema, sequence);
+        DataFrame frame = DataFrames.toDataFrameSequence(schema, sequence);
         frame = zeromeanUnitVariance(frame, Arrays.asList(DataFrames.SEQUENCE_UUID_COLUMN, DataFrames.SEQUENCE_INDEX_COLUMN));
         return DataFrames.toRecordsSequence(frame).getSecond();
     }
@@ -193,7 +192,7 @@ public class Normalization {
     }
 
     public static JavaRDD<List<List<Writable>>> normalizeSequence(Schema schema, JavaRDD<List<List<Writable>>> data, double min, double max){
-        DataFrame frame = DataFrames.sequenceToDataFrame(schema,data);
+        DataFrame frame = DataFrames.toDataFrameSequence(schema,data);
         return DataFrames.toRecordsSequence(normalize(frame,min,max, Arrays.asList(DataFrames.SEQUENCE_UUID_COLUMN, DataFrames.SEQUENCE_INDEX_COLUMN))).getSecond();
     }
 
