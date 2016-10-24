@@ -1,12 +1,11 @@
 package org.nd4j.linalg.api.ops.aggregates.impl;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * This Op describes HS round for SkipGram/CBOW Hierarchic Softmax
+ * This Op describes HS round for AggregateSkipGram/CBOW Hierarchic Softmax
  *
  * @author raver119@gmail.com
  */

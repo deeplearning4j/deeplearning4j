@@ -5,14 +5,22 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * This aggregate encapsulates SkipGram training round for a given word and context
+ * This aggregate encapsulates AggregateSkipGram training round for a given word and context
  *
  * @author raver119@gmail.com
  */
-public class SkipGram extends BaseAggregate {
+public class AggregateSkipGram extends BaseAggregate {
     private int vectorLength;
 
-    public SkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, INDArray inferenceVector) {
+        this(syn0, syn1, syn1Neg, expTable, negTable, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength, alpha, nextRandom, vocabSize);
+
+        arguments.set(5, inferenceVector);
+
+        indexingArguments.set(8, 1); // set isInference to true
+    }
+
+    public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(idxSyn0);
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);
@@ -21,12 +29,14 @@ public class SkipGram extends BaseAggregate {
         indexingArguments.add(vocabSize);
         indexingArguments.add(ngStarter);
         indexingArguments.add(negTable == null ? 0 : negTable.length());
+        indexingArguments.add(0);
 
         arguments.add(syn0);
         arguments.add(syn1);
         arguments.add(expTable);
         arguments.add(syn1Neg);
         arguments.add(negTable);
+        arguments.add(null);
 
         intArrayArguments.add(idxSyn1);
         intArrayArguments.add(codes);
@@ -75,7 +85,7 @@ public class SkipGram extends BaseAggregate {
 
     @Override
     public int maxArguments() {
-        return 5;
+        return 6;
     }
 
     @Override
@@ -96,7 +106,7 @@ public class SkipGram extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 8;
+        return 9;
     }
 
     @Override

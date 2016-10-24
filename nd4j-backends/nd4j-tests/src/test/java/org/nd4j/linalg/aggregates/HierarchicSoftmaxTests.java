@@ -8,8 +8,8 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
-import org.nd4j.linalg.api.ops.aggregates.impl.SkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * This tests pack covers simple gradient checks for SkipGram, CBOW and HierarchicSoftmax
+ * This tests pack covers simple gradient checks for AggregateSkipGram, CBOW and HierarchicSoftmax
  *
  * @author raver119@gmail.com
  */
@@ -92,7 +92,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         log.info("syn0row before: {}", Arrays.toString(syn0row.dup().data().asFloat()));
 
-        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr, 1L, 10);
+        AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0, new int[]{1}, new int[]{0}, 0, 0, 10, lr, 1L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -123,7 +123,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         log.info("syn1row2 before: {}", Arrays.toString(syn1.getRow(2).dup().data().asFloat()));
 
-        SkipGram op = new SkipGram(syn0, syn1, null, expTable, null, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr, 1L, 10);
+        AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, null, expTable, null, idxSyn0, new int[]{1, 2}, new int[]{0, 1}, 0, 0, 10, lr, 1L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -161,7 +161,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         INDArray expSyn0 = Nd4j.create(10).assign(0.01f);
         INDArray expSyn1 = syn1.dup();
 
-        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 0, 0, 10, lr, 1L, 10);
+        AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 0, 0, 10, lr, 1L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -186,7 +186,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         log.info("syn0row1 after: {}", Arrays.toString(syn0.getRow(idxSyn0).dup().data().asFloat()));
 
 
-        SkipGram op = new SkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 1, 3, 10, lr, 2L, 10);
+        AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[]{}, new int[]{}, 1, 3, 10, lr, 2L, 10);
 
         Nd4j.getExecutioner().exec(op);
 
@@ -384,6 +384,48 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         assertEquals(expInference, inference);
 
+    }
+
+    @Test
+    public void testSGInference1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = Nd4j.create(100000);
+
+        double lr = 0.025;
+
+        INDArray syn0dup = syn0.dup();
+        INDArray syn1dup = syn1.dup();
+        INDArray syn1NegDup = syn1Neg.dup();
+
+        INDArray inference = Nd4j.create(10).assign(0.04f);
+        INDArray dup = inference.dup();
+        INDArray expInference = Nd4j.create(10).assign(0.0395f);
+
+        AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, 0, new int[]{1,2}, new int[]{1, 1}, 0, 0, 10, lr, 1L, 10, inference);
+
+        Nd4j.getExecutioner().exec(op);
+
+        /*
+            syn0, syn1 and syn1Neg should stay intact during inference
+         */
+        assertEquals(syn0dup, syn0);
+        assertEquals(syn1dup, syn1);
+        assertEquals(syn1NegDup, syn1Neg);
+
+        assertNotEquals(dup, inference);
+
+        /**
+         * dot is expected to be 0.008 for both rounds
+         * g is expected to be -0.0125 for both rounds, since we don't update syn0/syn1 before end of SG round
+         * neu1e is expected to be -0.00025 after first round (-0.0125 * 0.02 + 0.00)
+         * neu1e is expected to be -0.0005 after first round (-0.0125 * 0.02 + -0.00025)
+         * inferenceVector is expected to be 0.0395 after training (0.04 + -0.0005)
+         */
+
+        assertEquals(expInference, inference);
     }
 
     @Override
