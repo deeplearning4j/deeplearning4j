@@ -74,7 +74,7 @@ public class TestJoin extends BaseSparkTest {
         JavaRDD<List<Writable>> purchases = sc.parallelize(purchaseList);
 
         JavaRDD<List<Writable>> joined = SparkTransformExecutor.executeJoin(join, info, purchases);
-        List<List<Writable>> joinedList = joined.collect();
+        List<List<Writable>> joinedList = new ArrayList<>(joined.collect());
         //Sort by order ID (column 3, index 2)
         Collections.sort(joinedList, new Comparator<List<Writable>>() {
             @Override
@@ -105,7 +105,7 @@ public class TestJoin extends BaseSparkTest {
         expectedManyToOne.add(Arrays.<Writable>asList(new LongWritable(1000002),new LongWritable(98765), new DoubleWritable(30.00), new Text("Customer98765")));
 
         JavaRDD<List<Writable>> joined2 = SparkTransformExecutor.executeJoin(join2, purchases, info);
-        List<List<Writable>> joinedList2 = joined2.collect();
+        List<List<Writable>> joinedList2 = new ArrayList<>(joined2.collect());
         //Sort by order ID (column 0)
         Collections.sort(joinedList2, new Comparator<List<Writable>>() {
             @Override
@@ -187,7 +187,7 @@ public class TestJoin extends BaseSparkTest {
                     .setJoinColumnsLeft("category").setJoinColumnsRight("otherCategory")
                     .setSchemas(schema1, schema2)
                     .build();
-            List<List<Writable>> out = SparkTransformExecutor.executeJoin(join, firstRDD, secondRDD).collect();
+            List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.executeJoin(join, firstRDD, secondRDD).collect());
 
             //Sort output by column 0, then column 1, then column 2 for comparison to expected...
             Collections.sort(out, new Comparator<List<Writable>>() {
