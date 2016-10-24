@@ -28,7 +28,7 @@ import static play.mvc.Results.ok;
 @Slf4j
 public class HistogramModule implements UIModule {
 
-    private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
 
 
     @Override

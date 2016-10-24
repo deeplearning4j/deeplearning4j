@@ -49,7 +49,7 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 16 13:32:31 AEDT 2016
+                  DATE: Mon Oct 24 17:43:11 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
                   HASH: 6492911519c48658c576a79c1717959d22d62ccf
                   MATRIX: 596->1|729->39|757->41
