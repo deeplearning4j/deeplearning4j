@@ -107,7 +107,6 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         T currentWord = sequence.getElementByIndex(i);
 
         List<Integer> intsList = new ArrayList<>();
-
         for(int a = b; a < end; a++) {
             if(a != window) {
                 int c = i - window + a;
