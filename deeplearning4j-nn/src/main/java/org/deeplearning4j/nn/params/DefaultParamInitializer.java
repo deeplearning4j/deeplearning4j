@@ -117,10 +117,16 @@ public class DefaultParamInitializer implements ParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
         if(initializeParameters) {
+
+            int nIn = layerConf.getNIn();
+            int nOut = layerConf.getNOut();
+            int[] shape = new int[]{nIn,nOut};
+
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
             INDArray ret = WeightInitUtil.initWeights(
-                    layerConf.getNIn(),
-                    layerConf.getNOut(),
+                    nIn,    //Fan in
+                    nOut,   //Fan out
+                    shape,
                     layerConf.getWeightInit(),
                     dist,
                     weightParamView);
