@@ -331,7 +331,58 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         assertEquals(expSyn0_row3, syn0.getRow(7));
         assertEquals(expSyn0_row3, syn0.getRow(8));
         assertEquals(expSyn0_row3, syn0.getRow(9));
+    }
 
+
+    @Test
+    public void testCBOWInference1() throws Exception {
+        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray table = Nd4j.create(100000);
+
+        double lr = 0.025;
+
+        INDArray syn0dup = syn0.dup();
+        INDArray syn1dup = syn1.dup();
+        INDArray syn1NegDup = syn1Neg.dup();
+
+        INDArray inference = Nd4j.create(10).assign(0.04f);
+        INDArray dup = inference.dup();
+        INDArray expInference = Nd4j.create(10).assign(0.0395f);
+
+        log.info("Empty vector: {}", Arrays.toString(inference.data().asFloat()));
+
+        /*
+            surrounding words are 0 and 1
+         */
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, null, expTable, null, 0, new int[]{0, 1}, new int[]{4, 5}, new int[]{1, 1}, 0, 0, 10, lr, 2L, 10, 0, false, inference);
+
+        Nd4j.getExecutioner().exec(op);
+
+        /*
+            syn0, syn1 and syn1Neg should stay intact during inference
+         */
+        assertEquals(syn0dup, syn0);
+        assertEquals(syn1dup, syn1);
+        assertEquals(syn1NegDup, syn1Neg);
+
+        /**
+         * neu1 is expected to be 0.02
+         * syn1 is expected to be 0.02
+         * dot is expected to be 0.04 ( 0.02 * 0.02 * 10)
+         * g is expected to be -0.0125 for BOTH rounds, since we're not changing syn1 values during inference
+         * neu1e is expected to be -0.00025 at first round (-0.0125 * 0.02 + 0.00)
+         * neu1e is expected to be -0.0005 at second round (-0.0125 * 0.02 + -0.00025)
+         * inference is expected to be 0.0395 after training (0.04 + -0.0005)
+         */
+
+        assertNotEquals(dup, inference);
+
+        log.info("Inferred vector: {}", Arrays.toString(inference.data().asFloat()));
+
+        assertEquals(expInference, inference);
 
     }
 
