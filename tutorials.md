@@ -5,6 +5,8 @@ layout: default
 
 # Deep Learning Tutorials
 
+Welcome to our Tutorials page. If you are just getting started with Deep Learning, and DeepLearning4J these tutorials will help clarify some of the concepts. Image recognition, Text processing and Classification examples are provided here. Some of the examples provide a written introduction along with code, while others over a screencast with voice of the code being written. Enjoy !
+
 ## Basic Neural Networks
 
 ### MNIST for Beginners
