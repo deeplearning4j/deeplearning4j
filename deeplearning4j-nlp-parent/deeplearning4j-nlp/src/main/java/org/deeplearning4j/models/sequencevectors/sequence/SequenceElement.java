@@ -47,6 +47,9 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
     protected AdaGrad adaGrad;
 
+    // this var is used as state for preciseWeightInit routine, to avoid multiple initializations for the same data
+    @Getter @Setter protected boolean init;
+
     /*
             Reserved for Joint/Distributed vocabs mechanics
     */

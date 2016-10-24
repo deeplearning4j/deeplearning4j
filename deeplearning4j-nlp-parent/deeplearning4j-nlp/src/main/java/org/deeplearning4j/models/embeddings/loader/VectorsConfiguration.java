@@ -57,6 +57,8 @@ public class VectorsConfiguration implements Serializable {
     // paravec-specific option
     private boolean trainElementsVectors = true;
 
+    private boolean preciseWeightInit = false;
+
     private static ObjectMapper mapper;
     private static final Object lock = new Object();
 

@@ -13,9 +13,11 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -158,21 +160,19 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
         // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
-        double stepDecay = Math.abs(learningRate - minLearningRate) / iterations;
-
         if(sequence.isEmpty())
             return null;
 
 
-        INDArray ret = Nd4j.rand(nr, new int[]{1 ,lookupTable.layerSize()}).subi(0.5).divi(lookupTable.layerSize());
-
+        DefaultRandom random = new DefaultRandom(configuration.getSeed() * sequence.hashCode());
+        INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
 
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                 dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret);
             }
-            learningRate -= stepDecay;
+            learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
 
