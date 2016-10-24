@@ -39,6 +39,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-play</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0</version>
