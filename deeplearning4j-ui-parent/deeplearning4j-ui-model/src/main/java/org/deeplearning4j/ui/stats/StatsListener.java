@@ -44,7 +44,7 @@ import java.util.*;
 @Slf4j
 public class StatsListener implements RoutingIterationListener {
 
-    public static String TYPE_ID = "StatsListener";
+    public static final String TYPE_ID = "StatsListener";
 
     private enum StatType {Mean, Stdev, MeanMagnitude}
 
