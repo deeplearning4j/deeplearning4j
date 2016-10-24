@@ -60,6 +60,8 @@ public class PlayUIServer extends UIServer {
 
     private Thread uiEventRoutingThread;
 
+    private int port;
+
     public PlayUIServer() {
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -120,12 +122,18 @@ public class PlayUIServer extends UIServer {
 
         Router router = routingDsl.build();
         server = Server.forRouter(router, Mode.DEV, port);
+        this.port = port;
 
         log.info("UI Server started at {}", server.mainAddress());
 
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
+    }
+
+    @Override
+    public int getPort() {
+        return port;
     }
 
     @Override
