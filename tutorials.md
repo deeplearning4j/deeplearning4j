@@ -59,6 +59,11 @@ Long Short-Term Memory Units provide a mechanism to allow a nueral net to learn 
 
 [View the tutorial](https://deeplearning4j.org/lstm.html)
 
+### Using Recurrent Networks in DL4J
+
+A more in depth discussion of RNN's including configuring your code to use RNN's in DL4J
+
+[View the tutorial](http://deeplearning4j.org/usingrnns)
 
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
