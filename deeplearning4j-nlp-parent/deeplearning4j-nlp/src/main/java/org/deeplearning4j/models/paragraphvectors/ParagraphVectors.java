@@ -737,6 +737,7 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
             this.configuration.setTrainElementsVectors(this.trainElementsVectors);
+            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
 
             ret.configuration = this.configuration;
 
@@ -1065,6 +1066,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder elementsLearningAlgorithm(String algorithm) {
             super.elementsLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder usePreciseWeightInit(boolean reallyUse) {
+            super.usePreciseWeightInit(reallyUse);
             return this;
         }
 
