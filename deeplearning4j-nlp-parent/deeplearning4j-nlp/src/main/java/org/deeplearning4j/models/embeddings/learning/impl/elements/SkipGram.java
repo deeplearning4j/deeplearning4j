@@ -12,7 +12,9 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
@@ -190,7 +192,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int c = i - currentWindow + a;
                 if(c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
-                    score = iterateSample(word,lastWord,nextRandom,alpha);
+                    score = iterateSample(word,lastWord,nextRandom,alpha, false, null);
 
                 }
             }
@@ -199,7 +201,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return score;
     }
 
-    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom,double alpha) {
+    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference, INDArray inferenceVector) {
         if(w1 == null || lastWord == null || lastWord.getIndex() < 0 || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP") || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || lastWord.getLabel().equals("UNK"))
             return 0.0;
 
@@ -239,11 +241,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             batches.set(new ArrayList<Aggregate>());
         }
 
-        org.nd4j.linalg.api.ops.aggregates.impl.SkipGram sg = new org.nd4j.linalg.api.ops.aggregates.impl.SkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords());
+        AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords(), inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-
-        batches.get().add(sg);
+        if (!isInference)
+            batches.get().add(sg);
+        else
+            Nd4j.getExecutioner().exec(sg);
 
         return score;
     }

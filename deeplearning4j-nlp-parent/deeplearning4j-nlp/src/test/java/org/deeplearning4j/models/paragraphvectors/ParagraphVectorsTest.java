@@ -424,6 +424,84 @@ public class ParagraphVectorsTest {
 
 
     @Test
+    public void testParagraphVectorsDBOW() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+        File file = resource.getFile();
+        SentenceIterator iter = new BasicLineIterator(file);
+
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        LabelsSource source = new LabelsSource("DOC_");
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1)
+                .iterations(5)
+                .seed(119)
+                .epochs(1)
+                .layerSize(100)
+                .learningRate(0.025)
+                .labelsSource(source)
+                .windowSize(5)
+                .iterate(iter)
+                .trainWordVectors(true)
+                .vocabCache(cache)
+                .tokenizerFactory(t)
+                .negativeSample(0)
+                .useHierarchicSoftmax(true)
+                .sampling(0)
+                .workers(2)
+                .usePreciseWeightInit(true)
+                .sequenceLearningAlgorithm(new DBOW<VocabWord>())
+                .build();
+
+        vec.fit();
+
+
+        int cnt1 = cache.wordFrequency("day");
+        int cnt2 = cache.wordFrequency("me");
+
+        assertNotEquals(1, cnt1);
+        assertNotEquals(1, cnt2);
+        assertNotEquals(cnt1, cnt2);
+
+        double simDN = vec.similarity("day", "night");
+        log.info("day/night similariry: {}", simDN );
+
+        double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
+        log.info("9835/12492 similarity: " + similarity1);
+//        assertTrue(similarity1 > 0.2d);
+
+        double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
+        log.info("3720/16392 similarity: " + similarity2);
+        //      assertTrue(similarity2 > 0.2d);
+
+        double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
+        log.info("6347/3720 similarity: " + similarity3);
+//        assertTrue(similarity3 > 0.6d);
+
+        double similarityX = vec.similarity("DOC_3720", "DOC_9852");
+        log.info("3720/9852 similarity: " + similarityX);
+        assertTrue(similarityX < 0.5d);
+
+
+        // testing DM inference now
+
+        INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
+        INDArray inferredA1 = vec.inferVector("This is my work");
+        INDArray inferredB1 = vec.inferVector("This is my work .");
+
+        double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
+        double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
+
+        log.info("Cos O/A: {}", cosAO1);
+        log.info("Cos A/B: {}", cosAB1);
+
+    }
+
+    @Test
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();

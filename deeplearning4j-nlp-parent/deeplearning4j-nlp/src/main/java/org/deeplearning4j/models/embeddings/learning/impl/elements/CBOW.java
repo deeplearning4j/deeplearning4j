@@ -128,13 +128,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 double f = 0;
                 codes[p] = currentWord.getCodes().get(p);
                 idxSyn1[p] = currentWord.getPoints().get(p);
-
-                /*
-                if (!isInference)
-                    Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row);
-                else
-                    Nd4j.getBlasWrapper().level1().axpy(syn1row.length(),g, neu1, syn1row.dup());
-                */
             }
         } else {
             idxSyn1 = new int[0];
