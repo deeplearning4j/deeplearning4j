@@ -296,7 +296,6 @@ namespace aggregateOps {
                 for (int x = threadIdx.x; x < vectorLength; x+=blockDim.x) {
                     syn1Neg[x] = g * syn0[x] + syn1Neg[x];
                 }
-            __syncthreads();
 
         //    printf("after syn1Neg[%i]: [%f]\n", threadIdx.x, syn1Neg[threadIdx.x]);
 
@@ -399,14 +398,15 @@ namespace aggregateOps {
             int vocabSize = indexArguments[5];
             int ngStarter = indexArguments[6];
             int negTableLength = indexArguments[7];
+            int isInference = indexArguments[8];
 
 
             T *neu1e = new T[vectorLength];
             std::memset(neu1e, 0, sizeof(T) * vectorLength);
 
-            T **args = new T *[4];
-            int *idxArgs = new int[4];
-            args[0] = arguments[0] + (syn0Row * vectorLength); // syn0
+            T *args[4];
+            int idxArgs[4];
+
             args[1] = arguments[1]; // syn1
             args[2] = arguments[2]; // expTable
             args[3] = neu1e;
@@ -414,12 +414,15 @@ namespace aggregateOps {
 
             idxArgs[0] = vectorLength; // vectorLength
             idxArgs[1] = expLength; // expLength
-            idxArgs[3] = 0; // we hardcode false for now
-
-            T *syn0 = arguments[0] + (syn0Row * vectorLength);
+            idxArgs[3] = isInference;
 
             T *syn1Neg = arguments[3];
             T *negTable = arguments[4];
+            T *inferenceVector = arguments[5];
+
+            T *syn0 = isInference == 1 ? inferenceVector : arguments[0] + (syn0Row * vectorLength);
+
+            args[0] = syn0;// syn0
 
             int *idxSyn1 = intArrays[0];
             int *codes = intArrays[1];
@@ -459,14 +462,20 @@ namespace aggregateOps {
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
 
+            if (!isInference) {
 #pragma omp simd
-            for (int x = 0; x < vectorLength; x++) {
-                syn0[x] += neu1e[x];
+                for (int x = 0; x < vectorLength; x++) {
+                    syn0[x] += neu1e[x];
+                }
+            } else {
+
+#pragma omp simd
+                for (int x = 0; x < vectorLength; x++) {
+                    inferenceVector[x] += neu1e[x];
+                }
             }
 
             delete[] neu1e;
-            delete[] args;
-            delete[] idxArgs;
         }
 
 #ifdef __CUDACC__
@@ -479,6 +488,7 @@ namespace aggregateOps {
             __shared__ int vocabSize;
             __shared__ int ngStarter;
             __shared__ int negTableLength;
+            __shared__ int isInference;
 
             __shared__ T *neu1e;
 
@@ -490,6 +500,7 @@ namespace aggregateOps {
 
             __shared__ T *negTable;
             T *syn1Neg = arguments[3];
+            __shared__ T *inferenceVector;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
@@ -503,10 +514,13 @@ namespace aggregateOps {
                 vocabSize = indexArguments[5];
                 ngStarter = indexArguments[6];
                 negTableLength = indexArguments[7];
+                isInference = indexArguments[8];
+
+                inferenceVector = arguments[5];
 
                 next_random = (unsigned long long) realArguments[1];
 
-                args[0] = arguments[0] + (syn0Row * vectorLength);; // syn0
+                args[0] = isInference == 1 ? inferenceVector : arguments[0] + (syn0Row * vectorLength); // syn0
                 args[1] = arguments[1]; // syn1
                 args[2] = arguments[2]; // expTable
                 args[3] = neu1e;
@@ -515,11 +529,11 @@ namespace aggregateOps {
 
                 idxArgs[0] = vectorLength; // vectorLength
                 idxArgs[1] = expLength; // expLength
-                idxArgs[3] = 0;
+                idxArgs[3] = isInference;
             }
             __syncthreads();
 
-            T *syn0 = arguments[0] + (syn0Row * vectorLength);
+            T *syn0 = isInference ? inferenceVector : arguments[0] + (syn0Row * vectorLength);
 
             for (int i = threadIdx.x; i < vectorLength; i+=blockDim.x) {
                 neu1e[i] = (T) 0.0f;
@@ -573,9 +587,14 @@ namespace aggregateOps {
 
 
             // final axpy with 1.0f as alpha
-            for (int x = threadIdx.x; x < vectorLength; x+= blockDim.x) {
-                syn0[x] += neu1e[x];
-            }
+            if (!isInference)
+                for (int x = threadIdx.x; x < vectorLength; x+= blockDim.x) {
+                    syn0[x] += neu1e[x];
+                }
+            else
+                for (int x = threadIdx.x; x < vectorLength; x+= blockDim.x) {
+                    inferenceVector[x] += neu1e[x];
+                }
         }
 #endif
     };
@@ -618,9 +637,8 @@ namespace aggregateOps {
             T *negTable = arguments[4];
             T *inferenceVector = arguments[5];
 
-            T *args[5];
-
-            int *idxArgs = new int[4];
+            T *args[4];
+            int idxArgs[4];
             idxArgs[0] = vectorLength; // vectorLength
             idxArgs[1] = expLength; // expLength
             idxArgs[3] = isInference;
@@ -663,7 +681,7 @@ namespace aggregateOps {
                     args[1] = syn1 + (idxSyn1[i] * vectorLength);
                     idxArgs[2] = codes[i];
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
+                    HierarchicSoftmax<T>::executeAggregate((T **)args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
                 }
 
             int target = ngStarter;
@@ -686,7 +704,7 @@ namespace aggregateOps {
 
                     //printf("Negative round: target: [%i]; code: [%i]; neu1e[0]: [%f]\n", target, idxArgs[4], neu1e[0]);
 
-                    NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
+                    NegativeSampling<T>::executeAggregate((T **)args, 4, nullptr, 0, idxArgs, 3, nullptr, 0, realArguments, 2);
                 }
 
 
