@@ -26,6 +26,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +174,52 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
             lookupTable.resetWeights(true);
+
+            // if preciseWeights used, we roll over data once again
+            if (configuration.isPreciseWeightInit()) {
+                log.info("Using precise weights init...");
+                iterator.reset();
+                while (iterator.hasMoreSequences()) {
+                    Sequence<T> sequence = iterator.nextSequence();
+
+                    // initializing elements, only once
+                    for (T element: sequence.getElements()) {
+                        T realElement = vocab.tokenFor(element.getLabel());
+
+                        if (realElement != null && !realElement.isInit()) {
+                            INDArray randArray = Nd4j.rand(configuration.getSeed() * realElement.hashCode(), new int[]{1, configuration.getLayersSize()}).subi(0.5).divi(configuration.getLayersSize());
+
+                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            realElement.setInit(true);
+                        }
+                    }
+
+                    // initializing labels, only once
+                    for (T label: sequence.getSequenceLabels()) {
+                        T realElement = vocab.tokenFor(label.getLabel());
+
+                        if (realElement != null && !realElement.isInit()) {
+                            DefaultRandom random = new DefaultRandom(configuration.getSeed() * sequence.hashCode());
+                            INDArray randArray = Nd4j.rand(new int[]{1, configuration.getLayersSize()}, random).subi(0.5).divi(configuration.getLayersSize());
+/*
+                            if (realElement.getLabel().equals("DOC_16392")) {
+                                log.info("seed: {}", configuration.getSeed());
+                                log.info("DOC_16392 hash: {}", sequence.hashCode());
+                                log.info("Sequence: {}", sequence.getElements());
+                                log.info("Data: {}", Arrays.toString(randArray.data().asFloat()));
+                            }
+*/
+
+                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            realElement.setInit(true);
+                        }
+                    }
+                }
+                this.iterator.reset();
+            }
         }
+
+
 
         initLearners();
 
@@ -286,6 +333,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected boolean trainSequenceVectors = false;
         protected boolean trainElementsVectors = true;
+
+        protected boolean preciseWeightInit = false;
 
         protected List<String> stopWords = new ArrayList<>();
 
@@ -476,6 +525,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param reallyUse
          * @return
          */
+        @Deprecated
         public Builder<T> useAdaGrad(boolean reallyUse) {
             this.useAdaGrad = reallyUse;
             return this;
@@ -698,6 +748,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * If set to true, initial weights for elements/sequences will be derived from elements themself.
+         * However, this implies additional cycle through input iterator.
+         *
+         * Default value: FALSE
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> usePreciseWeightInit(boolean reallyUse){
+            this.preciseWeightInit = reallyUse;
+            return this;
+        }
+
+        /**
          * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
          */
         protected void presetTables() {
@@ -812,6 +876,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUNK(this.UNK);
             this.configuration.setVariableWindows(variableWindows);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
 
             vectors.configuration = this.configuration;
 

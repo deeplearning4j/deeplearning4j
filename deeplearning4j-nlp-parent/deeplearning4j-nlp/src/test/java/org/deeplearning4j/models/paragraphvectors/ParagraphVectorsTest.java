@@ -360,6 +360,7 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec = new ParagraphVectors.Builder()
                 .minWordFrequency(1)
                 .iterations(5)
+                .seed(119)
                 .epochs(1)
                 .layerSize(100)
                 .learningRate(0.025)
@@ -370,8 +371,10 @@ public class ParagraphVectorsTest {
                 .vocabCache(cache)
                 .tokenizerFactory(t)
                 .negativeSample(0)
+                .useHierarchicSoftmax(true)
                 .sampling(0)
                 .workers(1)
+                .usePreciseWeightInit(true)
                 .sequenceLearningAlgorithm(new DM<VocabWord>())
                 .build();
 
@@ -408,8 +411,8 @@ public class ParagraphVectorsTest {
         // testing DM inference now
 
         INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
-        INDArray inferredA1 = vec.inferVector("This is my world .");
-        INDArray inferredB1 = vec.inferVector("This is my world .");
+        INDArray inferredA1 = vec.inferVector("This is my work");
+        INDArray inferredB1 = vec.inferVector("This is my work .");
 
         double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
         double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
