@@ -17,7 +17,7 @@ public class AggregateSkipGram extends BaseAggregate {
 
         arguments.set(5, inferenceVector);
 
-        indexingArguments.set(8, 1); // set isInference to true
+        indexingArguments.set(8, inferenceVector == null ? 0 : 1); // set isInference to true
     }
 
     public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
