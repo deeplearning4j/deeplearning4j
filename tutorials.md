@@ -50,3 +50,14 @@ XOR is a digital logic gate that implements an exclusive or. XOR means that a tr
 This tutorial shows how to use Skymind's DataVec to ingest Comma Separated Values from a text file, convert the fields to numeric using a DataVec Transform Process in Spark, and save the modified data. Transforming non-numeric data to numeric data is a key preliminary step to using a Neural Network to analyze the data.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/L5DtC8_4F-c" frameborder="0" allowfullscreen></iframe>
+
+
+### <a name="beginner">Other Deeplearning4j Tutorials</a>
+
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Neural Networks and Regression](./linear-regression)
+* [Convolutional Networks](./convolutionalnets)
+* [Neural Word Embeddings, Word2vec and Doc2vec](./word2vec)
