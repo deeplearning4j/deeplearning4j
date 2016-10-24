@@ -24,22 +24,10 @@ import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
  */
 @Slf4j
 public class HistogramIterationListener extends StatsListener {
-//    private static final Logger log = LoggerFactory.getLogger(HistogramIterationListener.class);
-//    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
-//    private WebTarget target;
-//    private int iterations = 1;
-//    private int curIteration = 0;
-//    private ArrayList<Double> scoreHistory = new ArrayList<>();
-//    private List<Map<String,List<Double>>> meanMagHistoryParams = new ArrayList<>();    //1 map per layer; keyed by new param name
-//    private List<Map<String,List<Double>>> meanMagHistoryUpdates = new ArrayList<>();
-//    private Map<String,Integer> layerNameIndexes = new HashMap<>();
-//    private List<String> layerNames = new ArrayList<>();
-//    private int layerNameIndexesCount = 0;
     private boolean openBrowser;
     private boolean firstIteration = true;
     private String path;
     private static final String subPath = "weights";
-//    private UiConnectionInfo connectionInfo;
 
     public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
         this(new MapDBStatsStorage(), iterations, true);

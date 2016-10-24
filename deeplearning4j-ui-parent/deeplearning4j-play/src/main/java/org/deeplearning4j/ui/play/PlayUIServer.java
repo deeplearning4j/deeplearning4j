@@ -6,6 +6,7 @@ import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.i18n.I18NProvider;
+import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.training.TrainModule;
 import org.deeplearning4j.ui.module.histogram.HistogramModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
@@ -78,6 +79,7 @@ public class PlayUIServer extends UIServer {
 
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
         uiModules.add(new TrainModule());
+        uiModules.add(new ConvolutionalListenerModule());
 
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
