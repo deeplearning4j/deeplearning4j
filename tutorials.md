@@ -51,6 +51,15 @@ This tutorial shows how to use Skymind's DataVec to ingest Comma Separated Value
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/L5DtC8_4F-c" frameborder="0" allowfullscreen></iframe>
 
+### Beginners Guide to Recurrent Networks and LSTM's
+
+Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, genomes, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
+
+Long Short-Term Memory Units provide a mechanism to allow a nueral net to learn from experience to classify, process and predict time series events.
+
+[View the tutorial](https://deeplearning4j.org/lstm.html)
+
+
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 
