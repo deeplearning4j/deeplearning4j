@@ -20,7 +20,6 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import lombok.Setter;
-import org.datavec.api.records.metadata.RecordMetaData;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -2416,7 +2415,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             } else {
                 out = this.output(features,false);
                 if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
-                else e.eval(labels,out,next.getExampleMetaData(RecordMetaData.class));
+                else{
+                    List<Serializable> meta = next.getExampleMetaData();
+                    List<Object> meta2 = (meta == null ? null : new ArrayList<Object>(meta));
+                    e.eval(labels,out,meta2);
+                }
             }
         }
 
