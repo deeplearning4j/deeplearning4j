@@ -2140,6 +2140,8 @@ public class WordVectorSerializer {
             }
         } catch (Exception e) {
             // let's try to load this file as csv file
+            if (1>0)
+                throw new RuntimeException(e);
             try {
                 log.debug("Trying CSV model restoration...");
 
