@@ -45,6 +45,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.Assert.fail;
+
 /**
  * Test environment for building/debugging UI.
  *
@@ -60,13 +62,14 @@ public class ManualTests {
     @Test
     public void testLaunch() throws Exception {
 
-        UiServer server = UiServer.getInstance();
-
-        System.out.println("http://localhost:" + server.getPort()+ "/");
+//        UiServer server = UiServer.getInstance();
+//
+//        System.out.println("http://localhost:" + server.getPort()+ "/");
 
         Thread.sleep(10000000000L);
 
         new ScoreIterationListener(100);
+        fail("not implemneted");
     }
 
     @Test
@@ -113,9 +116,9 @@ public class ManualTests {
                 .pretrain(true).backprop(false)
                 .build();
 
-        UiServer server = UiServer.getInstance();
-        UiConnectionInfo connectionInfo = server.getConnectionInfo();
-        connectionInfo.setSessionId("my session here");
+//        UiServer server = UiServer.getInstance();
+//        UiConnectionInfo connectionInfo = server.getConnectionInfo();
+//        connectionInfo.setSessionId("my session here");
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -136,6 +139,8 @@ public class ManualTests {
 
         log.info(eval.stats());
         log.info("****************Example finished********************");
+
+        fail("Not implemented");
     }
 
 
@@ -429,11 +434,12 @@ public class ManualTests {
 
         vec.fit();
 
-        UiConnectionInfo connectionInfo = UiServer.getInstance().getConnectionInfo();
+//        UiConnectionInfo connectionInfo = UiServer.getInstance().getConnectionInfo();
 
-        vec.getLookupTable().plotVocab(100, connectionInfo);
+//        vec.getLookupTable().plotVocab(100, connectionInfo);
 
         Thread.sleep(10000000000L);
+        fail("Not implemented");
     }
 
     @Test
