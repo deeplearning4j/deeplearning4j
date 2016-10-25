@@ -104,7 +104,7 @@ public class MultipleEpochsIteratorTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(1)));
+        net.setListeners(new ScoreIterationListener(1));
 
         MultipleEpochsIterator ds = new MultipleEpochsIterator(epochs, new CifarDataSetIterator(10,20, new int[]{20,20,1}));
         net.fit(ds);
