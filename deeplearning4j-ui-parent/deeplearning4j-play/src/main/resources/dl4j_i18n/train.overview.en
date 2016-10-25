@@ -1,3 +1,4 @@
+train.overview.chart.scoreTitle=Model Score vs. Iteration
 train.overview.perftable.startTime=Start Time
 train.overview.perftable.totalRuntime=Total Runtime
 train.overview.perftable.lastUpdate=Last Update
