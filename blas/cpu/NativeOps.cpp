@@ -2529,11 +2529,11 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
 
     nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
 
-    int **intArrays = new int *[maxIntArrays];
-
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) private(intArrays) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
+        int **intArrays = new int *[maxIntArrays];
+
         float **arguments = helper.getArguments(i);
         int **shapes = helper.getShapeArguments(i);
         int *idxArg = helper.getIndexArguments(i);
@@ -2544,9 +2544,9 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
         }
 
         execAggregateFloat(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
-    }
 
-    delete [] intArrays;
+        delete [] intArrays;
+    }
 }
 
 
@@ -2557,11 +2557,11 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
 
     nd4j::PointersHelper<double> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
 
-    int **intArrays = new int *[maxIntArrays];
-
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) private(intArrays) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
     for (int i = 0; i < numAggregates; i++) {
+        int **intArrays = new int *[maxIntArrays];
+
         double **arguments = helper.getArguments(i);
         int **shapes = helper.getShapeArguments(i);
         int *idxArg = helper.getIndexArguments(i);
@@ -2572,9 +2572,11 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
         }
 
         execAggregateDouble(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
+
+        delete [] intArrays;
     }
 
-    delete [] intArrays;
+
 }
 
 void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
