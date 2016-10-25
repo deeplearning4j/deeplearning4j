@@ -30,36 +30,36 @@ Seq[Any](format.raw/*1.1*/("""<html>
 
 
             <!-- jQuery -->
-        <script src="/assets/jquery-2.2.0.min.js"></script>
+        <script src="/assets/legacy/jquery-2.2.0.min.js"></script>
 
-        <link href='/assets/roboto.css' rel='stylesheet' type='text/css'>
+        <link href='/assets/legacy/roboto.css' rel='stylesheet' type='text/css'>
 
             <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="/assets/bootstrap.min.css" />
+        <link rel="stylesheet" href="/assets/legacy/bootstrap.min.css" />
 
             <!-- Optional theme -->
-        <link rel="stylesheet" href="/assets/bootstrap-theme.min.css" />
+        <link rel="stylesheet" href="/assets/legacy/bootstrap-theme.min.css" />
 
             <!-- Latest compiled and minified JavaScript -->
-        <script src="/assets/bootstrap.min.js" ></script>
+        <script src="/assets/legacy/bootstrap.min.js" ></script>
 
 
             <!-- Booststrap Notify plugin-->
-        <script src="/assets/bootstrap-notify.min.js"></script>
+        <script src="/assets/legacy/bootstrap-notify.min.js"></script>
 
             <!-- DateTime formatter-->
-        <script src="/assets/DateTimeFormat.js"></script>
+        <script src="/assets/legacy/DateTimeFormat.js"></script>
 
             <!-- d3 -->
-        <script src="/assets/d3.v3.min.js" charset="utf-8"></script>
+        <script src="/assets/legacy/d3.v3.min.js" charset="utf-8"></script>
 
-        <script src="/assets/Connection.js"></script>
-        <script src="/assets/Layer.js"></script>
-        <script src="/assets/Layers.js"></script>
+        <script src="/assets/legacy/Connection.js"></script>
+        <script src="/assets/legacy/Layer.js"></script>
+        <script src="/assets/legacy/Layers.js"></script>
 
-        <script src="/assets/common.js"></script>
+        <script src="/assets/legacy/common.js"></script>
 
-        <script src="/assets/renderFlow.js"></script>
+        <script src="/assets/legacy/renderFlow.js"></script>
         <style>
         body """),format.raw/*40.14*/("""{"""),format.raw/*40.15*/("""
             """),format.raw/*41.13*/("""font-family: 'Roboto', sans-serif;
@@ -177,7 +177,7 @@ Seq[Any](format.raw/*1.1*/("""<html>
         <table style="width: 100%; padding: 5px;" class="hd">
             <tbody>
                 <tr>
-                    <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img" border="0"/></a></td>
+                    <td style="width: 48px;"><a href="/"><img src="/assets/legacy/deeplearning4j.img" border="0"/></a></td>
                     <td>DeepLearning4j UI</td>
                     <td style="width: 512px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select class="selectpicker" id="sessionSelector" onchange="window.location.href = 'flow?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000; display: inline-block; width: 256px;">
                         <option value="0" selected="selected">Pick a session to track</option>
@@ -283,10 +283,10 @@ Seq[Any](format.raw/*1.1*/("""<html>
 object Flow extends Flow_Scope0.Flow
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 21:32:08 AEDT 2016
+                  DATE: Tue Oct 25 23:33:26 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/flow/Flow.scala.html
-                  HASH: 8931d71ad2b672997c04e2b7c2d12c1bf7059dec
-                  MATRIX: 634->0|1899->1237|1928->1238|1970->1252|2128->1383|2157->1384|2194->1394|2226->1398|2255->1399|2297->1413|2419->1508|2448->1509|2485->1519|2520->1526|2549->1527|2591->1541|2778->1701|2807->1702|2844->1712|2882->1722|2911->1723|2953->1737|3075->1832|3104->1833|3141->1843|3185->1859|3214->1860|3256->1874|3343->1934|3372->1935|3409->1945|3446->1954|3475->1955|3517->1969|4014->2439|4043->2440|4080->2450|4119->2461|4148->2462|4190->2476|4333->2592|4362->2593|4401->2605|4437->2613|4466->2614|4508->2628|4662->2755|4691->2756|4730->2768|4768->2778|4797->2779|4839->2793|4935->2861|4965->2862|5005->2874|5044->2884|5074->2885|5117->2899|5169->2923|5199->2924|5239->2936|5274->2942|5304->2943|5347->2957|5401->2983|5431->2984|5471->2996|5523->3019|5553->3020|5596->3034|5746->3156|5776->3157|5816->3169|5856->3180|5886->3181|5929->3195|6054->3292|6084->3293|6124->3305|6159->3311|6189->3312|6232->3326|6285->3351|6315->3352|6355->3364|6389->3369|6419->3370|6462->3384|6575->3469|6605->3470|6645->3482|6682->3490|6712->3491|6755->3505|6843->3565|6873->3566|6913->3578|6953->3589|6983->3590|7026->3604|7113->3663|7143->3664|7183->3676|7227->3691|7257->3692|7300->3706|7458->3836|7488->3837|7526->3847
+                  HASH: 16da75957d6324a8afc14f57af86666402e62d06
+                  MATRIX: 634->0|1990->1328|2019->1329|2061->1343|2219->1474|2248->1475|2285->1485|2317->1489|2346->1490|2388->1504|2510->1599|2539->1600|2576->1610|2611->1617|2640->1618|2682->1632|2869->1792|2898->1793|2935->1803|2973->1813|3002->1814|3044->1828|3166->1923|3195->1924|3232->1934|3276->1950|3305->1951|3347->1965|3434->2025|3463->2026|3500->2036|3537->2045|3566->2046|3608->2060|4105->2530|4134->2531|4171->2541|4210->2552|4239->2553|4281->2567|4424->2683|4453->2684|4492->2696|4528->2704|4557->2705|4599->2719|4753->2846|4782->2847|4821->2859|4859->2869|4888->2870|4930->2884|5026->2952|5056->2953|5096->2965|5135->2975|5165->2976|5208->2990|5260->3014|5290->3015|5330->3027|5365->3033|5395->3034|5438->3048|5492->3074|5522->3075|5562->3087|5614->3110|5644->3111|5687->3125|5837->3247|5867->3248|5907->3260|5947->3271|5977->3272|6020->3286|6145->3383|6175->3384|6215->3396|6250->3402|6280->3403|6323->3417|6376->3442|6406->3443|6446->3455|6480->3460|6510->3461|6553->3475|6666->3560|6696->3561|6736->3573|6773->3581|6803->3582|6846->3596|6934->3656|6964->3657|7004->3669|7044->3680|7074->3681|7117->3695|7204->3754|7234->3755|7274->3767|7318->3782|7348->3783|7391->3797|7549->3927|7579->3928|7617->3938
                   LINES: 25->1|64->40|64->40|65->41|69->45|69->45|70->46|70->46|70->46|71->47|74->50|74->50|75->51|75->51|75->51|76->52|81->57|81->57|82->58|82->58|82->58|83->59|86->62|86->62|87->63|87->63|87->63|88->64|90->66|90->66|91->67|91->67|91->67|92->68|107->83|107->83|108->84|108->84|108->84|109->85|113->89|113->89|115->91|115->91|115->91|116->92|120->96|120->96|122->98|122->98|122->98|123->99|125->101|125->101|127->103|127->103|127->103|128->104|129->105|129->105|131->107|131->107|131->107|132->108|133->109|133->109|135->111|135->111|135->111|136->112|140->116|140->116|142->118|142->118|142->118|143->119|146->122|146->122|148->124|148->124|148->124|149->125|150->126|150->126|152->128|152->128|152->128|153->129|156->132|156->132|158->134|158->134|158->134|159->135|161->137|161->137|163->139|163->139|163->139|164->140|166->142|166->142|168->144|168->144|168->144|169->145|173->149|173->149|174->150
                   -- GENERATED --
               */
