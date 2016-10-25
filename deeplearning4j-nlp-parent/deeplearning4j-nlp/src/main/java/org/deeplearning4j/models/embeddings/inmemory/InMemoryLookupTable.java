@@ -138,8 +138,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         if(syn1 == null || reset)
             syn1 = Nd4j.create(syn0.shape());
         initNegative();
-
-
     }
 
     private List<String> fitTnseAndGetLabels(final BarnesHutTsne tsne, final int numWords) {
@@ -361,7 +359,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
-
     }
 
     public boolean isUseAdaGrad() {
@@ -386,70 +383,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
+    @Deprecated
     @Override
     public  void iterate(T w1, T w2) {
-    /*
-        if(w2.getIndex() < 0)
-            return;
-        //current word vector
-        INDArray l1 = this.syn0.slice(w2.getIndex());
 
-        //error for current word and context
-        INDArray neu1e = Nd4j.create(vectorLength);
-
-
-
-
-        double alpha = this.lr.get();
-
-        for(int i = 0; i < w1.getCodeLength(); i++) {
-            int code = w1.getCodes().get(i);
-            int point = w1.getPoints().get(i);
-            if(point >= syn0.rows() || point < 0)
-                throw new IllegalStateException("Illegal point " + point);
-            //other word vector
-            INDArray syn1 = this.syn1.slice(point);
-
-
-            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
-
-            if(dot < -MAX_EXP || dot >= MAX_EXP)
-                continue;
-
-
-            int idx = (int) ((dot + MAX_EXP) * ((double) expTable.length / MAX_EXP / 2.0));
-            if(idx >= expTable.length)
-                continue;
-
-            //score
-            double f =  expTable[idx];
-            //gradient
-            double g = (1 - code - f) * (useAdaGrad ?  w1.getGradient(i, alpha) : alpha);
-
-            if(syn0.data().dataType() == DataBuffer.Type.DOUBLE) {
-                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-            }
-            else {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-            }
-        }
-
-
-
-
-
-        if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0,neu1e,l1);
-
-        else
-            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0f, neu1e, l1);
-
-
-
-
-        */
     }
 
 

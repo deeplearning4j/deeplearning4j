@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -681,5 +682,56 @@ public class WordVectorSerializerTest {
 
         assertNotEquals(null, arrayLive);
         assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Ignore
+    @Test
+    public void testBiggerParavecLoader() throws Exception {
+        ParagraphVectors vectors = WordVectorSerializer.readParagraphVectors("C:\\Users\\raver\\Downloads\\10kNews.zip");
+    }
+
+
+    @Test
+    public void testMalformedLabels1() throws Exception {
+        List<String> words = new ArrayList<>();
+        words.add("test A");
+        words.add("test B");
+        words.add("test\nC");
+        words.add("test`D");
+        words.add("test_E");
+        words.add("test 5");
+
+        AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+        int cnt = 0;
+        for(String word: words) {
+            vocabCache.addToken(new VocabWord(1.0, word));
+            vocabCache.addWordToIndex(cnt, word);
+            cnt++;
+        }
+
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>(vocabCache, 10, false, 0.01, new DefaultRandom(), 0.0);
+        lookupTable.resetWeights(true);
+
+        assertNotEquals(null, lookupTable.getSyn0());
+        assertNotEquals(null, lookupTable.getSyn1());
+        assertNotEquals(null, lookupTable.getExpTable());
+        assertEquals(null, lookupTable.getSyn1Neg());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .lookupTable(lookupTable)
+                .vocabCache(vocabCache)
+                .build();
+
+        File tempFile = File.createTempFile("temp","w2v");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeWord2Vec(vec, tempFile);
+
+
+        Word2Vec restoredVec = WordVectorSerializer.readWord2VecModel(tempFile, true);
+
+        for (String word: words) {
+            assertEquals(true, restoredVec.hasWord(word));
+        }
     }
 }
