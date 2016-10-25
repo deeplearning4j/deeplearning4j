@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.module.flow;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -25,7 +26,7 @@ public class FlowListenerModule implements UIModule {
 
     private static final String TYPE_ID = "FlowListener";
 
-    private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -35,8 +36,8 @@ public class FlowListenerModule implements UIModule {
     @Override
     public List<Route> getRoutes() {
         Route r1 = new Route("/flow", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.flow.Flow.apply()));
-        Route r2 = new Route("/flow/staticInfo/:id", HttpMethod.GET, FunctionType.Function, this::getStaticInfo);
-        Route r3 = new Route("/flow/update/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
+        Route r2 = new Route("/flow/info/:id", HttpMethod.GET, FunctionType.Function, this::getStaticInfo);
+        Route r3 = new Route("/flow/state/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
         Route r4 = new Route("/flow/listSessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
 
         return Arrays.asList(r1, r2, r3, r4);
@@ -66,7 +67,11 @@ public class FlowListenerModule implements UIModule {
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-        //TODO
+        for(String s : knownSessionIDs.keySet()){
+            if(statsStorage == knownSessionIDs.get(s)){
+                knownSessionIDs.remove(s);
+            }
+        }
     }
 
     private Result listSessions(){
@@ -74,8 +79,7 @@ public class FlowListenerModule implements UIModule {
     }
 
     private Result getStaticInfo(String sessionID){
-        if(!knownSessionIDs.containsKey(sessionID)) return ok();
-
+        if(!knownSessionIDs.containsKey(sessionID)) return ok("Unknown session ID");
         StatsStorage ss = knownSessionIDs.get(sessionID);
 
         List<Persistable> list = ss.getAllStaticInfos(sessionID,TYPE_ID);
@@ -90,8 +94,7 @@ public class FlowListenerModule implements UIModule {
     }
 
     private Result getUpdate(String sessionID){
-        if(!knownSessionIDs.containsKey(sessionID)) return ok();
-
+        if(!knownSessionIDs.containsKey(sessionID)) return ok("Unknown session ID");
         StatsStorage ss = knownSessionIDs.get(sessionID);
 
         List<Persistable> list = ss.getLatestUpdateAllWorkers(sessionID, TYPE_ID);
