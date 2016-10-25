@@ -11,6 +11,7 @@ import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.flow.FlowListenerModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.histogram.HistogramModule;
+import org.deeplearning4j.ui.module.tsne.TsneModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
@@ -83,6 +84,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new FlowListenerModule());
+        uiModules.add(new TsneModule());
 
 
         for (UIModule m : uiModules) {
