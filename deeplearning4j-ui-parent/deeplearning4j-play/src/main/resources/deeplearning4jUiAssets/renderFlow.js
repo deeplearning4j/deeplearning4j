@@ -547,7 +547,7 @@ function stateFunction() {
     if (sid == undefined) sid = 0;
 
     $.ajax({
-        url:"/flow" + "/state?sid=" + sid,
+        url:"/flow" + "/state/" + sid,
         async: true,
         error: function (query, status, error) {
             $.notify({
@@ -648,7 +648,7 @@ function timedFunction() {
      if (sid == undefined) sid = 0;
 
      $.ajax({
-                            url:"/flow" + "/info?sid=" + sid,
+                            url:"/flow" + "/info/" + sid,
                             async: true,
                             error: function (query, status, error) {
                                 $.notify({
