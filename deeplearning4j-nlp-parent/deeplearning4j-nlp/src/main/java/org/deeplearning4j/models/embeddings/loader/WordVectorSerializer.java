@@ -404,7 +404,7 @@ public class WordVectorSerializer {
      */
     @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull File path) {
-        try (FileOutputStream fos = new FileOutputStream(path)) {
+        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path))) {
             writeWordVectors(vectors, fos);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -492,7 +492,7 @@ public class WordVectorSerializer {
 
         writeWordVectors(vectors.lookupTable(), tempFileSyn0);
 
-        FileInputStream fis = new FileInputStream(tempFileSyn0);
+        BufferedInputStream fis = new BufferedInputStream(new FileInputStream(tempFileSyn0));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -516,7 +516,7 @@ public class WordVectorSerializer {
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
 
-        fis = new FileInputStream(tempFileSyn1);
+        fis = new BufferedInputStream(new FileInputStream(tempFileSyn1));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -539,7 +539,7 @@ public class WordVectorSerializer {
             }
         }
 
-        fis = new FileInputStream(tempFileCodes);
+        fis = new BufferedInputStream(new FileInputStream(tempFileCodes));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -563,7 +563,7 @@ public class WordVectorSerializer {
             }
         }
 
-        fis = new FileInputStream(tempFileHuffman);
+        fis = new BufferedInputStream(new FileInputStream(tempFileHuffman));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -590,7 +590,7 @@ public class WordVectorSerializer {
 
         writeWordVectors(vectors.lookupTable(), tempFileSyn0);
 
-        FileInputStream fis = new FileInputStream(tempFileSyn0);
+        BufferedInputStream fis = new BufferedInputStream(new FileInputStream(tempFileSyn0));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -614,7 +614,7 @@ public class WordVectorSerializer {
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
 
-        fis = new FileInputStream(tempFileSyn1);
+        fis = new BufferedInputStream(new FileInputStream(tempFileSyn1));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -637,7 +637,7 @@ public class WordVectorSerializer {
             }
         }
 
-        fis = new FileInputStream(tempFileCodes);
+        fis = new BufferedInputStream(new FileInputStream(tempFileCodes));
         writeEntry(fis, zipfile);
         fis.close();
 
@@ -661,7 +661,7 @@ public class WordVectorSerializer {
             }
         }
 
-        fis = new FileInputStream(tempFileHuffman);
+        fis = new BufferedInputStream(new FileInputStream(tempFileHuffman));
         writeEntry(fis, zipfile);
         fis.close();
 
