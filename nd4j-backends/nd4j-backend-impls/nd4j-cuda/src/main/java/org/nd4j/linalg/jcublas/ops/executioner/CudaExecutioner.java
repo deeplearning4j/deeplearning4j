@@ -30,6 +30,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.cache.TADManager;
@@ -1891,8 +1892,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         int indexPos = maxTypes * (Batch.getBatchLimit() * 16);
         int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * (Batch.getBatchLimit() * 16));
-        int realPos = intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 16));
-        int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 16))) / 2;
+        int realPos = (intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 16))) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1) ;
+
+        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+            realPos *= 2;
+
+        int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 16))) / (Nd4j.dataType() == DataBuffer.Type.FLOAT ? 2 : 1);
+
+        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+            argsPos /= 4;
+
         int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 16));
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
@@ -1925,10 +1934,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // TODO: variable datatype should be handled here
             // putting real arguments
-            FloatPointer realPtr = new FloatPointer(pointer);
-            for (int e = 0; e < op.getRealArguments().size(); e++) {
-                idx = realPos + i * op.maxRealArguments();
-                realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                FloatPointer realPtr = new FloatPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + i * op.maxRealArguments();
+                    realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                DoublePointer dPtr = new DoublePointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+                ShortPointer sPtr = new ShortPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    sPtr.put(idx + e, BaseDataBuffer.fromFloat(op.getRealArguments().get(e).floatValue()));
+                }
             }
 
             // putting arguments pointers
@@ -1961,7 +1984,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         extraArgs.put(0, null);
         extraArgs.put(1, context.getOldStream());
         extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
-        //extraArgs.put(2, new CudaPointer(8192));
         extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
@@ -1973,11 +1995,30 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(),
                     batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context) // we force
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-
+            nativeOps.execAggregateBatchDouble(extraArgs, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.execAggregateBatchHalf(extraArgs, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
+            );
         }
+
         surfacePoint.tickHostWrite();
     }
 

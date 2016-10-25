@@ -398,7 +398,7 @@ public class Nd4j {
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);
         }*/
-        shuffle(toShuffle, random, dimension);
+        INSTANCE.shuffle(toShuffle, random, dimension);
     }
 
     /**
