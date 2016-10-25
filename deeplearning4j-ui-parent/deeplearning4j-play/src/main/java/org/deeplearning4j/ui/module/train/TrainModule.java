@@ -34,6 +34,7 @@ import play.mvc.Results;
 import java.util.*;
 
 import static play.mvc.Results.ok;
+import static play.mvc.Results.redirect;
 
 /**
  * Created by Alex on 14/10/2016.
@@ -52,7 +53,7 @@ public class TrainModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> ok(Training.apply(I18NProvider.getInstance())));
+        Route r = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
         Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
         Route r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
         Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
