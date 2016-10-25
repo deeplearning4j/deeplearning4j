@@ -17,6 +17,7 @@ public abstract class UIServer {
         return uiServer;
     }
 
+    public abstract int getPort();
 
     public abstract void attach(StatsStorage statsStorage);
 

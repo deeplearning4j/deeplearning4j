@@ -232,7 +232,7 @@ public class BackTrackLineSearchTest {
                 .optimizationAlgo(optimizer)
                 .iterations(iterations)
                 .miniBatch(false).momentum(0.9)
-                .learningRate(0.1).updater(Updater.NESTEROVS)
+                .learningRate(0.01).updater(Updater.NESTEROVS)
                 .seed(12345L)
                 .list()
                 .layer(0, new DenseLayer.Builder()

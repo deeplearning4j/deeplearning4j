@@ -253,10 +253,17 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
+<<<<<<< HEAD
                   DATE: Sun Oct 23 22:17:19 PDT 2016
                   SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
                   HASH: fc87014eb9a9713be8e625d8517dbb7005f9742f
                   MATRIX: 604->1|737->39|764->40
+=======
+                  DATE: Tue Oct 25 20:32:36 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
+                  HASH: 5c570e1de495df0d7eac32bb009c90e8437c530f
+                  MATRIX: 604->1|737->39|765->41
+>>>>>>> ab_ui
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
               */
