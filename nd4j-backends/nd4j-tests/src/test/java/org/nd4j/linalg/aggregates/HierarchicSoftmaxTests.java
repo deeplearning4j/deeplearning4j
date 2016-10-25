@@ -6,6 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
@@ -35,7 +37,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test

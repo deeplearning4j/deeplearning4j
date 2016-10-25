@@ -106,7 +106,7 @@ public class AggregateSkipGram extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 9;
+        return 10;
     }
 
     @Override

@@ -1438,5 +1438,34 @@ public class NativeOps extends Pointer {
                                           FloatPointer realArguments,
                                           int numRealArguments);
 
+
+    public native void execAggregateDouble(PointerPointer extras,int opNum,
+                                          @Cast("double **") PointerPointer arguments,
+                                          int numArguments,
+                                          @Cast("int **") PointerPointer shapes,
+                                          int numShapes,
+                                          IntPointer indexArguments,
+                                          int numIndexArguments,
+                                          @Cast("int **") PointerPointer intArrays,
+                                          int numIntArrays,
+                                          DoublePointer realArguments,
+                                          int numRealArguments);
+
+    public native void execAggregateHalf(PointerPointer extras,int opNum,
+                                          @Cast("float16 **") PointerPointer arguments,
+                                          int numArguments,
+                                          @Cast("int **") PointerPointer shapes,
+                                          int numShapes,
+                                          IntPointer indexArguments,
+                                          int numIndexArguments,
+                                          @Cast("int **") PointerPointer intArrays,
+                                          int numIntArrays,
+                                          @Cast("float16*") ShortPointer realArguments,
+                                          int numRealArguments);
+
     public native void execAggregateBatchFloat(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
+
+    public native void execAggregateBatchDouble(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
+
+    public native void execAggregateBatchHalf(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
 }

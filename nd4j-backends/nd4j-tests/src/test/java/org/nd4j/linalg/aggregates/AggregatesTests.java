@@ -1,9 +1,12 @@
 package org.nd4j.linalg.aggregates;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateAxpy;
@@ -24,6 +27,11 @@ public class AggregatesTests extends BaseNd4jTest {
 
     public AggregatesTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Before
+    public void setUp() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @Test

@@ -80,11 +80,11 @@ public class AggregateAxpy extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 1;
+        return 2;
     }
 
     @Override
     public int maxRealArguments() {
-        return 1;
+        return 2;
     }
 }

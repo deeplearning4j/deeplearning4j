@@ -804,8 +804,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         int indexPos = maxTypes * Batch.getBatchLimit();
         int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
-        int realPos = intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit());
-        int argsPos = (realPos + (batch.getSample().maxRealArguments() * Batch.getBatchLimit())) / 2;
+        int realPos = (intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit())) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
+        int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())) ) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
@@ -838,10 +838,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             // TODO: variable datatype should be handled here
             // putting real arguments
-            FloatPointer realPtr = new FloatPointer(pointer);
-            for (int e = 0; e < op.getRealArguments().size(); e++) {
-                idx = realPos + i * op.maxRealArguments();
-                realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                FloatPointer fPtr = new FloatPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + i * op.maxRealArguments();
+                    fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                DoublePointer dPtr = new DoublePointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                }
             }
 
             // putting arguments pointers
@@ -873,7 +882,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxRealArguments(),
                     pointer);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-
+            loop.execAggregateBatchDouble(null, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    pointer);
+        } else {
+            throw new UnsupportedOperationException("Half precision isn't supported on CPU");
         }
     }
 
@@ -954,7 +972,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numRealArguments
                     );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-
+            loop.execAggregateDouble(null, op.opNum(),
+                    arguments,
+                    numArguments,
+                    shapes,
+                    numShapes,
+                    pointer,
+                    numIndexArguments,
+                    intArrays,
+                    numIntArrays,
+                    (DoublePointer) realsBuffer.data().addressPointer(),
+                    numRealArguments
+            );
+        } else {
+            throw new UnsupportedOperationException("Half precision isn't supported on CPU");
         }
     }
 

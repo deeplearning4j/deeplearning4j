@@ -2078,7 +2078,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     numRealArguments
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-
+            nativeOps.execAggregateDouble(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    sPtr,
+                    numShapeArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    iPtr,
+                    numIntArrays,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.execAggregateHalf(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    sPtr,
+                    numShapeArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    iPtr,
+                    numIntArrays,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
         }
     }
 
