@@ -1,6 +1,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class TfidfVectorizer extends BaseTextVectorizer {
     /**
      * Text coming from an input stream considered as one document
@@ -108,8 +110,9 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         for(int i = 0;i < tokens.size(); i++) {
             int idx = vocabCache.indexOf(tokens.get(i));
             if(idx >= 0) {
-                //System.out.println("TF-IDF for word: " + tokens.get(i));
-                ret.putScalar(idx, tfidfWord(tokens.get(i), counts.get(tokens.get(i)).longValue(), tokens.size()));
+                double tf_idf = tfidfWord(tokens.get(i), counts.get(tokens.get(i)).longValue(), tokens.size());
+                //log.info("TF-IDF for word: {} -> {} / {} => {}", tokens.get(i), counts.get(tokens.get(i)).longValue(), tokens.size(), tf_idf);
+                ret.putScalar(idx, tf_idf);
             }
         }
         return ret;
@@ -118,6 +121,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
 
 
     private double tfidfWord(String word, long wordCount, long documentLength) {
+        //log.info("word: {}; TF: {}; IDF: {}", word, tfForWord(wordCount, documentLength), idfForWord(word));
         return MathUtils.tfidf(tfForWord(wordCount, documentLength),idfForWord(word));
     }
 
