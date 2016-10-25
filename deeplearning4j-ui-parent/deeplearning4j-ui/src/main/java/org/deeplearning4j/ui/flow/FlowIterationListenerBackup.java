@@ -2,10 +2,6 @@ package org.deeplearning4j.ui.flow;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
@@ -19,13 +15,9 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
-import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.beans.*;
-import org.deeplearning4j.ui.flow.data.FlowStaticPersistable;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
-import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.ui.weights.HistogramBin;
-import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -50,22 +42,19 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-@Slf4j
-public class FlowIterationListener implements IterationListener {
-    public static final String TYPE_ID = "FlowListener";
-
+public class FlowIterationListenerBackup implements IterationListener {
     private static final String FORMAT = "%02d:%02d:%02d";
     public static final String LOCALHOST = "localhost";
     public static final String INPUT = "INPUT";
     // TODO: basic auth should be considered here as well
-//    private String remoteAddr;
-//    private int remotePort;
-//    private String login;
-//    private String password;
+    private String remoteAddr;
+    private int remotePort;
+    private String login;
+    private String password;
     private int frequency = 1;
     private boolean firstIteration = true;
     private String path;
-//    private UiConnectionInfo connectionInfo;
+    private UiConnectionInfo connectionInfo;
     private ModelState modelState = new ModelState();
 
     private AtomicLong iterationCount = new AtomicLong(0);
@@ -78,77 +67,52 @@ public class FlowIterationListener implements IterationListener {
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
-//    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
-//    private WebTarget target;
-//    private WebTarget targetState;
+    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+    private WebTarget target;
+    private WebTarget targetState;
 
-    private final StatsStorageRouter ssr;
-    private final String sessionID;
-    private final String workerID;
+    private static Logger log = LoggerFactory.getLogger(FlowIterationListenerBackup.class);
 
     /**
      * Creates IterationListener and keeps it detached from any UiServer instances
      */
-//    protected FlowIterationListener() {
-//        // please keep this constructor protected
-//    }
+    protected FlowIterationListenerBackup() {
+        // please keep this constructor protected
+    }
 
     /**
      * Creates IterationListener and attaches it local UiServer instance
      *
      * @param frequency update frequency
      */
-    public FlowIterationListener(int frequency) {
-//        this(LOCALHOST, 0, frequency);
-
-        this(new MapDBStatsStorage(), frequency, null, null, true);
+    public FlowIterationListenerBackup(int frequency) {
+        this(LOCALHOST, 0, frequency);
     }
 
-//    /**
-//     *  Creates IterationListener and attaches it to specified remote UiServer instance
-//     *
-//     * @param address remote UiServer address
-//     * @param port remote UiServer port
-//     * @param frequency update frequency
-//     */
-//    public FlowIterationListener(@NonNull String address, int port, int frequency) {
-//
-//    }
-
-    public FlowIterationListener(StatsStorageRouter ssr, int frequency, String sessionID, String workerID, boolean openBrowser){
-//        this.remoteAddr = address;
-//        this.remotePort = port;
+    /**
+     *  Creates IterationListener and attaches it to specified remote UiServer instance
+     *
+     * @param address remote UiServer address
+     * @param port remote UiServer port
+     * @param frequency update frequency
+     */
+    public FlowIterationListenerBackup(@NonNull String address, int port, int frequency) {
+        this.remoteAddr = address;
+        this.remotePort = port;
         this.frequency = frequency;
-//        UiConnectionInfo info = null;
+        UiConnectionInfo info = null;
 
-//        if (address.equals(LOCALHOST) || address.equals("127.0.0.1") || address.isEmpty()) {
-//            try {
-//                this.remoteAddr = LOCALHOST;
-//                this.remotePort = UiServer.getInstance().getPort();
-//                info = UiServer.getInstance().getConnectionInfo();
-//            } catch (Exception e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-
-//        setup(info);
-
-        this.ssr = ssr;
-        if(sessionID == null){
-            this.sessionID = UUID.randomUUID().toString();
-        } else {
-            this.sessionID = sessionID;
-        }
-        if(workerID == null){
-            this.workerID = UIDProvider.getJVMUID() + "_" + Thread.currentThread().getId();
-        } else {
-            this.workerID = workerID;
+        if (address.equals(LOCALHOST) || address.equals("127.0.0.1") || address.isEmpty()) {
+            try {
+                this.remoteAddr = LOCALHOST;
+                this.remotePort = UiServer.getInstance().getPort();
+                info = UiServer.getInstance().getConnectionInfo();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        if(ssr instanceof StatsStorage){
-            UIServer.getInstance().attach((StatsStorage) ssr);
-        }
-
+        setup(info);
     }
 
 
@@ -161,36 +125,36 @@ public class FlowIterationListener implements IterationListener {
      * @param port remote UiServer port
      * @param frequency update frequency
      */
-//    public FlowIterationListener(@NonNull String login, @NonNull String password, @NonNull String address, int port, int frequency) {
-////        this(address, port, frequency);
-////        this.connectionInfo.setLogin(login);
-////        this.connectionInfo.setPassword(password);
-////        this.login = login;
-////        this.password = password;
-//    }
+    public FlowIterationListenerBackup(@NonNull String login, @NonNull String password, @NonNull String address, int port, int frequency) {
+        this(address, port, frequency);
+        this.connectionInfo.setLogin(login);
+        this.connectionInfo.setPassword(password);
+        this.login = login;
+        this.password = password;
+    }
 
-//    public FlowIterationListener(@NonNull UiConnectionInfo connectionInfo, int frequency) {
-////        setup(connectionInfo);
-//    }
+    public FlowIterationListenerBackup(@NonNull UiConnectionInfo connectionInfo, int frequency) {
+        setup(connectionInfo);
+    }
 
-//    private void setup(@NonNull UiConnectionInfo connectionInfo) {
-//        // TODO: add auth option
-//
-//        this.connectionInfo = connectionInfo;
-//
-//        java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
-//        login = null;
-//        password = null;
-//       // client.register(new LoggingFilter(logger, true));
-//        if (login == null || password == null)
-//             target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
-//
-//        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
-//        this.path = connectionInfo.getFullAddress("flow");
-//
-//
-//        log.info("Flow UI address: " + this.path);
-//    }
+    private void setup(@NonNull UiConnectionInfo connectionInfo) {
+        // TODO: add auth option
+
+        this.connectionInfo = connectionInfo;
+
+        java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
+        login = null;
+        password = null;
+       // client.register(new LoggingFilter(logger, true));
+        if (login == null || password == null)
+             target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
+
+        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
+        this.path = connectionInfo.getFullAddress("flow");
+
+
+        log.info("Flow UI address: " + this.path);
+    }
 
     /**
      * Get if listener invoked
@@ -242,24 +206,13 @@ public class FlowIterationListener implements IterationListener {
             as soon as model info is built, we need to define color scheme based on number of unique nodes
          */
 
-            // send ModelInfo to stats storage
-            Persistable staticInfo = new FlowStaticPersistable(sessionID,workerID,System.currentTimeMillis(), info);
-            ssr.putStaticInfo(staticInfo);
-
-
-//            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
-//            log.debug("Response: " + resp);
-
-
+            // send ModelInfo to UiServer
+            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
+            log.debug("Response: " + resp);
 
             // send ModelState to UiServer
-//            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
-//            log.debug("Response: " + resp);
-
-
-
-
-
+            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
+            log.debug("Response: " + resp);
         /*
             TODO: it would be nice to send updates of nodes as well
          */
@@ -588,7 +541,7 @@ public class FlowIterationListener implements IterationListener {
             fullLine.append("Padding: ").append(Arrays.toString(layer1.getPadding())).append("<br/>");
             fullLine.append("Pooling type: ").append(layer1.getPoolingType().toString()).append("<br/>");
         } else if (layer.conf().getLayer() instanceof FeedForwardLayer) {
-            org.deeplearning4j.nn.conf.layers.FeedForwardLayer layer1 = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) layer.conf().getLayer();
+            FeedForwardLayer layer1 = (FeedForwardLayer) layer.conf().getLayer();
             mainLine.append("nIn/nOut: [" + layer1.getNIn() + "/" + layer1.getNOut() + "]");
             subLine.append(info.getLayerType());
             fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
@@ -596,8 +549,8 @@ public class FlowIterationListener implements IterationListener {
         } else {
                 // TODO: Introduce Layer.Type.OUTPUT
                 if (layer instanceof BaseOutputLayer) {
-                    mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
-                    fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
+                    mainLine.append("Outputs: [" + ((BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
+                    fullLine.append("Outputs number: ").append(((BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
                 }
         }
 
