@@ -7,13 +7,13 @@ import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
+import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.flow.FlowListenerModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.histogram.HistogramModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
-import org.deeplearning4j.ui.play.staticroutes.Index;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
@@ -73,11 +73,12 @@ public class PlayUIServer extends UIServer {
         // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
         //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
         // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
-        routingDsl.GET("/").routeTo(FunctionUtil.function0(new Index()));
+//        routingDsl.GET("/").routeTo(FunctionUtil.function0(new Index()));
         routingDsl.GET("/setlang/:to").routeTo(FunctionUtil.function(new I18NRoute()));
         routingDsl.GET("/lang/getCurrent").routeTo(() -> ok(I18NProvider.getInstance().getDefaultLanguage()));
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
+        uiModules.add(new DefaultModule());         //For: navigation page "/"
         uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
