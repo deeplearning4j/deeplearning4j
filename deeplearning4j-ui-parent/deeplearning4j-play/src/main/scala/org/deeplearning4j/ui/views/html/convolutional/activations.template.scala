@@ -119,7 +119,7 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 16:10:16 AEDT 2016
+                  DATE: Tue Oct 25 20:32:36 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
                   HASH: 57794eae8b13e5673c47560f5edae9a0ed479fa1
                   MATRIX: 657->0|914->289|955->303|1362->682|1391->683|1433->697|1591->828|1620->829|1659->841|1691->845|1720->846|1762->860|1884->955|1913->956|1952->968|1987->975|2016->976|2058->990|2245->1150|2274->1151|2313->1163|2351->1173|2380->1174|2422->1188|2544->1283|2573->1284|2610->1294|2723->1379|2752->1380|2794->1394|2959->1532|2988->1533
