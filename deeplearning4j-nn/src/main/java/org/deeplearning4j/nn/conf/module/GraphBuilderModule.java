@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.nn.conf.module;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 
 /**
@@ -27,8 +25,6 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
  *
  * @author Justin Long (crockpotveggies)
  */
-@Data
-@NoArgsConstructor
 public abstract class GraphBuilderModule {
 
     /**

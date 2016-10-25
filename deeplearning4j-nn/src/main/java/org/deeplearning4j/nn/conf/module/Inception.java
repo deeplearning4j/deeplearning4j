@@ -15,7 +15,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
  *
  * @author Justin Long (crockpotveggies)
  */
-public class InceptionGraphBuilderModule extends GraphBuilderModule {
+public class Inception extends GraphBuilderModule {
     protected String moduleName = "inception";
 
 
