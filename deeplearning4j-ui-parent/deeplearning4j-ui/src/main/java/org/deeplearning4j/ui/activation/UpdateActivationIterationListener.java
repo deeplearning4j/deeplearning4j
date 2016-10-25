@@ -3,7 +3,6 @@ package org.deeplearning4j.ui.activation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.iterationlistener.ActivationMeanIterationListener;
-import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +37,8 @@ public class UpdateActivationIterationListener implements IterationListener {
     public UpdateActivationIterationListener(int iterations, boolean openBrowser, String subPath){
         int port = -1;
         try{
-            UiServer server = UiServer.getInstance();
-            port = server.getPort();
+//            UiServer server = UiServer.getInstance();
+//            port = server.getPort();
         }catch(Exception e){
             log.error("Error initializing UI server",e);
             throw new RuntimeException(e);
@@ -51,10 +50,12 @@ public class UpdateActivationIterationListener implements IterationListener {
         path = "http://localhost:" + port + "/" + subPath;
         target = client.target("http://localhost:" + port).path(subPath).path("update");
         try{
-            UiServer.getInstance();
+//            UiServer.getInstance();
         }catch(Exception e){
             log.error("Error initializing UI server",e);
         }
+
+        throw new RuntimeException("TODO");
     }
 
     @Override
