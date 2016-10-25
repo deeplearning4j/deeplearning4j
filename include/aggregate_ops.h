@@ -132,7 +132,7 @@ namespace aggregateOps {
             if (dot < - (T) HS_MAX_EXP || dot >= (T) HS_MAX_EXP)
                 return;
 
-            int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
+            int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / (T) HS_MAX_EXP / 2.0));
 
             if (idx >= expLength)
                 return;
@@ -263,21 +263,21 @@ namespace aggregateOps {
             __syncthreads();
 
 
-            int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
-            if (idx >= expLength && dot <= HS_MAX_EXP && dot >= -HS_MAX_EXP)
+            int idx = (int) ((dot + (T) HS_MAX_EXP) * ((T) expLength / (T) HS_MAX_EXP / 2.0));
+            if (idx >= expLength && dot <= (T) HS_MAX_EXP && dot >= (T) -HS_MAX_EXP)
                 return;
 
 
             if (threadIdx.x == 0) {
                 // gradient calculation
-                if (dot > HS_MAX_EXP)
+                if (dot > (T) HS_MAX_EXP)
                     g = (code - 1) * alpha;
-                else if (dot < - HS_MAX_EXP)
+                else if (dot < (T) - HS_MAX_EXP)
                     g = (code - 0) * alpha;
                 else {
 
 
-                    g = (code - expTable[idx]) * alpha;
+                    g = ((T) code - expTable[idx]) * alpha;
                 }
 
             //    printf("dot: [%f]; g: [%f]\n", dot, g);
@@ -575,7 +575,7 @@ namespace aggregateOps {
 
                         args[1] = syn1Neg + (target * vectorLength);
                     }
-                    __syncthreads;
+                    __syncthreads();
 
                     // we put it here, to make sure all threads pick up continue call
                     if (r != 0 && target == ngStarter)
