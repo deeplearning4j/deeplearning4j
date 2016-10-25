@@ -244,9 +244,9 @@ Seq[Any](format.raw/*1.40*/("""
                     """),format.raw/*220.21*/("""}"""),format.raw/*220.22*/(""");
             </script>
 
-            <!-- Execute periodically -->
+            <!-- Execute periodically (every 2 sec) -->
             <script>
-
+                    setTimeout(renderScoreChart,2000);
             </script>
             <!-- End JavaScript-->
 
@@ -272,9 +272,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 23:33:26 AEDT 2016
+                  DATE: Wed Oct 26 00:36:18 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: cf4bb3190c83b35283ce69b3af68303ed25e9346
+                  HASH: 040abd7c7433a96b9ca051f0ccbbbba7dfc733d5
                   MATRIX: 604->1|737->39|765->41|4580->3829|4593->3833|4660->3879|12507->11745|12550->11759|12792->11972|12822->11973|12877->11999|12947->12040|12977->12041
                   LINES: 20->1|25->1|26->2|106->82|106->82|106->82|237->213|238->214|242->218|242->218|243->219|244->220|244->220
                   -- GENERATED --
