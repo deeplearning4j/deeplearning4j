@@ -28,16 +28,16 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
         <meta charset="utf-8" />
         <title>Neural Network activations</title>
             <!-- jQuery -->
-        <script src="/assets/jquery-2.2.0.min.js"></script>
+        <script src="/assets/legacy/jquery-2.2.0.min.js"></script>
         """),format.raw/*8.68*/("""
             """),format.raw/*9.13*/("""<!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="/assets/bootstrap.min.css" />
+        <link rel="stylesheet" href="/assets/legacy/bootstrap.min.css" />
 
             <!-- Optional theme -->
-        <link rel="stylesheet" href="/assets/bootstrap-theme.min.css" />
+        <link rel="stylesheet" href="/assets/legacy/bootstrap-theme.min.css" />
 
             <!-- Latest compiled and minified JavaScript -->
-        <script src="/assets/bootstrap.min.js" ></script>
+        <script src="/assets/legacy/bootstrap.min.js" ></script>
 
         <style>
         body """),format.raw/*19.14*/("""{"""),format.raw/*19.15*/("""
@@ -84,7 +84,7 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
             padding: 5px;" class="hd">
             <tbody>
                 <tr>
-                    <td style="width: 48px;"><a href="/"><img src="/assets/deeplearning4j.img" border="0"/></a></td>
+                    <td style="width: 48px;"><a href="/"><img src="/assets/legacy/deeplearning4j.img" border="0"/></a></td>
                     <td>DeepLearning4j UI</td>
                     <td style="width: 128px;">&nbsp; <!-- placeholder for future use --></td>
                 </tr>
@@ -119,10 +119,10 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 21:32:08 AEDT 2016
+                  DATE: Tue Oct 25 23:38:46 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
-                  HASH: 57794eae8b13e5673c47560f5edae9a0ed479fa1
-                  MATRIX: 657->0|914->289|955->303|1362->682|1391->683|1433->697|1591->828|1620->829|1659->841|1691->845|1720->846|1762->860|1884->955|1913->956|1952->968|1987->975|2016->976|2058->990|2245->1150|2274->1151|2313->1163|2351->1173|2380->1174|2422->1188|2544->1283|2573->1284|2610->1294|2723->1379|2752->1380|2794->1394|2959->1532|2988->1533
+                  HASH: 72d099499f7738ea1bd20d82a51bc9fed78e75bb
+                  MATRIX: 657->0|921->296|962->310|1390->710|1419->711|1461->725|1619->856|1648->857|1687->869|1719->873|1748->874|1790->888|1912->983|1941->984|1980->996|2015->1003|2044->1004|2086->1018|2273->1178|2302->1179|2341->1191|2379->1201|2408->1202|2450->1216|2572->1311|2601->1312|2638->1322|2751->1407|2780->1408|2822->1422|2987->1560|3016->1561
                   LINES: 25->1|32->8|33->9|43->19|43->19|44->20|48->24|48->24|50->26|50->26|50->26|51->27|54->30|54->30|56->32|56->32|56->32|57->33|62->38|62->38|64->40|64->40|64->40|65->41|68->44|68->44|69->45|72->48|72->48|73->49|75->51|75->51
                   -- GENERATED --
               */
