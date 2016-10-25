@@ -19,9 +19,6 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.PlotFilters;
-import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
-import org.deeplearning4j.ui.renders.UpdateFilterIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -40,57 +37,6 @@ import java.util.Collections;
  */
 @Ignore
 public class TestRenders extends BaseUiServerTest {
-    @Test
-    public void renderSetup() throws Exception {
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(100)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
-                .build();
-
-
-        fetcher.fetch(100);
-        DataSet d2 = fetcher.next();
-
-        INDArray input = d2.getFeatureMatrix();
-        PlotFilters filters = new PlotFilters(input,new int[]{10,10},new int[]{0,0},new int[]{28,28});
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
-        INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)
-                ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0, params, true);
-        da.setParams(da.params());
-        da.fit(input);
-    }
-
-    @Test
-    public void renderActivation() throws Exception {
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(100)
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
-                        .nIn(784).nOut(600)
-                        .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
-                .build();
-
-
-        fetcher.fetch(100);
-        DataSet d2 = fetcher.next();
-
-        INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
-        INDArray params = Nd4j.create(1, numParams);
-        AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params, true);
-        da.setParams(da.params());
-        da.fit(input);
-    }
 
     @Test
     public void renderHistogram() throws Exception {
