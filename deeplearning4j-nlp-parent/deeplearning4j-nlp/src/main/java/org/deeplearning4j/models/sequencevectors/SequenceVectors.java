@@ -609,6 +609,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> lookupTable(@NonNull WeightLookupTable<T> lookupTable) {
             this.lookupTable = lookupTable;
+
+            this.layerSize(lookupTable.layerSize());
+
             return this;
         }
 
@@ -784,6 +787,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .lr(learningRate)
                         .seed(seed)
                         .build();
+            }
+
+            if (this.configuration.getElementsLearningAlgorithm() != null) {
+                try {
+                    elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) Class.forName(this.configuration.getElementsLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (this.configuration.getSequenceLearningAlgorithm() != null) {
+                try {
+                    sequenceLearningAlgorithm = (SequenceLearningAlgorithm<T>) Class.forName(this.configuration.getSequenceLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             if (trainElementsVectors && elementsLearningAlgorithm == null) {
