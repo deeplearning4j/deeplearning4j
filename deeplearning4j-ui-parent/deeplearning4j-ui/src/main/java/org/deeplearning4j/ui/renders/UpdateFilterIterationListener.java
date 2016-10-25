@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
-import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +40,8 @@ public class UpdateFilterIterationListener implements IterationListener {
                                          String subPath ) {
         int port = -1;
         try{
-            UiServer server = UiServer.getInstance();
-            port = server.getPort();
+//            UiServer server = UiServer.getInstance();
+//            port = server.getPort();
         }catch(Exception e){
             log.error("Error initializing UI server",e);
             throw new RuntimeException(e);
@@ -52,6 +51,8 @@ public class UpdateFilterIterationListener implements IterationListener {
         this.iterations = iterations;
         this.openBrowser = openBrowser;
         path = "http://localhost:" + port + "/" + subPath;
+
+        throw new RuntimeException("TODO");
     }
 
     @Override
