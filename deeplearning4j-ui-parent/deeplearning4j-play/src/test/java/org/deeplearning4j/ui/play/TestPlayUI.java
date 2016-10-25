@@ -12,7 +12,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
-import org.deeplearning4j.ui.module.training.TrainModuleUtils;
+import org.deeplearning4j.ui.module.train.TrainModuleUtils;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;

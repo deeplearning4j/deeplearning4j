@@ -27,7 +27,6 @@ import static play.mvc.Results.ok;
 public class ConvolutionalListenerModule implements UIModule {
 
     private static final String TYPE_ID = "ConvolutionalListener";
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
 
     private StatsStorage lastStorage;
     private String lastSessionID;

@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.module.training;
+package org.deeplearning4j.ui.module.train;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
@@ -94,7 +94,7 @@ public class TrainModule implements UIModule {
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-
+        //TODO
     }
 
     private void getDefaultSession() {

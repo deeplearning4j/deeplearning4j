@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.weights;
+package org.deeplearning4j.ui.flow;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -20,7 +21,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 /**
  * Created by Alex on 08/10/2016.
  */
-public class TestConvolutionalListener {
+public class TestFlowListener {
 
     @Test
     public void testUI() throws Exception {
@@ -72,7 +73,7 @@ public class TestConvolutionalListener {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(new ConvolutionalIterationListener(1), new ScoreIterationListener(1));
+        net.setListeners(new FlowIterationListener(1), new ScoreIterationListener(1));
 
         for( int i=0; i<50; i++ ){
             net.fit(mnistTrain.next());
