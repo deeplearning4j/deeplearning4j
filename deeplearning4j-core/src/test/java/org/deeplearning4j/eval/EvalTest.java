@@ -652,14 +652,16 @@ public class EvalTest {
 
         List<Prediction> errors = e.getPredictionErrors();          //*** New - get list of prediction errors from evaluation ***
         List<RecordMetaData> metaForErrors = new ArrayList<>();
-        for(Prediction p : errors) metaForErrors.add(p.getRecordMetaData());
+        for(Prediction p : errors){
+            metaForErrors.add((RecordMetaData)p.getRecordMetaData());
+        }
         DataSet ds = rrdsi.loadFromMetaData(metaForErrors);         //*** New - dynamically load a subset of the data, just for prediction errors ***
         INDArray output = net.output(ds.getFeatures());
 
         int count = 0;
         for(Prediction t : errors){
             System.out.println(t
-                    + "\t\tRaw Data: " + csv.loadFromMetaData(t.getRecordMetaData()).getRecord()    //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
+                    + "\t\tRaw Data: " + csv.loadFromMetaData((RecordMetaData)t.getRecordMetaData()).getRecord()    //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
                     + "\tNormalized: " + ds.getFeatureMatrix().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count)
                     + "\tNetwork predictions: " + output.getRow(count));
             count++;

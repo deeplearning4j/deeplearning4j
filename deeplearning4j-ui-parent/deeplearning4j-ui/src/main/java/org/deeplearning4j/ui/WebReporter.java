@@ -26,6 +26,7 @@ public class WebReporter {
     private WebReporter() {
         ReporterThread thread = new ReporterThread(queue);
         thread.start();
+        throw new RuntimeException("Not implemented");
     }
 
     public static WebReporter getInstance() {
