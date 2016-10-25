@@ -30,6 +30,7 @@ int element_threshold = 32;
 #include <type_conversions.h>
 #include <op_boilerplate.h>
 #include <grid.h>
+#include <aggregates.h>
 //#include <sys/time.h>
 
 
@@ -5135,9 +5136,11 @@ int NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int
 	}
 
 	cudaError_t result = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
-	checkCudaErrors(result);
 	if (result != 0) {
+        checkCudaErrors(result);
 		printf("Failed on [%lu] -> [%lu], size: [%i], direction: [%i], result: [%i]\n", src, dst, size, flags, (int) result );
+        fflush(stdout);
+        fflush(stderr);
 		return 0L;
 	}
 	else return 1;
@@ -5908,6 +5911,136 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
     DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
+                                   float **arguments,
+                                   int numArguments,
+                                   int **shapes,
+                                   int numShapes,
+                                   int *indexArguments,
+                                   int numIndexArguments,
+                                   int **intArrays,
+                                   int numIntArrays,
+                                   float *realArguments,
+                                   int numRealArguments) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: proper launch dims required here
+    dim3 launchDims = dim3(numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
+                                   double **arguments,
+                                   int numArguments,
+                                   int **shapes,
+                                   int numShapes,
+                                   int *indexArguments,
+                                   int numIndexArguments,
+                                   int **intArrays,
+                                   int numIntArrays,
+                                   double *realArguments,
+                                   int numRealArguments) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: proper launch dims required here
+    dim3 launchDims = dim3(numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateSimple, double, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
+                                   float16 **arguments,
+                                   int numArguments,
+                                   int **shapes,
+                                   int numShapes,
+                                   int *indexArguments,
+                                   int numIndexArguments,
+                                   int **intArrays,
+                                   int numIntArrays,
+                                   float16 *realArguments,
+                                   int numRealArguments) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: proper launch dims required here
+    dim3 launchDims = dim3(numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateSimple, float16, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,  void *ptrToArguments) {
+    // not implemented yet
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: fix this, we want something better then fixed number of threads per block
+    dim3 launchDims = dim3(numAggregates, numThreads, shmem);
+
+    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,  void *ptrToArguments) {
+    // not implemented yet
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: fix this, we want something better then fixed number of threads per block
+    dim3 launchDims = dim3(numAggregates, numThreads, shmem);
+
+    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateBatchSimple, double, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,  void *ptrToArguments) {
+    // not implemented yet
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int numBlocks = getDeviceId(extraPointers[2]);
+    int numThreads = getDeviceId(extraPointers[3]);
+    int shmem = getDeviceId(extraPointers[4]);
+
+    // TODO: fix this, we want something better then fixed number of threads per block
+    dim3 launchDims = dim3(numAggregates, numThreads, shmem);
+
+    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
+
+    DISPATCH_SIMPLE(aggregateBatchSimple, float16, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
