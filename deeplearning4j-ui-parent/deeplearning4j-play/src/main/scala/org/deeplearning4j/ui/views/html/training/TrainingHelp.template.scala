@@ -304,10 +304,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 23 22:17:19 PDT 2016
-                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: 50edc2ea942572ef82ae35e93a9d4a4caf6d7f28
-                  MATRIX: 596->1|729->39|756->40
+                  DATE: Tue Oct 25 22:59:20 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  HASH: daf74aba585603665e1a6e4307fc30acf744180f
+                  MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
               */
