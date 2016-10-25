@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -25,11 +27,13 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SporadicTests {
 
     @Before
@@ -220,4 +224,159 @@ public class SporadicTests {
             BooleanIndexing.applyWhere(array, Conditions.lessThan(rnd.nextDouble()), rnd.nextDouble());
         }
     }
+
+    @Test
+    public void testIsView() {
+        INDArray array = Nd4j.zeros(100, 100);
+
+        assertFalse(array.isView());
+    }
+
+
+    @Test
+    public void testReplicate1() throws Exception {
+        INDArray array = Nd4j.create(new float[]{1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f});
+        INDArray exp = Nd4j.create(new float[]{2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f, 2f});
+
+        log.error("Array length: {}", array.length());
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    locals.get().addi(1f);
+                    locals.get().addi(0f);
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            exp.addi(0.0f);
+            assertEquals(exp, locals.get(t));
+        }
+    }
+
+    @Test
+    public void testReplicate2() throws Exception {
+        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 1f, 1f, 1f, 1f});
+
+        DataBuffer buffer2 = Nd4j.getAffinityManager().replicateToDevice(1, buffer);
+
+        assertEquals(1f, buffer2.getFloat(0), 0.001f);
+    }
+
+
+    @Test
+    public void testReplicate3() throws Exception {
+        INDArray array = Nd4j.ones(10, 10);
+        INDArray exp = Nd4j.create(10).assign(10f);
+
+        log.error("Array length: {}", array.length());
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get());
+                    log.error("Point deviceId: {}; current deviceId: {}", point.getDeviceId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+
+                    INDArray sum = locals.get().sum(1);
+                    INDArray localExp = Nd4j.create(10).assign(10f);
+
+                    assertEquals(localExp, sum);
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+
+            AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get(t));
+            log.error("Point deviceId: {}; current deviceId: {}", point.getDeviceId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+            exp.addi(0.0f);
+            assertEquals(exp, locals.get(t).sum(0));
+
+            log.error("Point after: {}", point.getDeviceId());
+        }
+    }
+
+
+    @Test
+    public void testReplicate4() throws Exception {
+        INDArray array = Nd4j.create(3,3);
+
+        array.getRow(1).putScalar(0, 1f);
+        array.getRow(1).putScalar(1, 1f);
+        array.getRow(1).putScalar(2, 1f);
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int t = 0; t < numDevices; t++) {
+            assertEquals(3, locals.get(t).sumNumber().floatValue(), 0.001f);
+        }
+    }
+
+
+    @Test
+    public void testReplicate5() throws Exception {
+        INDArray array = Nd4j.create(3, 3);
+
+        log.error("Original: Host pt: {}; Dev pt: {}", AtomicAllocator.getInstance().getAllocationPoint(array).getPointers().getHostPointer().address(), AtomicAllocator.getInstance().getAllocationPoint(array).getPointers().getDevicePointer().address());
+
+        final DeviceLocalNDArray locals = new DeviceLocalNDArray(array);
+
+
+
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int t = 0; t < numDevices; t++) {
+            log.error("deviceId: {}; Host pt: {}; Dev pt: {}", t, AtomicAllocator.getInstance().getAllocationPoint(locals.get(t)).getPointers().getHostPointer().address(), AtomicAllocator.getInstance().getAllocationPoint(locals.get(t)).getPointers().getDevicePointer().address());
+        }
+
+
+        Thread[] threads = new Thread[numDevices];
+        for (int t = 0; t < numDevices; t++) {
+            threads[t] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(locals.get());
+                    log.error("deviceId: {}; Host pt: {}; Dev pt: {}", Nd4j.getAffinityManager().getDeviceForCurrentThread(), point.getPointers().getHostPointer().address(), point.getPointers().getDevicePointer().address());
+
+                }
+            });
+            threads[t].start();
+        }
+
+
+        for (int t = 0; t < numDevices; t++) {
+            threads[t].join();
+        }
+    }
+
 }

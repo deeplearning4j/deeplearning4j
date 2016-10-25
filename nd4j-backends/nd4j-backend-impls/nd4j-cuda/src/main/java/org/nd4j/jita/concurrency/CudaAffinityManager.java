@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -148,5 +149,75 @@ public class CudaAffinityManager extends BasicAffinityManager {
         } else {
             AtomicAllocator.getInstance().getMemoryHandler().relocateObject(buffer);
         }
+    }
+
+    /**
+     * This method replicates given INDArray, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param array    INDArray to replicate
+     * @return
+     */
+    @Override
+    public synchronized INDArray replicateToDevice(Integer deviceId, INDArray array) {
+        if (array == null)
+            return null;
+
+        if (array.isView())
+            throw new UnsupportedOperationException("It's impossible to replicate View");
+
+        int[] shape = array.shape();
+        int[] stride = array.stride();
+        int elementWiseStride = array.elementWiseStride();
+        char ordering = array.ordering();
+        int length = array.length();
+
+        // we use this call to get device memory updated
+        AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+
+        int currentDeviceId = getDeviceForCurrentThread();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+        attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+
+
+        DataBuffer newDataBuffer =  replicateToDevice(deviceId, array.data());
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, elementWiseStride, ordering);
+        INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
+
+        attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+
+
+        return result;
+    }
+
+    /**
+     * This method replicates given DataBuffer, and places it to target device.
+     *
+     * @param deviceId target deviceId
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
+        if (buffer == null)
+            return null;
+
+        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        if (currentDeviceId != deviceId) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+        }
+
+        DataBuffer dstBuffer = Nd4j.createBuffer(buffer.length(), false);
+        AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
+
+        if (currentDeviceId != deviceId) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+        }
+
+        return dstBuffer;
     }
 }

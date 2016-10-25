@@ -348,4 +348,12 @@ public class NativeOpExecutionerTest {
 
         System.out.println("Props: " + properties.toString());
     }
+
+
+    @Test
+    public void testIsView() {
+        INDArray array = Nd4j.zeros(100, 100);
+
+        assertFalse(array.isView());
+    }
 }

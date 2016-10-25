@@ -1,10 +1,13 @@
 package org.nd4j.jita.allocator.utils;
 
 import lombok.NonNull;
+import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 
 
@@ -78,5 +81,12 @@ public class AllocationUtils {
      */
     public static long getByteOffset(AllocationShape shape) {
         return shape.getOffset() * getElementSize(shape);
+    }
+
+
+    public static DataBuffer getPointersBuffer(long[] pointers) {
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(pointers.length);
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(pointers), pointers.length * 8, 0);
+        return tempX;
     }
 }

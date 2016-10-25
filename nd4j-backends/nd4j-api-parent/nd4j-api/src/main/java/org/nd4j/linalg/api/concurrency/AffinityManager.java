@@ -64,4 +64,22 @@ public interface AffinityManager {
      * @param buffer
      */
     void touch(DataBuffer buffer);
+
+    /**
+     * This method replicates given INDArray, and places it to target device.
+     *
+     * @param deviceId  target deviceId
+     * @param array INDArray to replicate
+     * @return
+     */
+    INDArray replicateToDevice(Integer deviceId, INDArray array);
+
+    /**
+     * This method replicates given DataBuffer, and places it to target device.
+     *
+     * @param deviceId  target deviceId
+     * @param buffer
+     * @return
+     */
+    DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer);
 }

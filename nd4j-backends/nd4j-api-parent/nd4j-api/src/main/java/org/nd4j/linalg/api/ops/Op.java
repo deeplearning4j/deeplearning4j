@@ -55,7 +55,8 @@ public interface Op {
         VARIANCE,
         REDUCE3,
         GRID,
-        META
+        META,
+        AGGREGATION
     }
 
     /**

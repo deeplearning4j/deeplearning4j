@@ -1866,7 +1866,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isView() {
-        return Shape.offset(shapeInformation) > 0 || length() < data().length() || data().originalDataBuffer() != null;
+        /*
+            We don't really use Shape offset value anywhere
+            And it's possible to be not a view, and have non-empty originalBuffer
+         */
+        return Shape.offset(shapeInformation) > 0 || length() < data().length() ;
     }
 
     @Override

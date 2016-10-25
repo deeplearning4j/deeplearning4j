@@ -23,17 +23,16 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
-import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -45,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -1868,6 +1868,284 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return null;
     }
 
+    protected <T extends Aggregate> DataBuffer getBuffer(Batch<T> batch) {
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() * 4 , false);
+        batch.setParamsSurface(buffer);
+        return buffer;
+    }
+
+    @Override
+    public <T extends Aggregate> void exec(Batch<T> batch) {
+        DataBuffer surfaceBuffer = getBuffer(batch);
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        IntPointer pointer = (IntPointer) new CudaPointer(AtomicAllocator.getInstance().getHostPointer(surfaceBuffer)).asIntPointer();
+        AllocationPoint surfacePoint = AtomicAllocator.getInstance().getAllocationPoint(surfaceBuffer);
+
+        int maxTypes = 5;
+
+        int maxIntArrays = batch.getSample().maxIntArrays();
+
+        int maxArraySize = batch.getSample().maxIntArraySize();
+
+
+        int indexPos = maxTypes * (Batch.getBatchLimit() * 16);
+        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * (Batch.getBatchLimit() * 16));
+        int realPos = (intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 16))) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1) ;
+
+        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+            realPos *= 2;
+
+        int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 16))) / (Nd4j.dataType() == DataBuffer.Type.FLOAT ? 2 : 1);
+
+        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+            argsPos /= 4;
+
+        int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 16));
+        for (int i = 0; i < batch.getNumAggregates(); i++) {
+            T op = batch.getAggregates().get(i);
+
+            // put num arguments
+            int idx = i * maxTypes;
+            pointer.put(idx, op.getArguments().size());
+            pointer.put(idx + 1, op.getShapes().size());
+            pointer.put(idx + 2, op.getIndexingArguments().size());
+            pointer.put(idx + 3, op.getRealArguments().size());
+            pointer.put(idx + 4, op.getIntArrayArguments().size());
+
+
+            // putting indexing arguments
+            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
+                idx = indexPos + i * batch.getSample().maxIndexArguments();
+                pointer.put(idx + e, op.getIndexingArguments().get(e));
+            }
+
+            // putting intArray values
+            int bsize = maxIntArrays * maxArraySize;
+            for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
+                int step = (i * bsize) + (e * maxArraySize);
+                if (op.getIntArrayArguments().get(e) != null)
+                    for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
+                        idx = intArraysPos + step + x;
+                        pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
+                    }
+            }
+
+            // TODO: variable datatype should be handled here
+            // putting real arguments
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                FloatPointer realPtr = new FloatPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + i * op.maxRealArguments();
+                    realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                DoublePointer dPtr = new DoublePointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+                ShortPointer sPtr = new ShortPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    sPtr.put(idx + e, BaseDataBuffer.fromFloat(op.getRealArguments().get(e).floatValue()));
+                }
+            }
+
+            // putting arguments pointers
+            PointerPointer ptrPtr = new PointerPointer(pointer);
+            for (int e = 0; e < op.getArguments().size(); e++) {
+                idx = argsPos + i * batch.getSample().maxArguments();
+
+                if (op.getArguments().get(e) != null) {
+                    ptrPtr.put(idx + e, AtomicAllocator.getInstance().getPointer(op.getArguments().get(e), context));
+                    AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(e)).tickDeviceWrite();
+                }
+            }
+
+
+            // putting shape pointers
+            for (int e = 0; e < op.getShapes().size(); e++) {
+                idx = shapesPos + i * batch.getSample().maxShapes();
+
+                if (op.getShapes().get(e) != null) {
+                    ptrPtr.put(idx + e, AtomicAllocator.getInstance().getPointer(op.getShapes().get(e), context));
+                    AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(e)).tickDeviceWrite();
+                }
+            }
+        }
+
+        // trigger write, so getPointer request will force relocation to GPU
+        surfacePoint.tickHostWrite();
+
+        PointerPointer extraArgs = new PointerPointer(32);
+        extraArgs.put(0, null);
+        extraArgs.put(1, context.getOldStream());
+        extraArgs.put(2, new CudaPointer(Math.min(batch.getNumAggregates(), CudaEnvironment.getInstance().getConfiguration().getMaximumGridSize())));
+        extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
+        extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.execAggregateBatchFloat(extraArgs, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execAggregateBatchDouble(extraArgs, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.execAggregateBatchHalf(extraArgs, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context)
+            );
+        }
+
+        surfacePoint.tickHostWrite();
+    }
+
+    @Override
+    public void exec(List<Aggregate> batch) {
+        if (batch.size() == 0)
+            return;
+
+        List<Batch<Aggregate>> batches = Batch.getBatches(batch, 8192);
+        for (Batch<Aggregate> single: batches) {
+            this.exec(single);
+        }
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        context.syncOldStream();
+    }
+
+    @Override
+    public void exec(Aggregate op) {
+        int numArguments = op.getArguments().size();
+        int numShapeArguments = op.getShapes().size();
+        int numIndexArguments = op.getIndexingArguments().size();
+        int numIntArrays = op.getIntArrayArguments().size();
+        int numRealArguments = op.getRealArguments().size();
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        PointerPointer extraArgs = new PointerPointer(32);
+        extraArgs.put(0, null);
+        extraArgs.put(1, context.getOldStream());
+        extraArgs.put(2, new CudaPointer(1));
+        extraArgs.put(3, new CudaPointer(op.getThreadsPerInstance()));
+        extraArgs.put(4, new CudaPointer(op.getSharedMemorySize()));
+
+        long arguments[] = new long[numArguments];
+
+        for (int x = 0; x < numArguments; x++ ) {
+            arguments[x] = op.getArguments().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getArguments().get(x), context).address();
+
+            if (op.getArguments().get(x) != null)
+                AtomicAllocator.getInstance().getAllocationPoint(op.getArguments().get(x)).tickDeviceWrite();
+        }
+
+        DataBuffer tempX = AllocationUtils.getPointersBuffer(arguments);
+        PointerPointer xPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
+
+
+        long shapes[] = new long[numShapeArguments];
+        for (int x = 0; x < numShapeArguments; x++ ) {
+            shapes[x] = op.getShapes().get(x) == null ? 0 : AtomicAllocator.getInstance().getPointer(op.getShapes().get(x), context).address();
+
+            if (op.getShapes().get(x) != null)
+                AtomicAllocator.getInstance().getAllocationPoint(op.getShapes().get(x)).tickDeviceWrite();
+        }
+
+        DataBuffer tempS = AllocationUtils.getPointersBuffer(shapes);
+        PointerPointer sPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempS, context));
+
+
+        long ints[] = new long[numIntArrays];
+        for (int x = 0; x < numIntArrays; x++ ) {
+            if (op.getIntArrayArguments().get(x) != null) {
+                DataBuffer intBuf = Nd4j.getDataBufferFactory().createInt(op.getIntArrayArguments().get(x));
+                ints[x] = AtomicAllocator.getInstance().getPointer(intBuf, context).address();
+            }
+
+        }
+
+        DataBuffer tempI = AllocationUtils.getPointersBuffer(ints);
+        PointerPointer iPtr = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempI, context));
+
+        int[] indexes = new int[numIndexArguments];
+        for (int x = 0; x < numIndexArguments; x++) {
+            indexes[x] = op.getIndexingArguments().get(x);
+        }
+
+        DataBuffer intBuffer = Nd4j.getDataBufferFactory().createInt(indexes);
+
+        double[] reals = new double[numRealArguments];
+        for (int x = 0; x < numRealArguments; x++) {
+            reals[x] = op.getRealArguments().get(x).doubleValue();
+        }
+
+        INDArray realsBuffer = Nd4j.create(reals);
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.execAggregateFloat(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    sPtr,
+                    numShapeArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    iPtr,
+                    numIntArrays,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.execAggregateDouble(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    sPtr,
+                    numShapeArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    iPtr,
+                    numIntArrays,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.execAggregateHalf(extraArgs, op.opNum(),
+                    xPtr,
+                    numArguments,
+                    sPtr,
+                    numShapeArguments,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
+                    numIndexArguments,
+                    iPtr,
+                    numIntArrays,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    numRealArguments
+            );
+        }
+    }
 
     /**
      * This method return set of key/value and key/key/value objects, describing current environment

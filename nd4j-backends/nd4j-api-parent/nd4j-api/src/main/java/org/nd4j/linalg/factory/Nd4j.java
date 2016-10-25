@@ -398,7 +398,7 @@ public class Nd4j {
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);
         }*/
-        shuffle(toShuffle, random, dimension);
+        INSTANCE.shuffle(toShuffle, random, dimension);
     }
 
     /**
@@ -5357,5 +5357,32 @@ public class Nd4j {
 
     public static INDArray typeConversion(INDArray array, DataBuffer.TypeEx targetType) {
         return null;
+    }
+
+    /**
+     * This method returns sizeOf(currentDataType), in bytes
+     *
+     * @return number of bytes per element
+     */
+    public static int sizeOfDataType() {
+        return sizeOfDataType(Nd4j.dataType());
+    }
+
+    /**
+     * This method returns size of element for specified dataType, in bytes
+     *
+     * @param dtype number of bytes per element
+     * @return
+     */
+    public static int sizeOfDataType(DataBuffer.Type dtype) {
+        switch (dtype) {
+            case FLOAT:
+                return 4;
+            case HALF:
+                return 2;
+            default:
+            case DOUBLE:
+                return 8;
+        }
     }
 }

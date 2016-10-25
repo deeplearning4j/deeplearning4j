@@ -642,7 +642,7 @@ public class CudaZeroHandler implements MemoryHandler {
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
         //log.info("Buffer MemCpy called");
-        log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
+        //log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
         CudaContext context = getCudaContext();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         AllocationPoint srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();

@@ -952,8 +952,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         | ( exp | mant ) << 13 );         // value << ( 23 - 10 )
     }
 
-    @Override
-    public short fromFloat( float fval ) {
+    /*
+    protected short fromFloat( float fval ) {
         int fbits = Float.floatToIntBits( fval );
         int sign = fbits >>> 16 & 0x8000;          // sign only
         int val = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
@@ -978,4 +978,5 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 + ( 0x800000 >>> val - 102 )     // round depending on cut off
                 >>> 126 - val ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
     }
+    */
 }

@@ -3,15 +3,13 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.shape.Shape;
@@ -22,8 +20,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.Arrays;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
@@ -38,6 +35,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter private CpuTADManager tadManager = new CpuTADManager();
+
+    /**
+     * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
+     * Since for NativeOpExecutioner all executions are synchronous
+     */
+    private ThreadLocal<Map<Integer, Pointer>> batchPointers = new ThreadLocal<>();
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
@@ -764,6 +767,225 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer)getPointerForExtraArgs(op)));
                 }
             }
+        }
+    }
+
+
+    protected <T extends Aggregate> Pointer getPointer(Batch<T> batch) {
+        if (batchPointers.get() == null)
+            batchPointers.set(new HashMap<Integer, Pointer>());
+
+        if (!batchPointers.get().containsKey(batch.opNum())) {
+            IntPointer pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4);
+            batchPointers.get().put(batch.opNum(), pointer);
+            return pointer;
+        }
+
+        return batchPointers.get().get(batch.opNum());
+    }
+
+
+    /**
+     * This method executes previously built batch
+     *
+     * @param batch
+     */
+    @Override
+    public <T extends Aggregate> void exec(Batch<T> batch) {
+
+        IntPointer pointer = (IntPointer) getPointer(batch);
+
+        int maxTypes = 5;
+
+        int maxIntArrays = batch.getSample().maxIntArrays();
+
+        int maxArraySize = batch.getSample().maxIntArraySize();
+
+
+        int indexPos = maxTypes * Batch.getBatchLimit();
+        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
+        int realPos = (intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit())) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
+        int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())) ) / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
+        int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
+        for (int i = 0; i < batch.getNumAggregates(); i++) {
+            T op = batch.getAggregates().get(i);
+
+            // put num arguments
+            int idx = i * maxTypes;
+            pointer.put(idx, op.getArguments().size());
+            pointer.put(idx + 1, op.getShapes().size());
+            pointer.put(idx + 2, op.getIndexingArguments().size());
+            pointer.put(idx + 3, op.getRealArguments().size());
+            pointer.put(idx + 4, op.getIntArrayArguments().size());
+
+
+            // putting indexing arguments
+            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
+                idx = indexPos + i * batch.getSample().maxIndexArguments();
+                pointer.put(idx + e, op.getIndexingArguments().get(e));
+            }
+
+            // putting intArray values
+            int bsize = maxIntArrays * maxArraySize;
+            for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
+                int step = (i * bsize) + (e * maxArraySize);
+                if (op.getIntArrayArguments().get(e) != null)
+                    for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
+                        idx = intArraysPos + step + x;
+                        pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
+                    }
+            }
+
+            // TODO: variable datatype should be handled here
+            // putting real arguments
+
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                FloatPointer fPtr = new FloatPointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + i * op.maxRealArguments();
+                    fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                }
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                DoublePointer dPtr = new DoublePointer(pointer);
+                for (int e = 0; e < op.getRealArguments().size(); e++) {
+                    idx = realPos + (i * op.maxRealArguments());
+                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                }
+            }
+
+            // putting arguments pointers
+            PointerPointer ptrPtr = new PointerPointer(pointer);
+            for (int e = 0; e < op.getArguments().size(); e++) {
+                idx = argsPos + i * batch.getSample().maxArguments();
+
+                if (op.getArguments().get(e) != null)
+                    ptrPtr.put(idx + e, op.getArguments().get(e).data().addressPointer());
+            }
+
+
+            // putting shape pointers
+            for (int e = 0; e < op.getShapes().size(); e++) {
+                idx = shapesPos + i * batch.getSample().maxShapes();
+
+                if (op.getShapes().get(e) != null)
+                    ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
+            }
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    pointer);
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            loop.execAggregateBatchDouble(null, batch.getNumAggregates(), batch.opNum(),
+                    batch.getSample().maxArguments(),
+                    batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(),
+                    batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(),
+                    batch.getSample().maxRealArguments(),
+                    pointer);
+        } else {
+            throw new UnsupportedOperationException("Half precision isn't supported on CPU");
+        }
+    }
+
+    /**
+     * This method takes abritrary sized list of aggregates, and packs them into batches
+     *
+     * @param batch
+     */
+    @Override
+    public void exec(List<Aggregate> batch) {
+        if (batch.size() == 0)
+            return;
+
+        List<Batch<Aggregate>> batches = Batch.getBatches(batch);
+        for (Batch<Aggregate> single: batches) {
+            this.exec(single);
+        }
+    }
+
+    @Override
+    public void exec(Aggregate op) {
+
+        int numArguments = op.getArguments().size();
+        int numIndexArguments = op.getIndexingArguments().size();
+        int numRealArguments = op.getRealArguments().size();
+        int numShapes = op.getShapes().size();
+        int numIntArrays = op.getIntArrayArguments().size();
+
+        PointerPointer arguments = new PointerPointer(numArguments);
+        List<IntPointer> pointers = new ArrayList<>();
+        PointerPointer intArrays = new PointerPointer(numIntArrays);
+
+        for (int x = 0; x < numArguments; x++ ) {
+            arguments.put(x, op.getArguments().get(x) == null ? null : op.getArguments().get(x).data().addressPointer());
+        }
+
+        PointerPointer shapes = new PointerPointer(numShapes);
+
+        for (int x = 0; x < numShapes; x++ ) {
+            if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
+                throw new RuntimeException("ShapeBuffers should have INT data type");
+
+            shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
+        }
+
+        int[] indexes = new int[numIndexArguments];
+        for (int x = 0; x < numIndexArguments; x++) {
+            indexes[x] = op.getIndexingArguments().get(x);
+        }
+
+        IntPointer pointer = new IntPointer(indexes);
+
+        double[] reals = new double[numRealArguments];
+        for (int x = 0; x < numRealArguments; x++) {
+            reals[x] = op.getRealArguments().get(x).doubleValue();
+        }
+
+        for (int x = 0; x < numIntArrays; x++) {
+            IntPointer intPtr = new IntPointer(op.getIntArrayArguments().get(x));
+            intArrays.put(x, intPtr);
+            pointers.add(intPtr);
+        }
+
+        INDArray realsBuffer = Nd4j.create(reals);
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            loop.execAggregateFloat(null, op.opNum(),
+                    arguments,
+                    numArguments,
+                    shapes,
+                    numShapes,
+                    pointer,
+                    numIndexArguments,
+                    intArrays,
+                    numIntArrays,
+                    (FloatPointer) realsBuffer.data().addressPointer(),
+                    numRealArguments
+                    );
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            loop.execAggregateDouble(null, op.opNum(),
+                    arguments,
+                    numArguments,
+                    shapes,
+                    numShapes,
+                    pointer,
+                    numIndexArguments,
+                    intArrays,
+                    numIntArrays,
+                    (DoublePointer) realsBuffer.data().addressPointer(),
+                    numRealArguments
+            );
+        } else {
+            throw new UnsupportedOperationException("Half precision isn't supported on CPU");
         }
     }
 
