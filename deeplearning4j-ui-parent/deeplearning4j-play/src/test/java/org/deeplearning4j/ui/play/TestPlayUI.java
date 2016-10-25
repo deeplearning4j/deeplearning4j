@@ -42,8 +42,6 @@ public class TestPlayUI {
                 .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
                 .pretrain(false).backprop(true).build();
 
-        ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
-
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
