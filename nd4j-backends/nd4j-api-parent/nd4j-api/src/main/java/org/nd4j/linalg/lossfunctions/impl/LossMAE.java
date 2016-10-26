@@ -9,6 +9,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @EqualsAndHashCode
 public class LossMAE extends LossL1 {
 
+    public LossMAE(){
+
+    }
+
+    public LossMAE(INDArray weights){
+        super(weights);
+    }
+
     @Override
     public double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
 

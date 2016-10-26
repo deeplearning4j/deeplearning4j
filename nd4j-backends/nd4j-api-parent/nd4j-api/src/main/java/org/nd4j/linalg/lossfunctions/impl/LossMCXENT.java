@@ -19,7 +19,15 @@ import org.slf4j.LoggerFactory;
 @EqualsAndHashCode
 public class LossMCXENT implements ILossFunction {
 
-    private static Logger logger = LoggerFactory.getLogger(LossMCXENT.class);
+    private final INDArray weights;
+
+    public LossMCXENT(){
+        this(null);
+    }
+
+    public LossMCXENT(INDArray weights){
+        this.weights = weights;
+    }
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
@@ -32,6 +40,15 @@ public class LossMCXENT implements ILossFunction {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             scoreArr = Transforms.log(output, false).muli(labels);
         }
+
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != scoreArr.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + preOutput.size(1));
+            }
+            scoreArr.muliRowVector(weights);
+        }
+
         if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
@@ -63,13 +80,36 @@ public class LossMCXENT implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         if ("softmax".equals(activationFn)) {
-            grad = output.subi(labels);
+
+
+            //Weighted loss function
+            if(weights != null){
+                if(weights.length() != output.size(1)){
+                    throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+                }
+//                grad.muliRowVector(weights);
+                grad = output.subi(labels.mulRowVector(weights));
+            } else {
+
+                grad = output.subi(labels);
+            }
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             grad = sigmaPrimeZ.muli(labels);
             grad.divi(output).muli(-1);
+
+            //Weighted loss function
+            if(weights != null){
+                if(weights.length() != output.size(1)){
+                    throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+                }
+                grad.muliRowVector(weights);
+            }
         }
 
+
+
+        //Loss function with masking
         if (mask != null) {
             grad.muliColumnVector(mask);
         }

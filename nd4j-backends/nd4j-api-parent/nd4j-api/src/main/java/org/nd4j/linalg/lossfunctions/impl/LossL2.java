@@ -13,11 +13,32 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
 @EqualsAndHashCode
 public class LossL2 implements ILossFunction {
 
+    private final INDArray weights;
+
+    public LossL2(){
+        this(null);
+    }
+
+    public LossL2(INDArray weights){
+        if(!weights.isRowVector()) throw new IllegalArgumentException("Weights array must be a row vector");
+        this.weights = weights;
+    }
+
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = output.rsubi(labels);
         scoreArr = scoreArr.muli(scoreArr);
+
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            scoreArr.muliRowVector(weights);
+        }
+
+        //Loss function with masking
         if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
@@ -53,6 +74,15 @@ public class LossL2 implements ILossFunction {
             gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
         }
 
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            gradients.muliRowVector(weights);
+        }
+
+        //Loss function with masking
         if (mask != null) {
             gradients.muliColumnVector(mask);
         }
