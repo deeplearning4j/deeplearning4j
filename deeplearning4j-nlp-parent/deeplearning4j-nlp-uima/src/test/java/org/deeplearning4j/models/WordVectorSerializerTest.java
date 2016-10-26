@@ -251,9 +251,9 @@ public class WordVectorSerializerTest {
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
 
-        logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+        //logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
 
-        logger.info("Closest Words:");
+        //logger.info("Closest Words:");
         Collection<String> lst = vec.wordsNearest("day", 10);
         System.out.println(lst);
 
@@ -272,8 +272,8 @@ public class WordVectorSerializerTest {
 
         assertEquals(vec.getConfiguration(), vec2.getConfiguration());
 
-        logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
-        logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
+        //logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
+        //logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
         assertTrue(ArrayUtils.isEquals(((InMemoryLookupTable) table).getExpTable(), ((InMemoryLookupTable) vec2.getLookupTable()).getExpTable()));
 
 
@@ -303,8 +303,8 @@ public class WordVectorSerializerTest {
         INDArray rSyn0_1 = restoredTable.getSyn0().slice(1);
         INDArray oSyn0_1 = ((InMemoryLookupTable) table).getSyn0().slice(1);
 
-        logger.info("Restored syn0: " + rSyn0_1);
-        logger.info("Original syn0: " + oSyn0_1);
+        //logger.info("Restored syn0: " + rSyn0_1);
+        //logger.info("Original syn0: " + oSyn0_1);
 
         assertEquals(oSyn0_1, rSyn0_1);
 
@@ -322,8 +322,8 @@ public class WordVectorSerializerTest {
 
             assertEquals(rSyn1, oSyn1);
             if (arraysSimilarity(rSyn1, oSyn1) < 0.98) {
-                logger.info("Restored syn1: " + rSyn1);
-                logger.info("Original  syn1: " + oSyn1);
+             //   logger.info("Restored syn1: " + rSyn1);
+             //   logger.info("Original  syn1: " + oSyn1);
             }
             // we exclude word 222 since it has syn1 full of zeroes
             if (cnt != 222) assertEquals(1.0, arraysSimilarity(rSyn1, oSyn1), 0.001);
