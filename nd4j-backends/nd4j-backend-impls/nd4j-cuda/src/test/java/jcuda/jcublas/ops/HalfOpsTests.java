@@ -1,5 +1,6 @@
 package jcuda.jcublas.ops;
 
+import org.bytedeco.javacpp.FloatPointer;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -307,4 +309,42 @@ public class HalfOpsTests {
     }
 
 
+    @Test
+    public void testHalfToFloat1() throws Exception {
+        File tempFile = File.createTempFile("dsadasd","dsdfasd");
+        tempFile.deleteOnExit();
+
+        INDArray array = Nd4j.linspace(1, 100, 100);
+
+        DataOutputStream stream = new DataOutputStream(new FileOutputStream(tempFile));
+
+        Nd4j.write(array, stream);
+
+        DataInputStream dis = new DataInputStream(new FileInputStream(tempFile));
+
+        INDArray restoredFP16 = Nd4j.read(dis);
+
+        //assertEquals(array, restoredFP16);
+
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        assertEquals(DataBuffer.Type.FLOAT, Nd4j.dataType());
+        log.error("--------------------");
+
+        dis = new DataInputStream(new FileInputStream(tempFile));
+        INDArray expFP32 = Nd4j.linspace(1, 100, 100);
+        INDArray restoredFP32 = Nd4j.read(dis);
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        assertTrue(AtomicAllocator.getInstance().getPointer(expFP32, context) instanceof FloatPointer);
+        assertTrue(AtomicAllocator.getInstance().getPointer(restoredFP32, context) instanceof FloatPointer);
+
+        assertEquals(DataBuffer.Type.FLOAT, expFP32.data().dataType());
+        assertEquals(DataBuffer.Type.FLOAT, restoredFP32.data().dataType());
+
+        assertEquals(expFP32, restoredFP32);
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+    }
 }
