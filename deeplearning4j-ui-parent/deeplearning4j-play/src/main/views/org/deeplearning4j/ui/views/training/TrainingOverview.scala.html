@@ -88,18 +88,6 @@
                             </div>
                         </div>
 
-                        <div class="row-fluid">
-                            <div class="box span12">
-                                <div class="box-header">
-                                    <h2><b>Score vs Iteration: Realtime</b></h2>
-                                </div>
-                                <div class="box-content">
-                                    <div id="realtimechart" style="height: 190px;"></div><br>
-                                        <!--<p>Time between updates: <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>-->
-                                </div>
-                            </div>
-                        </div><!--/row-->
-
                     </div>
 
                     <div class="row-fluid">
@@ -110,75 +98,39 @@
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
                                     <thead>
-                                        <tr>
-                                            <th>Model</th>
-                                            <th>Score</th>
-                                            <th>Iteration</th>
-                                            <th>Status</th>
-                                        </tr>
+                                    <tr>
+                                        <th>Model Type</th>
+                                        <th>nLayers</th>
+                                        <th>nParams</th>
+                                        <th>Start Time</th>
+                                        <th>Total Run Time</th>
+                                        <th>Last Update</th>
+                                        <th>Total Param Updates</th>
+                                        <th>Updates Per Second</th>
+                                        <th>Examples Per Second</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>Model 1</td>
-                                            <td class="center">123141</td>
-                                            <td class="center">123213213</td>
-                                            <td class="center">
-                                                <span class="label label-success">Completed</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 2</td>
-                                            <td class="center">12321321</td>
-                                            <td class="center">123213</td>
-                                            <td class="center">
-                                                <span class="label label-important">Failed</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 3</td>
-                                            <td class="center">123213</td>
-                                            <td class="center">123123</td>
-                                            <td class="center">
-                                                <span class="label label-warning">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 4</td>
-                                            <td class="center">12312321</td>
-                                            <td class="center">12313112</td>
-                                            <td class="center">
-                                                <span class="label label-warning">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 5</td>
-                                            <td class="center">12313123213</td>
-                                            <td class="center">123213211</td>
-                                            <td class="center">
-                                                <span class="label label-success">Completed</span>
-                                            </td>
-                                        </tr>
+                                    <tr>
+                                        <td>MultiLayerNetwork</td>
+                                        <td>10</td>
+                                        <td>20</td>
+                                        <td>01:01:01</td>
+                                        <td>1:23</td>
+                                        <td>1:23</td>
+                                        <td>10000</td>
+                                        <td>10</td>
+                                        <td>10</td>
+                                    </tr>
                                     </tbody>
                                 </table>
-                                <div class="pagination pagination-centered">
-                                    <ul>
-                                        <li><a href="#">Prev</a></li>
-                                        <li class="active">
-                                            <a href="#">1</a>
-                                        </li>
-                                        <li><a href="#">2</a></li>
-                                        <li><a href="#">3</a></li>
-                                        <li><a href="#">4</a></li>
-                                        <li><a href="#">Next</a></li>
-                                    </ul>
-                                </div>
                             </div>
-                        </div><!--/span-->
-                    </div><!--/row-->
+                        </div>
+                    </div><!--End Table-->
 
-                    <!-- end: Content -->
-                </div><!--/#content.span10-->
-            </div><!--/fluid-row-->
+                    <!-- End Content -->
+                </div><!-- End Content Span10-->
+            </div><!--End Row Fluid-->
 
             <!-- Start JavaScript-->
             <script src="/assets/js/jquery-1.9.1.min.js"></script>

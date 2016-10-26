@@ -479,10 +479,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 23:33:26 AEDT 2016
-                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: f929a354ca257e8c1c287d1b0efd8713d8967eff
-                  MATRIX: 600->1|733->39|761->41
+                  DATE: Sun Oct 23 22:17:19 PDT 2016
+                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
+                  HASH: 22dda79ec330ef3bfbf370f8b0da8ea4fb47f473
+                  MATRIX: 600->1|733->39|760->40
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
               */
