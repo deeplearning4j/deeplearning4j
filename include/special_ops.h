@@ -333,6 +333,184 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Histogram {
+	public:
+		static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+		static inline __device__ void execSpecialCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+
+            int numBins = (int) extraParams[0];
+            T min_val = extraParams[1];
+            T max_val = extraParams[2];
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            __shared__ T *bins;
+            __shared__ int length;
+            __shared__ T *reductor;
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                bins = (T *) shmem;
+                reductor = ((T *) allocationPointer) + (numBins * blockIdx.x);
+
+                length = shape::length(xShapeBuffer);
+            }
+            __syncthreads();
+
+            T binSize = (max_val - min_val) / (numBins);
+
+            for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                bins[e] = (T) 0.0f;
+            }
+            __syncthreads();
+
+            for (int e = tid; e < length; e+= blockDim.x * gridDim.x) {
+                int idx = (int) ((dx[e] - min_val) / binSize);
+				    if (idx < 0) idx = 0;
+					else if (idx >= numBins) idx = numBins - 1;
+
+				nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (T) 1.0f);
+            }
+            __syncthreads();
+
+            // transfer shared memory to reduction memory
+
+
+            if (gridDim.x > 1) {
+                unsigned int *tc = (unsigned int *)reductionPointer;
+                __shared__ bool amLast;
+
+                for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                    reductor[e] = bins[e];
+                }
+                __threadfence();
+                __syncthreads();
+
+                if (threadIdx.x == 0) {
+						unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+						amLast = (ticket == gridDim.x - 1);
+				}
+				__syncthreads();
+
+				if (amLast) {
+				    tc[16384] = 0;
+
+                    // nullify shared memory for future accumulation
+                    for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                        bins[e] = (T) 0.0f;
+                    }
+
+                    // accumulate reduced bins
+                    for (int r = 0; r < gridDim.x; r++) {
+                        T *ptrBuf = ((T *)allocationPointer) + (r * numBins);
+
+                        for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                            bins[e] += ptrBuf[e];
+                        }
+                    }
+                    __syncthreads();
+
+                    // write them out to Z
+                    for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                        result[e] = bins[e];
+                    }
+				}
+            } else {
+                // if there's only 1 block - just write away data
+                for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
+                    result[e] = bins[e];
+                }
+            }
+
+		};
+#endif
+
+		static void execSpecial(
+				T *dx,
+				int *xShapeBuffer,
+				T *result,
+				int *resultShapeBuffer,
+				T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+
+			int length = shape::length(xShapeBuffer);
+			int _threads = 2;
+
+			int numBins = (int) extraParams[0];
+			int span = (length / _threads) + 8;
+
+			// get min over input
+            T min_val = extraParams[1];
+            T max_val = extraParams[2];
+
+            /*
+#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(min:min_val) proc_bind(close)
+            for (int x = 0; x < length; x++) {
+				if (min_val > dx[x])
+					min_val = dx[x];
+			}
+
+			// get max over input
+			T max_val = (T) MIN_FLOAT;
+
+#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(max:max_val) proc_bind(close)
+			for (int x = 0; x < length; x++) {
+				if (max_val < dx[x])
+					max_val = dx[x];
+			}
+            */
+
+			T binSize = (max_val - min_val) / (numBins);
+
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
+			{
+				int tid, start, end;
+
+				int *bins = new int[numBins];
+                std::memset(bins, 0, sizeof(int) * numBins);
+				tid = omp_get_thread_num();
+				start = span * tid;
+				end = span * (tid + 1);
+				if (end > length) end = length;
+
+#pragma omp simd
+				for (int x = start; x < end; x++) {
+					int idx = (int) ((dx[x] - min_val) / binSize);
+					if (idx < 0)
+						idx = 0;
+					else if (idx >= numBins)
+						idx = numBins - 1;
+
+					bins[idx]++;
+				}
+
+#pragma omp critical
+				{
+#pragma omp simd
+					for (int x = 0; x < numBins; x++) {
+						result[x] += bins[x];
+					}
+
+				}
+
+				delete[] bins;
+			}
+
+		}
+
+
+        op_def static T op(T d1, T *params) {
+            return d1;
+        }
+	};
+
+	template<typename T>
 	class Col2Im {
 
 	public:

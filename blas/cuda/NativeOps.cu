@@ -3910,6 +3910,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	float * special = (float *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
+    int *maskedAllocPointer = allocPointer;
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[1]);
 
@@ -4106,7 +4107,10 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 			}
 		}
-	} else {
+//	} else if (opNum == 48) {
+        //
+
+    } else {
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
@@ -4115,7 +4119,12 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 //            fflush(stdout);
         }
 
-        DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+        if (opNum == 48) {
+            int length = shape::length(hostZShapeInfo);
+            cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(float));
+        }
+
+        DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 	/*	transformFloat <<<launchDims.x, launchDims.y, launchDims.z, *stream>>> (
 				opNum,
 				dx,
@@ -4124,8 +4133,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 	}
 
-	if (debug)
+    // we need guaranteed sync here, due to temp memory release
+	if (debug || opNum == 48)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+    if (opNum == 48) {
+        cudaFree((void *)maskedAllocPointer);
+    }
 
 }
 
