@@ -359,14 +359,27 @@ namespace simdOps {
 			int _threads = 2;
 
 			int numBins = (int) extraParams[0];
-			T eps = extraParams[1];
 			int span = (length / _threads) + 8;
 
 			// get min over input
-			T min = (T) 0.0f;
-			T max = (T) 0.0f;
-			// get max over input
+			T min_val = (T) MAX_FLOAT;
 
+#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(min:min_val) proc_bind(close)
+            for (int x = 0; x < length; x++) {
+				if (min_val > dx[x])
+					min_val = dx[x];
+			}
+
+			// get max over input
+			T max_val = (T) MIN_FLOAT;
+
+#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(max:max_val) proc_bind(close)
+			for (int x = 0; x < length; x++) {
+				if (max_val < dx[x])
+					max_val = dx[x];
+			}
+
+			T binSize = (max_val - min_val) / (numBins - 1);
 
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
@@ -377,11 +390,11 @@ namespace simdOps {
 				tid = omp_get_thread_num();
 				start = span * tid;
 				end = span * (tid + 1);
-				if (end > n) end = n;
+				if (end > length) end = length;
 
 #pragma omp simd
 				for (int x = start; x < end; x++) {
-					int idx = (int) ((dx[x] - min) / numBins);
+					int idx = (int) ((dx[x] - min_val) / numBins);
 					if (idx < 0)
 						idx = 0;
 					else if (idx > numBins)
@@ -403,6 +416,11 @@ namespace simdOps {
 			}
 
 		}
+
+
+        op_def static T op(T d1, T *params) {
+            return d1;
+        }
 	};
 
 	template<typename T>
