@@ -333,6 +333,79 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Histogram {
+	public:
+		static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+		static inline __device__ void execSpecialCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+
+		};
+#endif
+
+		static void execSpecial(
+				T *dx,
+				int *xShapeBuffer,
+				T *result,
+				int *resultShapeBuffer,
+				T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+
+			int length = shape::length(xShapeBuffer);
+			int _threads = 2;
+
+			int numBins = (int) extraParams[0];
+			T eps = extraParams[1];
+			int span = (length / _threads) + 8;
+
+			// get min over input
+			T min = (T) 0.0f;
+			T max = (T) 0.0f;
+			// get max over input
+
+
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
+			{
+				int tid, start, end;
+
+				int *bins = new int[numBins];
+				tid = omp_get_thread_num();
+				start = span * tid;
+				end = span * (tid + 1);
+				if (end > n) end = n;
+
+#pragma omp simd
+				for (int x = start; x < end; x++) {
+					int idx = (int) ((dx[x] - min) / numBins);
+					if (idx < 0)
+						idx = 0;
+					else if (idx > numBins)
+						idx = numBins - 1;
+
+					bins[idx]++;
+				}
+
+#pragma omp critical
+				{
+#pragma omp simd
+					for (int x = 0; x < numBins; x++) {
+						result[x] += bins[x];
+					}
+
+				}
+
+				delete[] bins;
+			}
+
+		}
+	};
+
+	template<typename T>
 	class Col2Im {
 
 	public:
