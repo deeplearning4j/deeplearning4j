@@ -4130,20 +4130,25 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
         if (opNum == 48) {
             int length = shape::length(hostZShapeInfo);
-            cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(float));
+            cudaMalloc((void **) &maskedAllocPointer, length * launchDims.x * sizeof(float));
         }
 
-        DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+        DISPATCH_SIMPLE(transformShaped, float,
+                        PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo,
+                               shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 
         // we need guaranteed sync here, due to temp memory release
-	    if (debug || opNum == 48)
-		    checkCudaErrors(cudaStreamSynchronize(*stream));
+        if (debug || opNum == 48)
+            checkCudaErrors(cudaStreamSynchronize(*stream));
 
         if (opNum == 48) {
-            cudaFree((void *)maskedAllocPointer);
+            cudaFree((void *) maskedAllocPointer);
         }
+    }
 
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
@@ -4192,13 +4197,6 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
-
-            /*transformHalf<<< 1, block, launchDims.z + (block * sizeof(float16) * 4), *stream >> > (
-					opNum,
-							dx,
-							xShapeInfo,  shape::rank(hostXShapeInfo),
-							extraParams,
-							result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
