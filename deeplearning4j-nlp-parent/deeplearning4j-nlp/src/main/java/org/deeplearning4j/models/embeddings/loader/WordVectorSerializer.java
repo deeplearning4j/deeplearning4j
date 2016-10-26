@@ -2140,8 +2140,6 @@ public class WordVectorSerializer {
             }
         } catch (Exception e) {
             // let's try to load this file as csv file
-            if (1>0)
-                throw new RuntimeException(e);
             try {
                 log.debug("Trying CSV model restoration...");
 
@@ -2390,26 +2388,19 @@ public class WordVectorSerializer {
         }
     }
 
-    protected static String encodeB64(String word) {
+    public static String encodeB64(String word) {
         try {
-            return Base64.encodeBase64String(word.getBytes("UTF-8"));
+            return "B64:" + Base64.encodeBase64String(word.getBytes("UTF-8"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected static String decodeB64(String word) {
+    public static String decodeB64(String word) {
         if (word.startsWith("B64:")) {
             String arp = word.replaceFirst("B64:","");
             try {
                 return new String(Base64.decodeBase64(arp), "UTF-8");
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if (Base64.isBase64(word)) {
-            try {
-                String result = new String(Base64.decodeBase64(word), "UTF-8");
-                return result == null ? word : result;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
