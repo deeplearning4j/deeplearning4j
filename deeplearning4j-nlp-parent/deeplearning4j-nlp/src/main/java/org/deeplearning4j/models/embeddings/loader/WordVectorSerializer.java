@@ -382,7 +382,7 @@ public class WordVectorSerializer {
 
             StringBuilder builder = new StringBuilder();
 
-            builder.append(element.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
+            builder.append(encodeB64(element.getLabel())).append(" ");
             INDArray vec = lookupTable.vector(element.getLabel());
             for (int i = 0; i < vec.length(); i++) {
                 builder.append(vec.getDouble(i));
@@ -627,7 +627,7 @@ public class WordVectorSerializer {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
             for (int i = 0; i < vectors.getVocab().numWords(); i++) {
                 VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
                 for (int code: word.getCodes()) {
                     builder.append(code).append(" ");
                 }
@@ -651,7 +651,7 @@ public class WordVectorSerializer {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
             for (int i = 0; i < vectors.getVocab().numWords(); i++) {
                 VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
                 for (int point: word.getPoints()) {
                     builder.append(point).append(" ");
                 }
@@ -674,7 +674,7 @@ public class WordVectorSerializer {
         StringBuilder builder = new StringBuilder();
         for (VocabWord word: vectors.getVocab().tokens()) {
             if (word.isLabel())
-                builder.append(word.getLabel()).append("\n");
+                builder.append(encodeB64(word.getLabel())).append("\n");
         }
         writeEntry(new ByteArrayInputStream(builder.toString().trim().getBytes()), zipfile);
 
@@ -722,7 +722,7 @@ public class WordVectorSerializer {
             try(BufferedReader reader = new BufferedReader(new FileReader(tmpFileL))) {
                 String line;
                 while((line = reader.readLine()) != null) {
-                    VocabWord word = vectors.getVocab().tokenFor(line.trim());
+                    VocabWord word = vectors.getVocab().tokenFor(decodeB64(line.trim()));
                     if (word != null) {
                         word.markAsLabel(true);
                     }
@@ -854,7 +854,7 @@ public class WordVectorSerializer {
         reader = new BufferedReader(new FileReader(h_points));
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
-            VocabWord word = vocab.wordFor(split[0]);
+            VocabWord word = vocab.wordFor(decodeB64(split[0]));
             List<Integer> points = new ArrayList<>();
             for (int i = 1; i < split.length; i++ ){
                 points.add(Integer.parseInt(split[i]));
@@ -868,7 +868,7 @@ public class WordVectorSerializer {
         reader = new BufferedReader(new FileReader(h_codes));
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
-            VocabWord word = vocab.wordFor(split[0]);
+            VocabWord word = vocab.wordFor(decodeB64(split[0]));
             List<Integer> codes = new ArrayList<>();
             for (int i = 1; i < split.length; i++ ){
                 codes.add(Integer.parseInt(split[i]));
@@ -1579,7 +1579,7 @@ public class WordVectorSerializer {
         while (iter.hasNext()) {
             if (line.isEmpty()) line = iter.nextLine();
             String[] split = line.split(" ");
-            String word = split[0].replaceAll(whitespaceReplacement, " ");
+            String word = decodeB64(split[0]); //split[0].replaceAll(whitespaceReplacement, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
             word1.setIndex(cache.numWords());
@@ -2390,6 +2390,29 @@ public class WordVectorSerializer {
         }
     }
 
+    protected static String encodeB64(String word) {
+        try {
+            return Base64.encodeBase64String(word.getBytes("UTF-8"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-
+    protected static String decodeB64(String word) {
+        if (word.startsWith("B64:")) {
+            String arp = word.replaceFirst("B64:","");
+            try {
+                return new String(Base64.decodeBase64(arp), "UTF-8");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else if (Base64.isBase64(word)) {
+            try {
+                String result = new String(Base64.decodeBase64(word), "UTF-8");
+                return result == null ? word : result;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else return word;
+    }
 }
