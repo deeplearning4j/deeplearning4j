@@ -22,6 +22,7 @@ package org.nd4j.linalg.ops;
 
 import static org.junit.Assert.*;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -57,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 2/22/15.
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public  class OpExecutionerTestsC extends BaseNd4jTest {
 
@@ -705,6 +707,51 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertArrayEquals(var2bias.data().asDouble(), var4bias.data().asDouble(), 1e-5);
 
         DataTypeUtil.setDTypeForContext(type);
+    }
+
+
+    @Test
+    public void testHistogram1() throws Exception {
+        INDArray x = Nd4j.linspace(1, 1000, 100000);
+        INDArray z = Nd4j.zeros(20);
+
+        INDArray xDup = x.dup();
+        INDArray zDup = z.dup();
+
+        INDArray zExp = Nd4j.create(20).assign(5000);
+
+        Histogram histogram = new Histogram(x, z);
+
+        Nd4j.getExecutioner().exec(histogram);
+
+        assertEquals(xDup, x);
+        assertNotEquals(zDup, z);
+
+        log.info("bins: {}", z);
+
+        assertEquals(zExp, z);
+    }
+
+    @Test
+    public void testHistogram2() throws Exception {
+        INDArray x = Nd4j.create(new float[]{0f, 0f, 0f, 5f, 5f, 5f, 10f, 10f, 10f});
+
+
+        INDArray xDup = x.dup();
+
+        INDArray zExp = Nd4j.zeros(10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
+
+        Histogram histogram = new Histogram(x, 10);
+
+        Nd4j.getExecutioner().exec(histogram);
+
+        INDArray z = histogram.z();
+
+        assertEquals(xDup, x);
+
+        log.info("bins: {}", z);
+
+        assertEquals(zExp, z);
     }
 
     @Override
