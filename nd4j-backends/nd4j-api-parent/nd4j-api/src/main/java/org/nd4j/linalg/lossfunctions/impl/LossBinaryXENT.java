@@ -6,7 +6,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,16 +20,19 @@ import org.slf4j.LoggerFactory;
  * Created by susaneraly on 8/22/16.
  */
 @EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossBinaryXENT implements ILossFunction {
 
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private final INDArray weights;
 
-    public LossBinaryXENT(){
+    public LossBinaryXENT() {
         this(null);
     }
 
-    public LossBinaryXENT(INDArray weights){
-        if( weights != null && !weights.isRowVector()){
+    public LossBinaryXENT(INDArray weights) {
+        if (weights != null && !weights.isRowVector()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         this.weights = weights;
@@ -40,7 +49,7 @@ public class LossBinaryXENT implements ILossFunction {
             INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             scoreArr = Transforms.log(output, true).muli(labels);
             INDArray secondTerm = output.rsub(1);
-            Transforms.log(secondTerm,false);
+            Transforms.log(secondTerm, false);
             secondTerm.muli(labels.rsub(1));
             scoreArr.addi(secondTerm);
         }
@@ -97,8 +106,8 @@ public class LossBinaryXENT implements ILossFunction {
         }
 
         //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
+        if (weights != null) {
+            if (weights.length() != output.size(1)) {
                 throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
             }
             grad.muliRowVector(weights);

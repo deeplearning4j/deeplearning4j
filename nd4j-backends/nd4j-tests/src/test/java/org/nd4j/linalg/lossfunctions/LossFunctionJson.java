@@ -1,5 +1,7 @@
 package org.nd4j.linalg.lossfunctions;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -23,15 +25,32 @@ public class LossFunctionJson extends BaseNd4jTest {
     @Test
     public void testJsonSerialization() throws Exception {
 
+        INDArray w = Nd4j.create(new double[]{1.0,2.0,3.0});
+
         ILossFunction[] lossFns = new ILossFunction[]{
                 new LossBinaryXENT(),
+                new LossBinaryXENT(w),
+                new LossCosineProximity(),
                 new LossHinge(),
                 new LossKLD(),
+                new LossL1(),
+                new LossL1(w),
+                new LossL2(),
+                new LossL2(w),
                 new LossMAE(),
+                new LossMAE(w),
                 new LossMAPE(),
+                new LossMAPE(w),
                 new LossMCXENT(),
+                new LossMCXENT(w),
                 new LossMSE(),
-                new LossMSLE()
+                new LossMSE(w),
+                new LossMSLE(),
+                new LossMSLE(w),
+                new LossNegativeLogLikelihood(),
+                new LossNegativeLogLikelihood(w),
+                new LossPoisson(),
+                new LossSquaredHinge()
         };
 
         ObjectMapper mapper = new ObjectMapper();

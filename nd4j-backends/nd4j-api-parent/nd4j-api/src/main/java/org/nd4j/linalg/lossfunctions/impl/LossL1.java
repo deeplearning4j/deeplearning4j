@@ -7,13 +7,20 @@ import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Created by susaneraly on 9/14/16.
  */
-@EqualsAndHashCode
+@EqualsAndHashCode @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossL1 implements ILossFunction {
 
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private final INDArray weights;
 
     public LossL1(){

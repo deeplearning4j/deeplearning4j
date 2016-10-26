@@ -7,7 +7,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +21,11 @@ import org.slf4j.LoggerFactory;
  * Alex D Black
  * Susan Eraly
  */
-@EqualsAndHashCode
+@EqualsAndHashCode @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossMCXENT implements ILossFunction {
 
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private final INDArray weights;
 
     public LossMCXENT(){
