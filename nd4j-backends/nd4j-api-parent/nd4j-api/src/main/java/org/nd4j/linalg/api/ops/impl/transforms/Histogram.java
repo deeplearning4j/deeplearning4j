@@ -20,7 +20,11 @@ public class Histogram extends BaseTransformOp {
         setX(x);
         setZ(z);
         numBins = z.length();
-        this.extraArgs = new Object[]{(double) numBins};
+
+        double max = x.maxNumber().doubleValue();
+        double min = x.minNumber().doubleValue();
+
+        this.extraArgs = new Object[]{(double) numBins, min, max};
     }
 
     public Histogram(INDArray x, int numberOfBins) {
