@@ -379,7 +379,7 @@ namespace simdOps {
 					max_val = dx[x];
 			}
 
-			T binSize = (max_val - min_val) / (numBins - 1);
+			T binSize = (max_val - min_val) / (numBins);
 
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
@@ -387,6 +387,7 @@ namespace simdOps {
 				int tid, start, end;
 
 				int *bins = new int[numBins];
+                std::memset(bins, 0, sizeof(int) * numBins);
 				tid = omp_get_thread_num();
 				start = span * tid;
 				end = span * (tid + 1);
@@ -394,10 +395,10 @@ namespace simdOps {
 
 #pragma omp simd
 				for (int x = start; x < end; x++) {
-					int idx = (int) ((dx[x] - min_val) / numBins);
+					int idx = (int) ((dx[x] - min_val) / binSize);
 					if (idx < 0)
 						idx = 0;
-					else if (idx > numBins)
+					else if (idx >= numBins)
 						idx = numBins - 1;
 
 					bins[idx]++;
