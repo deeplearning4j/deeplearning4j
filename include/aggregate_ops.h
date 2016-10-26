@@ -235,7 +235,6 @@ namespace aggregateOps {
 
             __shared__ T dot;
             __shared__ T g;
-            __shared__ T f;
             __shared__ T alpha;
 
             if (threadIdx.x == 0) {

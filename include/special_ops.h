@@ -352,12 +352,12 @@ namespace simdOps {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             __shared__ T *bins;
-            __shared__ int length
+            __shared__ int length;
             __shared__ T *reductor;
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 bins = (T *) shmem;
-                reductor = reductionPointer + (numBins * blockIdx.x);
+                reductor = ((T *) allocationPointer) + (numBins * blockIdx.x);
 
                 length = shape::length(xShapeBuffer);
             }
@@ -371,11 +371,11 @@ namespace simdOps {
             __syncthreads();
 
             for (int e = tid; e < length; e+= blockDim.x * gridDim.x) {
-                int idx = (int) ((dx[x] - min_val) / binSize);
+                int idx = (int) ((dx[e] - min_val) / binSize);
 				    if (idx < 0) idx = 0;
 					else if (idx >= numBins) idx = numBins - 1;
 
-				nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], 1);
+				nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (T) 1.0f);
             }
             __syncthreads();
 
@@ -383,7 +383,7 @@ namespace simdOps {
 
 
             if (gridDim.x > 1) {
-                unsigned int *tc = (unsigned int *)reductionBuffer;
+                unsigned int *tc = (unsigned int *)reductionPointer;
                 __shared__ bool amLast;
 
                 for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
@@ -396,6 +396,8 @@ namespace simdOps {
 						unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
 						amLast = (ticket == gridDim.x - 1);
 				}
+				__syncthreads();
+
 				if (amLast) {
 				    tc[16384] = 0;
 
@@ -406,12 +408,13 @@ namespace simdOps {
 
                     // accumulate reduced bins
                     for (int r = 0; r < gridDim.x; r++) {
-                        T *ptrBuf = reductionPointer +  (r *numBins);
+                        T *ptrBuf = ((T *)allocationPointer) + (r * numBins);
 
                         for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
                             bins[e] += ptrBuf[e];
                         }
                     }
+                    __syncthreads();
 
                     // write them out to Z
                     for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
