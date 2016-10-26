@@ -709,6 +709,8 @@ public class WordVectorSerializerTest {
             cnt++;
         }
 
+        vocabCache.elementAtIndex(1).markAsLabel(true);
+
         InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>(vocabCache, 10, false, 0.01, new DefaultRandom(), 0.0);
         lookupTable.resetWeights(true);
 
@@ -717,7 +719,7 @@ public class WordVectorSerializerTest {
         assertNotEquals(null, lookupTable.getExpTable());
         assertEquals(null, lookupTable.getSyn1Neg());
 
-        Word2Vec vec = new Word2Vec.Builder()
+        ParagraphVectors vec = new ParagraphVectors.Builder()
                 .lookupTable(lookupTable)
                 .vocabCache(vocabCache)
                 .build();
@@ -725,13 +727,15 @@ public class WordVectorSerializerTest {
         File tempFile = File.createTempFile("temp","w2v");
         tempFile.deleteOnExit();
 
-        WordVectorSerializer.writeWord2Vec(vec, tempFile);
+        WordVectorSerializer.writeParagraphVectors(vec, tempFile);
 
 
-        Word2Vec restoredVec = WordVectorSerializer.readWord2VecModel(tempFile, true);
+        ParagraphVectors restoredVec = WordVectorSerializer.readParagraphVectors(tempFile);
 
         for (String word: words) {
             assertEquals(true, restoredVec.hasWord(word));
         }
+
+        assertTrue(restoredVec.getVocab().elementAtIndex(1).isLabel());
     }
 }
