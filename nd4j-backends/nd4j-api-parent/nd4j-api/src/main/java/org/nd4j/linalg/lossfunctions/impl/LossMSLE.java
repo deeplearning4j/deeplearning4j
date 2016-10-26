@@ -13,12 +13,37 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @EqualsAndHashCode
 public class LossMSLE implements ILossFunction {
+
+    private final INDArray weights;
+
+    public LossMSLE(){
+        this(null);
+    }
+
+    public LossMSLE(INDArray weights){
+        if( weights != null && !weights.isRowVector()){
+            throw new IllegalArgumentException("Weights array must be a row vector");
+        }
+        this.weights = weights;
+    }
+
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)), false);
         scoreArr = scoreArr.muli(scoreArr).divi(labels.size(1));
-        if (mask != null) scoreArr.muliColumnVector(mask);
+
+        //Weighted loss function
+        if (weights != null) {
+            if (weights.length() != output.size(1)) {
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            scoreArr.muliRowVector(weights);
+        }
+
+        if (mask != null){
+            scoreArr.muliColumnVector(mask);
+        }
         return scoreArr;
     }
 
@@ -56,6 +81,14 @@ public class LossMSLE implements ILossFunction {
             gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
             INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             gradients.muli(logRatio);
+        }
+
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            gradients.muliRowVector(weights);
         }
 
         if (mask != null) {

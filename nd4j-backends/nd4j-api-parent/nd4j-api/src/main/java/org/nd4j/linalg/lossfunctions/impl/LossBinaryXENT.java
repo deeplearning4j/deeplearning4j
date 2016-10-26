@@ -16,7 +16,18 @@ import org.slf4j.LoggerFactory;
 @EqualsAndHashCode
 public class LossBinaryXENT implements ILossFunction {
 
-    private static Logger logger = LoggerFactory.getLogger(LossBinaryXENT.class);
+    private final INDArray weights;
+
+    public LossBinaryXENT(){
+        this(null);
+    }
+
+    public LossBinaryXENT(INDArray weights){
+        if( weights != null && !weights.isRowVector()){
+            throw new IllegalArgumentException("Weights array must be a row vector");
+        }
+        this.weights = weights;
+    }
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
@@ -33,6 +44,15 @@ public class LossBinaryXENT implements ILossFunction {
             secondTerm.muli(labels.rsub(1));
             scoreArr.addi(secondTerm);
         }
+
+        //Weighted loss function
+        if (weights != null) {
+            if (weights.length() != preOutput.size(1)) {
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + preOutput.size(1));
+            }
+            scoreArr.muliRowVector(weights);
+        }
+
         if (mask != null) {
             scoreArr.muliColumnVector(mask);
         }
@@ -74,6 +94,14 @@ public class LossBinaryXENT implements ILossFunction {
             INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
             INDArray numerator = output.sub(labels);
             grad.muli(numerator).divi(denominator);
+        }
+
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            grad.muliRowVector(weights);
         }
 
         if (mask != null) {

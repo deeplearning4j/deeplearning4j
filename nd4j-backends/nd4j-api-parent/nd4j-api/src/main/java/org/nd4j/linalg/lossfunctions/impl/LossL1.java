@@ -21,6 +21,9 @@ public class LossL1 implements ILossFunction {
     }
 
     public LossL1(INDArray weights){
+        if( weights != null && !weights.isRowVector()){
+            throw new IllegalArgumentException("Weights array must be a row vector");
+        }
         this.weights = weights;
     }
 

@@ -26,6 +26,9 @@ public class LossMCXENT implements ILossFunction {
     }
 
     public LossMCXENT(INDArray weights){
+        if( weights != null && !weights.isRowVector()){
+            throw new IllegalArgumentException("Weights array must be a row vector");
+        }
         this.weights = weights;
     }
 

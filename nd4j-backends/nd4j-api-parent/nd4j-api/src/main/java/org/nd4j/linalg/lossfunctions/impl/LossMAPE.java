@@ -14,13 +14,39 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
  */
 @EqualsAndHashCode
 public class LossMAPE implements ILossFunction {
+
+    private final INDArray weights;
+
+    public LossMAPE() {
+        this(null);
+    }
+
+    public LossMAPE(INDArray weights) {
+        if( weights != null && !weights.isRowVector()){
+            throw new IllegalArgumentException("Weights array must be a row vector");
+        }
+        this.weights = weights;
+    }
+
+
     public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
         INDArray scoreArr;
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         scoreArr = output.rsubi(labels).divi(labels);
         Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
         scoreArr.muli(100.0 / labels.size(1));
-        if (mask != null) scoreArr.muliColumnVector(mask);
+
+        //Weighted loss function
+        if (weights != null) {
+            if (weights.length() != output.size(1)) {
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            scoreArr.muliRowVector(weights);
+        }
+
+        if (mask != null) {
+            scoreArr.muliColumnVector(mask);
+        }
         return scoreArr;
     }
 
@@ -56,6 +82,14 @@ public class LossMAPE implements ILossFunction {
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradient = dlda.muli(sigmaPrimeZ);
+        }
+
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            gradient.muliRowVector(weights);
         }
 
         if (mask != null) {
