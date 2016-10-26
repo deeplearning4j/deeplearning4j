@@ -738,4 +738,19 @@ public class WordVectorSerializerTest {
 
         assertTrue(restoredVec.getVocab().elementAtIndex(1).isLabel());
     }
+
+    @Test
+    public void testB64_1() throws Exception {
+        String wordA = "night";
+        String wordB = "night day";
+        String encA = WordVectorSerializer.encodeB64(wordA);
+        String encB = WordVectorSerializer.encodeB64(wordB);
+
+        assertEquals(wordA, WordVectorSerializer.decodeB64(encA));
+        assertEquals(wordB, WordVectorSerializer.decodeB64(encB));
+
+        assertEquals(wordA, WordVectorSerializer.decodeB64(wordA));
+        assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
+
+    }
 }
