@@ -2364,7 +2364,7 @@ public class WordVectorSerializer {
 
             String[] split = nextLine.split(" ");
 
-            VocabWord word = new VocabWord(1.0, split[0]);
+            VocabWord word = new VocabWord(1.0, decodeB64(split[0]));
             word.setIndex(idxCounter.getAndIncrement());
 
             float[] vector = new float[split.length - 1];
