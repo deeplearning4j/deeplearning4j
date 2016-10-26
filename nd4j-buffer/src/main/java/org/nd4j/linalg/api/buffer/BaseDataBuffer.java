@@ -1273,7 +1273,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 8;
             else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
-            if (currentType != globalType && currentType != Type.INT && globalType != Type.DOUBLE) {
+            if (currentType != globalType && currentType != Type.INT && !(globalType == Type.DOUBLE)) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
 			    if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 			}
