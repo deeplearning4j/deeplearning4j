@@ -10,11 +10,13 @@
         (1, randomOps::DropOut) ,\
         (2, randomOps::DropOutInverted) ,\
         (3, randomOps::ProbablisticMerge) ,\
-        (4, randomOps::Linspace)
+        (4, randomOps::Linspace) ,\
+        (5, randomOps::Choice)
 
 #include <shape.h>
 #include <helpers/helper_random.h>
 #include <ops/random_ops.h>
+#include <ops/special_random_ops.h>
 
 
 
@@ -27,6 +29,12 @@ namespace functions {
 
             template<typename OpClass>
             static inline void execTransform(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+
+                if (OpClass::requiresSpecial) {
+                    OpClass::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+                    return;
+                }
+
                 int length = shape::length(zShapeBuffer);
                 int xEWS = shape::elementWiseStride(xShapeBuffer);
                 int yEWS = shape::elementWiseStride(yShapeBuffer);

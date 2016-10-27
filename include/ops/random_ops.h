@@ -16,6 +16,8 @@
 #define method_X  random_def T op(T valueX, int idx, nd4j::RandomHelper<T> *helper, T *extraParams) { return 0.0f; }
 #define method_XY  random_def T op(T valueX, T valueY, int idx, nd4j::RandomHelper<T> *helper, T *extraParams) { return 0.0f; }
 
+#define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
+
 #include <helpers/helper_random.h>
 
 namespace randomOps {
@@ -26,6 +28,8 @@ namespace randomOps {
     template<typename T>
     class ProbablisticMerge {
     public:
+
+        no_exec_special
 
         method_idx
         method_X
@@ -45,6 +49,8 @@ namespace randomOps {
     class BoundedDistribution {
     public:
 
+        no_exec_special
+
         method_XY
         method_X
 
@@ -59,6 +65,8 @@ namespace randomOps {
     template<typename T>
     class DropOut {
     public:
+
+        no_exec_special
 
         method_idx
         method_XY
@@ -76,6 +84,8 @@ namespace randomOps {
     class DropOutInverted {
     public:
 
+        no_exec_special
+
         method_idx
         method_XY
 
@@ -90,6 +100,9 @@ namespace randomOps {
     template<typename T>
     class Linspace {
     public:
+
+        no_exec_special
+
         method_X
         method_XY
 
