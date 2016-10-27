@@ -10,7 +10,9 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * Created by susaneraly on 8/9/16.
+ * Kullback Leibler Divergence loss function
+ *
+ * @author Susan Eraly
  */
 @EqualsAndHashCode
 public class LossKLD implements ILossFunction {
