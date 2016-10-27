@@ -1351,12 +1351,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      */
     public void finetune() {
-        if(flattenedGradients == null) initGradientsView();
-
+        if (!layerWiseConfigurations.isFinetune()) {
+            log.warn("Warning: finetune is not applied.");
+            return;
+        }
         if (!(getOutputLayer() instanceof IOutputLayer)) {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
+        if(flattenedGradients == null) initGradientsView();
+
         if(labels == null)
             throw new IllegalStateException("No labels found");
 

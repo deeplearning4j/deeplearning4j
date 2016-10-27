@@ -61,9 +61,10 @@ import java.util.Map;
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
-    protected boolean pretrain = true;
+    protected boolean pretrain = false;
+    protected boolean finetune = false;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-    protected boolean backprop = false;
+    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -250,10 +251,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        protected boolean pretrain = true;
+        protected boolean pretrain = false;
+        protected boolean finetune = false;
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-        protected boolean backprop = false;
+        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
@@ -333,6 +335,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Whether to do pre train or not
+         * @param finetune whether to finetune or not
+         * @return builder pattern
+         */
+        public Builder finetune(boolean finetune) {
+            this.finetune = finetune;
+            return this;
+        }
+
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
@@ -374,6 +386,24 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public Builder setInputType(InputType inputType){
             this.inputType = inputType;
             return this;
+        }
+
+        private void generalValidation(){
+            // TODO drop new newtork default messages after 2 iterations from 0.6.1
+            if(pretrain && !finetune)
+                log.warn("Warning: if finetune is needed add to net configuration and set to true.");
+            else if (!pretrain){
+                log.warn("Warning: new network default sets pretrain to false.");
+                if(finetune) {
+                    log.warn("Pretrain is needed with finetune and will be set automatically.");
+                    pretrain = true;
+                }
+            }
+            if(backprop) {
+                log.warn("Warning: new network default sets backprop to true.");
+                if (finetune)
+                    throw new IllegalStateException("Only set finetune or backprop. Both are not needed.");
+            }
         }
 
         public MultiLayerConfiguration build() {
@@ -437,7 +467,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
+            conf.finetune = finetune;
             conf.backprop = backprop;
+            generalValidation();
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
