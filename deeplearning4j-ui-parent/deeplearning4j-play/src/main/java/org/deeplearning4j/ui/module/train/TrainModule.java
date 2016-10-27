@@ -19,7 +19,6 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.Histogram;
@@ -62,9 +61,9 @@ public class TrainModule implements UIModule {
         Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
         Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
         Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
-        Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions );
-        Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo );
-        Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession );
+        Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
+        Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
+        Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
 
         return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c);
     }
@@ -119,22 +118,22 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private Result listSessions(){
+    private Result listSessions() {
         return Results.ok(Json.toJson(knownSessionIDs.keySet()));
     }
 
-    private Result sessionInfo(){
+    private Result sessionInfo() {
         //Display, for each session: session ID, start time, number of workers, last update
-        Map<String,Object> dataEachSession = new HashMap<>();
-        for(Map.Entry<String,StatsStorage> entry : knownSessionIDs.entrySet()){
-            Map<String,Object> dataThisSession = new HashMap<>();
+        Map<String, Object> dataEachSession = new HashMap<>();
+        for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
+            Map<String, Object> dataThisSession = new HashMap<>();
             String sid = entry.getKey();
             StatsStorage ss = entry.getValue();
             List<String> workerIDs = ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID);
             int workerCount = (workerIDs == null ? 0 : workerIDs.size());
             List<Persistable> staticInfo = ss.getAllStaticInfos(sid, StatsListener.TYPE_ID);
             long initTime = Long.MAX_VALUE;
-            if(staticInfo != null) {
+            if (staticInfo != null) {
                 for (Persistable p : staticInfo) {
                     initTime = Math.min(p.getTimeStamp(), initTime);
                 }
@@ -142,7 +141,7 @@ public class TrainModule implements UIModule {
 
             long lastUpdateTime = Long.MIN_VALUE;
             List<Persistable> lastUpdatesAllWorkers = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
-            for(Persistable p : lastUpdatesAllWorkers){
+            for (Persistable p : lastUpdatesAllWorkers) {
                 lastUpdateTime = Math.max(lastUpdateTime, p.getTimeStamp());
             }
 
@@ -151,12 +150,12 @@ public class TrainModule implements UIModule {
             dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
 
             //Model info: type, # layers, # params...
-            if(staticInfo != null && staticInfo.size() > 0){
-                StatsInitializationReport sr = (StatsInitializationReport)staticInfo.get(0);
+            if (staticInfo != null && staticInfo.size() > 0) {
+                StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);
                 String modelClassName = sr.getModelClassName();
-                if(modelClassName.endsWith("MultiLayerNetwork")){
+                if (modelClassName.endsWith("MultiLayerNetwork")) {
                     modelClassName = "MultiLayerNetwork";
-                } else if(modelClassName.endsWith("ComputationGraph")){
+                } else if (modelClassName.endsWith("ComputationGraph")) {
                     modelClassName = "ComputationGraph";
                 }
                 int numLayers = sr.getModelNumLayers();
@@ -177,8 +176,8 @@ public class TrainModule implements UIModule {
         return ok(Json.toJson(dataEachSession));
     }
 
-    private Result setSession(String newSessionID){
-        if(knownSessionIDs.containsKey(newSessionID)){
+    private Result setSession(String newSessionID) {
+        if (knownSessionIDs.containsKey(newSessionID)) {
             currentSessionID = newSessionID;
             return ok();
         } else {
@@ -283,14 +282,14 @@ public class TrainModule implements UIModule {
         return Results.ok(Json.toJson(result));
     }
 
-    private Result getModelGraph(){
+    private Result getModelGraph() {
 
 
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
 
-        if(allStatic.size() == 0){
+        if (allStatic.size() == 0) {
             return ok();
         }
 
@@ -299,16 +298,14 @@ public class TrainModule implements UIModule {
 
         String modelClass = p.getModelClassName();
         String config = p.getModelConfigJson();
-        if(modelClass.endsWith("MultiLayerNetwork")){
+        if (modelClass.endsWith("MultiLayerNetwork")) {
             MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-//            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
-
             TrainModuleUtils.GraphInfo info = TrainModuleUtils.buildGraphInfo(conf);
 
             return ok(Json.toJson(info));
-        } else if(modelClass.endsWith("ComputationGraph")){
+        } else if (modelClass.endsWith("ComputationGraph")) {
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
-            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+            TrainModuleUtils.GraphInfo mi = TrainModuleUtils.buildGraphInfo(conf);
 
             return ok(Json.toJson(mi));
         } else {
@@ -366,7 +363,7 @@ public class TrainModule implements UIModule {
         result.put("activations", activationMap);
 
         //Get learning rate vs. time chart for layer
-        Map<String,Object> lrs = getLayerLearningRates(layerID, updates);
+        Map<String, Object> lrs = getLayerLearningRates(layerID, updates);
         result.put("learningRates", lrs);
 
         //Parameters histogram data
@@ -597,11 +594,11 @@ public class TrainModule implements UIModule {
         return new Triple<>(iterCounts, mean, stdev);
     }
 
-    private Map<String,Object> getLayerLearningRates(String paramName, List<Persistable> updates) {
+    private Map<String, Object> getLayerLearningRates(String paramName, List<Persistable> updates) {
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
-        Map<String,float[]> byName = new HashMap<>();
+        Map<String, float[]> byName = new HashMap<>();
         int used = 0;
         if (updates != null) {
             for (Persistable u : updates) {
@@ -610,13 +607,13 @@ public class TrainModule implements UIModule {
                 iterCounts[used] = sp.getIterationCount();
 
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
-                Map<String,Double> lrs = sp.getLearningRates();
+                Map<String, Double> lrs = sp.getLearningRates();
 
-                for(String p : lrs.keySet()){
-                    if(p.startsWith(paramName + "_")){
+                for (String p : lrs.keySet()) {
+                    if (p.startsWith(paramName + "_")) {
                         String layerParamName = p.substring(Math.min(p.length(), paramName.length() + 1));
-                        if(!byName.containsKey(layerParamName)){
-                            byName.put(layerParamName,new float[size]);
+                        if (!byName.containsKey(layerParamName)) {
+                            byName.put(layerParamName, new float[size]);
                         }
                         float[] lrThisParam = byName.get(layerParamName);
                         lrThisParam[used] = lrs.get(p).floatValue();
@@ -629,7 +626,7 @@ public class TrainModule implements UIModule {
         List<String> paramNames = new ArrayList<>(byName.keySet());
         Collections.sort(paramNames);   //Sorted for consistency
 
-        Map<String,Object> ret = new HashMap<>();
+        Map<String, Object> ret = new HashMap<>();
         ret.put("iterCounts", iterCounts);
         ret.put("paramNames", paramNames);
         ret.put("lrs", byName);
