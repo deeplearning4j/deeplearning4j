@@ -167,6 +167,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         INDArray layerInput;
 
         for (int i = 0; i < getnLayers(); i++) {
+            // TODO if RBM then get number of pretrain iterations to use and loop
             if (i == 0) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();

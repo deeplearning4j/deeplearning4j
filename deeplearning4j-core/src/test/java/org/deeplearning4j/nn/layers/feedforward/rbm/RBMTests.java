@@ -20,6 +20,9 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
 import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -28,6 +31,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -326,6 +330,55 @@ public class RBMTests {
         INDArray actualVOut = rbm.propDown(actualHOut);
         assertEquals(expectedVOut, actualVOut);
 
+    }
+
+    @Test
+    public void testRBM(){
+//        Original test from @Treo
+        INDArray features = Nd4j.rand(new int[]{100, 10});
+
+        MultiLayerConfiguration rbm;
+        rbm = new NeuralNetConfiguration.Builder()
+                .seed(0xDEADBEEF)
+                .iterations(2000)
+                .biasInit(0)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.NONE)
+                .learningRate(1)
+                .miniBatch(false)
+//                .epsilon(1)
+                .weightInit(WeightInit.UNIFORM)
+                .list(
+                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                                .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .activation("identity")
+                                .nOut(features.columns()).build(),
+                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .activation("identity")
+                                .nOut(features.columns()).build()
+                )
+                .backprop(true)
+                .pretrain(true)
+                .setInputType(InputType.feedForward(features.columns()))
+                .build();
+
+        System.out.println("Training RBM network, initialized with Xavier");
+        MultiLayerNetwork rbmModel = new MultiLayerNetwork(rbm);
+        rbmModel.init();
+        rbmModel.setListeners(new ScoreIterationListener(100));
+        rbmModel.fit(features, features);
+        double v = rbmModel.score();
+
+        System.out.println("Training RBM network, initialized with correct solution");
+        MultiLayerNetwork rbmModel2 = new MultiLayerNetwork(rbm);
+        rbmModel2.init();
+        rbmModel2.setListeners(new ScoreIterationListener(200));
+
+        rbmModel2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbmModel2.getParam("0_W")))));
+        rbmModel2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbmModel2.getParam("1_W")))));
+
+        rbmModel2.fit(features, features);
+        double x = rbmModel2.score();
     }
 
 }
