@@ -90,17 +90,15 @@ public class LossMCXENT implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         if ("softmax".equals(activationFn)) {
-
-
             //Weighted loss function
             if(weights != null){
                 if(weights.length() != output.size(1)){
                     throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
                 }
-//                grad.muliRowVector(weights);
-                grad = output.subi(labels.mulRowVector(weights));
+                INDArray temp = labels.mulRowVector(weights);
+                INDArray col = temp.sum(1);
+                grad = output.mulColumnVector(col).sub(temp);
             } else {
-
                 grad = output.subi(labels);
             }
         } else {

@@ -93,7 +93,16 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
 
         if ("softmax".equals(activationFn)) {
-            grad = output.subi(labels);
+            if(weights != null){
+                if(weights.length() != output.size(1)){
+                    throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+                }
+                INDArray temp = labels.mulRowVector(weights);
+                INDArray col = temp.sum(1);
+                grad = output.mulColumnVector(col).sub(temp);
+            } else {
+                grad = output.subi(labels);
+            }
         } else {
             // So, the derivative of XE(preoutput, label, activation) wrt preoutput is
             // for sanity sake, we'll call activation(preoutput) = a and activation'(preoutput) = a'
@@ -103,14 +112,14 @@ public class LossBinaryXENT implements ILossFunction {
             INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
             INDArray numerator = output.sub(labels);
             grad.muli(numerator).divi(denominator);
-        }
 
-        //Weighted loss function
-        if (weights != null) {
-            if (weights.length() != output.size(1)) {
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            //Weighted loss function
+            if (weights != null) {
+                if (weights.length() != output.size(1)) {
+                    throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+                }
+                grad.muliRowVector(weights);
             }
-            grad.muliRowVector(weights);
         }
 
         if (mask != null) {

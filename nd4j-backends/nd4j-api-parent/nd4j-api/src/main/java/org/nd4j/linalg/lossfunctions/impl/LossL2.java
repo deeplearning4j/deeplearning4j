@@ -15,20 +15,21 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 /**
  * Created by susaneraly on 9/14/16.
  */
-@EqualsAndHashCode @JsonInclude(JsonInclude.Include.NON_NULL)
+@EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossL2 implements ILossFunction {
 
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
     private final INDArray weights;
 
-    public LossL2(){
+    public LossL2() {
         this(null);
 
     }
 
-    public LossL2(INDArray weights){
-        if( weights != null && !weights.isRowVector()){
+    public LossL2(INDArray weights) {
+        if (weights != null && !weights.isRowVector()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         this.weights = weights;
@@ -41,8 +42,8 @@ public class LossL2 implements ILossFunction {
         scoreArr = scoreArr.muli(scoreArr);
 
         //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
+        if (weights != null) {
+            if (weights.length() != output.size(1)) {
                 throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
             }
             scoreArr.muliRowVector(weights);
@@ -78,19 +79,21 @@ public class LossL2 implements ILossFunction {
 
         INDArray gradients;
         if ("softmax".equals(activationFn)) {
-            gradients = LossUtil.dLdZsoftmaxi(output.sub(labels).muli(2), output);
+            INDArray dlda = output.sub(labels).muli(2);
+            if (weights != null) {
+                dlda.muliRowVector(weights);
+            }
+            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
+
+            //Weighted loss function
+            if (weights != null) {
+                gradients.muliRowVector(weights);
+            }
         }
 
-        //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
-            }
-            gradients.muliRowVector(weights);
-        }
 
         //Loss function with masking
         if (mask != null) {

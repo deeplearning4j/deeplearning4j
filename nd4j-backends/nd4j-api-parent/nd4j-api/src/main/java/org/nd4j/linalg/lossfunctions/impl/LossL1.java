@@ -78,20 +78,16 @@ public class LossL1 implements ILossFunction {
         INDArray outSubLabels = output.sub(labels);
         INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels));
 
+        if(weights != null){
+            dlda.muliRowVector(weights);
+        }
+
         INDArray gradients;
         if ("softmax".equals(activationFn)) {
             gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradients = dlda.muli(sigmaPrimeZ);
-        }
-
-        //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
-            }
-            gradients.muliRowVector(weights);
         }
 
         if (mask != null) {

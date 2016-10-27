@@ -83,20 +83,20 @@ public class LossMAPE implements ILossFunction {
         INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
         dlda.divi(absLabels).muli(-100.0 / labels.size(1));
 
+        //Weighted loss function
+        if(weights != null){
+            if(weights.length() != output.size(1)){
+                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            }
+            dlda.muliRowVector(weights);
+        }
+
         INDArray gradient;
         if ("softmax".equals(activationFn)) {
             gradient = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradient = dlda.muli(sigmaPrimeZ);
-        }
-
-        //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
-            }
-            gradient.muliRowVector(weights);
         }
 
         if (mask != null) {

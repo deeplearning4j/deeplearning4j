@@ -81,6 +81,11 @@ public class LossMSLE implements ILossFunction {
             INDArray dlda = p1.rdiv(2.0 / labels.size(1));
             INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             dlda.muli(logRatio);
+
+            if(weights != null){
+                dlda.muliRowVector(weights);
+            }
+
             gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray p1 = output.addi(1.0);
@@ -88,14 +93,11 @@ public class LossMSLE implements ILossFunction {
             gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
             INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             gradients.muli(logRatio);
-        }
 
-        //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
+            //Weighted loss function
+            if(weights != null){
+                gradients.muliRowVector(weights);
             }
-            gradients.muliRowVector(weights);
         }
 
         if (mask != null) {
