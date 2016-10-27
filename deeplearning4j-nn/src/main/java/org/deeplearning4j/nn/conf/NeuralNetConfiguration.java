@@ -183,11 +183,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public ListBuilder finetune(boolean finetune) {
-            this.finetune = finetune;
-            return this;
-        }
-
         public ListBuilder layer(int ind, Layer layer) {
             if(layerwise.containsKey(ind)){
                 layerwise.get(ind).layer(layer);
@@ -220,7 +215,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
-                    pretrain(pretrain).backpropType(backpropType).finetune(finetune).tBPTTForwardLength(tbpttFwdLength)
+                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
                     .cnnInputSize(this.cnnInputSize)
                     .setInputType(this.inputType)
