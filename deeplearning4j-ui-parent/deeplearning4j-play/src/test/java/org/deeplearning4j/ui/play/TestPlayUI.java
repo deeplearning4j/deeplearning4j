@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
@@ -54,32 +55,18 @@ public class TestPlayUI {
         }
 
 
-
-
         Thread.sleep(100000);
     }
 
     @Test
-    public void testModelInfo(){
+    public void testUICompGraph() throws Exception {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .list()
-                .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true).build();
+        StatsStorage ss = new MapDBStatsStorage();  //In-memory
 
-        ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+        UIServer uiServer = UIServer.getInstance();
+        uiServer.attach(ss);
 
-        List<LayerInfo> layerInfos = mi.getLayers();
-        for(LayerInfo li : layerInfos){
-            System.out.println(li);
-        }
-//        System.out.println(mi.getLayers());
-//        System.out.println();
-
-
-        ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("L0", new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build(), "in")
@@ -88,11 +75,20 @@ public class TestPlayUI {
                 .setOutputs("L1")
                 .build();
 
-        System.out.println("------------------");
-        ModelInfo mi2 = TrainModuleUtils.buildModelInfo(graph);
-        for(LayerInfo li : mi2.getLayers()){
-            System.out.println(li);
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
+
+        DataSetIterator iter = new IrisDataSetIterator(150,150);
+
+        for( int i=0; i<10; i++ ){
+            net.fit(iter);
+            Thread.sleep(1000);
         }
+
+
+        Thread.sleep(100000);
     }
 
 }
