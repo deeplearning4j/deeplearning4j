@@ -9,7 +9,8 @@
         (0, randomOps::BoundedDistribution) ,\
         (1, randomOps::DropOut) ,\
         (2, randomOps::DropOutInverted) ,\
-        (3, randomOps::ProbablisticMerge)
+        (3, randomOps::ProbablisticMerge) ,\
+        (4, randomOps::Linspace)
 
 #include <shape.h>
 #include <helpers/helper_random.h>
@@ -153,13 +154,13 @@ namespace functions {
                     if (ews == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int x = 0; x < length; x++) {
-                            z[x] = OpClass::op(z[x], x, nullptr, extraArguments);
+                            z[x] = OpClass::op(z[x], x, length, nullptr, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int x = 0; x < length; x++) {
-                            z[x * ews] = OpClass::op(z[x * ews], x, nullptr, extraArguments);
+                            z[x * ews] = OpClass::op(z[x * ews], x, length, nullptr, extraArguments);
                         }
                     }
                 } else {
@@ -175,7 +176,7 @@ namespace functions {
                     for (int i = 0; i < length; i++) {
                         shape::ind2sub(zRank, zShape, i, zCoord);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
-                        z[zOffset2] = OpClass::op(z[zOffset2], i, nullptr,  extraArguments);
+                        z[zOffset2] = OpClass::op(z[zOffset2], i, length, nullptr,  extraArguments);
                     }
                 }
             }
