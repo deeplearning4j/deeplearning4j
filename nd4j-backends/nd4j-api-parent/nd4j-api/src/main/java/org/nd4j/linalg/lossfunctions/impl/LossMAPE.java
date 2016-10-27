@@ -1,6 +1,7 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
@@ -17,7 +18,9 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 /**
  * Created by susaneraly on 8/15/16.
  */
-@EqualsAndHashCode @JsonInclude(JsonInclude.Include.NON_NULL)
+@EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter
 public class LossMAPE implements ILossFunction {
 
     @JsonSerialize(using = RowVectorSerializer.class)
@@ -28,8 +31,15 @@ public class LossMAPE implements ILossFunction {
         this(null);
     }
 
+    /**
+     * Mean Absolute Percentage Error loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
+     * Note that the weights array must be a row vector, of length equal to the labels/output dimension 1 size.
+     * A weight vector of 1s should give identical results to no weight vector.
+     *
+     * @param weights Weights array (row vector). May be null.
+     */
     public LossMAPE(INDArray weights) {
-        if( weights != null && !weights.isRowVector()){
+        if (weights != null && !weights.isRowVector()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         this.weights = weights;
@@ -84,10 +94,7 @@ public class LossMAPE implements ILossFunction {
         dlda.divi(absLabels).muli(-100.0 / labels.size(1));
 
         //Weighted loss function
-        if(weights != null){
-            if(weights.length() != output.size(1)){
-                throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
-            }
+        if (weights != null) {
             dlda.muliRowVector(weights);
         }
 
@@ -109,7 +116,6 @@ public class LossMAPE implements ILossFunction {
     @Override
     public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
-        //Yes - will implement in round two. Just want to get done now.
 
         return new Pair<>(
                 computeScore(labels, preOutput, activationFn, mask, average),
@@ -118,7 +124,8 @@ public class LossMAPE implements ILossFunction {
 
     @Override
     public String toString() {
-        return "LossMAPE()";
+        if (weights == null) return "LossMAPE()";
+        return "LossMAPE(weights=" + weights + ")";
     }
 
 }

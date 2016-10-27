@@ -4,15 +4,25 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by susaneraly on 8/15/16.
+ * Mean absolute error loss function: L = 1/N sum_i abs(predicted_i - actual_i)
+ * See also {@link LossL1} for a mathematically similar loss function (LossL1 does not have division by N, where N is output size)
+ *
+ * @author Susan Eraly
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class LossMAE extends LossL1 {
 
     public LossMAE(){
 
     }
 
+    /**
+     * Mean Absolute Error loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
+     * Note that the weights array must be a row vector, of length equal to the labels/output dimension 1 size.
+     * A weight vector of 1s should give identical results to no weight vector.
+     *
+     * @param weights Weights array (row vector). May be null.
+     */
     public LossMAE(INDArray weights){
         super(weights);
     }
@@ -41,6 +51,7 @@ public class LossMAE extends LossL1 {
 
     @Override
     public String toString() {
-        return "LossMAE()";
+        if(weights == null) return "LossMAE()";
+        return "LossMAE(weights=" + weights + ")";
     }
 }

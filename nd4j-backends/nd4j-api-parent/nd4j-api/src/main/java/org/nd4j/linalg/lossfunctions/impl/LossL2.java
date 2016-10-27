@@ -1,6 +1,7 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -13,21 +14,32 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
- * Created by susaneraly on 9/14/16.
+ * L2 loss function: i.e., sum of squared errors, L = sum_i (actual_i - predicted)^2
+ * See also {@link LossMSE} for a mathematically similar loss function (MSE has division by N, where N is output size)
+ *
+ * @author Susan Eraly
  */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter
 public class LossL2 implements ILossFunction {
 
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
-    private final INDArray weights;
+    protected final INDArray weights;
 
     public LossL2() {
         this(null);
 
     }
 
+    /**
+     * L2 loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
+     * Note that the weights array must be a row vector, of length equal to the labels/output dimension 1 size.
+     * A weight vector of 1s should give identical results to no weight vector.
+     *
+     * @param weights Weights array (row vector). May be null.
+     */
     public LossL2(INDArray weights) {
         if (weights != null && !weights.isRowVector()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
@@ -88,7 +100,6 @@ public class LossL2 implements ILossFunction {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
             gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
 
-            //Weighted loss function
             if (weights != null) {
                 gradients.muliRowVector(weights);
             }
@@ -113,6 +124,7 @@ public class LossL2 implements ILossFunction {
 
     @Override
     public String toString() {
-        return "LossL2()";
+        if (weights == null) return "LossL2()";
+        return "LossL2(weights=" + weights + ")";
     }
 }
