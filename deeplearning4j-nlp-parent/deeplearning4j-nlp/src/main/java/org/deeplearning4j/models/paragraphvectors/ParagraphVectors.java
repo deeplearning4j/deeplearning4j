@@ -147,10 +147,13 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(List<VocabWord> document, double learningRate, double minLearningRate, int iterations) {
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
-        if (learner == null || !learner.getCodeName().equals("PV-DM")) {
+
+        if (learner == null) {
+            log.info("Creating new PV-DM learner...");
             learner = new DM<VocabWord>();
             learner.configure(vocab, lookupTable, configuration);
         }
+
         Sequence<VocabWord> sequence = new Sequence<>();
         sequence.addElements(document);
         sequence.setSequenceLabel(new VocabWord(1.0, String.valueOf(new Random().nextInt())));
@@ -736,6 +739,9 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setEpochs(this.numEpochs);
             this.configuration.setStopList(this.stopWords);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+            this.configuration.setTrainElementsVectors(this.trainElementsVectors);
+            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
+            this.configuration.setSequenceLearningAlgorithm(this.sequenceLearningAlgorithm.getClass().getCanonicalName());
 
             ret.configuration = this.configuration;
 
@@ -1064,6 +1070,12 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder elementsLearningAlgorithm(String algorithm) {
             super.elementsLearningAlgorithm(algorithm);
+            return this;
+        }
+
+        @Override
+        public Builder usePreciseWeightInit(boolean reallyUse) {
+            super.usePreciseWeightInit(reallyUse);
             return this;
         }
 
