@@ -62,9 +62,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     private transient Solver solver;
 
-    //NOTE: So shouldn't I have something like this here..with a setter?
-    private transient ILossFunction lossFunction;
-
     private double fullNetworkL1;
     private double fullNetworkL2;
 
