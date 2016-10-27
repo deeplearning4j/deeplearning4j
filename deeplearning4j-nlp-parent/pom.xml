@@ -15,7 +15,5 @@
     <modules>
         <module>deeplearning4j-nlp</module>
         <module>deeplearning4j-nlp-uima</module>
-        <module>deeplearning4j-nlp-korean</module>
-        <module>deeplearning4j-nlp-japanese</module>
     </modules>
 </project>
