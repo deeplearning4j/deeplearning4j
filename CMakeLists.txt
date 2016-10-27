@@ -52,7 +52,7 @@ if(DEV)
     endif(CUDA_FOUND)
 
     set(CUDA_BLAS TRUE)
-    add_executable(main main.cpp include/files.h)
+    add_executable(main main.cpp include/helpers/files.h)
 endif(DEV)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")

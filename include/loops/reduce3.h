@@ -10,15 +10,15 @@
 
 #define EXTRA_PARAMS_LENGTH 10
 
-#include <templatemath.h>
-#include <helper_cuda.h>
-#include <sharedmem.h>
+#include "../templatemath.h"
+#include "../helper_cuda.h"
+#include "../helpers/sharedmem.h"
 #include <omp.h>
-#include <pairwise_util.h>
-#include <dll.h>
-#include <shape.h>
-#include <ops.h>
-#include <op_boilerplate.h>
+#include "../pairwise_util.h"
+#include "../dll.h"
+#include "../shape.h"
+#include "../ops/ops.h"
+#include "../op_boilerplate.h"
 
 #ifdef __JNI__
 #include <jni.h>

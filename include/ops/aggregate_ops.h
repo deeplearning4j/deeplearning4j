@@ -4,8 +4,8 @@
 #ifndef LIBND4J_AGGREGATE_OPS_H
 #define LIBND4J_AGGREGATE_OPS_H
 
-#include <ops.h>
-#include <templatemath.h>
+#include "ops.h"
+#include "../templatemath.h"
 
 #define HS_MAX_EXP 6.0f
 

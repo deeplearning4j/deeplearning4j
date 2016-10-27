@@ -7,11 +7,11 @@
 
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
-#include <shape.h>
+#include "../shape.h"
 #include <omp.h>
-#include <dll.h>
-#include <ops.h>
-#include <op_boilerplate.h>
+#include "../dll.h"
+#include "../ops/ops.h"
+#include "../op_boilerplate.h"
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
@@ -23,7 +23,7 @@
 #ifdef __JNI__
 #include <jni.h>
 #endif
-#include <pairwise_util.h>
+#include "../pairwise_util.h"
 
 
 #define INDEX_REDUCE_OPS \

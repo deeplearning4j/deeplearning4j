@@ -11,14 +11,14 @@
 #include <jni.h>
 #endif
 #include <omp.h>
-#include <templatemath.h>
-#include <helper_cuda.h>
-#include <shape.h>
-#include <pairwise_util.h>
-#include <dll.h>
+#include "../templatemath.h"
+#include "../helper_cuda.h"
+#include "../shape.h"
+#include "../pairwise_util.h"
+#include "../dll.h"
 #include <stdio.h>
-#include <ops.h>
-#include <op_boilerplate.h>
+#include "../ops/ops.h"
+#include "../op_boilerplate.h"
 
 #ifdef __CUDACC__
 #include <cuda.h>
