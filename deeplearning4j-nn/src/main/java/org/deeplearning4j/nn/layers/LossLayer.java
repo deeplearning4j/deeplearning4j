@@ -23,13 +23,15 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -39,7 +41,9 @@ import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -47,7 +51,7 @@ import java.util.List;
  *
  * A flexible output "layer" that performs a loss function onan input without MLP logic.
  */
-public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SoftOutputLayer>
+public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
     implements Serializable, IOutputLayer {
 
     //current input and label matrices
@@ -55,18 +59,29 @@ public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     private transient Solver solver;
 
-    //NOTE: So shouldn't I have something like this here..with a setter?
-    private transient ILossFunction lossFunction;
-
     private double fullNetworkL1;
     private double fullNetworkL2;
 
-    public SoftOutputLayer(NeuralNetConfiguration conf) {
+    public LossLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    public SoftOutputLayer(NeuralNetConfiguration conf, INDArray input) {
+    public LossLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+    }
+
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret
+            = new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    public ParamInitializer initializer() {
+        return EmptyParamInitializer.getInstance();
     }
 
     /** Compute score after labels and input have been set.
@@ -140,11 +155,23 @@ public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = triple.getSecond();
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));
 
-        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        return new Pair<>(triple.getFirst(),epsilonNext);
+        return new Pair<>(triple.getFirst(), triple.getSecond());
+    }
+
+
+    /** Returns tuple: {Gradient,Delta,Output} given preOut */
+    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
+        // delta calculation
+        ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(), maskArray);
+        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+
+        // grab the empty gradient
+        Gradient gradient = new DefaultGradient();
+
+        return new Triple<>(gradient, delta, output);
     }
 
     /**
@@ -156,30 +183,8 @@ public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
         return gradient;
     }
 
-    /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
-        ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));    //TODO: do we need dup here?
-
-        Gradient gradient = new DefaultGradient();
-
-        INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-
-        Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-        biasGradView.assign(delta.sum(0));
-
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
-
-        return new Triple<>(gradient, delta, output);
-    }
-
     @Override
-    public double calcL2() {
-        return 0;
-    }
+    public double calcL2() {return 0; }
 
     @Override
     public double calcL1() {
@@ -232,10 +237,10 @@ public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public  INDArray output(boolean training) {
+    public INDArray output(boolean training) {
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
-        return super.activate(training);
+        return activate(training);
     }
 
     @Override
@@ -303,8 +308,7 @@ public class SoftOutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public void fit(DataSetIterator iter) {
-        while(iter.hasNext())
-            fit(iter.next());
+        // no-op
     }
 
     /**

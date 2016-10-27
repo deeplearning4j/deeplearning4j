@@ -22,10 +22,10 @@ import java.util.Map;
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SoftOutputLayer extends FeedForwardLayer {
+public class LossLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
 
-    protected SoftOutputLayer(Builder builder) {
+    protected LossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
     }
@@ -50,8 +50,6 @@ public class SoftOutputLayer extends FeedForwardLayer {
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected ILossFunction lossFn = new LossMCXENT();
-        @Deprecated
-        protected String customLossFunction;
 
         public Builder() {}
 
@@ -69,13 +67,6 @@ public class SoftOutputLayer extends FeedForwardLayer {
 
         public T lossFunction(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
-            return (T)this;
-        }
-
-
-        @Deprecated
-        public T customLossFunction(String customLossFunction) {
-            this.customLossFunction = customLossFunction;
             return (T)this;
         }
     }
