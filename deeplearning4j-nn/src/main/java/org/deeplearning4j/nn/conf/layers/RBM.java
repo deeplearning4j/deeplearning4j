@@ -59,7 +59,7 @@ import java.util.Map;
 public class RBM extends BasePretrainNetwork {
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
-    protected int k;
+    protected int k; // gibbs sampling steps standard is 1 and includes propup and propdown
     protected double sparsity;
 
     @Override
