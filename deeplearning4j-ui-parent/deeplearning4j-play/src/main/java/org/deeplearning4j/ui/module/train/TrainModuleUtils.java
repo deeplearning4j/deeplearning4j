@@ -1,7 +1,10 @@
 package org.deeplearning4j.ui.module.train;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -16,6 +19,75 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by Alex on 17/10/2016.
  */
 public class TrainModuleUtils {
+
+
+    @AllArgsConstructor @Data
+    public static class GraphInfo {
+
+        private List<String> layerNames;
+        private List<String> layerTypes;
+        private List<List<Integer>> layerInputs;
+        private List<Map<String,String>> layerInfo;
+    }
+
+    public static GraphInfo buildGraphInfo(MultiLayerConfiguration config){
+
+        List<String> layerNames = new ArrayList<>();
+        List<String> layerTypes = new ArrayList<>();
+        List<List<Integer>> layerInputs = new ArrayList<>();
+        List<Map<String,String>> layerInfo = new ArrayList<>();
+        layerNames.add("Input");
+        layerTypes.add("Input");
+        layerInputs.add(Collections.emptyList());
+        layerInfo.add(Collections.emptyMap());
+
+        List<NeuralNetConfiguration> list = config.getConfs();
+        int layerIdx = 1;
+        for(NeuralNetConfiguration c : list){
+            Layer layer = c.getLayer();
+            String layerName = layer.getLayerName();
+            if(layerName == null) layerName = "layer" + layerIdx;
+            layerNames.add(layerName);
+
+            String layerType = c.getLayer().getClass().getSimpleName().replaceAll("Layer$", "");
+            layerTypes.add(layerType);
+
+            layerInputs.add(Collections.singletonList(layerIdx-1));
+            layerIdx++;
+
+            //Extract layer info
+            Map<String,String> map = new LinkedHashMap<>();
+
+            if(layer instanceof FeedForwardLayer){
+                FeedForwardLayer layer1 = (FeedForwardLayer)layer;
+                map.put("Input size", String.valueOf(layer1.getNIn()));
+                map.put("Output size", String.valueOf(layer1.getNOut()));
+                map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(c,true)));
+                map.put("Activation Function", layer1.getActivationFunction());
+            }
+
+            if (layer instanceof ConvolutionLayer) {
+                org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+                map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
+                map.put("Stride", Arrays.toString(layer1.getStride()));
+                map.put("Padding", Arrays.toString(layer1.getPadding()));
+            } else if (layer instanceof SubsamplingLayer) {
+                SubsamplingLayer layer1 = (SubsamplingLayer) layer;
+                map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
+                map.put("Stride", Arrays.toString(layer1.getStride()));
+                map.put("Padding", Arrays.toString(layer1.getPadding()));
+                map.put("Pooling Type", layer1.getPoolingType().toString());
+            } else if(layer instanceof BaseOutputLayer){
+                BaseOutputLayer ol = (BaseOutputLayer)layer;
+                map.put("Loss Function", ol.getLossFn().toString() );
+            }
+
+            layerInfo.add(map);
+        }
+
+        return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo);
+    }
+
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
     public static final String INPUT = "INPUT";
