@@ -21,6 +21,46 @@ namespace randomOps {
 
 
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            /**
+             * X holds data,
+             * Y holds probabilities
+             * Z will hold results
+             */
+
+            RandomHelper<T> helper(123);
+
+            // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
+            //T probSum = extraArguments[0];
+
+            int xLength = shape::length(xShapeBuffer);
+            int yLength = shape::length(yShapeBuffer);
+            int zLength = shape::length(zShapeBuffer);
+
+            int xEWS = shape::elementWiseStride(xShapeBuffer);
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
+            int zEWS = shape::elementWiseStride(zShapeBuffer);
+
+            int elementsPerThread = zLength / ELEMENT_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            if (zEWS >= 1) {
+#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+                for (int e = 0; e < zLength; e++) {
+                    T prob = helper.nextT((T) 1.0f);
+                    T cumProb = (T) 0.0f;
+                    for (int f; f < yLength; f++) {
+                        T relProb = y[f * yEWS];
+                        cumProb += relProb;
+
+                        if (prob <= cumProb || f == yLength - 1) {
+                            z[e * zEWS] = x[f * xEWS];
+                        }
+                    }
+                }
+            } else {
+
+            }
 
         }
     };
