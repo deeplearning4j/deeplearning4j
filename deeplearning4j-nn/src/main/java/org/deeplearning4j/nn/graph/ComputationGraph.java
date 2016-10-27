@@ -633,7 +633,7 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(dataSetIterator);
         }
 
-        if (configuration.isBackprop()) {
+        if (configuration.isBackprop() || configuration.isFinetune()) {
             update(TaskUtils.buildTask(dataSetIterator));
             while (dataSetIterator.hasNext()) {
                 DataSet next = dataSetIterator.next();
@@ -696,7 +696,7 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(multiDataSetIterator);
         }
 
-        if (configuration.isBackprop()) {
+        if (configuration.isBackprop() || configuration.isFinetune()) {
             while (multiDataSetIterator.hasNext()) {
                 MultiDataSet next = multiDataSetIterator.next();
                 if (next.getFeatures() == null || next.getLabels() == null)
@@ -754,6 +754,9 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isPretrain()) {
             throw new UnsupportedOperationException("Pretraining: Not yet implemented");
+        }
+        if (configuration.isFinetune()) {
+            throw new UnsupportedOperationException("Finetuning: Not yet implemented");
         }
 
         if (configuration.isBackprop()) {

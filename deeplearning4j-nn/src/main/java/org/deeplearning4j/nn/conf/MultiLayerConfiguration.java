@@ -388,7 +388,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        private void generalValidation(){
+        private void validate(){
             // TODO drop new newtork default messages after 2 iterations from 0.6.1
             if(pretrain && !finetune)
                 log.warn("Warning: if finetune is needed add to net configuration and set to true.");
@@ -469,7 +469,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.pretrain = pretrain;
             conf.finetune = finetune;
             conf.backprop = backprop;
-            generalValidation();
+            validate();
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
