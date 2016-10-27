@@ -301,9 +301,11 @@ public class TrainModule implements UIModule {
         String config = p.getModelConfigJson();
         if(modelClass.endsWith("MultiLayerNetwork")){
             MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
+//            ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
 
-            return ok(Json.toJson(mi));
+            TrainModuleUtils.GraphInfo info = TrainModuleUtils.buildGraphInfo(conf);
+
+            return ok(Json.toJson(info));
         } else if(modelClass.endsWith("ComputationGraph")){
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
             ModelInfo mi = TrainModuleUtils.buildModelInfo(conf);
