@@ -21,7 +21,7 @@ public class BoundedDistribution extends BaseRandomOp {
      * @param to
      */
     public BoundedDistribution(INDArray z, double from, double to) {
-        init(z, null, z, z.length());
+        init(null, null, z, z.length());
         this.from = from;
         this.to = to;
         this.extraArgs = new Object[]{from, to};
@@ -33,6 +33,14 @@ public class BoundedDistribution extends BaseRandomOp {
      */
     public BoundedDistribution(INDArray z) {
         this(z, 0.0, 1.0);
+    }
+
+    /**
+     * This op fills Z with random values within 0...to
+     * @param z
+     */
+    public BoundedDistribution(INDArray z, double to) {
+        this(z, 0.0, to);
     }
 
     @Override
