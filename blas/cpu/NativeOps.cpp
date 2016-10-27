@@ -2586,3 +2586,11 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
     NativeOpExcutioner<float>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
 }
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+}

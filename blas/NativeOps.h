@@ -1285,6 +1285,10 @@ public:
 
     void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments);
 
+    void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments);
+
+    void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments);
+
 
 
     /**
