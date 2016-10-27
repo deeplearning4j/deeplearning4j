@@ -69,8 +69,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     protected List<String> networkOutputs;
 
-    protected boolean pretrain = true;
-    protected boolean backprop = false;
+    protected boolean pretrain = false;
+    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -243,6 +243,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
             }
         }
+        if (!pretrain)
+            log.warn("Warning: new network default sets pretrain to false.");
+        if(backprop)
+            log.warn("Warning: new network default sets backprop to true.");
 
         //Check for no graph cycles: done in ComputationGraph.init()
     }
