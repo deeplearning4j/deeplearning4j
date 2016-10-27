@@ -348,33 +348,17 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .build();
 
         assertFalse(conf.isPretrain());
-        assertFalse(conf.isFinetune());
         assertTrue(conf.isBackprop());
 
         conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                 .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                .pretrain(true).finetune(true).backprop(false)
+                .pretrain(true).backprop(false)
                 .build();
 
         assertTrue(conf.isPretrain());
-        assertTrue(conf.isFinetune());
         assertFalse(conf.isBackprop());
-    }
-    @Test(expected = IllegalStateException.class)
-    public void testBackFineValidation() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                .pretrain(true).finetune(true)
-                .build();
-
-        assertTrue(conf.isPretrain());
-        assertTrue(conf.isFinetune());
-        assertTrue(conf.isBackprop());
-
     }
 
 
