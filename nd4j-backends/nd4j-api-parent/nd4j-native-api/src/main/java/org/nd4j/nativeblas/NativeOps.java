@@ -1468,4 +1468,12 @@ public class NativeOps extends Pointer {
     public native void execAggregateBatchDouble(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
 
     public native void execAggregateBatchHalf(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
+
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer y, IntPointer yShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
 }
