@@ -204,7 +204,7 @@ public class LossFunctionGradientCheck {
                 //Want binary vector labels
                 ret[1] = Nd4j.rand(minibatch, nOut);
                 BooleanIndexing.replaceWhere(ret[1],0, Conditions.lessThanOrEqual(0.5));
-                BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOEqual(0.5));
+                BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOrEqual(0.5));
                 break;
             case "LossCosineProximity":
                 //Should be real-valued??
@@ -247,7 +247,7 @@ public class LossFunctionGradientCheck {
                 //Binary vector labels should be OK here??
                 ret[1] = Nd4j.rand(minibatch, nOut);
                 BooleanIndexing.replaceWhere(ret[1],0, Conditions.lessThanOrEqual(0.5));
-                BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOEqual(0.5));
+                BooleanIndexing.replaceWhere(ret[1],1, Conditions.greaterThanOrEqual(0.5));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown class: " + l.getClass().getSimpleName());
@@ -263,8 +263,6 @@ public class LossFunctionGradientCheck {
         INDArray[] weights = new INDArray[]{
                 Nd4j.create(new double[]{0.2, 0.3, 0.5}),
                 Nd4j.create(new double[]{1.0, 0.5, 2.0})};
-
-
 
 
         List<String> passed = new ArrayList<>();
@@ -310,25 +308,6 @@ public class LossFunctionGradientCheck {
                     "softmax",  //nll + softmax
             };
 
-            int[] nOut = new int[]{
-                    3,          //xent
-                    3,          //l1
-                    3,          //l1 + softmax
-                    3,          //l2
-                    3,          //l2 + softmax
-                    3,          //mae
-                    3,          //mae + softmax
-                    3,          //mape
-                    3,          //mape + softmax
-                    3,          //mcxent
-                    3,          //mse
-                    3,          //mse + softmax
-                    3,          //msle
-                    3,          //msle + softmax
-                    3,          //nll
-                    3,          //nll + softmax
-            };
-
             int[] minibatchSizes = new int[]{1, 3};
 
             for (int i = 0; i < lossFunctions.length; i++) {
@@ -347,14 +326,14 @@ public class LossFunctionGradientCheck {
                             .layer(1, new OutputLayer.Builder()
                                     .lossFunction(lossFunctions[i])
                                     .activation(outputActivationFn[i])
-                                    .nIn(4).nOut(nOut[i])
+                                    .nIn(4).nOut(3)
                                     .build())
                             .pretrain(false).backprop(true).build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
 
-                    INDArray[] inOut = getFeaturesAndLabels(lossFunctions[i], minibatchSizes[j], 4, nOut[i], 12345);
+                    INDArray[] inOut = getFeaturesAndLabels(lossFunctions[i], minibatchSizes[j], 4, 3, 12345);
                     INDArray input = inOut[0];
                     INDArray labels = inOut[1];
 
