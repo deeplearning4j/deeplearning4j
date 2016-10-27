@@ -10,14 +10,14 @@ int element_threshold = 32;
 #include <shape.h>
 
 #include <cublas_v2.h>
-#include <reduce3.h>
-#include <reduce.h>
-#include <indexreduce.h>
-#include <pairwise_transform.h>
-#include <transform.h>
-#include <scalar.h>
-#include <broadcasting.h>
-#include <summarystatsreduce.h>
+#include <loops/reduce3.h>
+#include <loops/reduce.h>
+#include <loops/indexreduce.h>
+#include <loops/pairwise_transform.h>
+#include <loops/transform.h>
+#include <loops/scalar.h>
+#include <loops/broadcasting.h>
+#include <loops/summarystatsreduce.h>
 #include <thread>
 #include <map>
 #include <cuda.h>
@@ -27,10 +27,10 @@ int element_threshold = 32;
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <type_conversions.h>
+#include <loops/type_conversions.h>
 #include <op_boilerplate.h>
-#include <grid.h>
-#include <aggregates.h>
+#include <loops/grid.h>
+#include <loops/aggregates.h>
 //#include <sys/time.h>
 
 
@@ -6071,4 +6071,8 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
+
 }

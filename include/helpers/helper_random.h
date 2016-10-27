@@ -53,6 +53,9 @@ namespace nd4j {
          * @return
          */
         int nextInt(int from, int to) {
+            if (from == 0)
+                return nextInt(to);
+
             return 0;
         };
 
@@ -80,6 +83,9 @@ namespace nd4j {
          * @return
          */
         T nextT(T from, T to) {
+            if (from == (T) 0.0f)
+                return nextInt(to);
+
             return 0.0f;
         }
     };

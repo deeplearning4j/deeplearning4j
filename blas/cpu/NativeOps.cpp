@@ -11,9 +11,9 @@ int element_threshold = 32;
 #include <pairwise_util.h>
 #include <templatemath.h>
 #include <types/float8.h>
-#include <type_conversions.h>
-#include <aggregates.h>
-#include <helper_ptrmap.h>
+#include <loops/type_conversions.h>
+#include <loops/aggregates.h>
+#include <helpers/helper_ptrmap.h>
 
 char *name;
 bool nameSet = false;
@@ -2581,4 +2581,8 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
 
 void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
     // TODO: add support for fp16
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
+    NativeOpExcutioner<float>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
 }

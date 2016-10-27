@@ -1280,6 +1280,14 @@ public:
     void execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments);
 
     /**
+     * Random operations
+     */
+
+    void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments);
+
+
+
+    /**
      * Grid operations
      */
 
