@@ -339,4 +339,27 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertEquals(conf, conf3);
     }
 
+    @Test
+    public void testPreBackFineValidation() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .build();
+
+        assertFalse(conf.isPretrain());
+        assertTrue(conf.isBackprop());
+
+        conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .pretrain(true).backprop(false)
+                .build();
+
+        assertTrue(conf.isPretrain());
+        assertFalse(conf.isBackprop());
+    }
+
+
 }

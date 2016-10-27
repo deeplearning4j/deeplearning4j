@@ -86,8 +86,8 @@ public class TfidfVectorizerTest {
         log.info("TF-IDF vector: " + Arrays.toString(vector.data().asDouble()));
 
         assertEquals(0, vector.getDouble(0), 0.001);
-        assertEquals(0.088, vector.getDouble(1), 0.001);
-        assertEquals(0.088, vector.getDouble(2), 0.001);
+        assertEquals(.04402, vector.getDouble(1), 0.001);
+        assertEquals(.04402, vector.getDouble(2), 0.001);
         assertEquals(0, vector.getDouble(3), 0.001);
         assertEquals(0.119, vector.getDouble(4), 0.001);
         assertEquals(0, vector.getDouble(5), 0.001);
