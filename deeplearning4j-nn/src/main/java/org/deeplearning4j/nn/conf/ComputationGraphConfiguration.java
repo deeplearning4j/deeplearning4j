@@ -70,7 +70,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected List<String> networkOutputs;
 
     protected boolean pretrain = false;
-    protected boolean finetune = false;
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
@@ -194,7 +193,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);
 
         conf.pretrain = pretrain;
-        conf.finetune = finetune;
         conf.backprop = backprop;
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
@@ -395,7 +393,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected List<String> networkOutputs = new ArrayList<>();
 
         protected boolean pretrain = false;
-        protected boolean finetune = false;
         protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
@@ -448,16 +445,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
-            return this;
-        }
-
-        /**
-         * Whether to do layerwise finetune or not
-         *
-         * @param finetune whether to do pre train or not
-         */
-        public GraphBuilder finetune(boolean finetune) {
-            this.finetune = finetune;
             return this;
         }
 

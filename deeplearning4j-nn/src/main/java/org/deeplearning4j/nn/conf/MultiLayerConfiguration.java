@@ -62,7 +62,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
     protected boolean pretrain = false;
-    protected boolean finetune = false;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
@@ -252,7 +251,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected boolean pretrain = false;
-        protected boolean finetune = false;
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = true;
@@ -335,16 +333,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**
-         * Whether to do pre train or not
-         * @param finetune whether to finetune or not
-         * @return builder pattern
-         */
-        public Builder finetune(boolean finetune) {
-            this.finetune = finetune;
-            return this;
-        }
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
@@ -389,21 +377,14 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
 
         private void validate(){
-            // TODO drop new newtork default messages after 2 iterations from 0.6.1
-            if(pretrain && !finetune)
-                log.warn("Warning: if finetune is needed add to net configuration and set to true.");
-            else if (!pretrain){
+            // TODO drop new network default messages after 2 iterations from 0.6.1
+            if(pretrain && !backprop)
+                log.warn("Warning: pretrain is set to true and if finetune is needed set backprop to true.");
+            else if (!pretrain)
                 log.warn("Warning: new network default sets pretrain to false.");
-                if(finetune) {
-                    log.warn("Pretrain is needed with finetune and will be set automatically.");
-                    pretrain = true;
-                }
-            }
-            if(backprop) {
+            if(backprop)
                 log.warn("Warning: new network default sets backprop to true.");
-                if (finetune)
-                    throw new IllegalStateException("Only set finetune or backprop. Both are not needed.");
-            }
+
         }
 
         public MultiLayerConfiguration build() {
@@ -467,7 +448,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
-            conf.finetune = finetune;
             conf.backprop = backprop;
             validate();
             conf.inputPreProcessors = inputPreProcessors;
