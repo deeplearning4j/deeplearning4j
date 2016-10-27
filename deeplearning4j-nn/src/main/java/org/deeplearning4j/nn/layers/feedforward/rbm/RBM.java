@@ -20,12 +20,14 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -407,14 +409,18 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      */
     @Override
     public void fit(INDArray input) {
-        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN) {
-            this.sigma = input.var(0);
-            this.sigma.divi(input.rows());
-        }
 
         super.fit(input);
     }
 
+//    @Override
+//    public void setBackpropGradientsViewArray(INDArray gradients) {
+//        if(this.params != null && gradients.length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
+//                + ", got params of length " + gradients.length());
+//
+//        this.gradientsFlattened = gradients;
+//        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf,gradients);
+//    }
 
 
     @Deprecated
