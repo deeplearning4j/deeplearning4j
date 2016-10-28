@@ -7,9 +7,11 @@ layout: default
 
 Deeplearning4j's examples run on benchmark datasets that don't present any obstacles in the data pipeline, because we abstracted them away. But real-world users start with raw, messy data, which they need to preprocess, vectorize and use to train a neural net for clustering or classification. 
 
-*Canova* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [Canova Javadoc is here](http://deeplearning4j.org/canovadoc/).)
+*DataVec* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [Datavec Javadoc is here](http://deeplearning4j.org/datavecdoc/).)
 
 This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people.
+
+***Note*** this code example is old and uses Canova instead of the replacement DataVec. If you wish to use this code as a template to write an example using our current implementation you are welcome to, we will not however assist in using out of date libraries. 
 
 ## Introductory Video
 
