@@ -49,4 +49,4 @@ Below are the different kinds of multilayer networks:
 
 * [Stacked Denoising AutoEncoders](./stackeddenoisingautoencoder.html)
 * [Deep Belief Networks](./deepbeliefnetwork.html)
-* [Continuous Deep Belief Networks](./continuousdeepbeliefnetwork.html)
+
