@@ -36,7 +36,7 @@ namespace randomOps {
 
         random_def T op(T valueX, T valueY, int idx,  int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
             T threshold = extraParams[0];
-            T randVal = helper->nextT((T) 1.0f);
+            T randVal = helper->nextT();
 
             return randVal <= threshold ? valueY : valueX;
         }
@@ -72,8 +72,8 @@ namespace randomOps {
         method_XY
 
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
-            T randVal = helper->nextT(extraParams[0]);
-            return randVal <= extraParams[1] ? (T) 0.0f : valueX;
+            T randVal = helper->nextT();
+            return randVal <= extraParams[0] ? (T) 0.0f : valueX;
         }
     };
 
@@ -90,8 +90,8 @@ namespace randomOps {
         method_XY
 
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
-            T prob = extraParams[1];
-            T randVal = helper->nextT(extraParams[0]);
+            T prob = extraParams[0];
+            T randVal = helper->nextT();
             return randVal >= prob ? (T) 0.0f : valueX / prob;
         }
     };
@@ -110,9 +110,9 @@ namespace randomOps {
             T from = extraParams[0];
             T to = extraParams[1];
 
-            T step = idx / (length - 1);
+            T step = (T) idx / ((T)length - (T) 1.0f);
 
-            return from * (1 - step) + step * to;
+            return from * ((T) 1.0f - step) + step * to;
         }
     };
 }

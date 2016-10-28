@@ -9,7 +9,8 @@
 #include <curand.h>
 #endif
 
-#define MAX_INT 2147483647;
+#define MAX_INT 2147483647
+#define MAX_UINT 18446744073709551615
 
 #include <helpers/helper_generator.h>
 
@@ -42,6 +43,10 @@ namespace nd4j {
                 int r = (int) buffer->getNextElement();
                 return r < 0 ? -1 * r : r;
             };
+
+            uint64_t nextUInt() {
+                return buffer->getNextElement();
+            }
 
             /**
              * This method returns random int in range [0..to]
@@ -90,7 +95,7 @@ namespace nd4j {
              * @return
              */
             T nextT() {
-                return (T) nextInt() / (T) MAX_INT;
+                return (T) nextUInt() / (T) MAX_UINT;
             }
 
             /**
