@@ -9,17 +9,23 @@
 #include <inttypes.h>
 #endif
 
+
+#include <mutex>
+
 namespace nd4j {
     namespace random {
 
         class RandomBuffer {
         private:
             long size;
-            long *buffer;
+            uint64_t *buffer;
             long offset;
             long seed;
             long position;
             long generation;
+            long currentPosition;
+
+            std::mutex mtx;
 
         public:
             /**
@@ -28,18 +34,28 @@ namespace nd4j {
              * @param size
              * @return
              */
-            RandomBuffer(long size, long seed) {
-                this->buffer = (long *) malloc(size * sizeof(long));
+            RandomBuffer(long seed, long size, long *buffer) {
+                this->buffer = (uint64_t *) buffer;
                 this->seed = seed;
+                this->size = size;
                 this->generation = 1;
+                this->currentPosition = 0;
             }
 
-            long *getBuffer() {
+            uint64_t *getBuffer() {
                 return this->buffer;
             }
 
             long getSize() {
                 return this->size;
+            }
+
+            long getSeed() {
+                return this->seed;
+            }
+
+            void setSeed(long seed) {
+                this->seed = seed;
             }
 
             long getAllocatedSize() {
@@ -54,32 +70,39 @@ namespace nd4j {
                 this->seed = seed;
             }
 
-            long getElement(long position) {
+            uint64_t getElement(long position) {
                 return buffer[position];
             }
 
-            long getNextElement() {
-                // TODO: proper implementation needed here
-                return buffer[0];
+            long getNextIndex() {
+                mtx.lock();
+                currentPosition++;
+                long ret = currentPosition;
+                mtx.unlock();
+
+                return ret;
             }
 
-            ~RandomBuffer() {
-                free(buffer);
+            uint64_t getNextElement() {
+                // TODO: proper implementation needed here
+                return buffer[getNextIndex()];
             }
         };
 
         class IGenerator {
         protected:
-            long limit = 0;
-            long *buffer;
-            RandomBuffer *realBuffer;
+            long limit;
+            long seed;
+            uint64_t *buffer;
+            nd4j::random::RandomBuffer *realBuffer;
 
         public:
 
-            IGenerator(RandomBuffer *buffer) {
+            IGenerator(nd4j::random::RandomBuffer *buffer) {
                 this->limit = buffer->getSize();
-                this->buffer = buffer->getBuffer();
+                this->buffer = (uint64_t *) buffer->getBuffer();
                 this->realBuffer = buffer;
+                this->seed = buffer->getSeed();
             }
 
             RandomBuffer *getBuffer() {
@@ -105,7 +128,6 @@ namespace nd4j {
 
         class Xoroshiro128 : public IGenerator {
         protected:
-            uint64_t seed;
             uint64_t state[2];
 
 
@@ -157,13 +179,16 @@ namespace nd4j {
             }
 
         public:
-            Xoroshiro128(RandomBuffer *buffer) : IGenerator(buffer) {
+            Xoroshiro128(nd4j::random::RandomBuffer *buffer) : IGenerator(buffer) {
                 //
             }
 
             void refreshBuffer() {
+                state[0] = seedConv(this->seed);
+                state[1] = seedConv(this->seed * 119 + 3);
+
                 for (long i = 0; i < limit; i++) {
-                    buffer[i] = (long) next64();
+                    buffer[i] = next64();
                 }
             }
         };

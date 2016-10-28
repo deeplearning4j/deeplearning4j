@@ -6086,10 +6086,10 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 }
 
 
-Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
+Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
     // TODO: to be implemented
-    return 0;
 }
+
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     // TODO:: to be implemented

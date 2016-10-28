@@ -49,7 +49,7 @@ namespace randomOps {
             if (zEWS >= 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                 for (int e = 0; e < zLength; e++) {
-                    T prob = helper.nextT((T) 1.0f);
+                    T prob = helper.nextT();
                     T cumProb = (T) 0.0f;
                     for (int f; f < yLength; f++) {
                         T relProb = y[f * yEWS];

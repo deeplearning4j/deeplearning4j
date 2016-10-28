@@ -1290,7 +1290,7 @@ public:
     void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments);
 
 
-    Nd4jPointer initRandom(long seed, long bufferSize);
+    Nd4jPointer initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer);
 
     void destroyRandom(Nd4jPointer ptrBuffer);
 

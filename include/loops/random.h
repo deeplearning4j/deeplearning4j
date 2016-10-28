@@ -40,6 +40,10 @@ namespace functions {
                 int yEWS = shape::elementWiseStride(yShapeBuffer);
                 int zEWS = shape::elementWiseStride(zShapeBuffer);
 
+                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                nd4j::random::Xoroshiro128 generator(buffer);
+                nd4j::random::RandomHelper<T> helper(&generator);
+
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -48,13 +52,13 @@ namespace functions {
                     if (xEWS == 1 && yEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int e = 0; e < length; e++) {
-                            z[e] = OpClass::op(x[e], y[e], e, nullptr, extraArguments);
+                            z[e] = OpClass::op(x[e], y[e], e, length, &helper, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int e = 0; e < length; e++) {
-                            z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, nullptr, extraArguments);
+                            z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, &helper, extraArguments);
                         }
                     }
                 } else {
@@ -90,7 +94,7 @@ namespace functions {
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, nullptr, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, nullptr, extraArguments);
                     }
                 }
             }
@@ -102,6 +106,10 @@ namespace functions {
                 int xEWS = shape::elementWiseStride(xShapeBuffer);
                 int zEWS = shape::elementWiseStride(zShapeBuffer);
 
+                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                nd4j::random::Xoroshiro128 generator(buffer);
+                nd4j::random::RandomHelper<T> helper(&generator);
+
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -110,13 +118,13 @@ namespace functions {
                     if (xEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int e = 0; e < length; e++) {
-                            z[e] = OpClass::op(x[e], e, nullptr, extraArguments);
+                            z[e] = OpClass::op(x[e], e, length,  &helper, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int e = 0; e < length; e++) {
-                            z[e * zEWS] = OpClass::op(x[e * xEWS], e, nullptr, extraArguments);
+                            z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, &helper, extraArguments);
                         }
                     }
                 } else {
@@ -144,7 +152,7 @@ namespace functions {
                         Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], i, nullptr, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, nullptr, extraArguments);
                     }
                 }
             }
@@ -154,6 +162,10 @@ namespace functions {
                 int length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
+                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                nd4j::random::Xoroshiro128 generator(buffer);
+                nd4j::random::RandomHelper<T> helper(&generator);
+
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -162,13 +174,13 @@ namespace functions {
                     if (ews == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int x = 0; x < length; x++) {
-                            z[x] = OpClass::op(z[x], x, length, nullptr, extraArguments);
+                            z[x] = OpClass::op(x, length, &helper, extraArguments);
                         }
 
                     } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                         for (int x = 0; x < length; x++) {
-                            z[x * ews] = OpClass::op(z[x * ews], x, length, nullptr, extraArguments);
+                            z[x * ews] = OpClass::op(x, length, &helper, extraArguments);
                         }
                     }
                 } else {
@@ -184,7 +196,7 @@ namespace functions {
                     for (int i = 0; i < length; i++) {
                         shape::ind2sub(zRank, zShape, i, zCoord);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
-                        z[zOffset2] = OpClass::op(z[zOffset2], i, length, nullptr,  extraArguments);
+                        z[zOffset2] = OpClass::op(i, length, nullptr,  extraArguments);
                     }
                 }
             }

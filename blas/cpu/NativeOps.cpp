@@ -2595,16 +2595,16 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
 }
 
-Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
-    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize);
+Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
+    long *ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
+    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, ptrBuf);
 
-    nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
-    generator->refreshBuffer();
-
-    delete generator;
+    nd4j::random::Xoroshiro128 generator(buffer);
+    generator.refreshBuffer();
 
     return (Nd4jPointer) buffer;
 }
+
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(ptrBuffer);
