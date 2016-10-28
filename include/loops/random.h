@@ -94,7 +94,7 @@ namespace functions {
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, nullptr, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, &helper, extraArguments);
                     }
                 }
             }
@@ -152,7 +152,7 @@ namespace functions {
                         Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, nullptr, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, &helper, extraArguments);
                     }
                 }
             }
@@ -196,7 +196,7 @@ namespace functions {
                     for (int i = 0; i < length; i++) {
                         shape::ind2sub(zRank, zShape, i, zCoord);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
-                        z[zOffset2] = OpClass::op(i, length, nullptr,  extraArguments);
+                        z[zOffset2] = OpClass::op(i, length, &helper,  extraArguments);
                     }
                 }
             }

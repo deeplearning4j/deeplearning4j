@@ -71,12 +71,16 @@ namespace nd4j {
             }
 
             uint64_t getElement(long position) {
-                return buffer[position];
+                return buffer[this->getOffset() + position];
             }
 
             long getNextIndex() {
                 mtx.lock();
                 currentPosition++;
+                if (currentPosition >= size) {
+                    currentPosition = 0;
+                    generation++;
+                }
                 long ret = currentPosition;
                 mtx.unlock();
 
@@ -85,7 +89,7 @@ namespace nd4j {
 
             uint64_t getNextElement() {
                 // TODO: proper implementation needed here
-                return buffer[getNextIndex()];
+                return generation == 1 ? buffer[getNextIndex()] : buffer[getNextIndex()]  * generation;
             }
         };
 

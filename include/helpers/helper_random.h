@@ -40,7 +40,7 @@ namespace nd4j {
              * @return
              */
             int nextInt() {
-                int r = (int) buffer->getNextElement();
+                int r = (int) nextUInt();
                 return r < 0 ? -1 * r : r;
             };
 
@@ -120,6 +120,90 @@ namespace nd4j {
                 return from + (nextT() * (to - from));
             }
 
+            uint64_t relativeUInt(int index) {
+                return buffer->getElement(index);
+            }
+
+            /**
+             *  relative methods are made as workaround for lock-free concurrent execution
+             */
+
+            int relativeInt(int index) {
+                return (int) relativeInt(index);
+            }
+
+            /**
+             * This method returns random int within [0..to]
+             *
+             * @param index
+             * @param to
+             * @return
+             */
+            int relativeInt(int index, int to) {
+                // TODO: to be implemented
+                return 0;
+            }
+
+            /**
+             * This method returns random int within [from..to]
+             *
+             * @param index
+             * @param to
+             * @param from
+             * @return
+             */
+            int relativeInt(int index, int to, int from) {
+                if (from == 0)
+                    return relativeInt(index, to);
+
+                return from + relativeInt(index, to - from);
+            }
+
+            /**
+             * This method returns random T within [0..1]
+             *
+             * @param index
+             * @return
+             */
+            T relativeT(int index) {
+                return (T) relativeUInt() / (T) MAX_UINT;
+            }
+
+            /**
+             * This method returns random T within [0..to]
+             *
+             * @param index
+             * @param to
+             * @return
+             */
+            T relativeT(int index, T to) {
+                if (to == (T) 1.0f)
+                    return relativeT();
+
+                return relativeT((T) 0.0f, to);
+            }
+
+            /**
+             * This method returns random T within [from..to]
+             *
+             * @param index
+             * @param from
+             * @param to
+             * @return
+             */
+            T relativeT(int index, T from, T to) {
+                return from + (relativeT(index) * (to - from));
+            }
+
+
+            /**
+             * This method skips X elements from buffer
+             *
+             * @param numberOfElements number of elements to skip
+             */
+            void rewind(long numberOfElements) {
+                buffer->setOffset(buffer->getOffset() + numberOfElements);
+            }
         };
     }
 }
