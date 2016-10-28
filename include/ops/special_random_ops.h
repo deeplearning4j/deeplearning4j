@@ -27,7 +27,7 @@ namespace randomOps {
              * Z will hold results
              */
 
-            RandomHelper<T> helper(123);
+            nd4j::RandomHelper<T> helper(123);
 
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
