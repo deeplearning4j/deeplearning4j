@@ -14,11 +14,11 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.stats.api.*;
+import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
-import org.deeplearning4j.ui.stats.temp.HistogramBin;
 import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -571,18 +571,18 @@ public class StatsListener implements RoutingIterationListener {
         Map<String, Histogram> out = new LinkedHashMap<>();
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
-            HistogramBin histogram = new HistogramBin.Builder(entry.getValue().dup())
-                    .setBinCount(nBins)
-                    .setRounding(6)
-                    .build();
-            INDArray bins = histogram.getBins();
+
+            org.nd4j.linalg.api.ops.impl.transforms.Histogram hOp = new org.nd4j.linalg.api.ops.impl.transforms.Histogram(entry.getValue(), nBins);
+            Nd4j.getExecutioner().exec(hOp);
+
+            INDArray bins = hOp.z();
             int[] count = new int[nBins];
             for( int i=0; i<bins.length(); i++ ){
                 count[i] = (int)bins.getDouble(i);
             }
 
-            double min = histogram.getMin();
-            double max = histogram.getMax();
+            double min = entry.getValue().minNumber().doubleValue();
+            double max = entry.getValue().maxNumber().doubleValue();
 
             Histogram h = new Histogram(min, max, nBins, count);
 
