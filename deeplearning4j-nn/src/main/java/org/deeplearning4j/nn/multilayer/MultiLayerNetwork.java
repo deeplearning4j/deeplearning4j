@@ -20,7 +20,6 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import lombok.Setter;
-import org.datavec.api.records.metadata.RecordMetaData;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -1038,19 +1037,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();
-            while (iter.hasNext()) {
-                DataSet next = iter.next();
-                if (next.getFeatureMatrix() == null || next.getLabels() == null)
-                    break;
-                setInput(next.getFeatureMatrix());
-                setLabels(next.getLabels());
-                finetune();
-            }
-
+//            while (iter.hasNext()) {
+//                DataSet next = iter.next();
+//                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+//                    break;
+//                setInput(next.getFeatureMatrix());
+//                setLabels(next.getLabels());
+//                finetune();
+//            }
         }
         if (layerWiseConfigurations.isBackprop()) {
-            if(layerWiseConfigurations.isPretrain())
-                iter.reset();
             update(TaskUtils.buildTask(iter));
             iter.reset();
             while (iter.hasNext()) {
@@ -1078,7 +1074,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
                 if(hasMaskArrays) clearLayerMaskArrays();
             }
+        } else if (layerWiseConfigurations.isPretrain()) {
+            log.warn("Warning: finetune is not applied.");
         }
+
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
@@ -1351,13 +1350,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Run SGD based on the given labels
      *
      */
+    @Deprecated
     public void finetune() {
-        if(flattenedGradients == null) initGradientsView();
-
+        if (!layerWiseConfigurations.isBackprop()) {
+            log.warn("Warning: finetune is not applied.");
+            return;
+        }
         if (!(getOutputLayer() instanceof IOutputLayer)) {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
+        if(flattenedGradients == null) initGradientsView();
+
         if(labels == null)
             throw new IllegalStateException("No labels found");
 
@@ -1436,7 +1440,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
-            finetune();
+//            finetune();
         }
 
         if(layerWiseConfigurations.isBackprop()) {
@@ -2416,7 +2420,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             } else {
                 out = this.output(features,false);
                 if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
-                else e.eval(labels,out,next.getExampleMetaData(RecordMetaData.class));
+                else{
+                    List<Serializable> meta = next.getExampleMetaData();
+                    List<Object> meta2 = (meta == null ? null : new ArrayList<Object>(meta));
+                    e.eval(labels,out,meta2);
+                }
             }
         }
 

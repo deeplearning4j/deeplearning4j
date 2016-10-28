@@ -184,7 +184,7 @@ public class MultiLayerTest {
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
                         .activation("tanh")
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
@@ -655,6 +655,7 @@ public class MultiLayerTest {
                 .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
+                .setInputType(InputType.convolutional(20,20,1))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -698,6 +699,7 @@ public class MultiLayerTest {
                 .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
+                .setInputType(InputType.convolutional(20,20,1))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -8,8 +8,10 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
@@ -24,6 +26,9 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,7 +133,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected void initLearners() {
         if (!configured) {
             log.info("Building learning algorithms:");
-            if (trainElementsVectors && elementsLearningAlgorithm != null) {
+            if (trainElementsVectors && elementsLearningAlgorithm != null && !trainSequenceVectors) {
                 log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
                 elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
                 elementsLearningAlgorithm.pretrain(iterator);
@@ -137,6 +142,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 log.info("          building SequenceLearningAlgorithm: [" + sequenceLearningAlgorithm.getCodeName() + "]");
                 sequenceLearningAlgorithm.configure(vocab, lookupTable, configuration);
                 sequenceLearningAlgorithm.pretrain(this.iterator);
+
+                // we'll use the ELA compatible with selected SLA
+                if (trainElementsVectors) {
+                    elementsLearningAlgorithm = sequenceLearningAlgorithm.getElementsLearningAlgorithm();
+                    log.info("          building ElementsLearningAlgorithm: [" + elementsLearningAlgorithm.getCodeName() + "]");
+                }
             }
             configured = true;
         }
@@ -146,6 +157,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
+        AtomicLong timeSpent = new AtomicLong(0);
         if (!trainElementsVectors && !trainSequenceVectors) throw new IllegalStateException("You should define at least one training goal 'trainElementsRepresentation' or 'trainSequenceRepresentation'");
         if (iterator == null) throw new IllegalStateException("You can't fit() data without SequenceIterator defined");
 
@@ -162,11 +174,57 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         } else {
             // otherwise we reset weights, independent of actual current state of lookup table
             lookupTable.resetWeights(true);
+
+            // if preciseWeights used, we roll over data once again
+            if (configuration.isPreciseWeightInit()) {
+                log.info("Using precise weights init...");
+                iterator.reset();
+                while (iterator.hasMoreSequences()) {
+                    Sequence<T> sequence = iterator.nextSequence();
+
+                    // initializing elements, only once
+                    for (T element: sequence.getElements()) {
+                        T realElement = vocab.tokenFor(element.getLabel());
+
+                        if (realElement != null && !realElement.isInit()) {
+                            INDArray randArray = Nd4j.rand(configuration.getSeed() * realElement.hashCode(), new int[]{1, configuration.getLayersSize()}).subi(0.5).divi(configuration.getLayersSize());
+
+                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            realElement.setInit(true);
+                        }
+                    }
+
+                    // initializing labels, only once
+                    for (T label: sequence.getSequenceLabels()) {
+                        T realElement = vocab.tokenFor(label.getLabel());
+
+                        if (realElement != null && !realElement.isInit()) {
+                            DefaultRandom random = new DefaultRandom(configuration.getSeed() * sequence.hashCode());
+                            INDArray randArray = Nd4j.rand(new int[]{1, configuration.getLayersSize()}, random).subi(0.5).divi(configuration.getLayersSize());
+/*
+                            if (realElement.getLabel().equals("DOC_16392")) {
+                                log.info("seed: {}", configuration.getSeed());
+                                log.info("DOC_16392 hash: {}", sequence.hashCode());
+                                log.info("Sequence: {}", sequence.getElements());
+                                log.info("Data: {}", Arrays.toString(randArray.data().asFloat()));
+                            }
+*/
+
+                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            realElement.setInit(true);
+                        }
+                    }
+                }
+                this.iterator.reset();
+            }
         }
+
+
 
         initLearners();
 
         log.info("Starting learning process...");
+        timeSpent.set(System.currentTimeMillis());
         if (this.stopWords == null) this.stopWords = new ArrayList<>();
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
             final AtomicLong linesCounter = new AtomicLong(0);
@@ -218,6 +276,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 }
             }
         }
+
+        log.info("Time spent on training: {} ms", System.currentTimeMillis() - timeSpent.get());
     }
 
 
@@ -225,7 +285,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         if (sequence.getElements().isEmpty()) return;
 
-        if (trainElementsVectors) {
+        /*
+            we do NOT train elements separately if sequnceLearningAlgorithm isn't CBOW
+            we skip that, because PV-DM includes CBOW
+          */
+        if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!elementsLearningAlgorithm.isEarlyTerminationHit()) scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
@@ -257,7 +321,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected int layerSize = 100;
         protected int window = 5;
         protected boolean hugeModelExpected = false;
-        protected int batchSize = 100;
+        protected int batchSize = 512;
         protected int learningRateDecayWords;
         protected long seed;
         protected boolean useAdaGrad = false;
@@ -269,6 +333,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         protected boolean trainSequenceVectors = false;
         protected boolean trainElementsVectors = true;
+
+        protected boolean preciseWeightInit = false;
 
         protected List<String> stopWords = new ArrayList<>();
 
@@ -459,6 +525,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @param reallyUse
          * @return
          */
+        @Deprecated
         public Builder<T> useAdaGrad(boolean reallyUse) {
             this.useAdaGrad = reallyUse;
             return this;
@@ -542,6 +609,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> lookupTable(@NonNull WeightLookupTable<T> lookupTable) {
             this.lookupTable = lookupTable;
+
+            this.layerSize(lookupTable.layerSize());
+
             return this;
         }
 
@@ -681,6 +751,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * If set to true, initial weights for elements/sequences will be derived from elements themself.
+         * However, this implies additional cycle through input iterator.
+         *
+         * Default value: FALSE
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> usePreciseWeightInit(boolean reallyUse){
+            this.preciseWeightInit = reallyUse;
+            return this;
+        }
+
+        /**
          * This method creates new WeightLookupTable<T> and VocabCache<T> if there were none set
          */
         protected void presetTables() {
@@ -703,6 +787,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .lr(learningRate)
                         .seed(seed)
                         .build();
+            }
+
+            if (this.configuration.getElementsLearningAlgorithm() != null) {
+                try {
+                    elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) Class.forName(this.configuration.getElementsLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (this.configuration.getSequenceLearningAlgorithm() != null) {
+                try {
+                    sequenceLearningAlgorithm = (SequenceLearningAlgorithm<T>) Class.forName(this.configuration.getSequenceLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             if (trainElementsVectors && elementsLearningAlgorithm == null) {
@@ -795,6 +895,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setUNK(this.UNK);
             this.configuration.setVariableWindows(variableWindows);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
 
             vectors.configuration = this.configuration;
 
@@ -930,7 +1031,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         @Override
         public void run() {
-            while ( digitizer.hasMoreLines()) {
+            Nd4j.getAffinityManager().getDeviceForCurrentThread();
+             while ( digitizer.hasMoreLines()) {
                 try {
                     // get current sentence as list of VocabularyWords
                     List<Sequence<T>> sequences = new ArrayList<>();
@@ -953,6 +1055,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
+
+                        // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 
@@ -985,6 +1089,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 } catch (Exception  e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            if (trainElementsVectors) {
+                elementsLearningAlgorithm.finish();
+            }
+
+            if (trainSequenceVectors) {
+                sequenceLearningAlgorithm.finish();
             }
         }
     }

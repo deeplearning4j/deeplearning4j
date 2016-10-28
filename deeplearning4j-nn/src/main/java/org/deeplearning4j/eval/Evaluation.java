@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.eval;
 
-import org.datavec.api.records.metadata.RecordMetaData;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
@@ -60,7 +59,7 @@ public class Evaluation implements Serializable {
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
-    protected Map<Pair<Integer,Integer>,List<RecordMetaData>> confusionMatrixMetaData;      //Pair: (Actual,Predicted)
+    protected Map<Pair<Integer,Integer>,List<Object>> confusionMatrixMetaData;      //Pair: (Actual,Predicted)
 
     // Empty constructor
     public Evaluation() {
@@ -189,7 +188,7 @@ public class Evaluation implements Serializable {
      * @param guesses      the guesses/prediction (usually a probability vector)
      */
     public void eval(INDArray realOutcomes, INDArray guesses) {
-        eval(realOutcomes, guesses, (List<RecordMetaData>)null);
+        eval(realOutcomes, guesses, (List<Object>)null);
     }
 
     /**
@@ -200,7 +199,7 @@ public class Evaluation implements Serializable {
      * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
      *
      */
-    public void eval(INDArray realOutcomes, INDArray guesses, List<RecordMetaData> recordMetaData ) {
+    public void eval(INDArray realOutcomes, INDArray guesses, List<?> recordMetaData ) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -265,7 +264,7 @@ public class Evaluation implements Serializable {
                 confusion.add(actual,predicted);
 
                 if(recordMetaData != null && recordMetaData.size() > i){
-                    RecordMetaData m = recordMetaData.get(i);
+                    Object m = recordMetaData.get(i);
                     addToMetaConfusionMatrix(actual,predicted,m);
                 }
             }
@@ -993,13 +992,13 @@ public class Evaluation implements Serializable {
     }
 
 
-    private void addToMetaConfusionMatrix(int actual, int predicted, RecordMetaData metaData){
+    private void addToMetaConfusionMatrix(int actual, int predicted, Object metaData){
         if(confusionMatrixMetaData == null){
             confusionMatrixMetaData = new HashMap<>();
         }
 
         Pair<Integer,Integer> p = new Pair<>(actual,predicted);
-        List<RecordMetaData> list = confusionMatrixMetaData.get(p);
+        List<Object> list = confusionMatrixMetaData.get(p);
         if(list == null){
             list = new ArrayList<>();
             confusionMatrixMetaData.put(p,list);
@@ -1023,10 +1022,10 @@ public class Evaluation implements Serializable {
 
         List<Prediction> list = new ArrayList<>();
 
-        List<Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>>> sorted = new ArrayList<>(confusionMatrixMetaData.entrySet());
-        Collections.sort(sorted, new Comparator<Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>>>() {
+        List<Map.Entry<Pair<Integer, Integer>, List<Object>>> sorted = new ArrayList<>(confusionMatrixMetaData.entrySet());
+        Collections.sort(sorted, new Comparator<Map.Entry<Pair<Integer, Integer>, List<Object>>>() {
             @Override
-            public int compare(Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o1, Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> o2) {
+            public int compare(Map.Entry<Pair<Integer, Integer>, List<Object>> o1, Map.Entry<Pair<Integer, Integer>, List<Object>> o2) {
                 Pair<Integer, Integer> p1 = o1.getKey();
                 Pair<Integer, Integer> p2 = o2.getKey();
                 int order = Integer.compare(p1.getFirst(), p2.getFirst());
@@ -1036,13 +1035,13 @@ public class Evaluation implements Serializable {
             }
         });
 
-        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : sorted) {
+        for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : sorted) {
             Pair<Integer, Integer> p = entry.getKey();
             if (p.getFirst().equals(p.getSecond())) {
                 //predicted = actual -> not an error -> skip
                 continue;
             }
-            for (RecordMetaData m : entry.getValue()) {
+            for (Object m : entry.getValue()) {
                 list.add(new Prediction(p.getFirst(), p.getSecond(), m));
             }
         }
@@ -1066,11 +1065,11 @@ public class Evaluation implements Serializable {
         if (confusionMatrixMetaData == null) return null;
 
         List<Prediction> out = new ArrayList<>();
-        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : confusionMatrixMetaData.entrySet()) {  //Entry Pair: (Actual,Predicted)
+        for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : confusionMatrixMetaData.entrySet()) {  //Entry Pair: (Actual,Predicted)
             if (entry.getKey().getFirst() == actualClass) {
                 int actual = entry.getKey().getFirst();
                 int predicted = entry.getKey().getSecond();
-                for (RecordMetaData m : entry.getValue()) {
+                for (Object m : entry.getValue()) {
                     out.add(new Prediction(actual, predicted, m));
                 }
             }
@@ -1094,11 +1093,11 @@ public class Evaluation implements Serializable {
         if (confusionMatrixMetaData == null) return null;
 
         List<Prediction> out = new ArrayList<>();
-        for (Map.Entry<Pair<Integer, Integer>, List<RecordMetaData>> entry : confusionMatrixMetaData.entrySet()) { //Entry Pair: (Actual,Predicted)
+        for (Map.Entry<Pair<Integer, Integer>, List<Object>> entry : confusionMatrixMetaData.entrySet()) { //Entry Pair: (Actual,Predicted)
             if (entry.getKey().getSecond() == predictedClass) {
                 int actual = entry.getKey().getFirst();
                 int predicted = entry.getKey().getSecond();
-                for (RecordMetaData m : entry.getValue()) {
+                for (Object m : entry.getValue()) {
                     out.add(new Prediction(actual, predicted, m));
                 }
             }
@@ -1117,10 +1116,10 @@ public class Evaluation implements Serializable {
         if (confusionMatrixMetaData == null) return null;
 
         List<Prediction> out = new ArrayList<>();
-        List<RecordMetaData> list = confusionMatrixMetaData.get(new Pair<>(actualClass, predictedClass));
+        List<Object> list = confusionMatrixMetaData.get(new Pair<>(actualClass, predictedClass));
         if (list == null) return out;
 
-        for (RecordMetaData meta : list) {
+        for (Object meta : list) {
             out.add(new Prediction(actualClass, predictedClass, meta));
         }
         return out;
