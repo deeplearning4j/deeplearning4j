@@ -90,65 +90,43 @@ Seq[Any](format.raw/*1.40*/("""
 				</div>
 			</noscript>
 
+			<style>
+			/* Graph */
+			#layers """),format.raw/*71.12*/("""{"""),format.raw/*71.13*/("""
+			  """),format.raw/*72.6*/("""height: 100%;
+			  width: 50%;
+			  position: absolute;
+			  left: 0;
+			  top: 0;
+			"""),format.raw/*77.4*/("""}"""),format.raw/*77.5*/("""
+			"""),format.raw/*78.4*/("""</style>
+
 			<!-- Start Content -->
 			<div id="content" class="span10">
 
-			<div class="row-fluid">
+				<div class="row-fluid span6">
+					<div id="layers"></div>
+				</div>
+				<!-- Start Layer Details -->
+				<div class="row-fluid span6" id="0">
 
-				<div class="box blue span12">
-					<div class="box-header">
-						<h2>Network View</h2>
-					</div>
-					<div class="box-content">
-
-						<a class="quick-button span2">
-							<i class="glyphicons-icon database_plus"></i>
-							<p>Input</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon picture"></i>
-							<p>Convolution</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon cogwheels"></i>
-							<p>Subsampling</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon picture"></i>
-							<p>Convolution</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon cogwheels"></i>
-							<p>Dense</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon check"></i>
-							<p>Output</p>
-						</a>
-						<div class="clearfix"></div>
-					</div>
-				</div><!--/span-->
-
-			</div><!--/row-->
-
-			<div class="row-fluid sortable">
-				<div class="box span12">
-					<div class="box-header">
-						<h2><b>Layer Information</b></h2>
-					</div>
-					<div class="box-content">
-						<table class="table table-bordered table-striped table-condensed">
-							  <thead>
-								  <tr>
-									  <th>Name</th>
-									  <th>Type</th>
-									  <th>Inputs</th>
-									  <th>Outputs</th>
-									  <th>Activation Function</th>
-									  <th>Learning Rate</th>
-								  </tr>
-							  </thead>
-							  <tbody>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Layer Information</b></h2>
+						</div>
+						<div class="box-content">
+							<table class="table table-bordered table-striped table-condensed">
+								<thead>
+								<tr>
+									<th>Name</th>
+									<th>Type</th>
+									<th>Inputs</th>
+									<th>Outputs</th>
+									<th>Activation Function</th>
+									<th>Learning Rate</th>
+								</tr>
+								</thead>
+								<tbody>
 								<tr>
 									<td>Input</td>
 									<td>Dense</td>
@@ -157,61 +135,63 @@ Seq[Any](format.raw/*1.40*/("""
 									<td>relu</td>
 									<td>0.01</td>
 								</tr>
-							  </tbody>
-						 </table>
+								</tbody>
+							</table>
+						</div>
 					</div>
-				</div><!--/span-->
-			</div><!--/row-->
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Mean Magnitudes</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Mean Magnitudes</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Activations</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos2"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Activations</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Learning Rate</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos3"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Learning Rates</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Parameters vs Updates</b></h2>
-				</div>
-				<div class="box-content">
-					 <div id="stackchart" class="center" style="height:300px;"></div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Parameters Histogram</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="stackchart" class="center" style="height:300px;"></div>
 
-					<p class="stackControls center">
-						<input class="btn" type="button" value="With stacking">
-						<input class="btn" type="button" value="Without stacking">
-					</p>
+							<p class="stackControls center">
+								<input class="btn" type="button" value="With stacking">
+								<input class="btn" type="button" value="Without stacking">
+							</p>
 
-					<p class="graphControls center">
-						<input class="btn-primary" type="button" value="Bars">
-						<input class="btn-primary" type="button" value="Lines">
-						<input class="btn-primary" type="button" value="Lines with steps">
-					</p>
+							<p class="graphControls center">
+								<input class="btn-primary" type="button" value="Bars">
+								<input class="btn-primary" type="button" value="Lines">
+								<input class="btn-primary" type="button" value="Lines with steps">
+							</p>
+						</div>
+					</div>
+
 				</div>
-			</div>
+				<!-- End Layer Details-->
 
 		<!-- End Content -->
 		</div><!-- End Container -->
@@ -248,7 +228,24 @@ Seq[Any](format.raw/*1.40*/("""
 		<script src="/assets/js/counter.js"></script>
 		<script src="/assets/js/retina.js"></script>
 		<script src="/assets/js/custom.js"></script>
+		<script src="/assets/js/cytoscape.min.js"></script>
+		<script src="/assets/js/model-layers.js"></script>
+		<script src="/assets/js/dagre.min.js"></script>
+		<script src="/assets/js/cytoscape-dagre.js"></script>
+		<script src="/assets/js/cytoscape-toolbar.js"></script>
 		<!-- End JavaScript-->
+		<script type="text/javascript">
+		$(document).ready(function() """),format.raw/*214.32*/("""{"""),format.raw/*214.33*/("""
+			"""),format.raw/*215.4*/("""var option = '1';
+			var url = window.location.href;
+			option = url.match(/layer=(.*)/)[1];
+			showDiv(option);
+		"""),format.raw/*219.3*/("""}"""),format.raw/*219.4*/(""");
+		function showDiv(option) """),format.raw/*220.28*/("""{"""),format.raw/*220.29*/("""
+			"""),format.raw/*221.4*/("""$('#0').hide();
+			$('#' + option).show();
+		"""),format.raw/*223.3*/("""}"""),format.raw/*223.4*/("""
+		"""),format.raw/*224.3*/("""</script>
 </body>
 </html>
 """))
@@ -271,11 +268,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 23 22:17:19 PDT 2016
+                  DATE: Fri Oct 28 00:31:41 PDT 2016
                   SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: e714fa49c4538990e1e34df71c54ef8f26d13eaa
-                  MATRIX: 598->1|731->39|758->40
-                  LINES: 20->1|25->1|26->2
+                  HASH: 302b149ae2c1b8ca3d7d57be33df5db756f078f3
+                  MATRIX: 598->1|731->39|758->40|3467->2721|3496->2722|3529->2728|3642->2814|3670->2815|3701->2819|8563->7652|8593->7653|8625->7657|8768->7772|8797->7773|8856->7803|8886->7804|8918->7808|8991->7853|9020->7854|9051->7857
+                  LINES: 20->1|25->1|26->2|95->71|95->71|96->72|101->77|101->77|102->78|238->214|238->214|239->215|243->219|243->219|244->220|244->220|245->221|247->223|247->223|248->224
                   -- GENERATED --
               */
           

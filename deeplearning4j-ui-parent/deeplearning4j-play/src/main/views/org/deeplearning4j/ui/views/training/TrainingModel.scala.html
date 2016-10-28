@@ -66,65 +66,43 @@
 				</div>
 			</noscript>
 
+			<style>
+			/* Graph */
+			#layers {
+			  height: 100%;
+			  width: 50%;
+			  position: absolute;
+			  left: 0;
+			  top: 0;
+			}
+			</style>
+
 			<!-- Start Content -->
 			<div id="content" class="span10">
 
-			<div class="row-fluid">
+				<div class="row-fluid span6">
+					<div id="layers"></div>
+				</div>
+				<!-- Start Layer Details -->
+				<div class="row-fluid span6" id="0">
 
-				<div class="box blue span12">
-					<div class="box-header">
-						<h2>Network View</h2>
-					</div>
-					<div class="box-content">
-
-						<a class="quick-button span2">
-							<i class="glyphicons-icon database_plus"></i>
-							<p>Input</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon picture"></i>
-							<p>Convolution</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon cogwheels"></i>
-							<p>Subsampling</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon picture"></i>
-							<p>Convolution</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon cogwheels"></i>
-							<p>Dense</p>
-						</a>
-						<a class="quick-button span2">
-							<i class="glyphicons-icon check"></i>
-							<p>Output</p>
-						</a>
-						<div class="clearfix"></div>
-					</div>
-				</div><!--/span-->
-
-			</div><!--/row-->
-
-			<div class="row-fluid sortable">
-				<div class="box span12">
-					<div class="box-header">
-						<h2><b>Layer Information</b></h2>
-					</div>
-					<div class="box-content">
-						<table class="table table-bordered table-striped table-condensed">
-							  <thead>
-								  <tr>
-									  <th>Name</th>
-									  <th>Type</th>
-									  <th>Inputs</th>
-									  <th>Outputs</th>
-									  <th>Activation Function</th>
-									  <th>Learning Rate</th>
-								  </tr>
-							  </thead>
-							  <tbody>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Layer Information</b></h2>
+						</div>
+						<div class="box-content">
+							<table class="table table-bordered table-striped table-condensed">
+								<thead>
+								<tr>
+									<th>Name</th>
+									<th>Type</th>
+									<th>Inputs</th>
+									<th>Outputs</th>
+									<th>Activation Function</th>
+									<th>Learning Rate</th>
+								</tr>
+								</thead>
+								<tbody>
 								<tr>
 									<td>Input</td>
 									<td>Dense</td>
@@ -133,61 +111,63 @@
 									<td>relu</td>
 									<td>0.01</td>
 								</tr>
-							  </tbody>
-						 </table>
+								</tbody>
+							</table>
+						</div>
 					</div>
-				</div><!--/span-->
-			</div><!--/row-->
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Mean Magnitudes</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Mean Magnitudes</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Activations</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos2"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Activations</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Learning Rate</b></h2>
-				</div>
-				<div class="box-content">
-					<div id="sincos3"  class="center" style="height:300px;" ></div>
-					<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
-				</div>
-			</div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Learning Rates</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="sincos"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+						</div>
+					</div>
 
-			<div class="box">
-				<div class="box-header">
-					<h2><b>Parameters vs Updates</b></h2>
-				</div>
-				<div class="box-content">
-					 <div id="stackchart" class="center" style="height:300px;"></div>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Parameters Histogram</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="stackchart" class="center" style="height:300px;"></div>
 
-					<p class="stackControls center">
-						<input class="btn" type="button" value="With stacking">
-						<input class="btn" type="button" value="Without stacking">
-					</p>
+							<p class="stackControls center">
+								<input class="btn" type="button" value="With stacking">
+								<input class="btn" type="button" value="Without stacking">
+							</p>
 
-					<p class="graphControls center">
-						<input class="btn-primary" type="button" value="Bars">
-						<input class="btn-primary" type="button" value="Lines">
-						<input class="btn-primary" type="button" value="Lines with steps">
-					</p>
+							<p class="graphControls center">
+								<input class="btn-primary" type="button" value="Bars">
+								<input class="btn-primary" type="button" value="Lines">
+								<input class="btn-primary" type="button" value="Lines with steps">
+							</p>
+						</div>
+					</div>
+
 				</div>
-			</div>
+				<!-- End Layer Details-->
 
 		<!-- End Content -->
 		</div><!-- End Container -->
@@ -224,6 +204,23 @@
 		<script src="/assets/js/counter.js"></script>
 		<script src="/assets/js/retina.js"></script>
 		<script src="/assets/js/custom.js"></script>
+		<script src="/assets/js/cytoscape.min.js"></script>
+		<script src="/assets/js/model-layers.js"></script>
+		<script src="/assets/js/dagre.min.js"></script>
+		<script src="/assets/js/cytoscape-dagre.js"></script>
+		<script src="/assets/js/cytoscape-toolbar.js"></script>
 		<!-- End JavaScript-->
+		<script type="text/javascript">
+		$(document).ready(function() {
+			var option = '1';
+			var url = window.location.href;
+			option = url.match(/layer=(.*)/)[1];
+			showDiv(option);
+		});
+		function showDiv(option) {
+			$('#0').hide();
+			$('#' + option).show();
+		}
+		</script>
 </body>
 </html>

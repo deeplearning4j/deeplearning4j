@@ -112,18 +112,6 @@ Seq[Any](format.raw/*1.40*/("""
                             </div>
                         </div>
 
-                        <div class="row-fluid">
-                            <div class="box span12">
-                                <div class="box-header">
-                                    <h2><b>Score vs Iteration: Realtime</b></h2>
-                                </div>
-                                <div class="box-content">
-                                    <div id="realtimechart" style="height: 190px;"></div><br>
-                                        <!--<p>Time between updates: <input id="updateInterval" type="text" value="" style="text-align: right; width:5em"> milliseconds</p>-->
-                                </div>
-                            </div>
-                        </div><!--/row-->
-
                     </div>
 
                     <div class="row-fluid">
@@ -134,75 +122,40 @@ Seq[Any](format.raw/*1.40*/("""
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
                                     <thead>
-                                        <tr>
-                                            <th>Model</th>
-                                            <th>Score</th>
-                                            <th>Iteration</th>
-                                            <th>Status</th>
-                                        </tr>
+                                    <tr>
+                                        <th>Model Type</th>
+                                        <th>nLayers</th>
+                                        <th>nParams</th>
+                                        <th>Start Time</th>
+                                        <th>Total Run Time</th>
+                                        <th>Last Update</th>
+                                        <th>Total Param Updates</th>
+                                        <th>Updates Per Second</th>
+                                        <th>Examples Per Second</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>Model 1</td>
-                                            <td class="center">123141</td>
-                                            <td class="center">123213213</td>
-                                            <td class="center">
-                                                <span class="label label-success">Completed</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 2</td>
-                                            <td class="center">12321321</td>
-                                            <td class="center">123213</td>
-                                            <td class="center">
-                                                <span class="label label-important">Failed</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 3</td>
-                                            <td class="center">123213</td>
-                                            <td class="center">123123</td>
-                                            <td class="center">
-                                                <span class="label label-warning">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 4</td>
-                                            <td class="center">12312321</td>
-                                            <td class="center">12313112</td>
-                                            <td class="center">
-                                                <span class="label label-warning">Pending</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Model 5</td>
-                                            <td class="center">12313123213</td>
-                                            <td class="center">123213211</td>
-                                            <td class="center">
-                                                <span class="label label-success">Completed</span>
-                                            </td>
-                                        </tr>
+                                    <tr>
+                                        <td>MultiLayerNetwork</td>
+                                        <td>2</td>
+                                        <td>35</td>
+                                        <td>01:01:01</td>
+                                        <td>1:23</td>
+                                        <td>1477520530145</td>
+                                        <td>100</td>
+                                        <td>8.474575996398926</td>
+                                        <td>1271.1864013671875</td>
+                                    </tr>
                                     </tbody>
                                 </table>
-                                <div class="pagination pagination-centered">
-                                    <ul>
-                                        <li><a href="#">Prev</a></li>
-                                        <li class="active">
-                                            <a href="#">1</a>
-                                        </li>
-                                        <li><a href="#">2</a></li>
-                                        <li><a href="#">3</a></li>
-                                        <li><a href="#">4</a></li>
-                                        <li><a href="#">Next</a></li>
-                                    </ul>
-                                </div>
                             </div>
-                        </div><!--/span-->
-                    </div><!--/row-->
+                        </div>
+                    </div>
+                    <!--End Table -->
 
-                    <!-- end: Content -->
-                </div><!--/#content.span10-->
-            </div><!--/fluid-row-->
+                    <!-- End Content -->
+                </div><!-- End Content Span10-->
+            </div><!--End Row Fluid-->
 
             <!-- Start JavaScript-->
             <script src="/assets/js/jquery-1.9.1.min.js"></script>
@@ -234,14 +187,14 @@ Seq[Any](format.raw/*1.40*/("""
             <script src="/assets/js/jquery.sparkline.min.js"></script>
             <script src="/assets/js/counter.js"></script>
             <script src="/assets/js/retina.js"></script>
-            """),format.raw/*213.61*/("""
-            """),format.raw/*214.13*/("""<script src="/assets/js/train/overview.js"></script>    <!-- Charts are generated here! -->
+            """),format.raw/*166.61*/("""
+            """),format.raw/*167.13*/("""<script src="/assets/js/train/overview.js"></script>    <!-- Charts are generated here! -->
 
             <!-- Execute once on page load -->
             <script>
-                    $(document).ready(function()"""),format.raw/*218.49*/("""{"""),format.raw/*218.50*/("""
-                        """),format.raw/*219.25*/("""renderScoreChart();
-                    """),format.raw/*220.21*/("""}"""),format.raw/*220.22*/(""");
+                    $(document).ready(function()"""),format.raw/*171.49*/("""{"""),format.raw/*171.50*/("""
+                        """),format.raw/*172.25*/("""renderScoreChart();
+                    """),format.raw/*173.21*/("""}"""),format.raw/*173.22*/(""");
             </script>
 
             <!-- Execute periodically (every 2 sec) -->
@@ -272,11 +225,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Oct 25 15:17:44 PDT 2016
+                  DATE: Fri Oct 28 00:31:41 PDT 2016
                   SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 86368824eab54580a95b0c3bcf0c7f9f8fec74da
-                  MATRIX: 604->1|737->39|764->40|4499->3748|4512->3752|4579->3798|12295->11533|12337->11546|12575->11755|12605->11756|12659->11781|12728->11821|12758->11822
-                  LINES: 20->1|25->1|26->2|106->82|106->82|106->82|237->213|238->214|242->218|242->218|243->219|244->220|244->220
+                  HASH: 6d061660b8105c1d8dab12430e214dcc661e0c05
+                  MATRIX: 604->1|737->39|764->40|4499->3748|4512->3752|4579->3798|9230->8468|9272->8481|9510->8690|9540->8691|9594->8716|9663->8756|9693->8757
+                  LINES: 20->1|25->1|26->2|106->82|106->82|106->82|190->166|191->167|195->171|195->171|196->172|197->173|197->173
                   -- GENERATED --
               */
           
