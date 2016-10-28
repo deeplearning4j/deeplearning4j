@@ -3,8 +3,10 @@ package org.nd4j.rng;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -16,7 +18,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 @Slf4j
 public class NativeRandom implements Random {
     protected NativeOps nativeOps;
-    @Getter protected Pointer stateBuffer;
+    protected DataBuffer stateBuffer;
+    protected Pointer statePointer;
     protected long seed;
     protected long numberOfElements;
 
@@ -29,9 +32,13 @@ public class NativeRandom implements Random {
     }
 
     public NativeRandom(long seed, long numberOfElements) {
+        this.numberOfElements = numberOfElements;
+
         nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        stateBuffer = nativeOps.initRandom(seed, numberOfElements);
+        stateBuffer = Nd4j.getDataBufferFactory().createDouble(numberOfElements);
+
+        statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
     }
 
     @Override
@@ -131,5 +138,26 @@ public class NativeRandom implements Random {
     @Override
     public INDArray nextInt(int n, int[] shape) {
         return null;
+    }
+
+    /**
+     * This method returns pointer to RNG state structure.
+     * Please note: DefaultRandom implementation returns NULL here, making it impossible to use with RandomOps
+     *
+     * @return
+     */
+    @Override
+    public Pointer getStatePointer() {
+        return statePointer;
+    }
+
+    /**
+     * This method returns pointer to RNG buffer
+     *
+     * @return
+     */
+    @Override
+    public DataBuffer getStateBuffer() {
+        return stateBuffer;
     }
 }

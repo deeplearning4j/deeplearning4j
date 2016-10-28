@@ -1476,7 +1476,7 @@ public class NativeOps extends Pointer {
 
     public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
 
-    public native Pointer initRandom(long seed, long numberOfElements);
+    public native Pointer initRandom(long seed, long numberOfElements, Pointer pointerToBuffer);
 
     public native void destroyRandom(Pointer pointer);
 }

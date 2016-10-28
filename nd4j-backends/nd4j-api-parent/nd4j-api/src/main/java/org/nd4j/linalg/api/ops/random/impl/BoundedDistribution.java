@@ -24,7 +24,7 @@ public class BoundedDistribution extends BaseRandomOp {
         init(null, null, z, z.length());
         this.from = from;
         this.to = to;
-        this.extraArgs = new Object[]{from, to};
+        this.extraArgs = new Object[]{this.from, this.to};
     }
 
     /**

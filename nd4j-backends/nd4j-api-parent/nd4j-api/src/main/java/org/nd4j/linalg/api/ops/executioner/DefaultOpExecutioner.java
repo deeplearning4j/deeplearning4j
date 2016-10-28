@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -364,6 +365,27 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void exec(List<Aggregate> batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public void exec(RandomOp op) {
+        exec(op, Nd4j.getRandom());
+    }
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    @Override
+    public void exec(RandomOp op, Random rng) {
         throw new UnsupportedOperationException();
     }
 }

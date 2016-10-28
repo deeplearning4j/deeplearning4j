@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.rng.Random;
 
 import java.util.List;
 import java.util.Map;
@@ -190,6 +191,21 @@ public interface OpExecutioner {
      * @param batch
      */
     void exec(List<Aggregate> batch);
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    void exec(RandomOp op);
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    void exec(RandomOp op, Random rng);
 
     /**
      * This method return set of key/value and key/key/value objects, describing current environment

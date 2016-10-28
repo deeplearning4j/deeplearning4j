@@ -110,6 +110,7 @@ public class Nd4j {
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
     public final static String MEMORY_MANAGER = "memorymanager";
+    public final static String RANDOM_PROVIDER = "random";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -5260,7 +5261,7 @@ public class Nd4j {
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class.forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
-            String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
+            String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
 
 

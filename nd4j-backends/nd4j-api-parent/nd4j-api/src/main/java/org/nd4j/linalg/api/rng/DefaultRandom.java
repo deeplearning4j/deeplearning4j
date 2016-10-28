@@ -22,10 +22,13 @@ package org.nd4j.linalg.api.rng;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import javax.annotation.Nullable;
 
 /**
  * Apache commons based random number generation
@@ -194,4 +197,25 @@ public class DefaultRandom implements Random, RandomGenerator {
         return this.seed;
     }
 
+
+    /**
+     * This method returns pointer to RNG state structure.
+     * Please note: DefaultRandom implementation returns NULL here, making it impossible to use with RandomOps
+     *
+     * @return
+     */
+    @Override
+    public Pointer getStatePointer() {
+        return null;
+    }
+
+    /**
+     * This method returns pointer to RNG buffer
+     *
+     * @return
+     */
+    @Override
+    public DataBuffer getStateBuffer() {
+        return null;
+    }
 }

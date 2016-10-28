@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
@@ -1004,5 +1006,38 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         properties.put("blas.vendor", NativeOpsHolder.getInstance().getDeviceNativeBlas().getBlasVendor().toString());
 
         return properties;
+    }
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    @Override
+    public void exec(RandomOp op, Random rng) {
+
+        if (op.x() != null && op.y() != null && op.z() != null) {
+            // triple arg call
+        } else if (op.x() != null && op.z() != null) {
+            //double arg call
+        } else {
+            // single arg call
+
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer()
+                        );
+            }
+        }
     }
 }
