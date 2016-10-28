@@ -13,9 +13,9 @@
 =================================================================== */
 @import url("jquery-ui-1.8.21.custom.css");								/* jQuery User Interface Framework Styles */
 @import url("fullcalendar.css");										/* Calendars Styles */
-@import url("chosen.css");												/* Select Boxes Styles */  
+@import url("chosen.css");												/* Select Boxes Styles */
 @import url("uniform.default.css");										/* Uniform Styles */
-@import url("jquery.cleditor.css");										/* Text Editor Styles. */  
+@import url("jquery.cleditor.css");										/* Text Editor Styles. */
 @import url("jquery.noty.css");											/* Noty Notifications Style */
 @import url("noty_theme_default.css");									/* Noty Notifications Style */
 @import url("elfinder.min.css");										/* File Manager Style */
@@ -35,7 +35,7 @@
 .black,
 .black [class="box-header"],
 .black.box,
-.slider.black .ui-slider-range, 
+.slider.black .ui-slider-range,
 .progress.black .ui-progressbar-value
 .sliderVertical.black .ui-slider-range,
 .progressSlim.black .ui-progressbar-value {
@@ -55,7 +55,7 @@
 .green,
 .green [class="box-header"],
 .green.box,
-.slider.green .ui-slider-range, 
+.slider.green .ui-slider-range,
 .progress.green .ui-progressbar-value,
 .sliderVertical.green .ui-slider-range,
 .progressSlim.green .ui-progressbar-value,
@@ -69,7 +69,7 @@
 .greenDark,
 .greenDark [class="box-header"],
 .greenDark.box,
-.slider.greenDark .ui-slider-range, 
+.slider.greenDark .ui-slider-range,
 .progress.greenDark .ui-progressbar-value,
 .sliderVertical.greenDark .ui-slider-range,
 .progressSlim.greenDark .ui-progressbar-value {
@@ -81,7 +81,7 @@
 .greenLight,
 .greenLight [class="box-header"],
 .greenLight.box,
-.slider.greenLight .ui-slider-range, 
+.slider.greenLight .ui-slider-range,
 .progress.greenLight .ui-progressbar-value,
 .sliderVertical.greenLight .ui-slider-range,
 .progressSlim.greenLight .ui-progressbar-value {
@@ -93,7 +93,7 @@
 .pink,
 .pink [class="box-header"],
 .pink.box,
-.slider.pink .ui-slider-range, 
+.slider.pink .ui-slider-range,
 .progress.pink .ui-progressbar-value,
 .sliderVertical.pink .ui-slider-range,
 .progressSlim.pink .ui-progressbar-value {
@@ -105,7 +105,7 @@
 .pinkDark,
 .pinkDark [class="box-header"],
 .pinkDark.box,
-.slider.pinkDark .ui-slider-range, 
+.slider.pinkDark .ui-slider-range,
 .progress.pinkDark .ui-progressbar-value,
 .sliderVertical.pinkDark .ui-slider-range,
 .progressSlim.pinkDark .ui-progressbar-value {
@@ -117,7 +117,7 @@
 .yellow,
 .yellow [class="box-header"],
 .yellow.box,
-.slider.yellow .ui-slider-range, 
+.slider.yellow .ui-slider-range,
 .progress.yellow .ui-progressbar-value,
 .sliderVertical.yellow .ui-slider-range,
 .progressSlim.yellow .ui-progressbar-value,
@@ -131,7 +131,7 @@
 .purple,
 .purple [class="box-header"],
 .purple.box,
-.slider.purple .ui-slider-range, 
+.slider.purple .ui-slider-range,
 .progress.purple .ui-progressbar-value,
 .sliderVertical.purple .ui-slider-range,
 .progressSlim.purple .ui-progressbar-value {
@@ -143,7 +143,7 @@
 .blue,
 .blue [class="box-header"],
 .blue.box,
-.slider.blue .ui-slider-range, 
+.slider.blue .ui-slider-range,
 .progress.blue .ui-progressbar-value,
 .sliderVertical.blue .ui-slider-range,
 .progressSlim.blue .ui-progressbar-value,
@@ -157,7 +157,7 @@
 .blueDark,
 .blueDark [class="box-header"],
 .blueDark.box,
-.slider.blueDark .ui-slider-range, 
+.slider.blueDark .ui-slider-range,
 .progress.blueDark .ui-progressbar-value,
 .sliderVertical.blueDark .ui-slider-range,
 .progressSlim.blueDark .ui-progressbar-value {
@@ -169,7 +169,7 @@
 .blueLight,
 .blueLight [class="box-header"],
 .blueLight.box,
-.slider.blueLight .ui-slider-range, 
+.slider.blueLight .ui-slider-range,
 .progress.blueLight .ui-progressbar-value,
 .sliderVertical.blueLight .ui-slider-range,
 .progressSlim.blueLight .ui-progressbar-value {
@@ -181,7 +181,7 @@
 .orange,
 .orange [class="box-header"],
 .orange.box,
-.slider.orange .ui-slider-range, 
+.slider.orange .ui-slider-range,
 .progress.orange .ui-progressbar-value,
 .sliderVertical.orange .ui-slider-range,
 .progressSlim.orange .ui-progressbar-value {
@@ -193,7 +193,7 @@
 .orangeDark,
 .orangeDark [class="box-header"],
 .orangeDark.box,
-.slider.orangeDark .ui-slider-range, 
+.slider.orangeDark .ui-slider-range,
 .progress.oragneDark .ui-progressbar-value,
 .sliderVertical.orangeDark .ui-slider-range,
 .progressSlim.orangeDark .ui-progressbar-value {
@@ -205,7 +205,7 @@
 .red,
 .red [class="box-header"],
 .red.box,
-.slider.red .ui-slider-range, 
+.slider.red .ui-slider-range,
 .progress.red .ui-progressbar-value,
 .sliderVertical.red .ui-slider-range,
 .progressSlim.red .ui-progressbar-value,
@@ -317,7 +317,7 @@ h6 {
           	border-radius: 0px;
   	*zoom: 1;
 	border-bottom: 1px solid #38383D; /* rgba(0, 0, 0, 0.05); */
-	
+
 }
 
 .navbar-inner a {
@@ -424,11 +424,11 @@ a.brand span {
 	text-decoration: none;
 	-webkit-border-radius: 0px;
 	-moz-border-radius: 0px;
-	border-radius: 0px;		
+	border-radius: 0px;
 }
 
 .nav-tabs.nav-stacked > li:last-child > a {
-  	border-bottom: 1px solid transparent;		
+  	border-bottom: 1px solid transparent;
 }
 
 .nav-tabs.nav-stacked > li > ul > li > a{
@@ -531,7 +531,7 @@ a.brand span {
           	border-radius: 0px;
   	-webkit-box-shadow: none;
        -moz-box-shadow: none;
-            box-shadow: none;	
+            box-shadow: none;
 }
 
 .dropdown-menu.pull-right {
@@ -685,7 +685,7 @@ ul.notifications li .message {
 ul.notifications li.warning a {
 	color: #FA5833;
 }
- 
+
 ul.messages li .message {
 	font-size: 11px;
 }
@@ -712,7 +712,7 @@ ul.messages li .message {
 	   		box-shadow: none;
   	-webkit-border-radius: 0px;
        -moz-border-radius: 0px;
-	        border-radius: 0px; 	
+	        border-radius: 0px;
 }
 
 .breadcrumb span {
@@ -721,13 +721,13 @@ ul.messages li .message {
 
 .breadcrumb a {
 	color: #aaa;
-	text-shadow: 0px 1px 1px #fff;	
+	text-shadow: 0px 1px 1px #fff;
 }
 
 .breadcrumb a:hover {
 	color: #646464;
 	text-shadow: 0px 1px 1px #fff;
-	text-decoration: none;	
+	text-decoration: none;
 }
 
 .dark {
@@ -741,7 +741,7 @@ ul.messages li .message {
 	position: relative;
 	border-left: 2px solid #eee;
 	min-height: 100%;
-	overflow: hidden;		
+	overflow: hidden;
 }
 
 .well {
@@ -758,15 +758,16 @@ ul.messages li .message {
 	padding: 10px;
 	position: relative;
 	margin-bottom: 28px;
+	width: 100% !important;
 }
-	
+
 	.statbox .number {
 		font-size: 40px;
 		position: absolute;
 		top: 10px;
 		right: 10px;
 	}
-	
+
 	.statbox .title {
 		font-size: 16px;
 		position: absolute;
@@ -782,11 +783,11 @@ ul.messages li .message {
 		left: 0px;
 		padding: 10px;
 	}
-	
+
 	.statbox .footer:hover {
 		background: rgba(0,0,0,.2);
 	}
-	
+
 	.statbox .footer a {
 		color: #fff;
 		text-decoration: none;
@@ -815,7 +816,7 @@ ul.messages li .message {
 .box {
 	border: 2px solid #eee;
 	background: #fff !important;
-	margin-bottom: 28px;	
+	margin-bottom: 28px;
 }
 
 .box-header {
@@ -847,7 +848,7 @@ ul.messages li .message {
 	border-left: 1px solid #FFF;
 	margin: -12px 10px -10px 10px;
 	padding: 12px 0px 10px 0px;
-	
+
 }
 
 .box-header .box-icon {
@@ -890,21 +891,21 @@ ul.messages li .message {
 .verticalChart {
 	width: 100%;
 }
-	
+
 .verticalChart .singleBar {
 	width: 9%;
 	float: left;
 	margin-left: 0.5%;
 	margin-right: 0.5%;
-}	
-	
+}
+
 .verticalChart .singleBar .bar {
 	position: relative;
 	height: 200px;
 	background: rgba(255,255,255,0.2);
 	overflow: hidden;
 }
-	
+
 .verticalChart .singleBar .bar .value {
 	position: absolute;
 	bottom: 0;
@@ -923,7 +924,7 @@ ul.messages li .message {
 	text-shadow: 0px -1px 0px #fff, 0px 1px 0px #fff, 1px 0px 0px #fff, -1px 0px 0px #fff, -1px -1px 0px #fff,-1px 1px 0px #fff, 1px 1px 0px #fff, 1px -1px 0px #fff;
 	display: none;
 	text-align: center;
-}			
+}
 
 .verticalChart .singleBar .title {
 	margin-top: 5px;
@@ -1335,13 +1336,13 @@ ul.tickets li.ticket .content .status {
 	width: 40%;
 	white-space: nowrap;
 	overflow:hidden !important;
-	text-overflow: ellipsis;	
+	text-overflow: ellipsis;
 }
 
 ul.tickets li.ticket .content .priority,
 ul.tickets li.ticket .content .date {
 	float: right;
-	text-align: right;	
+	text-align: right;
 }
 
 /* Support tickets Metro Style
@@ -1409,7 +1410,7 @@ ul.chat li .message {
 ul.chat li.left .message {
 	text-align: left;
 	margin-left: 65px;
-	background: #fff 
+	background: #fff
 }
 
 ul.chat li.left .message .arrow {
@@ -1439,7 +1440,7 @@ ul.chat li.right .message {
 }
 
 ul.chat li .message .text {
-	display: block;	
+	display: block;
 }
 
 .chat-form {
@@ -1454,7 +1455,7 @@ ul.chat li .message .text {
 	padding: 0.5em;
 	-webkit-box-sizing: border-box; /* Safari, Chrome et al  */
 	   -moz-box-sizing: border-box; /* Firefox */
-	        box-sizing: border-box; /* Opera/IE 8+ */	
+	        box-sizing: border-box; /* Opera/IE 8+ */
 	height: 80px;
 	outline: 0px !important;
 	font-size: 12px;
@@ -1841,11 +1842,11 @@ fieldset[disabled] .btn-link:focus {
 
 .table th,
 .table td {
-  border-top: 1px solid #eee;	
+  border-top: 1px solid #eee;
 }
 
 .table-bordered {
-  border-color: #eee;	
+  border-color: #eee;
   -webkit-border-radius: 0px !important;
 	 -moz-border-radius: 0px !important;
           border-radius: 0px !important;
@@ -1978,7 +1979,7 @@ fieldset[disabled] .btn-link:focus {
 
 .tab-menu.nav-tabs > li > a:hover {
 	border: none;
-	
+
 }
 
 .tab-menu.nav-tabs > .active > a  {
@@ -1988,7 +1989,7 @@ fieldset[disabled] .btn-link:focus {
   	border: none;
 }
 
-.tab-menu.nav-tabs > .active > a:hover { 
+.tab-menu.nav-tabs > .active > a:hover {
 	background-color: #fafafa;
 }
 
@@ -2027,7 +2028,7 @@ fieldset[disabled] .btn-link:focus {
 .login-box .icons {
 	text-align: right;
 	margin: 20px 15px;
-	
+
 }
 
 .login-box .icons i {
@@ -2128,7 +2129,7 @@ div.uploader{
 	-webkit-border-radius:14px;
 	   -moz-border-radius:14px;
 			border-radius:14px;
-}	
+}
 
 /* UI - Sliders & Progress
 =================================================================== */
@@ -2233,7 +2234,7 @@ div.uploader{
 			box-shadow: none;
 	-webkit-border-radius: 0px;
 	   -moz-border-radius: 0px;
-			border-radius: 0px;		
+			border-radius: 0px;
 	position: relative;
 }
 
@@ -2321,7 +2322,7 @@ div.uploader{
 	opacity: .3;
 	filter: alpha(opacity=30);
 	-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";
-	margin: 2px 5px 0px 5px;	
+	margin: 2px 5px 0px 5px;
 }
 
 .todo-actions i:hover {
@@ -2374,7 +2375,7 @@ div.uploader{
 	opacity: .3;
 	filter: alpha(opacity=30);
 	-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";
-	margin: 2px 5px 0px 5px;	
+	margin: 2px 5px 0px 5px;
 }
 
 .todo-actions i:hover {
@@ -2404,8 +2405,8 @@ div.uploader{
 	padding-left: 0px;
 }
 
-.meter { 
-	height: 14px; 
+.meter {
+	height: 14px;
 	position: relative;
 	background: #fff !important;
 	border: 1px solid #ddd;
@@ -2422,14 +2423,14 @@ div.uploader{
 .meter > span:after, .animate > span > span {
 	content: "";
 	position: absolute;
-	top: 0; 
-	left: 0; 
-	bottom: 0; 
+	top: 0;
+	left: 0;
+	bottom: 0;
 	right: 0;
 	overflow: hidden;
 }
 
-.meter > span:after, 
+.meter > span:after,
 .animate > span > spans li.current {
 }
 
@@ -2482,25 +2483,24 @@ footer {
 =================================================================== */
 
 .sparkLineStats {
-	position: relative; 
+	position: relative;
 	margin-bottom: -4px;
 }
 
 .sparkLineStats ul {
 	margin:0;
 }
-	
+
 .sparkLineStats li {
-	margin-bottom: 0; 
-	line-height: 42px; 
-	padding-top:3px; 
-	font-size: 12px
+	margin-bottom: 0;
+	line-height: 42px;
+	padding-top:3px;
 }
 
 .sparkLineStats li .number {
 	font-size: 17px;
-	font-weight: 700; 
-	padding:0px 0px 0px 2px; 
+	font-weight: 700;
+	padding:0px 0px 0px 2px;
 	color: #fff;
 }
 
@@ -2510,9 +2510,9 @@ footer {
 
 .sparkLineStats h4 {
 	position: relative;
-	border-bottom: 1px solid #c4c4c4; 
-	padding-bottom: 0px; 
-	margin-bottom: 10px; 
+	border-bottom: 1px solid #c4c4c4;
+	padding-bottom: 0px;
+	margin-bottom: 10px;
 	line-height: 37px;
 	-webkit-box-shadow: 0 1px 0px rgba(255, 255, 255, 1);
 	   -moz-box-shadow:0 1px 0px rgba(255, 255, 255, 1);
@@ -2528,16 +2528,17 @@ footer {
 	position: relative;
 	background: #67C2EF;
 	width:100%;
-	min-width: 130px; 
+	min-width: 130px;
 	height: 160px;
 	padding-top: 40px;
 	margin-bottom: 28px;
+  margin-left: 17%;
 }
 
 .circleStatsItemBox .header {
 	background: rgba(255,255,255,0.2);
 	color: rgba(255,255,255,0.9);
-	width: 100%; 
+	width: 100%;
 	height: 20px;
 	padding: 5px 0px;
 	position: absolute;
@@ -2547,7 +2548,7 @@ footer {
 .circleStatsItemBox .footer {
 	background: rgba(0,0,0,0.1);
 	color: rgba(255,255,255,0.9);
-	width: 100%; 
+	width: 100%;
 	height: 20px;
 	padding: 5px 0px;
 	position: absolute;
@@ -2565,8 +2566,8 @@ footer {
 .circleStatsItemBox .percent {
 	font-size: 12px;
 	position: absolute;
-	top:110px; 
-	width: 100%; 
+	top:110px;
+	width: 100%;
 	left: 0px;
 	text-align: center;
 	color: rgba(255,255,255,0.9);
@@ -2592,7 +2593,7 @@ footer {
 }
 
 /* Typography - Blockquote
-=================================================================== */	
+=================================================================== */
 blockquote {
 	background: url(../img/quote.png) no-repeat 0px 10px;
 	font-style: italic;
@@ -2620,7 +2621,7 @@ ul.messagesList {
 	list-style: none;
 	margin: 0px;
 	font-size: 12px;
-	
+
 }
 
 ul.messagesList li {
@@ -2629,7 +2630,7 @@ ul.messagesList li {
 	   -moz-border-radius: 4px;
 			border-radius: 4px;
 	padding: 5px 10px;
-	cursor: pointer;		
+	cursor: pointer;
 }
 
 ul.messagesList li .glyphicons{
@@ -2655,7 +2656,7 @@ ul.messagesList li span.from {
 	width: 25%;
 	white-space: nowrap;
 	overflow:hidden !important;
-	text-overflow: ellipsis;	
+	text-overflow: ellipsis;
 }
 
 ul.messagesList li span.title {
@@ -2664,13 +2665,13 @@ ul.messagesList li span.title {
 	font-weight: 300;
 	white-space: nowrap;
 	overflow:hidden !important;
-	text-overflow: ellipsis;	
+	text-overflow: ellipsis;
 }
 
 ul.messagesList li span.date {
 	display: inline-block;
 	width: 20%;
-	text-align: right;	
+	text-align: right;
 }
 
 .message .header {
@@ -2825,19 +2826,19 @@ ul.messagesList li span.date {
 
 .task .time .date {
 	font-size: 18px;
-	margin-bottom: 5px;	
+	margin-bottom: 5px;
 }
 
 .timeline {
 	width: auto;
 	height: 100%;
-	margin: 20px auto; 
-	background: url(../img/timeline-bg.png) repeat-y center top; 
+	margin: 20px auto;
+	background: url(../img/timeline-bg.png) repeat-y center top;
 }
 
 .timeslot {
 	display: inline-block;
-	position: relative;	
+	position: relative;
 	width: 100%;
 	margin: 5px 0px;
 }
@@ -2918,13 +2919,13 @@ ul.messagesList li span.date {
 }
 
 .timeslot.alt .icon {
-	
+
 }
 
 .timeslot .time {
 	background: #f9f9f9;
 	position: absolute;
-	top: 1px;		
+	top: 1px;
 	left: 50%;
 	padding: 5px 10px 5px 40px;
 	z-index: 1;
@@ -2933,7 +2934,7 @@ ul.messagesList li span.date {
 
 .timeslot.alt .time {
 	top: 1px;
-	left: auto;		
+	left: auto;
 	right: 50%;
 	padding: 5px 40px 5px 10px;
 }
@@ -2941,17 +2942,17 @@ ul.messagesList li span.date {
 /* Retina Display Hack
 =================================================================== */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-	
+
 	.timeslot .task .arrow {
 		background: url(../img/timeline-left-arrow@2x.png) no-repeat;
 		background-size: 100%;
 	}
-	
+
 	.timeslot.alt .task .arrow {
 		background: url(../img/timeline-right-arrow@2x.png) no-repeat;
 		background-size: 100%;
 	}
-	
+
 	ul.chat li.left .message .arrow {
 		background: url(../img/chat-left@2x.png) no-repeat 0px 0px;
 		background-size: 100%;
@@ -2961,7 +2962,7 @@ ul.messagesList li span.date {
 		background: url(../img/chat-right@2x.png) no-repeat 0px 0px;
 		background-size: 100%;
 	}
-	
+
 	ul.chat.metro li.left .message .arrow {
 		background: url(../img/chat-left-metro@2x.png) no-repeat 0px 0px;
 		background-size: 100%;
@@ -2971,5 +2972,5 @@ ul.messagesList li span.date {
 		background: url(../img/chat-right-metro@2x.png) no-repeat 0px 0px;
 		background-size: 100%;
 	}
-    
+
 }
