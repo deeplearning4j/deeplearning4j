@@ -14,6 +14,8 @@ namespace nd4j {
             long *buffer;
             long offset;
             long seed;
+            long position;
+            long generation;
 
         public:
             /**
@@ -25,6 +27,7 @@ namespace nd4j {
             RandomBuffer(long size, long seed) {
                 this->buffer = (long *) malloc(size * sizeof(long));
                 this->seed = seed;
+                this->generation = 1;
             }
 
             long *getBuffer() {
@@ -45,6 +48,15 @@ namespace nd4j {
 
             void setOffset(long seed) {
                 this->seed = seed;
+            }
+
+            long getElement(long position) {
+                return buffer[position];
+            }
+
+            long getNextElement() {
+                // TODO: proper implementation needed here
+                return buffer[0];
             }
 
             ~RandomBuffer() {

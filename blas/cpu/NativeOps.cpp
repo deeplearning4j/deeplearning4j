@@ -2605,3 +2605,9 @@ Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
 
     return (Nd4jPointer) buffer;
 }
+
+void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(ptrBuffer);
+
+    delete buffer;
+}

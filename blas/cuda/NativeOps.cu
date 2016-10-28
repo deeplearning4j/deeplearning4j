@@ -6090,3 +6090,7 @@ Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
     // TODO: to be implemented
     return 0;
 }
+
+void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
+    // TODO:: to be implemented
+}

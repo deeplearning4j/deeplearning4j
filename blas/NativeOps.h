@@ -1292,6 +1292,8 @@ public:
 
     Nd4jPointer initRandom(long seed, long bufferSize);
 
+    void destroyRandom(Nd4jPointer ptrBuffer);
+
     /**
      * Grid operations
      */

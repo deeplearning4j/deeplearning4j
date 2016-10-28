@@ -37,7 +37,8 @@ namespace nd4j {
          * @return
          */
         int nextInt() {
-            return 0;
+            int r = (int) buffer->getNextElement();
+            return r < 0 ? -1 * r : r;
         };
 
         /**
@@ -46,7 +47,17 @@ namespace nd4j {
          * @return
          */
         int nextInt(int to) {
-            return 0;
+            int r = nextInt();
+            int m = to - 1;
+            if ((to & m) == 0)  // i.e., bound is a power of 2
+                r = (int)((to * (long)r) >> 31);
+            else {
+                for (int u = r;
+                     u - (r = u % to) + m < 0;
+                     u = nextInt())
+                    ;
+            }
+            return r;
         };
 
         /**
@@ -59,7 +70,7 @@ namespace nd4j {
             if (from == 0)
                 return nextInt(to);
 
-            return 0;
+            return from + nextInt(to - from);
         };
 
         /**
