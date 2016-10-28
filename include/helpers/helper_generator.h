@@ -5,6 +5,10 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
+#ifdef __GNUC__
+#include <inttypes.h>
+#endif
+
 namespace nd4j {
     namespace random {
 
@@ -153,7 +157,6 @@ namespace nd4j {
             }
 
         public:
-
             Xoroshiro128(RandomBuffer *buffer) : IGenerator(buffer) {
                 //
             }
