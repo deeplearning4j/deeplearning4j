@@ -176,6 +176,11 @@ public class StatsListener implements RoutingIterationListener {
         }
     }
 
+    @Override
+    public void onGradientCalculation(Model model) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
     private boolean storeActivations(){
         return updateConfig.collectMean(StatsType.Activations) || updateConfig.collectStdev(StatsType.Activations)
                 || updateConfig.collectMeanMagnitudes(StatsType.Activations) || updateConfig.collectHistograms(StatsType.Activations);

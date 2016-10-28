@@ -29,10 +29,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.api.*;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
@@ -150,6 +147,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public Pair<Gradient,Double> gradientAndScore() {
         oldScore = score;
         model.computeGradientAndScore();
+
+        if(iterationListeners != null && iterationListeners.size() > 0){
+            for(IterationListener l : iterationListeners){
+                if(l instanceof TrainingListener){
+                    ((TrainingListener)l).onGradientCalculation(model);
+                }
+            }
+        }
+
         Pair<Gradient,Double> pair = model.gradientAndScore();
         score = pair.getSecond();
         updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
