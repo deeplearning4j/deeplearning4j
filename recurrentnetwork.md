@@ -41,7 +41,8 @@ Recall that Deeplearning4j's multinetwork configuration lets you create a layer 
 
 ### LSTM Implementations in DL4J
 
-* [Graves LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesLSTM.java) (Useful for sensor data and time series)
+* [Graves LSTM](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java) (Useful for sensor data and time series)
+
 
 ## Loading Data for LSTMs
 
