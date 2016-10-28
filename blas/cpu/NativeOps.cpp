@@ -2594,3 +2594,14 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
 	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
 }
+
+Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
+    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize);
+
+    nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
+    generator->refreshBuffer();
+
+    delete generator;
+
+    return (Nd4jPointer) buffer;
+}

@@ -27,7 +27,9 @@ namespace randomOps {
              * Z will hold results
              */
 
-            nd4j::RandomHelper<T> helper(123);
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::random::Xoroshiro128 generator(buffer);
+            nd4j::RandomHelper<T> helper(&generator);
 
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];

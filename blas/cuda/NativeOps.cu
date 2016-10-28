@@ -6084,3 +6084,9 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
 
 }
+
+
+Nd4jPointer NativeOps::initRandom(long seed, long bufferSize) {
+    // TODO: to be implemented
+    return 0;
+}
