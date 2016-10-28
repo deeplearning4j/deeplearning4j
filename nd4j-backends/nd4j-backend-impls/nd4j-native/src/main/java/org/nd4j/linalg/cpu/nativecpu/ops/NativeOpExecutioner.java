@@ -1025,8 +1025,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
+            loop.execRandomFloat(null, op.opNum(),
+                    rng.getStatePointer(), // rng state ptr
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(),
+                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.extraArgsDataBuff().addressPointer()
+            );
         } else if (op.x() != null && op.z() != null) {
             //double arg call
+            loop.execRandomFloat(null, op.opNum(),
+                    rng.getStatePointer(), // rng state ptr
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.extraArgsDataBuff().addressPointer()
+            );
         } else {
             // single arg call
 
