@@ -326,6 +326,9 @@ public class TestStatsSBE {
         Map<String, Histogram> pHist = new HashMap<>();
         pHist.put(paramNames[0], new Histogram(23, 24, 2, new int[]{25, 26}));
         pHist.put(paramNames[1], new Histogram(27, 28, 3, new int[]{29, 30, 31}));
+        Map<String, Histogram> gHist = new HashMap<>();
+        gHist.put(paramNames[0], new Histogram(230, 240, 2, new int[]{250, 260}));
+        gHist.put(paramNames[1], new Histogram(270, 280, 3, new int[]{290, 300, 310}));
         Map<String, Histogram> uHist = new HashMap<>();
         uHist.put(paramNames[0], new Histogram(32, 33, 2, new int[]{34, 35}));
         uHist.put(paramNames[1], new Histogram(36, 37, 3, new int[]{38, 39, 40}));
@@ -336,6 +339,9 @@ public class TestStatsSBE {
         Map<String, Double> pMean = new HashMap<>();
         pMean.put(paramNames[0], 49.0);
         pMean.put(paramNames[1], 50.0);
+        Map<String, Double> gMean = new HashMap<>();
+        gMean.put(paramNames[0], 49.1);
+        gMean.put(paramNames[1], 50.1);
         Map<String, Double> uMean = new HashMap<>();
         uMean.put(paramNames[0], 51.0);
         uMean.put(paramNames[1], 52.0);
@@ -346,6 +352,9 @@ public class TestStatsSBE {
         Map<String, Double> pStd = new HashMap<>();
         pStd.put(paramNames[0], 55.0);
         pStd.put(paramNames[1], 56.0);
+        Map<String, Double> gStd = new HashMap<>();
+        gStd.put(paramNames[0], 55.1);
+        gStd.put(paramNames[1], 56.1);
         Map<String, Double> uStd = new HashMap<>();
         uStd.put(paramNames[0], 57.0);
         uStd.put(paramNames[1], 58.0);
@@ -356,6 +365,9 @@ public class TestStatsSBE {
         Map<String, Double> pMM = new HashMap<>();
         pMM.put(paramNames[0], 61.0);
         pMM.put(paramNames[1], 62.0);
+        Map<String, Double> gMM = new HashMap<>();
+        gMM.put(paramNames[0], 61.1);
+        gMM.put(paramNames[1], 62.1);
         Map<String, Double> uMM = new HashMap<>();
         uMM.put(paramNames[0], 63.0);
         uMM.put(paramNames[1], 64.0);
@@ -371,14 +383,16 @@ public class TestStatsSBE {
 
 
         boolean[] tf = new boolean[]{true, false};
-        boolean[][] tf3 = new boolean[][]{
-                {false, false, false},
-                {true, false, false},
-                {false, true, false},
-                {true, false, true},
-                {true, true, true}};
 
-        //Total tests: 2^6 x 5^3 = 8000 separate tests
+        boolean[][] tf4 = new boolean[][]{
+                {false, false, false, false},
+                {true, false, false, false},
+                {false, true, false, false},
+                {false, false, true, false},
+                {false, false, false, true},
+                {true, true, true, true}};
+
+        //Total tests: 2^6 x 6^3 = 13,824 separate tests
         int testCount = 0;
         for (boolean collectPerformanceStats : tf) {
             for (boolean collectMemoryStats : tf) {
@@ -386,9 +400,9 @@ public class TestStatsSBE {
                     for (boolean collectScore : tf) {
                         for (boolean collectLearningRates : tf) {
                             for (boolean collectMetaData : tf) {
-                                for (boolean[] collectHistograms : tf3) {
-                                    for (boolean[] collectMeanStdev : tf3) {
-                                        for (boolean[] collectMM : tf3) {
+                                for (boolean[] collectHistograms : tf4) {
+                                    for (boolean[] collectMeanStdev : tf4) {
+                                        for (boolean[] collectMM : tf4) {
 
                                             SbeStatsReport report = new SbeStatsReport();
                                             report.reportIDs(sessionID, typeID, workerID, time);
@@ -422,10 +436,13 @@ public class TestStatsSBE {
                                             if (collectHistograms[0]) {   //Param hist
                                                 report.reportHistograms(StatsType.Parameters, pHist);
                                             }
-                                            if (collectHistograms[1]) {   //Update hist
+                                            if (collectHistograms[1]) {   //Grad hist
+                                                report.reportHistograms(StatsType.Gradients, gHist);
+                                            }
+                                            if (collectHistograms[2]) {   //Update hist
                                                 report.reportHistograms(StatsType.Updates, uHist);
                                             }
-                                            if (collectHistograms[2]) {   //Act hist
+                                            if (collectHistograms[3]) {   //Act hist
                                                 report.reportHistograms(StatsType.Activations, aHist);
                                             }
 
@@ -433,11 +450,15 @@ public class TestStatsSBE {
                                                 report.reportMean(StatsType.Parameters, pMean);
                                                 report.reportStdev(StatsType.Parameters, pStd);
                                             }
-                                            if (collectMeanStdev[1]) {    //Update mean/stdev
+                                            if (collectMeanStdev[1]) {    //Gradient mean/stdev
+                                                report.reportMean(StatsType.Gradients, gMean);
+                                                report.reportStdev(StatsType.Gradients, gStd);
+                                            }
+                                            if (collectMeanStdev[2]) {    //Update mean/stdev
                                                 report.reportMean(StatsType.Updates, uMean);
                                                 report.reportStdev(StatsType.Updates, uStd);
                                             }
-                                            if (collectMeanStdev[2]) {    //Act mean/stdev
+                                            if (collectMeanStdev[3]) {    //Act mean/stdev
                                                 report.reportMean(StatsType.Activations, aMean);
                                                 report.reportStdev(StatsType.Activations, aStd);
                                             }
@@ -445,10 +466,13 @@ public class TestStatsSBE {
                                             if (collectMM[0]) {   //Param mean mag
                                                 report.reportMeanMagnitudes(StatsType.Parameters, pMM);
                                             }
-                                            if (collectMM[1]) {   //Update mm
+                                            if (collectMM[1]) {   //Gradient mean mag
+                                                report.reportMeanMagnitudes(StatsType.Gradients, gMM);
+                                            }
+                                            if (collectMM[2]) {   //Update mm
                                                 report.reportMeanMagnitudes(StatsType.Updates, uMM);
                                             }
-                                            if (collectMM[2]) {   //Act mm
+                                            if (collectMM[3]) {   //Act mm
                                                 report.reportMeanMagnitudes(StatsType.Activations, aMM);
                                             }
 
@@ -537,12 +561,18 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasHistograms(StatsType.Parameters));
                                             }
                                             if (collectHistograms[1]) {
+                                                assertEquals(gHist, report2.getHistograms(StatsType.Gradients));
+                                                Assert.assertTrue(report2.hasHistograms(StatsType.Gradients));
+                                            } else {
+                                                Assert.assertFalse(report2.hasHistograms(StatsType.Gradients));
+                                            }
+                                            if (collectHistograms[2]) {
                                                 assertEquals(uHist, report2.getHistograms(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasHistograms(StatsType.Updates));
                                             } else {
                                                 Assert.assertFalse(report2.hasHistograms(StatsType.Updates));
                                             }
-                                            if (collectHistograms[2]) {
+                                            if (collectHistograms[3]) {
                                                 assertEquals(aHist, report2.getHistograms(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasHistograms(StatsType.Activations));
                                             } else {
@@ -559,6 +589,15 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Stdev));
                                             }
                                             if (collectMeanStdev[1]) {
+                                                assertEquals(gMean, report2.getMean(StatsType.Gradients));
+                                                assertEquals(gStd, report2.getStdev(StatsType.Gradients));
+                                                Assert.assertTrue(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Mean));
+                                                Assert.assertTrue(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Stdev));
+                                            } else {
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Mean));
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Stdev));
+                                            }
+                                            if (collectMeanStdev[2]) {
                                                 assertEquals(uMean, report2.getMean(StatsType.Updates));
                                                 assertEquals(uStd, report2.getStdev(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Updates, SummaryType.Mean));
@@ -567,7 +606,7 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Mean));
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.Stdev));
                                             }
-                                            if (collectMeanStdev[2]) {
+                                            if (collectMeanStdev[3]) {
                                                 assertEquals(aMean, report2.getMean(StatsType.Activations));
                                                 assertEquals(aStd, report2.getStdev(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Activations, SummaryType.Mean));
@@ -584,12 +623,18 @@ public class TestStatsSBE {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
                                             }
                                             if (collectMM[1]) {
+                                                assertEquals(gMM, report2.getMeanMagnitudes(StatsType.Gradients));
+                                                Assert.assertTrue(report2.hasSummaryStats(StatsType.Gradients, SummaryType.MeanMagnitudes));
+                                            } else {
+                                                Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.MeanMagnitudes));
+                                            }
+                                            if (collectMM[2]) {
                                                 assertEquals(uMM, report2.getMeanMagnitudes(StatsType.Updates));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
                                             } else {
                                                 Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
                                             }
-                                            if (collectMM[2]) {
+                                            if (collectMM[3]) {
                                                 assertEquals(aMM, report2.getMeanMagnitudes(StatsType.Activations));
                                                 Assert.assertTrue(report2.hasSummaryStats(StatsType.Activations, SummaryType.MeanMagnitudes));
                                             } else {
@@ -619,7 +664,7 @@ public class TestStatsSBE {
             }
         }
 
-        Assert.assertEquals(8000, testCount);
+        Assert.assertEquals(13824, testCount);
     }
 
     @Test
@@ -656,31 +701,36 @@ public class TestStatsSBE {
         Map<String, Double> lrByParam = null;
 
         Map<String, Histogram> pHist = null;
+        Map<String, Histogram> gHist = null;
         Map<String, Histogram> uHist = null;
         Map<String, Histogram> aHist = null;
 
         Map<String, Double> pMean = null;
+        Map<String, Double> gMean = null;
         Map<String, Double> uMean = null;
         Map<String, Double> aMean = null;
 
         Map<String, Double> pStd = null;
+        Map<String, Double> gStd = null;
         Map<String, Double> uStd = null;
         Map<String, Double> aStd = null;
 
         Map<String, Double> pMM = null;
+        Map<String, Double> gMM = null;
         Map<String, Double> uMM = null;
         Map<String, Double> aMM = null;
 
 
         boolean[] tf = new boolean[]{true, false};
-        boolean[][] tf3 = new boolean[][]{
-                {false, false, false},
-                {true, false, false},
-                {false, true, false},
-                {true, false, true},
-                {true, true, true}};
+        boolean[][] tf4 = new boolean[][]{
+                {false, false, false, false},
+                {true, false, false, false},
+                {false, true, false, false},
+                {false, false, true, false},
+                {false, false, false, true},
+                {true, true, true, true}};
 
-        //Total tests: 2^6 x 5^3 = 8000 separate tests
+        //Total tests: 2^6 x 6^3 = 13,824 separate tests
         int testCount = 0;
         for (boolean collectPerformanceStats : tf) {
             for (boolean collectMemoryStats : tf) {
@@ -688,9 +738,9 @@ public class TestStatsSBE {
                     for (boolean collectDataSetMetaData : tf) {
                         for (boolean collectScore : tf) {
                             for (boolean collectLearningRates : tf) {
-                                for (boolean[] collectHistograms : tf3) {
-                                    for (boolean[] collectMeanStdev : tf3) {
-                                        for (boolean[] collectMM : tf3) {
+                                for (boolean[] collectHistograms : tf4) {
+                                    for (boolean[] collectMeanStdev : tf4) {
+                                        for (boolean[] collectMM : tf4) {
 
                                             SbeStatsReport report = new SbeStatsReport();
                                             report.reportIDs(null, null, null, time);
@@ -724,10 +774,13 @@ public class TestStatsSBE {
                                             if (collectHistograms[0]) {   //Param hist
                                                 report.reportHistograms(StatsType.Parameters, pHist);
                                             }
-                                            if (collectHistograms[1]) {   //Update hist
+                                            if (collectHistograms[1]) {
+                                                report.reportHistograms(StatsType.Gradients, gHist);
+                                            }
+                                            if (collectHistograms[2]) {   //Update hist
                                                 report.reportHistograms(StatsType.Updates, uHist);
                                             }
-                                            if (collectHistograms[2]) {   //Act hist
+                                            if (collectHistograms[3]) {   //Act hist
                                                 report.reportHistograms(StatsType.Activations, aHist);
                                             }
 
@@ -735,11 +788,15 @@ public class TestStatsSBE {
                                                 report.reportMean(StatsType.Parameters, pMean);
                                                 report.reportStdev(StatsType.Parameters, pStd);
                                             }
-                                            if (collectMeanStdev[1]) {    //Update mean/stdev
+                                            if (collectMeanStdev[1]) {    //Param mean/stdev
+                                                report.reportMean(StatsType.Gradients, gMean);
+                                                report.reportStdev(StatsType.Gradients, gStd);
+                                            }
+                                            if (collectMeanStdev[2]) {    //Update mean/stdev
                                                 report.reportMean(StatsType.Updates, uMean);
                                                 report.reportStdev(StatsType.Updates, uStd);
                                             }
-                                            if (collectMeanStdev[2]) {    //Act mean/stdev
+                                            if (collectMeanStdev[3]) {    //Act mean/stdev
                                                 report.reportMean(StatsType.Activations, aMean);
                                                 report.reportStdev(StatsType.Activations, aStd);
                                             }
@@ -747,10 +804,13 @@ public class TestStatsSBE {
                                             if (collectMM[0]) {   //Param mean mag
                                                 report.reportMeanMagnitudes(StatsType.Parameters, pMM);
                                             }
-                                            if (collectMM[1]) {   //Update mm
+                                            if (collectMM[1]) {   //Param mean mag
+                                                report.reportMeanMagnitudes(StatsType.Gradients, gMM);
+                                            }
+                                            if (collectMM[2]) {   //Update mm
                                                 report.reportMeanMagnitudes(StatsType.Updates, uMM);
                                             }
-                                            if (collectMM[2]) {   //Act mm
+                                            if (collectMM[3]) {   //Act mm
                                                 report.reportMeanMagnitudes(StatsType.Activations, aMM);
                                             }
 
@@ -818,6 +878,9 @@ public class TestStatsSBE {
                                             assertNull(report2.getHistograms(StatsType.Parameters));
                                             Assert.assertFalse(report2.hasHistograms(StatsType.Parameters));
 
+                                            assertNull(report2.getHistograms(StatsType.Gradients));
+                                            Assert.assertFalse(report2.hasHistograms(StatsType.Gradients));
+
                                             assertNull(report2.getHistograms(StatsType.Updates));
                                             Assert.assertFalse(report2.hasHistograms(StatsType.Updates));
 
@@ -828,6 +891,11 @@ public class TestStatsSBE {
                                             assertNull(report2.getStdev(StatsType.Parameters));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Mean));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.Stdev));
+
+                                            assertNull(report2.getMean(StatsType.Gradients));
+                                            assertNull(report2.getStdev(StatsType.Gradients));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Mean));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.Stdev));
 
                                             assertNull(report2.getMean(StatsType.Updates));
                                             assertNull(report2.getStdev(StatsType.Updates));
@@ -841,6 +909,9 @@ public class TestStatsSBE {
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Parameters));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Parameters, SummaryType.MeanMagnitudes));
+
+                                            assertNull(report2.getMeanMagnitudes(StatsType.Gradients));
+                                            Assert.assertFalse(report2.hasSummaryStats(StatsType.Gradients, SummaryType.MeanMagnitudes));
 
                                             assertNull(report2.getMeanMagnitudes(StatsType.Updates));
                                             Assert.assertFalse(report2.hasSummaryStats(StatsType.Updates, SummaryType.MeanMagnitudes));
@@ -871,7 +942,7 @@ public class TestStatsSBE {
             }
         }
 
-        Assert.assertEquals(8000, testCount);
+        Assert.assertEquals(13824, testCount);
     }
 
 }

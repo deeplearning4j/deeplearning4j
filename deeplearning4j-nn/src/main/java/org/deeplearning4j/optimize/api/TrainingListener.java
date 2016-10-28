@@ -46,9 +46,25 @@ public interface TrainingListener extends IterationListener {
      */
     void onForwardPass(Model model, Map<String, INDArray> activations);
 
+
     /**
-     * Called once per iteration (backward pass) after gradients have been calculated.
-     * Gradients are available via {@link Model#gradient()}
+     * Called once per iteration (backward pass) <b>before the gradients are updated</b>
+     * Gradients are available via {@link Model#gradient()}.
+     * Note that gradients will likely be updated in-place - thus they should be copied or processed synchronously
+     * in this method.
+     * <p>
+     * For updates (gradients post learning rate/momentum/rmsprop etc) see {@link #onBackwardPass(Model)}
+     *
+     * @param model Model
+     */
+    void onGradientCalculation(Model model);
+
+    /**
+     * Called once per iteration (backward pass) after gradients have been calculated, and updated
+     * Gradients are available via {@link Model#gradient()}.
+     * <p>
+     * Unlike {@link #onGradientCalculation(Model)} the gradients at this point will be post-update, rather than
+     * raw (pre-update) gradients at that method call.
      *
      * @param model Model
      */
