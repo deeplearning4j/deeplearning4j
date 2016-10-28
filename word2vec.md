@@ -23,7 +23,7 @@ Contents
 
 Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](./neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and [Scala](./scala.html), which works on Spark with GPUs. 
 
-Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#sequence">genes, code, [likes](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit#slide=id.g11a4ba0c5c_0_6), playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. 
+Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to <a href="#sequence">genes, code, likes, playlists, social media graphs and other verbal or symbolic series</a> in which patterns may be discerned. 
 
 Why? Because words are simply discrete states like the other data mentioned above, and we are simply looking for the transitional probabilities between those states: the likelihood that they will co-occur. So gene2vec, like2vec and follower2vec are all possible. With that in mind, the tutorial below will help you understand how to create neural embeddings for any group of discrete and co-occurring states. 
 
