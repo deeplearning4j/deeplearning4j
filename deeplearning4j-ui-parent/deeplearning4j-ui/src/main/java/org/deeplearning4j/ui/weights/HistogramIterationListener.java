@@ -84,18 +84,22 @@ public class HistogramIterationListener extends StatsListener {
                 .collectLearningRates(false)
 
                 .collectHistogramsParameters(true)
+                .collectHistogramsGradients(false)
                 .collectHistogramsUpdates(true)
                 .collectHistogramsActivations(false)
 
                 .collectMeanParameters(false)
+                .collectMeanGradients(false)
                 .collectMeanUpdates(false)
                 .collectMeanActivations(false)
 
-                .collectStdevParameters(false)
+                .collectStdevParameters(true)
+                .collectStdevGradients(false)
                 .collectStdevUpdates(false)
                 .collectStdevActivations(false)
 
                 .collectMeanMagnitudesParameters(true)
+                .collectMeanMagnitudesParameters(false)
                 .collectMeanMagnitudesUpdates(true)
                 .collectMeanMagnitudesActivations(false)
                 .build();
