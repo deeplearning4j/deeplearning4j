@@ -1712,8 +1712,8 @@ public class UpdateDecoder
             public StringBuilder appendTo(final StringBuilder builder)
             {
                 builder.append('(');
-                //Token{signal=BEGIN_FIELD, name='statType', description='null', id=403, version=0, encodedLength=0, offset=0, componentTokenCount=7, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-                //Token{signal=BEGIN_ENUM, name='StatsType', description='null', id=-1, version=0, encodedLength=1, offset=0, componentTokenCount=5, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+                //Token{signal=BEGIN_FIELD, name='statType', description='null', id=403, version=0, encodedLength=0, offset=0, componentTokenCount=8, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                //Token{signal=BEGIN_ENUM, name='StatsType', description='null', id=-1, version=0, encodedLength=1, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
                 builder.append("statType=");
                 builder.append(statType());
                 builder.append('|');
@@ -2105,8 +2105,8 @@ public class UpdateDecoder
             public StringBuilder appendTo(final StringBuilder builder)
             {
                 builder.append('(');
-                //Token{signal=BEGIN_FIELD, name='statType', description='null', id=407, version=0, encodedLength=0, offset=0, componentTokenCount=7, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-                //Token{signal=BEGIN_ENUM, name='StatsType', description='null', id=-1, version=0, encodedLength=1, offset=0, componentTokenCount=5, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+                //Token{signal=BEGIN_FIELD, name='statType', description='null', id=407, version=0, encodedLength=0, offset=0, componentTokenCount=8, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+                //Token{signal=BEGIN_ENUM, name='StatsType', description='null', id=-1, version=0, encodedLength=1, offset=0, componentTokenCount=6, encoding=Encoding{presence=REQUIRED, primitiveType=UINT8, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
                 builder.append("statType=");
                 builder.append(statType());
                 builder.append('|');
@@ -2156,7 +2156,7 @@ public class UpdateDecoder
             builder.append("learningRate=");
             builder.append(learningRate());
             builder.append('|');
-            //Token{signal=BEGIN_GROUP, name='summaryStat', description='null', id=402, version=0, encodedLength=10, offset=4, componentTokenCount=23, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+            //Token{signal=BEGIN_GROUP, name='summaryStat', description='null', id=402, version=0, encodedLength=10, offset=4, componentTokenCount=24, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
             builder.append("summaryStat=[");
             SummaryStatDecoder summaryStat = summaryStat();
             if (summaryStat.count() > 0)
@@ -2170,7 +2170,7 @@ public class UpdateDecoder
             }
             builder.append(']');
             builder.append('|');
-            //Token{signal=BEGIN_GROUP, name='histograms', description='null', id=406, version=0, encodedLength=21, offset=-1, componentTokenCount=31, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+            //Token{signal=BEGIN_GROUP, name='histograms', description='null', id=406, version=0, encodedLength=21, offset=-1, componentTokenCount=32, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
             builder.append("histograms=[");
             HistogramsDecoder histograms = histograms();
             if (histograms.count() > 0)
@@ -2802,8 +2802,8 @@ public class UpdateDecoder
         builder.append("iterationCount=");
         builder.append(iterationCount());
         builder.append('|');
-        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=4, version=0, encodedLength=0, offset=16, componentTokenCount=19, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
-        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=16, componentTokenCount=17, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
+        //Token{signal=BEGIN_FIELD, name='fieldsPresent', description='null', id=4, version=0, encodedLength=0, offset=16, componentTokenCount=26, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='unix', timeUnit=nanosecond, semanticType='null'}}
+        //Token{signal=BEGIN_SET, name='UpdateFieldsPresent', description='null', id=-1, version=0, encodedLength=4, offset=16, componentTokenCount=24, encoding=Encoding{presence=REQUIRED, primitiveType=UINT32, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='UpdateFieldsPresent'}}
         builder.append("fieldsPresent=");
         builder.append(fieldsPresent());
         builder.append('|');
@@ -2887,7 +2887,7 @@ public class UpdateDecoder
         }
         builder.append(']');
         builder.append('|');
-        //Token{signal=BEGIN_GROUP, name='perParameterStats', description='null', id=400, version=0, encodedLength=4, offset=-1, componentTokenCount=63, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        //Token{signal=BEGIN_GROUP, name='perParameterStats', description='null', id=400, version=0, encodedLength=4, offset=-1, componentTokenCount=65, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
         builder.append("perParameterStats=[");
         PerParameterStatsDecoder perParameterStats = perParameterStats();
         if (perParameterStats.count() > 0)

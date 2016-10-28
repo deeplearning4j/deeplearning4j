@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class Sequence<T extends SequenceElement> implements Serializable {
 
-    private static final long serialVersionUID = 2223750736522624732L;
+    private static final long serialVersionUID = 2223750736522624735L;
 
     protected List<T> elements = new ArrayList<>();
 
@@ -25,6 +25,9 @@ public class Sequence<T extends SequenceElement> implements Serializable {
     protected List<T> labels = new ArrayList<>();
 
     protected T label;
+
+    protected int hash = 0;
+    protected boolean hashCached = false;
 
     @Getter @Setter protected int sequenceId;
 
@@ -52,6 +55,7 @@ public class Sequence<T extends SequenceElement> implements Serializable {
      * @param element
      */
     public synchronized void addElement(@NonNull T element) {
+        hashCached = false;
         this.elementsMap.put(element.getLabel(), element);
         this.elements.add(element);
     }
@@ -172,11 +176,28 @@ public class Sequence<T extends SequenceElement> implements Serializable {
         return elements.get(index);
     }
 
-//    @Override
-//    public String toString() {
-//        return "Sequence{" +
-//                " labels=" + labels +
-//                ", elements=" + elements +
-//                '}';
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Sequence<?> sequence = (Sequence<?>) o;
+
+        return elements != null ? elements.equals(sequence.elements) : sequence.elements == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        if (hashCached)
+            return hash;
+
+        for (T element: elements) {
+            hash += 31 * element.hashCode();
+        }
+
+        hashCached = true;
+
+        return hash;
+    }
 }
