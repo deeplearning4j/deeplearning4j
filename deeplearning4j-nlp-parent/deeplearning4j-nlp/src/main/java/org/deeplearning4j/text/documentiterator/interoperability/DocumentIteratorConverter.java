@@ -41,9 +41,9 @@ public class DocumentIteratorConverter implements LabelAwareIterator {
 
             if (backendIterator instanceof LabelAwareDocumentIterator) {
                 String currentLabel = ((LabelAwareDocumentIterator) backendIterator).currentLabel();
-                document.setLabel(currentLabel);
+                document.addLabel(currentLabel);
                 generator.storeLabel(currentLabel);
-            } else document.setLabel(generator.nextLabel());
+            } else document.addLabel(generator.nextLabel());
 
             return document;
         } catch (Exception e) {
