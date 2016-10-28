@@ -2,6 +2,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.sequence;
 
 import lombok.NonNull;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -10,6 +11,8 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +35,12 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     protected SkipGram<T> skipGram = new SkipGram<>();
 
-
     private static final Logger log = LoggerFactory.getLogger(DBOW.class);
+
+    @Override
+    public ElementsLearningAlgorithm<T> getElementsLearningAlgorithm() {
+        return skipGram;
+    }
 
     public DBOW() {
 
@@ -41,7 +48,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public String getCodeName() {
-        return "DBOW";
+        return "PV-DBOW";
     }
 
     @Override
@@ -52,6 +59,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
+        this.configuration = configuration;
 
         skipGram.configure(vocabCache, lookupTable, configuration);
     }
@@ -68,9 +76,10 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
-//        for(int i = 0; i < sequence.getElements().size(); i++) {
-            dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate);
-//        }
+
+        // we just pass data to dbow, and loop over sequence there
+        dbow(0, sequence,  (int) nextRandom.get() % window, nextRandom, learningRate, false, null);
+
 
         return 0;
     }
@@ -84,7 +93,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         return false;
     }
 
-    protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha) {
+    protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference, INDArray inferenceVector) {
 
         //final T word = sequence.getElements().get(i);
         List<T> sentence = skipGram.applySubsampling(sequence,nextRandom).getElements();
@@ -101,8 +110,13 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             for (T word:  sentence) {
                 if (word == null) continue;
 
-                skipGram.iterateSample(word, lastWord,nextRandom,alpha);
+                skipGram.iterateSample(word, lastWord, nextRandom,alpha, isInference, inferenceVector);
             }
+        }
+
+        if (skipGram.getBatch() != null && skipGram.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(skipGram.getBatch());
+            skipGram.getBatch().clear();
         }
     }
 
@@ -116,6 +130,35 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
      */
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations) {
-        throw new UnsupportedOperationException("not implemented for DBOW, please use DM instead");
+        AtomicLong nr = new AtomicLong(nextRandom);
+
+        // we probably don't want subsampling here
+        // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
+        // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
+
+        if(sequence.isEmpty())
+            return null;
+
+
+        DefaultRandom random = new DefaultRandom(configuration.getSeed() * sequence.hashCode());
+        INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
+
+        for (int iter = 0; iter < iterations; iter++) {
+            nr.set(Math.abs(nr.get() * 25214903917L + 11));
+            dbow(0, sequence, (int) nr.get() % window, nr, learningRate, true, ret);
+
+            learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
+        }
+
+
+        return ret;
+    }
+
+    @Override
+    public void finish() {
+        if (skipGram.getBatch().size() >= configuration.getBatchSize()){
+            Nd4j.getExecutioner().exec(skipGram.getBatch());
+            skipGram.getBatch().clear();
+        }
     }
 }
