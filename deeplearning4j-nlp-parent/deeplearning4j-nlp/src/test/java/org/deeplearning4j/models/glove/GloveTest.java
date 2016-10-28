@@ -83,6 +83,7 @@ public class GloveTest {
 
     }
 
+    @Ignore
     @Test
     public void testGloVe1() throws Exception {
         File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();

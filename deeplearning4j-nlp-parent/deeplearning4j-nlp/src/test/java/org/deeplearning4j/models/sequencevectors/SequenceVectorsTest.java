@@ -35,6 +35,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,8 @@ public class SequenceVectorsTest {
     public void testAbstractW2VModel() throws Exception {
         ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
         File file = resource.getFile();
+
+        logger.info("dtype: {}", Nd4j.dataType());
 
         AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -146,6 +149,9 @@ public class SequenceVectorsTest {
                 // vocabulary built prior to modelling
                 .vocabCache(vocabCache)
 
+                // we might want to set layer size here. otherwise it'll be derived from lookupTable
+                //.layerSize(150)
+
                 // batchSize is the number of sequences being processed by 1 thread at once
                 // this value actually matters if you have iterations > 1
                 .batchSize(250)
@@ -172,7 +178,11 @@ public class SequenceVectorsTest {
         /*
             Now, after all options are set, we just call fit()
          */
+        logger.info("Starting training...");
+
         vectors.fit();
+
+        logger.info("Model saved...");
 
         /*
             As soon as fit() exits, model considered built, and we can test it.
@@ -215,7 +225,12 @@ public class SequenceVectorsTest {
                 .trainElementsRepresentation(true)
                 .build();
 
+
+        logger.info("Fitting model...");
+
         vectors.fit();
+
+        logger.info("Model ready...");
 
         double sim = vectors.similarity("day", "night");
         logger.info("Day/night similarity: " + sim);
@@ -251,6 +266,7 @@ public class SequenceVectorsTest {
                 .build();
     }
 
+    @Ignore
     @Test
     public void testGlove1() throws Exception {
         logger.info("Max available memory: " + Runtime.getRuntime().maxMemory());

@@ -451,6 +451,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder usePreciseWeightInit(boolean reallyUse) {
+            super.usePreciseWeightInit(reallyUse);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -513,6 +519,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setStopList(this.stopWords);
             this.configuration.setVariableWindows(variableWindows);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
 
             ret.configuration = this.configuration;
 

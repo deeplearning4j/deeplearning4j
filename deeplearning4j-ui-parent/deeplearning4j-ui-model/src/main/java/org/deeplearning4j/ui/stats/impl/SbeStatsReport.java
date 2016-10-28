@@ -313,6 +313,9 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
             case Parameters:
                 st = org.deeplearning4j.ui.stats.sbe.StatsType.Parameters;
                 break;
+            case Gradients:
+                st = org.deeplearning4j.ui.stats.sbe.StatsType.Gradients;
+                break;
             case Updates:
                 st = org.deeplearning4j.ui.stats.sbe.StatsType.Updates;
                 break;
@@ -346,6 +349,8 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         switch (statsType) {
             case Parameters:
                 return StatsType.Parameters;
+            case Gradients:
+                return StatsType.Gradients;
             case Updates:
                 return StatsType.Updates;
             case Activations:
@@ -359,6 +364,8 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         switch (statsType) {
             case Parameters:
                 return org.deeplearning4j.ui.stats.sbe.StatsType.Parameters;
+            case Gradients:
+                return org.deeplearning4j.ui.stats.sbe.StatsType.Gradients;
             case Updates:
                 return org.deeplearning4j.ui.stats.sbe.StatsType.Updates;
             case Activations:
@@ -469,7 +476,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         bufferSize += 4;    //Per parameter/layer stats group header: always present
         int nEntries = paramNames.size() + layerNames.size();
         bufferSize += nEntries * 12;  //Each parameter/layer entry: has learning rate -> float -> 4 bytes PLUS headers for 2 nested groups: 2*4 = 8 each -> 12 bytes total
-        bufferSize += entrySize(paramNames, StatsType.Parameters, StatsType.Updates);
+        bufferSize += entrySize(paramNames, StatsType.Parameters, StatsType.Gradients, StatsType.Updates);
         bufferSize += entrySize(layerNames, StatsType.Activations);
 
         //Metadata group:
@@ -498,7 +505,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         for (String s : entryNames) {
             //For each parameter: MAY also have a number of summary stats (mean, stdev etc), and histograms (both as nested groups)
             int summaryStatsCount = 0;
-            for (StatsType statsType : statsTypes) { //Parameters, updates, activations
+            for (StatsType statsType : statsTypes) { //Parameters, Gradients, updates, activations
                 for (SummaryType summaryType : SummaryType.values()) {        //Mean, stdev, MM
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null) continue;
@@ -536,18 +543,22 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         if(learningRatesByParam != null) paramNames.addAll(learningRatesByParam.keySet());
         if(histograms != null){
             addToSet(paramNames, histograms.get(StatsType.Parameters));
+            addToSet(paramNames, histograms.get(StatsType.Gradients));
             addToSet(paramNames, histograms.get(StatsType.Updates));
         }
         if(meanValues != null){
             addToSet(paramNames, meanValues.get(StatsType.Parameters));
+            addToSet(paramNames, meanValues.get(StatsType.Gradients));
             addToSet(paramNames, meanValues.get(StatsType.Updates));
         }
         if(stdevValues != null){
             addToSet(paramNames, stdevValues.get(StatsType.Parameters));
+            addToSet(paramNames, stdevValues.get(StatsType.Gradients));
             addToSet(paramNames, stdevValues.get(StatsType.Updates));
         }
         if(meanMagnitudeValues != null){
             addToSet(paramNames, meanMagnitudeValues.get(StatsType.Parameters));
+            addToSet(paramNames, meanMagnitudeValues.get(StatsType.Gradients));
             addToSet(paramNames, meanMagnitudeValues.get(StatsType.Updates));
         }
         return new ArrayList<>(paramNames);
@@ -612,12 +623,15 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                 .performance(performanceStatsPresent)
                 .garbageCollection(gcStats != null && !gcStats.isEmpty())
                 .histogramParameters(histograms != null && histograms.containsKey(StatsType.Parameters))
+                .histogramActivations(histograms != null && histograms.containsKey(StatsType.Gradients))
                 .histogramUpdates(histograms != null && histograms.containsKey(StatsType.Updates))
                 .histogramActivations(histograms != null && histograms.containsKey(StatsType.Activations))
                 .meanParameters(meanValues != null && meanValues.containsKey(StatsType.Parameters))
+                .meanGradients(meanValues != null && meanValues.containsKey(StatsType.Gradients))
                 .meanUpdates(meanValues != null && meanValues.containsKey(StatsType.Updates))
                 .meanActivations(meanValues != null && meanValues.containsKey(StatsType.Activations))
                 .meanMagnitudeParameters(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Parameters))
+                .meanMagnitudeGradients(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Gradients))
                 .meanMagnitudeUpdates(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Updates))
                 .meanMagnitudeActivations(meanMagnitudeValues != null && meanMagnitudeValues.containsKey(StatsType.Activations))
                 .learningRatesPresent(learningRatesByParam != null)
@@ -696,7 +710,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
         // +++++ Per Parameter Stats +++++
         UpdateEncoder.PerParameterStatsEncoder ppe = ue.perParameterStatsCount(paramNames.size() + layerNames.size());
-        StatsType[] st = new StatsType[]{StatsType.Parameters, StatsType.Updates};
+        StatsType[] st = new StatsType[]{StatsType.Parameters, StatsType.Gradients, StatsType.Updates};
         for (String s : paramNames) {
             ppe = ppe.next();
             float lr = 0.0f;
