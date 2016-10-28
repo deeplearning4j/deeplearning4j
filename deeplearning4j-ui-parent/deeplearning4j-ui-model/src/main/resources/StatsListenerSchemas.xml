@@ -73,16 +73,23 @@
             <choice name="performance">2</choice>
             <choice name="garbageCollection">3</choice>
             <choice name="histogramParameters">4</choice>
-            <choice name="histogramUpdates">5</choice>
-            <choice name="histogramActivations">6</choice>
-            <choice name="meanParameters">7</choice>
-            <choice name="meanUpdates">8</choice>
-            <choice name="meanActivations">9</choice>
-            <choice name="meanMagnitudeParameters">10</choice>
-            <choice name="meanMagnitudeUpdates">11</choice>
-            <choice name="meanMagnitudeActivations">12</choice>
-            <choice name="learningRatesPresent">13</choice>
-            <choice name="dataSetMetaDataPresent">14</choice>
+            <choice name="histogramGradients">5</choice>
+            <choice name="histogramUpdates">6</choice>
+            <choice name="histogramActivations">7</choice>
+            <choice name="meanParameters">8</choice>
+            <choice name="meanGradients">9</choice>
+            <choice name="meanUpdates">10</choice>
+            <choice name="meanActivations">11</choice>
+            <choice name="stdevParameters">12</choice>
+            <choice name="stdevGradients">13</choice>
+            <choice name="stdevUpdates">14</choice>
+            <choice name="stdevActivations">15</choice>
+            <choice name="meanMagnitudeParameters">16</choice>
+            <choice name="meanMagnitudeGradients">17</choice>
+            <choice name="meanMagnitudeUpdates">18</choice>
+            <choice name="meanMagnitudeActivations">19</choice>
+            <choice name="learningRatesPresent">20</choice>
+            <choice name="dataSetMetaDataPresent">21</choice>
         </set>
         <enum name="MemoryType" encodingType="uint8">
             <validValue name="JvmCurrent">0</validValue>
@@ -95,8 +102,9 @@
 
         <enum name="StatsType" encodingType="uint8">
             <validValue name="Parameters">0</validValue>
-            <validValue name="Updates">1</validValue>
-            <validValue name="Activations">2</validValue>
+            <validValue name="Gradients">1</validValue>
+            <validValue name="Updates">2</validValue>
+            <validValue name="Activations">3</validValue>
         </enum>
         <enum name="SummaryType" encodingType="uint8">
             <validValue name="Mean">0</validValue>
@@ -180,18 +188,18 @@
         <group name="layerNames" id="351" dimensionType="groupSizeEncoding">
             <data name="layerName" id="1101" type="VarDataUTF8"/>
         </group>
-        <!-- Per parameter and per stats: summary and histograms. mean/stdev/meanMag for each of params/updates/activations;
-         histograms for params/updates/activations. Assumption here is that per param stats are encoded first, followed by
+        <!-- Per parameter and per stats: summary and histograms. mean/stdev/meanMag for each of params/gradients/updates/activations;
+         histograms for params/gradients/updates/activations. Assumption here is that per param stats are encoded first, followed by
           per layer stats-->
         <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
             <field name="learningRate" id="401" type="float"/>
             <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
-                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Updates, Activations -->
+                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Gradients, Updates, Activations -->
                 <field name="summaryType" id="404" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
                 <field name="value" id="405" type="double"/>
             </group>
             <group name="histograms" id="406" dimensionType="groupSizeEncoding">
-                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Updates, Activations -->
+                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Gradients, Updates, Activations -->
                 <field name="minValue" id="408" type="double"/>
                 <field name="maxValue" id="409" type="double"/>
                 <field name="nBins" id="410" type="int32"/>
