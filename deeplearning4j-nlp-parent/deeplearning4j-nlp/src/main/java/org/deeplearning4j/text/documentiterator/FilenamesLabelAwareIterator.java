@@ -53,7 +53,7 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
             while ((line = reader.readLine()) != null) builder.append(line);
 
             document.setContent(builder.toString());
-            document.setLabel(label);
+            document.addLabel(label);
 
             try {
                 reader.close();

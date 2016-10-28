@@ -49,8 +49,8 @@ public class SimpleLabelAwareIterator implements LabelAwareIterator {
     @Override
     public LabelledDocument nextDocument() {
         LabelledDocument document = currentIterator.next();
-        if (document.getLabel() != null) {
-            labels.storeLabel(document.getLabel());
+        for (String label: document.getLabels()) {
+            labels.storeLabel(label);
         }
 
         return document;

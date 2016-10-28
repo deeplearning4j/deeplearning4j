@@ -118,11 +118,17 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
          */
 
         if(initializeParams) {
-            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwF));
-            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwF));
+            //As per standard LSTM
+            int fanIn = nL;
+            int fanOut = nLast + nL;
+            int[] inputWShape = new int[]{nLast, 4 * nL};
+            int[] recurrentWShape = new int[]{nL, 4 * nL + 3};
+
+            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape, layerConf.getWeightInit(), dist, iwF));
+            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape, layerConf.getWeightInit(), dist, rwF));
             params.put(BIAS_KEY_FORWARDS, bF);
-            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist, iwR));
-            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist, rwR));
+            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape, layerConf.getWeightInit(), dist, iwR));
+            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape, layerConf.getWeightInit(), dist, rwR));
             params.put(BIAS_KEY_BACKWARDS, bR);
         } else {
             params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new int[]{nLast, 4 * nL}, iwF));
