@@ -92,7 +92,7 @@ public class MnistManager {
     public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
         if (imagesFile != null) {
             images = new MnistImageFile(imagesFile, "r");
-            if(train) imagesArr = new MnistImageFile(imagesFile, "r").readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
+            if(train) imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
             else imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
         }
         if (labelsFile != null) {
