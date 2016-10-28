@@ -7,7 +7,7 @@
 
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include <omp.h>
 #include "../dll.h"
 #include "../ops/ops.h"

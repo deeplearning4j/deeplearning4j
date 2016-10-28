@@ -13,7 +13,7 @@
 #include <omp.h>
 #include "../templatemath.h"
 #include "../helper_cuda.h"
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include "../pairwise_util.h"
 #include "../dll.h"
 #include <stdio.h>

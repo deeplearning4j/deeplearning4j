@@ -7,7 +7,7 @@ int element_threshold = 32;
 #include <cuda_launch_config.h>
 
 #include <buffer.h>
-#include <shape.h>
+#include <helpers/shape.h>
 
 #include <cublas_v2.h>
 #include <loops/reduce3.h>

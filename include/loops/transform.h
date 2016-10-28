@@ -18,7 +18,7 @@
 #include "scalar.h"
 #include "indexreduce.h"
 #include "broadcasting.h"
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include "../ops/ops.h"
 #include "../ops/special_ops.h"
 #include "../op_boilerplate.h"

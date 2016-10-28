@@ -10,7 +10,7 @@
 #include "../templatemath.h"
 #include "../dll.h"
 
-#include "../shape.h"
+#include "../helpers/shape.h"
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

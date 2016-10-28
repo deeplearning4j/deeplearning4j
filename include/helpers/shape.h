@@ -10,11 +10,11 @@
 
 #include <cstring>
 #include <cstdio>
-#include <dll.h>
-#include <nd4jmalloc.h>
-#include <templatemath.h>
+#include "../dll.h"
+#include "../nd4jmalloc.h"
+#include "../templatemath.h"
 
-#include "pointercast.h"
+#include "../pointercast.h"
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
@@ -23,7 +23,7 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <sharedmem.h>
+#include <helpers/sharedmem.h>
 #endif
 
 
@@ -33,7 +33,7 @@
 #define INLINEDEF inline
 #endif
 
-#include <pairwise_util.h>
+#include "../pairwise_util.h"
 
 namespace shape {
 

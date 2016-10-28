@@ -2,7 +2,7 @@
 #ifndef OPS_H_
 #define OPS_H_
 
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include <vector>
 
 #define MIN 1e-12
@@ -19,7 +19,7 @@
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, int *tadOffsets) {}
 #ifdef __CUDACC__
 #define meta_def __noinline__ __device__
-#include <sharedmem.h>
+#include <helpers/sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
 #else
 #define meta_def inline

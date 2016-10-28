@@ -9,7 +9,7 @@
 #define BROADCASTING_H_
 #include "../dll.h"
 #include "../helpers/sharedmem.h"
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include "../templatemath.h"
 #include "../helper_cuda.h"
 #include "../pairwise_util.h"

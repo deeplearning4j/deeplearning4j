@@ -13,7 +13,7 @@
         (4, randomOps::Linspace) ,\
         (5, randomOps::Choice)
 
-#include <shape.h>
+#include <helpers/shape.h>
 #include <helpers/helper_random.h>
 #include <ops/random_ops.h>
 #include <ops/special_random_ops.h>

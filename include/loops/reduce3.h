@@ -16,7 +16,7 @@
 #include <omp.h>
 #include "../pairwise_util.h"
 #include "../dll.h"
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include "../ops/ops.h"
 #include "../op_boilerplate.h"
 

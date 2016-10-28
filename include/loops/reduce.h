@@ -2,7 +2,7 @@
 //#include <string>
 #include "../helpers/sharedmem.h"
 #include <stdio.h>
-#include "../shape.h"
+#include "../helpers/shape.h"
 #include <omp.h>
 #include "../templatemath.h"
 #include "../helper_cuda.h"
