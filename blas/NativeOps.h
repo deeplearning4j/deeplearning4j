@@ -1292,7 +1292,9 @@ public:
 
     Nd4jPointer initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer);
 
-    void destroyRandom(Nd4jPointer ptrBuffer);
+    void refreshBuffer(long seed, Nd4jPointer ptrRandom);
+
+    void destroyRandom(Nd4jPointer ptrRandom);
 
     /**
      * Grid operations

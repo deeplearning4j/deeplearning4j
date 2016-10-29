@@ -2605,9 +2605,18 @@ Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToB
     return (Nd4jPointer) buffer;
 }
 
+void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
+	nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+
+	buffer->setSeed(seed);
+	nd4j::random::Xoroshiro128 generator(buffer);
+	generator.refreshBuffer();
+}
+
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(ptrBuffer);
 
     delete buffer;
 }
+
