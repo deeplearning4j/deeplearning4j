@@ -136,7 +136,7 @@ namespace nd4j {
              */
 
             int relativeInt(int index) {
-                return (int) relativeInt(index);
+                return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
 
             /**
@@ -147,8 +147,8 @@ namespace nd4j {
              * @return
              */
             int relativeInt(int index, int to) {
-                // TODO: to be implemented
-                return 0;
+                int rel = relativeInt(index);
+                return rel % to;
             }
 
             /**
