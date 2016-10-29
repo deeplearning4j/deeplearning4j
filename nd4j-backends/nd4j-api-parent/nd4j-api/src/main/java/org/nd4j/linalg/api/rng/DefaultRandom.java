@@ -152,8 +152,13 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextFloat(int[] shape) {
+        return nextFloat(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextFloat(char order, int[] shape) {
         int length = ArrayUtil.prod(shape);
-        INDArray ret = Nd4j.create(shape);
+        INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
         for( int i=0; i<length; i++ ){
@@ -218,5 +223,10 @@ public class DefaultRandom implements Random, RandomGenerator {
     @Override
     public DataBuffer getStateBuffer() {
         return null;
+    }
+
+    @Override
+    public void close() throws Exception {
+        //
     }
 }

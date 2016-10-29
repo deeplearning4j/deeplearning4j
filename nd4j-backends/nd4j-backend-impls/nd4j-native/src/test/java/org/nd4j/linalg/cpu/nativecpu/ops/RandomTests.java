@@ -1,14 +1,14 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests for NativeRandom with respect to backend
@@ -164,5 +164,41 @@ public class RandomTests {
 
         assertEquals(z01, z11);
         assertEquals(z02, z12);
+    }
+
+
+    @Test
+    public void testJavaSide1() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        float array1[] = new float[1000];
+        float array2[] = new float[1000];
+
+        for (int e = 0; e < array1.length; e++) {
+            array1[e] = random1.nextFloat();
+            array2[e] = random2.nextFloat();
+        }
+
+        assertArrayEquals(array1, array2, 1e-5f);
+    }
+
+
+    @Test
+    public void testJavaSide2() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        int array1[] = new int[1000];
+        int array2[] = new int[1000];
+
+        for (int e = 0; e < array1.length; e++) {
+            array1[e] = random1.nextInt();
+            array2[e] = random2.nextInt();
+
+            assertTrue(array1[e] >= 0);
+        }
+
+        assertArrayEquals(array1, array2);
     }
 }

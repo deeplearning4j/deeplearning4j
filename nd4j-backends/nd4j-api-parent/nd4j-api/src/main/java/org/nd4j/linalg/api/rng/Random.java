@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
  *
  * @author Adam Gibson
  */
-public interface Random {
+public interface Random extends AutoCloseable {
 
     /**
      * Sets the seed of the underlying random number generator using an
@@ -204,13 +204,22 @@ public interface Random {
     INDArray nextDouble(char order, int[] shape);
 
     /**
-     * Generate a gaussian number ndarray
+     * Generate a uniform number ndarray
      * of the specified shape
      *
      * @param shape the shape to generate
-     * @return the generated gaussian numbers
+     * @return the generated uniform numbers
      */
     INDArray nextFloat(int[] shape);
+
+    /**
+     * Generate a uniform number ndarray
+     * of the specified shape
+     *
+     * @param shape the shape to generate
+     * @return the generated uniform numbers
+     */
+    INDArray nextFloat(char order, int[] shape);
 
     /**
      * Generate a random set of integers

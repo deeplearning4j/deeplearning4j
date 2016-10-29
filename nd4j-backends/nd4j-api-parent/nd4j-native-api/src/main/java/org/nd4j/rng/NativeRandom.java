@@ -2,16 +2,21 @@ package org.nd4j.rng;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
- * Basic nativeRandom implementation
+ * Basic NativeRandom implementation
  *
  * @author raver119@gmail.com
  */
@@ -22,6 +27,8 @@ public class NativeRandom implements Random {
     protected Pointer statePointer;
     protected long seed;
     protected long numberOfElements;
+    protected AtomicInteger position = new AtomicInteger(0);
+    protected LongPointer hostPointer;
 
     public NativeRandom() {
         this(System.currentTimeMillis());
@@ -39,6 +46,8 @@ public class NativeRandom implements Random {
         stateBuffer = Nd4j.getDataBufferFactory().createDouble(numberOfElements);
 
         statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
+
+        hostPointer = new LongPointer(stateBuffer.addressPointer());
     }
 
     @Override
@@ -67,77 +76,113 @@ public class NativeRandom implements Random {
 
     @Override
     public void nextBytes(byte[] bytes) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int nextInt() {
-        return 0;
+        int next = (int) nextLong();
+        return next < 0 ? -1 * next : next;
     }
 
     @Override
-    public int nextInt(int n) {
-        return 0;
+    public int nextInt(int to) {
+        int r = nextInt();
+        int m = to - 1;
+        if ((to & m) == 0)  // i.e., bound is a power of 2
+            r = (int) ((to * (long) r) >> 31);
+        else {
+            for (int u = r;
+                 u - (r = u % to) + m < 0;
+                 u = nextInt());
+        }
+        return r;
     }
 
     @Override
     public long nextLong() {
-        return 0;
+        long next = 0;
+        synchronized (this) {
+            if (position.get() >= numberOfElements) {
+                position.set(0);
+            }
+
+            next = hostPointer.get(position.getAndIncrement());
+        }
+
+        return next < 0 ? -1 * next : next;
     }
 
     @Override
     public boolean nextBoolean() {
-        return false;
+        return nextInt() % 2 == 0;
     }
 
     @Override
     public float nextFloat() {
-        return 0;
+        return  (float) nextInt() / (float)  Integer.MAX_VALUE;
     }
 
     @Override
     public double nextDouble() {
-        return 0;
+        return (double) nextInt() / (double)  Integer.MAX_VALUE;
     }
 
     @Override
     public double nextGaussian() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray nextGaussian(int[] shape) {
-        return null;
+        return nextGaussian(Nd4j.order(), shape);
     }
 
     @Override
     public INDArray nextGaussian(char order, int[] shape) {
-        return null;
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        GaussianDistribution op = new GaussianDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
     }
 
     @Override
     public INDArray nextDouble(int[] shape) {
-        return null;
+        return nextDouble(Nd4j.order(), shape);
     }
 
     @Override
     public INDArray nextDouble(char order, int[] shape) {
-        return null;
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        UniformDistribution op = new UniformDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
     }
 
     @Override
     public INDArray nextFloat(int[] shape) {
-        return null;
+        return nextFloat(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextFloat(char order, int[] shape) {
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        UniformDistribution op = new UniformDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
     }
 
     @Override
     public INDArray nextInt(int[] shape) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray nextInt(int n, int[] shape) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -159,5 +204,10 @@ public class NativeRandom implements Random {
     @Override
     public DataBuffer getStateBuffer() {
         return stateBuffer;
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
 }
