@@ -320,7 +320,6 @@ public class StatsListener implements RoutingIterationListener {
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
                         lrs.put(layerName + "_" + entry.getKey(), entry.getValue());
                     }
-                    lrs.putAll(conf.getLearningRateByParam());
                 }
             }
             report.reportLearningRates(lrs);
