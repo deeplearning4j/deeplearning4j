@@ -27,12 +27,12 @@ The best model is the one saved at the time of the vertical dotted line - i.e., 
 
 Using DL4J's early stopping functionality requires you to provide a number of configuration options:
 
-* A score calculator, such as the [DataSetLossCalculator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculator.java). This is the type of score we want to calculate at every epoch (for example: the loss function value on a test set, or the accuracy on the test set)
+* A score calculator, such as the *DataSetLossCalculator*([JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculator.html), [Source Code](https://github.com/deeplearning4j/deeplearning4j/blob/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculator.java)) for a Multi Layer Network, or *DataSetLossCalculatorCG* ([JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculatorCG.html), [Source Code](https://github.com/deeplearning4j/deeplearning4j/blob/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/scorecalc/DataSetLossCalculatorCG.java)) for a Computation Graph. Is used to calculate at every epoch (for example: the loss function value on a test set, or the accuracy on the test set)
 * How frequently we want to calculate the score function (default: every epoch)
 * One or more termination conditions, which tell the training process when to stop. There are two classes of termination conditions:
   * Epoch termination conditions: evaluated every N epochs
   * Iteration termination conditions: evaluated once per minibatch
-* A model saver, that defines how models are saved (see: [LocalFileModelSaver](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/saver/LocalFileModelSaver.java) and [InMemoryModelSaver](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/saver/InMemoryModelSaver.java))
+* A model saver, that defines how models are saved (see: [LocalFileModelSaver JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/saver/LocalFileModelSaver.html), [LocalFileModelSaver Source Code](https://github.com/deeplearning4j/deeplearning4j/blob/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/saver/LocalFileModelSaver.java)  and [InMemoryModelSaver JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/saver/InMemoryModelSaver.html), [InMemoryModelSaver Source Code](https://github.com/deeplearning4j/deeplearning4j/blob/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/saver/InMemoryModelSaver.java) )
 
 An example, with an epoch termination condition of maximum of 30 epochs, a maximum of 20 minutes training time, calculating the score every epoch, and saving the intermediate results to disk:
 
@@ -72,20 +72,22 @@ MultiLayerNetwork bestModel = result.getBestModel();
 
 Examples of epoch termination conditions:
 
-* To terminate training after a specified (maxiumum) number of epochs, use the [MaxEpochsTerminationCondition](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination/MaxEpochsTerminationCondition.java)
-* To terminate if the test set score does not improve for M consecutive epochs, use [ScoreImprovementEpochTerminationCondition](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination/ScoreImprovementEpochTerminationCondition.java)
+* To terminate training after a specified (maxiumum) number of epochs, use the [MaxEpochsTerminationCondition](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/termination/MaxEpochsTerminationCondition.html)
+* To terminate if the test set score does not improve for M consecutive epochs, use [ScoreImprovementEpochTerminationCondition](https://deeplearning4j.org/doc/org/deeplearning4j/earlystopping/termination/ScoreImprovementEpochTerminationCondition.html)
 
 Examples of iteration terminations conditions:
 
 * To terminate training after a specified amount of time (without waiting for an epoch to complete),  use [MaxTimeIterationTerminationCondition](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination/MaxTimeIterationTerminationCondition.java)
-* To terminate training if the score exceeds a certain value at any point, use [MaxScoreIterationTerminationCondition](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination/MaxScoreIterationTerminationCondition.java). This can be useful for example to terminate the training immediately if the network is poorly tuned or training becomes unstable (such as exploding weights/scores).
+* To terminate training if the score exceeds a certain value at any point, use [MaxScoreIterationTerminationCondition](https://github.com/deeplearning4j/deeplearning4j/blob/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination/MaxScoreIterationTerminationCondition.java). This can be useful for example to terminate the training immediately if the network is poorly tuned or training becomes unstable (such as exploding weights/scores).
+
+The source code for the built in termination classes are in this [directory](https://github.com/deeplearning4j/deeplearning4j/tree/c152293ef8d1094c281f5375ded61ff5f8eb6587/deeplearning4j-core/src/main/java/org/deeplearning4j/earlystopping/termination)
 
 You can of course implement your own iteration and epoch termination conditions.
 
 
 Final notes:
 
-* Here's a [very simple example using early stopping](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/misc/earlystopping/EarlyStoppingMNIST.java)
+* Here's a [very simple example using early stopping](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/earlystopping/EarlyStoppingMNIST.java)
 * [These unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/earlystopping/TestEarlyStopping.java) may also be useful.
 * Conducting early stopping training on Spark is also possible. The network configuration is the same; however, instead of using the EarlyStoppingTrainer as above, use the [SparkEarlyStoppingTrainer](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/spark/dl4j-spark/src/main/java/org/deeplearning4j/spark/earlystopping/SparkEarlyStoppingTrainer.java)
   *  [These unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/spark/dl4j-spark/src/test/java/org/deeplearning4j/spark/TestEarlyStoppingSpark.java) may also be useful for using early stopping on Spark.
