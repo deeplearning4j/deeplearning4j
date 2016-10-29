@@ -43,10 +43,10 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     public final static String VISIBLE_BIAS_KEY = "v" + DefaultParamInitializer.BIAS_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf, boolean backprop){
+    public int numParams(NeuralNetConfiguration conf){
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
-        return super.numParams(conf,backprop) + layerConf.getNIn();
+        return super.numParams(conf) + layerConf.getNIn();
     }
 
     @Override

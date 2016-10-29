@@ -110,7 +110,7 @@ public class SparkDl4jLayer implements Serializable {
 
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
-            int numParams = conf.getLayer().initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf);
             final INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf,null,0,params, true);
             layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
@@ -129,7 +129,7 @@ public class SparkDl4jLayer implements Serializable {
         }
         else {
             conf.setNumIterations(1);
-            int numParams = conf.getLayer().initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf);
             final INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             layer.setBackpropGradientsViewArray(Nd4j.create(1,numParams));

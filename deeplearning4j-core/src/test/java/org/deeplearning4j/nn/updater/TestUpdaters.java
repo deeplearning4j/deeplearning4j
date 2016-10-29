@@ -58,7 +58,7 @@ public class TestUpdaters {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).epsilon(Nd4j.EPS_THRESHOLD).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -116,7 +116,7 @@ public class TestUpdaters {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -153,7 +153,7 @@ public class TestUpdaters {
                         .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -204,7 +204,7 @@ public class TestUpdaters {
                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -246,7 +246,7 @@ public class TestUpdaters {
                         .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -289,7 +289,7 @@ public class TestUpdaters {
                         .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -319,7 +319,7 @@ public class TestUpdaters {
                 .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
                 .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
