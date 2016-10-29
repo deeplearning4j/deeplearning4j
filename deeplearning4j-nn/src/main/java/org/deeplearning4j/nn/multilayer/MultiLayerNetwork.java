@@ -379,26 +379,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 this.layers = new Layer[nLayers];
 
             //First: Work out total length of (backprop) params
-            int backpropParamLength = 0;
+            int paramLength = 0;
             int[] nParamsPerLayer = new int[nLayers];
             for( int i=0; i<nLayers; i++ ){
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf,true);
-                backpropParamLength += nParamsPerLayer[i];
+                nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
+                paramLength += nParamsPerLayer[i];
             }
 
             //Create parameters array, if required
             boolean initializeParams;
             if(parameters != null ){
                 if(!parameters.isRowVector()) throw new IllegalArgumentException("Invalid parameters: should be a row vector");
-                if(parameters.length() != backpropParamLength) throw new IllegalArgumentException("Invalid parameters: expected length " + backpropParamLength + ", got length " + parameters.length());
+                if(parameters.length() != paramLength) throw new IllegalArgumentException("Invalid parameters: expected length " + paramLength + ", got length " + parameters.length());
 
                 if(cloneParametersArray) flattenedParams = parameters.dup();
                 else flattenedParams = parameters;
 
                 initializeParams = false;
             } else {
-                flattenedParams = Nd4j.create(1, backpropParamLength);
+                flattenedParams = Nd4j.create(1, paramLength);
                 initializeParams = true;
             }
 
@@ -450,7 +450,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int[] nParamsPerLayer = new int[nLayers];
         for( int i=0; i<nLayers; i++ ){
             NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-            nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf,true);
+            nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf);
             backpropParamLength += nParamsPerLayer[i];
         }
 
