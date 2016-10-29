@@ -23,12 +23,12 @@ public class RandomTests {
     private static CpuNativeRandom random = new CpuNativeRandom(119, 10000000);
 
     @Test
-    public void testDistribution() throws Exception {
+    public void testDistribution1() throws Exception {
         CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
         CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
 
-        INDArray z1 = Nd4j.create(200);
-        INDArray z2 = Nd4j.create(200);
+        INDArray z1 = Nd4j.create(1000);
+        INDArray z2 = Nd4j.create(1000);
         BoundedDistribution distribution = new BoundedDistribution(z1, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution, random1);
         BoundedDistribution distribution2 = new BoundedDistribution(z2, 1.0, 2.0);
@@ -41,7 +41,30 @@ public class RandomTests {
             assertTrue(val >= 1.0 && val <= 2.0);
         }
 
-        //assertEquals(z1, z2);
+        assertEquals(z1, z2);
+    }
+
+
+    @Test
+    public void testDistribution2() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 20);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 20);
+
+        INDArray z1 = Nd4j.create(32);
+        INDArray z2 = Nd4j.create(32);
+        BoundedDistribution distribution = new BoundedDistribution(z1, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution, random1);
+        BoundedDistribution distribution2 = new BoundedDistribution(z2, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution2, random2);
+
+        System.out.println("Data: " + z1);
+        System.out.println("Data: " + z2);
+        for (int e = 0; e < z1.length(); e++) {
+            double val = z1.getDouble(e);
+            assertTrue(val >= 1.0 && val <= 2.0);
+        }
+
+        assertEquals(z1, z2);
     }
 
 
@@ -63,8 +86,8 @@ public class RandomTests {
         CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
         CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
 
-        INDArray z1 = Nd4j.ones(100);
-        INDArray z2 = Nd4j.ones(100);
+        INDArray z1 = Nd4j.ones(300);
+        INDArray z2 = Nd4j.ones(300);
         INDArray zDup = z1.dup();
 
         DropOutInverted op1 = new DropOutInverted(z1, z1, 0.10);
@@ -83,8 +106,8 @@ public class RandomTests {
         CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
         CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
 
-        INDArray z1 = Nd4j.ones(100);
-        INDArray z2 = Nd4j.ones(100);
+        INDArray z1 = Nd4j.ones(300);
+        INDArray z2 = Nd4j.ones(300);
         INDArray zDup = z1.dup();
 
         DropOut op1 = new DropOut(z1, z1, 0.10);
