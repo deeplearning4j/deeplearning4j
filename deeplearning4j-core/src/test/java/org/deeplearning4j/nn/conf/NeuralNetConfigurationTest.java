@@ -228,9 +228,6 @@ public class NeuralNetConfigurationTest {
         assertEquals(modelWeights, modelWeights2);
     }
 
-
-
-
     private static NeuralNetConfiguration getRBMConfig(int nIn, int nOut, WeightInit weightInit){
         RBM layer = new RBM.Builder()
                 .nIn(nIn)
@@ -239,17 +236,17 @@ public class NeuralNetConfigurationTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(3)
-                .regularization(false)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .regularization(false)
                 .layer(layer)
                 .build();
+        conf.setPretrain(true);
         return conf;
-
     }
 
     private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit){

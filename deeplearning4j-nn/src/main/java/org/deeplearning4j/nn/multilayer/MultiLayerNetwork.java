@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
@@ -165,10 +166,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
 
         INDArray layerInput;
+        Layer layer;
 
         for (int i = 0; i < getnLayers(); i++) {
-            // TODO if RBM then get number of pretrain iterations to use and loop
-            if (i == 0) {
+            layer = layers[i];
+            if (i == 0 && layer instanceof BasePretrainNetwork) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     if(getLayerWiseConfigurations().getInputPreProcess(i) != null) {
@@ -180,8 +182,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     setInput(layerInput);
                       /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
                     if (this.getInput() == null || this.getLayers() == null)
-                        initializeLayers(input());
-                    layers[i].fit(input());
+                        initializeLayers(layerInput);
+                    layer.fit(layerInput);
                     log.info("Training on layer " + (i + 1) + " with " + input().size(0) + " examples");
                 }
 
@@ -191,11 +193,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     layerInput = next.getFeatureMatrix();
                     for (int j = 1; j <= i; j++)
                         layerInput = activationFromPrevLayer(j - 1, layerInput,true);
-
                     log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
-                    getLayer(i).fit(layerInput);
+                    if (layer instanceof BasePretrainNetwork)
+                        layer.fit(layerInput);
                 }
             }
+            // Turn off pretrain after it is complete
+            layer.conf().setPretrain(false);
             iter.reset();
         }
     }
@@ -218,8 +222,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         int miniBatchSize = input.size(0);
         INDArray layerInput = null;
-
+        Layer layer;
         for (int i = 0; i < getnLayers() - 1; i++) {
+            layer = getLayers()[i];
             if (i == 0)
                 if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                     layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,miniBatchSize);
@@ -228,7 +233,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             else
                 layerInput = activationFromPrevLayer(i - 1, layerInput,true);
             log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
-            getLayers()[i].fit(layerInput);
+            layer.fit(layerInput);
+            layer.conf().setPretrain(false);
 
         }
 
@@ -1038,14 +1044,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();
-//            while (iter.hasNext()) {
-//                DataSet next = iter.next();
-//                if (next.getFeatureMatrix() == null || next.getLabels() == null)
-//                    break;
-//                setInput(next.getFeatureMatrix());
-//                setLabels(next.getLabels());
-//                finetune();
-//            }
+            layerWiseConfigurations.setPretrain(false);
         }
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1441,7 +1440,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
-//            finetune();
+            layerWiseConfigurations.setPretrain(false);
         }
 
         if(layerWiseConfigurations.isBackprop()) {
@@ -1470,8 +1469,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data) {
         setInput(data);
+        layerWiseConfigurations.setPretrain(true);
         update(TaskUtils.buildTask(data));
         pretrain(data);
+        layerWiseConfigurations.setPretrain(false);
     }
 
     @Override

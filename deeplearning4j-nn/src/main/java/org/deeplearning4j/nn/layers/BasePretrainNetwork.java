@@ -77,16 +77,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public int numParams(boolean backwards) {
-        if(!backwards)
-            return super.numParams(backwards);
-        int ret = 0;
-        for(String s : paramTable().keySet()) {
-            if(!s.equals(PretrainParamInitializer.VISIBLE_BIAS_KEY)) {
-                ret += getParam(s).length();
-            }
-        }
-
-        return ret;
+        return super.numParams(backwards);
     }
 
     /**
@@ -124,7 +115,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public INDArray params(boolean backprop){
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!backprop || !PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
+            if(!conf.isPretrain() || !PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+            list.add(entry.getValue());
         }
         return Nd4j.toFlattened('f', list);
     }
@@ -135,7 +127,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public int numParams() {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             ret += entry.getValue().length();
         }
         return ret;
@@ -163,11 +155,13 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
                 + " or " + lengthBackprop + " for backprop. Is: " + params.length());
         }
 
+        // Set for backprop and only W & hb
         if(!pretrain){
             paramsFlattened.assign(params);
             return;
         }
 
+        // Set for pretrain with W, vb & hb
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet) {
