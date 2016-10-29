@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -73,6 +74,9 @@ public class L2Vertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
+        INDArray out = Transforms.sqrt(Transforms.pow(inputs[0].sub(inputs[1]), 2));
+
+        return out;
     }
 
     @Override
