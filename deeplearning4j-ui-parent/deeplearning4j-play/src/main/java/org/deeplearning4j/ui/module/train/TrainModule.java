@@ -213,6 +213,55 @@ public class TrainModule implements UIModule {
         //Get scores info
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
 
+        //Collect update ratios for weights
+        //Collect variances: activations, gradients, updates
+        Map<String,List<Double>> updateRatios = new HashMap<>();    //Mean magnitude (updates) / mean magnitude (parameters)
+        result.put("updateRatios", updateRatios);
+
+        Map<String,List<Double>> varianceActivations = new HashMap<>();
+        Map<String,List<Double>> varianceGradients = new HashMap<>();
+        Map<String,List<Double>> varianceUpdates = new HashMap<>();
+        result.put("varianceActivations",varianceActivations);
+        result.put("varianceGradients", varianceGradients);
+        result.put("varianceUpdates", varianceUpdates);
+
+        if(!noData){
+            Persistable u = updates.get(0);
+            if (u instanceof StatsReport){
+                StatsReport sp = (StatsReport)u;
+                Map<String,Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
+                if(map != null){
+                    for(String s : map.keySet()){
+                        updateRatios.put(s,new ArrayList<>());
+                        varianceGradients.put(s, new ArrayList<>());
+                        varianceUpdates.put(s, new ArrayList<>());
+                    }
+                }
+
+                Map<String,Double> stdGrad = sp.getStdev(StatsType.Gradients);
+                if(stdGrad != null){
+                    for(String s : stdGrad.keySet()){
+                        varianceGradients.put(s, new ArrayList<>());
+                    }
+                }
+
+                Map<String,Double> stdUpdate = sp.getStdev(StatsType.Updates);
+                if(stdUpdate != null){
+                    for(String s : stdUpdate.keySet()){
+                        varianceGradients.put(s, new ArrayList<>());
+                    }
+                }
+
+
+                Map<String,Double> stdAct = sp.getStdev(StatsType.Activations);
+                if(stdAct != null){
+                    for(String s : stdAct.keySet()){
+                        varianceActivations.put(s, new ArrayList<>());
+                    }
+                }
+            }
+        }
+
         StatsReport last = null;
         if (!noData) {
             double lastScore;
@@ -223,6 +272,43 @@ public class TrainModule implements UIModule {
                 scoresIterCount.add(iterCount);
                 lastScore = last.getScore();
                 scores.add(lastScore);
+
+                //Update ratios: mean magnitudes(updates) / mean magnitudes (parameters)
+                Map<String,Double> updateMM = last.getMeanMagnitudes(StatsType.Updates);
+                Map<String,Double> paramMM = last.getMeanMagnitudes(StatsType.Parameters);
+                if(updateMM != null && paramMM != null && updateMM.size() > 0 && paramMM.size() > 0){
+                    for(String s : updateRatios.keySet()){
+                        List<Double> ratioHistory = updateRatios.get(s);
+                        double currUpdate = updateMM.get(s);
+                        double currParam = paramMM.get(s);
+                        double ratio = currUpdate / currParam;
+                        ratioHistory.add(ratio);
+                    }
+                }
+
+                //Variances: gradients, updates, activations
+                Map<String,Double> stdGrad = last.getStdev(StatsType.Gradients);
+                Map<String,Double> stdUpd = last.getStdev(StatsType.Updates);
+                Map<String,Double> stdAct = last.getStdev(StatsType.Activations);
+
+                if(stdGrad != null){
+                    for(String s : varianceGradients.keySet()){
+                        double d = stdGrad.get(s);
+                        varianceGradients.get(s).add(d*d);
+                    }
+                }
+                if(stdUpd != null){
+                    for(String s : varianceUpdates.keySet()){
+                        double d = stdUpd.get(s);
+                        varianceUpdates.get(s).add(d*d);
+                    }
+                }
+                if(stdAct != null){
+                    for(String s : varianceActivations.keySet()){
+                        double d = stdAct.get(s);
+                        varianceActivations.get(s).add(d*d);
+                    }
+                }
             }
         }
 
