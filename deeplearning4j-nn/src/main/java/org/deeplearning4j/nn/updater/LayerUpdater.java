@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -74,12 +75,14 @@ public class LayerUpdater implements Updater {
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
+            if(!layer.conf().isPretrain() || PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName)) continue;
             gradientOrig = gradientPair.getValue();
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
                 applyLrDecayPolicy(decay, layer, iteration, paramName);
             updater = init(paramName, layer);
             gradient2 = updater.getGradient(gradientOrig, iteration);
+            // TODO do not update vbias if backprop
             postApply(layer, gradient2, paramName, miniBatchSize);
             gradient.setGradientFor(paramName, gradient2);
         }
