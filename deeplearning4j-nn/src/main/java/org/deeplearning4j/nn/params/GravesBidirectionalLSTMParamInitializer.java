@@ -53,7 +53,7 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     public final static String INPUT_WEIGHT_KEY_BACKWARDS = DefaultParamInitializer.WEIGHT_KEY + "B";
 
     @Override
-    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+    public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
 

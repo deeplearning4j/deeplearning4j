@@ -59,7 +59,7 @@ public class TestRenders extends BaseUiServerTest {
 
         INDArray input = d2.getFeatureMatrix();
         PlotFilters filters = new PlotFilters(input,new int[]{10,10},new int[]{0,0},new int[]{28,28});
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)
                 ,new UpdateFilterIterationListener(filters,Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0, params, true);
@@ -85,7 +85,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0, params, true);
         da.setParams(da.params());
@@ -111,7 +111,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, null, 0, params, true);
         da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));

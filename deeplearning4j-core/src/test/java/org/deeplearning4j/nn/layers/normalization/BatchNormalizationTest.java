@@ -82,7 +82,7 @@ public class BatchNormalizationTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1).layer(bN).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = null;
         if (numParams > 0) {
             params = Nd4j.create(1, numParams);
