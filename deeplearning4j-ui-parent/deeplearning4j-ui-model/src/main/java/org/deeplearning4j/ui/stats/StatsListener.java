@@ -173,14 +173,14 @@ public class StatsListener implements RoutingIterationListener {
 
     @Override
     public void onForwardPass(Model model, Map<String, INDArray> activations) {
-        if (storeActivations() && updateConfig.reportingFrequency() > 1 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
+        if (storeActivations() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             activationsMap = activations;
         }
     }
 
     @Override
     public void onGradientCalculation(Model model) {
-        if (storeActivations() && updateConfig.reportingFrequency() > 1 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
+        if (storeGradients() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             Gradient g = model.gradient();
             gradientsPreUpdateMap.clear();
             for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
