@@ -126,8 +126,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             return;
 
         INDArray preOut = preOutput2d(true);
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
-        this.gradient = triple.getFirst();
+        Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOut);
+        this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1,fullNetworkL2,true);
     }
@@ -145,11 +145,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = triple.getSecond();
+        Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        INDArray delta = pair.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        return new Pair<>(triple.getFirst(),epsilonNext);
+        return new Pair<>(pair.getFirst(),epsilonNext);
     }
 
     /**
@@ -162,10 +162,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));    //TODO: do we need dup here?
+        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray);
 
         Gradient gradient = new DefaultGradient();
 
@@ -178,7 +177,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
 
-        return new Triple<>(gradient, delta, output);
+        return new Pair<>(gradient, delta);
     }
 
 
