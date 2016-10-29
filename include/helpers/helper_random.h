@@ -10,9 +10,15 @@
 #endif
 
 #define MAX_INT 2147483647
-#define MAX_UINT 18446744073709551615
+#define MAX_UINT 18446744073709551615LLU
 
 #include <helpers/helper_generator.h>
+
+#ifndef __CUDACC__
+
+#include <mutex>
+
+#endif
 
 namespace nd4j {
 
@@ -22,6 +28,7 @@ namespace nd4j {
         private:
             nd4j::random::IGenerator *generator;
             nd4j::random::RandomBuffer *buffer;
+
 
         public:
             RandomHelper(nd4j::random::IGenerator *generator) {

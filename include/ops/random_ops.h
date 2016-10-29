@@ -43,10 +43,10 @@ namespace randomOps {
     };
 
     /**
-     * This Op produces random values within specified boundaries
+     * This Op produces random values within specified boundaries. Disribution is uniform
      */
     template<typename T>
-    class BoundedDistribution {
+    class UniformDistribution {
     public:
 
         no_exec_special
@@ -58,6 +58,7 @@ namespace randomOps {
             return helper->relativeT(idx, extraParams[0], extraParams[1]);
         }
     };
+
 
     /**
      * Basic DropOut/DropConnect Op

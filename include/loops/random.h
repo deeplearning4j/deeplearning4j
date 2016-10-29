@@ -6,12 +6,13 @@
 #define LIBND4J_RANDOM_H
 
 #define RANDOM_OPS \
-        (0, randomOps::BoundedDistribution) ,\
+        (0, randomOps::UniformDistribution) ,\
         (1, randomOps::DropOut) ,\
         (2, randomOps::DropOutInverted) ,\
         (3, randomOps::ProbablisticMerge) ,\
         (4, randomOps::Linspace) ,\
-        (5, randomOps::Choice)
+        (5, randomOps::Choice) ,\
+        (6, randomOps::GaussianDistribution)
 
 #include <helpers/shape.h>
 #include <helpers/helper_random.h>
