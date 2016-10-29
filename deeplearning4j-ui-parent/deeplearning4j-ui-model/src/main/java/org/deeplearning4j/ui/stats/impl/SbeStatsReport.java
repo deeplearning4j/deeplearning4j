@@ -339,7 +339,6 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
             default:
                 throw new RuntimeException("Unknown summary type: " + summaryType);
         }
-
         sse.next().statType(st)
                 .summaryType(summaryT)
                 .value(d);
