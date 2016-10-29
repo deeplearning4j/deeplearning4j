@@ -40,6 +40,7 @@ namespace nd4j {
                 this->size = size;
                 this->generation = 1;
                 this->currentPosition = 0;
+                this->offset = 0;
             }
 
             uint64_t *getBuffer() {
@@ -63,15 +64,23 @@ namespace nd4j {
             }
 
             long getOffset() {
-                return this->offset;
+                return this->currentPosition;
             }
 
-            void setOffset(long seed) {
-                this->seed = seed;
+            void setOffset(long offset) {
+                this->currentPosition = offset;
             }
 
             uint64_t getElement(long position) {
-                return buffer[this->getOffset() + position];
+                long actualPosition = this->getOffset() + position;
+                long tempGen = generation;
+                if (actualPosition > this->size) {
+                    actualPosition = actualPosition % this->size;
+                    tempGen++;
+                    tempGen *= seed;
+                }
+
+                return tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen;
             }
 
             long getNextIndex() {

@@ -97,6 +97,8 @@ namespace functions {
                         z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, &helper, extraArguments);
                     }
                 }
+
+                helper.rewind(length);
             }
 
 
@@ -155,6 +157,8 @@ namespace functions {
                         z[zOffset2] = OpClass::op(x[xOffset2], i, length, &helper, extraArguments);
                     }
                 }
+
+                helper.rewind(length);
             }
 
             template<typename OpClass>
@@ -199,6 +203,8 @@ namespace functions {
                         z[zOffset2] = OpClass::op(i, length, &helper,  extraArguments);
                     }
                 }
+
+                helper.rewind(length);
             }
 
             static inline void execTransform(int opNum, Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {

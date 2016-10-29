@@ -166,7 +166,7 @@ namespace nd4j {
              * @return
              */
             T relativeT(int index) {
-                return (T) relativeUInt() / (T) MAX_UINT;
+                return (T) relativeUInt(index) / (T) MAX_UINT;
             }
 
             /**
@@ -178,9 +178,9 @@ namespace nd4j {
              */
             T relativeT(int index, T to) {
                 if (to == (T) 1.0f)
-                    return relativeT();
+                    return relativeT(index);
 
-                return relativeT((T) 0.0f, to);
+                return relativeT(index, (T) 0.0f, to);
             }
 
             /**
@@ -202,7 +202,13 @@ namespace nd4j {
              * @param numberOfElements number of elements to skip
              */
             void rewind(long numberOfElements) {
-                buffer->setOffset(buffer->getOffset() + numberOfElements);
+                long newPos = buffer->getOffset() + numberOfElements;
+                if (newPos > buffer->getSize())
+                    newPos = numberOfElements - (buffer->getSize() - buffer->getOffset());
+                else if (newPos == buffer->getSize())
+                    newPos = 0;
+
+                buffer->setOffset(newPos);
             }
         };
     }
