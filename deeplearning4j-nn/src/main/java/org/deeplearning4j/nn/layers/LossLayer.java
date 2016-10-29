@@ -137,8 +137,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             return;
 
         INDArray preOut = preOutput2d(true);
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOut);
-        this.gradient = triple.getFirst();
+        Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOut);
+        this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1,fullNetworkL2,true);
     }
@@ -155,23 +155,20 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput2d(true));
-
-        return new Pair<>(triple.getFirst(), triple.getSecond());
+        return getGradientsAndDelta(preOutput2d(true));
     }
 
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(), maskArray);
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
 
-        return new Triple<>(gradient, delta, output);
+        return new Pair<>(gradient, delta);
     }
 
     /**
@@ -199,6 +196,19 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public void fit(INDArray input) {
         // no-op
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        INDArray z = preOutput(training);
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+            conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
+
+        if(maskArray != null){
+            ret.muliColumnVector(maskArray);
+        }
+
+        return ret;
     }
 
     @Override
