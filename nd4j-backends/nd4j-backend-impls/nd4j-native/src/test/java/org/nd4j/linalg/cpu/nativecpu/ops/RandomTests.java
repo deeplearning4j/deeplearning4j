@@ -135,4 +135,34 @@ public class RandomTests {
 
         assertEquals(z1, z2);
     }
+
+    @Test
+    public void testSetSeed1() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        INDArray z01 = Nd4j.create(1000);
+        INDArray z11 = Nd4j.create(1000);
+
+        UniformDistribution distribution01 = new UniformDistribution(z01, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution01, random1);
+
+        UniformDistribution distribution11 = new UniformDistribution(z11, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution11, random2);
+
+        random1.setSeed(1999);
+        random2.setSeed(1999);
+
+        INDArray z02 = Nd4j.create(100);
+        UniformDistribution distribution02 = new UniformDistribution(z02, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution02, random1);
+
+        INDArray z12 = Nd4j.create(100);
+        UniformDistribution distribution12 = new UniformDistribution(z12, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution12, random2);
+
+
+        assertEquals(z01, z11);
+        assertEquals(z02, z12);
+    }
 }

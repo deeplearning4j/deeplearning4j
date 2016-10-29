@@ -1478,5 +1478,7 @@ public class NativeOps extends Pointer {
 
     public native Pointer initRandom(long seed, long numberOfElements, Pointer pointerToBuffer);
 
+    public native void refreshBuffer(long seed, Pointer pointer);
+
     public native void destroyRandom(Pointer pointer);
 }

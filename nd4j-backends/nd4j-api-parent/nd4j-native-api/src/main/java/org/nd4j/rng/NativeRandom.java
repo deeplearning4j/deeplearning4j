@@ -56,8 +56,8 @@ public class NativeRandom implements Random {
     }
 
     @Override
-    public void setSeed(long seed) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public synchronized void setSeed(long seed) {
+        nativeOps.refreshBuffer(seed, statePointer);
     }
 
     @Override
