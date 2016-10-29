@@ -28,29 +28,25 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.omg.PortableInterceptor.INACTIVE;
+
+import java.util.Arrays;
 
 /**
- * StackingVertex allows for stacking of inputs so that they may be forwarded through
- * a network. This is useful for cases such as Triplet Embedding, where shared parameters
- * are not supported by the network.
+ * L2Vertex calculates the L2
  *
  * @author Justin Long (crockpotveggies)
  */
-public class StackingVertex extends BaseGraphVertex {
+public class L2Vertex extends BaseGraphVertex {
 
     private String inputName;
     private int inputVertexIndex;
 
-    private boolean isUnstack;
-    private int unstackDim;
-
-    public StackingVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
         this(graph,name,vertexIndex,null,null,inputVertexName);
     }
 
-    public StackingVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                          VertexIndices[] outputVertices, String inputName) {
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                    VertexIndices[] outputVertices, String inputName) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.inputName = inputName;
         this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
@@ -75,43 +71,13 @@ public class StackingVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        // stacking along dimension 0
-        // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
-        // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
-        int nStack = inputs.length;
-        int[] inShape = inputs[0].shape();
-        int[] outShape = new int[inShape.length];
+        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        // create the new shape
-        for ( int i=0; i<nStack; i++ ) {
-            if(i==0) outShape[0] = nStack * inShape[0];
-            else outShape[i] = inShape[i];
-        }
-
-        INDArray out = Nd4j.create(outShape);
-
-        int rowCount = 0;
-
-        //Simplest case: no masking arrays, all same length
-        // loop through indexes for 2D, 3D, 4D...
-        INDArrayIndex[] indexes = new INDArrayIndex[inShape.length];
-        for (int i=0; i<inShape.length; i++) {
-            indexes[i] = NDArrayIndex.all();
-        }
-        
-        for (INDArray input : inputs) {
-            int nEx = input.size(0);
-            indexes[0] = NDArrayIndex.interval(rowCount, rowCount + nEx);
-            out.put(indexes, input);
-            rowCount += nEx;
-        }
-
-        return out;
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        throw new UnsupportedOperationException("Cannot do backward pass for InputVertex");
+        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
     }
 
     @Override
@@ -121,6 +87,6 @@ public class StackingVertex extends BaseGraphVertex {
 
     @Override
     public String toString(){
-        return "StackingVertex(inputName=" + inputName + ")";
+        return "L2Vertex(inputName=" + inputName + ")";
     }
 }
