@@ -126,8 +126,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 * and exploring the search space.
 		 */
         Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> matrices;
-        //negative visible means or expected values
-        INDArray nvMeans = null;
         //negative value samples
         INDArray nvSamples = null;
         //negative hidden means or expected values
@@ -153,7 +151,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 matrices = gibbhVh(nhSamples);
 
             //get the cost updates for sampling in the chain after k iterations
-            nvMeans = matrices.getFirst().getFirst();
             nvSamples = matrices.getFirst().getSecond();
             nhMeans = matrices.getSecond().getFirst();
             nhSamples = matrices.getSecond().getSecond();
@@ -185,31 +182,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
         gradient = ret;
         setScoreWithZ(delta);
-    }
-
-    @Deprecated
-    @Override
-    public Layer transpose() {
-        RBM r = (RBM) super.transpose();
-        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(layerConf().getVisibleUnit());
-        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(layerConf().getHiddenUnit());
-        if(h == null)
-            h = layerConf().getHiddenUnit();
-        if(v == null)
-            v = layerConf().getVisibleUnit();
-
-        r.layerConf().setHiddenUnit(h);
-        r.layerConf().setVisibleUnit(v);
-
-        //biases:
-        INDArray vb = getParam(DefaultParamInitializer.BIAS_KEY).dup();
-        INDArray b = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).dup();
-        r.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY,vb);
-        r.setParam(DefaultParamInitializer.BIAS_KEY,b);
-
-        r.sigma = sigma;
-        r.hiddenSigma = hiddenSigma;
-        return r;
     }
 
     /**
@@ -332,10 +304,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
-
-//        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-//            this.sigma = v.var(0).divi(input.rows());
-
         INDArray preSig = v.mmul(W).addiRowVector(hBias);
 
         switch (layerConf().getHiddenUnit()) {
@@ -387,7 +355,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
     }
 
-
     /**
      * Reconstructs the visible INPUT.
      * A reconstruction is a propdown of the reconstructed hidden input.
@@ -409,7 +376,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      */
     @Override
     public void fit(INDArray input) {
-
         super.fit(input);
     }
 
@@ -433,4 +399,31 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         applyDropOutIfNecessary(true);
         contrastiveDivergence();
     }
+
+    @Deprecated
+    @Override
+    public Layer transpose() {
+        RBM r = (RBM) super.transpose();
+        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(layerConf().getVisibleUnit());
+        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(layerConf().getHiddenUnit());
+        if(h == null)
+            h = layerConf().getHiddenUnit();
+        if(v == null)
+            v = layerConf().getVisibleUnit();
+
+        r.layerConf().setHiddenUnit(h);
+        r.layerConf().setVisibleUnit(v);
+
+        //biases:
+        INDArray vb = getParam(DefaultParamInitializer.BIAS_KEY).dup();
+        INDArray b = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).dup();
+        r.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY,vb);
+        r.setParam(DefaultParamInitializer.BIAS_KEY,b);
+
+        r.sigma = sigma;
+        r.hiddenSigma = hiddenSigma;
+        return r;
+    }
+
+
 }

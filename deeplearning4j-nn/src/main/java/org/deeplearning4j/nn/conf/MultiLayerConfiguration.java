@@ -61,8 +61,8 @@ import java.util.Map;
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
-    protected boolean pretrain = false;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+    protected boolean pretrain = false;
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
@@ -207,12 +207,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return toJson();
     }
 
-
-
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
     }
-
 
     @Override
     public MultiLayerConfiguration clone() {
@@ -250,9 +247,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        protected boolean pretrain = false;
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+        protected boolean pretrain = false;
         protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
@@ -283,6 +280,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param backprop whether to do back prop or not
          * @return
          */
+        @Deprecated
         public Builder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
@@ -328,6 +326,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param pretrain whether to do pre train or not
          * @return builder pattern
          */
+        @Deprecated
         public Builder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
@@ -381,9 +380,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             if(pretrain && !backprop)
                 log.warn("Warning: pretrain is set to true and if finetune is needed set backprop to true.");
             else if (!pretrain)
-                log.warn("Warning: new network default sets pretrain to false.");
+                log.warn("Warning: new network default sets pretrain to false and requires moving configuration above layer defintion.");
             if(backprop)
-                log.warn("Warning: new network default sets backprop to true.");
+                log.warn("Warning: new network default sets backprop to true and requires moving configuration above layer defintion.");
 
         }
 
@@ -426,6 +425,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 InputType currentInputType = inputType;
                 for( int i=0; i<confs.size(); i++){
                     Layer l = confs.get(i).getLayer();
+                    // Sets pretrain on the layer to track update for that specific layer
+                    if (l instanceof BasePretrainNetwork && pretrain) confs.get(i).setPretrain(pretrain);
                     if(inputPreProcessors.get(i) == null){
                         //Don't override preprocessor setting, but set preprocessor if required...
                         InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);
@@ -442,6 +443,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                     currentInputType = l.getOutputType(currentInputType);
                 }
+
             }
 
 

@@ -88,6 +88,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double lrPolicyDecayRate;
     protected double lrPolicySteps;
     protected double lrPolicyPower;
+    protected boolean pretrain;
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -128,7 +129,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     	variables.clear();
     }
 
-
     public void setLayerParamLR(String variable){
         double lr = layer.getLearningRateByParam(variable);
         double l1 = layer.getL1ByParam(variable);
@@ -155,6 +155,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return l2ByParam.get(variable);
     }
 
+    public void setPretrain(boolean pretrain) { this.pretrain = pretrain;}
+    public boolean isPretrain() { return pretrain;}
 
     /**
      * Fluent interface for building a list of configurations
@@ -175,6 +177,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public ListBuilder backprop(boolean backprop) {
             this.backprop = backprop;
+
             return this;
         }
 
@@ -446,6 +449,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double lrPolicyDecayRate = Double.NaN;
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
+        protected boolean pretrain = false;
 
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
@@ -943,6 +947,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 } else if ((dist != null || layer.getDist() != null))
                     log.warn("Layer \"" + layerName + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
             }
+
         }
 
         ////////////////
@@ -969,6 +974,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.lrPolicyDecayRate = lrPolicyDecayRate;
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
+            conf.pretrain = pretrain;
             String layerName;
             if(layer == null || layer.getLayerName() == null ) layerName = "Layer not named";
             else layerName = "Layer " + layer.getLayerName() ;

@@ -502,10 +502,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public int numParams(boolean backwards) {
-        if(backwards){
+        if(!conf.isPretrain()){
             int ret = 0;
             for(Map.Entry<String,INDArray> entry : params.entrySet()){
-//                if(this instanceof BasePretrainNetwork && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+                if(this instanceof BasePretrainNetwork && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
                 ret += entry.getValue().length();
             }
             return ret;
