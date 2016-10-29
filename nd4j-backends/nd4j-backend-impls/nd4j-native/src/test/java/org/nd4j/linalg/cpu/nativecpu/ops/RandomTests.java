@@ -178,6 +178,8 @@ public class RandomTests {
         for (int e = 0; e < array1.length; e++) {
             array1[e] = random1.nextFloat();
             array2[e] = random2.nextFloat();
+
+            assertTrue(array1[e] <= 1.0f);
         }
 
         assertArrayEquals(array1, array2, 1e-5f);
@@ -197,6 +199,25 @@ public class RandomTests {
             array2[e] = random2.nextInt();
 
             assertTrue(array1[e] >= 0);
+        }
+
+        assertArrayEquals(array1, array2);
+    }
+
+    @Test
+    public void testJavaSide3() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        int array1[] = new int[10000];
+        int array2[] = new int[10000];
+
+        for (int e = 0; e < array1.length; e++) {
+            array1[e] = random1.nextInt(9823);
+            array2[e] = random2.nextInt(9823);
+
+            assertTrue(array1[e] >= 0);
+            assertTrue(array1[e] < 9823);
         }
 
         assertArrayEquals(array1, array2);
