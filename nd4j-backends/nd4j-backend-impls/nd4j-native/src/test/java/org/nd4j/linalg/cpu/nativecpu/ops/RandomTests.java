@@ -1,12 +1,8 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.impl.BoundedDistribution;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
-import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -29,9 +25,9 @@ public class RandomTests {
 
         INDArray z1 = Nd4j.create(1000);
         INDArray z2 = Nd4j.create(1000);
-        BoundedDistribution distribution = new BoundedDistribution(z1, 1.0, 2.0);
+        UniformDistribution distribution = new UniformDistribution(z1, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution, random1);
-        BoundedDistribution distribution2 = new BoundedDistribution(z2, 1.0, 2.0);
+        UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution2, random2);
 
         System.out.println("Data: " + z1);
@@ -52,9 +48,9 @@ public class RandomTests {
 
         INDArray z1 = Nd4j.create(32);
         INDArray z2 = Nd4j.create(32);
-        BoundedDistribution distribution = new BoundedDistribution(z1, 1.0, 2.0);
+        UniformDistribution distribution = new UniformDistribution(z1, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution, random1);
-        BoundedDistribution distribution2 = new BoundedDistribution(z2, 1.0, 2.0);
+        UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution2, random2);
 
         System.out.println("Data: " + z1);
@@ -117,6 +113,25 @@ public class RandomTests {
         Nd4j.getExecutioner().exec(op2, random2);
 
         assertNotEquals(zDup, z1);
+
+        assertEquals(z1, z2);
+    }
+
+    @Test
+    public void testGaussianDistribution1() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        INDArray z1 = Nd4j.create(100000);
+        INDArray z2 = Nd4j.create(100000);
+
+        GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        GaussianDistribution op2 = new GaussianDistribution(z2, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
 
         assertEquals(z1, z2);
     }

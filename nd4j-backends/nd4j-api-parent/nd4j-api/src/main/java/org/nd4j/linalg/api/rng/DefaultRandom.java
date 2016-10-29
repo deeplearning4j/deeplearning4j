@@ -35,6 +35,7 @@ import javax.annotation.Nullable;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
     protected long seed;

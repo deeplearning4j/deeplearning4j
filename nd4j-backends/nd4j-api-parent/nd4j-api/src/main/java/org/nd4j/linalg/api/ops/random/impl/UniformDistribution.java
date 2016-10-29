@@ -6,11 +6,11 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 /**
  * @author raver119@gmail.com
  */
-public class BoundedDistribution extends BaseRandomOp {
+public class UniformDistribution extends BaseRandomOp {
     private double from;
     private double to;
 
-    public BoundedDistribution(){
+    public UniformDistribution(){
         super();
     }
 
@@ -20,7 +20,7 @@ public class BoundedDistribution extends BaseRandomOp {
      * @param from
      * @param to
      */
-    public BoundedDistribution(INDArray z, double from, double to) {
+    public UniformDistribution(INDArray z, double from, double to) {
         init(null, null, z, z.length());
         this.from = from;
         this.to = to;
@@ -31,7 +31,7 @@ public class BoundedDistribution extends BaseRandomOp {
      * This op fills Z with random values within 0...1
      * @param z
      */
-    public BoundedDistribution(INDArray z) {
+    public UniformDistribution(INDArray z) {
         this(z, 0.0, 1.0);
     }
 
@@ -39,7 +39,7 @@ public class BoundedDistribution extends BaseRandomOp {
      * This op fills Z with random values within 0...to
      * @param z
      */
-    public BoundedDistribution(INDArray z, double to) {
+    public UniformDistribution(INDArray z, double to) {
         this(z, 0.0, to);
     }
 
@@ -50,6 +50,6 @@ public class BoundedDistribution extends BaseRandomOp {
 
     @Override
     public String name() {
-        return "bounded_distribution";
+        return "distribution_uniform";
     }
 }
