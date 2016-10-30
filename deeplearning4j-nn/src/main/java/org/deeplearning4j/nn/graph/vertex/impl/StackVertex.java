@@ -42,7 +42,7 @@ public class StackVertex extends BaseGraphVertex {
     private int inputVertexIndex;
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
-        this(graph,name,vertexIndex,null,null,inputVertexName);
+        this(graph, name, vertexIndex, null, null, inputVertexName);
     }
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
