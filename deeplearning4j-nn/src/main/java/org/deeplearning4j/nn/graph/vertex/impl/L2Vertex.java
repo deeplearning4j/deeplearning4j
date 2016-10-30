@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -33,7 +35,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Arrays;
 
 /**
- * L2Vertex calculates the L2
+ * L2Vertex calculates the L2 least squares error of two inputs.
+ *
+ * For example, in Triplet Embedding you can input an anchor and a pos/neg class and use two parallel
+ * L2 vertices to calculate two real numbers which can be fed into a LossLayer to calculate TripletLoss.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -74,14 +79,46 @@ public class L2Vertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        INDArray out = Transforms.sqrt(Transforms.pow(inputs[0].sub(inputs[1]), 2));
+        INDArray a = inputs[0];
+        INDArray b = inputs[1];
 
-        return out;
+        int[] dimensions = new int[a.rank()-1];
+        for( int i=1; i<a.rank(); i++ ){
+            dimensions[i-1] = i;
+        }
+
+        return Nd4j.getExecutioner().exec(new EuclideanDistance(a,b),dimensions);
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
+
+        INDArray a = inputs[0];
+        INDArray b = inputs[1];
+        INDArray out = doForward(tbptt);
+
+        INDArray dLdlambda = Nd4j.rand(out.shape());      //dL/dlambda aka 'epsilon' - from layer above
+
+        INDArray sNegHalf = out.rdiv(1.0);      //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
+
+        INDArray diff = a.sub(b);
+
+        INDArray first = dLdlambda.mul(sNegHalf);   //Column vector for all cases
+
+        INDArray dLda;
+        INDArray dLdb;
+        if (a.rank() == 2){
+            //2d case (MLPs etc)
+            dLda = diff.muliColumnVector(first);
+            dLdb = dLda.neg();
+        } else {
+            //RNN and CNN case - Broadcast along dimension 0
+            dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff,first,diff,0));
+            dLdb = dLda.neg();
+        }
+
+        return new Pair<>(null, new INDArray[]{dLda, dLdb});
     }
 
     @Override
