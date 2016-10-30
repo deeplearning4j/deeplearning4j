@@ -1218,11 +1218,11 @@ public:
      * PullRow special op
      */
 
-    void pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets);
+    void pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets);
 
-    void pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float* z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets);
+    void pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float* z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets);
 
-    void pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets);
+    void pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets);
 
     /**
      * Array averaging op
