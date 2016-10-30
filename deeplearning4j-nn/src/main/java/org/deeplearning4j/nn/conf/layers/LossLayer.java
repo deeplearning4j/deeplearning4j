@@ -18,14 +18,19 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
+ * LossLayer is a flexible output "layer" that performs a loss function on
+ * an input without MLP logic.
+ *
+ * @author Justin Long (crockpotveggies)
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LossLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
 
-    protected LossLayer(Builder builder) {
+    private LossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
     }
@@ -48,8 +53,10 @@ public class LossLayer extends FeedForwardLayer {
         return DefaultParamInitializer.getInstance();
     }
 
-    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+    public static class Builder extends BaseOutputLayer.Builder<Builder> {
         protected ILossFunction lossFn = new LossMCXENT();
+        protected int nIn = 0;
+        protected int nOut = 0;
 
         public Builder() {}
 
@@ -61,13 +68,24 @@ public class LossLayer extends FeedForwardLayer {
             this.lossFn = lossFunction;
         }
 
-        public T lossFunction(LossFunctions.LossFunction lossFunction) {
-            return lossFunction(lossFunction.getILossFunction());
+        @Override
+        @SuppressWarnings("unchecked")
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            this.nOut = nIn;
+            return this;
         }
 
-        public T lossFunction(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
-            return (T)this;
+        @Override
+        @SuppressWarnings("unchecked")
+        public Builder nOut(int nOut) {
+            throw new UnsupportedOperationException("nOut must be equal to nIn. Use nIn method only.");
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public LossLayer build() {
+            return new LossLayer(this);
         }
     }
 }

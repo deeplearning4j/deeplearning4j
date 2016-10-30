@@ -47,9 +47,10 @@ import java.util.Map;
 
 
 /**
- * Soft Output Layer
+ * LossLayer is a flexible output "layer" that performs a loss function on
+ * an input without MLP logic.
  *
- * A flexible output "layer" that performs a loss function onan input without MLP logic.
+ * @author Justin Long (crockpotveggies)
  */
 public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
     implements Serializable, IOutputLayer {
