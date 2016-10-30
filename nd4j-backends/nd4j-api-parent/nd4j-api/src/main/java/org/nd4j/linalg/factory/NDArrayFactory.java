@@ -394,6 +394,18 @@ public interface NDArrayFactory {
     INDArray pullRows(INDArray source, int sourceDimension, int[] indexes);
 
     /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @param order order for result array
+     * @return
+     */
+    INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order);
+
+
+    /**
      * In place shuffle of an ndarray
      * along a specified set of dimensions
      *

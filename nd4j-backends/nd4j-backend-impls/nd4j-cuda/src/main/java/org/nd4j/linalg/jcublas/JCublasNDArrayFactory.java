@@ -737,7 +737,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     indexes.length,
                     (IntPointer)pIndex,
                     (IntPointer)tadShapeInfo,
-                    (IntPointer)tadOffsets
+                    (IntPointer)tadOffsets,
+                    null, null
             );
         } else if(ret.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.pullRowsFloat(
@@ -749,7 +750,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     indexes.length,
                     (IntPointer)pIndex,
                     (IntPointer)tadShapeInfo,
-                    (IntPointer)tadOffsets
+                    (IntPointer)tadOffsets,
+                    null, null
             );
         } else {
             nativeOps.pullRowsHalf(
@@ -761,7 +763,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     indexes.length,
                     (IntPointer)pIndex,
                     (IntPointer)tadShapeInfo,
-                    (IntPointer)tadOffsets
+                    (IntPointer)tadOffsets,
+                    null, null
             );
         }
 

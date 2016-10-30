@@ -4829,6 +4829,20 @@ public class Nd4j {
     }
 
     /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @return
+     */
+    public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
+        INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Concatneate ndarrays along a dimension
      *
      * @param dimension the dimension to concatnte along
