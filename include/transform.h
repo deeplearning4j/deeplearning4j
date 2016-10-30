@@ -1240,18 +1240,20 @@ __device__ void pullRowsKernelGeneric(T *x,
                                      int n,
                                      int *indexes,
                                      int *tadShapeInfo,
-                                     int *tadOffsets) {
+                                     int *tadOffsets,
+                                     int *zTadShapeInfo,
+                                     int *zTadOffsets) {
 
 
     int xEWS = shape::elementWiseStride(tadShapeInfo);
-    int zEWS = shape::elementWiseStride(zShapeInfo);
+    int zEWS = shape::elementWiseStride(zTadShapeInfo);
     int tadLength = shape::length(tadShapeInfo);
 
     for (int idx = blockIdx.x; idx < n; idx += gridDim.x) {
         int tadOffsetForBlock = tadOffsets[indexes[idx]];
 
         T *rX = x + tadOffsetForBlock;
-        T *rZ = z + idx * tadLength;
+        T *rZ = z + zTadOffsets[idx];
 
         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
             rZ[i * zEWS] = rX[i * xEWS];
@@ -1267,8 +1269,10 @@ extern "C" __global__ void pullRowsKernelHalf(
                                      int n,
                                      int *indexes,
                                      int *tadShapeInfo,
-                                     int *tadOffsets) {
-    pullRowsKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+                                     int *tadOffsets,
+                                     int *zTadShapeInfo,
+                                     int *zTadOffsets) {
+    pullRowsKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 extern "C" __global__ void pullRowsKernelFloat(float *x,
@@ -1278,8 +1282,10 @@ extern "C" __global__ void pullRowsKernelFloat(float *x,
                                      int n,
                                      int *indexes,
                                      int *tadShapeInfo,
-                                     int *tadOffsets) {
-    pullRowsKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+                                     int *tadOffsets,
+                                     int *zTadShapeInfo,
+                                     int *zTadOffsets) {
+    pullRowsKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 extern "C" __global__ void pullRowsKernelDouble(double *x,
@@ -1289,8 +1295,10 @@ extern "C" __global__ void pullRowsKernelDouble(double *x,
                                      int n,
                                      int *indexes,
                                      int *tadShapeInfo,
-                                     int *tadOffsets) {
-    pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+                                     int *tadOffsets,
+                                     int *zTadShapeInfo,
+                                     int *zTadOffsets) {
+    pullRowsKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 template <typename T>
