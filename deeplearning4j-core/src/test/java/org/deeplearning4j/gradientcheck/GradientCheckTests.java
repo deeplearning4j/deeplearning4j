@@ -39,7 +39,7 @@ public class GradientCheckTests {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -616,7 +616,7 @@ public class GradientCheckTests {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.NONE)
                 .seed(12345)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2,2))
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nIn(3)
