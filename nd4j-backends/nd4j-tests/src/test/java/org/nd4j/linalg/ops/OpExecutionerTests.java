@@ -573,7 +573,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testVPull1() {
-        int indexes[] = new int[]{0, 1, 2};
+        int indexes[] = new int[]{0, 2, 4};
         INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
         INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'f');
         for( int i=0; i<3; i++ ){
@@ -589,7 +589,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testVPull2() {
-        int indexes[] = new int[]{0, 1, 2};
+        int indexes[] = new int[]{0, 2, 4};
         INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
         INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'c');
         for( int i=0; i<3; i++ ){
@@ -601,6 +601,9 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(3, result.rows());
         assertEquals(5, result.columns());
         assertEquals(assertion, result);
+
+        System.out.println(assertion.toString());
+        System.out.println(result.toString());
     }
 
 
