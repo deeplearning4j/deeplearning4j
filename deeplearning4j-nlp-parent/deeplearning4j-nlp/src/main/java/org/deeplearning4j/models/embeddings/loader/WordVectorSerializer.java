@@ -94,6 +94,8 @@ public class WordVectorSerializer {
     /**
      * Loads the google model
      *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
+     *
      * @param modelFile
      *            the path to the google model
      * @param binary
@@ -109,6 +111,8 @@ public class WordVectorSerializer {
 
     /**
      * Loads the Google model.
+     *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
      *
      * @param modelFile
      *            the input file
@@ -133,6 +137,8 @@ public class WordVectorSerializer {
      * Loads the Google model without normalization being applied.
      *
      * PLEASE NOTE: Use this method only if you understand why you need not-normalized model. In all other cases please use loadGoogleModel() instead.
+     *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
      *
      * @param modelFile
      * @param binary
@@ -891,6 +897,8 @@ public class WordVectorSerializer {
     /**
      * Restores previously serialized ParagraphVectors model
      *
+     * Deprecation note: Please, consider using readParagraphVectors() method instead
+     *
      * @param path Path to file that contains previously serialized model
      * @return
      */
@@ -901,6 +909,8 @@ public class WordVectorSerializer {
 
     /**
      * Restores previously serialized ParagraphVectors model
+     *
+     * Deprecation note: Please, consider using readParagraphVectors() method instead
      *
      * @param file File that contains previously serialized model
      * @return
@@ -917,6 +927,8 @@ public class WordVectorSerializer {
 
     /**
      * Restores previously serialized ParagraphVectors model
+     *
+     * Deprecation note: Please, consider using readParagraphVectors() method instead
      *
      * @param stream InputStream that contains previously serialized model
      * @return
@@ -1134,6 +1146,8 @@ public class WordVectorSerializer {
     /**
      * Saves full Word2Vec model in the way, that allows model updates without being rebuilt from scratches
      *
+     * Deprecation note: Please, consider using writeWord2VecModel() method instead
+     *
      * @param vec - The Word2Vec instance to be saved
      * @param path - the path for json to be saved
      */
@@ -1249,6 +1263,8 @@ public class WordVectorSerializer {
 
     /**
      * This method loads full w2v model, previously saved with writeFullMethod call
+     *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
      *
      * @param path - path to previously stored w2v json model
      * @return - Word2Vec instance
@@ -1506,6 +1522,8 @@ public class WordVectorSerializer {
     /**
      * Loads an in memory cache from the given path (sets syn0 and the vocab)
      *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
+     *
      * @param vectorsFile
      *            the path of the file to load\
      * @return
@@ -1621,6 +1639,8 @@ public class WordVectorSerializer {
 
     /**
      * This method can be used to load previously saved model from InputStream (like a HDFS-stream)
+     *
+     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
      *
      * @param stream InputStream that contains previously serialized model
      * @param skipFirstLine Set this TRUE if first line contains csv header, FALSE otherwise
