@@ -35,9 +35,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class UnstackVertex extends GraphVertex {
 
-    private String inputName;
-    private int from;
-    private int forwardShape[];
+    protected String inputName;
+    protected int from;
+    protected int forwardShape[];
+
+    public UnstackVertex(int from) {
+        this(null, from, null);
+    }
 
     @Override
     public UnstackVertex clone() {

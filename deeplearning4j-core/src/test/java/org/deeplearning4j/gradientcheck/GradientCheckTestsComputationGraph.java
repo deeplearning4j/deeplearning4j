@@ -7,9 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
-import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -427,6 +425,61 @@ public class GradientCheckTestsComputationGraph {
         assertTrue(msg, gradOK);
 
 
+    }
+
+    @Test
+    public void testBasicIrisTripletStackingL2Loss(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(12345)
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+            .updater(Updater.NONE).learningRate(1.0)
+            .graphBuilder()
+            .addInputs("input")
+            .addVertex("stack", new StackVertex(), "input")
+            .addLayer("l1", new DenseLayer.Builder().nIn(4*3).nOut(5*3).activation("tanh").build(), "input")
+            .addVertex("unstack0", new UnstackVertex(0), "l1")
+            .addVertex("unstack1", new UnstackVertex(1), "l1")
+            .addVertex("unstack2", new UnstackVertex(2), "l1")
+            .addVertex("l2-1", new L2Vertex(), "unstack1", "unstack0") // x - x-
+            .addVertex("l2-2", new L2Vertex(), "unstack1", "unstack2") // x - x+
+            .addLayer("lossLayer", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                .activation("softmax").build(), "l2-1", "l2-2")
+            .setOutputs("lossLayer")
+            .pretrain(false).backprop(true)
+            .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int numParams = (3*(4*5+5)) + (3*(4*5+5)) + (3*(10*3+3));
+        assertEquals(numParams, graph.numParams());
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        DataSet ds = new IrisDataSetIterator(150,150).next();
+        INDArray min = ds.getFeatureMatrix().min(0);
+        INDArray max = ds.getFeatureMatrix().max(0);
+        ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
+        INDArray input1 = ds.getFeatureMatrix();
+        INDArray input2 = ds.getFeatureMatrix();
+        INDArray input3 = ds.getFeatureMatrix();
+        INDArray labels = ds.getLabels();
+
+        if( PRINT_RESULTS ){
+            System.out.println("testBasicIrisTripletStackingL2Loss()" );
+            for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input1, input2, input3}, new INDArray[]{labels});
+
+        String msg = "testBasicIrisWithMerging()";
+        assertTrue(msg,gradOK);
     }
 
 }
