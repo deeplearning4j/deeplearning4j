@@ -570,6 +570,40 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertNotEquals(array, result);
     }
 
+    @Test
+    public void testVPull1() {
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'f');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
+
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'f');
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+    }
+
+    @Test
+    public void testVPull2() {
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'c');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
+
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'c');
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+
+        System.out.println(assertion.toString());
+        System.out.println(result.toString());
+    }
 
 
     @Override
