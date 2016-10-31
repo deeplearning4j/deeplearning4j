@@ -11,17 +11,20 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 
 * Spark
 * Hadoop/YARN
-* Akka + AWS
+* Model Import from Keras
 
 ### APIs
 
 * Scala
 * Java 
-* (A Python SDK is forthcoming)
+
 
 ### Libraries
 
 * [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
+* [libND4J: Native CPU/GPU operations for ND4J](https://github.com/deeplearning4j/libnd4j)
+* [DataVec: Data preperation for DL4J](https://github.com/deeplearning4j/DataVec)
+* [DeepLEarning4J:](https://github.com/deeplearning4j/deeplearning4j)
 
 ### Nets
 
@@ -39,12 +42,13 @@ Since Deeplearning4j is a composable framework, users can arrange shallow nets t
 
 DL4J contains the following built-in vectorization algorithms:
 
-* [Canova: The Rosetta Stone of Vectorization](https://github.com/deeplearning4j/Canova)
+* [DataVec: The Rosetta Stone of Vectorization](https://github.com/deeplearning4j/DataVec)
 * Moving-window for images
 * Moving-window for text 
 * Viterbi for sequential classification
 * [Word2Vec](./word2vec.html)
 * [Bag-of-Words encoding for word count and TF-IDF](./bagofwords-tf-idf.html)
+* [Doc2Vec for Paragraph Vectors](https://deeplearning4j.org/doc2vec)
 * Constituency parsing
 * [DeepWalk](http://arxiv.org/abs/1403.6652)
 
