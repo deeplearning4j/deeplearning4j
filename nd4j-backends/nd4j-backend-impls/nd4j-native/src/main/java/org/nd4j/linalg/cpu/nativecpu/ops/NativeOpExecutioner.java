@@ -1013,6 +1013,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      *
      * @param op
      */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
 
     /**
      * This method executes specific RandomOp against specified RNG
@@ -1021,7 +1025,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param rng
      */
     @Override
-    public void exec(RandomOp op, Random rng) {
+    public INDArray exec(RandomOp op, Random rng) {
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
@@ -1057,5 +1061,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         );
             }
         }
+
+        return op.z();
     }
 }

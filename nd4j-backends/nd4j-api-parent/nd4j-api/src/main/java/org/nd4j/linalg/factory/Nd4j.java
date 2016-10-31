@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -2603,9 +2604,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2616,9 +2617,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int[] shape) {
-        INDArray ret = INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(shape, order); //INSTANCE.rand(order, shape);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2646,9 +2647,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns) {
-        INDArray ret = INSTANCE.rand(rows, columns, Nd4j.getRandom());
+        INDArray ret =  create(rows, columns);//INSTANCE.rand(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2659,9 +2660,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.rand(order, rows, columns);
+        INDArray ret = create(new int[]{rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
 
@@ -2673,9 +2674,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = create(shape);//;INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2686,9 +2688,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed,int...shape) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = create(shape);//INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2700,9 +2703,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.rand(rows, columns, seed);
+        INDArray ret = create(rows, columns);INSTANCE.rand(rows, columns, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2713,9 +2717,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, rng);
+        INDArray ret = create(shape); //INSTANCE.rand(shape, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2726,9 +2730,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, Distribution dist) {
-        INDArray ret = INSTANCE.rand(shape, dist);
-        logCreationIfNecessary(ret);
-        return ret;
+        //INDArray ret = INSTANCE.rand(shape, dist);
+        //logCreationIfNecessary(ret);
+        return dist.sample(shape);
     }
 
     /**
@@ -2741,9 +2745,9 @@ public class Nd4j {
      */
     @Deprecated
     public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(rows, columns, rng);
+        INDArray ret = create(rows, columns);//INSTANCE.rand(rows, columns, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2756,9 +2760,9 @@ public class Nd4j {
      * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = create(shape); //INSTANCE.rand(shape, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
     }
 
     /**
@@ -2773,9 +2777,9 @@ public class Nd4j {
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
-        INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
+        INDArray ret = create(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
     }
 
     /**

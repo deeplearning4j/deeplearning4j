@@ -197,7 +197,7 @@ public interface OpExecutioner {
      *
      * @param op
      */
-    void exec(RandomOp op);
+    INDArray exec(RandomOp op);
 
     /**
      * This method executes specific RandomOp against specified RNG
@@ -205,7 +205,7 @@ public interface OpExecutioner {
      * @param op
      * @param rng
      */
-    void exec(RandomOp op, Random rng);
+    INDArray exec(RandomOp op, Random rng);
 
     /**
      * This method return set of key/value and key/key/value objects, describing current environment

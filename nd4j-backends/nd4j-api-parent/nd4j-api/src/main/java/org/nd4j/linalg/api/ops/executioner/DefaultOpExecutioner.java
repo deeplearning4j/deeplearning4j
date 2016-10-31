@@ -374,8 +374,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param op
      */
     @Override
-    public void exec(RandomOp op) {
-        exec(op, Nd4j.getRandom());
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
     }
 
     /**
@@ -385,7 +385,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param rng
      */
     @Override
-    public void exec(RandomOp op, Random rng) {
+    public INDArray exec(RandomOp op, Random rng) {
         throw new UnsupportedOperationException();
     }
 }
