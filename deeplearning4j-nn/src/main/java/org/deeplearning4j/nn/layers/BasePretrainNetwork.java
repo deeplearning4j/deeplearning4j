@@ -109,13 +109,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        return params(false);
-    }
-
-    public INDArray params(boolean backprop){
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!conf.isPretrain() || !PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             list.add(entry.getValue());
         }
         return Nd4j.toFlattened('f', list);
@@ -127,7 +123,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public int numParams() {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
+//            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             ret += entry.getValue().length();
         }
         return ret;
@@ -149,30 +145,26 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
             if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) lengthBackprop += len;
         }
 
-        boolean pretrain = params.length() == lengthPretrain;
-        if( !pretrain && params.length() != lengthBackprop ) {
+        if(!conf.isPretrain() && params.length() != lengthBackprop ) {
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + lengthPretrain + " for pretrain, "
                 + " or " + lengthBackprop + " for backprop. Is: " + params.length());
         }
 
         // Set for backprop and only W & hb
-        if(!pretrain){
-            paramsFlattened.assign(params);
-            return;
-        }
+        paramsFlattened.assign(params);
 
-        // Set for pretrain with W, vb & hb
-        int idx = 0;
-        Set<String> paramKeySet = this.params.keySet();
-        for(String s : paramKeySet) {
-            INDArray param = getParam(s);
-            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
-            if(param.length() != get.length())
-                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            param.assign(get.reshape('f',param.shape()));  //Use assign due to backprop params being a view of a larger array
-            idx += param.length();
-
-        }
+        // Set for pretrain with W, hb & vb
+//        int idx = 0;
+//        Set<String> paramKeySet = this.params.keySet();
+//        for(String s : paramKeySet) {
+//            INDArray param = getParam(s);
+//            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
+//            if(param.length() != get.length())
+//                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
+//            param.assign(get.reshape('f',param.shape()));  //Use assign due to backprop params being a view of a larger array
+//            idx += param.length();
+//
+//        }
 
     }
 

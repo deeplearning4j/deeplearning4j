@@ -37,7 +37,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -225,7 +224,7 @@ public class RBMTests {
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
         rbm.computeGradientAndScore();
-        INDArray getParams = rbm.params(true);
+        INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
     }
 
@@ -303,9 +302,11 @@ public class RBMTests {
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(HiddenUnit.BINARY, VisibleUnit.BINARY)
                         .nIn(10).nOut(5)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
+                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
+                        .build())
                 .build();
 
+        conf.setPretrain(true);
         INDArray params = Nd4j.hstack(
                 Nd4j.linspace(1,50,50), Nd4j.create(new double[] {
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1} ));
@@ -345,7 +346,6 @@ public class RBMTests {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
                 .learningRate(1)
-                .miniBatch(false)
 //                .epsilon(1)
                 .weightInit(WeightInit.UNIFORM)
                 .list(
