@@ -137,17 +137,14 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
         List<String> parameterList = conf.variables();
-        int lengthPretrain = 0;
-        int lengthBackprop = 0;
+        int paramLength = 0;
         for(String s : parameterList) {
             int len = getParam(s).length();
-            lengthPretrain += len;
-            if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) lengthBackprop += len;
+            paramLength += len;
         }
 
-        if(!conf.isPretrain() && params.length() != lengthBackprop ) {
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + lengthPretrain + " for pretrain, "
-                + " or " + lengthBackprop + " for backprop. Is: " + params.length());
+        if(params.length() != paramLength) {
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength);
         }
 
         // Set for backprop and only W & hb
