@@ -167,9 +167,11 @@ namespace randomOps {
 
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
-            T prob = extraArguments[1];
+
 
             int zLength = shape::length(zShapeBuffer);
+
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
             int zEWS = shape::elementWiseStride(zShapeBuffer);
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
@@ -189,11 +191,18 @@ namespace randomOps {
                 int end = span * (tid + 1);
                 if (end > zLength) end = zLength;
 
+                T prob = extraArguments[1];
+
                 for (int e = start; e < end; e++) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
                         T randVal = helper->relativeT(e * t);
+                        if (y != z) {
+                            // we're using external probs
+                            prob = y[t-1];
+                        }
+
                         if (randVal < prob)
                             success++;
                     }
