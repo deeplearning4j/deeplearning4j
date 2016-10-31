@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -300,5 +301,18 @@ public class RandomTests {
 
         BooleanIndexing.and(z1, Conditions.lessThanOrEqual(5.0));
         BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
+    }
+
+    @Ignore
+    @Test
+    public void testDeallocation1() throws Exception {
+
+        while (true) {
+            CpuNativeRandom random1 = new CpuNativeRandom(119, 1000);
+            random1.nextInt();
+
+            System.gc();
+            Thread.sleep(50);
+        }
     }
 }

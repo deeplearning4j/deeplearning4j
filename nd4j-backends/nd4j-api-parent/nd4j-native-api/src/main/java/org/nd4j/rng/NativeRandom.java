@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.rng.deallocator.NativePack;
+import org.nd4j.rng.deallocator.NativeRandomDeallocator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +32,10 @@ public class NativeRandom implements Random {
     protected AtomicInteger position = new AtomicInteger(0);
     protected LongPointer hostPointer;
     protected boolean isDestroyed = false;
+    protected NativeRandomDeallocator deallocator;
+
+    // hack to attach deallocator
+    protected NativePack pack;
 
     public NativeRandom() {
         this(System.currentTimeMillis());
@@ -49,6 +55,12 @@ public class NativeRandom implements Random {
         statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
 
         hostPointer = new LongPointer(stateBuffer.addressPointer());
+
+        deallocator = NativeRandomDeallocator.getInstance();
+
+        pack = new NativePack(statePointer.address(), statePointer);
+
+        deallocator.trackStatePointer(pack);
     }
 
     @Override
