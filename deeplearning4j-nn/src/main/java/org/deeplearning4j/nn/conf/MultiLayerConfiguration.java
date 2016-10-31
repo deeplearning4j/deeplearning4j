@@ -20,8 +20,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-import org.nd4j.shade.jackson.core.JsonFactory;
-import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
@@ -33,8 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
@@ -280,7 +276,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param backprop whether to do back prop or not
          * @return
          */
-        @Deprecated
         public Builder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
@@ -326,7 +321,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param pretrain whether to do pre train or not
          * @return builder pattern
          */
-        @Deprecated
         public Builder pretrain(boolean pretrain) {
             this.pretrain = pretrain;
             return this;
@@ -426,7 +420,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 for( int i=0; i<confs.size(); i++){
                     Layer l = confs.get(i).getLayer();
                     // Sets pretrain on the layer to track update for that specific layer
-                    if (l instanceof BasePretrainNetwork && pretrain) confs.get(i).setPretrain(pretrain);
+                    if (l instanceof BasePretrainNetwork && pretrain) confs.get(i).pretrain(pretrain);
                     if(inputPreProcessors.get(i) == null){
                         //Don't override preprocessor setting, but set preprocessor if required...
                         InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);

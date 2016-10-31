@@ -177,9 +177,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray  vBiasGradient = delta.sum(0);
 
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         gradient = ret;
         setScoreWithZ(delta);
     }
@@ -208,6 +208,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
         INDArray h1Mean = propUp(v);
         INDArray h1Sample;
+        Distribution dist;
 
         switch (layerConf().getHiddenUnit()) {
             case RECTIFIED: {
@@ -223,7 +224,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 break;
             }
             case GAUSSIAN: {
-                Distribution dist = Nd4j.getDistributions().createNormal(h1Mean, 1);
+                dist = Nd4j.getDistributions().createNormal(h1Mean, 1);
                 dist.reseedRandomGenerator(seed);
                 h1Sample = dist.sample(h1Mean.shape());
                 break;
@@ -233,7 +234,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 break;
             }
             case BINARY: {
-                h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
+                dist = Nd4j.getDistributions().createBinomial(1, h1Mean);
+                dist.reseedRandomGenerator(seed);
+                h1Sample = dist.sample(h1Mean.shape());
                 break;
             }
             default:
@@ -379,15 +382,12 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         super.fit(input);
     }
 
-//    @Override
-//    public void setBackpropGradientsViewArray(INDArray gradients) {
-//        if(this.params != null && gradients.length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
-//                + ", got params of length " + gradients.length());
-//
-//        this.gradientsFlattened = gradients;
-//        this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf,gradients);
-//    }
 
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+        Pair<Gradient,INDArray> result = super.backpropGradient(epsilon);
+        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+        return result;
+    }
 
     @Deprecated
     @Override

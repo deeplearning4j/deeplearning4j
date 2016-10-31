@@ -76,4 +76,17 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         return visibleBiasView;
     }
 
+
+    @Override
+    public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
+        Map<String,INDArray> out = super.getGradientsFromFlattened(conf, gradientView);
+        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+
+        INDArray vBiasView = Nd4j.valueArrayOf(layerConf.getNIn(), 0);
+
+        out.put(VISIBLE_BIAS_KEY, vBiasView);
+
+        return out;
+    }
 }
