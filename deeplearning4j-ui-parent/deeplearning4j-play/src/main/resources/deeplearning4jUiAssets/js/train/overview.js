@@ -53,3 +53,45 @@ function renderScoreChart() {
     });
 
 }
+
+/* ---------- Model Performance Table Data ---------- */
+function renderPerformanceTable() {
+
+    $.ajax({
+        url: "/train/overview/data",
+        async: true,
+        error: function (query, status, error) {
+            console.log("Error getting data: " + error);
+        },
+        success: function (data) {
+            console.log("Keys: " + Object.keys(data));
+
+            /* Model */
+            var modelType = data["model"][0][1];
+            var nLayers = data["model"][1];
+            var nParams = data["model"][2];
+
+            /* Performance */
+            var startTime = data["perf"][0];
+            var totalRuntime = data["perf"][1];
+            var lastUpdate = data["perf"][2];
+            var totalParamUpdates = data["perf"][3];
+            var updatesPerSec = data["perf"][4];
+            var examplesPerSec = data["perf"][5];
+
+            /* Inject Model Information */
+            $("#modelType").html(modelType);
+            $("#nLayers").html(nLayers);
+            $("#nParams").html(nParams);
+
+            /* Inject Performance Information*/
+            $("#startTime").html(startTime);
+            $("#totalRuntime").html(totalRuntime);
+            $("#lastUpdate").html(lastUpdate);
+            $("#totalParamUpdates").html(totalParamUpdates);
+            $("#updatesPerSec").html(updatesPerSec);
+            $("#examplesPerSec").html(examplesPerSec);
+        }
+    });
+
+}
