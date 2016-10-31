@@ -170,6 +170,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for (int i = 0; i < getnLayers(); i++) {
             layer = layers[i];
+            layer.conf().setPretrain(true);
             if (i == 0 && layer instanceof BasePretrainNetwork) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
@@ -233,11 +234,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             else
                 layerInput = activationFromPrevLayer(i - 1, layerInput,true);
             log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
+            layer.conf().setPretrain(true);
             layer.fit(layerInput);
             layer.conf().setPretrain(false);
         }
-
-
 
     }
 
@@ -1043,7 +1043,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();
-            layerWiseConfigurations.setPretrain(false);
         }
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1439,7 +1438,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(data);
-            layerWiseConfigurations.setPretrain(false);
         }
 
         if(layerWiseConfigurations.isBackprop()) {
@@ -1467,11 +1465,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
+        log.warn("Passing in data without labels does not apply backprop to the model.");
         setInput(data);
-        layerWiseConfigurations.setPretrain(true);
+        if(!layerWiseConfigurations.isPretrain())
+            throw new IllegalStateException("Set pretrain to true in the configuration in order to pretrain the model.");
         update(TaskUtils.buildTask(data));
         pretrain(data);
-        layerWiseConfigurations.setPretrain(false);
     }
 
     @Override

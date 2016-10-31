@@ -155,9 +155,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return l2ByParam.get(variable);
     }
 
-    public void pretrain(boolean pretrain) { this.pretrain = pretrain;}
-    public boolean isPretrain() { return pretrain;}
-
     /**
      * Fluent interface for building a list of configurations
      */

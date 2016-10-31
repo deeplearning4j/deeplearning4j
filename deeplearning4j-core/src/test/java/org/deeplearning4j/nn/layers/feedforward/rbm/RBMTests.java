@@ -341,12 +341,11 @@ public class RBMTests {
         MultiLayerConfiguration rbm;
         rbm = new NeuralNetConfiguration.Builder()
                 .seed(0xDEADBEEF)
-                .iterations(2000)
+                .iterations(1000)
                 .biasInit(0)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
-                .learningRate(1)
-//                .epsilon(1)
+                .epsilon(1)
                 .weightInit(WeightInit.UNIFORM)
                 .list(
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
@@ -357,7 +356,6 @@ public class RBMTests {
                                 .activation("identity")
                                 .nOut(features.columns()).build()
                 )
-                .backprop(true)
                 .pretrain(true)
                 .setInputType(InputType.feedForward(features.columns()))
                 .build();
@@ -366,18 +364,18 @@ public class RBMTests {
         MultiLayerNetwork rbmModel = new MultiLayerNetwork(rbm);
         rbmModel.init();
         rbmModel.setListeners(new ScoreIterationListener(100));
-        rbmModel.fit(features, features);
+        rbmModel.fit(features);
         double v = rbmModel.score();
 
         System.out.println("Training RBM network, initialized with correct solution");
         MultiLayerNetwork rbmModel2 = new MultiLayerNetwork(rbm);
         rbmModel2.init();
-        rbmModel2.setListeners(new ScoreIterationListener(200));
+        rbmModel2.setListeners(new ScoreIterationListener(100));
 
         rbmModel2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbmModel2.getParam("0_W")))));
         rbmModel2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbmModel2.getParam("1_W")))));
 
-        rbmModel2.fit(features, features);
+        rbmModel2.fit(features);
         double x = rbmModel2.score();
     }
 
