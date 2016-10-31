@@ -75,14 +75,13 @@ public class LayerUpdater implements Updater {
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
-            if(!layer.conf().isPretrain() || PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName)) continue;
+            if(!layer.conf().isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName.split("_")[0])) continue;
             gradientOrig = gradientPair.getValue();
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
                 applyLrDecayPolicy(decay, layer, iteration, paramName);
             updater = init(paramName, layer);
             gradient2 = updater.getGradient(gradientOrig, iteration);
-            // TODO do not update vbias if backprop
             postApply(layer, gradient2, paramName, miniBatchSize);
             gradient.setGradientFor(paramName, gradient2);
         }
@@ -168,7 +167,7 @@ public class LayerUpdater implements Updater {
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
         GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None) return;  //no op
+        if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain()) return;  //no op
 
         final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
 
