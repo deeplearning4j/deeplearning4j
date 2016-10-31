@@ -452,7 +452,7 @@ public class WordVectorSerializerTest {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         for (int i = 0; i < 100; i++) {
-            VocabWord word = new VocabWord(1.0f, "word_" + i);
+            VocabWord word = new VocabWord((float) i, "word_" + i);
             List<Integer> points = new ArrayList<>();
             List<Integer> codes = new ArrayList<>();
             int num = org.apache.commons.lang3.RandomUtils.nextInt(1,20);
@@ -499,6 +499,7 @@ public class WordVectorSerializerTest {
         for (int i = 0; i < cache.numWords(); i++) {
             assertEquals(cache.elementAtIndex(i).isLabel(), restoredVocab.elementAtIndex(i).isLabel());
             assertEquals(cache.wordAtIndex(i), restoredVocab.wordAtIndex(i));
+            assertEquals(cache.elementAtIndex(i).getElementFrequency(), restoredVocab.elementAtIndex(i).getElementFrequency(), 0.1f);
             List<Integer> originalPoints = cache.elementAtIndex(i).getPoints();
             List<Integer> restoredPoints = restoredVocab.elementAtIndex(i).getPoints();
             assertEquals(originalPoints.size(), restoredPoints.size());
