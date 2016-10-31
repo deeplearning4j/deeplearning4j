@@ -59,6 +59,21 @@ namespace randomOps {
         }
     };
 
+    /**
+     * This op produces single bernoulli trial
+     */
+    template <typename T>
+    class BernoulliDistribution {
+        no_exec_special
+
+        method_XY
+        method_X
+
+        random_def T op(int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
+            return extraParams[0] < helper->relativeT(idx) ? (T) 1.0 : (T) 0.0f;
+        }
+    };
+
 
     /**
      * Basic DropOut/DropConnect Op
