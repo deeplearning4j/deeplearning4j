@@ -41,23 +41,20 @@ import java.util.Arrays;
  * @author Justin Long (crockpotveggies)
  */
 public class UnstackVertex extends BaseGraphVertex {
-
-    private String inputName;
-    private int inputVertexIndex;
     private int from;
     private int forwardShape[];
+    private int intervalSize;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
-        this(graph,name,vertexIndex,null,null,inputVertexName);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from){
+        this(graph,name,vertexIndex,null,null,from);
     }
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                         VertexIndices[] outputVertices, String inputName) {
+                         VertexIndices[] outputVertices, int from) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
-        this.inputName = inputName;
-        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if(inputVertexIndex == -1)  throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
+        this.from = from;
+        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        this.intervalSize = inputs[0].size(0)/inputs.length;
     }
 
     @Override
@@ -79,8 +76,6 @@ public class UnstackVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-
         switch (inputs[0].rank()) {
             case 2:
                 return inputs[0].get(NDArrayIndex.interval(from, inputs[0].size(0), true), NDArrayIndex.all());
@@ -98,15 +93,16 @@ public class UnstackVertex extends BaseGraphVertex {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
+
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, inputs[0].size(0)/forwardShape[0], true), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, inputs[0].size(0)/forwardShape[0], true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, inputs[0].size(0)/forwardShape[0], true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen
@@ -120,7 +116,7 @@ public class UnstackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public String toString(){
-        return "UnstackVertex(inputName=" + inputName + ")";
+    public String toString() {
+        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",forwardShape=" + forwardShape + ")";
     }
 }

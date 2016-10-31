@@ -30,7 +30,7 @@ import java.util.Map;
 public class LossLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
 
-    private LossLayer(Builder builder) {
+    protected LossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
     }
