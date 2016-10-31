@@ -528,7 +528,7 @@ public class WordVectorSerializer {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
             for (int i = 0; i < vectors.getVocab().numWords(); i++) {
                 VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
                 for (int code: word.getCodes()) {
                     builder.append(code).append(" ");
                 }
@@ -552,7 +552,7 @@ public class WordVectorSerializer {
         try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
             for (int i = 0; i < vectors.getVocab().numWords(); i++) {
                 VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(word.getLabel()).append(" ");
+                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
                 for (int point: word.getPoints()) {
                     builder.append(point).append(" ");
                 }
