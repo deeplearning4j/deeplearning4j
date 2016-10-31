@@ -74,7 +74,7 @@ public class TSNEStandardExample {
 
 }
 
-</code></pre>
+</code></pre> 
 
 Here is an image of the tsne-standard-coords.csv file plotted using gnuplot.
 
