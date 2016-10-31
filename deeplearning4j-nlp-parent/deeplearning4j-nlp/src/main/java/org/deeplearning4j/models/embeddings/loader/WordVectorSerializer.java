@@ -571,6 +571,26 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
+        File tempFileFreqs = File.createTempFile("word2vec","f");
+        tempFileFreqs.deleteOnExit();
+
+        ZipEntry hF = new ZipEntry("frequencies.txt");
+        zipfile.putNextEntry(hF);
+
+        // writing out word frequencies
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ").append(word.getElementFrequency()).append(" ").append(vectors.getVocab().docAppearedIn(word.getLabel()));
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new BufferedInputStream(new FileInputStream(tempFileFreqs));
+        writeEntry(fis, zipfile);
+        fis.close();
+
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
@@ -683,6 +703,27 @@ public class WordVectorSerializer {
         }
         writeEntry(new ByteArrayInputStream(builder.toString().trim().getBytes()), zipfile);
 
+        ZipEntry hF = new ZipEntry("frequencies.txt");
+        zipfile.putNextEntry(hF);
+
+
+        File tempFileFreqs = File.createTempFile("paravec","h");
+        tempFileFreqs.deleteOnExit();
+
+        // writing out word frequencies
+        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
+            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                VocabWord word = vectors.getVocab().elementAtIndex(i);
+                builder = new StringBuilder(encodeB64(word.getLabel())).append(" ").append(word.getElementFrequency()).append(" ").append(vectors.getVocab().docAppearedIn(word.getLabel()));
+
+                writer.println(builder.toString().trim());
+            }
+        }
+
+        fis = new BufferedInputStream(new FileInputStream(tempFileFreqs));
+        writeEntry(fis, zipfile);
+        fis.close();
+
         zipfile.flush();
         zipfile.close();
     }
@@ -755,11 +796,13 @@ public class WordVectorSerializer {
         File tmpFileSyn1 = File.createTempFile("word2vec", "1");
         File tmpFileC = File.createTempFile("word2vec", "c");
         File tmpFileH = File.createTempFile("word2vec", "h");
+        File tmpFileF = File.createTempFile("word2vec", "f");
 
         tmpFileSyn0.deleteOnExit();
         tmpFileSyn1.deleteOnExit();
         tmpFileH.deleteOnExit();
         tmpFileC.deleteOnExit();
+        tmpFileF.deleteOnExit();
 
 
         ZipFile zipFile = new ZipFile(file);
@@ -797,6 +840,21 @@ public class WordVectorSerializer {
 
         // we read first 4 files as w2v model
         Word2Vec w2v = readWord2VecFromText(tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, configuration);
+
+        // we read frequencies from frequencies.txt, however it's possible that we might not have this file
+        ZipEntry frequencies = zipFile.getEntry("frequencies.txt");
+        if (frequencies != null) {
+            stream = zipFile.getInputStream(frequencies);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] split = line.split(" ");
+                    VocabWord word = w2v.getVocab().tokenFor(decodeB64(split[0]));
+                    word.setElementFrequency((long) Double.parseDouble(split[1]));
+                    word.setSequencesCount((long) Double.parseDouble(split[2]));
+                }
+            }
+        }
 
         return w2v;
     }
