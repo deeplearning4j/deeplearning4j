@@ -4,9 +4,19 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
+import org.nd4j.linalg.api.rng.distribution.impl.*;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -221,5 +231,74 @@ public class RandomTests {
         }
 
         assertArrayEquals(array1, array2);
+    }
+
+
+    @Test
+    public void testBernoulliDistribution1() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        INDArray z1 = Nd4j.zeros(1000);
+        INDArray z2 = Nd4j.zeros(1000);
+        INDArray z1Dup = Nd4j.zeros(1000);
+
+        BernoulliDistribution op1 = new BernoulliDistribution(z1, 0.25);
+        BernoulliDistribution op2 = new BernoulliDistribution(z2, 0.25);
+
+        Nd4j.getExecutioner().exec(op1, random1);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(z1Dup, z1);
+
+        assertEquals(z1, z2);
+    }
+
+    @Test
+    public void testBinomialDistribution1() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        INDArray z1 = Nd4j.zeros(1000);
+        INDArray z2 = Nd4j.zeros(1000);
+        INDArray z1Dup = Nd4j.zeros(1000);
+
+        BinomialDistribution op1 = new BinomialDistribution(z1, 5, 0.25);
+        BinomialDistribution op2 = new BinomialDistribution(z2, 5, 0.25);
+
+        Nd4j.getExecutioner().exec(op1, random1);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(z1Dup, z1);
+
+        assertEquals(z1, z2);
+
+        BooleanIndexing.and(z1, Conditions.lessThanOrEqual(5.0));
+        BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
+    }
+
+    @Test
+    public void testBinomialDistribution2() throws Exception {
+        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
+        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+
+        INDArray z1 = Nd4j.zeros(1000);
+        INDArray z2 = Nd4j.zeros(1000);
+        INDArray z1Dup = Nd4j.zeros(1000);
+
+        INDArray probs = Nd4j.create(new float[]{0.25f, 0.43f, 0.55f, 0.43f, 0.25f});
+
+        BinomialDistribution op1 = new BinomialDistribution(z1, 5, probs);
+        BinomialDistribution op2 = new BinomialDistribution(z2, 5, probs);
+
+        Nd4j.getExecutioner().exec(op1, random1);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(z1Dup, z1);
+
+        assertEquals(z1, z2);
+
+        BooleanIndexing.and(z1, Conditions.lessThanOrEqual(5.0));
+        BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
     }
 }
