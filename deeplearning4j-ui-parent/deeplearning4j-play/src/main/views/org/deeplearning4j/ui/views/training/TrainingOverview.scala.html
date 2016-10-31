@@ -72,7 +72,7 @@
                     </div>
                 </noscript>
 
-                    <!-- Start Content -->
+                <!-- Start Score Chart-->
                 <div id="content" class="span10">
 
                     <div class="row-fluid">
@@ -89,11 +89,12 @@
                         </div>
 
                     </div>
-
+                    <!-- End Score Chart-->
+                    <!-- Start Model Table-->
                     <div class="row-fluid">
                         <div class="box span12">
                             <div class="box-header">
-                                <h2><b>Model Performance</b></h2>
+                                <h2><b>@i18n.getMessage("train.overview.perftable.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
@@ -112,24 +113,57 @@
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td>MultiLayerNetwork</td>
-                                        <td>2</td>
-                                        <td>35</td>
-                                        <td>01:01:01</td>
-                                        <td>1:23</td>
-                                        <td>1477520530145</td>
-                                        <td>100</td>
-                                        <td>8.474575996398926</td>
-                                        <td>1271.1864013671875</td>
+                                        <td id="modelType">modelType</td>
+                                        <td id="nLayers">nLayers</td>
+                                        <td id="nParams">nParams</td>
+                                        <td id="startTime">startTime</td>
+                                        <td id="totalRuntime">totalRuntime</td>
+                                        <td id="lastUpdate">lastUpdate</td>
+                                        <td id="totalParamUpdates">totalParamUpdates</td>
+                                        <td id="updatesPerSec">updatesPerSec</td>
+                                        <td id="examplesPerSec">examplesPerSec</td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <!--End Table -->
+                    <!--End Model Table -->
+                    <!--Start Ratio Table -->
+                    <div class="row-fluid">
 
-                    <!-- End Content -->
+                        <div class="box">
+                            <div class="box-header">
+                                <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
+                            </div>
+                            <div class="box-content">
+                                <div id="sincos"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!--End Ratio Table -->
+                    <!--Start Variance Table -->
+                    <div class="row-fluid">
+
+                        <div class="box">
+                            <div class="box-header">
+                                <h2><b>Variances</b></h2>
+                            </div>
+                            <div class="box-content">
+                                <p class="stackControls center">
+                                    <input class="btn" type="button" value="Activations">
+                                    <input class="btn" type="button" value="Gradients">
+                                    <input class="btn" type="button" value="Updates">
+                                </p>
+                                <div id="sincos"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- End Variance Table -->
                 </div><!-- End Content Span10-->
             </div><!--End Row Fluid-->
 
@@ -170,6 +204,7 @@
             <script>
                     $(document).ready(function(){
                         renderScoreChart();
+                        renderPerformanceTable();
                     });
             </script>
 
