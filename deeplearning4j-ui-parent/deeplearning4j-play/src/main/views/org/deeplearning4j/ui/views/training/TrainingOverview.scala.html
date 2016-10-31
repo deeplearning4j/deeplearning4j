@@ -113,15 +113,15 @@
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td id="modelType">modelType</td>
-                                        <td id="nLayers">nLayers</td>
-                                        <td id="nParams">nParams</td>
-                                        <td id="startTime">startTime</td>
-                                        <td id="totalRuntime">totalRuntime</td>
-                                        <td id="lastUpdate">lastUpdate</td>
-                                        <td id="totalParamUpdates">totalParamUpdates</td>
-                                        <td id="updatesPerSec">updatesPerSec</td>
-                                        <td id="examplesPerSec">examplesPerSec</td>
+                                        <td id="modelType">Loading...</td>
+                                        <td id="nLayers">Loading...</td>
+                                        <td id="nParams">Loading...</td>
+                                        <td id="startTime">Loading...</td>
+                                        <td id="totalRuntime">Loading...</td>
+                                        <td id="lastUpdate">Loading...</td>
+                                        <td id="totalParamUpdates">Loading...</td>
+                                        <td id="updatesPerSec">Loading...</td>
+                                        <td id="examplesPerSec">Loading...</td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -210,7 +210,10 @@
 
             <!-- Execute periodically (every 2 sec) -->
             <script>
-                    setTimeout(renderScoreChart,2000);
+                    setInterval(function(){
+                        renderScoreChart()
+                        renderPerformanceTable()
+                    }, 2000);
             </script>
             <!-- End JavaScript-->
 
