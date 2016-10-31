@@ -64,6 +64,7 @@ namespace randomOps {
      */
     template <typename T>
     class BernoulliDistribution {
+    public:
         no_exec_special
 
         method_XY

@@ -13,7 +13,9 @@
         (4, randomOps::Linspace) ,\
         (5, randomOps::Choice) ,\
         (6, randomOps::GaussianDistribution) ,\
-        (7, randomOps::BernoulliDistribution)
+        (7, randomOps::BernoulliDistribution) ,\
+        (8, randomOps::BinomialDistribution)
+
 
 
 #include <helpers/shape.h>

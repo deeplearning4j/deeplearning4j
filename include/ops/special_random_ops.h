@@ -148,6 +148,65 @@ namespace randomOps {
             delete generator;
         }
     };
+
+
+    /**
+    * This Op produces random values within [0..N], Distribuion is binomial
+    */
+    template<typename T>
+    class BinomialDistribution {
+    public:
+
+
+        method_XY
+        method_X
+        method_idx
+
+        static const bool requiresSpecial = true;
+
+
+        static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            int trials = (int) extraArguments[0];
+            T prob = extraArguments[1];
+
+            int zLength = shape::length(zShapeBuffer);
+            int zEWS = shape::elementWiseStride(zShapeBuffer);
+
+            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            int span = (zLength / _threads) + 8;
+
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
+            nd4j::random::RandomHelper<T> *helper = new nd4j::random::RandomHelper<T>(generator);
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            {
+                int tid = omp_get_thread_num();
+                int start = span * tid;
+                int end = span * (tid + 1);
+                if (end > zLength) end = zLength;
+
+                for (int e = start; e < end; e++) {
+
+                    int success = 0;
+                    for (int t = 1; t <= trials; t++) {
+                        T randVal = helper->relativeT(e * t);
+                        if (randVal < prob)
+                            success++;
+                    }
+
+                    // if trials is set to 0, effectively we just have successful memset
+                    z[e * zEWS] = (T) success;
+                }
+            }
+
+            if (trials > 0)
+                helper->rewind(zLength * trials);
+        }
+    };
 }
 
 #endif //LIBND4J_SPECIAL_RANDOM_OPS_H
