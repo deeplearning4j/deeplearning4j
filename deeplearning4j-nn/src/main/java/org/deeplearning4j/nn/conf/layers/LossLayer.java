@@ -71,15 +71,13 @@ public class LossLayer extends FeedForwardLayer {
         @Override
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            this.nOut = nIn;
-            return this;
+            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
-            throw new UnsupportedOperationException("nOut must be equal to nIn. Use nIn method only.");
+            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
