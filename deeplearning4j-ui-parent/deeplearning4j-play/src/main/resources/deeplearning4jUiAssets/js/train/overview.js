@@ -68,16 +68,16 @@ function renderPerformanceTable() {
 
             /* Model */
             var modelType = data["model"][0][1];
-            var nLayers = data["model"][1];
-            var nParams = data["model"][2];
+            var nLayers = data["model"][1][1];
+            var nParams = data["model"][2][1];
 
             /* Performance */
-            var startTime = data["perf"][0];
-            var totalRuntime = data["perf"][1];
-            var lastUpdate = data["perf"][2];
-            var totalParamUpdates = data["perf"][3];
-            var updatesPerSec = data["perf"][4];
-            var examplesPerSec = data["perf"][5];
+            var startTime = data["perf"][0][1];
+            var totalRuntime = data["perf"][1][1];
+            var lastUpdate = data["perf"][2][1];
+            var totalParamUpdates = data["perf"][3][1];
+            var updatesPerSec = data["perf"][4][1];
+            var examplesPerSec = data["perf"][5][1];
 
             /* Inject Model Information */
             $("#modelType").html(modelType);
