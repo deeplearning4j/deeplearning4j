@@ -673,7 +673,7 @@ public class GradientCheckTests {
         String[] activFns = {"sigmoid"};
         boolean[] characteristic = {false, true};    //If true: run some backprop steps first
 
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.KL_DIVERGENCE, LossFunction.COSINE_PROXIMITY};
         String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
@@ -701,7 +701,7 @@ public class GradientCheckTests {
                                 .regularization(true)
                                 .l2(l2).l1(l1)
                                 .learningRate(1.0)
-                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .seed(12345L)
                                 .list()
                                 .layer(0, new RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)

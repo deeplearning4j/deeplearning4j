@@ -420,7 +420,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 for( int i=0; i<confs.size(); i++){
                     Layer l = confs.get(i).getLayer();
                     // Sets pretrain on the layer to track update for that specific layer
-                    if (l instanceof BasePretrainNetwork && pretrain) confs.get(i).pretrain(pretrain);
+                    if (l instanceof BasePretrainNetwork && pretrain) confs.get(i).setPretrain(pretrain);
                     if(inputPreProcessors.get(i) == null){
                         //Don't override preprocessor setting, but set preprocessor if required...
                         InputPreProcessor inputPreProcessor = l.getPreProcessorForInputType(currentInputType);

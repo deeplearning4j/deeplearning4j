@@ -245,7 +245,7 @@ public class NeuralNetConfigurationTest {
                 .regularization(false)
                 .layer(layer)
                 .build();
-        conf.pretrain(true);
+        conf.setPretrain(true);
         return conf;
     }
 
