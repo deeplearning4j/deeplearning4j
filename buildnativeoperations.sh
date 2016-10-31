@@ -84,6 +84,11 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname
     HOST="windows"
     KERNEL="windows-x86_64"
     echo "Running windows"
+elif [ "$(uname -m)" == "ppc64le" ]; then
+    if [ -z "$ARCH" ]; then
+        ARCH="power8"
+    fi
+    KERNEL="linux-ppc64le"
 fi
 
 if [ -z "$OS" ]; then
@@ -96,6 +101,9 @@ fi
 
 case "$OS" in
     android-arm)
+    if [ -z "$ARCH" ]; then
+        ARCH="armv7-a"
+    fi
     export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/bin/arm-linux-androideabi"
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
@@ -103,6 +111,9 @@ case "$OS" in
     ;;
 
     android-x86)
+    if [ -z "$ARCH" ]; then
+        ARCH="i686"
+    fi
     export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/bin/i686-linux-android"
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"

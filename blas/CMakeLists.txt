@@ -20,14 +20,22 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/")
 
+IF(${ARCH} MATCHES "arm*")
+    set(ARCH_TUNE "-march=${ARCH}")
+ELSEIF(${ARCH} MATCHES "power*")
+    set(ARCH_TUNE "-mcpu=${ARCH} -mtune=${ARCH}")
+ELSE()
+    set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH}")
+ENDIF()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
     set(CMAKE_C_COMPILER clang-omp++)
     set(CMAKE_CXX_COMPILER clang-omp++)
 
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=${ARCH} -mtune=${ARCH} -fopenmp ")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fopenmp ")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -fp-model fast -march=${ARCH} -mtune=${ARCH}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O3 -fp-model fast")
 
     # using Intel C++
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -35,7 +43,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -march=${ARCH} -mtune=${ARCH}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 endif()
 
 
