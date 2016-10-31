@@ -29,6 +29,7 @@ public class NativeRandom implements Random {
     protected long numberOfElements;
     protected AtomicInteger position = new AtomicInteger(0);
     protected LongPointer hostPointer;
+    protected boolean isDestroyed = false;
 
     public NativeRandom() {
         this(System.currentTimeMillis());
@@ -65,8 +66,11 @@ public class NativeRandom implements Random {
     }
 
     @Override
-    public synchronized void setSeed(long seed) {
-        nativeOps.refreshBuffer(seed, statePointer);
+    public void setSeed(long seed) {
+        synchronized (this) {
+            this.seed = seed;
+            nativeOps.refreshBuffer(seed, statePointer);
+        }
     }
 
     @Override
@@ -208,6 +212,8 @@ public class NativeRandom implements Random {
 
     @Override
     public void close() throws Exception {
-
+        /*
+            Do nothing here, since we use WeakReferences for actual deallocation
+         */
     }
 }
