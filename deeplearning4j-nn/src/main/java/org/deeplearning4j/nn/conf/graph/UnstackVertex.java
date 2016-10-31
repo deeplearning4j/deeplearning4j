@@ -34,13 +34,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Justin Long (crockpotveggies)
  */
 public class UnstackVertex extends GraphVertex {
-
-    protected String inputName;
     protected int from;
-    protected int forwardShape[];
 
-    public UnstackVertex(int from) {
-        this(null, from, null);
+    @Override
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+                                                                      INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, null, null, from);
     }
 
     @Override
@@ -62,12 +61,6 @@ public class UnstackVertex extends GraphVertex {
     @Override
     public int hashCode(){
         return 433682566;
-    }
-
-    @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, null, null, inputName);
     }
 
     @Override
