@@ -2152,17 +2152,23 @@ void pullRowsGeneric(T *x,
                      const int n,
                      int *indexes,
                      int *tadShapeInfo,
-                     int *tadOffsets) {
+                     int *tadOffsets,
+                     int *zTadShapeInfo,
+                     int *zTadOffsets) {
     const int xEWS = shape::elementWiseStride(tadShapeInfo);
-    const int zEWS = shape::elementWiseStride(zShapeInfo);
+    const int zEWS = shape::elementWiseStride(zTadShapeInfo);
     const int tadLength = shape::length(tadShapeInfo);
 
-#pragma omp parallel for schedule(guided) if (n > 16)
+    int elementsPerThread = n / TAD_THRESHOLD;
+    int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+#pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided)
     for (int idx = 0; idx < n; idx++) {
         int tadOffsetForBlock = tadOffsets[indexes[idx]];
 
         T *rX = x + tadOffsetForBlock;
-        T *rZ = z + idx * tadLength;
+        T *rZ = z + zTadOffsets[idx];
 
         if (xEWS == 1 && zEWS == 1) {
 
@@ -2180,16 +2186,16 @@ void pullRowsGeneric(T *x,
     }
 }
 
-void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets) {
+void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
     // no-op
 }
 
-void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets) {
-    pullRowsGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+    pullRowsGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
-void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets) {
-    pullRowsGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets);
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+    pullRowsGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 
