@@ -37,8 +37,8 @@ public class LossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.OutputLayer ret
-            = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        org.deeplearning4j.nn.layers.LossLayer ret
+            = new org.deeplearning4j.nn.layers.LossLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
