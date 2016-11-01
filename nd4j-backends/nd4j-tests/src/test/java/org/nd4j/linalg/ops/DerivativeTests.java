@@ -215,6 +215,27 @@ public class DerivativeTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testCubeDerivative() {
+        assertTrue(Nd4j.getOpFactory().createTransform("cube", Nd4j.ones(1)).derivative() instanceof CubeDerivative);
+
+        //Derivative of cube: 3*x^2
+        INDArray z = Nd4j.zeros(100);
+        double[] expOut = new double[100];
+        for (int i = 0; i < 100; i++) {
+            double x = 0.1 * (i - 50);
+            z.putScalar(i, x);
+            expOut[i] = 1.0 - 3*x*x;
+        }
+
+        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("cube", z).derivative());
+
+        for (int i = 0; i < 100; i++) {
+            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+            assertTrue(relError < REL_ERROR_TOLERANCE);
+        }
+    }
+
+    @Test
     public void testLeakyReLUDerivative() {
         assertTrue(Nd4j.getOpFactory().createTransform("leakyrelu", Nd4j.ones(1)).derivative() instanceof LeakyReLUDerivative);
 

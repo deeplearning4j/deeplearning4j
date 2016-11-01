@@ -264,6 +264,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftPlus(x);
             case "step":
             	return new Step(x,y);
+            case "cube":
+                return new Cube(x, y);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -333,6 +335,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftPlus(x);
             case "step":
             	return new Step(x);
+            case "cube":
+                return new Cube(x);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -419,7 +423,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftMax(x, z);
             case "softplus":
                 return new SoftPlus(x,z);
-
+            case "cube":
+                return new Cube(x,z);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
