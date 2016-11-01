@@ -44,20 +44,13 @@ import java.util.Arrays;
  */
 public class L2Vertex extends BaseGraphVertex {
 
-    private String inputName;
-    private int inputVertexIndex;
-
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
-        this(graph,name,vertexIndex,null,null,inputVertexName);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex){
+        this(graph,name,vertexIndex,null,null);
     }
 
     public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, String inputName) {
+                    VertexIndices[] outputVertices) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
-        this.inputName = inputName;
-        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if(inputVertexIndex == -1)  throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
     }
 
     @Override
@@ -128,6 +121,6 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public String toString(){
-        return "L2Vertex(inputName=" + inputName + ")";
+        return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 }

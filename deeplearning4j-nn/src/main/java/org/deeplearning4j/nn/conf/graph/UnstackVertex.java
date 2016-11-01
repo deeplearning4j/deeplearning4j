@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * UnstackVertex allows for unstacking of inputs so that they may be forwarded through
@@ -35,22 +36,33 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class UnstackVertex extends GraphVertex {
     protected int from;
+    protected int stackSize;
+
+    /**
+     * @param from The first column index of the stacked inputs.
+     * @param stackSize The total number of stacked inputs. An interval is automatically
+     *                  calculated according to the size of the first dimension.
+     */
+    public UnstackVertex(@JsonProperty("from") int from, @JsonProperty("stackSize") int stackSize) {
+        this.from = from;
+        this.stackSize = stackSize;
+    }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, null, null, from);
+        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, null, null, from, stackSize);
     }
 
     @Override
     public UnstackVertex clone() {
-        return new UnstackVertex();
+        return new UnstackVertex(from, stackSize);
     }
 
     @Override
     public boolean equals(Object o){
         if(!(o instanceof UnstackVertex)) return false;
-        return ((UnstackVertex)o).from == from;
+        return ((UnstackVertex)o).from == from && ((UnstackVertex)o).stackSize == stackSize;
     }
 
     @Override
@@ -70,14 +82,14 @@ public class UnstackVertex extends GraphVertex {
         if(first.getType() == InputType.Type.CNNFlat){
             //TODO
             //Merging flattened CNN format data could be messy?
-            throw new InvalidInputTypeException("Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: " + vertexInputs);
+            throw new InvalidInputTypeException("Invalid input: UnstackVertex cannot currently merge CNN data in flattened format. Got: " + vertexInputs);
         } else if(first.getType() != InputType.Type.CNN){
             //FF or RNN data inputs
             int size = 0;
             InputType.Type type = null;
             for( int i=0; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge activations of different types:"
+                    throw new InvalidInputTypeException("Invalid input: UnstackVertex cannot merge activations of different types:"
                         + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
                 }
 
@@ -121,7 +133,7 @@ public class UnstackVertex extends GraphVertex {
 
             for( int i=1; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != InputType.Type.CNN){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot process activations of different types:"
+                    throw new InvalidInputTypeException("Invalid input: UnstackVertex cannot process activations of different types:"
                         + " first type = " + InputType.Type.CNN + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
                 }
 
@@ -132,7 +144,7 @@ public class UnstackVertex extends GraphVertex {
                 int oh = otherConv.getHeight();
 
                 if(fw != ow || fh != oh){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge CNN activations of different width/heights:"
+                    throw new InvalidInputTypeException("Invalid input: UnstackVertex cannot merge CNN activations of different width/heights:"
                         + "first [depth,width,height] = [" + fd + "," + fw + "," + fh + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
 

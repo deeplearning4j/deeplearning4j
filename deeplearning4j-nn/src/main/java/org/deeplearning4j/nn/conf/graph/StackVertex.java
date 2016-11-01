@@ -36,7 +36,7 @@ import java.util.Arrays;
  */
 public class StackVertex extends GraphVertex {
 
-    private String inputName;
+    public StackVertex() {}
 
     @Override
     public StackVertex clone() {
@@ -61,7 +61,7 @@ public class StackVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx, null, null, inputName);
+        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx);
     }
 
     @Override
@@ -71,14 +71,14 @@ public class StackVertex extends GraphVertex {
         if(first.getType() == InputType.Type.CNNFlat){
             //TODO
             //Merging flattened CNN format data could be messy?
-            throw new InvalidInputTypeException("Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: " + vertexInputs);
+            throw new InvalidInputTypeException("Invalid input: StackVertex cannot currently merge CNN data in flattened format. Got: " + vertexInputs);
         } else if(first.getType() != InputType.Type.CNN){
             //FF or RNN data inputs
             int size = 0;
             InputType.Type type = null;
             for( int i=0; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != first.getType()){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge activations of different types:"
+                    throw new InvalidInputTypeException("Invalid input: StackVertex cannot merge activations of different types:"
                         + " first type = " + first.getType() + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
                 }
 
@@ -122,7 +122,7 @@ public class StackVertex extends GraphVertex {
 
             for( int i=1; i<vertexInputs.length; i++ ){
                 if(vertexInputs[i].getType() != InputType.Type.CNN){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot process activations of different types:"
+                    throw new InvalidInputTypeException("Invalid input: StackVertex cannot process activations of different types:"
                         + " first type = " + InputType.Type.CNN + ", input type " + (i+1) + " = " + vertexInputs[i].getType());
                 }
 
@@ -133,7 +133,7 @@ public class StackVertex extends GraphVertex {
                 int oh = otherConv.getHeight();
 
                 if(fw != ow || fh != oh){
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge CNN activations of different width/heights:"
+                    throw new InvalidInputTypeException("Invalid input: StackVertex cannot merge CNN activations of different width/heights:"
                         + "first [depth,width,height] = [" + fd + "," + fw + "," + fh + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
 
