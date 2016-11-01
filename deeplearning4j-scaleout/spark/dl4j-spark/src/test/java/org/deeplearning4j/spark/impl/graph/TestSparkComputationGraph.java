@@ -159,8 +159,8 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         }
         JavaRDD<DataSet> dataNoKeysRdd = sc.parallelize(dataNoKeys);
 
-        List<Double> scoresWithReg = sparkNet.scoreExamples(dataNoKeysRdd, true, 4).collect();
-        List<Double> scoresNoReg = sparkNet.scoreExamples(dataNoKeysRdd, false, 4).collect();
+        List<Double> scoresWithReg = new ArrayList<>(sparkNet.scoreExamples(dataNoKeysRdd, true, 4).collect());
+        List<Double> scoresNoReg = new ArrayList<>(sparkNet.scoreExamples(dataNoKeysRdd, false, 4).collect());
         Collections.sort(scoresWithReg);
         Collections.sort(scoresNoReg);
         double[] localScoresWithRegDouble = localScoresWithReg.data().asDouble();

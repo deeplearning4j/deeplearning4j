@@ -69,6 +69,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
      */
     @Override
     public void removeHook(TrainingHook trainingHook) {
+        if(trainingHooks == null) return;
         trainingHooks.remove(trainingHook);
     }
 
@@ -80,6 +81,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
      */
     @Override
     public void addHook(TrainingHook trainingHook) {
+        if(trainingHooks == null) trainingHooks = new ArrayList<>();
         trainingHooks.add(trainingHook);
     }
 
@@ -159,15 +161,17 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (configuration.isCollectTrainingStats()) stats.logFitStart();
 
         if (trainingHooks != null) {
-            for (TrainingHook trainingHook : trainingHooks)
+            for (TrainingHook trainingHook : trainingHooks) {
                 trainingHook.preUpdate(dataSet, network);
+            }
         }
 
         network.fit(dataSet);
 
         if (trainingHooks != null) {
-            for (TrainingHook trainingHook : trainingHooks)
+            for (TrainingHook trainingHook : trainingHooks) {
                 trainingHook.postUpdate(dataSet, network);
+            }
         }
 
 
@@ -188,19 +192,21 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
 
     @Override
     public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        if (configuration.isCollectTrainingStats()) stats.logFitStart();
-        //pre training hooks
+        if(configuration.isCollectTrainingStats()) stats.logFitStart();
+       //pre training hooks
         if (trainingHooks != null) {
-            for (TrainingHook trainingHook : trainingHooks)
+            for (TrainingHook trainingHook : trainingHooks) {
                 trainingHook.preUpdate(dataSet, graph);
+            }
         }
 
         graph.fit(dataSet);
 
         //post training hooks
         if (trainingHooks != null) {
-            for (TrainingHook trainingHook : trainingHooks)
+            for (TrainingHook trainingHook : trainingHooks) {
                 trainingHook.postUpdate(dataSet, graph);
+            }
         }
 
 
