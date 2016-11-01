@@ -55,6 +55,15 @@
 						<li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> Model</span></a></li>
 						<li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> System</span></a></li>
 						<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> User Guide</span></a></li>
+                        <li>
+                            <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+                            <ul>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+                            </ul>
+                        </li>
 					</ul>
 				</div>
 			</div>
@@ -87,65 +96,69 @@
 							<div id="myTabContent" class="tab-content">
 								<div class="tab-pane active" id="machine1">
 
-									<!-- Start Memory Utilization -->
+									<!-- Memory Utilization -->
 									<div class="row-fluid">
 
 										<div class="span8 widget blue" onTablet="span7" onDesktop="span8">
-											<h1>JVM Memory Utilization</h1>
-											<div id="stats-chart2"  style="height:282px" ></div>
+											<h1>i18n.getMessage("train.system.chart.jvmTitle")</h1>
+											<div id="jvm-memory-chart"  style="height:282px" ></div>
 										</div>
 
-										<!-- Start System Statistics -->
+										<!-- System Statistics -->
 										<div class="sparkLineStats span4 widget green" onTablet="span5" onDesktop="span4">
-											<h1>Hardware Information</h1>
+											<h1>i18n.getMessage("train.system.table.hardwareTitle")</h1>
 											<ul class="unstyled">
 												<li>
 													JVM Current Memory:
-													<span class="number">699400192</span>
+													<span class="number" id="currentBytesJVM">Loading...</span>
 												</li>
 												<li>
 													JVM Max Memory:
-													<span class="number">1908932608</span>
+													<span class="number" id="maxBytesJVM">Loading...</span>
 												</li>
 												<li>
 													Off-Head Current Memory:
-													<span class="number">498762</span>
+													<span class="number" id="currentBytesOffHeap">Loading...</span>
 												</li>
 												<li>
 													Off-Heap Max Memory:
-													<span class="number">1908932608</span>
+													<span class="number" id="maxBytesOffHeap">Loading...</span>
 												</li>
 												<li>
 													JVM Available Processors:
-													<span class="number">4</span>
+													<span class="number" id="jvmAvailableProcessors">Loading...</span>
 												</li>
 												<li>
-													# Compute Devices: <span class="number">0</span>
+													# Compute Devices:
+													<span class="number" id="nComputeDevices">Loading...</span>
 												</li>
 											</ul>
 										</div>
 									</div>
+
 									<div class="row-fluid">
+										<!-- Off Heap Memory Utlization Chart -->
 										<div class="span8 widget yellow" onTablet="span7" onDesktop="span8">
-											<h1>Off-Heap Memory Utilization</h1>
-											<div id="stats-chart2"  style="height:282px" ></div>
+											<h1>@i18n.getMessage("train.system.chart.offHeapTitle")</h1>
+											<div id="offheap-chart"  style="height:282px" ></div>
 										</div>
 
+										<!-- Stat Box -->
 										<div class="row-fluid hideInIE8 circleStats">
 
 											<div class="span2">
 												<div class="circleStatsItemBox pink">
-													<div class="header">JVM Memory</div>
+													<div class="header">@i18n.getMessage("train.system.statbox.jvmTitle")</div>
 													<span class="percent">percent</span>
 													<div class="circleStat"><input type="text" value="58" class="whiteCircle" /></div>
 													<div class="footer">
 												<span class="count">
-													<span class="number">699400192</span>
+													<span class="number" id="currentBytesJVM">Loading...</span>
 													<span class="unit">Bytes</span>
 												</span>
 														<span class="sep"> / </span>
 														<span class="value">
-													<span class="number">699400192</span>
+													<span class="number" id="maxBytesJVM">Loading...</span>
 													<span class="unit">Bytes</span>
 												</span>
 													</div>
@@ -154,17 +167,17 @@
 
 											<div class="span2">
 												<div class="circleStatsItemBox red">
-													<div class="header">Off-Heap Memory</div>
+													<div class="header">@i18n.getMessage("train.system.statbox.offHeapTitle")</div>
 													<span class="percent">percent</span>
 													<div class="circleStat"><input type="text" value="78" class="whiteCircle" /></div>
 													<div class="footer">
 												<span class="count">
-													<span class="number">498762</span>
+													<span class="number" id="currentBytesOffHeap">Loading...</span>
 													<span class="unit">Bytes</span>
 												</span>
 														<span class="sep"> / </span>
 														<span class="value">
-													<span class="number">1908932608</span>
+													<span class="number" id="maxBytesOffHeap">Loading...</span>
 													<span class="unit">Bytes</span>
 												</span>
 													</div>
@@ -175,13 +188,13 @@
 
 									</div>
 
-									<!-- Start Charts -->
+									<!-- Charts -->
 									<div class="row-fluid">
 
-										<!-- Start Software Information -->
+										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>Software Information</b></h2>
+												<h2><b>@i18n.getMessage("train.system.software.title")</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -198,13 +211,13 @@
 													</thead>
 													<tbody>
 													<tr>
-														<td>Mac OS X</td>
-														<td>Edwards-Air</td>
-														<td>x86_64</td>
-														<td>Java HotSpot(TM) 64-Bit Server VM</td>
-														<td>1.8.0_74</td>
-														<td>org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory</td>
-														<td>FLOAT</td>
+														<td id="OS">Loading...</td>
+														<td id="hostName">Loading...</td>
+														<td id="OSArchitecture">Loading...</td>
+														<td id="jvmName">Loading...</td>
+														<td id="jvmVersion">Loading...</td>
+														<td id="nd4jBackend">Loading...</td>
+														<td id="nd4jDataType">Loading...</td>
 													</tr>
 													</tbody>
 												</table>
@@ -212,8 +225,8 @@
 										</div>
 
 									</div>
-									<!--End System Tab -->
-									<!--Start GPU Tab -->
+
+									<!-- GPU Chart -->
 									<div class="row-fluid">
 										<div class="box span12">
 											<div class="box-header">
@@ -223,33 +236,32 @@
 												<table class="table table-striped">
 													<thead>
 													<tr>
-														<th>OS</th>
-														<th>Host Name</th>
-														<th>OS Architecture</th>
-														<th>JVM Name</th>
-														<th>JVM Version</th>
-														<th>ND4J Backend</th>
-														<th>ND4J Data Type</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
 													</tr>
 													</thead>
 													<tbody>
 													<tr>
-														<td>Mac OS X</td>
-														<td>Edwards-Air</td>
-														<td>x86_64</td>
-														<td>Java HotSpot(TM) 64-Bit Server VM</td>
-														<td>1.8.0_74</td>
-														<td>org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory</td>
-														<td>FLOAT</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
 													</tr>
 													</tbody>
 												</table>
 											</div>
 										</div>
 									</div>
-									<!--End GPU Tab -->
 								</div>
-								<!-- End Machine 1 -->
+								<!-- End System Tab -->
 								<div class="tab-pane" id="machine2">
 									<p>
 										Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
@@ -300,7 +312,23 @@
 		<script src="/assets/js/jquery.sparkline.min.js"></script>
 		<script src="/assets/js/counter.js"></script>
 		<script src="/assets/js/retina.js"></script>
-		<script src="/assets/js/custom.js"></script>
+		<script src="/assets/js/train/system.js"></script> <!-- Charts and tables are generated here! -->
+
+		<!-- Execute once on page load -->
+		<script>
+                    $(document).ready(function(){
+                        renderSystemInformation();
+                        renderJVMMemoryChart();
+                    });
+            </script>
+
+		<!-- Execute periodically (every 2 sec) -->
+		<script>
+                    setInterval(function(){
+                        renderSystemInformation()
+                        renderJVMMemoryChart()
+                    }, 2000);
+            </script>
 		<!-- End JavaScript-->
 
 </body>
