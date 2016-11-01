@@ -36,25 +36,26 @@ import java.util.Arrays;
  * a network. This is useful for cases such as Triplet Embedding, where embeddings can
  * be separated and run through subsequent layers.
  *
- * Works similarly to SubsetVertex, except on dimension 0 of the input.
+ * Works similarly to SubsetVertex, except on dimension 0 of the input. stackSize is
+ * explicitly defined by the user to properly calcualte an intervalSize.
  *
  * @author Justin Long (crockpotveggies)
  */
 public class UnstackVertex extends BaseGraphVertex {
     private int from;
+    private int stackSize;
     private int forwardShape[];
     private int intervalSize;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from){
-        this(graph,name,vertexIndex,null,null,from);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize){
+        this(graph,name,vertexIndex,null,null,from,stackSize);
     }
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                         VertexIndices[] outputVertices, int from) {
+                         VertexIndices[] outputVertices, int from, int stackSize) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.from = from;
-        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.intervalSize = inputs[0].size(0)/inputs.length;
+        this.stackSize = stackSize;
     }
 
     @Override
@@ -76,13 +77,17 @@ public class UnstackVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
+        // once we know the inputs, save the shape and interval size for doBackward
+        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        this.intervalSize = inputs[0].size(0)/stackSize;
+
         switch (inputs[0].rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(from, inputs[0].size(0), true), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all());
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(from, inputs[0].size(0), true), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(from, inputs[0].size(0), true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             default:
                 throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
         }

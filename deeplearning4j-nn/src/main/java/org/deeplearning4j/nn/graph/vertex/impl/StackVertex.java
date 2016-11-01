@@ -34,24 +34,19 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  * a network. This is useful for cases such as Triplet Embedding, where shared parameters
  * are not supported by the network.
  *
+ * This vertex will automatically stack all available inputs.
+ *
  * @author Justin Long (crockpotveggies)
  */
 public class StackVertex extends BaseGraphVertex {
 
-    private String inputName;
-    private int inputVertexIndex;
-
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName){
-        this(graph, name, vertexIndex, null, null, inputVertexName);
+    public StackVertex(ComputationGraph graph, String name, int vertexIndex){
+        this(graph, name, vertexIndex, null, null);
     }
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                       VertexIndices[] outputVertices, String inputName) {
+                       VertexIndices[] outputVertices) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
-        this.inputName = inputName;
-        this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
-        if(inputVertexIndex == -1)  throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
-                + "of network inputs (" + graph.getConfiguration().getNetworkInputs() + ")");
     }
 
     @Override
@@ -136,6 +131,6 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public String toString(){
-        return "StackVertex(inputName=" + inputName + ")";
+        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 }
