@@ -82,7 +82,7 @@
 
                     <div class="row-fluid">
 
-                        <div class="box">
+                        <div class="box span8">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.overview.chart.scoreTitle")</b></h2>
                             </div>
@@ -92,67 +92,71 @@
                                     0</span></p>
                             </div>
                         </div>
-
-                    </div>
-                    <!-- End Score Chart-->
-                    <!-- Start Model Table-->
-                    <div class="row-fluid">
-                        <div class="box span12">
+                        <!-- End Score Chart-->
+                        <!-- Start Model Table-->
+                        <div class="box span4">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.overview.perftable.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
-                                    <thead>
                                     <tr>
-                                        <th>Model Type</th>
-                                        <th>nLayers</th>
-                                        <th>nParams</th>
-                                        <th>Start Time</th>
-                                        <th>Total Run Time</th>
-                                        <th>Last Update</th>
-                                        <th>Total Param Updates</th>
-                                        <th>Updates Per Second</th>
-                                        <th>Examples Per Second</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr>
+                                        <td>Model Type</td>
                                         <td id="modelType">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>nLayers</td>
                                         <td id="nLayers">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>nParams</td>
                                         <td id="nParams">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Start Time</td>
                                         <td id="startTime">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Run Time</td>
                                         <td id="totalRuntime">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Last Update</td>
                                         <td id="lastUpdate">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Param Updates</td>
                                         <td id="totalParamUpdates">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Updates Per Second</td>
                                         <td id="updatesPerSec">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Examples Per Second</td>
                                         <td id="examplesPerSec">Loading...</td>
                                     </tr>
-                                    </tbody>
                                 </table>
                             </div>
                         </div>
+                        <!--End Model Table -->
                     </div>
-                    <!--End Model Table -->
-                    <!--Start Ratio Table -->
-                    <div class="row-fluid">
 
-                        <div class="box">
+
+                    <div class="row-fluid">
+                        <!--Start Ratio Table -->
+                        <div class="box span6">
                             <div class="box-header">
                                 <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
                             </div>
                             <div class="box-content">
-                                <div id="sincos"  class="center" style="height:300px;" ></div>
+                                <div id="sincos"  class="center" style="height:345px;" ></div>
                                 <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
                             </div>
                         </div>
-
-                    </div>
-                    <!--End Ratio Table -->
-                    <!--Start Variance Table -->
-                    <div class="row-fluid">
-
-                        <div class="box">
+                        <!--End Ratio Table -->
+                        <!--Start Variance Table -->
+                        <div class="box span6">
                             <div class="box-header">
                                 <h2><b>Variances</b></h2>
                             </div>
@@ -166,9 +170,9 @@
                                 <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
                             </div>
                         </div>
-
+                        <!-- End Variance Table -->
                     </div>
-                    <!-- End Variance Table -->
+
                 </div><!-- End Content Span10-->
             </div><!--End Row Fluid-->
 
