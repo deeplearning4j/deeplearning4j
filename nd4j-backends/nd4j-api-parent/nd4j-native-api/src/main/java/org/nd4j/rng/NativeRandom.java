@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class NativeRandom implements Random {
+public abstract class NativeRandom implements Random {
     protected NativeOps nativeOps;
     protected DataBuffer stateBuffer;
     protected Pointer statePointer;
@@ -52,7 +52,7 @@ public class NativeRandom implements Random {
 
         stateBuffer = Nd4j.getDataBufferFactory().createDouble(numberOfElements);
 
-        statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
+        init();
 
         hostPointer = new LongPointer(stateBuffer.addressPointer());
 
@@ -62,6 +62,8 @@ public class NativeRandom implements Random {
 
         deallocator.trackStatePointer(pack);
     }
+
+    public abstract void init();
 
     @Override
     public void setSeed(int seed) {

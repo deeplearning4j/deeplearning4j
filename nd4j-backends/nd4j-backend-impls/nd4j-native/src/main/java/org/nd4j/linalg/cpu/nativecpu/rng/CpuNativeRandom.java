@@ -21,4 +21,8 @@ public class CpuNativeRandom extends NativeRandom {
         super(seed, numberOfElements);
     }
 
+    @Override
+    public void init() {
+        statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
+    }
 }
