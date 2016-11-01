@@ -87,8 +87,8 @@
         (46,simdOps::ReplaceNans) ,\
         (47,simdOps::StabilizeFP16) ,\
         (48,simdOps::Histogram), \
-		(49,simdOps::Cube), \
-		(50,simdOps::CubeDerivative)
+        (49,simdOps::Cube), \
+        (50,simdOps::CubeDerivative)
 
 
 namespace functions {
