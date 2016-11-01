@@ -90,7 +90,7 @@ namespace randomOps {
 
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
             T randVal = helper->relativeT(idx);
-            return randVal <= extraParams[0] ? (T) 0.0f : valueX;
+            return randVal >= extraParams[0] ? (T) 0.0f : valueX;
         }
     };
 
@@ -109,7 +109,7 @@ namespace randomOps {
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
             T prob = extraParams[0];
             T randVal = helper->relativeT(idx);
-            return randVal <= prob ? (T) 0.0f : valueX / prob;
+            return randVal >= prob ? (T) 0.0f : valueX / prob;
         }
     };
 
