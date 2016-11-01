@@ -671,6 +671,29 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Cube {
+	public:
+		no_op_exec_special
+			no_op_exec_special_cuda
+
+			op_def static T op(T d1, T *params) {
+			return d1 * d1 * d1;
+		}
+	};
+
+
+	template<typename T>
+	class CubeDerivative {
+	public:
+		no_op_exec_special
+			no_op_exec_special_cuda
+
+			op_def static T op(T d1, T *params) {
+			return 3 * d1 * d1;
+		}
+	};
+
+	template<typename T>
 	class ACos {
 	public:
 		no_op_exec_special
