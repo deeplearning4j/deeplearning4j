@@ -260,23 +260,31 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     /**
      * Increment number of documents the label was observed in
      *
+     * Please note: this method is NOT thread-safe
+     *
      * @param word the word to increment by
      * @param howMuch
      */
     @Override
     public void incrementDocCount(String word, int howMuch) {
-        // TODO: to be implemented
+        if (vocabulary.containsKey(word)) {
+            vocabulary.get(word).setSequencesCount(vocabulary.get(word).getSequencesCount() + 1);
+        }
     }
 
     /**
      * Set exact number of observed documents that contain specified word
+     *
+     * Please note: this method is NOT thread-safe
      *
      * @param word the word to set the count for
      * @param count the count of the word
      */
     @Override
     public void setCountForDoc(String word, int count) {
-        // TODO: to be implemented
+        if (vocabulary.containsKey(word)) {
+            vocabulary.get(word).setSequencesCount(count);
+        }
     }
 
     /**
