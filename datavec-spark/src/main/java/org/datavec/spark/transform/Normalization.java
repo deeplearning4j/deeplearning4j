@@ -113,7 +113,7 @@ public class Normalization {
         columnsList.removeAll(skipColumns);
         String[] columnNames = DataFrames.toArray(columnsList);
         //first row is std second row is mean, each column in a row is for a particular column
-        List<Row> stdDevMean = stdDevMeanColumns(frame, frame.columns());
+        List<Row> stdDevMean = stdDevMeanColumns(frame, columnNames);
         for(int i = 0; i < stdDevMean.size(); i++) {
             String columnName = columnNames[i];
             double std = ((Number) stdDevMean.get(0).get(i)).doubleValue();
@@ -298,8 +298,8 @@ public class Normalization {
         List<String> columnsList = DataFrames.toList(dataFrame.columns());
         columnsList.removeAll(skipColumns);
         String[] columnNames = DataFrames.toArray(columnsList);
-        //first row is min second row is max, each column in a rowi s for a particular column
-        List<Row> minMax = minMaxColumns(dataFrame, dataFrame.columns());
+        //first row is min second row is max, each column in a row is for a particular column
+        List<Row> minMax = minMaxColumns(dataFrame, columnNames);
         for(int i = 0; i < columnNames.length; i++) {
             String columnName = columnNames[i];
             double dMin = ((Number) minMax.get(0).get(i)).doubleValue();

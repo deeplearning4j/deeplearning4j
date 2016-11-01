@@ -192,13 +192,13 @@ public class DataFrameTests extends BaseSparkTest {
 
         //Min/max normalization:
         List<List<Writable>> expSeq1MinMax = new ArrayList<>();
-        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((1-1.0)/(5.0-1.0)), new DoubleWritable((10-10.0)/(50.0-10.0)), new DoubleWritable((100-100.0)/(500.0-100.0))));
-        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((2-1.0)/(5.0-1.0)), new DoubleWritable((20-10.0)/(50.0-10.0)), new DoubleWritable((200-100.0)/(500.0-100.0))));
-        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((3-1.0)/(5.0-1.0)), new DoubleWritable((30-10.0)/(50.0-10.0)), new DoubleWritable((300-100.0)/(500.0-100.0))));
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((1 - 1.0) / (5.0-1.0)), new DoubleWritable((10- 10.0)/(50.0 - 10.0)), new DoubleWritable((100-100.0) / (500.0-100.0))));
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((2 - 1.0) / (5.0 - 1.0)), new DoubleWritable((20 - 10.0)/(50.0 - 10.0)), new DoubleWritable((200 - 100.0) / (500.0-100.0))));
+        expSeq1MinMax.add(Arrays.asList(new DoubleWritable((3 - 1.0) / (5.0 - 1.0)), new DoubleWritable((30 - 10.0)/(50.0 - 10.0)), new DoubleWritable((300 - 100.0) / (500.0-100.0))));
 
         List<List<Writable>> expSeq2MinMax = new ArrayList<>();
-        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((4-1.0)/(5.0-1.0)), new DoubleWritable((40-10.0)/(50.0-10.0)), new DoubleWritable((400-100.0)/(500.0-100.0))));
-        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((5-1.0)/(5.0-1.0)), new DoubleWritable((50-10.0)/(50.0-10.0)), new DoubleWritable((500-100.0)/(500.0-100.0))));
+        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((4 - 1.0)/(5.0 - 1.0)), new DoubleWritable((40 - 10.0)/(50.0 - 10.0)), new DoubleWritable((400 - 100.0) / (500.0 - 100.0))));
+        expSeq2MinMax.add(Arrays.asList(new DoubleWritable((5 - 1.0)/(5.0 - 1.0)), new DoubleWritable((50 - 10.0)/(50.0 - 10.0)), new DoubleWritable((500 - 100.0) / (500.0 - 100.0))));
 
 
         List<List<List<Writable>>> norm = new ArrayList<>(normalized.collect());
@@ -207,7 +207,7 @@ public class DataFrameTests extends BaseSparkTest {
 
         System.out.println(norm);
 
-        for( int i = 0; i < 2; i++ ){
+        for(int i = 0; i < 2; i++) {
             List<List<Writable>> seqExp = (i == 0 ? expSeq1MinMax : expSeq2MinMax);
             for( int j = 0; j<seqExp.size(); j++ ){
                 List<Writable> stepExp = seqExp.get(j);
@@ -225,9 +225,9 @@ public class DataFrameTests extends BaseSparkTest {
         //Standardize:
         double m1 = (1 + 2 + 3 + 4 +5) / 5.0;
         double s1 = new StandardDeviation().evaluate(new double[]{1,2,3,4,5});
-        double m2 = (10 + 20 + 30 + 40 + 50)/5.0;
+        double m2 = (10 + 20 + 30 + 40 + 50) / 5.0;
         double s2 = new StandardDeviation().evaluate(new double[]{10,20,30,40,50});
-        double m3 = (100 + 200 + 300 + 400 + 500)/5.0;
+        double m3 = (100 + 200 + 300 + 400 + 500) / 5.0;
         double s3 = new StandardDeviation().evaluate(new double[]{100,200,300,400,500});
 
         List<List<Writable>> expSeq1Std = new ArrayList<>();
@@ -236,8 +236,8 @@ public class DataFrameTests extends BaseSparkTest {
         expSeq1Std.add(Arrays.asList(new DoubleWritable((3 - m1)/s1), new DoubleWritable((30 - m2) / s2), new DoubleWritable((300 - m3)/s3)));
 
         List<List<Writable>> expSeq2Std = new ArrayList<>();
-        expSeq2Std.add(Arrays.asList(new DoubleWritable((4 - m1)/s1), new DoubleWritable((40 - m2) / s2), new DoubleWritable((400 - m3) / s3)));
-        expSeq2Std.add(Arrays.asList(new DoubleWritable((5 - m1)/s1), new DoubleWritable((50 - m2) / s2), new DoubleWritable((500 - m3) / s3)));
+        expSeq2Std.add(Arrays.asList(new DoubleWritable((4 - m1) / s1), new DoubleWritable((40 - m2) / s2), new DoubleWritable((400 - m3) / s3)));
+        expSeq2Std.add(Arrays.asList(new DoubleWritable((5 - m1) / s1), new DoubleWritable((50 - m2) / s2), new DoubleWritable((500 - m3) / s3)));
 
 
         List<List<List<Writable>>> std = new ArrayList<>(standardized.collect());
@@ -248,7 +248,7 @@ public class DataFrameTests extends BaseSparkTest {
 
         for( int i = 0; i < 2; i++) {
             List<List<Writable>> seqExp = (i == 0 ? expSeq1Std : expSeq2Std);
-            for( int j = 0; j<seqExp.size(); j++) {
+            for( int j = 0; j < seqExp.size(); j++) {
                 List<Writable> stepExp = seqExp.get(j);
                 List<Writable> stepAct = std.get(i).get(j);
                 for( int k = 0; k<stepExp.size(); k++ ){
