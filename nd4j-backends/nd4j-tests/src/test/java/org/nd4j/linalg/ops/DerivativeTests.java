@@ -224,7 +224,7 @@ public class DerivativeTests extends BaseNd4jTest {
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
             z.putScalar(i, x);
-            expOut[i] = 1.0 - 3*x*x;
+            expOut[i] = 3*x*x;
         }
 
         INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("cube", z).derivative());
