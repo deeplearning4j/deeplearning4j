@@ -74,14 +74,12 @@ public class StackVertex extends BaseGraphVertex {
         int[] outShape = new int[inShape.length];
 
         // create the new shape
-        for ( int i=0; i<nStack; i++ ) {
+        for ( int i=0; i<inShape.length; i++ ) {
             if(i==0) outShape[0] = nStack * inShape[0];
             else outShape[i] = inShape[i];
         }
 
         INDArray out = Nd4j.create(outShape);
-
-        int rowCount = 0;
 
         //Simplest case: no masking arrays, all same length
         // loop through indexes for 2D, 3D, 4D...
@@ -90,6 +88,7 @@ public class StackVertex extends BaseGraphVertex {
             indexes[i] = NDArrayIndex.all();
         }
 
+        int rowCount = 0;
         for (INDArray input : inputs) {
             int nEx = input.size(0);
             indexes[0] = NDArrayIndex.interval(rowCount, rowCount + nEx);
