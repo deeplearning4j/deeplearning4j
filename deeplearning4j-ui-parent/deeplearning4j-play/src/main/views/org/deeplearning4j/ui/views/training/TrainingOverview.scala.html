@@ -159,15 +159,22 @@
                         <div class="box span6">
                             <div class="box-header">
                                 <h2><b>Variances</b></h2>
+                                <div style="float: right">
+                                    <p class="stackControls center">
+                                        <input class="btn btn-small" type="button" value="Activations">
+                                        <input class="btn btn-small" type="button" value="Gradients">
+                                        <input class="btn btn-small" type="button" value="Updates">
+                                    </p>
+                                </div>
                             </div>
                             <div class="box-content">
-                                <p class="stackControls center">
-                                    <input class="btn" type="button" value="Activations">
-                                    <input class="btn" type="button" value="Gradients">
-                                    <input class="btn" type="button" value="Updates">
-                                </p>
-                                <div id="sincos"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                                @*<p class="stackControls center">*@
+                                    @*<input class="btn btn-small" type="button" value="Activations">*@
+                                    @*<input class="btn btn-small" type="button" value="Gradients">*@
+                                    @*<input class="btn btn-small" type="button" value="Updates">*@
+                                @*</p>*@
+                                <div id="varianceChart"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="yVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->
