@@ -84,7 +84,7 @@ function renderPerformanceTable() {
             $("#nLayers").html(nLayers);
             $("#nParams").html(nParams);
 
-            /* Inject Performance Information*/
+            /* Inject Performance Information */
             $("#startTime").html(startTime);
             $("#totalRuntime").html(totalRuntime);
             $("#lastUpdate").html(lastUpdate);
