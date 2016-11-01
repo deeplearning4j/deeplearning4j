@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
 /**
  * Cube (x^3) elementwise function
  *
- * @author Adam Gibson
+ * @author Paul Dubs
  */
 public class Cube extends BaseTransformOp {
 
