@@ -11,6 +11,7 @@ import static org.apache.spark.sql.functions.*;
 
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -116,9 +117,9 @@ public class Normalization {
         List<Row> stdDevMean = stdDevMeanColumns(frame, columnNames);
         for(int i = 0; i < stdDevMean.size(); i++) {
             String columnName = columnNames[i];
-            double std = ((Number) stdDevMean.get(0).get(i)).doubleValue();
+            double std = ((Number) stdDevMean.get(0).get(i)).doubleValue() + Nd4j.EPS_THRESHOLD;
             double mean = ((Number) stdDevMean.get(1).get(i)).doubleValue();
-            if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
+          //  if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
 
             frame = frame.withColumn(columnName, frame.col(columnName).minus(mean).divide(std));
         }
@@ -304,7 +305,7 @@ public class Normalization {
             String columnName = columnNames[i];
             double dMin = ((Number) minMax.get(0).get(i)).doubleValue();
             double dMax = ((Number) minMax.get(1).get(i)).doubleValue();
-            double maxSubMin = dMax - dMin;
+            double maxSubMin = (dMax - dMin);
             if (maxSubMin == 0) maxSubMin = 1;
 
             Column newCol = dataFrame.col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);

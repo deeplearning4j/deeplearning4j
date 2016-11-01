@@ -24,6 +24,8 @@ import org.apache.spark.sql.functions;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceCreateCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeValue;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.apache.spark.sql.functions.avg;
 import static org.apache.spark.sql.functions.col;
@@ -374,6 +376,21 @@ public class DataFrames {
         String[] ret = new String[list.size()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = list.get(i);
+        return ret;
+    }
+
+    /**
+     * Convert a list of rows to a matrix
+     * @param rows the list of rows to convert
+     * @return the converted matrix
+     */
+    public static INDArray toMatrix(List<Row> rows) {
+        INDArray ret = Nd4j.create(rows.size(),rows.get(0).size());
+        for(int i = 0; i < ret.rows(); i++) {
+            for(int j = 0; j < ret.columns(); j++) {
+                ret.putScalar(i,j,rows.get(i).getDouble(j));
+            }
+        }
         return ret;
     }
 
