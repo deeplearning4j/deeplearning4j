@@ -12,7 +12,7 @@ function renderOverviewPage() {
 
             renderScoreVsIterChart(data);
             renderModelPerformanceTable(data);
-
+            renderUpdatesRatio(data);
         }
     });
 
@@ -26,7 +26,9 @@ function renderScoreVsIterChart(data) {
 
     var maxScore = Math.max.apply(Math, scoresArr);
 
-    if ($("#scoreiterchart").length) {
+    var scoreChart = $("#scoreiterchart");
+
+    if (scoreChart.length) {
         var scoreData = [];
 
         for (var i = 0; i < scoresArr.length; i++) {
@@ -34,14 +36,12 @@ function renderScoreVsIterChart(data) {
         }
 
         var plot = $.plot($("#scoreiterchart"),
-            [{data: scoreData, label: "Scores"}], {
+            [{data: scoreData, label: "score"}], {
                 series: {
                     lines: {
                         show: true,
                         lineWidth: 2
                     }
-                    // points: {show: true},
-                    // shadowSize: 2
                 },
                 grid: {
                     hoverable: true,
@@ -53,13 +53,44 @@ function renderScoreVsIterChart(data) {
                 colors: ["#FA5833", "#2FABE9"]
             });
 
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltip">' + contents + '</div>').css( {
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#scoreiterchart").fadeIn(200);
+        }
+
         var previousPoint = null;
-        $("#scoreiterchart").bind("plothover", function (event, pos, item) {
+        scoreChart.bind("plothover", function (event, pos, item) {
             $("#x").text(pos.x.toFixed(0));
             $("#y").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(0),
+                        y = item.datapoint[1].toFixed(5);
+
+                    showTooltip(item.pageX - scoreChart.offset().left,
+                        item.pageY - scoreChart.offset().top,
+                        // item.series.label + "(" + x + ") = " + y);
+                        "(" + x + ", " + y + ")");
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
         });
     }
-
 }
 
 /* ---------- Model Performance Table ---------- */
@@ -95,6 +126,97 @@ function renderModelPerformanceTable(data) {
 /* ---------- Ratio of Updates to Parameters Chart ---------- */
 function renderUpdatesRatio(data){
 
+    var ratios = data["updateRatios"];
+
+    console.log("Update ratio keys: " + Object.keys(ratios));
+
+    var iter = data["scoresIter"];
+
+    var chart = $("#updateRatioChart");
+
+    if (chart.length) {
+
+        var keys = Object.keys(ratios);
+        var toPlot = [];
+        var overallMax = -Number.MAX_VALUE;
+        var overallMin = Number.MAX_VALUE;
+        for( var i=0; i<keys.length; i++ ){
+            var r = ratios[keys[i]];
+
+            var pairs = [];
+            for( var j=0; j<r.length; j++ ){
+                pairs.push([iter[j], r[j]]);
+            }
+            toPlot.push({data: pairs, label: keys[i]});
+
+
+            var thisMax = Math.max.apply(Math, r);
+            var thisMin = Math.min.apply(Math, r);
+            overallMax = Math.max(overallMax, thisMax);
+            overallMin = Math.min(overallMin, thisMin);
+        }
+
+        if(overallMax == -Number.MAX_VALUE) overallMax = 1.0;
+        if(overallMin == Number.MAX_VALUE) overallMin = 0.0;
+
+        var plot = $.plot(chart,
+            toPlot, {
+                series: {
+                    lines: {
+                        show: true,
+                        lineWidth: 2
+                    }
+                    // points: {show: true},
+                    // shadowSize: 2
+                },
+                grid: {
+                    hoverable: true,
+                    clickable: true,
+                    tickColor: "#dddddd",
+                    borderWidth: 0
+                },
+                yaxis: {min: overallMin, max: overallMax},
+                colors: ["#FA5833", "#2FABE9"]
+            });
+
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltipRatioChart">' + contents + '</div>').css( {
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#updateRatioChart").fadeIn(200);
+        }
+
+        var previousPoint = null;
+        chart.bind("plothover", function (event, pos, item) {
+            $("#xRatio").text(pos.x.toFixed(0));
+            $("#yRatio").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltipRatioChart").remove();
+                    var x = item.datapoint[0].toFixed(0),
+                        y = item.datapoint[1].toFixed(5);
+
+                    showTooltip(item.pageX - chart.offset().left,
+                        item.pageY - chart.offset().top,
+                        "(" + x + ", " + y + ")");
+                }
+            }
+            else {
+                $("#tooltipRatioChart").remove();
+                previousPoint = null;
+            }
+        });
+    }
 
 }
 
