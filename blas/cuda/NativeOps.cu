@@ -18,6 +18,7 @@ int element_threshold = 32;
 #include <loops/scalar.h>
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>
+#include <loops/random.h>
 #include <thread>
 #include <map>
 #include <cuda.h>
@@ -33,7 +34,7 @@ int element_threshold = 32;
 #include <loops/aggregates.h>
 //#include <sys/time.h>
 
-
+#include <curand.h>
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -6087,14 +6088,32 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 
 
 Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
-    // TODO: to be implemented
+    unsigned long long *ptrBuf = reinterpret_cast<unsigned long long *>(ptrToBuffer);
+    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrBuf);
+
+    curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_PSEUDO_DEFAULT);
+
+    curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
+
+    curandGenerateLongLong(buffer->getGenerator(), ptrBuf, bufferSize);
 }
 
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
-    // TODO:: to be implemented
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrBuffer);
+
+    curandDestroyGenerator(buffer->getGenerator());
+
+    delete buffer;
 }
 
 void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
-	// TODO:: to be implemented
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+
+    buffer->setSeed(seed);
+    buffer->setOffset(0);
+
+    curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
+
+    curandGenerateLongLong(buffer->getGenerator(), (unsigned long long *) buffer->getBuffer(), buffer->getSize());
 }

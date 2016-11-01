@@ -15,7 +15,29 @@
 namespace nd4j {
     namespace random {
 
+#ifdef __CUDACC__
+        class CudaManaged {
+        private:
+
+        public:
+            void *operator new(size_t len) {
+                void *ptr;
+                cudaMallocManaged(&ptr, len);
+                cudaDeviceSynchronize();
+                return ptr;
+             }
+
+            void operator delete(void *ptr) {
+                cudaDeviceSynchronize();
+                cudaFree(ptr);
+            }
+        };
+#endif
+#ifdef __CUDACC__
+        class RandomBuffer : public CudaManaged {
+#else
         class RandomBuffer {
+#endif
         private:
             long size;
             uint64_t *buffer;
@@ -24,6 +46,10 @@ namespace nd4j {
             long position;
             long generation;
             long currentPosition;
+
+#ifdef __CUDACC__
+            curandGenerator_t gen;
+#endif
 
             std::mutex mtx;
 
@@ -34,8 +60,8 @@ namespace nd4j {
              * @param size
              * @return
              */
-            RandomBuffer(long seed, long size, long *buffer) {
-                this->buffer = (uint64_t *) buffer;
+            RandomBuffer(long seed, long size, uint64_t *buffer) {
+                this->buffer = buffer;
                 this->seed = seed;
                 this->size = size;
                 this->generation = 1;
@@ -46,6 +72,16 @@ namespace nd4j {
             uint64_t *getBuffer() {
                 return this->buffer;
             }
+
+#ifdef __CUDACC__
+            curandGenerator_t *getGeneratorPointer() {
+                return &gen;
+            }
+
+            curandGenerator_t getGenerator() {
+                return gen;
+            }
+#endif
 
             long getSize() {
                 return this->size;
