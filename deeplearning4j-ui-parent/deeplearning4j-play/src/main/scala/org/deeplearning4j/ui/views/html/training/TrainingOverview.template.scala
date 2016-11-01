@@ -174,8 +174,8 @@ Seq[Any](format.raw/*1.40*/("""
                                 <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
                             </div>
                             <div class="box-content">
-                                <div id="sincos"  class="center" style="height:345px;" ></div>
-                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                                <div id="updateRatioChart"  class="center" style="height:345px;" ></div>
+                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
                         <!--End Ratio Table -->
@@ -269,10 +269,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 19:42:26 AEDT 2016
+                  DATE: Tue Nov 01 21:34:27 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: fee46d383baa81c4d64d06fedb3f5275e1c3c553
-                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|12915->12048|12945->12049|13000->12075|13072->12118|13102->12119|13281->12269|13311->12270|13366->12296|13438->12339|13468->12340
+                  HASH: 3c6b75ab11c71c518d537bb4adec0f561ccda9a6
+                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|12935->12068|12965->12069|13020->12095|13092->12138|13122->12139|13301->12289|13331->12290|13386->12316|13458->12359|13488->12360
                   LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|237->213|237->213|238->214|239->215|239->215|244->220|244->220|245->221|246->222|246->222
                   -- GENERATED --
               */
