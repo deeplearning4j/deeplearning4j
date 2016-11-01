@@ -79,6 +79,15 @@ Seq[Any](format.raw/*1.40*/("""
 						<li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> Model</span></a></li>
 						<li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> System</span></a></li>
 						<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> User Guide</span></a></li>
+                        <li>
+                            <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+                            <ul>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+                            </ul>
+                        </li>
 					</ul>
 				</div>
 			</div>
@@ -111,101 +120,62 @@ Seq[Any](format.raw/*1.40*/("""
 							<div id="myTabContent" class="tab-content">
 								<div class="tab-pane active" id="machine1">
 
-									<!-- Start Memory Utilization -->
+									<!-- Memory Utilization -->
 									<div class="row-fluid">
 
 										<div class="span8 widget blue" onTablet="span7" onDesktop="span8">
-											<h1>JVM Memory Utilization</h1>
-											<div id="stats-chart2"  style="height:282px" ></div>
+											<h1>"""),_display_(/*103.17*/i18n/*103.21*/.getMessage("train.system.chart.jvmTitle")),format.raw/*103.63*/("""</h1>
+											<div id="jvm-memory-chart"  style="height:282px" ></div>
 										</div>
 
-										<!-- Start System Statistics -->
+										<!-- System Statistics -->
 										<div class="sparkLineStats span4 widget green" onTablet="span5" onDesktop="span4">
-											<h1>Hardware Information</h1>
+											<h1>"""),_display_(/*109.17*/i18n/*109.21*/.getMessage("train.system.table.hardwareTitle")),format.raw/*109.68*/("""</h1>
 											<ul class="unstyled">
 												<li>
 													JVM Current Memory:
-													<span class="number">699400192</span>
+													<span class="number" id="currentBytesJVM">Loading...</span>
 												</li>
 												<li>
 													JVM Max Memory:
-													<span class="number">1908932608</span>
+													<span class="number" id="maxBytesJVM">Loading...</span>
 												</li>
 												<li>
 													Off-Head Current Memory:
-													<span class="number">498762</span>
+													<span class="number" id="currentBytesOffHeap">Loading...</span>
 												</li>
 												<li>
 													Off-Heap Max Memory:
-													<span class="number">1908932608</span>
+													<span class="number" id="maxBytesOffHeap">Loading...</span>
 												</li>
 												<li>
 													JVM Available Processors:
-													<span class="number">4</span>
+													<span class="number" id="jvmAvailableProcessors">Loading...</span>
 												</li>
 												<li>
-													# Compute Devices: <span class="number">0</span>
+													# Compute Devices:
+													<span class="number" id="nComputeDevices">Loading...</span>
 												</li>
 											</ul>
 										</div>
 									</div>
+
 									<div class="row-fluid">
+										<!-- Off Heap Memory Utlization Chart -->
 										<div class="span8 widget yellow" onTablet="span7" onDesktop="span8">
-											<h1>Off-Heap Memory Utilization</h1>
-											<div id="stats-chart2"  style="height:282px" ></div>
-										</div>
-
-										<div class="row-fluid hideInIE8 circleStats">
-
-											<div class="span2">
-												<div class="circleStatsItemBox pink">
-													<div class="header">JVM Memory</div>
-													<span class="percent">percent</span>
-													<div class="circleStat"><input type="text" value="58" class="whiteCircle" /></div>
-													<div class="footer">
-												<span class="count">
-													<span class="number">699400192</span>
-													<span class="unit">Bytes</span>
-												</span>
-														<span class="sep"> / </span>
-														<span class="value">
-													<span class="number">699400192</span>
-													<span class="unit">Bytes</span>
-												</span>
-													</div>
-												</div>
-											</div>
-
-											<div class="span2">
-												<div class="circleStatsItemBox red">
-													<div class="header">Off-Heap Memory</div>
-													<span class="percent">percent</span>
-													<div class="circleStat"><input type="text" value="78" class="whiteCircle" /></div>
-													<div class="footer">
-												<span class="count">
-													<span class="number">498762</span>
-													<span class="unit">Bytes</span>
-												</span>
-														<span class="sep"> / </span>
-														<span class="value">
-													<span class="number">1908932608</span>
-													<span class="unit">Bytes</span>
-												</span>
-													</div>
-												</div>
-											</div>
-
+											<h1>"""),_display_(/*142.17*/i18n/*142.21*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*142.67*/("""</h1>
+											<div id="off-heap-memory-chart"  style="height:282px" ></div>
 										</div>
 
 									</div>
 
-									<!-- Start Charts -->
+									<!-- Charts -->
 									<div class="row-fluid">
 
-										<!-- Start Software Information -->
+										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>Software Information</b></h2>
+												<h2><b>"""),_display_(/*154.21*/i18n/*154.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*154.72*/("""</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -222,13 +192,13 @@ Seq[Any](format.raw/*1.40*/("""
 													</thead>
 													<tbody>
 													<tr>
-														<td>Mac OS X</td>
-														<td>Edwards-Air</td>
-														<td>x86_64</td>
-														<td>Java HotSpot(TM) 64-Bit Server VM</td>
-														<td>1.8.0_74</td>
-														<td>org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory</td>
-														<td>FLOAT</td>
+														<td id="OS">Loading...</td>
+														<td id="hostName">Loading...</td>
+														<td id="OSArchitecture">Loading...</td>
+														<td id="jvmName">Loading...</td>
+														<td id="jvmVersion">Loading...</td>
+														<td id="nd4jBackend">Loading...</td>
+														<td id="nd4jDataType">Loading...</td>
 													</tr>
 													</tbody>
 												</table>
@@ -236,8 +206,8 @@ Seq[Any](format.raw/*1.40*/("""
 										</div>
 
 									</div>
-									<!--End System Tab -->
-									<!--Start GPU Tab -->
+
+									<!-- GPU Chart -->
 									<div class="row-fluid">
 										<div class="box span12">
 											<div class="box-header">
@@ -247,33 +217,32 @@ Seq[Any](format.raw/*1.40*/("""
 												<table class="table table-striped">
 													<thead>
 													<tr>
-														<th>OS</th>
-														<th>Host Name</th>
-														<th>OS Architecture</th>
-														<th>JVM Name</th>
-														<th>JVM Version</th>
-														<th>ND4J Backend</th>
-														<th>ND4J Data Type</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
+														<th>?</th>
 													</tr>
 													</thead>
 													<tbody>
 													<tr>
-														<td>Mac OS X</td>
-														<td>Edwards-Air</td>
-														<td>x86_64</td>
-														<td>Java HotSpot(TM) 64-Bit Server VM</td>
-														<td>1.8.0_74</td>
-														<td>org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory</td>
-														<td>FLOAT</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
+														<td id="gpuPlaceholder">Loading...</td>
 													</tr>
 													</tbody>
 												</table>
 											</div>
 										</div>
 									</div>
-									<!--End GPU Tab -->
 								</div>
-								<!-- End Machine 1 -->
+								<!-- End System Tab -->
 								<div class="tab-pane" id="machine2">
 									<p>
 										Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
@@ -324,8 +293,26 @@ Seq[Any](format.raw/*1.40*/("""
 		<script src="/assets/js/jquery.sparkline.min.js"></script>
 		<script src="/assets/js/counter.js"></script>
 		<script src="/assets/js/retina.js"></script>
-		<script src="/assets/js/custom.js"></script>
-		<!-- End JavaScript-->
+		<script src="/assets/js/train/system.js"></script> <!-- Charts and tables are generated here! -->
+
+		<!-- Execute once on page load -->
+		<script>
+            $(document).ready(function()"""),format.raw/*276.41*/("""{"""),format.raw/*276.42*/("""
+                """),format.raw/*277.17*/("""renderSystemInformation();
+                renderJVMMemoryChart();
+                renderOffHeapMemoryChart();
+            """),format.raw/*280.13*/("""}"""),format.raw/*280.14*/(""");
+        </script>
+
+		 <!--Execute periodically (every 2 sec) -->
+		<script>
+            setInterval(function()"""),format.raw/*285.35*/("""{"""),format.raw/*285.36*/("""
+                """),format.raw/*286.17*/("""renderSystemInformation()
+                renderJVMMemoryChart()
+                renderOffHeapMemoryChart()
+            """),format.raw/*289.13*/("""}"""),format.raw/*289.14*/(""", 2000);
+        </script>
+		 <!--End JavaScript-->
 
 </body>
 </html>
@@ -349,11 +336,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Fri Oct 28 00:31:41 PDT 2016
-                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 04f9541aecbe1e558e189639b62308858124c657
-                  MATRIX: 600->1|733->39|760->40
-                  LINES: 20->1|25->1|26->2
+                  DATE: Tue Nov 01 19:33:45 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
+                  HASH: 9c8c4ba29f7dd5ed14254ca44a9652eff0e12167
+                  MATRIX: 600->1|733->39|761->41|5247->4499|5261->4503|5325->4545|5597->4789|5611->4793|5680->4840|6871->6003|6885->6007|6953->6053|7297->6369|7311->6373|7380->6420|13154->12165|13184->12166|13231->12184|13386->12310|13416->12311|13563->12429|13593->12430|13640->12448|13792->12571|13822->12572
+                  LINES: 20->1|25->1|26->2|127->103|127->103|127->103|133->109|133->109|133->109|166->142|166->142|166->142|178->154|178->154|178->154|300->276|300->276|301->277|304->280|304->280|309->285|309->285|310->286|313->289|313->289
                   -- GENERATED --
               */
           

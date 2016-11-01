@@ -23,7 +23,7 @@
 	<![endif]-->
 
             <!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
 	<![endif]-->
 
     </head>
@@ -211,16 +211,14 @@
             <!-- Execute once on page load -->
             <script>
                     $(document).ready(function(){
-                        renderScoreChart();
-                        renderPerformanceTable();
+                        renderOverviewPage();
                     });
             </script>
 
             <!-- Execute periodically (every 2 sec) -->
             <script>
                     setInterval(function(){
-                        renderScoreChart()
-                        renderPerformanceTable()
+                        renderOverviewPage();
                     }, 2000);
             </script>
             <!-- End JavaScript-->

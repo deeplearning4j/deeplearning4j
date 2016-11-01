@@ -47,7 +47,7 @@ Seq[Any](format.raw/*1.40*/("""
 	<![endif]-->
 
             <!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
 	<![endif]-->
 
     </head>
@@ -75,14 +75,19 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">
-                                Overview</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">
-                                Model</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">
-                                System</span></a></li>
-                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet">
-                                User Guide</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">Overview</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">Model</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">System</span></a></li>
+                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet">User Guide</span></a></li>
+                            <li>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+                                <ul>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+                                </ul>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -96,14 +101,14 @@ Seq[Any](format.raw/*1.40*/("""
                     </div>
                 </noscript>
 
-                    <!-- Start Content -->
+                <!-- Start Score Chart-->
                 <div id="content" class="span10">
 
                     <div class="row-fluid">
 
-                        <div class="box">
+                        <div class="box span8">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*82.41*/i18n/*82.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*82.91*/("""</b></h2>
+                                <h2><b>"""),_display_(/*87.41*/i18n/*87.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*87.91*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
@@ -111,49 +116,87 @@ Seq[Any](format.raw/*1.40*/("""
                                     0</span></p>
                             </div>
                         </div>
-
-                    </div>
-
-                    <div class="row-fluid">
-                        <div class="box span12">
+                        <!-- End Score Chart-->
+                        <!-- Start Model Table-->
+                        <div class="box span4">
                             <div class="box-header">
-                                <h2><b>Model Performance</b></h2>
+                                <h2><b>"""),_display_(/*99.41*/i18n/*99.45*/.getMessage("train.overview.perftable.title")),format.raw/*99.90*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
-                                    <thead>
                                     <tr>
-                                        <th>Model Type</th>
-                                        <th>nLayers</th>
-                                        <th>nParams</th>
-                                        <th>Start Time</th>
-                                        <th>Total Run Time</th>
-                                        <th>Last Update</th>
-                                        <th>Total Param Updates</th>
-                                        <th>Updates Per Second</th>
-                                        <th>Examples Per Second</th>
+                                        <td>Model Type</td>
+                                        <td id="modelType">Loading...</td>
                                     </tr>
-                                    </thead>
-                                    <tbody>
                                     <tr>
-                                        <td>MultiLayerNetwork</td>
-                                        <td>2</td>
-                                        <td>35</td>
-                                        <td>01:01:01</td>
-                                        <td>1:23</td>
-                                        <td>1477520530145</td>
-                                        <td>100</td>
-                                        <td>8.474575996398926</td>
-                                        <td>1271.1864013671875</td>
+                                        <td>nLayers</td>
+                                        <td id="nLayers">Loading...</td>
                                     </tr>
-                                    </tbody>
+                                    <tr>
+                                        <td>nParams</td>
+                                        <td id="nParams">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Start Time</td>
+                                        <td id="startTime">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Run Time</td>
+                                        <td id="totalRuntime">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Last Update</td>
+                                        <td id="lastUpdate">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Param Updates</td>
+                                        <td id="totalParamUpdates">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Updates Per Second</td>
+                                        <td id="updatesPerSec">Loading...</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Examples Per Second</td>
+                                        <td id="examplesPerSec">Loading...</td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>
+                        <!--End Model Table -->
                     </div>
-                    <!--End Table -->
 
-                    <!-- End Content -->
+
+                    <div class="row-fluid">
+                        <!--Start Ratio Table -->
+                        <div class="box span6">
+                            <div class="box-header">
+                                <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
+                            </div>
+                            <div class="box-content">
+                                <div id="sincos"  class="center" style="height:345px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                            </div>
+                        </div>
+                        <!--End Ratio Table -->
+                        <!--Start Variance Table -->
+                        <div class="box span6">
+                            <div class="box-header">
+                                <h2><b>Variances</b></h2>
+                            </div>
+                            <div class="box-content">
+                                <p class="stackControls center">
+                                    <input class="btn" type="button" value="Activations">
+                                    <input class="btn" type="button" value="Gradients">
+                                    <input class="btn" type="button" value="Updates">
+                                </p>
+                                <div id="sincos"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                            </div>
+                        </div>
+                        <!-- End Variance Table -->
+                    </div>
+
                 </div><!-- End Content Span10-->
             </div><!--End Row Fluid-->
 
@@ -187,19 +230,20 @@ Seq[Any](format.raw/*1.40*/("""
             <script src="/assets/js/jquery.sparkline.min.js"></script>
             <script src="/assets/js/counter.js"></script>
             <script src="/assets/js/retina.js"></script>
-            """),format.raw/*166.61*/("""
-            """),format.raw/*167.13*/("""<script src="/assets/js/train/overview.js"></script>    <!-- Charts are generated here! -->
+            <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
 
             <!-- Execute once on page load -->
             <script>
-                    $(document).ready(function()"""),format.raw/*171.49*/("""{"""),format.raw/*171.50*/("""
-                        """),format.raw/*172.25*/("""renderScoreChart();
-                    """),format.raw/*173.21*/("""}"""),format.raw/*173.22*/(""");
+                    $(document).ready(function()"""),format.raw/*213.49*/("""{"""),format.raw/*213.50*/("""
+                        """),format.raw/*214.25*/("""renderOverviewPage();
+                    """),format.raw/*215.21*/("""}"""),format.raw/*215.22*/(""");
             </script>
 
             <!-- Execute periodically (every 2 sec) -->
             <script>
-                    setTimeout(renderScoreChart,2000);
+                    setInterval(function()"""),format.raw/*220.43*/("""{"""),format.raw/*220.44*/("""
+                        """),format.raw/*221.25*/("""renderOverviewPage();
+                    """),format.raw/*222.21*/("""}"""),format.raw/*222.22*/(""", 2000);
             </script>
             <!-- End JavaScript-->
 
@@ -225,11 +269,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Fri Oct 28 00:31:41 PDT 2016
-                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 6d061660b8105c1d8dab12430e214dcc661e0c05
-                  MATRIX: 604->1|737->39|764->40|4499->3748|4512->3752|4579->3798|9230->8468|9272->8481|9510->8690|9540->8691|9594->8716|9663->8756|9693->8757
-                  LINES: 20->1|25->1|26->2|106->82|106->82|106->82|190->166|191->167|195->171|195->171|196->172|197->173|197->173
+                  DATE: Tue Nov 01 19:42:26 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
+                  HASH: fee46d383baa81c4d64d06fedb3f5275e1c3c553
+                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|12915->12048|12945->12049|13000->12075|13072->12118|13102->12119|13281->12269|13311->12270|13366->12296|13438->12339|13468->12340
+                  LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|237->213|237->213|238->214|239->215|239->215|244->220|244->220|245->221|246->222|246->222
                   -- GENERATED --
               */
           
