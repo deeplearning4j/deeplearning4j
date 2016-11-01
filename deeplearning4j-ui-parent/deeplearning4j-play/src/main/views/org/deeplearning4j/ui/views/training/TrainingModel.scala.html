@@ -105,20 +105,22 @@
 								<tr>
 									<th>Name</th>
 									<th>Type</th>
-									<th>Inputs</th>
-									<th>Outputs</th>
+									<th>Input Size</th>
+									<th>Output Size</th>
+									<th># Parameters</th>
 									<th>Activation Function</th>
-									<th>Learning Rate</th>
+									<th>Loss Function</th>
 								</tr>
 								</thead>
 								<tbody>
 								<tr>
-									<td>Input</td>
-									<td>Dense</td>
-									<td>800</td>
-									<td>500</td>
-									<td>relu</td>
-									<td>0.01</td>
+									<td id="layerName">Loading...</td>
+									<td id="layerType">Loading...</td>
+									<td id="inputSize">Loading...</td>
+									<td id="outputSize">Loading...</td>
+									<td id="nParams">Loading...</td>
+									<td id="activationFunction">Loading...</td>
+									<td id="lossFunction">Loading...</td>
 								</tr>
 								</tbody>
 							</table>
@@ -130,8 +132,8 @@
 							<h2><b>Mean Magnitudes</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="mean-mag-chart"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -217,19 +219,35 @@
 		<script src="/assets/js/model-layers.js"></script>
 		<script src="/assets/js/dagre.min.js"></script>
 		<script src="/assets/js/cytoscape-dagre.js"></script>
-		<script src="/assets/js/cytoscape-toolbar.js"></script>
-		<!-- End JavaScript-->
-		<script type="text/javascript">
-		$(document).ready(function() {
-			var option = '1';
-			var url = window.location.href;
-			option = url.match(/layer=(.*)/)[1];
-			showDiv(option);
-		});
-		function showDiv(option) {
-			$('#0').hide();
-			$('#' + option).show();
-		}
+		<script src="/assets/js/train/model.js"></script>    <!-- Charts and tables are generated here! -->
+
+		<!-- Execute once on page load -->
+		<script>
+				$(document).ready(function(){
+					renderLayerTable();
+					renderMeanMagChart();
+				});
 		</script>
+
+		<!-- Execute periodically (every 2 sec) -->
+		<!--<script>-->
+				<!--setInterval(function(){-->
+					<!--renderLayerTable() -->
+				<!--}, 2000);-->
+		<!--</script>-->
+
+		<!--<script type="text/javascript">-->
+		<!--$(document).ready(function() {-->
+			<!--var option = '1';-->
+			<!--var url = window.location.href;-->
+			<!--option = url.match(/layer=(.*)/)[1];-->
+			<!--showDiv(option);-->
+		<!--});-->
+		<!--function showDiv(option) {-->
+			<!--$('#0').hide();-->
+			<!--$('#' + option).show();-->
+		<!--}-->
+		<!--</script>-->
+		<!-- End JavaScript-->
 </body>
 </html>
