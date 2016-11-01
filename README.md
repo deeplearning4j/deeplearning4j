@@ -9,7 +9,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
-The most recent stable release in Maven Central is `0.6.0`, and the current master is `0.6.1-SNAPSHOT`. For more on working with snapshots, see this [page](http://deeplearning4j.org/snapshot). 
+The most recent stable release in Maven Central is `0.6.0`, and the current master is `0.6.1-SNAPSHOT`. 
 
 ---
 ## Using Deeplearning4j
