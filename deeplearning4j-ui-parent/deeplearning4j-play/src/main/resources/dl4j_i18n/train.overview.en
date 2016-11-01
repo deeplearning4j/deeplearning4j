@@ -14,5 +14,3 @@ train.system.table.softwareTitle=Software Information
 train.system.table.hardwareTitle=Hardware Information
 train.system.chart.jvmTitle=JVM Memory Utilization
 train.system.chart.offHeapTitle=Off-Heap Memory Utilization
-train.system.statbox.jvmTitle=JVM Memory
-train.system.statbox.offHeapTitle=Off-Heap Memory
