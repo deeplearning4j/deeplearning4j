@@ -79,6 +79,15 @@ Seq[Any](format.raw/*1.40*/("""
 						<li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> Model</span></a></li>
 						<li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> System</span></a></li>
 						<li class="active"><a href="javascript:void(0);"><i class="icon-star"></i><span class="hidden-tablet"> User Guide</span></a></li>
+						<li>
+							<a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+							<ul>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+							</ul>
+						</li>
 					</ul>
 				</div>
 			</div>
@@ -304,10 +313,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Oct 23 22:17:19 PDT 2016
-                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: 50edc2ea942572ef82ae35e93a9d4a4caf6d7f28
-                  MATRIX: 596->1|729->39|756->40
+                  DATE: Tue Nov 01 19:33:45 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  HASH: ff6c6fd968ea6d0709fc08c7bcabc3113d62faa9
+                  MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
               */
