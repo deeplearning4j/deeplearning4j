@@ -37,7 +37,7 @@ import java.util.Arrays;
  * be separated and run through subsequent layers.
  *
  * Works similarly to SubsetVertex, except on dimension 0 of the input. stackSize is
- * explicitly defined by the user to properly calcualte an intervalSize.
+ * explicitly defined by the user to properly calculate an intervalSize.
  *
  * @author Justin Long (crockpotveggies)
  */
