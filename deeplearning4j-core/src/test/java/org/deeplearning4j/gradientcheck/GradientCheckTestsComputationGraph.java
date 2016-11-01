@@ -438,7 +438,7 @@ public class GradientCheckTestsComputationGraph {
             .graphBuilder()
             .addInputs("input1","input2","input3")
             .addVertex("stack1", new StackVertex(), "input1","input2","input3")
-            .addLayer("l1", new DenseLayer.Builder().nIn(4*3).nOut(5*3).activation("tanh").build(), "stack1")
+            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "stack1")
             .addVertex("unstack0", new UnstackVertex(0,3), "l1")
             .addVertex("unstack1", new UnstackVertex(1,3), "l1")
             .addVertex("unstack2", new UnstackVertex(2,3), "l1")
@@ -453,7 +453,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        int numParams = (3*(4*5+5)) + (3*(4*5+5)) + (3*(10*3+3));
+        int numParams = (4*5+5);
         assertEquals(numParams, graph.numParams());
 
         Nd4j.getRandom().setSeed(12345);
