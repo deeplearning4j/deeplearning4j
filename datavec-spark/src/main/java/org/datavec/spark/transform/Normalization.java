@@ -75,7 +75,7 @@ public class Normalization {
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data, double min, double max) {
         DataFrame frame = DataFrames.toDataFrame(schema, data);
-        return DataFrames.toRecords(normalize(frame, min, max, Collections.<String>emptyList())).getSecond();
+        return DataFrames.toRecords(normalize(frame, min, max, Collections.emptyList())).getSecond();
     }
 
 
@@ -86,7 +86,7 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame) {
-        return normalize(dataFrame, 0, 1, Collections.<String>emptyList());
+        return normalize(dataFrame, 0, 1, Collections.emptyList());
     }
 
     /**
@@ -97,7 +97,7 @@ public class Normalization {
      * @return the normalized ata
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data) {
-        return normalize(schema, data, 0, 1, Collections.<String>emptyList());
+        return normalize(schema, data, 0, 1, Collections.emptyList());
     }
 
 
@@ -109,18 +109,21 @@ public class Normalization {
      * rdd
      */
     public static DataFrame zeromeanUnitVariance(DataFrame frame, List<String> skipColumns) {
-        String[] columnNames = frame.columns();
-        for (String columnName : columnNames) {
-            if (skipColumns.contains(columnName)) continue;
-
-            DataFrame meanStd = frame.select(columnName).agg(mean(columnName), stddev(columnName));
-            Row r = meanStd.collect()[0];
-            double mean = ((Number) r.get(0)).doubleValue();
-            double std = ((Number) r.get(1)).doubleValue();
+        List<String> columnsList = DataFrames.toList(frame.columns());
+        columnsList.removeAll(skipColumns);
+        String[] columnNames = DataFrames.toArray(columnsList);
+        //first row is std second row is mean, each column in a row is for a particular column
+        List<Row> stdDevMean = stdDevMeanColumns(frame, frame.columns());
+        for(int i = 0; i < stdDevMean.size(); i++) {
+            String columnName = columnNames[i];
+            double std = ((Number) stdDevMean.get(0).get(i)).doubleValue();
+            double mean = ((Number) stdDevMean.get(1).get(i)).doubleValue();
             if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
 
             frame = frame.withColumn(columnName, frame.col(columnName).minus(mean).divide(std));
         }
+
+
 
         return frame;
     }
@@ -211,14 +214,16 @@ public class Normalization {
     }
 
     /**
-     * Returns the standard deviation and mean of the given columns.
+     * Returns the standard deviation
+     * and mean of the given columns
      * The list returned is a list of size 2 where each row
-     * @param data the data to get the max for
+     * represents the standard deviation of each column and the mean of each column
+     * @param data the data to get the standard deviation and mean for for
      * @param columns the columns to get the
      * @return
      */
     public static List<Row> stdDevMeanColumns(DataFrame data,String...columns) {
-        return aggregate(data,columns,new String[]{"mean","stddev"});
+        return aggregate(data,columns,new String[]{"stddev","mean"});
     }
 
     /**
@@ -290,21 +295,22 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame, double min, double max, List<String> skipColumns) {
-        String[] columnNames = dataFrame.columns();
-        for (String columnName : columnNames) {
-            if (skipColumns.contains(columnName))
-                continue;
-            DataFrame minMax = dataFrame.select(columnName).agg(min(columnName), max(columnName));
-            Row r = minMax.collect()[0];
-            double dMin = ((Number) r.get(0)).doubleValue();
-            double dMax = ((Number) r.get(1)).doubleValue();
-
+        List<String> columnsList = DataFrames.toList(dataFrame.columns());
+        columnsList.removeAll(skipColumns);
+        String[] columnNames = DataFrames.toArray(columnsList);
+        //first row is min second row is max, each column in a rowi s for a particular column
+        List<Row> minMax = minMaxColumns(dataFrame, dataFrame.columns());
+        for(int i = 0; i < columnNames.length; i++) {
+            String columnName = columnNames[i];
+            double dMin = ((Number) minMax.get(0).get(i)).doubleValue();
+            double dMax = ((Number) minMax.get(1).get(i)).doubleValue();
             double maxSubMin = dMax - dMin;
             if (maxSubMin == 0) maxSubMin = 1;
 
             Column newCol = dataFrame.col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);
             dataFrame = dataFrame.withColumn(columnName, newCol);
         }
+
 
         return dataFrame;
     }
