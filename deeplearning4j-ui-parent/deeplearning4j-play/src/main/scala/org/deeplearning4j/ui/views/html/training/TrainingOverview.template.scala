@@ -183,15 +183,22 @@ Seq[Any](format.raw/*1.40*/("""
                         <div class="box span6">
                             <div class="box-header">
                                 <h2><b>Variances</b></h2>
+                                <div style="float: right">
+                                    <p class="stackControls center">
+                                        <input class="btn btn-small" type="button" value="Activations">
+                                        <input class="btn btn-small" type="button" value="Gradients">
+                                        <input class="btn btn-small" type="button" value="Updates">
+                                    </p>
+                                </div>
                             </div>
                             <div class="box-content">
-                                <p class="stackControls center">
-                                    <input class="btn" type="button" value="Activations">
-                                    <input class="btn" type="button" value="Gradients">
-                                    <input class="btn" type="button" value="Updates">
-                                </p>
-                                <div id="sincos"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                                """),format.raw/*171.69*/("""
+                                    """),format.raw/*172.104*/("""
+                                    """),format.raw/*173.102*/("""
+                                    """),format.raw/*174.100*/("""
+                                """),format.raw/*175.41*/("""
+                                """),format.raw/*176.33*/("""<div id="varianceChart"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Score:</b> <span id="yVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->
@@ -234,16 +241,16 @@ Seq[Any](format.raw/*1.40*/("""
 
             <!-- Execute once on page load -->
             <script>
-                    $(document).ready(function()"""),format.raw/*213.49*/("""{"""),format.raw/*213.50*/("""
-                        """),format.raw/*214.25*/("""renderOverviewPage();
-                    """),format.raw/*215.21*/("""}"""),format.raw/*215.22*/(""");
+                    $(document).ready(function()"""),format.raw/*220.49*/("""{"""),format.raw/*220.50*/("""
+                        """),format.raw/*221.25*/("""renderOverviewPage();
+                    """),format.raw/*222.21*/("""}"""),format.raw/*222.22*/(""");
             </script>
 
             <!-- Execute periodically (every 2 sec) -->
             <script>
-                    setInterval(function()"""),format.raw/*220.43*/("""{"""),format.raw/*220.44*/("""
-                        """),format.raw/*221.25*/("""renderOverviewPage();
-                    """),format.raw/*222.21*/("""}"""),format.raw/*222.22*/(""", 2000);
+                    setInterval(function()"""),format.raw/*227.43*/("""{"""),format.raw/*227.44*/("""
+                        """),format.raw/*228.25*/("""renderOverviewPage();
+                    """),format.raw/*229.21*/("""}"""),format.raw/*229.22*/(""", 2000);
             </script>
             <!-- End JavaScript-->
 
@@ -269,11 +276,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 21:34:27 AEDT 2016
+                  DATE: Tue Nov 01 22:03:58 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 3c6b75ab11c71c518d537bb4adec0f561ccda9a6
-                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|12935->12068|12965->12069|13020->12095|13092->12138|13122->12139|13301->12289|13331->12290|13386->12316|13458->12359|13488->12360
-                  LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|237->213|237->213|238->214|239->215|239->215|244->220|244->220|245->221|246->222|246->222
+                  HASH: 67e777f2afdeef4c34ed962eb69afae4c4b33c04
+                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|10380->9549|10448->9654|10516->9757|10584->9858|10647->9900|10710->9934|13467->12662|13497->12663|13552->12689|13624->12732|13654->12733|13833->12883|13863->12884|13918->12910|13990->12953|14020->12954
+                  LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|195->171|196->172|197->173|198->174|199->175|200->176|244->220|244->220|245->221|246->222|246->222|251->227|251->227|252->228|253->229|253->229
                   -- GENERATED --
               */
           

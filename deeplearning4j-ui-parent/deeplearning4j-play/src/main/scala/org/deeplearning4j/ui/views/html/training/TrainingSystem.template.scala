@@ -43,11 +43,11 @@ Seq[Any](format.raw/*1.40*/("""
 	<!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
 	<!--[if lt IE 9]>
 	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet">
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
 	<![endif]-->
 
 	<!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
 	<![endif]-->
 
 </head>
@@ -298,19 +298,15 @@ Seq[Any](format.raw/*1.40*/("""
 		<!-- Execute once on page load -->
 		<script>
             $(document).ready(function()"""),format.raw/*276.41*/("""{"""),format.raw/*276.42*/("""
-                """),format.raw/*277.17*/("""renderSystemInformation();
-                renderJVMMemoryChart();
-                renderOffHeapMemoryChart();
-            """),format.raw/*280.13*/("""}"""),format.raw/*280.14*/(""");
+				"""),format.raw/*277.5*/("""renderSystemPage();
+            """),format.raw/*278.13*/("""}"""),format.raw/*278.14*/(""");
         </script>
 
 		 <!--Execute periodically (every 2 sec) -->
 		<script>
-            setInterval(function()"""),format.raw/*285.35*/("""{"""),format.raw/*285.36*/("""
-                """),format.raw/*286.17*/("""renderSystemInformation()
-                renderJVMMemoryChart()
-                renderOffHeapMemoryChart()
-            """),format.raw/*289.13*/("""}"""),format.raw/*289.14*/(""", 2000);
+            setInterval(function()"""),format.raw/*283.35*/("""{"""),format.raw/*283.36*/("""
+                """),format.raw/*284.17*/("""renderSystemPage();
+            """),format.raw/*285.13*/("""}"""),format.raw/*285.14*/(""", 2000);
         </script>
 		 <!--End JavaScript-->
 
@@ -336,11 +332,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 19:33:45 AEDT 2016
+                  DATE: Tue Nov 01 23:32:27 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 9c8c4ba29f7dd5ed14254ca44a9652eff0e12167
-                  MATRIX: 600->1|733->39|761->41|5247->4499|5261->4503|5325->4545|5597->4789|5611->4793|5680->4840|6871->6003|6885->6007|6953->6053|7297->6369|7311->6373|7380->6420|13154->12165|13184->12166|13231->12184|13386->12310|13416->12311|13563->12429|13593->12430|13640->12448|13792->12571|13822->12572
-                  LINES: 20->1|25->1|26->2|127->103|127->103|127->103|133->109|133->109|133->109|166->142|166->142|166->142|178->154|178->154|178->154|300->276|300->276|301->277|304->280|304->280|309->285|309->285|310->286|313->289|313->289
+                  HASH: 1b892b2e9756321b5a601105ef63f5b0dd2a6611
+                  MATRIX: 600->1|733->39|761->41|5249->4501|5263->4505|5327->4547|5599->4791|5613->4795|5682->4842|6873->6005|6887->6009|6955->6055|7299->6371|7313->6375|7382->6422|13156->12167|13186->12168|13220->12174|13282->12207|13312->12208|13459->12326|13489->12327|13536->12345|13598->12378|13628->12379
+                  LINES: 20->1|25->1|26->2|127->103|127->103|127->103|133->109|133->109|133->109|166->142|166->142|166->142|178->154|178->154|178->154|300->276|300->276|301->277|302->278|302->278|307->283|307->283|308->284|309->285|309->285
                   -- GENERATED --
               */
           
