@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -33,6 +34,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Justin Long (crockpotveggies)
  */
 public class L2Vertex extends GraphVertex {
+
+    public L2Vertex() {
+    }
 
     @Override
     public L2Vertex clone() {
@@ -57,7 +61,7 @@ public class L2Vertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx,null,null,null);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null);
     }
 
     @Override

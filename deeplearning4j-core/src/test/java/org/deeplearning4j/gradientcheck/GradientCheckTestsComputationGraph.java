@@ -439,9 +439,9 @@ public class GradientCheckTestsComputationGraph {
             .addInputs("input1","input2","input3")
             .addVertex("stack1", new StackVertex(), "input1","input2","input3")
             .addLayer("l1", new DenseLayer.Builder().nIn(4*3).nOut(5*3).activation("tanh").build(), "stack1")
-            .addVertex("unstack0", new UnstackVertex(0), "l1")
-            .addVertex("unstack1", new UnstackVertex(1), "l1")
-            .addVertex("unstack2", new UnstackVertex(2), "l1")
+            .addVertex("unstack0", new UnstackVertex(0,3), "l1")
+            .addVertex("unstack1", new UnstackVertex(1,3), "l1")
+            .addVertex("unstack2", new UnstackVertex(2,3), "l1")
             .addVertex("l2-1", new L2Vertex(), "unstack1", "unstack0") // x - x-
             .addVertex("l2-2", new L2Vertex(), "unstack1", "unstack2") // x - x+
             .addLayer("lossLayer", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
