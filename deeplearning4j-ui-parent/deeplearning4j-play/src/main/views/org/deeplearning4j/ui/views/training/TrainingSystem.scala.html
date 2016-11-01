@@ -100,13 +100,13 @@
 									<div class="row-fluid">
 
 										<div class="span8 widget blue" onTablet="span7" onDesktop="span8">
-											<h1>i18n.getMessage("train.system.chart.jvmTitle")</h1>
+											<h1>@i18n.getMessage("train.system.chart.jvmTitle")</h1>
 											<div id="jvm-memory-chart"  style="height:282px" ></div>
 										</div>
 
 										<!-- System Statistics -->
 										<div class="sparkLineStats span4 widget green" onTablet="span5" onDesktop="span4">
-											<h1>i18n.getMessage("train.system.table.hardwareTitle")</h1>
+											<h1>@i18n.getMessage("train.system.table.hardwareTitle")</h1>
 											<ul class="unstyled">
 												<li>
 													JVM Current Memory:
@@ -140,50 +140,7 @@
 										<!-- Off Heap Memory Utlization Chart -->
 										<div class="span8 widget yellow" onTablet="span7" onDesktop="span8">
 											<h1>@i18n.getMessage("train.system.chart.offHeapTitle")</h1>
-											<div id="offheap-chart"  style="height:282px" ></div>
-										</div>
-
-										<!-- Stat Box -->
-										<div class="row-fluid hideInIE8 circleStats">
-
-											<div class="span2">
-												<div class="circleStatsItemBox pink">
-													<div class="header">@i18n.getMessage("train.system.statbox.jvmTitle")</div>
-													<span class="percent">percent</span>
-													<div class="circleStat"><input type="text" value="58" class="whiteCircle" /></div>
-													<div class="footer">
-												<span class="count">
-													<span class="number" id="currentBytesJVM">Loading...</span>
-													<span class="unit">Bytes</span>
-												</span>
-														<span class="sep"> / </span>
-														<span class="value">
-													<span class="number" id="maxBytesJVM">Loading...</span>
-													<span class="unit">Bytes</span>
-												</span>
-													</div>
-												</div>
-											</div>
-
-											<div class="span2">
-												<div class="circleStatsItemBox red">
-													<div class="header">@i18n.getMessage("train.system.statbox.offHeapTitle")</div>
-													<span class="percent">percent</span>
-													<div class="circleStat"><input type="text" value="78" class="whiteCircle" /></div>
-													<div class="footer">
-												<span class="count">
-													<span class="number" id="currentBytesOffHeap">Loading...</span>
-													<span class="unit">Bytes</span>
-												</span>
-														<span class="sep"> / </span>
-														<span class="value">
-													<span class="number" id="maxBytesOffHeap">Loading...</span>
-													<span class="unit">Bytes</span>
-												</span>
-													</div>
-												</div>
-											</div>
-
+											<div id="off-heap-memory-chart"  style="height:282px" ></div>
 										</div>
 
 									</div>
@@ -194,7 +151,7 @@
 										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>@i18n.getMessage("train.system.software.title")</b></h2>
+												<h2><b>@i18n.getMessage("train.system.table.softwareTitle")</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -316,20 +273,22 @@
 
 		<!-- Execute once on page load -->
 		<script>
-                    $(document).ready(function(){
-                        renderSystemInformation();
-                        renderJVMMemoryChart();
-                    });
-            </script>
+            $(document).ready(function(){
+                renderSystemInformation();
+                renderJVMMemoryChart();
+                renderOffHeapMemoryChart();
+            });
+        </script>
 
-		<!-- Execute periodically (every 2 sec) -->
+		 <!--Execute periodically (every 2 sec) -->
 		<script>
-                    setInterval(function(){
-                        renderSystemInformation()
-                        renderJVMMemoryChart()
-                    }, 2000);
-            </script>
-		<!-- End JavaScript-->
+            setInterval(function(){
+                renderSystemInformation()
+                renderJVMMemoryChart()
+                renderOffHeapMemoryChart()
+            }, 2000);
+        </script>
+		 <!--End JavaScript-->
 
 </body>
 </html>
