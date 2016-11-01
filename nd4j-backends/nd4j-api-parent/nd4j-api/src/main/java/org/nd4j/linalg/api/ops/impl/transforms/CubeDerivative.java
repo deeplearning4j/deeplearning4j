@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -60,44 +61,43 @@ public class CubeDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-    	return null;
+    	throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
 
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
-
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override
     public float op(float origin, float other) {
-        return 0;
+        return (float)(3 * FastMath.pow(origin, 2));
     }
 
     @Override
     public double op(double origin, double other) {
-        return 0;
+        return 3 * FastMath.pow(origin, 2);
     }
 
     @Override
     public double op(double origin) {
-        return 0;
+        return 3 * FastMath.pow(origin, 2);
     }
 
     @Override
     public float op(float origin) {
-        return 0;
+        return (float)(3 * FastMath.pow(origin, 2));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return null;
+        throw new UnsupportedOperationException("Cube Derivative not supported on Complex Numbers");
     }
 
     @Override

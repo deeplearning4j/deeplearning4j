@@ -19,11 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Cube (x^3) elementwise function
@@ -67,42 +69,42 @@ public class Cube extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return null;
+        return ComplexUtil.pow(origin, 3);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return null;
+        return ComplexUtil.pow(origin, 3);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return null;
+        return ComplexUtil.pow(origin, 3);
     }
 
     @Override
     public float op(float origin, float other) {
-        return 0;
+        return (float) FastMath.pow(origin, 3);
     }
 
     @Override
     public double op(double origin, double other) {
-        return 0;
+        return FastMath.pow(origin, 3);
     }
 
     @Override
     public double op(double origin) {
-        return 0;
+        return FastMath.pow(origin, 3);
     }
 
     @Override
     public float op(float origin) {
-        return 0;
+        return (float) FastMath.pow(origin, 3);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return null;
+        return ComplexUtil.pow(origin, 3);
     }
 
     @Override
