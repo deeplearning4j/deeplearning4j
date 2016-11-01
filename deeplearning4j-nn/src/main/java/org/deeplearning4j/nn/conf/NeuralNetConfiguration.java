@@ -173,7 +173,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this(globalConfig,new HashMap<Integer, Builder>());
         }
 
-
         public ListBuilder backprop(boolean backprop) {
             this.backprop = backprop;
             return this;
