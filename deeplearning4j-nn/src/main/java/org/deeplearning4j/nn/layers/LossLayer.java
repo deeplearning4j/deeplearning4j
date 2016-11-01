@@ -20,18 +20,14 @@ package org.deeplearning4j.nn.layers;
 
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.Solver;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -41,9 +37,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -71,20 +65,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         super(conf, input);
     }
 
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret
-            = new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
-        ret.setListeners(iterationListeners);
-        ret.setIndex(layerIndex);
-        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
-        ret.setConf(conf);
-        return ret;
-    }
-
-    public ParamInitializer initializer() {
-        return EmptyParamInitializer.getInstance();
-    }
-
     /** Compute score after labels and input have been set.
      * @param fullNetworkL1 L1 regularization term for the entire network
      * @param fullNetworkL2 L2 regularization term for the entire network
@@ -98,7 +78,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+        INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -121,7 +101,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2){
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
@@ -137,7 +117,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         if(input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true);
+        INDArray preOut = input;
         Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
@@ -156,7 +136,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        return getGradientsAndDelta(preOutput2d(true));
+        return getGradientsAndDelta(input);
     }
 
 
@@ -434,11 +414,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }
-
-    protected INDArray preOutput2d(boolean training){
-        return preOutput(training);
-    }
-
 
     protected INDArray getLabels2d(){
         if(labels.rank() > 2) {
