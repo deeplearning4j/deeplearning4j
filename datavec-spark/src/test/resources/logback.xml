@@ -38,6 +38,7 @@
     <logger name="opennlp.uima.util" level="OFF" />
     <logger name="org.apache.uima" level="OFF" />
     <logger name="org.cleartk" level="OFF" />
+    <logger name="org.apache.spark" level="WARN" />
 
 
     <root level="ERROR">

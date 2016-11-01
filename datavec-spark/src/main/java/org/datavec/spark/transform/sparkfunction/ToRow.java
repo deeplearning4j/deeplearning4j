@@ -10,6 +10,10 @@ import org.datavec.spark.transform.DataFrames;
 
 import java.util.List;
 
+import org.datavec.common.data.NDArrayWritable;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+
 /**
  * Convert a record to a row
  * @author Adam Gibson
@@ -25,20 +29,42 @@ public class ToRow implements Function<List<Writable>,Row> {
 
     @Override
     public Row call(List<Writable> v1) throws Exception {
-        if(v1.size() != schema.numColumns())
-            throw new IllegalStateException("Illegal record of size " + v1 + ". Should have been " + schema.numColumns());
-        Object[] values = new Object[v1.size()];
-        for(int i = 0; i < values.length; i++) {
-            switch (schema.getColumnTypes().get(i)) {
-                case Double: values[i] = v1.get(i).toDouble(); break;
-                case Integer: values[i] = v1.get(i).toInt(); break;
-                case Long: values[i] = v1.get(i).toLong(); break;
-                case Float: values[i] = v1.get(i).toFloat(); break;
-                default: throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
+        if(v1.size() == 1 && v1.get(0) instanceof NDArrayWritable) {
+            NDArrayWritable writable = (NDArrayWritable) v1.get(0);
+            INDArray arr = writable.get();
+            if(arr.columns() != schema.numColumns())
+                throw new IllegalStateException("Illegal record of size " + v1 + ". Should have been " + schema.numColumns());
+            Object[] values = new Object[arr.columns()];
+            for(int i = 0; i < values.length; i++) {
+                switch (schema.getColumnTypes().get(i)) {
+                    case Double: values[i] = arr.getDouble(i); break;
+                    case Integer: values[i] = (int) arr.getDouble(i); break;
+                    case Long: values[i] = (long) arr.getDouble(i); break;
+                    case Float: values[i] = (float) arr.getDouble(i); break;
+                    default: throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
+                }
             }
+
+            Row row = new GenericRowWithSchema(values,structType);
+            return row;
+        }
+        else {
+            if(v1.size() != schema.numColumns())
+                throw new IllegalStateException("Illegal record of size " + v1 + ". Should have been " + schema.numColumns());
+            Object[] values = new Object[v1.size()];
+            for(int i = 0; i < values.length; i++) {
+                switch (schema.getColumnTypes().get(i)) {
+                    case Double: values[i] = v1.get(i).toDouble(); break;
+                    case Integer: values[i] = v1.get(i).toInt(); break;
+                    case Long: values[i] = v1.get(i).toLong(); break;
+                    case Float: values[i] = v1.get(i).toFloat(); break;
+                    default: throw new IllegalStateException("This api should not be used with strings , binary data or ndarrays. This is only for columnar data");
+                }
+            }
+
+            Row row = new GenericRowWithSchema(values,structType);
+            return row;
         }
 
-        Row row = new GenericRowWithSchema(values,structType);
-        return row;
     }
 }

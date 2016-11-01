@@ -1,5 +1,6 @@
 package org.datavec.spark.transform;
 
+import freemarker.ext.beans.HashAdapter;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
@@ -10,10 +11,15 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.common.RecordConverter;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import static org.apache.spark.sql.functions.*;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,6 +28,26 @@ import static org.junit.Assert.assertEquals;
  */
 public class DataFrameTests extends BaseSparkTest {
 
+
+    @Test
+    public void testMinMax() {
+        INDArray arr = Nd4j.linspace(1,10,10).broadcast(10,10);
+        for(int i = 0; i < arr.rows(); i++)
+            arr.getRow(i).addi(i);
+
+        List<List<Writable>> records = RecordConverter.toRecords(arr);
+        Schema.Builder builder = new Schema.Builder();
+        int numColumns = 10;
+        for(int i = 0; i < numColumns; i++)
+            builder.addColumnDouble(String.valueOf(i));
+        Schema schema = builder.build();
+        DataFrame dataFrame = DataFrames.toDataFrame(schema,sc.parallelize(records));
+        dataFrame.show();
+        dataFrame.describe(DataFrames.toArray(schema.getColumnNames())).show();
+        System.out.println(Normalization.minMaxColumns(dataFrame,schema.getColumnNames()));
+        System.out.println(Normalization.stdDevMeanColumns(dataFrame,schema.getColumnNames()));
+
+    }
 
 
     @Test
@@ -71,7 +97,6 @@ public class DataFrameTests extends BaseSparkTest {
 
     @Test
     public void testNormalize(){
-
         List<List<Writable>> data = new ArrayList<>();
 
         data.add(Arrays.<Writable>asList(new IntWritable(1), new DoubleWritable(10)));
@@ -84,9 +109,9 @@ public class DataFrameTests extends BaseSparkTest {
         expMinMax.add(Arrays.<Writable>asList(new DoubleWritable(0.5), new DoubleWritable(0.5)));
         expMinMax.add(Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(1.0)));
 
-        double m1 = (1+2+3)/3.0;
+        double m1 = (1 + 2 + 3)/ 3.0;
         double s1 = new StandardDeviation().evaluate(new double[]{1,2,3});
-        double m2 = (10+20+30)/3.0;
+        double m2 = (10 + 20 + 30)/3.0;
         double s2 = new StandardDeviation().evaluate(new double[]{10,20,30});
 
         List<List<Writable>> expStandardize = new ArrayList<>();
@@ -117,20 +142,20 @@ public class DataFrameTests extends BaseSparkTest {
         System.out.println("Standardized:");
         System.out.println(c2);
 
-        for( int i=0; i<expMinMax.size(); i++ ){
+        for( int i = 0; i < expMinMax.size(); i++) {
             List<Writable> exp = expMinMax.get(i);
             List<Writable> act = c.get(i);
 
-            for( int j=0; j<exp.size(); j++ ){
+            for( int j = 0; j<exp.size(); j++) {
                 assertEquals(exp.get(j).toDouble(), act.get(j).toDouble(), 1e-6);
             }
         }
 
-        for( int i=0; i<expStandardize.size(); i++ ){
+        for( int i = 0; i < expStandardize.size(); i++) {
             List<Writable> exp = expStandardize.get(i);
             List<Writable> act = c2.get(i);
 
-            for( int j=0; j<exp.size(); j++ ){
+            for( int j = 0; j < exp.size(); j++ ){
                 assertEquals(exp.get(j).toDouble(), act.get(j).toDouble(), 1e-6);
             }
         }
@@ -138,7 +163,7 @@ public class DataFrameTests extends BaseSparkTest {
 
 
     @Test
-    public void testDataFrameSequenceNormalization(){
+    public void testDataFrameSequenceNormalization() {
         List<List<List<Writable>>> sequences = new ArrayList<>();
 
         List<List<Writable>> seq1 = new ArrayList<>();
@@ -182,12 +207,12 @@ public class DataFrameTests extends BaseSparkTest {
 
         System.out.println(norm);
 
-        for( int i=0; i<2; i++ ){
+        for( int i = 0; i < 2; i++ ){
             List<List<Writable>> seqExp = (i == 0 ? expSeq1MinMax : expSeq2MinMax);
-            for( int j=0; j<seqExp.size(); j++ ){
+            for( int j = 0; j<seqExp.size(); j++ ){
                 List<Writable> stepExp = seqExp.get(j);
                 List<Writable> stepAct = norm.get(i).get(j);
-                for( int k=0; k<stepExp.size(); k++ ){
+                for( int k = 0; k<stepExp.size(); k++ ){
                     assertEquals(stepExp.get(k).toDouble(), stepAct.get(k).toDouble(), 1e-6);
                 }
             }

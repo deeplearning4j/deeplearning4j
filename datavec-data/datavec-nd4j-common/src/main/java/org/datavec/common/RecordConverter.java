@@ -59,6 +59,20 @@ public class RecordConverter {
 
     /**
      * Convert a set of records in to a matrix
+     * @param matrix the records ot convert
+     * @return the matrix for the records
+     */
+    public static List<List<Writable>> toRecords(INDArray matrix) {
+        List<List<Writable>> ret = new ArrayList<>();
+        for(int i = 0; i < matrix.rows(); i++) {
+           ret.add(RecordConverter.toRecord(matrix.getRow(i)));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Convert a set of records in to a matrix
      * @param records the records ot convert
      * @return the matrix for the records
      */
