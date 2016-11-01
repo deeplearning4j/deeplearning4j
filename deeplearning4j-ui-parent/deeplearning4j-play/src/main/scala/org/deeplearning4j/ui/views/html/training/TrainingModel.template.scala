@@ -78,6 +78,15 @@ Seq[Any](format.raw/*1.40*/("""
 						<li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i><span class="hidden-tablet"> Model</span></a></li>
 						<li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> System</span></a></li>
 						<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> User Guide</span></a></li>
+						<li>
+							<a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+							<ul>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+							</ul>
+						</li>
 					</ul>
 				</div>
 			</div>
@@ -92,14 +101,14 @@ Seq[Any](format.raw/*1.40*/("""
 
 			<style>
 			/* Graph */
-			#layers """),format.raw/*71.12*/("""{"""),format.raw/*71.13*/("""
-			  """),format.raw/*72.6*/("""height: 100%;
+			#layers """),format.raw/*80.12*/("""{"""),format.raw/*80.13*/("""
+			  """),format.raw/*81.6*/("""height: 100%;
 			  width: 50%;
 			  position: absolute;
 			  left: 0;
 			  top: 0;
-			"""),format.raw/*77.4*/("""}"""),format.raw/*77.5*/("""
-			"""),format.raw/*78.4*/("""</style>
+			"""),format.raw/*86.4*/("""}"""),format.raw/*86.5*/("""
+			"""),format.raw/*87.4*/("""</style>
 
 			<!-- Start Content -->
 			<div id="content" class="span10">
@@ -120,20 +129,22 @@ Seq[Any](format.raw/*1.40*/("""
 								<tr>
 									<th>Name</th>
 									<th>Type</th>
-									<th>Inputs</th>
-									<th>Outputs</th>
+									<th>Input Size</th>
+									<th>Output Size</th>
+									<th># Parameters</th>
 									<th>Activation Function</th>
-									<th>Learning Rate</th>
+									<th>Loss Function</th>
 								</tr>
 								</thead>
 								<tbody>
 								<tr>
-									<td>Input</td>
-									<td>Dense</td>
-									<td>800</td>
-									<td>500</td>
-									<td>relu</td>
-									<td>0.01</td>
+									<td id="layerName">Loading...</td>
+									<td id="layerType">Loading...</td>
+									<td id="inputSize">Loading...</td>
+									<td id="outputSize">Loading...</td>
+									<td id="nParams">Loading...</td>
+									<td id="activationFunction">Loading...</td>
+									<td id="lossFunction">Loading...</td>
 								</tr>
 								</tbody>
 							</table>
@@ -145,8 +156,8 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Mean Magnitudes</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="mean-mag-chart"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -232,20 +243,36 @@ Seq[Any](format.raw/*1.40*/("""
 		<script src="/assets/js/model-layers.js"></script>
 		<script src="/assets/js/dagre.min.js"></script>
 		<script src="/assets/js/cytoscape-dagre.js"></script>
-		<script src="/assets/js/cytoscape-toolbar.js"></script>
+		<script src="/assets/js/train/model.js"></script>    <!-- Charts and tables are generated here! -->
+
+		<!-- Execute once on page load -->
+		<script>
+				$(document).ready(function()"""),format.raw/*226.33*/("""{"""),format.raw/*226.34*/("""
+					"""),format.raw/*227.6*/("""renderLayerTable();
+					renderMeanMagChart();
+				"""),format.raw/*229.5*/("""}"""),format.raw/*229.6*/(""");
+		</script>
+
+		<!-- Execute periodically (every 2 sec) -->
+		<!--<script>-->
+				<!--setInterval(function()"""),format.raw/*234.31*/("""{"""),format.raw/*234.32*/("""-->
+					<!--renderLayerTable() -->
+				<!--"""),format.raw/*236.9*/("""}"""),format.raw/*236.10*/(""", 2000);-->
+		<!--</script>-->
+
+		<!--<script type="text/javascript">-->
+		<!--$(document).ready(function() """),format.raw/*240.36*/("""{"""),format.raw/*240.37*/("""-->
+			<!--var option = '1';-->
+			<!--var url = window.location.href;-->
+			<!--option = url.match(/layer=(.*)/)[1];-->
+			<!--showDiv(option);-->
+		<!--"""),format.raw/*245.7*/("""}"""),format.raw/*245.8*/(""");-->
+		<!--function showDiv(option) """),format.raw/*246.32*/("""{"""),format.raw/*246.33*/("""-->
+			<!--$('#0').hide();-->
+			<!--$('#' + option).show();-->
+		<!--"""),format.raw/*249.7*/("""}"""),format.raw/*249.8*/("""-->
+		<!--</script>-->
 		<!-- End JavaScript-->
-		<script type="text/javascript">
-		$(document).ready(function() """),format.raw/*214.32*/("""{"""),format.raw/*214.33*/("""
-			"""),format.raw/*215.4*/("""var option = '1';
-			var url = window.location.href;
-			option = url.match(/layer=(.*)/)[1];
-			showDiv(option);
-		"""),format.raw/*219.3*/("""}"""),format.raw/*219.4*/(""");
-		function showDiv(option) """),format.raw/*220.28*/("""{"""),format.raw/*220.29*/("""
-			"""),format.raw/*221.4*/("""$('#0').hide();
-			$('#' + option).show();
-		"""),format.raw/*223.3*/("""}"""),format.raw/*223.4*/("""
-		"""),format.raw/*224.3*/("""</script>
 </body>
 </html>
 """))
@@ -268,11 +295,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Fri Oct 28 00:31:41 PDT 2016
-                  SOURCE: /Users/ejunprung/skymind-ui/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 302b149ae2c1b8ca3d7d57be33df5db756f078f3
-                  MATRIX: 598->1|731->39|758->40|3467->2721|3496->2722|3529->2728|3642->2814|3670->2815|3701->2819|8563->7652|8593->7653|8625->7657|8768->7772|8797->7773|8856->7803|8886->7804|8918->7808|8991->7853|9020->7854|9051->7857
-                  LINES: 20->1|25->1|26->2|95->71|95->71|96->72|101->77|101->77|102->78|238->214|238->214|239->215|243->219|243->219|244->220|244->220|245->221|247->223|247->223|248->224
+                  DATE: Tue Nov 01 19:33:45 AEDT 2016
+                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
+                  HASH: b8be61b9f44d7ef722a7e4713bd94b7591516c45
+                  MATRIX: 598->1|731->39|759->41|4294->3548|4323->3549|4357->3556|4475->3647|4503->3648|4535->3653|9787->8876|9817->8877|9852->8884|9933->8937|9962->8938|10106->9053|10136->9054|10210->9100|10240->9101|10381->9213|10411->9214|10598->9373|10627->9374|10694->9412|10724->9413|10825->9486|10854->9487
+                  LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|250->226|250->226|251->227|253->229|253->229|258->234|258->234|260->236|260->236|264->240|264->240|269->245|269->245|270->246|270->246|273->249|273->249
                   -- GENERATED --
               */
           
