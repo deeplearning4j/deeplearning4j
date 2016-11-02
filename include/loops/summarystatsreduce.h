@@ -7,10 +7,10 @@
 
 #ifndef SUMMARYSTATSREDUCE_H_
 #define SUMMARYSTATSREDUCE_H_
-#include "../templatemath.h"
-#include "../dll.h"
+#include <templatemath.h>
+#include <dll.h>
 
-#include "../helpers/shape.h"
+#include <helpers/shape.h>
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -25,8 +25,8 @@
 #include <jni.h>
 #endif
 
-#include "../ops/ops.h"
-#include "../op_boilerplate.h"
+#include <ops/ops.h>
+#include <op_boilerplate.h>
 
 #define SUMMARY_STATS_OPS \
         (0, simdOps::SummaryStatsVariance), \

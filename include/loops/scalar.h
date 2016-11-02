@@ -7,14 +7,14 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
-#include "../dll.h"
+#include <dll.h>
 
 #ifdef __JNI__
 #include <jni.h>
 #endif
-#include "../templatemath.h"
-#include "../ops/ops.h"
-#include "../op_boilerplate.h"
+#include <templatemath.h>
+#include <ops/ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

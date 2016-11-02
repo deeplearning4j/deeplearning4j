@@ -6,12 +6,11 @@
 #ifndef __CUDACC__
 #include <omp.h>
 #endif
-#endif
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
-#include <ops.h>
+#include <ops/ops.h>
 #include <op_boilerplate.h>
 
 #pragma once

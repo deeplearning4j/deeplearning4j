@@ -5,7 +5,7 @@
 #ifndef LIBND4J_GRID_H
 #define LIBND4J_GRID_H
 
-#include "../types/float16.h"
+#include <types/float16.h>
 
 // number of pointers within single grid row
 #define GRID_WIDTH 19

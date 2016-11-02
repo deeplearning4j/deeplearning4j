@@ -5,8 +5,8 @@
 #ifndef LIBND4J_AGGREGATES_H
 #define LIBND4J_AGGREGATES_H
 
-#include "../ops/aggregate_ops.h"
-#include "../helpers/helper_ptrmap.h"
+#include <ops/aggregate_ops.h>
+#include <helpers/helper_ptrmap.h>
 
 #define AGGREGATE_OPS \
         (0, aggregateOps::HierarchicSoftmax) ,\

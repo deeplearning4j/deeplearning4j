@@ -11,6 +11,7 @@
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
+#include <ops/special_ops.h>
 #ifndef __CUDACC__
 #include <omp.h>
 #endif

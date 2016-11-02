@@ -1,5 +1,9 @@
 #pragma once
-#include "ops.h"
+#include <ops/ops.h>
+#include <loops/reduce.h>
+#include <loops/scalar.h>
+#include <loops/indexreduce.h>
+#include <loops/broadcasting.h>
 
 namespace functions {
 	namespace broadcast {

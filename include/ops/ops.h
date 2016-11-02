@@ -2,7 +2,7 @@
 #ifndef OPS_H_
 #define OPS_H_
 
-#include "../helpers/shape.h"
+#include <helpers/shape.h>
 #include <vector>
 
 #define MIN 1e-12

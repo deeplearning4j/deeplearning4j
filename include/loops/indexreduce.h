@@ -12,7 +12,7 @@
 #include <omp.h>
 #endif
 #include <dll.h>
-#include <ops.h>
+#include <ops/ops.h>
 #include <op_boilerplate.h>
 
 #ifdef __CUDACC__

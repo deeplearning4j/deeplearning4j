@@ -15,13 +15,13 @@
 #define ND4J_DOUBLE 7
 #define ND4J_FLOAT24 119
 
-#include "../ops/ops.h"
-#include "../types/float16.h"
-#include "../types/float8.h"
-#include "../types/uint8.h"
-#include "../types/int8.h"
-#include "../types/int16.h"
-#include "../types/uint16.h"
+#include <ops/ops.h>
+#include <types/float16.h>
+#include <types/float8.h>
+#include <types/uint8.h>
+#include <types/int8.h>
+#include <types/int16.h>
+#include <types/uint16.h>
 
 
 #ifdef __CUDACC__
