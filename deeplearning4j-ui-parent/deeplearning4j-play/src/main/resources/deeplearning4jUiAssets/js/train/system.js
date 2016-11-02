@@ -204,7 +204,39 @@ function renderSystemInformation(data) {
     $("#maxBytesJVM").html(maxBytesJVM);
     $("#maxBytesOffHeap").html(maxBytesOffHeap);
 
-    //     }
-    // });
+}
+
+/* Tabs */
+
+/* Generate tabs */
+function renderMultipleTabs() {
+
+//    var nMachines = data["memory"];
+    var nMachines = [0,1,2]; // For testing
+
+    /* Generate Tabs Depending on nMachines.length*/
+    for (i = 0; i < nMachines.length; i++)  {
+        $('#systemTab').append("<li><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
+    }
+
+    /* Show/Hide Tabs on Click */
+    $('#systemTab a:first').tab('show');
+    $('#systemTab a').click(function (e) {
+      e.preventDefault();
+      $(this).tab('show');
+    });
+
+    /* onClick to Dynamically pull the right charts (WIP) */
+    selectMachine = nMachines[0]
+
+    $('#'+ selectMachine + '').click(function() {
+      $( "div" ).each(function( index, element ) {
+        if ($('#'+ selectMachine + '') == "?" ) {
+          // Switch charts
+        } else {
+          // Do nothing
+        }
+      });
+    });
 
 }
