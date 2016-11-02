@@ -32,13 +32,16 @@ public class BaseSparkTest {
     public static void beforeClass(){
         SparkConf conf = new SparkConf();
         conf.setAppName("Test");
+        conf.set("spark.driverEnv.SPARK_LOCAL_IP","127.0.0.1");
+        conf.set("spark.executorEnv.SPARK_LOCAL_IP","127.0.0.1");
         conf.setMaster("local[*]");
         sc = new JavaSparkContext(conf);
     }
 
     @AfterClass
-    public static void afterClass(){
-        sc.stop();
+    public static void afterClass() {
+        if(sc != null)
+            sc.stop();
     }
 
 }

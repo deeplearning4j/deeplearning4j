@@ -24,8 +24,11 @@ import org.apache.spark.sql.functions;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceCreateCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeValue;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.apache.spark.sql.functions.avg;
+import static org.apache.spark.sql.functions.col;
 
 
 /**
@@ -350,4 +353,71 @@ public class DataFrames {
         }
         return ret;
     }
+
+    /**
+     * Convert a string array into a list
+     * @param input the input to create the list from
+     * @return the created array
+     */
+    public static List<String> toList(String[] input) {
+        List<String> ret = new ArrayList<>();
+        for(int i = 0; i < input.length; i++)
+            ret.add(input[i]);
+        return ret;
+    }
+
+
+    /**
+     * Convert a string list into a array
+     * @param list the input to create the array from
+     * @return the created list
+     */
+    public static String[] toArray(List<String> list) {
+        String[] ret = new String[list.size()];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = list.get(i);
+        return ret;
+    }
+
+    /**
+     * Convert a list of rows to a matrix
+     * @param rows the list of rows to convert
+     * @return the converted matrix
+     */
+    public static INDArray toMatrix(List<Row> rows) {
+        INDArray ret = Nd4j.create(rows.size(),rows.get(0).size());
+        for(int i = 0; i < ret.rows(); i++) {
+            for(int j = 0; j < ret.columns(); j++) {
+                ret.putScalar(i,j,rows.get(i).getDouble(j));
+            }
+        }
+        return ret;
+    }
+
+
+    /**
+     * Convert a list of string names
+     * to columns
+     * @param columns the columns to convert
+     * @return the resulting column list
+     */
+    public static List<Column> toColumn(List<String> columns) {
+        List<Column> ret = new ArrayList<>();
+        for(String s : columns)
+            ret.add(col(s));
+        return ret;
+    }
+    /**
+     * Convert an array of strings
+     * to column names
+     * @param columns the columns to convert
+     * @return the converted columns
+     */
+    public static Column[] toColumns(String...columns) {
+        Column[] ret = new Column[columns.length];
+        for(int i = 0; i < columns.length; i++)
+            ret[i] = col(columns[i]);
+        return ret;
+    }
+
 }

@@ -29,7 +29,15 @@
         <spark.version>1.6.2</spark.version>
     </properties>
 
+
+
+
     <dependencies>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-nd4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.10</artifactId>
