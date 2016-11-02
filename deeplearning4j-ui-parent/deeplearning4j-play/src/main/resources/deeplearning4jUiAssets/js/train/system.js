@@ -1,5 +1,4 @@
 function renderSystemPage() {
-
     $.ajax({
         url: "/train/system/data",
         async: true,
@@ -14,12 +13,26 @@ function renderSystemPage() {
     });
 }
 
+function renderTabs() {
+    $.ajax({
+        url: "/train/system/data",
+        async: true,
+        error: function (query, status, error) {
+            console.log("Error getting data: " + error);
+        },
+        success: function (data) {
+            renderMultipleTabs(data);
+        }
+    });
+}
+
+selectMachine(); //Make machineID Global
+
 /* ---------- JVM Memory Utilization Chart ---------- */
 function renderJVMMemoryChart(data) {
-    var jvmValues = data["memory"]["0"]["values"][0];
 
+    var jvmValues = data["memory"][machineID]["values"][0];
     var maxValue = Math.max.apply(Math, jvmValues) + 1;
-
     var jvmChart = $("#jvmmemorychart");
 
     if (jvmChart.length) {
@@ -88,10 +101,9 @@ function renderJVMMemoryChart(data) {
 
 /* ---------- Off Heap Memory Utilization Chart ---------- */
 function renderOffHeapMemoryChart(data) {
-    var offHeapValues = data["memory"]["0"]["values"][1];
 
+    var offHeapValues = data["memory"][machineID]["values"][1];
     var maxValue = Math.max.apply(Math, offHeapValues);
-
     var offHeapChart = $("#offheapmemorychart");
 
     if (offHeapChart.length) {
@@ -160,28 +172,27 @@ function renderOffHeapMemoryChart(data) {
 
 /* ---------- System Information ---------- */
 function renderSystemInformation(data) {
-    // console.log("Keys: " + Object.keys(data));
 
     /* Hardware */
-    var jvmAvailableProcessors = data["hardware"]["0"][2][1];
-    var nComputeDevices = data["hardware"]["0"][3][1];
+    var jvmAvailableProcessors = data["hardware"][machineID][2][1];
+    var nComputeDevices = data["hardware"][machineID][3][1];
 
     /* Software */
-    var OS = data["software"]["0"][0][1];
-    var hostName = data["software"]["0"][1][1];
-    var OSArchitecture = data["software"]["0"][2][1];
-    var jvmName = data["software"]["0"][3][1];
-    var jvmVersion = data["software"]["0"][4][1];
-    var nd4jBackend = data["software"]["0"][5][1];
-    var nd4jDataType = data["software"]["0"][6][1];
+    var OS = data["software"][machineID][0][1];
+    var hostName = data["software"][machineID][1][1];
+    var OSArchitecture = data["software"][machineID][2][1];
+    var jvmName = data["software"][machineID][3][1];
+    var jvmVersion = data["software"][machineID][4][1];
+    var nd4jBackend = data["software"][machineID][5][1];
+    var nd4jDataType = data["software"][machineID][6][1];
 
     /* Memory */
-    var currentBytesJVM = data["memory"]["0"]["currentBytes"][0];
-    var currentBytesOffHeap = data["memory"]["0"]["currentBytes"][1];
-    var isDeviceJVM = data["memory"]["0"]["isDevice"][1];
-    var isDeviceOffHeap = data["memory"]["0"]["isDevice"][1];
-    var maxBytesJVM = data["memory"]["0"]["maxBytes"][0];
-    var maxBytesOffHeap = data["memory"]["0"]["maxBytes"][1];
+    var currentBytesJVM = data["memory"][machineID]["currentBytes"][0];
+    var currentBytesOffHeap = data["memory"][machineID]["currentBytes"][1];
+    var isDeviceJVM = data["memory"][machineID]["isDevice"][1];
+    var isDeviceOffHeap = data["memory"][machineID]["isDevice"][1];
+    var maxBytesJVM = data["memory"][machineID]["maxBytes"][0];
+    var maxBytesOffHeap = data["memory"][machineID]["maxBytes"][1];
 
     /* Inject Hardware Information */
     $("#jvmAvailableProcessors").html(jvmAvailableProcessors);
@@ -208,15 +219,15 @@ function renderSystemInformation(data) {
 
 /* Tabs */
 
-/* Generate tabs */
-function renderMultipleTabs() {
+/* Render Tabs */
+function renderMultipleTabs(data) {
 
-//    var nMachines = data["memory"];
-    var nMachines = [0,1,2]; // For testing
+    var nMachinesData = data["memory"];
+    var nMachines = Object.keys(nMachinesData);
 
     /* Generate Tabs Depending on nMachines.length*/
     for (i = 0; i < nMachines.length; i++)  {
-        $('#systemTab').append("<li><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
+        $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
     }
 
     /* Show/Hide Tabs on Click */
@@ -226,17 +237,16 @@ function renderMultipleTabs() {
       $(this).tab('show');
     });
 
-    /* onClick to Dynamically pull the right charts (WIP) */
-    selectMachine = nMachines[0]
+}
 
-    $('#'+ selectMachine + '').click(function() {
-      $( "div" ).each(function( index, element ) {
-        if ($('#'+ selectMachine + '') == "?" ) {
-          // Switch charts
-        } else {
-          // Do nothing
-        }
-      });
-    });
+/* Set Machine ID Depending on Tab Clicked */
+function selectMachine() {
 
+    machineID = 0;
+
+    $('#systemTab').on("click", "li", function() {
+        machineID = $(this).attr('id');
+     });
+
+    return machineID;
 }
