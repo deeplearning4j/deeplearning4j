@@ -311,6 +311,7 @@ function renderVariancesRatio(data) {
             $("#yLogVariance").text(pos.y.toFixed(5));
             $("#yVariance").text(Math.pow(10,pos.y).toFixed(5));
 
+            //Tooltip
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
