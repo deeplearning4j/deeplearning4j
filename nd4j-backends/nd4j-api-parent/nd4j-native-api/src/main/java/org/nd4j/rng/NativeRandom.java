@@ -28,6 +28,8 @@ public abstract class NativeRandom implements Random {
     protected DataBuffer stateBuffer;
     protected Pointer statePointer;
     protected long seed;
+    protected long amplifier;
+    protected long generation;
     protected long numberOfElements;
     protected AtomicInteger position = new AtomicInteger(0);
     protected LongPointer hostPointer;
@@ -46,6 +48,9 @@ public abstract class NativeRandom implements Random {
     }
 
     public NativeRandom(long seed, long numberOfElements) {
+        this.amplifier = seed;
+        this.generation = 1;
+        this.seed = seed;
         this.numberOfElements = numberOfElements;
 
         nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -83,6 +88,7 @@ public abstract class NativeRandom implements Random {
     public void setSeed(long seed) {
         synchronized (this) {
             this.seed = seed;
+            this.amplifier = seed;
             nativeOps.refreshBuffer(seed, statePointer);
         }
     }
@@ -99,7 +105,7 @@ public abstract class NativeRandom implements Random {
 
     @Override
     public int nextInt() {
-        int next = (int) nextLong();
+        int next = (int) (amplifier == seed ? nextLong() : nextLong() * amplifier + 11);
         return next < 0 ? -1 * next : next;
     }
 
@@ -123,9 +129,12 @@ public abstract class NativeRandom implements Random {
         synchronized (this) {
             if (position.get() >= numberOfElements) {
                 position.set(0);
+                generation++;
             }
 
             next = hostPointer.get(position.getAndIncrement());
+            if (generation > 1)
+                next = next * generation + 27;
         }
 
         return next < 0 ? -1 * next : next;
@@ -222,6 +231,18 @@ public abstract class NativeRandom implements Random {
     @Override
     public DataBuffer getStateBuffer() {
         return stateBuffer;
+    }
+
+    @Override
+    public void reSeed() {
+        reSeed(System.currentTimeMillis());
+    }
+
+    @Override
+    public void reSeed(long amplifier) {
+        this.amplifier = amplifier;
+
+        nativeOps.reSeedBuffer(amplifier, getStatePointer());
     }
 
     @Override

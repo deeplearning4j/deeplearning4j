@@ -33,9 +33,11 @@ import javax.annotation.Nullable;
 /**
  * Apache commons based random number generation
  *
+ * Please note: this implementation can't be used for NativeOps execution
+ *
  * @author Adam Gibson
  */
-@Deprecated
+// TODO: make this op compatible with NativeOpExecutioner
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
     protected long seed;
@@ -228,5 +230,23 @@ public class DefaultRandom implements Random, RandomGenerator {
     @Override
     public void close() throws Exception {
         //
+    }
+
+    /**
+     * Identical to setSeed(System.currentTimeMillis());
+     */
+    @Override
+    public void reSeed() {
+        reSeed(System.currentTimeMillis());
+    }
+
+    /**
+     * Identical to setSeed(seed);
+     *
+     * @param seed
+     */
+    @Override
+    public void reSeed(long seed) {
+        setSeed(seed);
     }
 }

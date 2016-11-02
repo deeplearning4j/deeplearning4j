@@ -1,6 +1,5 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,7 +11,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.impl.*;
-import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -27,12 +25,11 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class RandomTests {
-    private static CpuNativeRandom random = new CpuNativeRandom(119, 10000000);
 
     @Test
     public void testDistribution1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.create(1000);
         INDArray z2 = Nd4j.create(1000);
@@ -54,8 +51,8 @@ public class RandomTests {
 
     @Test
     public void testDistribution2() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 20);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 20);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.create(32);
         INDArray z2 = Nd4j.create(32);
@@ -80,7 +77,7 @@ public class RandomTests {
         INDArray z1 = Nd4j.linspace(1, 100, 200);
 
         Linspace linspace = new Linspace(1, 100, 200);
-        Nd4j.getExecutioner().exec(linspace, random);
+        Nd4j.getExecutioner().exec(linspace, Nd4j.getRandom());
 
         INDArray z2 = linspace.z();
 
@@ -90,8 +87,8 @@ public class RandomTests {
 
     @Test
     public void testDropoutInverted1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.ones(300);
         INDArray z2 = Nd4j.ones(300);
@@ -110,8 +107,8 @@ public class RandomTests {
 
     @Test
     public void testDropout1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 100000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 100000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.ones(300);
         INDArray z2 = Nd4j.ones(300);
@@ -130,8 +127,8 @@ public class RandomTests {
 
     @Test
     public void testGaussianDistribution1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.create(100000);
         INDArray z2 = Nd4j.create(100000);
@@ -147,10 +144,47 @@ public class RandomTests {
         assertEquals(z1, z2);
     }
 
+
+    @Test
+    public void testGaussianDistribution2() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random3 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random4 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z1 = Nd4j.create(100000);
+        INDArray z2 = Nd4j.create(100000);
+        INDArray z3 = Nd4j.create(100000);
+        INDArray z4 = Nd4j.create(100000);
+
+        random3.reSeed(8231);
+        random4.reSeed(4453523);
+
+        GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        GaussianDistribution op2 = new GaussianDistribution(z2, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        GaussianDistribution op3 = new GaussianDistribution(z3, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op3, random3);
+
+        GaussianDistribution op4 = new GaussianDistribution(z4, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op4, random4);
+
+        assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
+
+        assertEquals(z1, z2);
+
+        assertNotEquals(z1, z3);
+        assertNotEquals(z2, z4);
+        assertNotEquals(z3, z4);
+    }
+
     @Test
     public void testSetSeed1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z01 = Nd4j.create(1000);
         INDArray z11 = Nd4j.create(1000);
@@ -180,8 +214,8 @@ public class RandomTests {
 
     @Test
     public void testJavaSide1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         float array1[] = new float[1000];
         float array2[] = new float[1000];
@@ -199,8 +233,8 @@ public class RandomTests {
 
     @Test
     public void testJavaSide2() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         int array1[] = new int[1000];
         int array2[] = new int[1000];
@@ -209,6 +243,7 @@ public class RandomTests {
             array1[e] = random1.nextInt();
             array2[e] = random2.nextInt();
 
+            assertEquals(array1[e], array2[e]);
             assertTrue(array1[e] >= 0);
         }
 
@@ -217,8 +252,8 @@ public class RandomTests {
 
     @Test
     public void testJavaSide3() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         int array1[] = new int[10000];
         int array2[] = new int[10000];
@@ -234,11 +269,49 @@ public class RandomTests {
         assertArrayEquals(array1, array2);
     }
 
+    /**
+     * This test checks reSeed mechanics for native side
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testJavaSide4() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        int array1[] = new int[1000];
+        int array2[] = new int[1000];
+
+        for (int e = 0; e < array1.length; e++) {
+            array1[e] = random1.nextInt();
+            array2[e] = random2.nextInt();
+
+            assertEquals(array1[e], array2[e]);
+            assertTrue(array1[e] >= 0);
+        }
+
+        assertArrayEquals(array1, array2);
+
+        random1.reSeed();
+        random1.reSeed();
+
+        int array3[] = new int[1000];
+        int array4[] = new int[1000];
+
+        for (int e = 0; e < array1.length; e++) {
+            array3[e] = random1.nextInt();
+            array4[e] = random2.nextInt();
+
+            assertNotEquals(array3[e], array4[e]);
+            assertTrue(array1[e] >= 0);
+        }
+    }
+
 
     @Test
     public void testBernoulliDistribution1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.zeros(1000);
         INDArray z2 = Nd4j.zeros(1000);
@@ -257,8 +330,8 @@ public class RandomTests {
 
     @Test
     public void testBinomialDistribution1() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.zeros(1000);
         INDArray z2 = Nd4j.zeros(1000);
@@ -280,8 +353,8 @@ public class RandomTests {
 
     @Test
     public void testBinomialDistribution2() throws Exception {
-        CpuNativeRandom random1 = new CpuNativeRandom(119, 10000000);
-        CpuNativeRandom random2 = new CpuNativeRandom(119, 10000000);
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.zeros(1000);
         INDArray z2 = Nd4j.zeros(1000);
@@ -308,7 +381,7 @@ public class RandomTests {
     public void testDeallocation1() throws Exception {
 
         while (true) {
-            CpuNativeRandom random1 = new CpuNativeRandom(119, 1000);
+            Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
             random1.nextInt();
 
             System.gc();

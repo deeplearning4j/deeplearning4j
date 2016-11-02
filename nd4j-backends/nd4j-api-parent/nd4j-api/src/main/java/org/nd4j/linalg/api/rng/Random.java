@@ -273,6 +273,23 @@ public interface Random extends AutoCloseable {
      * @return
      */
     DataBuffer getStateBuffer();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state. System.currentTimeMillis() will be used as modifier.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     */
+    void reSeed();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     * @param seed
+     */
+    void reSeed(long seed);
 }
 
 

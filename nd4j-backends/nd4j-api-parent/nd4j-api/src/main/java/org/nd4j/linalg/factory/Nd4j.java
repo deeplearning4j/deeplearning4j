@@ -504,9 +504,18 @@ public class Nd4j {
      *
      * @return the current random generator
      */
-    public static synchronized  org.nd4j.linalg.api.rng.Random getRandom() {
+    public static org.nd4j.linalg.api.rng.Random getRandom() {
 
         return randomFactory.getRandom();
+    }
+
+    /**
+     * This method returns RandomFactory instance
+     *
+     * @return
+     */
+    public static RandomFactory getRandomFactory() {
+        return randomFactory;
     }
 
     /**

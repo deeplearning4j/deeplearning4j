@@ -16,7 +16,11 @@ public class RandomFactory {
         this.randomClass = randomClass;
     }
 
-
+    /**
+     * This method returns Random implementation instance associated with calling thread
+     *
+     * @return object implementing Random interface
+     */
     public Random getRandom() {
         try {
             if (threadRandom.get() == null) {
@@ -26,10 +30,40 @@ public class RandomFactory {
                     // if it's stateless random - we just don't care then
                 }
                 threadRandom.set(t);
+                return t;
             }
 
 
             return threadRandom.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method returns new onject implementing Random interface, initialized with System.currentTimeMillis() as seed
+     *
+     * @return object implementing Random interface
+     */
+    public Random getNewRandomInstance() {
+        return getNewRandomInstance(System.currentTimeMillis());
+    }
+
+
+    /**
+     * This method returns new onject implementing Random interface, initialized with seed value
+     *
+     * @return object implementing Random interface
+     */
+    public Random getNewRandomInstance(long seed) {
+        try {
+            Random t = (Random) randomClass.newInstance();
+            if (t.getStatePointer() != null) {
+                // TODO: attach this thing to deallocator
+                // if it's stateless random - we just don't care then
+            }
+            t.setSeed(seed);
+            return t;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

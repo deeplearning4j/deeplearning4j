@@ -1480,5 +1480,7 @@ public class NativeOps extends Pointer {
 
     public native void refreshBuffer(long seed, Pointer pointer);
 
+    public native void reSeedBuffer(long seed, Pointer pointer);
+
     public native void destroyRandom(Pointer pointer);
 }
