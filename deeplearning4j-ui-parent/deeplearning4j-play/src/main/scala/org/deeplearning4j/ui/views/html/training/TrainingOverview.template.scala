@@ -43,7 +43,7 @@ Seq[Any](format.raw/*1.40*/("""
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
             <!--[if lt IE 9]>
 	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet">
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
 	<![endif]-->
 
             <!--[if IE 9]>
@@ -174,7 +174,7 @@ Seq[Any](format.raw/*1.40*/("""
                                 <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
                             </div>
                             <div class="box-content">
-                                <div id="updateRatioChart"  class="center" style="height:345px;" ></div>
+                                <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
                                 <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
@@ -276,10 +276,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 22:03:58 AEDT 2016
+                  DATE: Wed Nov 02 12:17:18 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 67e777f2afdeef4c34ed962eb69afae4c4b33c04
-                  MATRIX: 604->1|737->39|765->41|5438->4687|5451->4691|5518->4737|6232->5424|6245->5428|6311->5473|10380->9549|10448->9654|10516->9757|10584->9858|10647->9900|10710->9934|13467->12662|13497->12663|13552->12689|13624->12732|13654->12733|13833->12883|13863->12884|13918->12910|13990->12953|14020->12954
+                  HASH: 42c801f248dd307baeaacf5641d4d54e753aed03
+                  MATRIX: 604->1|737->39|765->41|5439->4688|5452->4692|5519->4738|6233->5425|6246->5429|6312->5474|10381->9550|10449->9655|10517->9758|10585->9859|10648->9901|10711->9935|13468->12663|13498->12664|13553->12690|13625->12733|13655->12734|13834->12884|13864->12885|13919->12911|13991->12954|14021->12955
                   LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|195->171|196->172|197->173|198->174|199->175|200->176|244->220|244->220|245->221|246->222|246->222|251->227|251->227|252->228|253->229|253->229
                   -- GENERATED --
               */
