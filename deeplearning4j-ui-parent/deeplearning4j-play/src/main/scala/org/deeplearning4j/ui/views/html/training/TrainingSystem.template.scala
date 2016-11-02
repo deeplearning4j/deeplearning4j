@@ -110,11 +110,7 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Select Machine</b></h2>
 						</div>
 						<div class="box-content">
-							<ul class="nav tab-menu nav-tabs" id="myTab">
-								<li class="active"><a href="#machine1">Machine 1</a></li>
-								<li><a href="#machine2">Machine 2</a></li>
-								<li><a href="#machine3">Machine 3</a></li>
-							</ul>
+							<ul class="nav tab-menu nav-tabs" id="systemTab"></ul>
 
 							<!--Start System Tab -->
 							<div id="myTabContent" class="tab-content">
@@ -125,7 +121,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                                         <div class="box span6">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*104.57*/i18n/*104.61*/.getMessage("train.system.chart.jvmTitle")),format.raw/*104.103*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*100.57*/i18n/*100.61*/.getMessage("train.system.chart.jvmTitle")),format.raw/*100.103*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
@@ -135,7 +131,7 @@ Seq[Any](format.raw/*1.40*/("""
                                         <!-- Off Heap Memory Utlization Chart -->
                                         <div class="box span6">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*114.57*/i18n/*114.61*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*114.107*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*110.57*/i18n/*110.61*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*110.107*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
@@ -151,7 +147,7 @@ Seq[Any](format.raw/*1.40*/("""
                                         <!-- Hardware Information -->
                                         <div class="box span12">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*130.57*/i18n/*130.61*/.getMessage("train.system.table.hardwareTitle")),format.raw/*130.108*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*126.57*/i18n/*126.61*/.getMessage("train.system.table.hardwareTitle")),format.raw/*126.108*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <table class="table table-striped">
@@ -186,7 +182,7 @@ Seq[Any](format.raw/*1.40*/("""
 										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>"""),_display_(/*165.21*/i18n/*165.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*165.72*/("""</b></h2>
+												<h2><b>"""),_display_(/*161.21*/i18n/*161.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*161.72*/("""</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -308,16 +304,17 @@ Seq[Any](format.raw/*1.40*/("""
 
 		<!-- Execute once on page load -->
 		<script>
-            $(document).ready(function()"""),format.raw/*287.41*/("""{"""),format.raw/*287.42*/("""
-				"""),format.raw/*288.5*/("""renderSystemPage();
-            """),format.raw/*289.13*/("""}"""),format.raw/*289.14*/(""");
+            $(document).ready(function()"""),format.raw/*283.41*/("""{"""),format.raw/*283.42*/("""
+				"""),format.raw/*284.5*/("""renderSystemPage();
+				renderMultipleTabs();
+            """),format.raw/*286.13*/("""}"""),format.raw/*286.14*/(""");
         </script>
 
 		 <!--Execute periodically (every 2 sec) -->
 		<script>
-            setInterval(function()"""),format.raw/*294.35*/("""{"""),format.raw/*294.36*/("""
-                """),format.raw/*295.17*/("""renderSystemPage();
-            """),format.raw/*296.13*/("""}"""),format.raw/*296.14*/(""", 2000);
+            setInterval(function()"""),format.raw/*291.35*/("""{"""),format.raw/*291.36*/("""
+                """),format.raw/*292.17*/("""renderSystemPage();
+            """),format.raw/*293.13*/("""}"""),format.raw/*293.14*/(""", 2000);
         </script>
 		 <!--End JavaScript-->
 
@@ -343,11 +340,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 17:56:03 AEDT 2016
+                  DATE: Wed Nov 02 20:14:42 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 6013cafe9a857df8894a2e5e21c23ac7511f0506
-                  MATRIX: 600->1|733->39|761->41|5356->4608|5370->4612|5435->4654|6214->5405|6228->5409|6297->5455|7216->6346|7230->6350|7300->6397|9515->8584|9529->8588|9598->8635|15372->14380|15402->14381|15436->14387|15498->14420|15528->14421|15675->14539|15705->14540|15752->14558|15814->14591|15844->14592
-                  LINES: 20->1|25->1|26->2|128->104|128->104|128->104|138->114|138->114|138->114|154->130|154->130|154->130|189->165|189->165|189->165|311->287|311->287|312->288|313->289|313->289|318->294|318->294|319->295|320->296|320->296
+                  HASH: cc450ae1585c1c4636b4266ed9b29c48782ed59a
+                  MATRIX: 600->1|733->39|761->41|5180->4432|5194->4436|5259->4478|6038->5229|6052->5233|6121->5279|7040->6170|7054->6174|7124->6221|9339->8408|9353->8412|9422->8459|15196->14204|15226->14205|15260->14211|15349->14271|15379->14272|15526->14390|15556->14391|15603->14409|15665->14442|15695->14443
+                  LINES: 20->1|25->1|26->2|124->100|124->100|124->100|134->110|134->110|134->110|150->126|150->126|150->126|185->161|185->161|185->161|307->283|307->283|308->284|310->286|310->286|315->291|315->291|316->292|317->293|317->293
                   -- GENERATED --
               */
           

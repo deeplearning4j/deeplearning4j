@@ -276,7 +276,7 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 18:24:29 AEDT 2016
+                  DATE: Wed Nov 02 20:14:42 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
                   HASH: 82926c21faccd39c44d8f5b17e16f53f64d3b1dd
                   MATRIX: 604->1|737->39|765->41|5439->4688|5452->4692|5519->4738|6233->5425|6246->5429|6312->5474|10448->9617|10516->9722|10584->9825|10652->9926|10715->9968|10778->10002|13595->12790|13625->12791|13680->12817|13752->12860|13782->12861|13961->13011|13991->13012|14046->13038|14118->13081|14148->13082

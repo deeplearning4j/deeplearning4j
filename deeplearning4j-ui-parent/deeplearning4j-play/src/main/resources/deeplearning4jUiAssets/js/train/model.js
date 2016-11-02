@@ -1,7 +1,17 @@
+
+var selectedVertex = 0;
+
+function setSelectedVertex(vertex){
+    selectedVertex = vertex;
+}
+
+
 function renderModelPage() {
 
+    console.log("Currently selected vertex: " + selectedVertex);
+
     $.ajax({
-        url: "/train/model/data/0",
+        url: "/train/model/data/" + selectedVertex,
         async: true,
         error: function (query, status, error) {
             console.log("Error getting data: " + error);
