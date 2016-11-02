@@ -364,7 +364,7 @@ template<typename OpType>
 				int *resultIndexes, int *tadShapeInfo, int *tadOffsets) {
 
 				int n = shape::length(xShapeInfo);
-#pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY)
+#pragma omp parallel for simd schedule(guided) proc_bind(AFFINITY) default(shared)
 				for (Nd4jIndex i = 0; i < n; i++) {
 					result[resultIndexes[i]] = OpType::op(dx[indexes[i]], extraParams);
 				}
@@ -386,7 +386,7 @@ template<typename OpType>
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;
@@ -399,7 +399,7 @@ template<typename OpType>
                     }
                 } else {
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;

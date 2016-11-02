@@ -1780,7 +1780,7 @@ namespace shape {
         void createOffsets() {
 
             this->tadOffsets = new int[this->numTads];
-#pragma omp parallel for schedule(guided) proc_bind(close)
+#pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
 

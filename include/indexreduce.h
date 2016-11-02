@@ -461,7 +461,7 @@ template<typename OpType>
 						else {
 							BlockInformation info(length, ELEMENT_THRESHOLD);
 
-#pragma omp parallel
+#pragma omp parallel default(shared)
 
 							{
 								IndexValue<T> local;
@@ -549,7 +549,7 @@ template<typename OpType>
 				const int resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
-#pragma omp parallel for schedule(guided) if (resultLength > 32)
+#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 				for (Nd4jIndex i = 0; i < resultLength; i++) {
 					IndexValue<T> val;
 					val.value = OpType::startingValue(x);
@@ -596,7 +596,7 @@ template<typename OpType>
 					int *xStride = shape::stride(tadShapeShapeInfo);
 					int rank = shape::rank(tadShapeShapeInfo);
 
-#pragma omp  parallel for schedule(guided) if (resultLength > 32)
+#pragma omp  parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						int offset = tadOffsets[i];
 						int shapeIter[MAX_RANK];
@@ -639,7 +639,7 @@ template<typename OpType>
 					int tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
 					const int tadLength = shape::length(tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) if (resultLength > 32)
+#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
 						int baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue;
