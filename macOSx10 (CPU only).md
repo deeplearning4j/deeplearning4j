@@ -5,23 +5,24 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 1. Make sure you have all the Apple updates installed (at time of writing 10.11.4
 
 2. Make sure you have the latest XCode (go to the app store and make sure you have the latest, at time of writing 7.3)
-  You will also want to run `xcode-select --install` to ensure the correct version of clang is available.
+  You will also want to run `xcode-select --install` to ensure the correct version of Xcode is available.
 
 3. Make sure you have brew (if not get it http://brew.sh)
 
-4. run `brew install llvm openblas` in terminal (this will install llvm/clang (at time of writing 3.8.0). Also please note: openblas is optional, Apple Accelerate library is supported as well.
+4. run `brew install gcc5` in terminal (this will install GCC (at time of writing 5.4.0). Also please note: openblas is optional, Apple Accelerate library is supported as well.
 
 4.1 Add following symbolic links:
 ```
-ln -s /usr/local/opt/llvm/bin/clang /usr/local/bin/clang-omp
-ln -s /usr/local/opt/llvm/bin/clang++ /usr/local/bin/clang-omp++
+ln -s /usr/local/Cellar/gcc5/5.4.0/bin/gcc-5 /usr/local/bin/gcc-5
+ln -s /usr/local/Cellar/gcc5/5.4.0/bin/g++-5 /usr/local/bin/g++-5
+ln -s /usr/local/Cellar/gcc5/5.4.0/bin/gfortran-5 /usr/local/bin/gfortran-5
 ```
 
 5. Clone the libnd4j repo from the deeplearning4j (and unzip if its not automatically done)
 
 6. export the path to the folder as LIBND4J_HOME (eg: export LIBND4J_HOME=/workspace/libnd4j-master) 
-6b. run `export` in terminal and make sure your path variable contains the path to `clang-omp` (`/usr/local/Cellar/clang-omp/2015-04-01/bin`)
-6c. make sure there are no exports for variables like LIBRARY_PATH, or LD_LIBRARY_PATH or DYLD_LIBRARY_PATH, but if they are, and are pointing to anything inside clang-omp remove the clang-omp bits (or if you have trouble, remove the paths entirely)
+6b. run `export` in terminal and make sure your path variable contains the path to `gcc-5` (`/usr/local/Cellar/gcc5/5.4.0/bin/`)
+6c. make sure there are no exports for variables like LIBRARY_PATH, or LD_LIBRARY_PATH or DYLD_LIBRARY_PATH, but if they are, and are pointing to anything inside `gcc-5` remove the `gcc-5` bits (or if you have trouble, remove the paths entirely)
 
 7. `cd $LIBND4J_HOME` 
 8. `./buildnativeoperations.sh` (This will give a LOT of warnings, dont fret, if the last line is something like `[100%] Built target nd4j`)

@@ -1,23 +1,25 @@
-#include "../dll.h"
+#include <dll.h>
 //#include <string>
-#include "../helpers/sharedmem.h"
+#include <helpers/sharedmem.h>
 #include <stdio.h>
-#include "../helpers/shape.h"
+#include <helpers/shape.h>
+#ifndef __CUDACC__
 #include <omp.h>
-#include "../templatemath.h"
-#include "../helper_cuda.h"
-#include "../nd4jmalloc.h"
-#include "../pairwise_util.h"
-#include "../ops/ops.h"
-#include "../op_boilerplate.h"
+#endif
+#endif
+#include <templatemath.h>
+#include <helper_cuda.h>
+#include <nd4jmalloc.h>
+#include <pairwise_util.h>
+#include <ops.h>
+#include <op_boilerplate.h>
 
 #pragma once
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-#ifdef __JNI__
-#include <jni.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 

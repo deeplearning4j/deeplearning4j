@@ -8,21 +8,22 @@
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
 #include "../helpers/shape.h"
+#ifndef __CUDACC__
 #include <omp.h>
-#include "../dll.h"
-#include "../ops/ops.h"
-#include "../op_boilerplate.h"
+#endif
+#include <dll.h>
+#include <ops.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 
-#ifdef __JNI__
-#include <jni.h>
-#endif
 #include "../pairwise_util.h"
 
 

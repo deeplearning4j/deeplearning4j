@@ -9,31 +9,24 @@
 #ifndef TRANSFORM_H_
 #define TRANSFORM_H_
 #include <vector>
-#include "../templatemath.h"
-#include "../ops/ops.h"
+#include <templatemath.h>
+#include <ops/ops.h>
+#ifndef __CUDACC__
 #include <omp.h>
-#include "../pairwise_util.h"
-#include "../dll.h"
-#include "reduce.h"
-#include "scalar.h"
-#include "indexreduce.h"
-#include "broadcasting.h"
-#include "../helpers/shape.h"
-#include "../ops/ops.h"
-#include "../ops/special_ops.h"
-#include "../op_boilerplate.h"
-#include "../types/float8.h"
-
-#ifdef __CUDACC__
-#include <helper_cuda.h>
 #endif
+#include <pairwise_util.h>
+#include <dll.h>
+#include <loops/reduce.h>
+#include <loops/scalar.h>
+#include <loops/indexreduce.h>
+#include <loops/broadcasting.h>
 
-#ifdef __JNI__
-#include <jni.h>
-#endif
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <helper_cuda.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 
@@ -86,7 +79,9 @@
         (45,simdOps::CompareAndSet), \
         (46,simdOps::ReplaceNans) ,\
         (47,simdOps::StabilizeFP16) ,\
-        (48,simdOps::Histogram)
+        (48,simdOps::Histogram), \
+        (49,simdOps::Cube), \
+        (50,simdOps::CubeDerivative)
 
 
 namespace functions {
@@ -382,16 +377,15 @@ template<typename OpType>
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int tid, start, end;
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
@@ -400,11 +394,11 @@ template<typename OpType>
                     }
                 } else {
 
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
