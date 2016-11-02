@@ -568,6 +568,7 @@ template<typename OpType>
 
 					if (tad->dimensionLength < 1) {
 						delete tad;
+						delete[] startingIndex;
 						return;
 					}
 
