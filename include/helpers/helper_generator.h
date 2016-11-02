@@ -47,6 +47,7 @@ namespace nd4j {
             long generation;
             long currentPosition;
             long amplifier;
+            int synchronizer;
 
 #ifdef __CUDACC__
             curandGenerator_t gen;
@@ -69,6 +70,7 @@ namespace nd4j {
                 this->currentPosition = 0;
                 this->offset = 0;
                 this->amplifier = seed;
+                this->synchronizer = 0;
             }
 
             uint64_t *getBuffer() {
@@ -120,15 +122,21 @@ namespace nd4j {
                 if (actualPosition > this->size) {
                     actualPosition = actualPosition % this->size;
                     tempGen++;
-                    tempGen *= seed;
                 }
 
-                uint64_t ret = tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen;
+                uint64_t ret = tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen + 11;
+
+                if(generation > 1)
+                    ret = ret * generation + 11;
 
                 if (amplifier != seed)
                     ret = ret * amplifier + 11;
 
                 return ret;
+            }
+
+            void incrementGeneration() {
+                this->generation++;
             }
 
             long getNextIndex() {
@@ -147,6 +155,24 @@ namespace nd4j {
             uint64_t getNextElement() {
                 // TODO: proper implementation needed here
                 return generation == 1 ? buffer[getNextIndex()] : buffer[getNextIndex()]  * generation;
+            }
+
+
+            /**
+             * This method skips X elements from buffer
+             *
+             * @param numberOfElements number of elements to skip
+             */
+            void rewind(long numberOfElements) {
+                long newPos = this->getOffset() + numberOfElements;
+                if (newPos > this->getSize()) {
+                    newPos = numberOfElements - (this->getSize() - this->getOffset());
+                    this->incrementGeneration();
+                }
+                else if (newPos == this->getSize())
+                    newPos = 0;
+
+                this->setOffset(newPos);
             }
         };
 

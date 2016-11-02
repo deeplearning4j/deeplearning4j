@@ -209,13 +209,7 @@ namespace nd4j {
              * @param numberOfElements number of elements to skip
              */
             void rewind(long numberOfElements) {
-                long newPos = buffer->getOffset() + numberOfElements;
-                if (newPos > buffer->getSize())
-                    newPos = numberOfElements - (buffer->getSize() - buffer->getOffset());
-                else if (newPos == buffer->getSize())
-                    newPos = 0;
-
-                buffer->setOffset(newPos);
+                buffer->rewind(numberOfElements);
             }
         };
     }
