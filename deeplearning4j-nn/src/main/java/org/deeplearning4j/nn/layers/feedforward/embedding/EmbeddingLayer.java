@@ -71,14 +71,15 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         weightGradients.assign(0);
 
         INDArray linearisedInput = Nd4j.toFlattened(input);
+        INDArray deltaRows = delta.reshape(linearisedInput.length(), delta.shape()[delta.shape().length - 1]);
         int[] indexes = new int[linearisedInput.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = linearisedInput.getInt(i);
-            weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
+            weightGradients.getRow(indexes[i]).addi(deltaRows.getRow(i));
         }
 
         INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        INDArray biasGradients = delta.sum(0);
+        INDArray biasGradients = deltaRows.sum(0);
         biasGradientsView.assign(biasGradients);    //TODO do this without the assign...
 
         Gradient ret = new DefaultGradient();
