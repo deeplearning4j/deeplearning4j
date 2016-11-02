@@ -8,7 +8,6 @@ if(APPLE)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
     link_directories(/lib)
-    link_directories(/usr/local/opt/llvm/lib)
 endif()
 if(WIN32)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -30,14 +29,10 @@ ENDIF()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
-    set(CMAKE_C_COMPILER clang-omp++)
-    set(CMAKE_CXX_COMPILER clang-omp++)
-
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fopenmp ")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O3 -fp-model fast")
-
     # using Intel C++
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O3 -fp-model fast")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 
@@ -63,9 +58,7 @@ if(CUDA_BLAS)
     message("Build cublas")
     find_package(CUDA)
     add_definitions(-D__CUDABLAS__=true)
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        list(APPEND CUDA_NVCC_FLAGS "-ccbin clang-omp")
-    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         set (CMAKE_CXX_FLAGS "")
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if ("${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER 4.9 AND "$ENV{TRICK_NVCC}" STREQUAL "YES")

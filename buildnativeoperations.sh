@@ -125,8 +125,13 @@ case "$OS" in
 
     macosx)
     # Do something under Mac OS X platform
-    export CC=clang-omp
-    export CXX=clang-omp++
+    if [ "$CHIP" == "cuda" ]; then
+        export CC=clang
+        export CXX=clang++
+    else
+        export CC=$(ls /usr/local/bin/gcc-?)
+        export CXX=$(ls /usr/local/bin/g++-?)
+    fi
     ;;
 
     windows)

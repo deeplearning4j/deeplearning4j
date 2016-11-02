@@ -7,10 +7,9 @@
 
 #ifndef PAIRWISE_TRANSFORM_H_
 #define PAIRWISE_TRANSFORM_H_
-#ifdef __JNI__
-#include <jni.h>
-#endif
+#ifndef __CUDACC__
 #include <omp.h>
+#endif
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <shape.h>
@@ -23,6 +22,8 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 #define PAIRWISE_TRANSFORM_OPS \
