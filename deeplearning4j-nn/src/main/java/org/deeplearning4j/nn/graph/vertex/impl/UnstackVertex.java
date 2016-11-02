@@ -83,11 +83,11 @@ public class UnstackVertex extends BaseGraphVertex {
 
         switch (inputs[0].rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all());
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             default:
                 throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
         }
@@ -101,13 +101,13 @@ public class UnstackVertex extends BaseGraphVertex {
 
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen

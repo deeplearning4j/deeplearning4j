@@ -181,9 +181,9 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public INDArray activate(boolean training) {
-        INDArray z = preOutput(training);
+        INDArray z = input;
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-            conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
+            conf.getLayer().getActivationFunction(), z.dup(), conf.getExtraArgs() ));
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);

@@ -24,6 +24,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -468,7 +470,20 @@ public class GradientCheckTestsComputationGraph {
         INDArray input1 = ds.getFeatureMatrix();
         INDArray input2 = ds.getFeatureMatrix();
         INDArray input3 = ds.getFeatureMatrix();
-        INDArray labels = ds.getLabels();
+//        INDArray labels = ds.getLabels();
+
+        INDArray labels = Nd4j.zeros(150,2);
+        Random r = new Random(12345);
+        for( int i=0; i<150; i++ ){
+            labels.putScalar(i,r.nextInt(2),1.0);
+        }
+
+
+        Map<String,INDArray> out = graph.feedForward(new INDArray[]{input1, input2, input3}, true);
+
+        for(String s : out.keySet()){
+            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
+        }
 
         if( PRINT_RESULTS ){
             System.out.println("testBasicIrisTripletStackingL2Loss()" );
