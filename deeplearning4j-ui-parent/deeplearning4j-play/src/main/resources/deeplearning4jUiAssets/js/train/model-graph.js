@@ -17,24 +17,24 @@ function renderModelGraph(){
 function createGraph(data){
 
     //Generate the elements data
-    var layerNames = data["layerNames"];    //List<String>
-    var layerTypes = data["layerTypes"];    //List<String>
-    var layerInputs = data["layerInputs"];  //int[][]
-    var layerInfos = data["layerInfo"];     //List<Map<String,String>>
+    var vertexNames = data["vertexNames"];    //List<String>
+    var vertexTypes = data["vertexTypes"];    //List<String>
+    var vertexInputs = data["vertexInputs"];  //int[][]
+    var vertexInfos = data["vertexInfo"];     //List<Map<String,String>>
 
     var nodes = [];
     var edges = [];
-    for(var i=0; i<layerNames.length; i++ ){
+    for(var i=0; i<vertexNames.length; i++ ){
         var obj = {
             id: i,
-            name: layerNames[i],
+            name: vertexNames[i],
             faveColor: '#6FB1FC',   //TODO
             faveShape: 'triangle'   //TODO
         };
         nodes.push({ data: obj} );
 
         //Edges:
-        var inputsToCurrent = layerInputs[i];
+        var inputsToCurrent = vertexInputs[i];
         for(var j=0; j<inputsToCurrent.length; j++ ){
             var e = {
                 source: inputsToCurrent[j],

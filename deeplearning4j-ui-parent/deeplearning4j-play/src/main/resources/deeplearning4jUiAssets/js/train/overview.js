@@ -165,7 +165,7 @@ function renderUpdatesRatio(data) {
         overallMax = Math.ceil(overallMax);
         overallMin = Math.floor(overallMin);
 
-        console.log("Overall max/min: " + overallMax + "\t" + overallMin);
+        // console.log("Overall max/min: " + overallMax + "\t" + overallMin);
 
         var plot = $.plot(chart,
             toPlot, {
