@@ -1609,7 +1609,7 @@ namespace simdOps {
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
 
-#pragma omp simd
+#pragma omp simd reduction(max:maxIdx)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
 									currMax = dx[i];
@@ -1625,7 +1625,7 @@ namespace simdOps {
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
-#pragma omp for nowait
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i]) {
 									currMaxLocal = dx[i];
@@ -1636,12 +1636,12 @@ namespace simdOps {
 
 							}
 #pragma omp critical
-{
-							if (currMax < currMaxLocal) {
-								currMax = currMaxLocal;
-								maxIdx = maxIdxLocal;
-							}
-}
+                            {
+							    if (currMax < currMaxLocal) {
+								    currMax = currMaxLocal;
+								    maxIdx = maxIdxLocal;
+							    }
+                            }
 }
 						}
 
@@ -1654,7 +1654,7 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-#pragma omp simd
+#pragma omp simd reduction(max:maxIdx)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
 									currMax = dx[i * eleStride];
@@ -1670,7 +1670,7 @@ namespace simdOps {
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
-#pragma omp for nowait
+
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i * eleStride]) {
 									currMaxLocal = dx[i * eleStride];
@@ -1678,7 +1678,6 @@ namespace simdOps {
 								}
 
 								result[i] = 0.0;
-
 							}
 #pragma omp critical
 {
