@@ -332,7 +332,7 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 23:32:27 AEDT 2016
+                  DATE: Wed Nov 02 12:12:42 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
                   HASH: 1b892b2e9756321b5a601105ef63f5b0dd2a6611
                   MATRIX: 600->1|733->39|761->41|5249->4501|5263->4505|5327->4547|5599->4791|5613->4795|5682->4842|6873->6005|6887->6009|6955->6055|7299->6371|7313->6375|7382->6422|13156->12167|13186->12168|13220->12174|13282->12207|13312->12208|13459->12326|13489->12327|13536->12345|13598->12378|13628->12379
