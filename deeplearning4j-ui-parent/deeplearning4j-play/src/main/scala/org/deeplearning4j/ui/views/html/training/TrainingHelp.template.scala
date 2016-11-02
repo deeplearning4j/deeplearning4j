@@ -100,163 +100,247 @@ Seq[Any](format.raw/*1.40*/("""
 				</div>
 			</noscript>
 
-			<!-- start: Content -->
+			<!-- Start Content -->
 			<div id="content" class="span10">
+				<!-- Begin User Guide -->
+				<div class="row-fluid">
+					<div class="box span9">
+						<div class="box-header">
+							<h2><b>User Guide</b></h2>
+						</div>
+						<div class="box-content">
 
-			<div class="row-fluid sortable">
-				<div class="box span9">
-					<div class="box-header">
-						<h2><b>User Guide</b></h2>
-					</div>
-					<div class="box-content">
 							<div class="page-header">
-								<h1>Typography <small>Headings, paragraphs, lists, and other inline type elements</small></h1>
+								<h1>Deeplearning4j <small>Training UI</small></h1>
 							</div>
-							<div class="row-fluid">
-								<div class="span4">
-								<h3>Sample text and paragraphs</h3>
-								<p>
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales at. Nulla tellus elit, varius non commodo eget, mattis vel eros. In sed ornare nulla. Donec consectetur, velit a pharetra ultricies, diam lorem lacinia risus, ac commodo orci erat eu massa. Sed sit amet nulla ipsum. Donec felis mauris, vulputate sed tempor at, aliquam a ligula. Pellentesque non pulvinar nisi.
-								</p>
-								<p>
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales at. Nulla tellus elit, varius non commodo eget, mattis vel eros. In sed ornare nulla. Donec consectetur, velit a pharetra ultricies, diam lorem lacinia risus, ac commodo orci erat eu massa. Sed sit amet nulla ipsum. Donec felis mauris, vulputate sed tempor at, aliquam a ligula. Pellentesque non pulvinar nisi.
-								</p>
-								</div>
-								<div class="span4">
-								<h3>Example body text</h3>
-								<p>Nullam quis risus eget urna mollis ornare vel eu leo. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
-								<p>Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Donec sed odio dui.</p>
-								</div>
-								<div class="span4 ">
-								<div class="well">
-									<h1>h1. Heading 1</h1>
-									<h2>h2. Heading 2</h2>
-									<h3>h3. Heading 3</h3>
-									<h4>h4. Heading 4</h4>
-									<h5>h5. Heading 5</h5>
-									<h6>h6. Heading 6</h6>
-								</div>
-								</div>
-							</div><!--/row -->
 
 							<div class="row-fluid">
-								<div class="span12">
-									<h3>Example blockquotes</h3>
-									<div class="row-fluid">
-									<div class="span6">
-										<p>Default blockquotes are styled as such:</p>
-										<blockquote>
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis.</p>
-										<small>Someone famous in <cite title="">Body of work</cite></small>
-										</blockquote>
-									</div>
-									<div class="span6">
-										<p>You can always float your blockquote to the right:</p>
-										<blockquote class="pull-right">
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis.</p>
-										<small>Someone famous in <cite title="">Body of work</cite></small>
-										</blockquote>
-									</div>
-									</div>
-								</div>
-							</div>
-							<div class="row-fluid">
-								<div class="span6">
-								<h3>More Sample Text</h3>
-								<p>
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales at. Nulla tellus elit, varius non commodo eget, mattis vel eros. In sed ornare nulla. Donec consectetur, velit a pharetra ultricies, diam lorem lacinia risus, ac commodo orci erat eu massa. Sed sit amet nulla ipsum. Donec felis mauris, vulputate sed tempor at, aliquam a ligula. Pellentesque non pulvinar nisi.
-								</p>
-								</div>
-								<div class="span6">
-								<h3>And Paragraphs</h3>
-								<p>
-								Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare dolor, quis ullamcorper ligula sodales at. Nulla tellus elit, varius non commodo eget, mattis vel eros. In sed ornare nulla. Donec consectetur, velit a pharetra ultricies, diam lorem lacinia risus, ac commodo orci erat eu massa. Sed sit amet nulla ipsum. Donec felis mauris, vulputate sed tempor at, aliquam a ligula. Pellentesque non pulvinar nisi.
-								</p>
-								</div>
-							</div>
-							<div class="row-fluid">
-								<div class="span12">
-								<h2>Example use of Tooltips</h2>
-								<p>Hover over the links below to see tooltips:</p>
-								<div class="tooltip-demo well">
-									<p class="muted" style="margin-bottom: 0;">Tight pants next level keffiyeh <a href="#" data-rel="tooltip" data-original-title="first tooltip">you probably</a> haven't heard of them. Photo booth beard raw denim letterpress vegan messenger bag stumptown. Farm-to-table seitan, mcsweeney's fixie sustainable quinoa 8-bit american appadata-rel <a href="#" data-rel="tooltip" data-original-title="Another tooltip">have a</a> terry richardson vinyl chambray. Beard stumptown, cardigans banh mi lomo thundercats. Tofu biodiesel williamsburg marfa, four loko mcsweeney's cleanse vegan chambray. A <a href="#" data-rel="tooltip" data-original-title="Another one here too">really ironic</a> artisan whatever keytar, scenester farm-to-table banksy Austin <a href="#" data-rel="tooltip" data-original-title="The last tip!">twitter handle</a> freegan cred raw denim single-origin coffee viral.
+								<div class="span8">
+									<h1><small>Welcome!</small></h1>
+									<p>
+										Welcome to the Deeplearning4j Training UI! DL4J provides the HistogramIterationListener as a method of visualizing in your browser (in real time) the progress of network training. Here’s an excellent <a href="https://cs231n.github.io/neural-networks-3/#baby" target="_blank">web page by Andrej Karpathy</a> about visualizing neural net training. It is worth reading that page first.
 									</p>
 								</div>
+
+								<div class="span4">
+									<div class="well">
+										<h1><small>If there's any confusion, please ask our engineers in <a href="https://gitter.im/deeplearning4j/deeplearning4j" target="_blank">Gitter</a>.</small></h1>
+									</div>
 								</div>
 							</div>
+
+							<h1><small>Overview Tab</small></h1>
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Score vs Iteration: Snapshot</h2>
+									<ul>
+										<li>Score vs. iteration should (overall) go down over time.</li>
+										<ul>
+											<li>If the score increases consistently, your learning rate is likely set too high. Try reducing it until scores become more stable.</li>
+											<li>Increasing scores can also be indicative of other network issues, such as incorrect data normalization.</li>
+											<li>If the score is flat or decreases very slowly (over a few hundred iteratons) (a) your learning rate may be too low, or (b) you might be having diffulties with optimization. In the latter case, if you are using the SGD updater, try a different updater such as momentum, RMSProp or Adagrad.</li>
+											<li>Note that data that isn’t shuffled (i.e., each minibatch contains only one class, for classification) can result in very rough or abnormal-looking score vs. iteration graphs.</li>
+										</ul>
+										<li>Some noise in this line chart is expected (i.e., the line will go up and down within a small range). However, if the scores vary quite significantly between runs variation is very large, this can be a problem.</li>
+									</ul>
+								</div>
+								<div class="span6">
+									<h2>Model Performance</h2>
+									<p>
+										The table contains basic model performance metrics.<br><br>
+										<b>Model Type</b> - MultiLayerNetwork or...<br>
+										<b>nLayers</b> - Number of layers.<br>
+										<b>nParams</b> - Number of parameters.<br>
+										<b>Total Runtime</b> - Explain importance<br>
+										<b>Last Update</b> - Explain importance<br>
+										<b>Total Parameter Updates</b> - Explain importance<br>
+										<b>Updates Per Second</b> - Explain importance<br>
+										<b>Examples Per Second</b> - Explain importance
+									</p>
+								</div>
+							</div>
+
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Ratio of Updates to Parameters: All Layers</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Variances</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+							</div>
+
+							<h1><small>Model Tab</small></h1>
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Layer Visualization UI</h2>
+									<p>
+										The layer visualization UI renders network structure dynamically. Users can inspect the and node layer parameters by clicking on the various elements of the GUI to see general information about layers/nodes, overall network information such as performance.
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Layer Information</h2>
+									<p>
+										The table contains basic layer information.<br><br>
+										<b>Name</b> - MultiLayerNetwork or...<br>
+										<b>Type</b> - Number of layers.<br>
+										<b>Inputs</b> - Number of parameters.<br>
+										<b>Outputs</b> - Explain importance<br>
+										<b>Activation Function</b> - Explain importance<br>
+										<b>Learning Rate</b> - Explain importance
+									</p>
+								</div>
+							</div>
+
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Mean Magnitudes</h2>
+									<p>
+									<ul>
+										<li>At the right is a line chart of the mean magnitude of both the parameters and the updates in the neural network.</li>
+										<ul>
+											<li>“Mean magnitude” = the average of the absolute value of the parameters or updates.</li>
+										</ul>
+										<li>For tuning the learning rate, the ratio of parameters to updates for a layer should be somewhere in the order of 1000:1 - but note that is a rough guide only, and may not be appropriate for all networks. It’s often a good starting point, however.</li>
+										<ul>
+											<li>If the ratio diverges significantly from this, your parameters may be too unstable to learn useful features, or may change too slowly to learn useful features</li>
+											<li>To change this ratio, adjust your learning rate (or sometimes, parameter initialization). In some networks, you may need to set the learning rate differently for different layers.</li>
+										</ul>
+										<li>Keep an eye out for unusually large spikes in the updates: this may indicate exploding gradients (see discussion in the “histogram of gradients” section above)</li>
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Activations</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+							</div>
+
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Parameters Histogram</h2>
+									<p>
+									<ul>
+										<li>At the top right is a histogram of the weights in the neural network (at the last iteration), split up by layer and the type of parameter. For example, “param_0_W” refers to the weight parameters for the first layer.</li>
+										<li>For weights, these histograms should have an approximately Gaussian (normal) distribution, after some time.</li>
+										<li>For biases, these histograms will generally start at 0, and will usually end up being approximately Gaussian.</li>
+										<ul>
+											<li>One exception to this is for LSTM recurrent neural network layers: by default, the biases for one gate (the forget gate) are set to 1.0 (by default, though this is configurable), to help in learning dependencies across long time periods. This results in the bias graphs initially having many biases around 0.0, with another set of biases around 1.0</li>
+										</ul>
+										<li>Keep an eye out for parameters that are diverging to +/- infinity: this may be due to too high a learning rate, or insufficient regularization (try adding some L2 regularization to your network).</li>
+										<li>Keep an eye out for biases that become very large. This can sometimes occur in the output layer for classification, if the distribution of classes is very imbalanced</li>
+									</ul>
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Updates Histogram</h2>
+									<p>
+									<ul>
+										<li>At the bottom left is the histogram of updates for the neural network (at the last iteration), also split up by layer and type of parameter.</li>
+										<ul>
+											<li>Note that these are the updates - i.e., the gradients after appling learning rate, momentum, regularization etc.</li>
+										</ul>
+										<li>As with the parameter graphs, these should have an approximately Gaussian (normal) distribution.</li>
+										<li>Keep an eye out for very large values: this can indicate exploding gradients in your network.</li>
+										<ul>
+											<li>Exploding gradients are problematic as they can ‘mess up’ the parameters of your network.</li>
+											<li>In this case, it may indicate a weight initialization, learning rate or input/labels data normalization issue.</li>
+											<li>In the case of recurrent neural networks, adding some gradient normalization or gradient clipping can frequently help.</li>
+										</ul>
+									</ul>
+									</p>
+								</div>
+							</div>
+
+							<h1><small>System Tab</small></h1>
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>JVM Memory Utilization</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Off-Heap Memory Utilization</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+							</div>
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>Hardware Information</h2>
+									<p>
+										The table contains basic hardware metrics.<br><br>
+										<b>JVM Current Memory</b> - What this means.<br>
+										<b>JVM Max Memory</b> - What this means.<br>
+										<b>Off-Heap Current Memory</b> - What this means.<br>
+										<b>Off-Heap Current Memory</b> - What this means.<br>
+										<b>JVM Available Processors</b> - What this means.<br>
+										<b>Number Compute Devices</b> - What this means.
+									</p>
+								</div>
+								<div class="span6">
+									<h2>Software Information</h2>
+									<p>
+										The table contains basic software information.<br><br>
+										<b>OS</b> - What this means.<br>
+										<b>Host Name</b> - What this means.<br>
+										<b>OS Architecture</b> - What this means.<br>
+										<b>JVM Name</b> - What this means.<br>
+										<b>JVM Version</b> - What this means.<br>
+										<b>ND4J Backend</b> - What this means.<br>
+										<b>ND4J Datatype</b> - What this means.
+									</p>
+								</div>
+							</div>
+							<div class="row-fluid">
+								<div class="span6">
+									<h2>GPU Specific Graph?</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+								<div class="span6">
+									<h2>GPU Specific Table?</h2>
+									<p>
+										Need Explanation Here.
+									</p>
+								</div>
+							</div>
+
 						</div>
-				</div><!--/span-->
-
-				<div class="box span3">
-					<div class="box-header" data-original-title>
-						<h2><i class="halflings-icon list"></i><span class="break"></span>Unordered List</h2>
 					</div>
-					<div class="box-content">
-						<ul>
-							<li>Lorem ipsum dolor sit amet</li>
-							<li>Consectetur adipiscing elit</li>
-							<li>Integer molestie lorem at massa</li>
-							<li>Facilisis in pretium nisl aliquet</li>
-							<li>Nulla volutpat aliquam velit
-							<ul>
-								<li>Phasellus iaculis neque</li>
-								<li>Purus sodales ultricies</li>
-								<li>Vestibulum laoreet porttitor sem</li>
-								<li>Ac tristique libero volutpat at</li>
-							</ul>
-							</li>
-							<li>Faucibus porta lacus fringilla vel</li>
-							<li>Aenean sit amet erat nunc</li>
-							<li>Eget porttitor lorem</li>
-						</ul>
-					</div>
-				</div><!--/span-->
-
-				<div class="box span3">
-					<div class="box-header" data-original-title>
-						<h2><i class="halflings-icon list"></i><span class="break"></span>Ordered List</h2>
-					</div>
-					<div class="box-content">
-						<ol>
-							<li>Lorem ipsum dolor sit amet</li>
-							<li>Consectetur adipiscing elit</li>
-							<li>Integer molestie lorem at massa</li>
-							<li>Facilisis in pretium nisl aliquet</li>
-							<li>Nulla volutpat aliquam velit</li>
-							<li>Faucibus porta lacus fringilla vel</li>
-							<li>Aenean sit amet erat nunc</li>
-							<li>Eget porttitor lorem</li>
-						</ol>
-					</div>
-				</div><!--/span-->
-
-				<div class="box span3">
-					<div class="box-header" data-original-title>
-						<h2><i class="halflings-icon list"></i><span class="break"></span>Description List</h2>
-					</div>
-					<div class="box-content">
-						<dl>
-							<dt>Description lists</dt>
-							<dd>A description list is perfect for defining terms.</dd>
-							<dt>Euismod</dt>
-							<dd>Vestibulum id ligula porta felis euismod semper eget lacinia odio sem nec elit.</dd>
-							<dd>Donec id elit non mi porta gravida at eget metus.</dd>
-							<dt>Malesuada porta</dt>
-							<dd>Etiam porta sem malesuada magna mollis euismod.</dd>
-						</dl>
-					</div>
-				</div><!--/span-->
-
-
-
-			</div><!--/row-->
-
-
-	</div><!--/.fluid-container-->
-
-			<!-- end: Content -->
-		</div><!--/#content.span10-->
-		</div><!--/fluid-row-->
+					<!-- End User Guide -->
+					<!-- Begin Table of Contents -->
+					<div class="box span3">
+						<div class="box-header">
+							<h2><b>Table of Contents</b></h2>
+						</div>
+						<div class="box-content">
+							<dl>
+								<dt>Overview</dt>
+								<dd>Snapshot of your model performance.</dd>
+								<dt>Model</dt>
+								<dd>Layer by layer inspection tool.</dd>
+								<dt>System</dt>
+								<dd>Memory utilization dashboard as well as system configurations across multiple machines.</dd>
+								<dt>Language</dt>
+								<dd>Switch between English, Japanese, Chinese, Korean, Ukranian and Russian.</dd>
+							</dl>
+						</div>
+					</div><!-- End Table of Contents -->
+				</div><!-- End Row Fluid -->
+			</div>
+			<!-- End Content -->
+		</div><!--End Row Fluid -->
+		</div><!-- End Container Fluid Full-->
 
 		<!-- Start JavaScript-->
 		<script src="/assets/js/jquery-1.9.1.min.js"></script>
@@ -313,9 +397,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 12:12:42 AEDT 2016
+                  DATE: Wed Nov 02 17:56:03 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: ff6c6fd968ea6d0709fc08c7bcabc3113d62faa9
+                  HASH: ddd704858fc18a69bea22dab35731a988a170a03
                   MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --
