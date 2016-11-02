@@ -1,7 +1,10 @@
-package org.nd4j.linalg.cpu.nativecpu.ops;
+package org.nd4j.linalg.rng;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
@@ -12,6 +15,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
@@ -24,7 +28,12 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
-public class RandomTests {
+@RunWith(Parameterized.class)
+public class RandomTests extends BaseNd4jTest {
+
+    public RandomTests(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Test
     public void testDistribution1() throws Exception {
@@ -387,5 +396,10 @@ public class RandomTests {
             System.gc();
             Thread.sleep(50);
         }
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
     }
 }
