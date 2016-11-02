@@ -72,6 +72,8 @@ public class L2Vertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
+//        System.out.println("l2 vertex input sizes: " + Arrays.toString(inputs[0].shape()) + "\t" + Arrays.toString(inputs[1].shape()));
+
         INDArray a = inputs[0];
         INDArray b = inputs[1];
 
