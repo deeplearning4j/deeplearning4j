@@ -468,9 +468,6 @@ public class TrainModule implements UIModule {
         mmRatioMap.put("layerParamNames", meanMagnitudes.getSecond().keySet());
         mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
         mmRatioMap.put("ratios", meanMagnitudes.getSecond());
-//        for (Map.Entry<String, List<Double>> entry : meanMagnitudes.getSecond().entrySet()) {
-//            mmRatioMap.put(entry.getKey(), entry.getValue());
-//        }
         result.put("meanMagRatio", mmRatioMap);
 
         //Get activations line chart for layer
@@ -802,7 +799,7 @@ public class TrainModule implements UIModule {
         if (!(p instanceof StatsReport)) return null;
         StatsReport sr = (StatsReport) p;
 
-        String layerName = gi.getVertexNames().get(layerIdx);
+        String layerName = gi.getOriginalVertexName().get(layerIdx);
 
         Map<String, Histogram> map = sr.getHistograms(statsType);
 
