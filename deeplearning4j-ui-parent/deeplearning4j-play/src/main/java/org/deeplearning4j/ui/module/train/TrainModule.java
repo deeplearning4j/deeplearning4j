@@ -233,7 +233,7 @@ public class TrainModule implements UIModule {
                 Map<String,Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
                 if(map != null){
                     for(String s : map.keySet()){
-                        updateRatios.put(s,new ArrayList<>());
+                        if(s.toLowerCase().endsWith("w")) updateRatios.put(s,new ArrayList<>());    //TODO: more robust "weights only" approach...
                         varianceGradients.put(s, new ArrayList<>());
                         varianceUpdates.put(s, new ArrayList<>());
                     }

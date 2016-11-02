@@ -120,62 +120,73 @@ Seq[Any](format.raw/*1.40*/("""
 							<div id="myTabContent" class="tab-content">
 								<div class="tab-pane active" id="machine1">
 
-									<!-- Memory Utilization -->
+									<!-- JVM Memory Utilization Chart -->
 									<div class="row-fluid">
 
-										<div class="span8 widget blue" onTablet="span7" onDesktop="span8">
-											<h1>"""),_display_(/*103.17*/i18n/*103.21*/.getMessage("train.system.chart.jvmTitle")),format.raw/*103.63*/("""</h1>
-											<div id="jvm-memory-chart"  style="height:282px" ></div>
+                                        <div class="box span6">
+                                            <div class="box-header">
+                                                <h2><b>"""),_display_(/*104.57*/i18n/*104.61*/.getMessage("train.system.chart.jvmTitle")),format.raw/*104.103*/("""</b></h2>
+                                            </div>
+                                            <div class="box-content">
+                                                <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
+                                                <p id="hoverdata"><b>JVM Memory:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+                                            </div>
 										</div>
-
-										<!-- System Statistics -->
-										<div class="sparkLineStats span4 widget green" onTablet="span5" onDesktop="span4">
-											<h1>"""),_display_(/*109.17*/i18n/*109.21*/.getMessage("train.system.table.hardwareTitle")),format.raw/*109.68*/("""</h1>
-											<ul class="unstyled">
-												<li>
-													JVM Current Memory:
-													<span class="number" id="currentBytesJVM">Loading...</span>
-												</li>
-												<li>
-													JVM Max Memory:
-													<span class="number" id="maxBytesJVM">Loading...</span>
-												</li>
-												<li>
-													Off-Head Current Memory:
-													<span class="number" id="currentBytesOffHeap">Loading...</span>
-												</li>
-												<li>
-													Off-Heap Max Memory:
-													<span class="number" id="maxBytesOffHeap">Loading...</span>
-												</li>
-												<li>
-													JVM Available Processors:
-													<span class="number" id="jvmAvailableProcessors">Loading...</span>
-												</li>
-												<li>
-													# Compute Devices:
-													<span class="number" id="nComputeDevices">Loading...</span>
-												</li>
-											</ul>
-										</div>
-									</div>
-
-									<div class="row-fluid">
-										<!-- Off Heap Memory Utlization Chart -->
-										<div class="span8 widget yellow" onTablet="span7" onDesktop="span8">
-											<h1>"""),_display_(/*142.17*/i18n/*142.21*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*142.67*/("""</h1>
-											<div id="off-heap-memory-chart"  style="height:282px" ></div>
-										</div>
+                                        <!-- Off Heap Memory Utlization Chart -->
+                                        <div class="box span6">
+                                            <div class="box-header">
+                                                <h2><b>"""),_display_(/*114.57*/i18n/*114.61*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*114.107*/("""</b></h2>
+                                            </div>
+                                            <div class="box-content">
+                                                <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
+                                                <p id="hoverdata"><b>Off Heap Memory:</b> <span id="y2">0</span>, <b>Iteration:</b> <span id="x2">0</span></p>
+                                            </div>
+                                        </div>
 
 									</div>
 
-									<!-- Charts -->
+									<!-- Tables -->
+                                    <div class="row-fluid">
+
+                                        <!-- Hardware Information -->
+                                        <div class="box span12">
+                                            <div class="box-header">
+                                                <h2><b>"""),_display_(/*130.57*/i18n/*130.61*/.getMessage("train.system.table.hardwareTitle")),format.raw/*130.108*/("""</b></h2>
+                                            </div>
+                                            <div class="box-content">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>JVM Current Memory</th>
+                                                        <th>JVM Max Memory</th>
+                                                        <th>Off-Heap Current Memory</th>
+                                                        <th>Off-Heap Max Memory</th>
+                                                        <th>JVM Available Processors</th>
+                                                        <th># Compute Devices</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr>
+                                                        <td id="currentBytesJVM">Loading...</td>
+                                                        <td id="maxBytesJVM">Loading...</td>
+                                                        <td id="currentBytesOffHeap">Loading...</td>
+                                                        <td id="maxBytesOffHeap">Loading...</td>
+                                                        <td id="jvmAvailableProcessors">Loading...</td>
+                                                        <td id="nComputeDevices">Loading...</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
 									<div class="row-fluid">
 
 										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>"""),_display_(/*154.21*/i18n/*154.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*154.72*/("""</b></h2>
+												<h2><b>"""),_display_(/*165.21*/i18n/*165.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*165.72*/("""</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -297,16 +308,16 @@ Seq[Any](format.raw/*1.40*/("""
 
 		<!-- Execute once on page load -->
 		<script>
-            $(document).ready(function()"""),format.raw/*276.41*/("""{"""),format.raw/*276.42*/("""
-				"""),format.raw/*277.5*/("""renderSystemPage();
-            """),format.raw/*278.13*/("""}"""),format.raw/*278.14*/(""");
+            $(document).ready(function()"""),format.raw/*287.41*/("""{"""),format.raw/*287.42*/("""
+				"""),format.raw/*288.5*/("""renderSystemPage();
+            """),format.raw/*289.13*/("""}"""),format.raw/*289.14*/(""");
         </script>
 
 		 <!--Execute periodically (every 2 sec) -->
 		<script>
-            setInterval(function()"""),format.raw/*283.35*/("""{"""),format.raw/*283.36*/("""
-                """),format.raw/*284.17*/("""renderSystemPage();
-            """),format.raw/*285.13*/("""}"""),format.raw/*285.14*/(""", 2000);
+            setInterval(function()"""),format.raw/*294.35*/("""{"""),format.raw/*294.36*/("""
+                """),format.raw/*295.17*/("""renderSystemPage();
+            """),format.raw/*296.13*/("""}"""),format.raw/*296.14*/(""", 2000);
         </script>
 		 <!--End JavaScript-->
 
@@ -332,11 +343,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 12:12:42 AEDT 2016
+                  DATE: Wed Nov 02 17:56:03 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 1b892b2e9756321b5a601105ef63f5b0dd2a6611
-                  MATRIX: 600->1|733->39|761->41|5249->4501|5263->4505|5327->4547|5599->4791|5613->4795|5682->4842|6873->6005|6887->6009|6955->6055|7299->6371|7313->6375|7382->6422|13156->12167|13186->12168|13220->12174|13282->12207|13312->12208|13459->12326|13489->12327|13536->12345|13598->12378|13628->12379
-                  LINES: 20->1|25->1|26->2|127->103|127->103|127->103|133->109|133->109|133->109|166->142|166->142|166->142|178->154|178->154|178->154|300->276|300->276|301->277|302->278|302->278|307->283|307->283|308->284|309->285|309->285
+                  HASH: 6013cafe9a857df8894a2e5e21c23ac7511f0506
+                  MATRIX: 600->1|733->39|761->41|5356->4608|5370->4612|5435->4654|6214->5405|6228->5409|6297->5455|7216->6346|7230->6350|7300->6397|9515->8584|9529->8588|9598->8635|15372->14380|15402->14381|15436->14387|15498->14420|15528->14421|15675->14539|15705->14540|15752->14558|15814->14591|15844->14592
+                  LINES: 20->1|25->1|26->2|128->104|128->104|128->104|138->114|138->114|138->114|154->130|154->130|154->130|189->165|189->165|189->165|311->287|311->287|312->288|313->289|313->289|318->294|318->294|319->295|320->296|320->296
                   -- GENERATED --
               */
           
