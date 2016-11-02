@@ -43,11 +43,11 @@ Seq[Any](format.raw/*1.40*/("""
 	<!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
 	<!--[if lt IE 9]>
 	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet">
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
 	<![endif]-->
 
 	<!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
 	<![endif]-->
 </head>
 
@@ -156,8 +156,8 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Mean Magnitudes</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="mean-mag-chart"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
+							<div id="meanmag"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Magnitude:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -166,8 +166,8 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Activations</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="activations"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Activation:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -176,8 +176,8 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Learning Rates</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="learningrate"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Learning Rate:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -186,7 +186,7 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Parameters Histogram</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="stackchart" class="center" style="height:300px;"></div>
+							<div id="parametershistogram" class="center" style="height:300px;"></div>
 
 							<p class="stackControls center">
 								<input class="btn" type="button" value="With stacking">
@@ -240,37 +240,41 @@ Seq[Any](format.raw/*1.40*/("""
 		<script src="/assets/js/retina.js"></script>
 		<script src="/assets/js/custom.js"></script>
 		<script src="/assets/js/cytoscape.min.js"></script>
-		<script src="/assets/js/model-layers.js"></script>
 		<script src="/assets/js/dagre.min.js"></script>
 		<script src="/assets/js/cytoscape-dagre.js"></script>
-		<script src="/assets/js/train/model.js"></script>    <!-- Charts and tables are generated here! -->
+		"""),format.raw/*221.100*/("""
+		"""),format.raw/*222.3*/("""<script src="/assets/js/train/model.js"></script>        <!-- Charts and tables are generated here! -->
+
+        <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
 
 		<!-- Execute once on page load -->
 		<script>
-				$(document).ready(function()"""),format.raw/*226.33*/("""{"""),format.raw/*226.34*/("""
-					"""),format.raw/*227.6*/("""renderLayerTable();
-					renderMeanMagChart();
-				"""),format.raw/*229.5*/("""}"""),format.raw/*229.6*/(""");
+				$(document).ready(function()"""),format.raw/*228.33*/("""{"""),format.raw/*228.34*/("""
+					"""),format.raw/*229.6*/("""renderModelGraph();
+					renderLayerTable();
+					renderModelPage();
+				"""),format.raw/*232.5*/("""}"""),format.raw/*232.6*/(""");
 		</script>
 
 		<!-- Execute periodically (every 2 sec) -->
-		<!--<script>-->
-				<!--setInterval(function()"""),format.raw/*234.31*/("""{"""),format.raw/*234.32*/("""-->
-					<!--renderLayerTable() -->
-				<!--"""),format.raw/*236.9*/("""}"""),format.raw/*236.10*/(""", 2000);-->
-		<!--</script>-->
+		<script>
+				setInterval(function()"""),format.raw/*237.27*/("""{"""),format.raw/*237.28*/("""
+					"""),format.raw/*238.6*/("""renderLayerTable();
+					renderModelPage();
+				"""),format.raw/*240.5*/("""}"""),format.raw/*240.6*/(""", 2000);
+		</script>
 
 		<!--<script type="text/javascript">-->
-		<!--$(document).ready(function() """),format.raw/*240.36*/("""{"""),format.raw/*240.37*/("""-->
+		<!--$(document).ready(function() """),format.raw/*244.36*/("""{"""),format.raw/*244.37*/("""-->
 			<!--var option = '1';-->
 			<!--var url = window.location.href;-->
 			<!--option = url.match(/layer=(.*)/)[1];-->
 			<!--showDiv(option);-->
-		<!--"""),format.raw/*245.7*/("""}"""),format.raw/*245.8*/(""");-->
-		<!--function showDiv(option) """),format.raw/*246.32*/("""{"""),format.raw/*246.33*/("""-->
+		<!--"""),format.raw/*249.7*/("""}"""),format.raw/*249.8*/(""");-->
+		<!--function showDiv(option) """),format.raw/*250.32*/("""{"""),format.raw/*250.33*/("""-->
 			<!--$('#0').hide();-->
 			<!--$('#' + option).show();-->
-		<!--"""),format.raw/*249.7*/("""}"""),format.raw/*249.8*/("""-->
+		<!--"""),format.raw/*253.7*/("""}"""),format.raw/*253.8*/("""-->
 		<!--</script>-->
 		<!-- End JavaScript-->
 </body>
@@ -295,11 +299,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Tue Nov 01 19:33:45 AEDT 2016
+                  DATE: Wed Nov 02 12:37:22 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: b8be61b9f44d7ef722a7e4713bd94b7591516c45
-                  MATRIX: 598->1|731->39|759->41|4294->3548|4323->3549|4357->3556|4475->3647|4503->3648|4535->3653|9787->8876|9817->8877|9852->8884|9933->8937|9962->8938|10106->9053|10136->9054|10210->9100|10240->9101|10381->9213|10411->9214|10598->9373|10627->9374|10694->9412|10724->9413|10825->9486|10854->9487
-                  LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|250->226|250->226|251->227|253->229|253->229|258->234|258->234|260->236|260->236|264->240|264->240|269->245|269->245|270->246|270->246|273->249|273->249
+                  HASH: c21010b2d872f69e486dededfddda2d2236ebb41
+                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9593->8778|9625->8782|9947->9075|9977->9076|10012->9083|10116->9159|10145->9160|10278->9264|10308->9265|10343->9272|10421->9322|10450->9323|10581->9425|10611->9426|10798->9585|10827->9586|10894->9624|10924->9625|11025->9698|11054->9699
+                  LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|245->221|246->222|252->228|252->228|253->229|256->232|256->232|261->237|261->237|262->238|264->240|264->240|268->244|268->244|273->249|273->249|274->250|274->250|277->253|277->253
                   -- GENERATED --
               */
           
