@@ -173,7 +173,7 @@ namespace simdOps {
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY) default(shared)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[6];
@@ -468,7 +468,7 @@ namespace simdOps {
 			T binSize = (max_val - min_val) / (numBins);
 
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close) default(shared)
 			{
 				int tid, start, end;
 
@@ -642,7 +642,7 @@ namespace simdOps {
 
 			T *fIn = dx;
 			T *fOut = result;
-#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[4];
@@ -1407,8 +1407,7 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-// FIXME: proper reduction required here
-//#pragma omp simd
+#pragma omp simd reduction (max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
 							if (currMax < dx[i]) {
 								currMax = dx[i];
@@ -1455,8 +1454,7 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-// FIXME: proper reduction required here
-//#pragma omp simd
+#pragma omp simd reduction(max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
 							if (currMax < dx[i * eleStride]) {
@@ -1472,7 +1470,7 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
@@ -1609,7 +1607,7 @@ namespace simdOps {
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
 
-#pragma omp simd reduction(max:maxIdx)
+#pragma omp simd reduction(max:maxIdx,currMax)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
 									currMax = dx[i];
@@ -1621,7 +1619,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
@@ -1665,7 +1663,7 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
@@ -1698,6 +1696,8 @@ namespace simdOps {
 			else {
                 int dimensionLength = (int) extraParams[0];
                 int *dimension = new int[dimensionLength];
+
+#pragma omp simd
                 for (int i = 0; i < dimensionLength; i++) {
                     dimension[i] = (int) extraParams[i + 1];
                 }
@@ -1757,7 +1757,7 @@ namespace simdOps {
 
                             } else {
 
-#pragma omp parallel for reduction(max:maxValue,maxIdx)
+#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                                 for (int i = 0; i < tadLength; i++) {
                                     if (rX[i * tadEWS] > maxValue) {
                                         maxIdx = i;
@@ -1775,7 +1775,7 @@ namespace simdOps {
                             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                             num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                             for (int i = 0; i < tads; i++) {
                                 int offset = tadOffsets[i];
                                 int shapeIter[MAX_RANK];

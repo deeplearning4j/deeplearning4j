@@ -346,7 +346,7 @@ template<typename OpType>
                            int *indexes,
                            int *resultIndexes) {
                 const Nd4jIndex n = shape::length(xShapeInfo);
-#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY)
+#pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                 for (Nd4jIndex i = 0; i < n; i++) {
                     result[resultIndexes[i]] = OpType::op(x[indexes[i]], scalar,extraParams);
                 }
@@ -387,7 +387,7 @@ template<typename OpType>
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 // main loop, rolling along tads
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int r = 0; r < numTads; r++) {
 
                     int offset = tadOffsets[r];
@@ -503,7 +503,7 @@ template<typename OpType>
                         int xOffset = shape::offset(xShapeInfo);
                         int resultOffset = shape::offset(resultShapeInfo);
 
-#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY)
+#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY) default(shared)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
@@ -549,7 +549,7 @@ template<typename OpType>
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;
@@ -563,7 +563,7 @@ template<typename OpType>
                 }
 
                 else {
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;

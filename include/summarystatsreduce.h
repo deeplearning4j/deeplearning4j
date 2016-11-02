@@ -729,7 +729,7 @@ template<typename OpType>
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-#pragma omp  parallel  for
+#pragma omp parallel for schedule(guided) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         int offset = tad.tadOffsets[i];
                         int shapeIter[MAX_RANK];
@@ -772,7 +772,7 @@ template<typename OpType>
                         int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided) default(shared)
                         for (int i = 0; i < resultLength; i++) {
                             int baseOffset = tad.tadOffsets[i];
                             SummaryStatsData<T> comp;
@@ -795,7 +795,7 @@ template<typename OpType>
                         int tadRank = shape::rank(tadShapeShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided) default(shared)
                         for (int r = 0; r < resultLength; r ++) {
                             int xCoord[MAX_RANK];
                             int tadOffsetForBlock = tad.tadOffsets[r];

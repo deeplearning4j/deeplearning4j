@@ -492,7 +492,7 @@ template<typename OpType>
 
 				if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
 					for (int i = 0; i < resultLength; i++) {
 						T *iter = x + tadOffsets[i];
 						T start = OpType::startingValue(iter);
@@ -519,7 +519,7 @@ template<typename OpType>
 					int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					int *tadStride = shape::stride(tadOnlyShapeInfo);
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1)
+#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
 					for (int i = 0; i < resultLength; i++) {
 						int offset = tadOffsets[i];
 						int xCoord[MAX_RANK];
@@ -606,7 +606,7 @@ template<typename OpType>
                         int _threads = nd4j::math::nd4j_min<int>(info.threads, omp_get_max_threads());
                         _threads = nd4j::math::nd4j_max<int>(_threads, 1);
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
 						{
 							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
@@ -670,7 +670,7 @@ template<typename OpType>
 					T *blocks = new T[info.chunks];
 
 
-#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
 					{
 						T local = OpType::startingValue(x);
 						for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
