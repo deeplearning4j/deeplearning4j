@@ -132,8 +132,8 @@
 							<h2><b>Mean Magnitudes</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="mean-mag-chart"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Y:</b> <span id="y">0</span>, <b>X:</b> <span id="x">0</span></p>
+							<div id="meanmag"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Magnitude:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -142,8 +142,8 @@
 							<h2><b>Activations</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="activations"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Activation:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -152,8 +152,8 @@
 							<h2><b>Learning Rates</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="sincos"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<div id="learningrate"  class="center" style="height:300px;" ></div>
+							<p id="hoverdata"><b>Learning Rate:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
 						</div>
 					</div>
 
@@ -162,7 +162,7 @@
 							<h2><b>Parameters Histogram</b></h2>
 						</div>
 						<div class="box-content">
-							<div id="stackchart" class="center" style="height:300px;"></div>
+							<div id="parametershistogram" class="center" style="height:300px;"></div>
 
 							<p class="stackControls center">
 								<input class="btn" type="button" value="With stacking">
@@ -216,25 +216,26 @@
 		<script src="/assets/js/retina.js"></script>
 		<script src="/assets/js/custom.js"></script>
 		<script src="/assets/js/cytoscape.min.js"></script>
-		<script src="/assets/js/model-layers.js"></script>
 		<script src="/assets/js/dagre.min.js"></script>
 		<script src="/assets/js/cytoscape-dagre.js"></script>
-		<script src="/assets/js/train/model.js"></script>    <!-- Charts and tables are generated here! -->
+		<!-- <script src="/assets/js/train/model-layers.js"></script> Layer graph generated here! -->
+		<script src="/assets/js/train/model.js"></script>        <!-- Charts and tables are generated here! -->
 
 		<!-- Execute once on page load -->
 		<script>
 				$(document).ready(function(){
 					renderLayerTable();
-					renderMeanMagChart();
+					renderModelPage();
 				});
 		</script>
 
 		<!-- Execute periodically (every 2 sec) -->
-		<!--<script>-->
-				<!--setInterval(function(){-->
-					<!--renderLayerTable() -->
-				<!--}, 2000);-->
-		<!--</script>-->
+		<script>
+				setInterval(function(){
+					renderLayerTable();
+					renderModelPage();
+				}, 2000);
+		</script>
 
 		<!--<script type="text/javascript">-->
 		<!--$(document).ready(function() {-->
