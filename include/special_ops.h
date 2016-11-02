@@ -1430,14 +1430,14 @@ namespace simdOps {
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
-#pragma omp for nowait
+
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
 							if (currMaxLocal < dx[i]) {
 								currMaxLocal = dx[i];
 								maxIdxLocal = i;
 							}
 							result[i] = 0.0;
-
 						}
 #pragma omp critical
 {
@@ -1476,7 +1476,7 @@ namespace simdOps {
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
-#pragma omp for nowait
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
 							if (currMaxLocal < dx[i * eleStride]) {
@@ -1654,15 +1654,14 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-#pragma omp simd reduction(max:maxIdx)
+#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
 									currMax = dx[i * eleStride];
 									maxIdx = i;
 								}
 
-								dx[i] = 0.0;
-
+								result[i] = 0.0;
 							}
 						}
 						else {
@@ -1671,6 +1670,7 @@ namespace simdOps {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
 
+#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i * eleStride]) {
 									currMaxLocal = dx[i * eleStride];
@@ -1690,7 +1690,6 @@ namespace simdOps {
 						}
 
 						result[maxIdx] = 1.0;
-
 					}
 				}
 
@@ -1743,11 +1742,11 @@ namespace simdOps {
                             T maxValue = rX[0];
                             int maxIdx = 0;
                             if (tadEWS == 1 && zEWS == 1) {
+#pragma omp simd reduction(max:maxValue,maxIdx)
                                 for (int i = 0; i < tadLength; i++) {
-                                    T cValue = rX[i];
-                                    if (cValue > maxValue) {
+                                    if (rX[i] > maxValue) {
                                         maxIdx = i;
-                                        maxValue = cValue;
+                                        maxValue = rX[i];
                                     }
                                 }
 
@@ -1757,11 +1756,12 @@ namespace simdOps {
                                 }
 
                             } else {
+
+#pragma omp parallel for reduction(max:maxValue,maxIdx)
                                 for (int i = 0; i < tadLength; i++) {
-                                    T cValue = rX[i * tadEWS];
-                                    if (cValue > maxValue) {
+                                    if (rX[i * tadEWS] > maxValue) {
                                         maxIdx = i;
-                                        maxValue = cValue;
+                                        maxValue = rX[i * tadEWS];
                                     }
                                 }
 

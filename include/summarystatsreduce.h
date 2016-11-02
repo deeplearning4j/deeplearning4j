@@ -788,8 +788,6 @@ template<typename OpType>
                             result[i] = OpType::getValue(biasCorrected, comp);
                         }
                     } else {
-                        int xCoord[MAX_RANK];
-
                         int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 
                         int *tadShape = shape::shapeOf(tadShapeShapeInfo);
@@ -797,8 +795,9 @@ template<typename OpType>
                         int tadRank = shape::rank(tadShapeShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) private(xCoord)
+#pragma omp parallel for schedule(guided)
                         for (int r = 0; r < resultLength; r ++) {
+                            int xCoord[MAX_RANK];
                             int tadOffsetForBlock = tad.tadOffsets[r];
 
                             SummaryStatsData<T> comp;
