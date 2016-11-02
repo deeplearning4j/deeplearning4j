@@ -45,6 +45,13 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
