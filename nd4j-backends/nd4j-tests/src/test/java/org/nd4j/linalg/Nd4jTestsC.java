@@ -3134,11 +3134,14 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVPull1() {
+        int indexes[] = new int[]{0, 2, 4};
         INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
-        INDArray assertion = Nd4j.create(new float[]{1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25}).reshape(3,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'f');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
 
-
-        INDArray result = Nd4j.pullRows(array, 1, new int[]{0, 2, 4});
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'f');
 
         assertEquals(3, result.rows());
         assertEquals(5, result.columns());
@@ -3147,16 +3150,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVPull2() {
-        INDArray array = Nd4j.linspace(1,24,24).reshape(4, 6);
-        INDArray assertion = Nd4j.create(new float[]{1, 7, 13, 19, 3, 9, 15, 21, 4, 10, 16, 22}).reshape(3, 4);
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'c');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
 
-
-        INDArray result = Nd4j.pullRows(array, 0, new int[]{0, 2, 3});
-        System.out.println(result);
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'c');
 
         assertEquals(3, result.rows());
-        assertEquals(4, result.columns());
+        assertEquals(5, result.columns());
         assertEquals(assertion, result);
+
+        System.out.println(assertion.toString());
+        System.out.println(result.toString());
     }
 
 
