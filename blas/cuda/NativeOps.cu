@@ -6117,3 +6117,7 @@ void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
 
     curandGenerateLongLong(buffer->getGenerator(), (unsigned long long *) buffer->getBuffer(), buffer->getSize());
 }
+
+void NativeOps::reSeedBuffer(long seed, Nd4jPointer ptrRandom) {
+	// TODO: to be implemented
+}

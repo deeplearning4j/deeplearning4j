@@ -2621,6 +2621,12 @@ void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
 	generator.refreshBuffer();
 }
 
+void NativeOps::reSeedBuffer(long seed, Nd4jPointer ptrRandom) {
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+
+    buffer->reSeed(seed);
+}
+
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(ptrBuffer);

@@ -1294,6 +1294,8 @@ public:
 
     void refreshBuffer(long seed, Nd4jPointer ptrRandom);
 
+    void reSeedBuffer(long seed, Nd4jPointer ptrRandom);
+
     void destroyRandom(Nd4jPointer ptrRandom);
 
     /**

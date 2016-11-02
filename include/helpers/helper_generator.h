@@ -46,6 +46,7 @@ namespace nd4j {
             long position;
             long generation;
             long currentPosition;
+            long amplifier;
 
 #ifdef __CUDACC__
             curandGenerator_t gen;
@@ -67,6 +68,7 @@ namespace nd4j {
                 this->generation = 1;
                 this->currentPosition = 0;
                 this->offset = 0;
+                this->amplifier = seed;
             }
 
             uint64_t *getBuffer() {
@@ -93,6 +95,7 @@ namespace nd4j {
 
             void setSeed(long seed) {
                 this->seed = seed;
+                this->amplifier = seed;
             }
 
             long getAllocatedSize() {
@@ -107,6 +110,10 @@ namespace nd4j {
                 this->currentPosition = offset;
             }
 
+            void reSeed(long amplifier) {
+                this->amplifier = amplifier;
+            }
+
             uint64_t getElement(long position) {
                 long actualPosition = this->getOffset() + position;
                 long tempGen = generation;
@@ -116,7 +123,12 @@ namespace nd4j {
                     tempGen *= seed;
                 }
 
-                return tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen;
+                uint64_t ret = tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen;
+
+                if (amplifier != seed)
+                    ret = ret * amplifier + 11;
+
+                return ret;
             }
 
             long getNextIndex() {
