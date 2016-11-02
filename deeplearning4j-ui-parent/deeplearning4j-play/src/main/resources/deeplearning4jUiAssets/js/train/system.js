@@ -16,99 +16,145 @@ function renderSystemPage() {
 
 /* ---------- JVM Memory Utilization Chart ---------- */
 function renderJVMMemoryChart(data) {
-    // console.log("Keys: " + Object.keys(data));
-
     var jvmValues = data["memory"]["0"]["values"][0];
-    var jvmTimes = data["memory"]["0"]["times"];
 
-    if ($("#jvm-memory-chart").length) {
-        var jvmData = [];
+    var maxValue = Math.max.apply(Math, jvmValues) + 1;
+
+    var jvmChart = $("#jvmmemorychart");
+
+    if (jvmChart.length) {
+
+        var jvmValuesData = [];
 
         for (var i = 0; i < jvmValues.length; i++) {
-            jvmData.push([jvmTimes[i], jvmValues[i]]);
+            jvmValuesData.push([i, jvmValues[i]]);
         }
 
-        var plot = $.plot($("#jvm-memory-chart"),
-            [{
-                data: jvmData,
-                lines: {
-                    show: true,
-                    fill: false,
-                    lineWidth: 2
+        var plot = $.plot($("#jvmmemorychart"),
+            [{data: jvmValuesData, label: "JVM Memory"}], {
+                series: {
+                    lines: {
+                        show: true,
+                        lineWidth: 2
+                    }
                 },
-                shadowSize: 0
-            }, {
-                data: jvmData,
-                bars: {
-                    show: true,
-                    fill: false,
-                    barWidth: 0.1,
-                    align: "center",
-                    lineWidth: 5
-                }
-            }
-            ], {
-
                 grid: {
                     hoverable: true,
                     clickable: true,
-                    tickColor: "rgba(255,255,255,0.05)",
+                    tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                legend: {show: false},
-                colors: ["rgba(255,255,255,0.8)", "rgba(255,255,255,0.6)", "rgba(255,255,255,0.4)", "rgba(255,255,255,0.2)"],
-                xaxis: {ticks: 15, tickDecimals: 0, color: "rgba(255,255,255,0.8)"},
-                yaxis: {ticks: 5, tickDecimals: 0, color: "rgba(255,255,255,0.8)"},
+                yaxis: {min: 0, max: maxValue},
+                colors: ["#FA5833", "#2FABE9"]
             });
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltip">' + contents + '</div>').css( {
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#jvmmemorychart").fadeIn(200);
+        }
+
+        var previousPoint = null;
+        jvmChart.bind("plothover", function (event, pos, item) {
+            $("#x").text(pos.x.toFixed(0));
+            $("#y").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(0),
+                        y = item.datapoint[1].toFixed(5);
+
+                    showTooltip(item.pageX - jvmChart.offset().left, item.pageY - jvmChart.offset().top,
+                        "(" + x + ", " + y + ")");
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
+        });
     }
 }
 
 /* ---------- Off Heap Memory Utilization Chart ---------- */
 function renderOffHeapMemoryChart(data) {
-    // console.log("Keys: " + Object.keys(data));
-
     var offHeapValues = data["memory"]["0"]["values"][1];
-    var jvmTimes = data["memory"]["0"]["times"];
 
-    if ($("#off-heap-memory-chart").length) {
-        var jvmData = [];
+    var maxValue = Math.max.apply(Math, offHeapValues);
+
+    var offHeapChart = $("#offheapmemorychart");
+
+    if (offHeapChart.length) {
+
+        var offHeapValuesData = [];
 
         for (var i = 0; i < offHeapValues.length; i++) {
-            jvmData.push([jvmTimes[i], offHeapValues[i]]);
+            offHeapValuesData.push([i, offHeapValues[i]]);
         }
 
-        var plot = $.plot($("#off-heap-memory-chart"),
-            [{
-                data: jvmData,
-                lines: {
-                    show: true,
-                    fill: false,
-                    lineWidth: 2
+        var plot = $.plot($("#offheapmemorychart"),
+            [{data: offHeapValuesData, label: "Off Heap Memory"}], {
+                series: {
+                    lines: {
+                        show: true,
+                        lineWidth: 2
+                    }
                 },
-                shadowSize: 0
-            }, {
-                data: jvmData,
-                bars: {
-                    show: true,
-                    fill: false,
-                    barWidth: 0.1,
-                    align: "center",
-                    lineWidth: 5
-                }
-            }
-            ], {
-
                 grid: {
                     hoverable: true,
                     clickable: true,
-                    tickColor: "rgba(255,255,255,0.05)",
+                    tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                legend: {show: false},
-                colors: ["rgba(255,255,255,0.8)", "rgba(255,255,255,0.6)", "rgba(255,255,255,0.4)", "rgba(255,255,255,0.2)"],
-                xaxis: {ticks: 15, tickDecimals: 0, color: "rgba(255,255,255,0.8)"},
-                yaxis: {ticks: 5, tickDecimals: 0, color: "rgba(255,255,255,0.8)"},
+                yaxis: {min: 0, max: maxValue},
+                colors: ["#FA5833", "#2FABE9"]
             });
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltip">' + contents + '</div>').css( {
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#offheapmemorychart").fadeIn(200);
+        }
+
+        var previousPoint = null;
+        offHeapChart.bind("plothover", function (event, pos, item) {
+            $("#x2").text(pos.x.toFixed(0));
+            $("#y2").text(pos.y.toFixed(5));
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(0),
+                        y = item.datapoint[1].toFixed(5);
+
+                    showTooltip(item.pageX - offHeapChart.offset().left, item.pageY - offHeapChart.offset().top,
+                        "(" + x + ", " + y + ")");
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
+        });
     }
 }
 
