@@ -136,7 +136,7 @@ function renderOffHeapMemoryChart(data) {
         var previousPoint = null;
         offHeapChart.bind("plothover", function (event, pos, item) {
             $("#x2").text(pos.x.toFixed(0));
-            $("#y2").text(pos.y.toFixed(2));
+            $("#y2").text(pos.y.toFixed(5));
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
