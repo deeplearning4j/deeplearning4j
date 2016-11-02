@@ -36,16 +36,43 @@ function renderMeanMagChart(data) {
     var iter = data["meanMagRatio"]["iterCounts"];
 
     if ($("#meanmag").length) {
-        var bData = [];
-        var WData = [];
 
-        for (var i = 0; i < iter.length; i++) {
-            bData.push([iter[i], b[i]]);
-            WData.push([iter[i], W[i]]);
+        var ratios = data["meanMagRatio"]["ratios"];
+        var keys = Object.keys(ratios);
+        var toPlot = [];
+        var overallMax = -Number.MAX_VALUE;
+        var overallMin = Number.MAX_VALUE;
+        for (var i = 0; i < keys.length; i++) {
+            var r = ratios[keys[i]];
+
+            var pairs = [];
+            for (var j = 0; j < r.length; j++) {
+                pairs.push([iter[j], Math.log10(r[j])]);
+            }
+            toPlot.push({data: pairs, label: keys[i]});
+
+
+            var thisMax = Math.max.apply(Math, r);
+            var thisMin = Math.min.apply(Math, r);
+            overallMax = Math.max(overallMax, thisMax);
+            overallMin = Math.min(overallMin, thisMin);
         }
 
+        if (overallMax == -Number.MAX_VALUE) overallMax = 1.0;
+        if (overallMin == Number.MAX_VALUE) overallMin = 0.0;
+
+        overallMax = Math.log10(overallMax);
+        overallMin = Math.log10(overallMin);
+        overallMin = Math.max(overallMin, -10);
+
+        overallMax = Math.ceil(overallMax);
+        overallMin = Math.floor(overallMin);
+
+        // console.log("MM CHART: " + overallMin + "\t" + overallMax);
+
         var plot = $.plot($("#meanmag"),
-            [{data: bData, label: "Bias"},{data: WData, label: "Weights"}], {
+            // [{data: bData, label: "Bias"},{data: WData, label: "Weights"}], {
+            toPlot, {
                 series: {
                     lines: {
                         show: true,
@@ -58,14 +85,16 @@ function renderMeanMagChart(data) {
                     tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                yaxis: {min: 0, max: 1},
+                yaxis: {min: overallMin, max: overallMax},
                 colors: ["#FA5833", "#2FABE9"]
             });
 
         var previousPoint = null;
         $("#meanmag").bind("plothover", function (event, pos, item) {
-            $("#x").text(pos.x.toFixed(0));
-            $("#y").text(pos.y.toFixed(2));
+            $("#xMeanMagnitudes").text(pos.x.toFixed(0));
+            $("#yMeanMagnitudes").text(pos.y.toFixed(2));
+
+
         });
     }
 }
@@ -79,15 +108,29 @@ function renderActivationsChart(data) {
 
     if ($("#activations").length) {
         var meanData = [];
-        var stdevData = [];
+        var meanPlus2 = [];
+        var meanMinus2 = [];
+
+        var overallMin = Number.MAX_VALUE;
+        var overallMax = Number.MIN_VALUE;
 
         for (var i = 0; i < iter.length; i++) {
+            var mp2 = mean[i] + 2*stdev[i];
+            var ms2 = mean[i] - 2*stdev[i];
+            overallMin = Math.min(overallMin, ms2);
+            overallMax = Math.max(overallMax, mp2);
             meanData.push([iter[i], mean[i]]);
-            stdevData.push([iter[i], stdev[i]]);
+            meanPlus2.push([iter[i], mp2]);
+            meanMinus2.push([iter[i], ms2]);
         }
 
+        if(overallMin == Number.MAX_VALUE) overallMin = 0;
+        if(overallMax == Number.MIN_VALUE) overallMax = 1;
+
         var plot = $.plot($("#activations"),
-            [{data: meanData, label: "Mean"},{data: stdevData, label: "Standard Deviation"}], {
+            [{data: meanData, label: "Mean"},{data: meanPlus2, label: "Mean + 2*sd"}, {data: meanMinus2, label: "Mean - 2*sd"}], {
+
+
                 series: {
                     lines: {
                         show: true,
@@ -100,14 +143,14 @@ function renderActivationsChart(data) {
                     tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                yaxis: {min: -1, max: 1},
-                colors: ["#FA5833", "#2FABE9"]
+                yaxis: {min: overallMin, max: overallMax},
+                colors: ["#FA5833", "#2FABE9", "#2FABE9"]
             });
 
         var previousPoint = null;
         $("#activations").bind("plothover", function (event, pos, item) {
-            $("#x").text(pos.x.toFixed(0));
-            $("#y").text(pos.y.toFixed(2));
+            $("#xActivations").text(pos.x.toFixed(0));
+            $("#yActivations").text(pos.y.toFixed(2));
         });
     }
 }
@@ -120,6 +163,8 @@ function renderLearningRateChart(data) {
     var iter = data["learningRates"]["iterCounts"];
 
     if ($("#learningrate").length) {
+
+
         var lrs_bData = [];
         var lrs_WData = [];
 
@@ -148,8 +193,8 @@ function renderLearningRateChart(data) {
 
         var previousPoint = null;
         $("#learningrate").bind("plothover", function (event, pos, item) {
-            $("#x").text(pos.x.toFixed(0));
-            $("#y").text(pos.y.toFixed(2));
+            $("#xLearningRate").text(pos.x.toFixed(0));
+            $("#yLearningRate").text(pos.y.toFixed(2));
         });
     }
 }
@@ -167,13 +212,13 @@ function renderLayerTable() {
             console.log("Keys: " + Object.keys(data));
 
             /* Layer */
-            var layerName = data["layerNames"][1];
-            var layerType = data["layerTypes"][1];
-            var inputSize = data["layerInfo"][1]["Input size"];
-            var outputSize = data["layerInfo"][1]["Output size"];
-            var nParams = data["layerInfo"][1]["Num Parameters"];
-            var activationFunction = data["layerInfo"][1]["Activation Function"];
-            var lossFunction = data["layerInfo"][1]["Loss Function"];
+            var layerName = data["vertexNames"][1];
+            var layerType = data["vertexTypes"][1];
+            var inputSize = data["vertexInfo"][1]["Input size"];
+            var outputSize = data["vertexInfo"][1]["Output size"];
+            var nParams = data["vertexInfo"][1]["Num Parameters"];
+            var activationFunction = data["vertexInfo"][1]["Activation Function"];
+            var lossFunction = data["vertexInfo"][1]["Loss Function"];
 
             $("#layerName").html(layerName);
             $("#layerType").html(layerType);

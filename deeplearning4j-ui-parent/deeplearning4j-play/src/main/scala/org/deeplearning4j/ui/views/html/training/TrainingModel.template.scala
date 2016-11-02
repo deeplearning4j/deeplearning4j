@@ -153,11 +153,11 @@ Seq[Any](format.raw/*1.40*/("""
 
 					<div class="box">
 						<div class="box-header">
-							<h2><b>Mean Magnitudes</b></h2>
+							<h2><b>Mean Magnitude Update Ratios - Log10</b></h2>
 						</div>
 						<div class="box-content">
 							<div id="meanmag"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Magnitude:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<p id="hoverdata"><b>Magnitude:</b> <span id="yMeanMagnitudes">0</span>, <b>Iteration:</b> <span id="xMeanMagnitudes">0</span></p>
 						</div>
 					</div>
 
@@ -167,7 +167,7 @@ Seq[Any](format.raw/*1.40*/("""
 						</div>
 						<div class="box-content">
 							<div id="activations"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Activation:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<p id="hoverdata"><b>Activation:</b> <span id="yActivations">0</span>, <b>Iteration:</b> <span id="xActivations">0</span></p>
 						</div>
 					</div>
 
@@ -177,7 +177,7 @@ Seq[Any](format.raw/*1.40*/("""
 						</div>
 						<div class="box-content">
 							<div id="learningrate"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Learning Rate:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">0</span></p>
+							<p id="hoverdata"><b>Learning Rate:</b> <span id="yLearningRate">0</span>, <b>Iteration:</b> <span id="xLearningRate">0</span></p>
 						</div>
 					</div>
 
@@ -299,10 +299,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 20:14:42 AEDT 2016
+                  DATE: Wed Nov 02 22:57:19 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: c21010b2d872f69e486dededfddda2d2236ebb41
-                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9593->8778|9625->8782|9947->9075|9977->9076|10012->9083|10116->9159|10145->9160|10278->9264|10308->9265|10343->9272|10421->9322|10450->9323|10581->9425|10611->9426|10798->9585|10827->9586|10894->9624|10924->9625|11025->9698|11054->9699
+                  HASH: ac83fff64a1f3d28e08a554dd7daa7d68efe9859
+                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9688->8873|9720->8877|10042->9170|10072->9171|10107->9178|10211->9254|10240->9255|10373->9359|10403->9360|10438->9367|10516->9417|10545->9418|10676->9520|10706->9521|10893->9680|10922->9681|10989->9719|11019->9720|11120->9793|11149->9794
                   LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|245->221|246->222|252->228|252->228|253->229|256->232|256->232|261->237|261->237|262->238|264->240|264->240|268->244|268->244|273->249|273->249|274->250|274->250|277->253|277->253
                   -- GENERATED --
               */
