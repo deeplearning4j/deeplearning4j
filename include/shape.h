@@ -4007,7 +4007,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
         int *ret = new int[numTotalElements];
         int count = 0;
-#pragma omp simd
+
         for (int i = 0; i < numArrays; i++) {
             for (int j = 0; j < lengths[i]; j++) {
                 ret[count++] = arr[i][j];
@@ -4202,11 +4202,11 @@ __device__ int tadOffset(int *xInfo, int offset) {
         int rank = info->rank;
 
         ret[0] = info->rank;
-#pragma omp simd
+
         for (int i = 0; i < rank; i++) {
             ret[count++] = info->shape[i];
         }
-#pragma omp simd
+
         for (int i = 0; i < rank; i++) {
             ret[count++] = info->stride[i];
         }
