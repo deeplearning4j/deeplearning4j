@@ -105,17 +105,11 @@ function createGraph(data){
             cy.autoungrabify(true);
             cy.maxZoom(5);
             cy.minZoom(1);
-            // cy.wheelSensitivity(0);
         }
     });
 
-    // cy.on('tap', 'node', function () {
-    //     window.location.href = this.data('href');
-    // });
-
     cy.on('click', 'node', function (evt) {
-        console.log('CLICKED: id=' + this.id() + ", name=" + this.data.name);
-        console.log('CLICKED: id=' + this.id() + ", name=" + this.name);
+        setSelectedVertex(this.id());
     });
 
 }
