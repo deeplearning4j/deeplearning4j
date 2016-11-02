@@ -603,10 +603,7 @@ template<typename OpType>
 						BlockInformation info(length, ELEMENT_THRESHOLD);
 						T *blocks = new T[info.chunks];
 
-                        int _threads = nd4j::math::nd4j_min<int>(info.threads, omp_get_max_threads());
-                        _threads = nd4j::math::nd4j_max<int>(_threads, 1);
-
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
 						{
 							T local = OpType::startingValue(x);
 							for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
@@ -677,21 +674,19 @@ template<typename OpType>
 							Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
 							const T *chunk = x + newOffset;
 							Nd4jIndex itemsToLoop = info.items;
+							if (i * info.items > length)
+								break;
 
 // FIXME: proper reduction should be used here
 //#pragma omp simd
 
-							for (Nd4jIndex i = 0; i < itemsToLoop; i++) {
-								T curr = OpType::op(chunk[i * xElementWiseStride], extraParams);
+							for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
+								T curr = OpType::op(chunk[j * xElementWiseStride], extraParams);
 								local = OpType::update(local, curr, extraParams);
 							}
-
-
 						}
 
 						blocks[omp_get_thread_num()] = local;
-
-
 					}
 
 // FIXME: proper reduction should be used here

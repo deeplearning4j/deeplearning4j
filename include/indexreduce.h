@@ -461,7 +461,7 @@ template<typename OpType>
 						else {
 							BlockInformation info(length, ELEMENT_THRESHOLD);
 
-#pragma omp parallel default(shared)
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
 
 							{
 								IndexValue<T> local;
