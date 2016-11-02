@@ -463,13 +463,14 @@ public class TrainModule implements UIModule {
 
         //Get mean magnitudes line chart
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates);
+        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", meanMagnitudes.getSecond().keySet());
         mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
-        for (Map.Entry<String, List<Double>> entry : meanMagnitudes.getSecond().entrySet()) {
-            mmRatioMap.put(entry.getKey(), entry.getValue());
-        }
+        mmRatioMap.put("ratios", meanMagnitudes.getSecond());
+//        for (Map.Entry<String, List<Double>> entry : meanMagnitudes.getSecond().entrySet()) {
+//            mmRatioMap.put(entry.getKey(), entry.getValue());
+//        }
         result.put("meanMagRatio", mmRatioMap);
 
         //Get activations line chart for layer
@@ -546,7 +547,7 @@ public class TrainModule implements UIModule {
 
     private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData, StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), gi.getLayerNames().get(layerIdx)});
+        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), gi.getVertexNames().get(layerIdx)});
         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerType"), ""});
 
         if (!noData) {
@@ -573,7 +574,7 @@ public class TrainModule implements UIModule {
                 } else if (modelClass.endsWith("ComputationGraph")) {
                     ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(configJson);
 
-                    String vertexName = gi.getLayerNames().get(layerIdx);
+                    String vertexName = gi.getVertexNames().get(layerIdx);
 
                     Map<String, GraphVertex> vertices = conf.getVertices();
                     if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
@@ -653,12 +654,21 @@ public class TrainModule implements UIModule {
     }
 
     //TODO float precision for smaller transfers?
-    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates) {
+    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
+                                                                                  List<Persistable> updates, boolean isMLN) {
         if(gi == null){
             return new Pair<>(Collections.emptyList(), Collections.emptyMap());
         }
 
-        String layerName = gi.getLayerNames().get(layerIdx);
+        String layerName = gi.getVertexNames().get(layerIdx);
+        if(isMLN){
+            //Get the original name, for the index...
+            layerName = gi.getOriginalVertexName().get(layerIdx);
+        }
+        String layerType = gi.getVertexTypes().get(layerIdx);
+        if("input".equalsIgnoreCase(layerType)){        //TODO better checking - other vertices, etc
+            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
+        }
 
         List<Integer> iterCounts = new ArrayList<>();
         Map<String, List<Double>> ratioValues = new HashMap<>();
@@ -702,12 +712,12 @@ public class TrainModule implements UIModule {
             return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
         }
 
-        String type = gi.getLayerTypes().get(index);    //Index may be for an input, for example
+        String type = gi.getVertexTypes().get(index);    //Index may be for an input, for example
         if("input".equalsIgnoreCase(type)){
             return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
         }
 
-        String layerName = gi.getLayerNames().get(index);
+        String layerName = gi.getOriginalVertexName().get(index);
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
@@ -745,7 +755,8 @@ public class TrainModule implements UIModule {
         if(gi == null){
             return Collections.emptyMap();
         }
-        String layerName = gi.getLayerNames().get(layerIdx);
+//        String layerName = gi.getVertexNames().get(layerIdx);
+        String layerName = gi.getOriginalVertexName().get(layerIdx);
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
@@ -791,7 +802,7 @@ public class TrainModule implements UIModule {
         if (!(p instanceof StatsReport)) return null;
         StatsReport sr = (StatsReport) p;
 
-        String layerName = gi.getLayerNames().get(layerIdx);
+        String layerName = gi.getVertexNames().get(layerIdx);
 
         Map<String, Histogram> map = sr.getHistograms(statsType);
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.module.train;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -25,21 +26,27 @@ public class TrainModuleUtils {
     @Data
     public static class GraphInfo {
 
-        private List<String> layerNames;
-        private List<String> layerTypes;
-        private List<List<Integer>> layerInputs;
-        private List<Map<String, String>> layerInfo;
+        private List<String> vertexNames;
+        private List<String> vertexTypes;
+        private List<List<Integer>> vertexInputs;
+        private List<Map<String, String>> vertexInfo;
+
+        @JsonIgnore
+        private List<String> originalVertexName;
     }
 
     public static GraphInfo buildGraphInfo(MultiLayerConfiguration config) {
-        List<String> layerNames = new ArrayList<>();
+        List<String> vertexNames = new ArrayList<>();
+        List<String> originalVertexName = new ArrayList<>();
         List<String> layerTypes = new ArrayList<>();
         List<List<Integer>> layerInputs = new ArrayList<>();
         List<Map<String, String>> layerInfo = new ArrayList<>();
-        layerNames.add("Input");
+        vertexNames.add("Input");
+        originalVertexName.add(null);
         layerTypes.add("Input");
         layerInputs.add(Collections.emptyList());
         layerInfo.add(Collections.emptyMap());
+
 
         List<NeuralNetConfiguration> list = config.getConfs();
         int layerIdx = 1;
@@ -47,7 +54,8 @@ public class TrainModuleUtils {
             Layer layer = c.getLayer();
             String layerName = layer.getLayerName();
             if (layerName == null) layerName = "layer" + layerIdx;
-            layerNames.add(layerName);
+            vertexNames.add(layerName);
+            originalVertexName.add(String.valueOf(layerIdx-1));
 
             String layerType = c.getLayer().getClass().getSimpleName().replaceAll("Layer$", "");
             layerTypes.add(layerType);
@@ -60,7 +68,7 @@ public class TrainModuleUtils {
             layerInfo.add(map);
         }
 
-        return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo);
+        return new GraphInfo(vertexNames, layerTypes, layerInputs, layerInfo, originalVertexName);
     }
 
     public static GraphInfo buildGraphInfo(ComputationGraphConfiguration config) {
@@ -73,6 +81,8 @@ public class TrainModuleUtils {
         Map<String, GraphVertex> vertices = config.getVertices();
         Map<String, List<String>> vertexInputs = config.getVertexInputs();
         List<String> networkInputs = config.getNetworkInputs();
+
+        List<String> originalVertexName = new ArrayList<>();
 
         Map<String, Integer> vertexToIndexMap = new HashMap<>();
         int vertexCount = 0;
@@ -88,6 +98,7 @@ public class TrainModuleUtils {
             vertexToIndexMap.put(s, vertexCount++);
         }
 
+        int layerCount = 0;
         for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
             GraphVertex gv = entry.getValue();
             layerNames.add(entry.getKey());
@@ -110,6 +121,8 @@ public class TrainModuleUtils {
                 //Extract layer info
                 Map<String, String> map = getLayerInfo(c, layer);
                 layerInfo.add(map);
+
+                originalVertexName.add(String.valueOf(layerCount++));
             } else {
                 String layerType = gv.getClass().getSimpleName();
                 layerTypes.add(layerType);
@@ -118,7 +131,7 @@ public class TrainModuleUtils {
             }
         }
 
-        return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo);
+        return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo, originalVertexName);
     }
 
 
