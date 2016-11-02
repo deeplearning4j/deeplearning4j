@@ -70,9 +70,15 @@ public class ParameterServerClientTest {
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
 
-
-        while(!masterNode.subscriberLaunched() && !slaveNode.subscriberLaunched())
+        int tries = 10;
+        while(!masterNode.subscriberLaunched() && !slaveNode.subscriberLaunched() && tries < 10) {
             Thread.sleep(10000);
+            tries++;
+        }
+
+        if(!masterNode.subscriberLaunched() && !slaveNode.subscriberLaunched()) {
+            throw new IllegalStateException("Failed to start master and slave node");
+        }
 
         log.info("Using media driver directory " + mediaDriver.aeronDirectoryName());
         log.info("Launched media driver");
