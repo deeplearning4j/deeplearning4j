@@ -30,12 +30,10 @@ function renderModelPage() {
 
 /* ---------- Mean Magnitudes Chart ---------- */
 function renderMeanMagChart(data) {
-
-    var b = data["meanMagRatio"]["b"];
-    var W = data["meanMagRatio"]["W"];
     var iter = data["meanMagRatio"]["iterCounts"];
 
-    if ($("#meanmag").length) {
+    var chart = $("#meanmag");
+    if (chart.length) {
 
         var ratios = data["meanMagRatio"]["ratios"];
         var keys = Object.keys(ratios);
@@ -70,8 +68,7 @@ function renderMeanMagChart(data) {
 
         // console.log("MM CHART: " + overallMin + "\t" + overallMax);
 
-        var plot = $.plot($("#meanmag"),
-            // [{data: bData, label: "Bias"},{data: WData, label: "Weights"}], {
+        var plot = $.plot(chart,
             toPlot, {
                 series: {
                     lines: {
@@ -89,12 +86,42 @@ function renderMeanMagChart(data) {
                 colors: ["#FA5833", "#2FABE9"]
             });
 
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltipMMChart">' + contents + '</div>').css({
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#meanmag").fadeIn(200);
+        }
+
         var previousPoint = null;
         $("#meanmag").bind("plothover", function (event, pos, item) {
             $("#xMeanMagnitudes").text(pos.x.toFixed(0));
             $("#yMeanMagnitudes").text(pos.y.toFixed(2));
 
+            //Tooltip
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
 
+                    $("#tooltipMMChart").remove();
+                    var x = item.datapoint[0].toFixed(0);
+                    var logy = item.datapoint[1].toFixed(5);
+                    var y = Math.pow(10, item.datapoint[1]).toFixed(5);
+
+                    showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
+                        item.series.label + " (" + x + ", logRatio=" + logy + ", ratio=" + y + ")");
+                }
+            }
+            else {
+                $("#tooltipMMChart").remove();
+                previousPoint = null;
+            }
         });
     }
 }
@@ -106,13 +133,14 @@ function renderActivationsChart(data) {
     var stdev = data["activations"]["stdev"];
     var iter = data["activations"]["iterCount"];
 
-    if ($("#activations").length) {
+    var chart = $("#activations");
+    if (chart.length) {
         var meanData = [];
         var meanPlus2 = [];
         var meanMinus2 = [];
 
         var overallMin = Number.MAX_VALUE;
-        var overallMax = Number.MIN_VALUE;
+        var overallMax = -Number.MAX_VALUE;
 
         for (var i = 0; i < iter.length; i++) {
             var mp2 = mean[i] + 2*stdev[i];
@@ -127,7 +155,7 @@ function renderActivationsChart(data) {
         if(overallMin == Number.MAX_VALUE) overallMin = 0;
         if(overallMax == Number.MIN_VALUE) overallMax = 1;
 
-        var plot = $.plot($("#activations"),
+        var plot = $.plot(chart,
             [{data: meanData, label: "Mean"},{data: meanPlus2, label: "Mean + 2*sd"}, {data: meanMinus2, label: "Mean - 2*sd"}], {
 
 
@@ -147,10 +175,47 @@ function renderActivationsChart(data) {
                 colors: ["#FA5833", "#2FABE9", "#2FABE9"]
             });
 
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltipActivationChart">' + contents + '</div>').css({
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#activations").fadeIn(200);
+        }
+
         var previousPoint = null;
         $("#activations").bind("plothover", function (event, pos, item) {
             $("#xActivations").text(pos.x.toFixed(0));
             $("#yActivations").text(pos.y.toFixed(2));
+
+
+            //Tooltip
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltipActivationChart").remove();
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = item.datapoint[1].toFixed(5);
+
+                    //TODO get raw stdev...
+                    // var std = (meanPlus2[x] - meanData[x])/2.0;  //This doesn't work
+
+                    showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
+                        // item.series.label + " (" + x + ", stdev=" + std + ")");
+                        item.series.label + " (" + x + ", y=" + y + ")");
+                }
+            }
+            else {
+                $("#tooltipActivationChart").remove();
+                previousPoint = null;
+            }
         });
     }
 }
@@ -162,19 +227,45 @@ function renderLearningRateChart(data) {
     var lrs_W = data["learningRates"]["lrs"]["W"];
     var iter = data["learningRates"]["iterCounts"];
 
-    if ($("#learningrate").length) {
+    var chart = $("#learningrate");
+    if (chart.length) {
+
+        // var lrs_bData = [];
+        // var lrs_WData = [];
+        var lrs = data["learningRates"]["lrs"];
+        var keys = Object.keys(lrs);
+
+        var toPlot = [];
+        var overallMax = -Number.MAX_VALUE;
+        var overallMin = Number.MAX_VALUE;
+        for (var i = 0; i < keys.length; i++) {
+            var lr = lrs[keys[i]];
+
+            var pairs = [];
+            for (var j = 0; j < lr.length; j++) {
+                pairs.push([iter[j], lr[j]]);
+            }
+            toPlot.push({data: pairs, label: keys[i]});
 
 
-        var lrs_bData = [];
-        var lrs_WData = [];
-
-        for (var i = 0; i < iter.length; i++) {
-            lrs_bData.push([iter[i], lrs_b[i]]);
-            lrs_WData.push([iter[i], lrs_W[i]]);
+            var thisMax = Math.max.apply(Math, lr);
+            var thisMin = Math.min.apply(Math, lr);
+            overallMax = Math.max(overallMax, thisMax);
+            overallMin = Math.min(overallMin, thisMin);
         }
 
-        var plot = $.plot($("#learningrate"),
-            [{data: lrs_bData, label: "lrs_b"},{data: lrs_WData, label: "lrs_w"}], {
+        if (overallMax == -Number.MAX_VALUE){
+            //No data
+            overallMin = 0.0;
+            overallMax = 1.0;
+        } else if(overallMin == overallMax){
+            overallMax = 2*overallMax;
+        }
+
+        overallMin = 0;
+
+        var plot = $.plot(chart,
+            toPlot, {
                 series: {
                     lines: {
                         show: true,
@@ -187,14 +278,46 @@ function renderLearningRateChart(data) {
                     tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                yaxis: {min: 0, max: 1},
+                yaxis: {min: overallMin, max: overallMax},
                 colors: ["#FA5833", "#2FABE9"]
             });
 
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltipLRChart">' + contents + '</div>').css({
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#learningrate").fadeIn(200);
+        }
+
         var previousPoint = null;
-        $("#learningrate").bind("plothover", function (event, pos, item) {
+        chart.bind("plothover", function (event, pos, item) {
             $("#xLearningRate").text(pos.x.toFixed(0));
-            $("#yLearningRate").text(pos.y.toFixed(2));
+            $("#yLearningRate").text(pos.y.toFixed(5));
+
+
+            //Tooltip
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltipLRChart").remove();
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = item.datapoint[1].toFixed(5);
+
+                    showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
+                        item.series.label + " (" + x + ", learningRate=" + y + ")");
+                }
+            }
+            else {
+                $("#tooltipLRChart").remove();
+                previousPoint = null;
+            }
         });
     }
 }
