@@ -134,6 +134,7 @@ public class Nd4j {
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
     public static Nd4jBackend backend;
+    public static RandomFactory randomFactory;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -504,9 +505,8 @@ public class Nd4j {
      * @return the current random generator
      */
     public static synchronized  org.nd4j.linalg.api.rng.Random getRandom() {
-        if(random == null)
-            throw new IllegalStateException("Illegal random not found");
-        return random;
+
+        return randomFactory.getRandom();
     }
 
     /**
@@ -5281,6 +5281,7 @@ public class Nd4j {
             allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
+            randomFactory = new RandomFactory(randomClazz);
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
