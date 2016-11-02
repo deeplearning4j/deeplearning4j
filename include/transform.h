@@ -11,7 +11,9 @@
 #include <vector>
 #include <templatemath.h>
 #include <ops.h>
+#ifndef __CUDACC__
 #include <omp.h>
+#endif
 #include <pairwise_util.h>
 #include <dll.h>
 #include "reduce.h"
@@ -25,15 +27,11 @@
 #include "types/float8.h"
 
 #ifdef __CUDACC__
-#include <helper_cuda.h>
-#endif
-
-#ifdef __JNI__
-#include <jni.h>
-#endif
-#ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <helper_cuda.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 

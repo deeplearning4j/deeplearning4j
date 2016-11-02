@@ -5,7 +5,9 @@
 #ifndef NATIVEOPERATIONS_CONVOLUTION_H
 #define NATIVEOPERATIONS_CONVOLUTION_H
 
+#ifndef __CUDACC__
 #include <omp.h>
+#endif
 
 template <typename T>
 class Im2col {

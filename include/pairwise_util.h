@@ -7,12 +7,16 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 #include <pairwise_util.h>
 #include <pointercast.h>
 #include <dll.h>
 #include <nd4jmemset.h>
+#ifndef __CUDACC__
 #include <omp.h>
+#endif
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 

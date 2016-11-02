@@ -3,7 +3,9 @@
 #include <sharedmem.h>
 #include <stdio.h>
 #include <shape.h>
+#ifndef __CUDACC__
 #include <omp.h>
+#endif
 #include <templatemath.h>
 #include <helper_cuda.h>
 #include <nd4jmalloc.h>
@@ -15,9 +17,8 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-#ifdef __JNI__
-#include <jni.h>
+#define omp_get_thread_num() 0
+#define omp_get_max_threads() 1
 #endif
 
 
