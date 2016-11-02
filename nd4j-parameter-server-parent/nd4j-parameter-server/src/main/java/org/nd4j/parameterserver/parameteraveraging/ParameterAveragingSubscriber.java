@@ -188,6 +188,7 @@ public class ParameterAveragingSubscriber {
             LockSupport.parkNanos(100000);
         }
 
+        //set the server for the status of the master and slave nodes
         server = StatusServer.startServer(this);
         log.info("Started status server  on " + statusServerPort);
 

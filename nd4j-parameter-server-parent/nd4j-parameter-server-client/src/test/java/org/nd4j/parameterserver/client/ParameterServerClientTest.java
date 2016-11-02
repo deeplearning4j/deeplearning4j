@@ -25,9 +25,9 @@ public class ParameterServerClientTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);
     private Aeron.Context ctx;
-    private Aeron.Context ctx2;
     private ParameterAveragingSubscriber masterNode,slaveNode;
     private int parameterLength = 1000;
+
     @Before
     public void before() throws Exception {
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -45,7 +45,9 @@ public class ParameterServerClientTest {
                 "-l",String.valueOf(parameterLength),
                 "-p","40123",
                 "-h","localhost",
-                "-id","11"
+                "-id","11",
+                "-md", mediaDriver.aeronDirectoryName(),
+                "-sp", "10000"
         });
 
         assertTrue(masterNode.isMaster());
@@ -61,7 +63,9 @@ public class ParameterServerClientTest {
                 "-p","40126",
                 "-h","localhost",
                 "-id","10",
-                "-pm",masterNode.getSubscriber().connectionUrl()
+                "-pm",masterNode.getSubscriber().connectionUrl(),
+                "-md", mediaDriver.aeronDirectoryName(),
+                "-sp", "11000"
         });
 
         assertFalse(slaveNode.isMaster());

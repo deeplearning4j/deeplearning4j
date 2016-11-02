@@ -80,6 +80,7 @@ public class AeronNDArraySubscriber {
             init();
 
         log.info("Subscribing to " + channel + " on stream Id " + streamId);
+        log.info("Using aeron directory " + ctx.aeronDirectoryName());
 
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
@@ -110,7 +111,7 @@ public class AeronNDArraySubscriber {
 
                 }
             }catch(Exception e) {
-                log.warn("Unable to connect...trying again on channel " + channel);
+                log.warn("Unable to connect...trying again on channel " + channel,e);
             }
         }
 
