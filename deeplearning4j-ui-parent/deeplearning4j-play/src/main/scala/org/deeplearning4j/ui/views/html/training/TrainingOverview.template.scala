@@ -171,18 +171,18 @@ Seq[Any](format.raw/*1.40*/("""
                         <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Ratio of Updates to Parameters: All Layers</b></h2>
+                                <h2><b>Log10 - Ratio of Updates to Parameters: All Layers</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
+                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Log10 Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
                         <!--End Ratio Table -->
                         <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Variances</b></h2>
+                                <h2><b>Log10 - Variances</b></h2>
                                 <div style="float: right">
                                     <p class="stackControls center">
                                         <input class="btn btn-small" type="button" value="Activations">
@@ -198,7 +198,7 @@ Seq[Any](format.raw/*1.40*/("""
                                     """),format.raw/*174.100*/("""
                                 """),format.raw/*175.41*/("""
                                 """),format.raw/*176.33*/("""<div id="varianceChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Score:</b> <span id="yVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
+                                <p id="hoverdata"><b>Variance:</b> <span id="yVariance">0</span>, <b>Log10 Variance:</b> <span id="yLogVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->
@@ -276,10 +276,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 12:17:18 AEDT 2016
+                  DATE: Wed Nov 02 18:24:29 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 42c801f248dd307baeaacf5641d4d54e753aed03
-                  MATRIX: 604->1|737->39|765->41|5439->4688|5452->4692|5519->4738|6233->5425|6246->5429|6312->5474|10381->9550|10449->9655|10517->9758|10585->9859|10648->9901|10711->9935|13468->12663|13498->12664|13553->12690|13625->12733|13655->12734|13834->12884|13864->12885|13919->12911|13991->12954|14021->12955
+                  HASH: 82926c21faccd39c44d8f5b17e16f53f64d3b1dd
+                  MATRIX: 604->1|737->39|765->41|5439->4688|5452->4692|5519->4738|6233->5425|6246->5429|6312->5474|10448->9617|10516->9722|10584->9825|10652->9926|10715->9968|10778->10002|13595->12790|13625->12791|13680->12817|13752->12860|13782->12861|13961->13011|13991->13012|14046->13038|14118->13081|14148->13082
                   LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|195->171|196->172|197->173|198->174|199->175|200->176|244->220|244->220|245->221|246->222|246->222|251->227|251->227|252->228|253->229|253->229
                   -- GENERATED --
               */

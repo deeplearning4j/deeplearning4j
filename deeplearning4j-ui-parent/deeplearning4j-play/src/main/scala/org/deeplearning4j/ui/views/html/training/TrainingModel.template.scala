@@ -299,7 +299,7 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 12:37:22 AEDT 2016
+                  DATE: Wed Nov 02 17:56:03 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
                   HASH: c21010b2d872f69e486dededfddda2d2236ebb41
                   MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9593->8778|9625->8782|9947->9075|9977->9076|10012->9083|10116->9159|10145->9160|10278->9264|10308->9265|10343->9272|10421->9322|10450->9323|10581->9425|10611->9426|10798->9585|10827->9586|10894->9624|10924->9625|11025->9698|11054->9699

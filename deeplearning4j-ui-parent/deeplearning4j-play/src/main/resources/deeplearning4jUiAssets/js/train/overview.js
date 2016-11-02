@@ -144,7 +144,7 @@ function renderUpdatesRatio(data) {
 
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
-                pairs.push([iter[j], r[j]]);
+                pairs.push([iter[j], Math.log10(r[j])]);
             }
             toPlot.push({data: pairs, label: keys[i]});
 
@@ -157,6 +157,15 @@ function renderUpdatesRatio(data) {
 
         if (overallMax == -Number.MAX_VALUE) overallMax = 1.0;
         if (overallMin == Number.MAX_VALUE) overallMin = 0.0;
+
+        overallMax = Math.log10(overallMax);
+        overallMin = Math.log10(overallMin);
+        overallMin = Math.max(overallMin, -10);
+
+        overallMax = Math.ceil(overallMax);
+        overallMin = Math.floor(overallMin);
+
+        console.log("Overall max/min: " + overallMax + "\t" + overallMin);
 
         var plot = $.plot(chart,
             toPlot, {
@@ -195,18 +204,20 @@ function renderUpdatesRatio(data) {
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
             $("#xRatio").text(pos.x.toFixed(0));
-            $("#yRatio").text(pos.y.toFixed(2));
+            $("#yLogRatio").text(pos.y.toFixed(5));
+            $("#yRatio").text(Math.pow(10, pos.y).toFixed(5));
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
                     $("#tooltipRatioChart").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(5);
+                    var x = item.datapoint[0].toFixed(0);
+                    var logy = item.datapoint[1].toFixed(5);
+                    var y = Math.pow(10, item.datapoint[1]).toFixed(5);
 
                     showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
-                        "(" + x + ", " + y + ")");
+                        "(" + x + ", logRatio=" + logy + ", ratio=" + y + ")");
                 }
             }
             else {
@@ -239,7 +250,8 @@ function renderVariancesRatio(data) {
 
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
-                pairs.push([iter[j], r[j]]);
+                // pairs.push([iter[j], r[j]]);
+                pairs.push([iter[j], Math.log10(r[j])]);
             }
             toPlot.push({data: pairs, label: keys[i]});
 
@@ -253,6 +265,12 @@ function renderVariancesRatio(data) {
         if (overallMax == -Number.MAX_VALUE) overallMax = 1.0;
         if (overallMin == Number.MAX_VALUE) overallMin = 0.0;
 
+        overallMax = Math.log10(overallMax);
+        overallMin = Math.log10(overallMin);
+        overallMin = Math.max(overallMin, -10);
+
+        overallMax = Math.ceil(overallMax);
+        overallMin = Math.floor(overallMin);
 
 
         var plot = $.plot(chart,
@@ -290,18 +308,20 @@ function renderVariancesRatio(data) {
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
             $("#xVariance").text(pos.x.toFixed(0));
-            $("#yVariance").text(pos.y.toFixed(2));
+            $("#yLogVariance").text(pos.y.toFixed(5));
+            $("#yVariance").text(Math.pow(10,pos.y).toFixed(5));
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
                     $("#tooltipVarianceChart").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(5);
+                    var x = item.datapoint[0].toFixed(0);
+                    var logy = item.datapoint[1].toFixed(5);
+                    var y = Math.pow(10, item.datapoint[1]).toFixed(5);
 
                     showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
-                        item.series.label + " (" + x + ", " + y + ")");
+                        item.series.label + " (" + x + ", logVariance=" + logy + ", variance=" + y + ")");
                 }
             }
             else {
@@ -309,70 +329,6 @@ function renderVariancesRatio(data) {
                 previousPoint = null;
             }
         });
-
-
-        // var maxScore = Math.max.apply(Math, variances);
-        //
-        //
-        // var varData = [];
-        //
-        // for (var i = 0; i < variances.length; i++) {
-        //     varData.push([iter[i], variances[i]]);
-        // }
-        //
-        // var plot = $.plot(chart,
-        //     [{data: varData, label: "variance"}], {
-        //         series: {
-        //             lines: {
-        //                 show: true,
-        //                 lineWidth: 2
-        //             }
-        //         },
-        //         grid: {
-        //             hoverable: true,
-        //             clickable: true,
-        //             tickColor: "#dddddd",
-        //             borderWidth: 0
-        //         },
-        //         yaxis: {min: 0, max: maxScore},
-        //         colors: ["#FA5833", "#2FABE9"]
-        //     });
-        //
-        // function showTooltip(x, y, contents) {
-        //     $('<div id="tooltip">' + contents + '</div>').css( {
-        //         position: 'absolute',
-        //         display: 'none',
-        //         top: y + 8,
-        //         left: x + 10,
-        //         border: '1px solid #fdd',
-        //         padding: '2px',
-        //         'background-color': '#dfeffc',
-        //         opacity: 0.80
-        //     }).appendTo("#varianceChart").fadeIn(200);
-        // }
-        //
-        // var previousPoint = null;
-        // chart.bind("plothover", function (event, pos, item) {
-        //     $("#xVariance").text(pos.x.toFixed(0));
-        //     $("#yVariance").text(pos.y.toFixed(2));
-        //
-        //     if (item) {
-        //         if (previousPoint != item.dataIndex) {
-        //             previousPoint = item.dataIndex;
-        //
-        //             $("#tooltipVariance").remove();
-        //             var x = item.datapoint[0].toFixed(0),
-        //                 y = item.datapoint[1].toFixed(5);
-        //
-        //             showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
-        //                 "(" + x + ", " + y + ")");
-        //         }
-        //     }
-        //     else {
-        //         $("#tooltipVariance").remove();
-        //         previousPoint = null;
-        //     }
-        // });
     }
 }
 
