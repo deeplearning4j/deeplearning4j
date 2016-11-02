@@ -27,14 +27,27 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
- * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
- * Mathematically, EmbeddingLayer is equivalent to using a DenseLayer with a one-hot representation for the input; however,
- * it can be much more efficient with a large number of classes (as a dense layer + one-hot input does a matrix multiply
- * with all but one value being zero).<br>
+import java.util.Arrays;
+import java.util.Collections;
+
+/**
+ * Embedding layer: feed-forward layer that expects single column input, each scalar value being interpreted as an
+ * integer - the class index. Typical usage includes transforming word IDs into dense vectors, when performing NLP tasks.
+ * Each example may either be:
+ * <ul>
+ * <li>a scalar, e.g. the word index in a vocabulary. In this case the input is expected to have shape [batchSize, 1]</li>
+ * <li>a column vector, e.g. the word indexes for a sequence of words (a document). In this case the input is
+ * expected to have shape [batchSize, numWords, 1]</li>
+ * </ul>
+ * Any other input shape will cause an exception.
+ * <p>
+ * This embedding layer is equivalent to a dense layer using 1-hot representation as input (either [batchSize, numClasses],
+ * or [batchSize, numWords, numClasses]) but is more efficient when the number of classes (vocabulary size) is large.
+ * <br>
  * <b>Note</b>: can only be used as the first layer for a network<br>
  * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding for each example.
+ * weight rows can be considered a vector/embedding for each input token.
+ *
  * @author Alex Black
  */
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
@@ -43,25 +56,24 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon){
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         INDArray delta = epsilon.muli(activationDerivative);
 
-        if(maskArray != null){
+        if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int[] indexes = new int[input.length()];
-        for( int i=0; i<indexes.length; i++ ){
-            indexes[i] = input.getInt(i,0);
-
+        INDArray linearisedInput = Nd4j.toFlattened(input);
+        int[] indexes = new int[linearisedInput.length()];
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = linearisedInput.getInt(i);
             weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
@@ -73,49 +85,46 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
 
-        return new Pair<>(ret,null);    //Don't bother returning epsilons: no layer below this one...
+        return new Pair<>(ret, null);    //Don't bother returning epsilons: no layer below this one...
     }
 
     @Override
-    public INDArray preOutput(boolean training){
-        if(input.columns() != 1){
-            //Assume shape is [numExamples,1], and each entry is an integer index
-            throw new IllegalStateException("Cannot do forward pass for embedding layer with input more than one column. "
-                    + "Expected input shape: [numExamples,1] with each entry being an integer index");
+    public INDArray preOutput(boolean training) {
+        if (input.shape().length < 2 || input.shape().length > 3 || input.shape()[input.shape().length - 1] != 1) {
+            throw new IllegalArgumentException("Input should be of shape [batchSize, 1] for single token examples, " +
+                    "or [batchSize, numTokens, 1] for multi-token examples. However, got shape " + Arrays.toString(input.shape()));
         }
 
-        int[] indexes = new int[input.length()];
-        for( int i=0; i<indexes.length; i++ ) indexes[i] = input.getInt(i,0);
+        INDArray flatInput = Nd4j.toFlattened(input);
+        int[] indexes = new int[flatInput.length()];
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = flatInput.getInt(i);
+        }
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
-
-        //INDArray rows = weights.getRows(indexes);
-/*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
-
-        for( int i=0; i<indexes.length; i++ ){
-            rows.putRow(i,weights.getRow(indexes[i]));
-        }
-        */
         INDArray rows = Nd4j.pullRows(weights, 1, indexes, 'c');
         rows.addiRowVector(bias);
 
+        final int[] outputShape = input.shape().clone();
+        outputShape[outputShape.length - 1] = weights.columns();
+        rows = rows.reshape(outputShape);
         return rows;
     }
 
     @Override
-    public INDArray activate(boolean training){
+    public INDArray activate(boolean training) {
         INDArray rows = preOutput(training);
 
-        INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
-        if(maskArray != null){
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
+        if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }
         return ret;
     }
 
     @Override
-    protected void applyDropOutIfNecessary(boolean training){
+    protected void applyDropOutIfNecessary(boolean training) {
         throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer");
     }
 
