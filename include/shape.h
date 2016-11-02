@@ -1778,10 +1778,9 @@ namespace shape {
         __host__ __device__
 #endif
         void createOffsets() {
-            traceNew(1);
 
             this->tadOffsets = new int[this->numTads];
-#pragma omp parallel for
+#pragma omp parallel for schedule(guided) proc_bind(close)
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
 
@@ -4005,8 +4004,6 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #endif
 
     INLINEDEF int *concat(int numArrays, int numTotalElements, int **arr, int *lengths) {
-
-        traceNew(26);
 
         int *ret = new int[numTotalElements];
         int count = 0;

@@ -589,7 +589,9 @@ template<typename OpType>
 				char yOrder = shape::order(yShapeInfo);
 				if(xOrder == yOrder && (xElementWiseStride  >= 1 && yElementWiseStride >= 1)) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-#pragma omp simd
+
+// TODO:: proper reduction required here
+//#pragma omp simd
 						for(int i = 0; i < length; i++) {
 							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i], extraParamsVals), extraParamsVals);
 						}
@@ -599,7 +601,8 @@ template<typename OpType>
 					}
 
 					else {
-#pragma omp simd
+// TODO:: proper reduction required here
+//#pragma omp simd
 						for(Nd4jIndex i = 0; i < length; i++) {
 							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
 						}

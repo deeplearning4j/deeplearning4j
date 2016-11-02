@@ -382,16 +382,15 @@ template<typename OpType>
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int tid, start, end;
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && resultStride == 1) {
 
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
@@ -400,11 +399,11 @@ template<typename OpType>
                     }
                 } else {
 
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {

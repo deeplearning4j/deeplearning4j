@@ -1209,6 +1209,7 @@ namespace simdOps {
 #pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
+
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
@@ -1725,18 +1726,14 @@ namespace simdOps {
                 int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
                 int zEWS = tadEWS;
 
-//                printf("numTads: %i; tadEWS: %i; tadLength: %i; num_threads: %i\n", tads, tadEWS, tadLength, num_threads);
-//                fflush(stdout);
-
-                int tid, start, end;
                 int span = (tads / num_threads) + 8;
 
 //#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                 {
-                    tid = omp_get_thread_num();
-                    start = span * tid;
-                    end = span * (tid + 1);
+                    int tid = omp_get_thread_num();
+                    int start = span * tid;
+                    int end = span * (tid + 1);
                     if (end > tads) end = tads;
 
                     for (int r = start; r < end; r++) {

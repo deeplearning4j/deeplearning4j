@@ -243,11 +243,13 @@ template<typename OpType>
 								}
 							}
 						} else {
-							int xCoord[MAX_RANK];
-                            int zCoord[MAX_RANK];
 
-#pragma omp simd
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 							for (int f = 0; f < tadLength; f++) {
+								int xCoord[MAX_RANK];
+								int zCoord[MAX_RANK];
+
                                 shape::ind2subC(tadRank,xShape, i, xCoord);
                                 shape::ind2subC(zRank,zShape, i, zCoord);
                                 Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);

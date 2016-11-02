@@ -2204,10 +2204,11 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 // aggregation step
 // TODO: this step should be improved, to exploit SIMD
-#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for schedule(guided)
     for (Nd4jIndex i = 0; i < length; i++) {
         z[i] = 0.0;
 
+#pragma omp simd
         for (int ar = 0; ar < n; ar++) {
             z[i] += x[ar][i];
         }
@@ -2309,11 +2310,11 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
             } else {
                 // ind2sub branch
-                int xCoord[MAX_RANK];
-                int yCoord[MAX_RANK];
-
 #pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
                 for (Nd4jIndex i = 0; i < tadLength; i++) {
+                    int xCoord[MAX_RANK];
+                    int yCoord[MAX_RANK];
+
                     shape::ind2subC(tadRank,tadShape, i, xCoord);
                     shape::ind2subC(tadRank,tadShape, i, yCoord);
 

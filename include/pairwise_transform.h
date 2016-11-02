@@ -492,9 +492,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 }
 
                 else {
-                    int xCoord[MAX_RANK];
-                    int yCoord[MAX_RANK];
-                    int resultCoord[MAX_RANK];
+
 
                     Nd4jIndex len = shape::length(xShapeBuffer);
                     int xRank = shape::rank(xShapeBuffer);
@@ -514,8 +512,11 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                     if(dx == result) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord) proc_bind(AFFINITY)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
                         for (Nd4jIndex i = 0; i < len; i++) {
+                            int xCoord[MAX_RANK];
+                            int yCoord[MAX_RANK];
+
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
 
@@ -526,8 +527,11 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) private(xCoord, yCoord, resultCoord) proc_bind(AFFINITY)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
                         for (Nd4jIndex i = 0; i < len; i++) {
+                            int xCoord[MAX_RANK];
+                            int yCoord[MAX_RANK];
+                            int resultCoord[MAX_RANK];
 
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
@@ -556,17 +560,15 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int tid, start, end;
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
-                        //printf("Thread: [%i], start: [%i], end: [%i], length: [%i]\n", tid, start, end, n);
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
                             result[i] = OpType::op(dx[i], y[i], extraParams);
@@ -574,13 +576,13 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     }
                 }
                 else {
-#pragma omp parallel num_threads(num_threads) private(tid, start, end) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                     {
-                        tid = omp_get_thread_num();
-                        start = span * tid;
-                        end = span * (tid + 1);
+                        int tid = omp_get_thread_num();
+                        int start = span * tid;
+                        int end = span * (tid + 1);
                         if (end > n) end = n;
-                        //printf("Thread: [%i], start: [%i], end: [%i], length: [%i]\n", tid, start, end, n);
+
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
                             result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
