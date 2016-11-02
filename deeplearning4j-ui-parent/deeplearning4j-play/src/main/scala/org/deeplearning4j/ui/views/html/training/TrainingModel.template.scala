@@ -157,7 +157,7 @@ Seq[Any](format.raw/*1.40*/("""
 						</div>
 						<div class="box-content">
 							<div id="meanmag"  class="center" style="height:300px;" ></div>
-							<p id="hoverdata"><b>Magnitude:</b> <span id="yMeanMagnitudes">0</span>, <b>Iteration:</b> <span id="xMeanMagnitudes">0</span></p>
+							<p id="hoverdata"><b>Log10 Ratio:</b> <span id="yMeanMagnitudes">0</span>, <b>Iteration:</b> <span id="xMeanMagnitudes">0</span></p>
 						</div>
 					</div>
 
@@ -299,10 +299,10 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 22:57:19 AEDT 2016
+                  DATE: Wed Nov 02 23:34:53 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: ac83fff64a1f3d28e08a554dd7daa7d68efe9859
-                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9688->8873|9720->8877|10042->9170|10072->9171|10107->9178|10211->9254|10240->9255|10373->9359|10403->9360|10438->9367|10516->9417|10545->9418|10676->9520|10706->9521|10893->9680|10922->9681|10989->9719|11019->9720|11120->9793|11149->9794
+                  HASH: 450a3a3f08b48a288e8ff87388706c9eb42a47a7
+                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9690->8875|9722->8879|10044->9172|10074->9173|10109->9180|10213->9256|10242->9257|10375->9361|10405->9362|10440->9369|10518->9419|10547->9420|10678->9522|10708->9523|10895->9682|10924->9683|10991->9721|11021->9722|11122->9795|11151->9796
                   LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|245->221|246->222|252->228|252->228|253->229|256->232|256->232|261->237|261->237|262->238|264->240|264->240|268->244|268->244|273->249|273->249|274->250|274->250|277->253|277->253
                   -- GENERATED --
               */
