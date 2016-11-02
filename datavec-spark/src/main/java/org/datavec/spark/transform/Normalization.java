@@ -115,11 +115,11 @@ public class Normalization {
         String[] columnNames = DataFrames.toArray(columnsList);
         //first row is std second row is mean, each column in a row is for a particular column
         List<Row> stdDevMean = stdDevMeanColumns(frame, columnNames);
-        for(int i = 0; i < stdDevMean.size(); i++) {
+        for(int i = 0; i < columnNames.length; i++) {
             String columnName = columnNames[i];
-            double std = ((Number) stdDevMean.get(0).get(i)).doubleValue() + Nd4j.EPS_THRESHOLD;
+            double std = ((Number) stdDevMean.get(0).get(i)).doubleValue();
             double mean = ((Number) stdDevMean.get(1).get(i)).doubleValue();
-          //  if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
+            if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
 
             frame = frame.withColumn(columnName, frame.col(columnName).minus(mean).divide(std));
         }

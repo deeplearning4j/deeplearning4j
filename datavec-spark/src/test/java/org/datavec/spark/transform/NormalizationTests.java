@@ -62,9 +62,9 @@ public class NormalizationTests extends BaseSparkTest {
         List<Row> rows = Normalization.stdDevMeanColumns(dataFrame,dataFrame.columns());
         INDArray assertion = DataFrames.toMatrix(rows);
         //compare standard deviation
-        assertTrue(standardScaler.getStd().equals(assertion.getRow(0)));
+        assertTrue(standardScaler.getStd().equalsWithEps(assertion.getRow(0),1e-1));
         //compare mean
-        assertTrue(standardScaler.getMean().equals(assertion.getRow(1)));
+        assertTrue(standardScaler.getMean().equalsWithEps(assertion.getRow(1),1e-1));
 
     }
 
@@ -100,7 +100,7 @@ public class NormalizationTests extends BaseSparkTest {
         Normalization.normalize(dataFrame).show();
 
         //assert equivalent to the ndarray pre processing
-        DataNormalization standardScaler = new NormalizerStandardize();
+        NormalizerStandardize standardScaler = new NormalizerStandardize();
         standardScaler.fit(new DataSet(arr.dup(),arr.dup()));
         INDArray standardScalered = arr.dup();
         standardScaler.transform(new DataSet(standardScalered,standardScalered));
@@ -112,7 +112,7 @@ public class NormalizationTests extends BaseSparkTest {
         INDArray zeroMeanUnitVarianceDataFrame = RecordConverter.toMatrix(Normalization.zeromeanUnitVariance(schema,rdd).collect());
         INDArray zeroMeanUnitVarianceDataFrameZeroToOne = RecordConverter.toMatrix(Normalization.normalize(schema,rdd).collect());
         assertEquals(standardScalered,zeroMeanUnitVarianceDataFrame);
-        assertEquals(zeroToOnes,zeroMeanUnitVarianceDataFrameZeroToOne);
+        assertTrue(zeroToOnes.equalsWithEps(zeroMeanUnitVarianceDataFrameZeroToOne,1e-1));
 
     }
 
