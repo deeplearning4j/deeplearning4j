@@ -380,28 +380,49 @@ public class TrainModule implements UIModule {
             return ok();
         }
 
-        //TODO type check
-        StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
+        TrainModuleUtils.GraphInfo gi = getGraphInfo();
+        if(gi == null) return ok();
+        return ok(Json.toJson(gi));
+    }
 
-        String modelClass = p.getModelClassName();
-        String config = p.getModelConfigJson();
-        if (modelClass.endsWith("MultiLayerNetwork")) {
-            MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-            TrainModuleUtils.GraphInfo info = TrainModuleUtils.buildGraphInfo(conf);
+    private TrainModuleUtils.GraphInfo getGraphInfo(){
+        Pair<MultiLayerConfiguration,ComputationGraphConfiguration> conf = getConfig();
+        if(conf == null){
+            return null;
+        }
 
-            return ok(Json.toJson(info));
-        } else if (modelClass.endsWith("ComputationGraph")) {
-            ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
-            TrainModuleUtils.GraphInfo mi = TrainModuleUtils.buildGraphInfo(conf);
-
-            return ok(Json.toJson(mi));
+        if(conf.getFirst() != null){
+            return TrainModuleUtils.buildGraphInfo(conf.getFirst());
+        } else if(conf.getSecond() != null){
+            return TrainModuleUtils.buildGraphInfo(conf.getSecond());
         } else {
-            return ok();
+            return null;
         }
     }
 
+    private Pair<MultiLayerConfiguration,ComputationGraphConfiguration> getConfig(){
+        boolean noData = currentSessionID == null;
+        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+        List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+        if(allStatic.size() == 0) return null;
 
-    private Result getModelData(String layerID) {
+        StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
+        String modelClass = p.getModelClassName();
+        String config = p.getModelConfigJson();
+
+        if (modelClass.endsWith("MultiLayerNetwork")) {
+            MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
+            return new Pair<>(conf,null);
+        } else if (modelClass.endsWith("ComputationGraph")) {
+            ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
+            return new Pair<>(null,conf);
+        }
+        return null;
+    }
+
+
+    private Result getModelData(String str) {
+        int layerIdx = Integer.parseInt(str);   //TODO validation
         I18N i18N = I18NProvider.getInstance();
 
         //Model info for layer
@@ -424,15 +445,25 @@ public class TrainModule implements UIModule {
 
         Map<String, Object> result = new HashMap<>();
 
+        Pair<MultiLayerConfiguration,ComputationGraphConfiguration> conf = getConfig();
+        if(conf == null){
+            return ok(Json.toJson(result));
+        }
+
+        TrainModuleUtils.GraphInfo gi = getGraphInfo();
+        if(gi == null){
+            return ok(Json.toJson(result));
+        }
+
 
         // Get static layer info
-        String[][] layerInfoTable = getLayerInfoTable(layerID, i18N, noData, ss, wid);
+        String[][] layerInfoTable = getLayerInfoTable(layerIdx, gi, i18N, noData, ss, wid);
 
         result.put("layerInfo", layerInfoTable);
 
         //Get mean magnitudes line chart
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerID, updates);
+        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", meanMagnitudes.getSecond().keySet());
         mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
@@ -442,7 +473,8 @@ public class TrainModule implements UIModule {
         result.put("meanMagRatio", mmRatioMap);
 
         //Get activations line chart for layer
-        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerID, updates);
+
+        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, conf.getFirst(), conf.getSecond());
         Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
         activationMap.put("mean", activationsData.getSecond());
@@ -450,16 +482,16 @@ public class TrainModule implements UIModule {
         result.put("activations", activationMap);
 
         //Get learning rate vs. time chart for layer
-        Map<String, Object> lrs = getLayerLearningRates(layerID, updates);
+        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates);
         result.put("learningRates", lrs);
 
         //Parameters histogram data
         Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size() - 1) : null);
-        Map<String, Object> paramHistograms = getHistograms(layerID, StatsType.Parameters, lastUpdate);
+        Map<String, Object> paramHistograms = getHistograms(layerIdx, gi, StatsType.Parameters, lastUpdate);
         result.put("paramHist", paramHistograms);
 
         //Updates histogram data
-        Map<String, Object> updateHistograms = getHistograms(layerID, StatsType.Updates, lastUpdate);
+        Map<String, Object> updateHistograms = getHistograms(layerIdx, gi, StatsType.Updates, lastUpdate);
         result.put("updateHist", updateHistograms);
 
         return ok(Json.toJson(result));
@@ -512,9 +544,9 @@ public class TrainModule implements UIModule {
         return layerType;
     }
 
-    private String[][] getLayerInfoTable(String layerID, I18N i18N, boolean noData, StatsStorage ss, String wid) {
+    private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData, StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), layerID});
+        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), gi.getLayerNames().get(layerIdx)});
         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerType"), ""});
 
         if (!noData) {
@@ -530,21 +562,38 @@ public class TrainModule implements UIModule {
                 NeuralNetConfiguration nnc = null;
                 if (modelClass.endsWith("MultiLayerNetwork")) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(configJson);
-                    int layerIdx = Integer.parseInt(layerID);
-                    if (layerIdx >= 0) {
-                        nnc = conf.getConf(layerIdx);
+                    int confIdx = layerIdx-1;   //-1 because of input
+                    if (confIdx >= 0) {
+                        nnc = conf.getConf(confIdx);
                         layer = nnc.getLayer();
+                    } else {
+                        //Input layer
+                        layerType = "Input";
                     }
                 } else if (modelClass.endsWith("ComputationGraph")) {
                     ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(configJson);
+
+                    String vertexName = gi.getLayerNames().get(layerIdx);
+
                     Map<String, GraphVertex> vertices = conf.getVertices();
-                    if (vertices.containsKey(layerID) && vertices.get(layerID) instanceof LayerVertex) {
-                        LayerVertex lv = (LayerVertex) vertices.get(layerID);
+                    if (vertices.containsKey(vertexName) && vertices.get(vertexName) instanceof LayerVertex) {
+                        LayerVertex lv = (LayerVertex) vertices.get(vertexName);
                         nnc = lv.getLayerConf();
                         layer = nnc.getLayer();
+                    } else if(conf.getNetworkInputs().contains(vertexName)){
+                        layerType = "Input";
+                    } else {
+                        GraphVertex gv = conf.getVertices().get(vertexName);
+                        if(gv != null){
+                            layerType = gv.getClass().getSimpleName();
+                        }
                     }
                 }
-                layerType = getLayerType(layer);
+
+                if(layer != null) {
+                    layerType = getLayerType(layer);
+                }
+
                 if (layer != null) {
                     String activationFn = null;
                     if (layer instanceof FeedForwardLayer) {
@@ -604,7 +653,12 @@ public class TrainModule implements UIModule {
     }
 
     //TODO float precision for smaller transfers?
-    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(String layerID, List<Persistable> updates) {
+    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates) {
+        if(gi == null){
+            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
+        }
+
+        String layerName = gi.getLayerNames().get(layerIdx);
 
         List<Integer> iterCounts = new ArrayList<>();
         Map<String, List<Double>> ratioValues = new HashMap<>();
@@ -620,7 +674,7 @@ public class TrainModule implements UIModule {
                 Map<String, Double> paramMM = sp.getMeanMagnitudes(StatsType.Parameters);
                 Map<String, Double> updateMM = sp.getMeanMagnitudes(StatsType.Updates);
                 for (String s : paramMM.keySet()) {
-                    String prefix = layerID + "_";
+                    String prefix = layerName + "_";
                     if (s.startsWith(prefix)) {
                         //Relevant parameter for this layer...
                         String layerParam = s.substring(prefix.length());
@@ -643,7 +697,17 @@ public class TrainModule implements UIModule {
     }
 
 
-    private Triple<int[], float[], float[]> getLayerActivations(String paramName, List<Persistable> updates) {
+    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
+        if(gi == null){
+            return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
+        }
+
+        String type = gi.getLayerTypes().get(index);    //Index may be for an input, for example
+        if("input".equalsIgnoreCase(type)){
+            return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
+        }
+
+        String layerName = gi.getLayerNames().get(index);
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
@@ -660,15 +724,11 @@ public class TrainModule implements UIModule {
                 Map<String, Double> stdevs = sp.getStdev(StatsType.Activations);
 
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
-                if (means != null && means.containsKey(paramName)) {
-                    mean[used] = means.get(paramName).floatValue();
-                    stdev[used] = stdevs.get(paramName).floatValue();
-                } else {
-                    mean[used] = 0.0f;
-                    stdev[used] = 1.0f;
+                if (means != null && means.containsKey(layerName)) {
+                    mean[used] = means.get(layerName).floatValue();
+                    stdev[used] = stdevs.get(layerName).floatValue();
+                    used++;
                 }
-
-                used++;
             }
         }
 
@@ -681,7 +741,11 @@ public class TrainModule implements UIModule {
         return new Triple<>(iterCounts, mean, stdev);
     }
 
-    private Map<String, Object> getLayerLearningRates(String paramName, List<Persistable> updates) {
+    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates) {
+        if(gi == null){
+            return Collections.emptyMap();
+        }
+        String layerName = gi.getLayerNames().get(layerIdx);
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
@@ -697,8 +761,8 @@ public class TrainModule implements UIModule {
                 Map<String, Double> lrs = sp.getLearningRates();
 
                 for (String p : lrs.keySet()) {
-                    if (p.startsWith(paramName + "_")) {
-                        String layerParamName = p.substring(Math.min(p.length(), paramName.length() + 1));
+                    if (p.startsWith(layerName + "_")) {
+                        String layerParamName = p.substring(Math.min(p.length(), layerName.length() + 1));
                         if (!byName.containsKey(layerParamName)) {
                             byName.put(layerParamName, new float[size]);
                         }
@@ -722,11 +786,12 @@ public class TrainModule implements UIModule {
     }
 
 
-    private static Map<String, Object> getHistograms(String layerName, StatsType statsType, Persistable p) {
+    private static Map<String, Object> getHistograms(int layerIdx, TrainModuleUtils.GraphInfo gi, StatsType statsType, Persistable p) {
         if (p == null) return null;
         if (!(p instanceof StatsReport)) return null;
         StatsReport sr = (StatsReport) p;
 
+        String layerName = gi.getLayerNames().get(layerIdx);
 
         Map<String, Histogram> map = sr.getHistograms(statsType);
 
