@@ -1,3 +1,10 @@
+train.model.layerInfoTable.title=Layer Information
+train.model.activationsChart.title=Layer Activations
+train.model.activationsChart.titleShort=Activations
+train.model.lrChart.title=Parameter Learning Rates
+train.model.lrChart.titleShort=Learning Rate
+train.model.paramHistChart.title=Layer Parameters Histogram
+train.model.updateHistChart.title=Layer Updates Histogram
 train.model.layerinfotable.layerName=Layer Name
 train.model.layerinfotable.layerType=Layer Type
 train.model.layerinfotable.layerNIn=Input Size
