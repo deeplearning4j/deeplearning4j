@@ -4,7 +4,7 @@
     <head>
 
         <meta charset="utf-8">
-        <title>DL4J Training UI</title>
+        <title>@i18n.getMessage("train.pagetitle")</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -38,7 +38,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>DL4J Training UI</span></a>
+                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
                 </div>
             </div>
         </div>
@@ -51,14 +51,10 @@
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet">
-                                Overview</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">
-                                Model</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet">
-                                System</span></a></li>
-                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet">
-                                User Guide</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.overview")</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.model")</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.system")</span></a></li>
+                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.userguide")</span></a></li>
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">
                                     Language</span></a>
@@ -91,7 +87,7 @@
 
                         <div class="box span12">
                             <div class="box-header">
-                                <h2><b>Select Machine</b></h2>
+                                <h2><b>@i18n.getMessage("train.system.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <ul class="nav tab-menu nav-tabs" id="systemTab"></ul>
@@ -109,8 +105,8 @@
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
-                                                    <p id="hoverdata"><b>JVM Memory:</b> <span id="y">0</span>, <b>
-                                                        Iteration:</b> <span id="x">0</span></p>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y">0</span>, <b>
+                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">0</span></p>
                                                 </div>
                                             </div>
                                                 <!-- Off Heap Memory Utlization Chart -->
@@ -120,8 +116,8 @@
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
-                                                    <p id="hoverdata"><b>Off Heap Memory:</b> <span id="y2">0</span>, <b>
-                                                        Iteration:</b> <span id="x2">0</span></p>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y2">0</span>, <b>
+                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x2">0</span></p>
                                                 </div>
                                             </div>
 
@@ -133,18 +129,18 @@
                                                 <!-- Hardware Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.table.hardwareTitle")</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.hwTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>JVM Current Memory</th>
-                                                                <th>JVM Max Memory</th>
-                                                                <th>Off-Heap Current Memory</th>
-                                                                <th>Off-Heap Max Memory</th>
-                                                                <th>JVM Available Processors</th>
-                                                                <th># Compute Devices</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmCurrent")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmMax")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapCurrent")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapMax")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.jvmProcs")</th>
+                                                                <th>@i18n.getMessage("train.system.hwTable.computeDevices")</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -168,25 +164,25 @@
                                                 <!-- Software Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.table.softwareTitle")</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.swTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>OS</th>
-                                                                <th>Host Name</th>
-                                                                <th>OS Architecture</th>
-                                                                <th>JVM Name</th>
-                                                                <th>JVM Version</th>
-                                                                <th>ND4J Backend</th>
-                                                                <th>ND4J Data Type</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.hostname")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.os")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.osArch")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.jvmName")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.jvmVersion")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.nd4jBackend")</th>
+                                                                <th>@i18n.getMessage("train.system.swTable.nd4jDataType")</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td id="OS">Loading...</td>
                                                                 <td id="hostName">Loading...</td>
+                                                                <td id="OS">Loading...</td>
                                                                 <td id="OSArchitecture">Loading...</td>
                                                                 <td id="jvmName">Loading...</td>
                                                                 <td id="jvmVersion">Loading...</td>

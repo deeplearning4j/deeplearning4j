@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
     <head>
 
         <meta charset="utf-8">
-        <title>DL4J Training UI</title>
+        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("train.pagetitle")),format.raw/*7.51*/("""</title>
             <!-- start: Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
@@ -61,7 +61,7 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>DL4J Training UI</span></a>
+                    <a class="brand" href="index.html"><span>"""),_display_(/*40.63*/i18n/*40.67*/.getMessage("train.pagetitle")),format.raw/*40.97*/("""</span></a>
                 </div>
             </div>
         </div>
@@ -74,10 +74,10 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet"> Overview</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet"> Model</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet"> System</span></a></li>
-                            <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet"> User Guide</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">"""),_display_(/*53.112*/i18n/*53.116*/.getMessage("train.nav.overview")),format.raw/*53.149*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">"""),_display_(/*54.134*/i18n/*54.138*/.getMessage("train.nav.model")),format.raw/*54.168*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">"""),_display_(/*55.110*/i18n/*55.114*/.getMessage("train.nav.system")),format.raw/*55.145*/("""</span></a></li>
+                            <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">"""),_display_(/*56.103*/i18n/*56.107*/.getMessage("train.nav.userguide")),format.raw/*56.141*/("""</span></a></li>
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet"> Language</span></a>
                                 <ul>
@@ -124,7 +124,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Layer Information</b></h2>
+                                <h2><b>"""),_display_(/*103.41*/i18n/*103.45*/.getMessage("train.model.layerInfoTable")),format.raw/*103.86*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
@@ -133,40 +133,41 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Mean Magnitude Update Ratios - Log10</b></h2>
+                                <h2><b>"""),_display_(/*112.41*/i18n/*112.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*112.97*/(""": log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>Log10 Ratio:</b> <span id="yMeanMagnitudes">0</span>
-                                    , <b>Iteration:</b> <span id="xMeanMagnitudes">0</span></p>
+                                <p id="hoverdata"><b>log<sub>
+                                    10</sub> """),_display_(/*117.47*/i18n/*117.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*117.108*/("""</b> <span id="yMeanMagnitudes">0</span>
+                                    , <b>"""),_display_(/*118.43*/i18n/*118.47*/.getMessage("train.overview.charts.iteration")),format.raw/*118.93*/(""":</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Activations</b></h2>
+                                <h2><b>"""),_display_(/*124.41*/i18n/*124.45*/.getMessage("train.model.activationsChart.title")),format.raw/*124.94*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="activations" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>Activation:</b> <span id="yActivations">0</span>
-                                    , <b>Iteration:</b> <span id="xActivations">0</span></p>
+                                <p id="hoverdata"><b>"""),_display_(/*128.55*/i18n/*128.59*/.getMessage("train.model.activationsChart.titleShort")),format.raw/*128.113*/(""":</b> <span id="yActivations">0</span>
+                                    , <b>"""),_display_(/*129.43*/i18n/*129.47*/.getMessage("train.overview.charts.iteration")),format.raw/*129.93*/(""":</b> <span id="xActivations">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Learning Rates</b></h2>
+                                <h2><b>"""),_display_(/*135.41*/i18n/*135.45*/.getMessage("train.model.lrChart.title")),format.raw/*135.85*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="learningrate" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>Learning Rate:</b> <span id="yLearningRate">0</span>
-                                    , <b>Iteration:</b> <span id="xLearningRate">0</span></p>
+                                <p id="hoverdata"><b>"""),_display_(/*139.55*/i18n/*139.59*/.getMessage("train.model.lrChart.titleShort")),format.raw/*139.104*/(""":</b> <span id="yLearningRate">0</span>
+                                    , <b>"""),_display_(/*140.43*/i18n/*140.47*/.getMessage("train.overview.charts.iteration")),format.raw/*140.93*/(""":</b> <span id="xLearningRate">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Parameters Histogram</b></h2>
+                                <h2><b>"""),_display_(/*146.41*/i18n/*146.45*/.getMessage("train.model.paramHistChart.title")),format.raw/*146.92*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="parametershistogram" class="center" style="height: 300px;"></div>
@@ -175,7 +176,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>Updates Histogram</b></h2>
+                                <h2><b>"""),_display_(/*155.41*/i18n/*155.45*/.getMessage("train.model.updateHistChart.title")),format.raw/*155.93*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateshistogram" class="center" style="height: 300px;"></div>
@@ -229,18 +230,18 @@ Seq[Any](format.raw/*1.40*/("""
 
         <!-- Execute once on page load -->
         <script>
-				$(document).ready(function () """),format.raw/*208.35*/("""{"""),format.raw/*208.36*/("""
-                    """),format.raw/*209.21*/("""renderModelGraph();
+				$(document).ready(function () """),format.raw/*209.35*/("""{"""),format.raw/*209.36*/("""
+                    """),format.raw/*210.21*/("""renderModelGraph();
                     renderModelPage();
                     renderLayerTable();
-                """),format.raw/*212.17*/("""}"""),format.raw/*212.18*/(""");
+                """),format.raw/*213.17*/("""}"""),format.raw/*213.18*/(""");
 		</script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
-				setInterval(function () """),format.raw/*217.29*/("""{"""),format.raw/*217.30*/("""
-                    """),format.raw/*218.21*/("""renderModelPage();
-                """),format.raw/*219.17*/("""}"""),format.raw/*219.18*/(""", 2000);
+				setInterval(function () """),format.raw/*218.29*/("""{"""),format.raw/*218.30*/("""
+                    """),format.raw/*219.21*/("""renderModelPage();
+                """),format.raw/*220.17*/("""}"""),format.raw/*220.18*/(""", 2000);
 		</script>
     </body>
 </html>
@@ -264,11 +265,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Thu Nov 03 19:11:22 AEDT 2016
+                  DATE: Thu Nov 03 19:29:18 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 6694dbf65e9d002a8b6772d46cb643f77835ea6c
-                  MATRIX: 598->1|731->39|759->41|5820->5074|5849->5075|5899->5097|6091->5261|6120->5262|6166->5280|12524->11609|12554->11610|12605->11632|12752->11750|12782->11751|12933->11873|12963->11874|13014->11896|13079->11932|13109->11933
-                  LINES: 20->1|25->1|26->2|107->83|107->83|108->84|113->89|113->89|114->90|232->208|232->208|233->209|236->212|236->212|241->217|241->217|242->218|243->219|243->219
+                  HASH: 6746b6fd34cb89488e367945ccc9ba32cfc031d8
+                  MATRIX: 598->1|731->39|759->41|882->138|894->142|944->172|2729->1930|2742->1934|2793->1964|3357->2500|3371->2504|3426->2537|3605->2688|3619->2692|3671->2722|3826->2849|3840->2853|3893->2884|4041->3004|4055->3008|4111->3042|6324->5227|6353->5228|6403->5250|6595->5414|6624->5415|6670->5433|7186->5921|7200->5925|7263->5966|7723->6398|7737->6402|7811->6454|8165->6780|8179->6784|8259->6841|8371->6925|8385->6929|8453->6975|8735->7229|8749->7233|8820->7282|9105->7539|9119->7543|9196->7597|9306->7679|9320->7683|9388->7729|9667->7980|9681->7984|9743->8024|10029->8282|10043->8286|10111->8331|10222->8414|10236->8418|10304->8464|10584->8716|10598->8720|10667->8767|11112->9184|11126->9188|11196->9236|14278->12289|14308->12290|14359->12312|14506->12430|14536->12431|14687->12553|14717->12554|14768->12576|14833->12612|14863->12613
+                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|64->40|64->40|64->40|77->53|77->53|77->53|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|107->83|107->83|108->84|113->89|113->89|114->90|127->103|127->103|127->103|136->112|136->112|136->112|141->117|141->117|141->117|142->118|142->118|142->118|148->124|148->124|148->124|152->128|152->128|152->128|153->129|153->129|153->129|159->135|159->135|159->135|163->139|163->139|163->139|164->140|164->140|164->140|170->146|170->146|170->146|179->155|179->155|179->155|233->209|233->209|234->210|237->213|237->213|242->218|242->218|243->219|244->220|244->220
                   -- GENERATED --
               */
           
