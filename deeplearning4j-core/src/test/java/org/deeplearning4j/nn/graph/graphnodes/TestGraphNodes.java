@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
-import org.deeplearning4j.nn.conf.graph.StackVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -16,6 +15,7 @@ import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
 import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -244,6 +244,23 @@ public class TestGraphNodes {
     }
 
     @Test
+    public void testStackNode(){
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new StackVertex(null,"",-1);
+
+        INDArray in1 = Nd4j.rand(5,2);
+        INDArray in2 = Nd4j.rand(5,2);
+        INDArray in3 = Nd4j.rand(5,2);
+        unstack.setInputs(in1, in2, in3);
+        INDArray out = unstack.doForward(false);
+        assertEquals(in2, out.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+
+        unstack.setErrors(out);
+        INDArray backward = unstack.doBackward(false).getSecond()[2];
+        assertEquals(in3, backward);
+    }
+
+    @Test
     public void testUnstackNode(){
         Nd4j.getRandom().setSeed(12345);
         GraphVertex unstack = new UnstackVertex(null,"",-1,1,3);
@@ -296,8 +313,15 @@ public class TestGraphNodes {
 
         assertEquals(out, forwardL2);
 
-        // TODO how do we test when we don't have an epsilon?
-//        INDArray backward = l2.doBackward(false).getSecond()[0];
+        // should be a column vector of shape [numExamples, 1]
+        INDArray epsilon = Nd4j.rand(out.shape());
+
+        l2.setErrors(epsilon);
+        INDArray[] backward = l2.doBackward(false).getSecond();
+//        System.out.println(backward[0]);
+//        System.out.println(backward[1]);
+        assertEquals(backward[0].shape(), in1.shape());
+        assertEquals(backward[1].shape(), in2.shape());
     }
 
     @Test
@@ -312,7 +336,7 @@ public class TestGraphNodes {
             .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0,1),"in")
             .addVertex("v5", new DuplicateToTimeSeriesVertex("in"),"in")
             .addVertex("v6", new LastTimeStepVertex("in"), "in")
-            .addVertex("v7", new StackVertex(), "in")
+            .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
             .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0,1), "in")
             .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
             .setOutputs("out")
