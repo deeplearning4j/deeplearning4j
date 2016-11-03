@@ -557,13 +557,13 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                              T *extraParams,
                              const Nd4jIndex n) {
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-                int span = (n / num_threads) + 8;
+                int span = (n / _threads) + 8;
 
                 if (xStride == 1 && yStride == 1 && resultStride == 1) {
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;
@@ -576,7 +576,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     }
                 }
                 else {
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
                     {
                         int tid = omp_get_thread_num();
                         int start = span * tid;

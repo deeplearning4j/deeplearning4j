@@ -503,7 +503,7 @@ template<typename OpType>
                         int xOffset = shape::offset(xShapeInfo);
                         int resultOffset = shape::offset(resultShapeInfo);
 
-#pragma omp parallel for simd schedule(guided) if (n > 2048) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                         for (Nd4jIndex i = 0; i < n; i++) {
                             int *xIdx = shape::ind2sub(xRank, xShape, i);
                             int *resultIdx = shape::ind2sub(resultRank, resultShape, i);
