@@ -1,15 +1,10 @@
 
 var selectedVertex = 0;
-
 function setSelectedVertex(vertex){
     selectedVertex = vertex;
 }
 
-
 function renderModelPage() {
-
-    console.log("Currently selected vertex: " + selectedVertex);
-
     $.ajax({
         url: "/train/model/data/" + selectedVertex,
         async: true,
@@ -17,49 +12,27 @@ function renderModelPage() {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
-            console.log("Keys: " + Object.keys(data));
-
+            renderLayerTable(data);
             renderMeanMagChart(data);
             renderActivationsChart(data);
             renderLearningRateChart(data);
             renderParametersHistogram(data);
             renderUpdatesHistogram(data);
-
-        }
-    });
-
-}
-
-function renderLayerTable() {
-
-    $.ajax({
-        url: "/train/model/data/" + selectedVertex,
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            console.log("Keys: " + Object.keys(data));
-
-            renderLayerTableData(data);
         }
     });
 }
 
 /* ---------- Layer Table Data ---------- */
-function renderLayerTableData(data) {
-
+function renderLayerTable(data) {
     var layerInfo = data["layerInfo"];
     var nRows = Object.keys(layerInfo);
 
-    console.log("Layer Info" + layerInfo);
-    console.log("Rows" + nRows);
-
     //Generate row for each item in the table
-    for (i = 0; i < nRows.length; i++)  {
-        $('#layerInfo').append("<tr><td>" + layerInfo[i][0] + "</td><td>" + layerInfo[i][1] + "</td></tr>");
+    var tbl = $('#layerInfo');
+    tbl.empty();
+    for (var i = 0; i < nRows.length; i++)  {
+        tbl.append("<tr><td>" + layerInfo[i][0] + "</td><td>" + layerInfo[i][1] + "</td></tr>");
     }
-
 }
 
 /* ---------- Mean Magnitudes Chart ---------- */
@@ -99,8 +72,6 @@ function renderMeanMagChart(data) {
 
         overallMax = Math.ceil(overallMax);
         overallMin = Math.floor(overallMin);
-
-        // console.log("MM CHART: " + overallMin + "\t" + overallMax);
 
         var plot = $.plot(chart,
             toPlot, {
@@ -256,9 +227,6 @@ function renderActivationsChart(data) {
 
 /* ---------- Learning Rate Chart ---------- */
 function renderLearningRateChart(data) {
-
-    var lrs_b = data["learningRates"]["lrs"]["b"];
-    var lrs_W = data["learningRates"]["lrs"]["W"];
     var iter = data["learningRates"]["iterCounts"];
 
     var chart = $("#learningrate");
@@ -359,7 +327,6 @@ function renderLearningRateChart(data) {
 /* ---------- Parameters Histogram ---------- */
 
 function selectParamHist(paramName){
-    console.log("Selected: " + paramName);
     currSelectedParamHist = paramName;
 }
 
@@ -419,13 +386,10 @@ function renderParametersHistogram(data) {
             },
             colors: ["#2FABE9"]
         });
-
     }
 }
 
 /* ---------- Updates Histogram ---------- */
-
-
 function selectUpdateHist(paramName){
     currSelectedUpdateHist = paramName;
 }
@@ -487,6 +451,5 @@ function renderUpdatesHistogram(data) {
             },
             colors: ["#2FABE9"]
         });
-
     }
 }
