@@ -30,6 +30,9 @@ import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
 
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static play.mvc.Results.ok;
@@ -41,6 +44,8 @@ import static play.mvc.Results.redirect;
 @Slf4j
 public class TrainModule implements UIModule {
 
+    private static final DecimalFormat df2 = new DecimalFormat("#.00");
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
     private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
     private String currentSessionID;
 
@@ -327,10 +332,10 @@ public class TrainModule implements UIModule {
         };
 
         if (last != null) {
-            perfInfo[2][1] = String.valueOf(last.getTimeStamp());   //TODO FORMATTING
+            perfInfo[2][1] = String.valueOf(dateFormat.format(new Date(last.getTimeStamp())));
             perfInfo[3][1] = String.valueOf(last.getTotalMinibatches());
-            perfInfo[4][1] = String.valueOf(last.getMinibatchesPerSecond());    //TODO FORMATTING
-            perfInfo[5][1] = String.valueOf(last.getExamplesPerSecond());    //TODO FORMATTING
+            perfInfo[4][1] = String.valueOf(df2.format(last.getMinibatchesPerSecond()));
+            perfInfo[5][1] = String.valueOf(df2.format(last.getExamplesPerSecond()));
         }
 
         result.put("perf", perfInfo);
