@@ -93,7 +93,8 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray b = inputs[1];
         INDArray out = doForward(tbptt);
 
-        INDArray dLdlambda = Nd4j.rand(out.shape());      //dL/dlambda aka 'epsilon' - from layer above
+        // TODO do we merge all epsilons?
+        INDArray dLdlambda = epsilons[0];      //dL/dlambda aka 'epsilon' - from layer above
 
         INDArray sNegHalf = out.rdiv(1.0);      //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
