@@ -358,85 +358,135 @@ function renderLearningRateChart(data) {
 
 /* ---------- Parameters Histogram ---------- */
 
+function selectParamHist(paramName){
+    console.log("Selected: " + paramName);
+    currSelectedParamHist = paramName;
+}
+
+var currSelectedParamHist = null;
 function renderParametersHistogram(data) {
 
-    var bMin = data["paramHist"]["b"]["min"];
-    var bMax = data["paramHist"]["b"]["max"];
-    var bBins = data["paramHist"]["b"]["bins"];
-    var bCounts = data["paramHist"]["b"]["counts"];
+    var histograms = data["paramHist"];
+    var paramNames = histograms["paramNames"];
 
-    var WMin = data["paramHist"]["W"]["min"];
-    var WMax = data["paramHist"]["W"]["max"];
-    var WBins = data["paramHist"]["W"]["bins"];
-    var WCounts = data["paramHist"]["W"]["counts"];
+    //Create buttons, add them to the div...
+    var buttonDiv = $("#paramHistButtonsDiv");
+    buttonDiv.empty();
+    for( var i=0; i<paramNames.length; i++ ){
+        var n = "paramBtn_"+paramNames[i];
+        var btn = $('<input id="' + n + '" class="btn btn-small"/>').attr({type:"button",name:n,value:paramNames[i]});
 
-    var binWidthB = (bMax - bMin)/bBins;
-    var binWidthW = (WMax - WMin)/WBins;
+        var onClickFn = (function(pName){
+            return function(){
+                selectParamHist(pName);
+            }
+        })(paramNames[i]);
 
-	if($("#parametershistogram").length)
-	{
-		var bData = [];
-		var WData = [];
+        $(document).on("click", "#" + n, onClickFn);
+        buttonDiv.prepend(btn);
+    }
 
-        for (var i = 0; i < bCounts.length; i++) {
-            var binWidthChartB = (bMin + i * binWidthB)
-            bData.push([binWidthChartB, bCounts[i]]);
-            var binWidthChartW = (WMin + i * binWidthW)
-            WData.push([binWidthChartW, WCounts[i]]);
-         }
+    if(currSelectedParamHist == null){
+        if(jQuery.inArray("W",paramNames)) currSelectedParamHist = "W";
+        else if(paramNames.length > 0) currSelectedParamHist = paramNames[0];
+    }
 
-        $.plot($("#parametershistogram"), [ bData, WData ], {
+
+    if(currSelectedParamHist != null && $("#parametershistogram").length){
+
+        var label = $("#paramhistSelected");
+        label.html("&nbsp&nbsp(" + currSelectedParamHist + ")");
+
+        var min = data["paramHist"][currSelectedParamHist]["min"];
+        var max = data["paramHist"][currSelectedParamHist]["max"];
+
+        var bins = data["paramHist"][currSelectedParamHist]["bins"];
+        var counts = data["paramHist"][currSelectedParamHist]["counts"];
+
+        var binWidth = (max-min)/bins;
+        var halfBin = binWidth/2.0;
+
+        var data = [];
+        for (var i = 0; i < counts.length; i++) {
+            var binPos = (min + i * binWidth - halfBin);
+            data.push([binPos, counts[i]]);
+        }
+
+        $.plot($("#parametershistogram"), [ data ], {
             stack: null,
             series: {
-                bars: { show: true, barWidth: binWidthW }
+                bars: { show: true, barWidth: binWidth }
             },
-            colors: ["#FA5833", "#2FABE9"]
+            colors: ["#2FABE9"]
         });
-	}
+
+    }
 }
 
 /* ---------- Updates Histogram ---------- */
 
-function renderUpdatesHistogram(data) {
 
-    var bMin = data["updateHist"]["b"]["min"];
-    var bMax = data["updateHist"]["b"]["max"];
-    var bBins = data["updateHist"]["b"]["bins"];
-    var bCounts = data["updateHist"]["b"]["counts"];
-
-    var WMin = data["updateHist"]["W"]["min"];
-    var WMax = data["updateHist"]["W"]["max"];
-    var WBins = data["updateHist"]["W"]["bins"];
-    var WCounts = data["updateHist"]["W"]["counts"];
-
-    var binWidthB = (bMax - bMin)/bBins;
-    var binWidthW = (WMax - WMin)/WBins;
-
-	if($("#updateshistogram").length)
-	{
-		var bData = [];
-		var WData = [];
-
-        for (var i = 0; i < bCounts.length; i++) {
-            var binWidthChartB = (bMin + i * binWidthB)
-            bData.push([binWidthChartB, bCounts[i]]);
-            var binWidthChartW = (WMin + i * binWidthW)
-            WData.push([binWidthChartW, WCounts[i]]);
-         }
-
-        $.plot($("#updateshistogram"), [ bData, WData ], {
-            stack: null,
-            series: {
-                bars: { show: true, barWidth: binWidthW }
-            },
-            colors: ["#FA5833", "#2FABE9"]
-        });
-	}
+function selectUpdateHist(paramName){
+    currSelectedUpdateHist = paramName;
 }
 
-/* ---------- Language Dropdown ---------- */
+var currSelectedUpdateHist = null;
+function renderUpdatesHistogram(data) {
 
-	$('.dropmenu').click(function(e){
-		e.preventDefault();
-		$(this).parent().find('ul').slideToggle();
-	});
+    var histograms = data["updateHist"];
+    var paramNames = histograms["paramNames"];
+
+    //Create buttons, add them to the div...
+    var buttonDiv = $("#updateHistButtonsDiv");
+    buttonDiv.empty();
+    for( var i=0; i<paramNames.length; i++ ){
+        var n = "updParamBtn_"+paramNames[i];
+        var btn = $('<input id="' + n + '" class="btn btn-small"/>').attr({type:"button",name:n,value:paramNames[i]});
+
+        var onClickFn = (function(pName){
+            return function(){
+                selectUpdateHist(pName);
+            }
+        })(paramNames[i]);
+
+        $(document).on("click", "#" + n, onClickFn);
+        buttonDiv.prepend(btn);
+    }
+
+    if(currSelectedUpdateHist == null){
+        if(jQuery.inArray("W",paramNames)) currSelectedUpdateHist = "W";
+        else if(paramNames.length > 0) currSelectedUpdateHist = paramNames[0];
+    }
+
+
+    var chart = $("#updateshistogram");
+    if(currSelectedUpdateHist != null && chart.length){
+
+        var label = $("#updatehistSelected");
+        label.html("&nbsp&nbsp(" + currSelectedUpdateHist + ")");
+
+        var min = data["paramHist"][currSelectedUpdateHist]["min"];
+        var max = data["paramHist"][currSelectedUpdateHist]["max"];
+
+        var bins = data["paramHist"][currSelectedUpdateHist]["bins"];
+        var counts = data["paramHist"][currSelectedUpdateHist]["counts"];
+
+        var binWidth = (max-min)/bins;
+        var halfBin = binWidth/2.0;
+
+        var data = [];
+        for (var i = 0; i < counts.length; i++) {
+            var binPos = (min + i * binWidth - halfBin);
+            data.push([binPos, counts[i]]);
+        }
+
+        $.plot(chart, [ data ], {
+            stack: null,
+            series: {
+                bars: { show: true, barWidth: binWidth }
+            },
+            colors: ["#2FABE9"]
+        });
+
+    }
+}
