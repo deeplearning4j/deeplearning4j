@@ -2,6 +2,8 @@ package org.deeplearning4j.ui.i18n;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.api.I18N;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -9,6 +11,7 @@ import org.reflections.util.ConfigurationBuilder;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -55,24 +58,15 @@ public class DefaultI18N implements I18N {
     private Set<String> loadedLanguages = Collections.synchronizedSet(new HashSet<>());
 
     private DefaultI18N() {
-
         //Load default language...
         loadLanguageResources(currentLanguage);
-
     }
 
     private synchronized void loadLanguageResources(String languageCode) {
         if (loadedLanguages.contains(languageCode)) return;
 
         //Scan classpath for resources in the /dl4j_i18n/ directory...
-
-        URL url;
-        try {
-            url = new File("").toURI().toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);  //Should never happen
-        }
-
+        URL url = this.getClass().getResource("/" + DEFAULT_I8N_RESOURCES_DIR + "/");
         Reflections reflections = new Reflections(
                 new ConfigurationBuilder()
                         .setScanners(new ResourcesScanner())
@@ -82,15 +76,13 @@ public class DefaultI18N implements I18N {
         String pattern = ".*" + languageCode;
         Set<String> resources = reflections.getResources(Pattern.compile(pattern));
 
-        String regex = ".*/" + DEFAULT_I8N_RESOURCES_DIR + "/.*" + languageCode;
-
         Map<String, String> messages = new HashMap<>();
 
         for (String s : resources) {
-            if (!s.matches(regex)) continue;
+            if (!s.endsWith(languageCode)) continue;
 
             log.info("Attempting to parse file: {}", s);
-            parseFile(new File(s), messages);
+            parseFile(s, messages);
         }
 
         messagesByLanguage.put(languageCode, messages);
@@ -98,21 +90,30 @@ public class DefaultI18N implements I18N {
         loadedLanguages.add(languageCode);
     }
 
-    private void parseFile(File f, Map<String, String> results) {
-        String str;
+    private void parseFile(String filename, Map<String, String> results) {
+
+        List<String> lines;
         try {
-            str = FileUtils.readFileToString(f);
-        } catch (IOException e) {
-            log.warn("Error parsing UI I18N content file; skipping: {}", f.getName(), e.getMessage());
+            String path;
+            if(filename.startsWith(DEFAULT_I8N_RESOURCES_DIR)){
+                //As a resource from JAR file - already has dir at the start...
+                path = "/" + filename;
+            } else {
+                //Run in dev environment - no dir at the start...
+                path = "/" + DEFAULT_I8N_RESOURCES_DIR + "/" + filename;
+            }
+            InputStream is = this.getClass().getResourceAsStream(path);
+            lines = IOUtils.readLines(is);
+        } catch (Exception e) {
+            log.warn("Error parsing UI I18N content file; skipping: {}", filename, e.getMessage());
             return;
         }
 
         //TODO need to think more carefully about how to parse this, with multi-line messages, etc
         int count = 0;
-        String[] lines = str.split(LINE_SEPARATOR);
         for (String line : lines) {
             if (!line.matches(".+=.*")) {
-                log.warn("Invalid line in I18N file: {}, \"{}\"", f, line);
+                log.warn("Invalid line in I18N file: {}, \"{}\"", filename, line);
                 continue;
             }
             int idx = line.indexOf('=');
@@ -123,7 +124,7 @@ public class DefaultI18N implements I18N {
         }
 
         //TODO don't log (only for development)
-        log.info("Loaded {} messages from file {}", count, f);
+        log.info("Loaded {} messages from file {}", count, filename);
     }
 
     @Override
