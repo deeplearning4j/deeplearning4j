@@ -930,8 +930,8 @@ public class TrainModule implements UIModule {
             fracUtilized.add(fracOffHeap);
 
             String[] seriesNames = new String[2 + numDevices];
-            seriesNames[0] = i18n.getMessage("train.system.memory.onHeapName");
-            seriesNames[1] = i18n.getMessage("train.system.memory.offHeapName");
+            seriesNames[0] = i18n.getMessage("train.system.hwTable.jvmCurrent");
+            seriesNames[1] = i18n.getMessage("train.system.hwTable.offHeapCurrent");
             boolean[] isDevice = new boolean[2 + numDevices];
             String[] devNames = deviceNames.get(wid);
             for (int i = 0; i < numDevices; i++) {
@@ -983,16 +983,16 @@ public class TrainModule implements UIModule {
             String[] deviceDescription = sr.getHwDeviceDescription();
             long[] devTotalMem = sr.getHwDeviceTotalMemory();
 
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmMaxMem"), String.valueOf(sr.getHwJvmMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmMaxMem"), String.valueOf(sr.getHwOffHeapMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.jvmprocs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hardwareinfo.numDevices"), String.valueOf(numDevices)});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmMax"), String.valueOf(sr.getHwJvmMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.offHeapMax"), String.valueOf(sr.getHwOffHeapMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmProcs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
+            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.computeDevices"), String.valueOf(numDevices)});
             for (int i = 0; i < numDevices; i++) {
                 String label = i18n.getMessage("train.system.hardwareinfo.deviceName") + " (" + i + ")";
                 String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i) : deviceDescription[i]);
                 hwInfo.add(new String[]{label, name});
 
-                String memLabel = i18n.getMessage("train.system.hardwareinfo.deviceMemory") + " (" + i + ")";
+                String memLabel = i18n.getMessage("train.system.hwTable.deviceMemory") + " (" + i + ")";
                 String memBytes = (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
                 hwInfo.add(new String[]{memLabel, memBytes});
             }
@@ -1000,14 +1000,37 @@ public class TrainModule implements UIModule {
             retHw.put(String.valueOf(count), hwInfo);
 
             //---- Software Info -----
+
+            String nd4jBackend = sr.getSwNd4jBackendClass();
+            if(nd4jBackend != null && nd4jBackend.contains(".")){
+                int idx = nd4jBackend.lastIndexOf('.');
+                nd4jBackend = nd4jBackend.substring(idx+1);
+                String temp;
+                switch(nd4jBackend){
+                    case "CpuNDArrayFactory":
+                        temp = "CPU";
+                        break;
+                    case "JCublasNDArrayFactory":
+                        temp = "CUDA";
+                        break;
+                    default:
+                        temp = nd4jBackend;
+                }
+                nd4jBackend = temp;
+            }
+
+            String datatype = sr.getSwNd4jDataTypeName();
+            if(datatype == null) datatype = "";
+            else datatype = datatype.toLowerCase();
+
             List<String[]> swInfo = new ArrayList<>();
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.os"), sr.getSwOsName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.hostname"), sr.getSwHostName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.architecture"), sr.getSwArch()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.jvmName"), sr.getSwJvmName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.jvmVersion"), sr.getSwJvmVersion()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.nd4jBackend"), sr.getSwNd4jBackendClass()});     //TODO proper formatting
-            swInfo.add(new String[]{i18n.getMessage("train.system.softwareinfo.nd4jDataType"), sr.getSwNd4jDataTypeName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.os"), sr.getSwOsName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.hostname"), sr.getSwHostName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.osArch"), sr.getSwArch()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmName"), sr.getSwJvmName()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmVersion"), sr.getSwJvmVersion()});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jBackend"), nd4jBackend});
+            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jDataType"), datatype});
 
             retSw.put(String.valueOf(count), swInfo);
 

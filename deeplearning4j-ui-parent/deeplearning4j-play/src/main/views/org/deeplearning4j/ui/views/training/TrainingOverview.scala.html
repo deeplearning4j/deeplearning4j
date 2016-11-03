@@ -58,12 +58,18 @@
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.language")</span></a>
                                 <ul>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        English</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        日本語</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        中文</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        한글</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        русский</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
+                                        український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -79,7 +85,7 @@
                     </div>
                 </noscript>
 
-                <!-- Start Score Chart-->
+                    <!-- Start Score Chart-->
                 <div id="content" class="span10">
 
                     <div class="row-fluid">
@@ -90,12 +96,14 @@
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.scoreTitleShort"):</b> <span id="y">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.scoreTitleShort")
+                                    :</b> <span id="y">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration")
+                                    :</b> <span id="x">
                                     0</span></p>
                             </div>
                         </div>
-                        <!-- End Score Chart-->
-                        <!-- Start Model Table-->
+                            <!-- End Score Chart-->
+                            <!-- Start Model Table-->
                         <div class="box span4">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.overview.perftable.title")</b></h2>
@@ -141,26 +149,32 @@
                                 </table>
                             </div>
                         </div>
-                        <!--End Model Table -->
+                            <!--End Model Table -->
                     </div>
 
 
                     <div class="row-fluid">
-                        <!--Start Ratio Table -->
+                            <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle"): log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
-                                <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.updateRatioTitleShort"):</b> <span id="yRatio">0</span>, <b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort"):</b> <span id="yLogRatio">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xRatio">0</span></p>
+                                <div id="updateRatioChart" class="center" style="height: 300px;" ></div>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.updateRatioTitleShort")
+                                    :</b> <span id="yRatio">0</span>, <b>log<sub>
+                                    10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")
+                                    :</b> <span id="yLogRatio">0</span>
+                                    , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xRatio">
+                                        0</span></p>
                             </div>
                         </div>
-                        <!--End Ratio Table -->
-                        <!--Start Variance Table -->
+                            <!--End Ratio Table -->
+                            <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b><h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>10</sub></b></h2></b></h2>
+                                <h2><b><h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>
+                                    10</sub></b></h2></b></h2>
                                 <div style="float: right">
                                     <p class="stackControls center">
                                         <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.activations")" onclick="selectStdevChart('stdevActivations')">
@@ -170,62 +184,67 @@
                                 </div>
                             </div>
                             <div class="box-content">
-                                <div id="stdevChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.stdevTitleShort"):</b> <span id="yStdev">0</span>, <b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.stdevTitleShort"):</b> <span id="yLogStdev">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xStdev">0</span></p>
+                                <div id="stdevChart" class="center" style="height: 300px;" ></div>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.stdevTitleShort")
+                                    :</b> <span id="yStdev">0</span>, <b>log<sub>
+                                    10</sub> @i18n.getMessage("train.overview.chart.stdevTitleShort")
+                                    :</b> <span id="yLogStdev">0</span>
+                                    , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xStdev">
+                                        0</span></p>
                             </div>
                         </div>
-                        <!-- End Variance Table -->
+                            <!-- End Variance Table -->
                     </div>
+                </div>
+            </div><!-- End Content Span10-->
+        </div><!--End Row Fluid-->
 
-                </div><!-- End Content Span10-->
-            </div><!--End Row Fluid-->
+        <!-- Start JavaScript-->
+        <script src="/assets/js/jquery-1.9.1.min.js"></script>
+        <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
+        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
+        <script src="/assets/js/jquery.ui.touch-punch.js"></script>
+        <script src="/assets/js/modernizr.js"></script>
+        <script src="/assets/js/bootstrap.min.js"></script>
+        <script src="/assets/js/jquery.cookie.js"></script>
+        <script src="/assets/js/fullcalendar.min.js"></script>
+        <script src="/assets/js/jquery.dataTables.min.js"></script>
+        <script src="/assets/js/excanvas.js"></script>
+        <script src="/assets/js/jquery.flot.js"></script>
+        <script src="/assets/js/jquery.flot.pie.js"></script>
+        <script src="/assets/js/jquery.flot.stack.js"></script>
+        <script src="/assets/js/jquery.flot.resize.min.js"></script>
+        <script src="/assets/js/jquery.chosen.min.js"></script>
+        <script src="/assets/js/jquery.uniform.min.js"></script>
+        <script src="/assets/js/jquery.cleditor.min.js"></script>
+        <script src="/assets/js/jquery.noty.js"></script>
+        <script src="/assets/js/jquery.elfinder.min.js"></script>
+        <script src="/assets/js/jquery.raty.min.js"></script>
+        <script src="/assets/js/jquery.iphone.toggle.js"></script>
+        <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
+        <script src="/assets/js/jquery.gritter.min.js"></script>
+        <script src="/assets/js/jquery.imagesloaded.js"></script>
+        <script src="/assets/js/jquery.masonry.min.js"></script>
+        <script src="/assets/js/jquery.knob.modified.js"></script>
+        <script src="/assets/js/jquery.sparkline.min.js"></script>
+        <script src="/assets/js/counter.js"></script>
+        <script src="/assets/js/retina.js"></script>
+        <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
 
-            <!-- Start JavaScript-->
-            <script src="/assets/js/jquery-1.9.1.min.js"></script>
-            <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
-            <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
-            <script src="/assets/js/jquery.ui.touch-punch.js"></script>
-            <script src="/assets/js/modernizr.js"></script>
-            <script src="/assets/js/bootstrap.min.js"></script>
-            <script src="/assets/js/jquery.cookie.js"></script>
-            <script src="/assets/js/fullcalendar.min.js"></script>
-            <script src="/assets/js/jquery.dataTables.min.js"></script>
-            <script src="/assets/js/excanvas.js"></script>
-            <script src="/assets/js/jquery.flot.js"></script>
-            <script src="/assets/js/jquery.flot.pie.js"></script>
-            <script src="/assets/js/jquery.flot.stack.js"></script>
-            <script src="/assets/js/jquery.flot.resize.min.js"></script>
-            <script src="/assets/js/jquery.chosen.min.js"></script>
-            <script src="/assets/js/jquery.uniform.min.js"></script>
-            <script src="/assets/js/jquery.cleditor.min.js"></script>
-            <script src="/assets/js/jquery.noty.js"></script>
-            <script src="/assets/js/jquery.elfinder.min.js"></script>
-            <script src="/assets/js/jquery.raty.min.js"></script>
-            <script src="/assets/js/jquery.iphone.toggle.js"></script>
-            <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
-            <script src="/assets/js/jquery.gritter.min.js"></script>
-            <script src="/assets/js/jquery.imagesloaded.js"></script>
-            <script src="/assets/js/jquery.masonry.min.js"></script>
-            <script src="/assets/js/jquery.knob.modified.js"></script>
-            <script src="/assets/js/jquery.sparkline.min.js"></script>
-            <script src="/assets/js/counter.js"></script>
-            <script src="/assets/js/retina.js"></script>
-            <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
-            <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
-
-            <!-- Execute once on page load -->
-            <script>
-                    $(document).ready(function(){
-                        renderOverviewPage();
-                    });
-            </script>
+        <!-- Execute once on page load -->
+        <script>
+                $(document).ready(function () {
+                    renderOverviewPage();
+                });
+        </script>
 
             <!-- Execute periodically (every 2 sec) -->
-            <script>
-                    setInterval(function(){
-                        renderOverviewPage();
-                    }, 2000);
-            </script>
+        <script>
+                setInterval(function () {
+                    renderOverviewPage();
+                }, 2000);
+        </script>
             <!-- End JavaScript-->
 
     </body>
