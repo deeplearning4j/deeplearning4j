@@ -902,54 +902,60 @@ namespace simdOps {
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+
+#pragma omp simd reduction(max:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<T>(max, dx[i]);
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] = dx[i] - max;
 						}
 
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] = nd4j::math::nd4j_exp<T>(result[i]);
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							sum += result[i];
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] /= sum;
 						}
-
-
 					}
 					else {
 
+#pragma omp simd reduction(max:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] = dx[i * elementWiseStride] - max;
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
-							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(
-								result[i * resultElementWiseStride]);
+							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * resultElementWiseStride]);
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							sum += result[i * resultElementWiseStride];
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] /= sum;
 						}
 					}
-
 				}
-
-
 			}
 		}
 
@@ -1033,8 +1039,11 @@ namespace simdOps {
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
 				std::vector <T> maxResult(shape[0]);
+
+#pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
+
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
@@ -1058,7 +1067,6 @@ namespace simdOps {
 				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 
-
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
@@ -1068,38 +1076,38 @@ namespace simdOps {
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
-#pragma omp parallel for simd reduction(max:max) shared(result)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
 						sum += result[i];
 					}
 
-#pragma omp parallel for simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 						result[i] = nd4j::math::nd4j_log<T>(result[i]);
 					}
 				}
 				else {
-#pragma omp parallel for simd reduction(max:max) shared(result, elementWiseStride)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result, elementWiseStride)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp parallel for simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 						result[i * elementWiseStride] = nd4j::math::nd4j_log<T>(result[i * elementWiseStride]);
@@ -1262,12 +1270,12 @@ namespace simdOps {
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 
-#pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result) schedule(guided)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
@@ -1285,39 +1293,27 @@ namespace simdOps {
                     }
                 } else {
 
-#pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 					}
 
 
-#pragma omp parallel for simd reduction(+:sum) shared(result, elementWiseStride) schedule(guided)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp parallel for simd schedule(guided)
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 					}
 
-					if (elementWiseStride >= 1) {
-						if (elementWiseStride == 1) {
 #pragma omp simd
-							for (int i = 0; i < length; i++) {
-								result[i] = result[i] * (1 - result[i]);
-							}
-
-						} else {
-#pragma omp simd
-							for (int i = 0; i < length; i++) {
-								result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
-							}
-						}
-					} else {
-						printf("Non element wise stride not supported right now\n");
+					for (int i = 0; i < length; i++) {
+						result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
 					}
 				}
 			}

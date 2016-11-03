@@ -122,13 +122,12 @@ template<typename OpType>
 				__syncthreads();
 
                 int idx[MAX_RANK];
-#pragma unroll
+
 				for(Nd4jIndex i = blockIdx.x * gridDim.x + threadIdx.x;i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
-
 				}
 
 				T **sPartialsRef = (T **) &sPartials;
@@ -395,7 +394,7 @@ template<typename OpType>
 						int coord[MAX_RANK];
 						Nd4jIndex n = shape::length(xShapeInfo);
 						int rank = shape::rank(xShapeInfo);
-#pragma unroll
+
 						for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
 							int offset = tadOffsets[i];
 							int dim;
@@ -591,7 +590,6 @@ template<typename OpType>
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 
 // TODO:: proper reduction required here
-//#pragma omp simd
 						for(int i = 0; i < length; i++) {
 							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i], extraParamsVals), extraParamsVals);
 						}
@@ -602,7 +600,6 @@ template<typename OpType>
 
 					else {
 // TODO:: proper reduction required here
-//#pragma omp simd
 						for(Nd4jIndex i = 0; i < length; i++) {
 							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
 						}
@@ -765,6 +762,7 @@ template<typename OpType>
                      */
 					int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
 					int tadLength = shape::length(xTad.tadOnlyShapeInfo);
+
 #pragma omp parallel for proc_bind(AFFINITY) default(shared)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						T *localExtraParams = nullptr;

@@ -481,7 +481,6 @@ template<typename OpType>
 				}
 
 
-				int tadRank = shape::rank(tadOnlyShapeInfo);
 				const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 				int numTads = shape::length(xShapeInfo) / tadLength;
 				int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
@@ -499,7 +498,6 @@ template<typename OpType>
 						if (tadEWS == 1) {
 
 // FIXME: proper reduction should be used here
-//#pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
 								start = OpType::update(start, OpType::op(iter[j], extraParams), extraParams);
 
@@ -507,7 +505,6 @@ template<typename OpType>
 						}
 						else {
 // FIXME: proper reduction to be used here
-//#pragma omp simd
 							for (int j = 0; j < tadLength; j++) {
 								start = OpType::update(start, OpType::op(iter[j * tadEWS], extraParams), extraParams);
 							}
@@ -518,6 +515,7 @@ template<typename OpType>
 				else {
 					int *tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					int *tadStride = shape::stride(tadOnlyShapeInfo);
+                    int tadRank = shape::rank(tadOnlyShapeInfo);
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
 					for (int i = 0; i < resultLength; i++) {
@@ -587,7 +585,6 @@ template<typename OpType>
 						T local = OpType::startingValue(x);
 
 // FIXME: proper reduction to be used here
-// #pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
 							T curr = OpType::op(x[i], extraParams);
 							local = OpType::update(local, curr, extraParams);
@@ -618,8 +615,8 @@ template<typename OpType>
 								if (newOffset + info.items >= length) {
 									itemsToLoop = length - newOffset;
 								}
+
 // FIXME: proper reduction should be used here
-//#pragma omp simd
 								for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
 									T curr = OpType::op(chunk[j], extraParams);
 									local = OpType::update(local, curr, extraParams);
@@ -631,7 +628,6 @@ template<typename OpType>
 						}
 
 // FIXME: proper reduction should be used here
-//#pragma omp simd
 						for (int i = 0; i < info.threads; i++) {
 							finalVal = OpType::update(finalVal, blocks[i], extraParams);
 						}
@@ -650,7 +646,6 @@ template<typename OpType>
 						T local = OpType::startingValue(x);
 
 // FIXME: proper reduction should be used here
-//#pragma omp simd
 						for (Nd4jIndex i = 0; i < length; i++) {
 							T curr = OpType::op(x[i * xElementWiseStride], extraParams);
 							local = OpType::update(local, curr, extraParams);
@@ -678,8 +673,6 @@ template<typename OpType>
 								break;
 
 // FIXME: proper reduction should be used here
-//#pragma omp simd
-
 							for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
 								T curr = OpType::op(chunk[j * xElementWiseStride], extraParams);
 								local = OpType::update(local, curr, extraParams);
@@ -690,7 +683,6 @@ template<typename OpType>
 					}
 
 // FIXME: proper reduction should be used here
-//#pragma omp simd
 					for (int i = 0; i < info.threads; i++) {
 						finalVal = OpType::update(finalVal, blocks[i], extraParams);
 					}

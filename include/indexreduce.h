@@ -511,18 +511,11 @@ template<typename OpType>
 							curr.index = i;
 							startingIndex = OpType::update(startingIndex, curr,
 												   extraParams);
-
 						}
-
-
-
 					}
-
-
 				}
 
 				return  startingIndex.index;
-
 			}
 
 			
@@ -647,7 +640,6 @@ template<typename OpType>
 						indexValue.value = x[baseOffset];
 
 // FIXME: proper reduction required here
-//#pragma omp simd
 						for(int j = 1; j < tadLength; j++) {
 							IndexValue<T> comp;
 							comp.index = j;
