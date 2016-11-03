@@ -80,14 +80,16 @@ public class UnstackVertex extends BaseGraphVertex {
         // once we know the inputs, save the shape and interval size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
         this.intervalSize = inputs[0].size(0)/stackSize;
+        int start = from*intervalSize;
+        int end = (from*intervalSize)+intervalSize;
 
         switch (inputs[0].rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             default:
                 throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
         }
@@ -98,16 +100,18 @@ public class UnstackVertex extends BaseGraphVertex {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
+        int start = from*intervalSize;
+        int end = (from*intervalSize)+intervalSize;
 
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(from, from+intervalSize), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen
