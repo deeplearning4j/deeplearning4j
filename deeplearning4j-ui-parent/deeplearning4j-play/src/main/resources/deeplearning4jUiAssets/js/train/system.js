@@ -29,21 +29,23 @@ function renderTabs() {
 selectMachine(); //Make machineID Global
 
 /* ---------- JVM Memory Utilization Chart ---------- */
+var jvmMaxLastIter = 0;
 function renderJVMMemoryChart(data) {
 
-    var jvmValues = data["memory"][machineID]["values"][0];
-    var maxValue = Math.max.apply(Math, jvmValues) + 1;
+    var jvmCurrentFrac = data["memory"][machineID]["values"][0];
     var jvmChart = $("#jvmmemorychart");
+
+    jvmMaxLastIter = data["memory"][machineID]["maxBytes"][0];
 
     if (jvmChart.length) {
 
         var jvmValuesData = [];
 
-        for (var i = 0; i < jvmValues.length; i++) {
-            jvmValuesData.push([i, jvmValues[i]]);
+        for (var i = 0; i < jvmCurrentFrac.length; i++) {
+            jvmValuesData.push([i, 100.0 * jvmCurrentFrac[i]]);
         }
 
-        var plot = $.plot($("#jvmmemorychart"),
+        var plot = $.plot(jvmChart,
             [{data: jvmValuesData, label: "JVM Memory"}], {
                 series: {
                     lines: {
@@ -57,7 +59,7 @@ function renderJVMMemoryChart(data) {
                     tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                yaxis: {min: 0, max: maxValue},
+                yaxis: {min: 0, max: 100.0},
                 colors: ["#FA5833", "#2FABE9"]
             });
 
@@ -77,18 +79,22 @@ function renderJVMMemoryChart(data) {
         var previousPoint = null;
         jvmChart.bind("plothover", function (event, pos, item) {
             $("#x").text(pos.x.toFixed(0));
-            $("#y").text(pos.y.toFixed(2));
+            var tempY = Math.min(100.0,pos.y);
+            tempY = Math.max(tempY, 0.0);
+            var asBytes = formatBytes(tempY * jvmMaxLastIter / 100.0, 2);
+            $("#y").text(tempY.toFixed(2) + " (" + asBytes + ")");
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
                     $("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(5);
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = Math.min(100.0, item.datapoint[1]).toFixed(2);
+                    var bytes = (item.datapoint[1] * jvmMaxLastIter / 100.0).toFixed(0);
 
                     showTooltip(item.pageX - jvmChart.offset().left, item.pageY - jvmChart.offset().top,
-                        "(" + x + ", " + y + ")");
+                        "(" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
                 }
             }
             else {
@@ -100,21 +106,23 @@ function renderJVMMemoryChart(data) {
 }
 
 /* ---------- Off Heap Memory Utilization Chart ---------- */
+var offHeapMaxLastIter = 0;
 function renderOffHeapMemoryChart(data) {
 
-    var offHeapValues = data["memory"][machineID]["values"][1];
-    var maxValue = Math.max.apply(Math, offHeapValues);
+    var offHeapFrac = data["memory"][machineID]["values"][1];
     var offHeapChart = $("#offheapmemorychart");
+
+    offHeapMaxLastIter = data["memory"][machineID]["maxBytes"][1];
 
     if (offHeapChart.length) {
 
         var offHeapValuesData = [];
 
-        for (var i = 0; i < offHeapValues.length; i++) {
-            offHeapValuesData.push([i, offHeapValues[i]]);
+        for (var i = 0; i < offHeapFrac.length; i++) {
+            offHeapValuesData.push([i, 100.0 * offHeapFrac[i]]);
         }
 
-        var plot = $.plot($("#offheapmemorychart"),
+        var plot = $.plot(offHeapChart,
             [{data: offHeapValuesData, label: "Off Heap Memory"}], {
                 series: {
                     lines: {
@@ -128,12 +136,12 @@ function renderOffHeapMemoryChart(data) {
                     tickColor: "#dddddd",
                     borderWidth: 0
                 },
-                yaxis: {min: 0, max: maxValue},
+                yaxis: {min: 0, max: 100.0},
                 colors: ["#FA5833", "#2FABE9"]
             });
 
         function showTooltip(x, y, contents) {
-            $('<div id="tooltip">' + contents + '</div>').css( {
+            $('<div id="tooltipOffHeap">' + contents + '</div>').css( {
                 position: 'absolute',
                 display: 'none',
                 top: y + 8,
@@ -148,22 +156,26 @@ function renderOffHeapMemoryChart(data) {
         var previousPoint = null;
         offHeapChart.bind("plothover", function (event, pos, item) {
             $("#x2").text(pos.x.toFixed(0));
-            $("#y2").text(pos.y.toFixed(5));
+            var tempY = Math.min(100.0,pos.y);
+            tempY = Math.max(0.0, tempY);
+            var asBytes = formatBytes(tempY * offHeapMaxLastIter / 100.0, 2);
+            $("#y2").text(tempY.toFixed(2) + " (" + asBytes + ")");
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
-                    $("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(5);
+                    $("#tooltipOffHeap").remove();
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = Math.min(100.0, item.datapoint[1]).toFixed(2);
+                    var bytes = (item.datapoint[1] * offHeapMaxLastIter / 100.0).toFixed(0);
 
                     showTooltip(item.pageX - offHeapChart.offset().left, item.pageY - offHeapChart.offset().top,
-                        "(" + x + ", " + y + ")");
+                        "(" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
                 }
             }
             else {
-                $("#tooltip").remove();
+                $("#tooltipOffHeap").remove();
                 previousPoint = null;
             }
         });
@@ -208,12 +220,12 @@ function renderSystemInformation(data) {
     $("#nd4jDataType").html(nd4jDataType);
 
     /* Inject Memory Information */
-    $("#currentBytesJVM").html(currentBytesJVM);
-    $("#currentBytesOffHeap").html(currentBytesOffHeap);
+    $("#currentBytesJVM").html(formatBytes(currentBytesJVM,2));
+    $("#currentBytesOffHeap").html(formatBytes(currentBytesOffHeap,2));
     $("#isDeviceJVM").html(isDeviceJVM);
     $("#isDeviceOffHeap").html(isDeviceOffHeap);
-    $("#maxBytesJVM").html(maxBytesJVM);
-    $("#maxBytesOffHeap").html(maxBytesOffHeap);
+    $("#maxBytesJVM").html(formatBytes(maxBytesJVM,2));
+    $("#maxBytesOffHeap").html(formatBytes(maxBytesOffHeap,2));
 
 }
 

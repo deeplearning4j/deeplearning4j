@@ -911,7 +911,7 @@ public class TrainModule implements UIModule {
                 lastBytes[0] = jvmCurrentBytes;
                 lastBytes[1] = ohCurrentBytes;
 
-                lastMaxBytes[0] = jvmCurrentBytes;
+                lastMaxBytes[0] = jvmMaxBytes;
                 lastMaxBytes[1] = ohMaxBytes;
 
                 if (numDevices > 0) {
