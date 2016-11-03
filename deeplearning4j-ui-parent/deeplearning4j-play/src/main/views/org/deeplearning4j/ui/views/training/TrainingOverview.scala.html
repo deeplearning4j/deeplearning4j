@@ -58,12 +58,12 @@
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.language")</span></a>
                                 <ul>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk','overview')"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -211,6 +211,7 @@
             <script src="/assets/js/counter.js"></script>
             <script src="/assets/js/retina.js"></script>
             <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
+            <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
 
             <!-- Execute once on page load -->
             <script>
