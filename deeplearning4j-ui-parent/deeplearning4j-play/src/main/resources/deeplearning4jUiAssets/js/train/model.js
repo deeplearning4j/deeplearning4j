@@ -23,6 +23,8 @@ function renderModelPage() {
             renderActivationsChart(data);
             renderLearningRateChart(data);
             renderParametersHistogram(data);
+            renderUpdatesHistogram(data);
+
         }
     });
 
@@ -356,51 +358,84 @@ function renderLayerTable() {
 }
 
 
-
-	/* ---------- Parameters Histogram ---------- */
+/* ---------- Parameters Histogram ---------- */
 
 function renderParametersHistogram(data) {
 
+    var bMin = data["paramHist"]["b"]["min"];
+    var bMax = data["paramHist"]["b"]["max"];
+    var bBins = data["paramHist"]["b"]["bins"];
+    var bCounts = data["paramHist"]["b"]["counts"];
+
+    var WMin = data["paramHist"]["W"]["min"];
+    var WMax = data["paramHist"]["W"]["max"];
+    var WBins = data["paramHist"]["W"]["bins"];
+    var WCounts = data["paramHist"]["W"]["counts"];
+
+    var binWidthB = (bMax - bMin)/bBins;
+    var binWidthW = (WMax - WMin)/WBins;
+
 	if($("#parametershistogram").length)
 	{
-		var d1 = [];
-		for (var i = 0; i <= 10; i += 1)
-		d1.push([i, parseInt(Math.random() * 30)]);
+		var bData = [];
+		var WData = [];
 
-		var d2 = [];
-		for (var i = 0; i <= 10; i += 1)
-			d2.push([i, parseInt(Math.random() * 30)]);
+        for (var i = 0; i < bCounts.length; i++) {
+            var binWidthChartB = (bMin + i * binWidthB)
+            bData.push([binWidthChartB, bCounts[i]]);
+            var binWidthChartW = (WMin + i * binWidthW)
+            WData.push([binWidthChartW, WCounts[i]]);
+         }
 
-		var d3 = [];
-		for (var i = 0; i <= 10; i += 1)
-			d3.push([i, parseInt(Math.random() * 30)]);
+        console.log("Param Histogram: " + WData);
 
-		var stack = 0, bars = true, lines = false, steps = false;
+        $.plot($("#parametershistogram"), [ bData, WData ], {
+            stack: null,
+            series: {
+                bars: { show: true, barWidth: binWidthW }
+            },
+            colors: ["#FA5833", "#2FABE9"]
+        });
+	}
+}
 
-		function plotWithOptions() {
-			$.plot($("#parametershistogram"), [ d1, d2, d3 ], {
-				series: {
-					stack: stack,
-					lines: { show: lines, fill: true, steps: steps },
-					bars: { show: bars, barWidth: 0.6 },
-				},
-				colors: ["#FA5833", "#2FABE9", "#FABB3D"]
-			});
-		}
+/* ---------- Updates Histogram ---------- */
 
-		plotWithOptions();
+function renderUpdatesHistogram(data) {
 
-		$(".stackControls input").click(function (e) {
-			e.preventDefault();
-			stack = $(this).val() == "With stacking" ? true : null;
-			plotWithOptions();
-		});
-		$(".graphControls input").click(function (e) {
-			e.preventDefault();
-			bars = $(this).val().indexOf("Bars") != -1;
-			lines = $(this).val().indexOf("Lines") != -1;
-			steps = $(this).val().indexOf("steps") != -1;
-			plotWithOptions();
-		});
+    var bMin = data["updateHist"]["b"]["min"];
+    var bMax = data["updateHist"]["b"]["max"];
+    var bBins = data["updateHist"]["b"]["bins"];
+    var bCounts = data["updateHist"]["b"]["counts"];
+
+    var WMin = data["updateHist"]["W"]["min"];
+    var WMax = data["updateHist"]["W"]["max"];
+    var WBins = data["updateHist"]["W"]["bins"];
+    var WCounts = data["updateHist"]["W"]["counts"];
+
+    var binWidthB = (bMax - bMin)/bBins;
+    var binWidthW = (WMax - WMin)/WBins;
+
+	if($("#updateshistogram").length)
+	{
+		var bData = [];
+		var WData = [];
+
+        for (var i = 0; i < bCounts.length; i++) {
+            var binWidthChartB = (bMin + i * binWidthB)
+            bData.push([binWidthChartB, bCounts[i]]);
+            var binWidthChartW = (WMin + i * binWidthW)
+            WData.push([binWidthChartW, WCounts[i]]);
+         }
+
+        console.log("Updates Histogram: " + WData);
+
+        $.plot($("#updateshistogram"), [ bData, WData ], {
+            stack: null,
+            series: {
+                bars: { show: true, barWidth: binWidthW }
+            },
+            colors: ["#FA5833", "#2FABE9"]
+        });
 	}
 }
