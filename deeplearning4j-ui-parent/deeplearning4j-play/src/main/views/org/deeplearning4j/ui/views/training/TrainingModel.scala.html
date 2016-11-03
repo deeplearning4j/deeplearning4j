@@ -100,30 +100,7 @@
 							<h2><b>Layer Information</b></h2>
 						</div>
 						<div class="box-content">
-							<table class="table table-bordered table-striped table-condensed">
-								<thead>
-								<tr>
-									<th>Name</th>
-									<th>Type</th>
-									<th>Input Size</th>
-									<th>Output Size</th>
-									<th># Parameters</th>
-									<th>Activation Function</th>
-									<th>Loss Function</th>
-								</tr>
-								</thead>
-								<tbody>
-								<tr>
-									<td id="layerName">Loading...</td>
-									<td id="layerType">Loading...</td>
-									<td id="inputSize">Loading...</td>
-									<td id="outputSize">Loading...</td>
-									<td id="nParams">Loading...</td>
-									<td id="activationFunction">Loading...</td>
-									<td id="lossFunction">Loading...</td>
-								</tr>
-								</tbody>
-							</table>
+							<table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
 						</div>
 					</div>
 
@@ -225,15 +202,14 @@
 		<script>
 				$(document).ready(function(){
 					renderModelGraph();
-					renderLayerTable();
 					renderModelPage();
+					renderLayerTable();
 				});
 		</script>
 
 		<!-- Execute periodically (every 2 sec) -->
 		<script>
 				setInterval(function(){
-					renderLayerTable();
 					renderModelPage();
 				}, 2000);
 		</script>

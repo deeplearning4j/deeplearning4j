@@ -30,6 +30,38 @@ function renderModelPage() {
 
 }
 
+function renderLayerTable() {
+
+    $.ajax({
+        url: "/train/model/data/" + selectedVertex,
+        async: true,
+        error: function (query, status, error) {
+            console.log("Error getting data: " + error);
+        },
+        success: function (data) {
+            console.log("Keys: " + Object.keys(data));
+
+            renderLayerTableData(data);
+        }
+    });
+}
+
+/* ---------- Layer Table Data ---------- */
+function renderLayerTableData(data) {
+
+    var layerInfo = data["layerInfo"];
+    var nRows = Object.keys(layerInfo);
+
+    console.log("Layer Info" + layerInfo);
+    console.log("Rows" + nRows);
+
+    //Generate row for each item in the table
+    for (i = 0; i < nRows.length; i++)  {
+        $('#layerInfo').append("<tr><td>" + layerInfo[i][0] + "</td><td>" + layerInfo[i][1] + "</td></tr>");
+    }
+
+}
+
 /* ---------- Mean Magnitudes Chart ---------- */
 function renderMeanMagChart(data) {
     var iter = data["meanMagRatio"]["iterCounts"];
@@ -324,40 +356,6 @@ function renderLearningRateChart(data) {
     }
 }
 
-/* ---------- Layer Table Data ---------- */
-function renderLayerTable() {
-
-    $.ajax({
-        url: "/train/model/graph",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            console.log("Keys: " + Object.keys(data));
-
-            /* Layer */
-            var layerName = data["vertexNames"][1];
-            var layerType = data["vertexTypes"][1];
-            var inputSize = data["vertexInfo"][1]["Input size"];
-            var outputSize = data["vertexInfo"][1]["Output size"];
-            var nParams = data["vertexInfo"][1]["Num Parameters"];
-            var activationFunction = data["vertexInfo"][1]["Activation Function"];
-            var lossFunction = data["vertexInfo"][1]["Loss Function"];
-
-            $("#layerName").html(layerName);
-            $("#layerType").html(layerType);
-            $("#inputSize").html(inputSize);
-            $("#outputSize").html(outputSize);
-            $("#nParams").html(nParams);
-            $("#activationFunction").html(activationFunction);
-            $("#lossFunction").html(lossFunction);
-        }
-    });
-
-}
-
-
 /* ---------- Parameters Histogram ---------- */
 
 function renderParametersHistogram(data) {
@@ -386,8 +384,6 @@ function renderParametersHistogram(data) {
             var binWidthChartW = (WMin + i * binWidthW)
             WData.push([binWidthChartW, WCounts[i]]);
          }
-
-        console.log("Param Histogram: " + WData);
 
         $.plot($("#parametershistogram"), [ bData, WData ], {
             stack: null,
@@ -427,8 +423,6 @@ function renderUpdatesHistogram(data) {
             var binWidthChartW = (WMin + i * binWidthW)
             WData.push([binWidthChartW, WCounts[i]]);
          }
-
-        console.log("Updates Histogram: " + WData);
 
         $.plot($("#updateshistogram"), [ bData, WData ], {
             stack: null,
