@@ -83,9 +83,11 @@ Seq[Any](format.raw/*1.40*/("""
 							<a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
 							<ul>
 								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
 							</ul>
 						</li>
 					</ul>
@@ -397,9 +399,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 17:56:03 AEDT 2016
+                  DATE: Thu Nov 03 16:15:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: ddd704858fc18a69bea22dab35731a988a170a03
+                  HASH: 4d08fdb8536878a3cf61dc353e6352c1bc19c92d
                   MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

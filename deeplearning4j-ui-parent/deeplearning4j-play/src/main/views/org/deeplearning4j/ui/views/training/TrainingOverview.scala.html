@@ -149,34 +149,29 @@
                         <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Log10 - Ratio of Updates to Parameters: All Layers</b></h2>
+                                <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle"): log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Log10 Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
+                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>log<sub>10</sub> Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
                         <!--End Ratio Table -->
                         <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Log10 - Variances</b></h2>
+                                <h2><b><h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>10</sub></b></h2></b></h2>
                                 <div style="float: right">
                                     <p class="stackControls center">
-                                        <input class="btn btn-small" type="button" value="Activations">
-                                        <input class="btn btn-small" type="button" value="Gradients">
-                                        <input class="btn btn-small" type="button" value="Updates">
+                                        <input class="btn btn-small" type="button" value="Activations" onclick="selectStdevChart('stdevActivations')">
+                                        <input class="btn btn-small" type="button" value="Gradients" onclick="selectStdevChart('stdevGradients')">
+                                        <input class="btn btn-small" type="button" value="Updates" onclick="selectStdevChart('stdevUpdates')">
                                     </p>
                                 </div>
                             </div>
                             <div class="box-content">
-                                @*<p class="stackControls center">*@
-                                    @*<input class="btn btn-small" type="button" value="Activations">*@
-                                    @*<input class="btn btn-small" type="button" value="Gradients">*@
-                                    @*<input class="btn btn-small" type="button" value="Updates">*@
-                                @*</p>*@
-                                <div id="varianceChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Variance:</b> <span id="yVariance">0</span>, <b>Log10 Variance:</b> <span id="yLogVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
+                                <div id="stdevChart"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Standard Deviations:</b> <span id="yStdev">0</span>, <b>log<sub>10</sub> St. Dev:</b> <span id="yLogStdev">0</span>, <b>Iteration:</b> <span id="xStdev">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->
