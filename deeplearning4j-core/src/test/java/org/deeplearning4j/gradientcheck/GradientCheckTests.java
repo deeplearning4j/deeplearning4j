@@ -2,14 +2,19 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
@@ -267,6 +272,77 @@ public class GradientCheckTests {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         String msg = "testEmbeddingLayerSimple";
+        assertTrue(msg, gradOK);
+    }
+
+    @Test
+    public void testEmbeddingLayerRectangularInput() {
+        int nExamples = 10;
+        int docLen = 30;
+        int nClasses = 3;
+        int vocabSize = 5;
+        int embeddingsDim = 3;
+        Random r = new Random(12345);
+        INDArray input = Nd4j.zeros(nExamples, docLen, 1);
+        INDArray labels = Nd4j.zeros(nExamples, nClasses);
+        for (int i = 0; i < nExamples; i++) {
+            for (int j = 0; j < docLen; j++) {
+                input.putScalar(i, j, 0, r.nextInt(vocabSize));
+            }
+            labels.putScalar(new int[]{i, r.nextInt(nClasses)}, 1.0);
+        }
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345L)
+                .regularization(true)
+                .l2(0.2).l1(0.1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.NONE)
+                .graphBuilder()
+                .pretrain(false)
+                .backprop(true)
+                .addInputs("input")
+                .setOutputs("output")
+                .addLayer("embedded",
+                        new EmbeddingLayer.Builder()
+                                .nIn(vocabSize)
+                                .nOut(embeddingsDim)
+                                .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                .updater(Updater.NONE)
+                                .activation("tanh")
+                                .build()
+                        , "input")
+                // output layer expects row vectors as input, so we need to linearise the activations
+                .addVertex("reshaped",
+                        new PreprocessorVertex(
+                                new ReshapePreProcessor(new int[]{nExamples, docLen, embeddingsDim},
+                                        new int[]{nExamples, docLen * embeddingsDim}, false)
+                        ),
+                        "embedded")
+                .addLayer("output",
+                        new OutputLayer.Builder(LossFunction.MCXENT)
+                                .nIn(docLen * embeddingsDim)
+                                .nOut(nClasses)
+                                .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                .updater(Updater.NONE)
+                                .activation("softmax")
+                                .build(), "reshaped")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        String msg = "testEmbeddingLayerRectangularInput";
+        if (PRINT_RESULTS) {
+            System.out.println(msg);
+            for (GraphVertex graphVertex : graph.getVertices()) {
+                if (graphVertex.hasLayer()) {
+                    System.out.println("Vertex " + graphVertex.getVertexName() + " # params: " + graphVertex.getLayer().numParams());
+                }
+            }
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
         assertTrue(msg, gradOK);
     }
 
@@ -616,7 +692,7 @@ public class GradientCheckTests {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.NONE)
                 .seed(12345)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nIn(3)
@@ -644,7 +720,7 @@ public class GradientCheckTests {
                         .nOut(nClasses)
                         .activation("softmax")
                         .build())
-                .setInputType(InputType.convolutional(10,10,3))
+                .setInputType(InputType.convolutional(10, 10, 3))
                 .pretrain(false).backprop(true)
                 .build();
 
@@ -795,7 +871,7 @@ public class GradientCheckTests {
                                 .l2(l2).l1(l1)
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .updater(Updater.SGD)
                                 .list()
                                 .layer(0, new AutoEncoder.Builder()
