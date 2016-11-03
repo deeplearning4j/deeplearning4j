@@ -4,7 +4,7 @@
     <head>
 
         <meta charset="utf-8">
-        <title>DL4J Training UI</title>
+        <title>@i18n.getMessage("train.pagetitle")</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -38,7 +38,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="#"><span>DL4J Training UI</span></a>
+                    <a class="brand" href="#"><span>@i18n.getMessage("train.pagetitle")</span></a>
                 </div>
             </div>
         </div>
@@ -51,12 +51,12 @@
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">Overview</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">Model</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">System</span></a></li>
-                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet">User Guide</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.overview")</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.model")</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.system")</span></a></li>
+                            <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.userguide")</span></a></li>
                             <li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">@i18n.getMessage("train.nav.language")</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
@@ -90,7 +90,7 @@
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>Score:</b> <span id="y">0</span>, <b>Iteration:</b> <span id="x">
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.scoreTitleShort"):</b> <span id="y">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">
                                     0</span></p>
                             </div>
                         </div>
@@ -103,39 +103,39 @@
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
                                     <tr>
-                                        <td>Model Type</td>
+                                        <td>@i18n.getMessage("train.overview.modeltable.modeltype")</td>
                                         <td id="modelType">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>nLayers</td>
+                                        <td>@i18n.getMessage("train.overview.modeltable.nLayers")</td>
                                         <td id="nLayers">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>nParams</td>
+                                        <td>@i18n.getMessage("train.overview.modeltable.nParams")</td>
                                         <td id="nParams">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Start Time</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.startTime")</td>
                                         <td id="startTime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Total Run Time</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.totalRuntime")</td>
                                         <td id="totalRuntime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Last Update</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.lastUpdate")</td>
                                         <td id="lastUpdate">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Total Param Updates</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.totalParamUpdates")</td>
                                         <td id="totalParamUpdates">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Updates Per Second</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.updatesPerSec")</td>
                                         <td id="updatesPerSec">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>Examples Per Second</td>
+                                        <td>@i18n.getMessage("train.overview.perftable.examplesPerSec")</td>
                                         <td id="examplesPerSec">Loading...</td>
                                     </tr>
                                 </table>
@@ -153,7 +153,7 @@
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>log<sub>10</sub> Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.updateRatioTitleShort"):</b> <span id="yRatio">0</span>, <b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort"):</b> <span id="yLogRatio">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
                         <!--End Ratio Table -->
@@ -163,15 +163,15 @@
                                 <h2><b><h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>10</sub></b></h2></b></h2>
                                 <div style="float: right">
                                     <p class="stackControls center">
-                                        <input class="btn btn-small" type="button" value="Activations" onclick="selectStdevChart('stdevActivations')">
-                                        <input class="btn btn-small" type="button" value="Gradients" onclick="selectStdevChart('stdevGradients')">
-                                        <input class="btn btn-small" type="button" value="Updates" onclick="selectStdevChart('stdevUpdates')">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.activations")" onclick="selectStdevChart('stdevActivations')">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.gradients")" onclick="selectStdevChart('stdevGradients')">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.updates")" onclick="selectStdevChart('stdevUpdates')">
                                     </p>
                                 </div>
                             </div>
                             <div class="box-content">
                                 <div id="stdevChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Standard Deviations:</b> <span id="yStdev">0</span>, <b>log<sub>10</sub> St. Dev:</b> <span id="yLogStdev">0</span>, <b>Iteration:</b> <span id="xStdev">0</span></p>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.overview.chart.stdevTitleShort"):</b> <span id="yStdev">0</span>, <b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.stdevTitleShort"):</b> <span id="yLogStdev">0</span>, <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xStdev">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->

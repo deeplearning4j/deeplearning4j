@@ -1,11 +1,6 @@
-train.pagetitle=Deeplearning4j UI
-train.nav.sessionid=Session ID
+train.pagetitle=DL4J Training UI
 train.nav.overview=Overview
 train.nav.model=Model
-train.nav.hwsw=System
-train.nav.help=User Guide
-train.nav.errormsg=Error loading page: could not connect to UI server
-train.nav.langChangeErrorMsg=Cannot change language: could not connect to UI server
+train.nav.system=System
+train.nav.userguide=User Guide
 train.nav.language=Language
-train.nav.websitelink=http://www.deeplearning4j.org/
-train.nav.websitelinktext=deeplearning4j.org
