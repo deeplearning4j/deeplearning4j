@@ -1,15 +1,17 @@
 package org.deeplearning4j.ui.play.staticroutes;
 
+import com.google.common.net.HttpHeaders;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.util.ClassPathResource;
+import play.api.libs.MimeTypes;
 import play.mvc.Result;
-import play.mvc.Results;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Function;
 
+import static play.mvc.Http.Context.Implicit.response;
 import static play.mvc.Results.ok;
 
 /**
@@ -23,13 +25,29 @@ public class Assets implements Function<String,Result> {
 
     @Override
     public Result apply(String s) {
-        File f;
-        try {
-            f = new ClassPathResource(assetsRootDirectory + s).getFile();
-        } catch (IOException e){
-            log.debug("Error for asset request: {}",s,e);
-            return Results.notFound("Not found: /assets/" + s);
+        String fullPath = assetsRootDirectory + s;
+
+        InputStream inputStream;
+        try{
+            inputStream = new ClassPathResource(fullPath).getInputStream();
+        }catch (Exception e){
+            log.info("Could not find asset: {}", s);    //TODO switch to debug later...
+            return ok();
+        } catch (Throwable t){
+            return ok();
         }
-        return ok(f);
+
+        String fileName = FilenameUtils.getName(fullPath);
+
+        response().setHeader( HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        scala.Option<String> contentType = MimeTypes.forFileName(fileName);
+        String ct;
+        if(contentType.isDefined()){
+            ct = contentType.get();
+        } else {
+            ct = "application/octet-stream";
+        }
+
+        return ok(inputStream).as(ct);
     }
 }
