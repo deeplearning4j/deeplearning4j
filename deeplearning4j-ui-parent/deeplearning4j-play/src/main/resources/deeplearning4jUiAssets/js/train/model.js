@@ -429,11 +429,11 @@ function renderUpdatesHistogram(data) {
         var label = $("#updatehistSelected");
         label.html("&nbsp&nbsp(" + currSelectedUpdateHist + ")");
 
-        var min = data["paramHist"][currSelectedUpdateHist]["min"];
-        var max = data["paramHist"][currSelectedUpdateHist]["max"];
+        var min = data["updateHist"][currSelectedUpdateHist]["min"];
+        var max = data["updateHist"][currSelectedUpdateHist]["max"];
 
-        var bins = data["paramHist"][currSelectedUpdateHist]["bins"];
-        var counts = data["paramHist"][currSelectedUpdateHist]["counts"];
+        var bins = data["updateHist"][currSelectedUpdateHist]["bins"];
+        var counts = data["updateHist"][currSelectedUpdateHist]["counts"];
 
         var binWidth = (max-min)/bins;
         var halfBin = binWidth/2.0;
