@@ -158,8 +158,8 @@ sudo yum install atlas-devel
 Installing ATLAS on OS X is a somewhat complicated and lengthy process. However, the following commands will work on most machines:
 
 ```
-wget http://hivelocity.dl.sourceforge.net/project/math-atlas/Stable/3.10.1/atlas3.10.1.tar.bz2 (Download)
-tar jxf atlas3.10.1.tar.bz2
+wget --content-disposition https://sourceforge.net/projects/math-atlas/files/latest/download?source=files
+tar jxf atlas*.tar.bz2
 mkdir atlas (Creating a directory for ATLAS)
 mv ATLAS atlas/src-3.10.1
 cd atlas/src-3.10.1
