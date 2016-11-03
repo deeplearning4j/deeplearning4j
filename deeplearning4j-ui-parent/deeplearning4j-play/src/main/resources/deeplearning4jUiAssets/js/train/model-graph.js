@@ -29,7 +29,8 @@ function createGraph(data){
             id: i,
             name: vertexNames[i],
             faveColor: '#6FB1FC',   //TODO
-            faveShape: 'triangle'   //TODO
+            faveShape: 'triangle',   //TODO
+            onclick: "renderLayerTable()"
         };
         nodes.push({ data: obj} );
 
