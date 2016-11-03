@@ -1,5 +1,13 @@
-function renderOverviewPage() {
 
+/* ---------- Variances chart selection ---------- */
+var selectedChart = "stdevActivations";
+function selectStdevChart(fieldName){
+    selectedChart = fieldName;
+}
+
+/* ---------- Render page ---------- */
+
+function renderOverviewPage() {
     $.ajax({
         url: "/train/overview/data",
         async: true,
@@ -13,12 +21,10 @@ function renderOverviewPage() {
             renderScoreVsIterChart(data);
             renderModelPerformanceTable(data);
             renderUpdatesRatio(data);
-            renderVariancesRatio(data);
+            renderStdevChart(data);
         }
     });
-
 }
-
 
 /* ---------- Score vs. Iteration Chart ---------- */
 function renderScoreVsIterChart(data) {
@@ -231,22 +237,22 @@ function renderUpdatesRatio(data) {
 
 
 
-/* ---------- Variance Charts ---------- */
-function renderVariancesRatio(data) {
-    var selected = "varianceActivations";   //TODO: selection
-    var chart = $("#varianceChart");
+/* ---------- Stdev Charts ---------- */
+function renderStdevChart(data) {
+    var selected = selectedChart;
+    var chart = $("#stdevChart");
 
     if (chart.length) {
 
-        var variances = data[selected];
+        var stdevs = data[selected];
         var iter = data["scoresIter"];
-        var keys = Object.keys(variances);
+        var keys = Object.keys(stdevs);
 
         var toPlot = [];
         var overallMax = -Number.MAX_VALUE;
         var overallMin = Number.MAX_VALUE;
         for (var i = 0; i < keys.length; i++) {
-            var r = variances[keys[i]];
+            var r = stdevs[keys[i]];
 
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
@@ -293,7 +299,7 @@ function renderVariancesRatio(data) {
 
 
         function showTooltip(x, y, contents) {
-            $('<div id="tooltipVarianceChart">' + contents + '</div>').css({
+            $('<div id="tooltipStdevChart">' + contents + '</div>').css({
                 position: 'absolute',
                 display: 'none',
                 top: y + 8,
@@ -302,31 +308,31 @@ function renderVariancesRatio(data) {
                 padding: '2px',
                 'background-color': '#dfeffc',
                 opacity: 0.80
-            }).appendTo("#varianceChart").fadeIn(200);
+            }).appendTo("#stdevChart").fadeIn(200);
         }
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
-            $("#xVariance").text(pos.x.toFixed(0));
-            $("#yLogVariance").text(pos.y.toFixed(5));
-            $("#yVariance").text(Math.pow(10,pos.y).toFixed(5));
+            $("#xStdev").text(pos.x.toFixed(0));
+            $("#yLogStdev").text(pos.y.toFixed(5));
+            $("#yStdev").text(Math.pow(10,pos.y).toFixed(5));
 
             //Tooltip
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
-                    $("#tooltipVarianceChart").remove();
+                    $("#tooltipStdevChart").remove();
                     var x = item.datapoint[0].toFixed(0);
                     var logy = item.datapoint[1].toFixed(5);
                     var y = Math.pow(10, item.datapoint[1]).toFixed(5);
 
                     showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
-                        item.series.label + " (" + x + ", logVariance=" + logy + ", variance=" + y + ")");
+                        item.series.label + " (" + x + ", logStdev=" + logy + ", stdev=" + y + ")");
                 }
             }
             else {
-                $("#tooltipVarianceChart").remove();
+                $("#tooltipStdevChart").remove();
                 previousPoint = null;
             }
         });

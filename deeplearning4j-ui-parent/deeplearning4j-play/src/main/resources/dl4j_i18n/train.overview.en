@@ -1,4 +1,6 @@
 train.overview.chart.scoreTitle=Model Score vs. Iteration
+train.overview.chart.updateRatioTitle=Update:Parameter Ratios (Mean Magnitudes)
+train.overview.chart.stdevTitle=Standard Deviations
 train.overview.perftable.title=Model Performance
 train.overview.perftable.startTime=Start Time
 train.overview.perftable.totalRuntime=Total Runtime

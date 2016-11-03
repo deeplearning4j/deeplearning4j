@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
 <head>
 
 	<meta charset="utf-8">
-	<title>System Page Demo</title>
+	<title>DL4J Training UI</title>
 	<!-- start: Mobile Specific -->
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!-- end: Mobile Specific -->
@@ -82,9 +82,11 @@ Seq[Any](format.raw/*1.40*/("""
 							<a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
 							<ul>
 								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
 							</ul>
 						</li>
 					</ul>
@@ -101,14 +103,14 @@ Seq[Any](format.raw/*1.40*/("""
 
 			<style>
 			/* Graph */
-			#layers """),format.raw/*80.12*/("""{"""),format.raw/*80.13*/("""
-			  """),format.raw/*81.6*/("""height: 100%;
+			#layers """),format.raw/*82.12*/("""{"""),format.raw/*82.13*/("""
+			  """),format.raw/*83.6*/("""height: 100%;
 			  width: 50%;
 			  position: absolute;
 			  left: 0;
 			  top: 0;
-			"""),format.raw/*86.4*/("""}"""),format.raw/*86.5*/("""
-			"""),format.raw/*87.4*/("""</style>
+			"""),format.raw/*88.4*/("""}"""),format.raw/*88.5*/("""
+			"""),format.raw/*89.4*/("""</style>
 
 			<!-- Start Content -->
 			<div id="content" class="span10">
@@ -124,30 +126,7 @@ Seq[Any](format.raw/*1.40*/("""
 							<h2><b>Layer Information</b></h2>
 						</div>
 						<div class="box-content">
-							<table class="table table-bordered table-striped table-condensed">
-								<thead>
-								<tr>
-									<th>Name</th>
-									<th>Type</th>
-									<th>Input Size</th>
-									<th>Output Size</th>
-									<th># Parameters</th>
-									<th>Activation Function</th>
-									<th>Loss Function</th>
-								</tr>
-								</thead>
-								<tbody>
-								<tr>
-									<td id="layerName">Loading...</td>
-									<td id="layerType">Loading...</td>
-									<td id="inputSize">Loading...</td>
-									<td id="outputSize">Loading...</td>
-									<td id="nParams">Loading...</td>
-									<td id="activationFunction">Loading...</td>
-									<td id="lossFunction">Loading...</td>
-								</tr>
-								</tbody>
-							</table>
+							<table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
 						</div>
 					</div>
 
@@ -187,17 +166,15 @@ Seq[Any](format.raw/*1.40*/("""
 						</div>
 						<div class="box-content">
 							<div id="parametershistogram" class="center" style="height:300px;"></div>
+						</div>
+					</div>
 
-							<p class="stackControls center">
-								<input class="btn" type="button" value="With stacking">
-								<input class="btn" type="button" value="Without stacking">
-							</p>
-
-							<p class="graphControls center">
-								<input class="btn-primary" type="button" value="Bars">
-								<input class="btn-primary" type="button" value="Lines">
-								<input class="btn-primary" type="button" value="Lines with steps">
-							</p>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Updates Histogram</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="updateshistogram" class="center" style="height:300px;"></div>
 						</div>
 					</div>
 
@@ -242,39 +219,38 @@ Seq[Any](format.raw/*1.40*/("""
 		<script src="/assets/js/cytoscape.min.js"></script>
 		<script src="/assets/js/dagre.min.js"></script>
 		<script src="/assets/js/cytoscape-dagre.js"></script>
-		"""),format.raw/*221.100*/("""
-		"""),format.raw/*222.3*/("""<script src="/assets/js/train/model.js"></script>        <!-- Charts and tables are generated here! -->
+		"""),format.raw/*198.100*/("""
+		"""),format.raw/*199.3*/("""<script src="/assets/js/train/model.js"></script>        <!-- Charts and tables are generated here! -->
 
         <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
 
 		<!-- Execute once on page load -->
 		<script>
-				$(document).ready(function()"""),format.raw/*228.33*/("""{"""),format.raw/*228.34*/("""
-					"""),format.raw/*229.6*/("""renderModelGraph();
-					renderLayerTable();
+				$(document).ready(function()"""),format.raw/*205.33*/("""{"""),format.raw/*205.34*/("""
+					"""),format.raw/*206.6*/("""renderModelGraph();
 					renderModelPage();
-				"""),format.raw/*232.5*/("""}"""),format.raw/*232.6*/(""");
+					renderLayerTable();
+				"""),format.raw/*209.5*/("""}"""),format.raw/*209.6*/(""");
 		</script>
 
 		<!-- Execute periodically (every 2 sec) -->
 		<script>
-				setInterval(function()"""),format.raw/*237.27*/("""{"""),format.raw/*237.28*/("""
-					"""),format.raw/*238.6*/("""renderLayerTable();
-					renderModelPage();
-				"""),format.raw/*240.5*/("""}"""),format.raw/*240.6*/(""", 2000);
+				setInterval(function()"""),format.raw/*214.27*/("""{"""),format.raw/*214.28*/("""
+					"""),format.raw/*215.6*/("""renderModelPage();
+				"""),format.raw/*216.5*/("""}"""),format.raw/*216.6*/(""", 2000);
 		</script>
 
 		<!--<script type="text/javascript">-->
-		<!--$(document).ready(function() """),format.raw/*244.36*/("""{"""),format.raw/*244.37*/("""-->
+		<!--$(document).ready(function() """),format.raw/*220.36*/("""{"""),format.raw/*220.37*/("""-->
 			<!--var option = '1';-->
 			<!--var url = window.location.href;-->
 			<!--option = url.match(/layer=(.*)/)[1];-->
 			<!--showDiv(option);-->
-		<!--"""),format.raw/*249.7*/("""}"""),format.raw/*249.8*/(""");-->
-		<!--function showDiv(option) """),format.raw/*250.32*/("""{"""),format.raw/*250.33*/("""-->
+		<!--"""),format.raw/*225.7*/("""}"""),format.raw/*225.8*/(""");-->
+		<!--function showDiv(option) """),format.raw/*226.32*/("""{"""),format.raw/*226.33*/("""-->
 			<!--$('#0').hide();-->
 			<!--$('#' + option).show();-->
-		<!--"""),format.raw/*253.7*/("""}"""),format.raw/*253.8*/("""-->
+		<!--"""),format.raw/*229.7*/("""}"""),format.raw/*229.8*/("""-->
 		<!--</script>-->
 		<!-- End JavaScript-->
 </body>
@@ -299,11 +275,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 23:34:53 AEDT 2016
+                  DATE: Thu Nov 03 16:15:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 450a3a3f08b48a288e8ff87388706c9eb42a47a7
-                  MATRIX: 598->1|731->39|759->41|4296->3550|4325->3551|4359->3558|4477->3649|4505->3650|4537->3655|9690->8875|9722->8879|10044->9172|10074->9173|10109->9180|10213->9256|10242->9257|10375->9361|10405->9362|10440->9369|10518->9419|10547->9420|10678->9522|10708->9523|10895->9682|10924->9683|10991->9721|11021->9722|11122->9795|11151->9796
-                  LINES: 20->1|25->1|26->2|104->80|104->80|105->81|110->86|110->86|111->87|245->221|246->222|252->228|252->228|253->229|256->232|256->232|261->237|261->237|262->238|264->240|264->240|268->244|268->244|273->249|273->249|274->250|274->250|277->253|277->253
+                  HASH: 9658888a5ba015deb8696751b506208de78c33a2
+                  MATRIX: 598->1|731->39|759->41|4568->3822|4597->3823|4631->3830|4749->3921|4777->3922|4809->3927|9104->8289|9136->8293|9458->8586|9488->8587|9523->8594|9627->8670|9656->8671|9789->8775|9819->8776|9854->8783|9906->8807|9935->8808|10066->8910|10096->8911|10283->9070|10312->9071|10379->9109|10409->9110|10510->9183|10539->9184
+                  LINES: 20->1|25->1|26->2|106->82|106->82|107->83|112->88|112->88|113->89|222->198|223->199|229->205|229->205|230->206|233->209|233->209|238->214|238->214|239->215|240->216|240->216|244->220|244->220|249->225|249->225|250->226|250->226|253->229|253->229
                   -- GENERATED --
               */
           
