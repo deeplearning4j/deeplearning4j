@@ -96,26 +96,27 @@
                                 <div id="myTabContent" class="tab-content">
                                     <div class="tab-pane active">
 
-                                            <!-- JVM Memory Utilization Chart -->
+                                            <!-- System Memory Utilization Chart -->
                                         <div class="row-fluid">
 
-                                            <div class="box span6">
+                                            <div class="box span12" id="systemMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.jvmTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.chart.systemTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
-                                                    <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
+                                                    <div id="systemMemoryChartPlot" class="center" style="height: 300px;" ></div>
                                                     <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y">0</span>, <b>
                                                         @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">0</span></p>
                                                 </div>
                                             </div>
-                                                <!-- Off Heap Memory Utlization Chart -->
-                                            <div class="box span6">
+
+                                            <!-- GPU Memory Utlization Chart -->
+                                            <div class="box span6" id="gpuMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.offHeapTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.chart.gpuTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
-                                                    <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
+                                                    <div id="gpuMemoryChartPlot" class="center" style="height: 300px;" ></div>
                                                     <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y2">0</span>, <b>
                                                         @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x2">0</span></p>
                                                 </div>
@@ -196,11 +197,11 @@
 
                                         </div>
 
-                                            <!-- GPU Chart -->
-                                        <div class="row-fluid">
+                                            <!-- GPU Information -->
+                                        <div class="row-fluid" id="gpuTable">
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>GPU Information (if isDevice == true)</b></h2>
+                                                    <h2><b>GPU Information</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
