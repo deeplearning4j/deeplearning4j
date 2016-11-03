@@ -544,7 +544,6 @@ template<typename OpType>
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int tid, start, end;
                 int span = (n / num_threads) + 8;
 
                 if (xStride == 1 && resultStride == 1) {

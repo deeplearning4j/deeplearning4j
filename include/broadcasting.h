@@ -215,11 +215,11 @@ template<typename OpType>
 
 
 				int tadsPerThread = tads / TAD_THRESHOLD;
-				int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-				num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+				int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+				_threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
 				if (true) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
@@ -243,12 +243,12 @@ template<typename OpType>
 								}
 							}
 						} else {
+                            int xCoord[MAX_RANK];
+                            int zCoord[MAX_RANK];
 
-
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+// all this stuff already happens within thread
+//#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
 							for (int f = 0; f < tadLength; f++) {
-								int xCoord[MAX_RANK];
-								int zCoord[MAX_RANK];
 
                                 shape::ind2subC(tadRank,xShape, i, xCoord);
                                 shape::ind2subC(zRank,zShape, i, zCoord);
