@@ -5,6 +5,7 @@ function setSelectedVertex(vertex){
 }
 
 function renderModelPage() {
+
     $.ajax({
         url: "/train/model/data/" + selectedVertex,
         async: true,
@@ -22,13 +23,28 @@ function renderModelPage() {
     });
 }
 
+/* ---------- Zero State ---------- */
+
+function renderZeroState() { // Need to ask Alex how to deal with error when selectedVertex == 0.
+
+    if (selectedVertex == 0) {
+        $("#layerDetails").hide();
+        $("#zeroState").show();
+    }
+    else {
+        $("#layerDetails").show();
+        $("#zeroState").hide();
+    }
+
+}
+
 /* ---------- Layer Table Data ---------- */
 function renderLayerTable(data) {
     var layerInfo = data["layerInfo"];
     var nRows = Object.keys(layerInfo);
 
     //Generate row for each item in the table
-    var tbl = $('#layerInfo');
+    var tbl = $("#layerInfo");
     tbl.empty();
     for (var i = 0; i < nRows.length; i++)  {
         tbl.append("<tr><td>" + layerInfo[i][0] + "</td><td>" + layerInfo[i][1] + "</td></tr>");
