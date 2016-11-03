@@ -37,7 +37,7 @@ import java.util.Arrays;
  * be separated and run through subsequent layers.
  *
  * Works similarly to SubsetVertex, except on dimension 0 of the input. stackSize is
- * explicitly defined by the user to properly calculate an intervalSize.
+ * explicitly defined by the user to properly calculate an step.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -45,7 +45,7 @@ public class UnstackVertex extends BaseGraphVertex {
     private int from;
     private int stackSize;
     private int forwardShape[];
-    private int intervalSize;
+    private int step;
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize){
         this(graph,name,vertexIndex,null,null,from,stackSize);
@@ -79,9 +79,9 @@ public class UnstackVertex extends BaseGraphVertex {
 
         // once we know the inputs, save the shape and interval size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.intervalSize = inputs[0].size(0)/stackSize;
-        int start = from*intervalSize;
-        int end = (from*intervalSize)+intervalSize;
+        this.step = inputs[0].size(0)/stackSize;
+        int start = from*step;
+        int end = (from+1)*step;
 
         switch (inputs[0].rank()) {
             case 2:
@@ -100,8 +100,8 @@ public class UnstackVertex extends BaseGraphVertex {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
-        int start = from*intervalSize;
-        int end = (from*intervalSize)+intervalSize;
+        int start = from*step;
+        int end = (from+1)*step;
 
         switch (forwardShape.length) {
             case 2:

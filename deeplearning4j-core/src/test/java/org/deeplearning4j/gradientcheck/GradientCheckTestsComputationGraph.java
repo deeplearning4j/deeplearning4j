@@ -21,7 +21,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -463,14 +465,30 @@ public class GradientCheckTestsComputationGraph {
         INDArray newParams = Nd4j.rand(1,nParams);
         graph.setParams(newParams);
 
-        DataSet ds = new IrisDataSetIterator(150,150).next();
-        INDArray min = ds.getFeatureMatrix().min(0);
-        INDArray max = ds.getFeatureMatrix().max(0);
-        ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
-        INDArray input1 = ds.getFeatureMatrix();
-        INDArray input2 = ds.getFeatureMatrix();
-        INDArray input3 = ds.getFeatureMatrix();
-//        INDArray labels = ds.getLabels();
+//        DataSetIterator iris = new IrisDataSetIterator(150,450);
+//
+//        DataSet ds1 = iris.next(150);
+//        INDArray min = ds1.getFeatureMatrix().min(0);
+//        INDArray max = ds1.getFeatureMatrix().max(0);
+//        ds1.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
+//        INDArray pos = ds1.getFeatureMatrix();
+//
+//        DataSet ds2 = iris.next(150);
+//        INDArray min2 = ds2.getFeatureMatrix().min(0);
+//        INDArray max2 = ds2.getFeatureMatrix().max(0);
+//        ds2.getFeatureMatrix().subiRowVector(min2).diviRowVector(max2.sub(min2));
+//        INDArray anc = ds2.getFeatureMatrix();
+//
+//        DataSet ds3 = iris.next();
+//        INDArray min3 = ds3.getFeatureMatrix().min(0);
+//        INDArray max3 = ds3.getFeatureMatrix().max(0);
+//        ds3.getFeatureMatrix().subiRowVector(min3).diviRowVector(max3.sub(min3));
+//        INDArray neg = ds3.getFeatureMatrix();
+////        INDArray labels = ds.getLabels();
+
+        INDArray pos = Nd4j.rand(150,4);
+        INDArray anc = Nd4j.rand(150,4);
+        INDArray neg = Nd4j.rand(150,4);
 
         INDArray labels = Nd4j.zeros(150,2);
         Random r = new Random(12345);
@@ -479,7 +497,7 @@ public class GradientCheckTestsComputationGraph {
         }
 
 
-        Map<String,INDArray> out = graph.feedForward(new INDArray[]{input1, input2, input3}, true);
+        Map<String,INDArray> out = graph.feedForward(new INDArray[]{pos, anc, neg}, true);
 
         for(String s : out.keySet()){
             System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
@@ -491,7 +509,7 @@ public class GradientCheckTestsComputationGraph {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input1, input2, input3}, new INDArray[]{labels});
+            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{pos, anc, neg}, new INDArray[]{labels});
 
         String msg = "testBasicIrisWithMerging()";
         assertTrue(msg,gradOK);
