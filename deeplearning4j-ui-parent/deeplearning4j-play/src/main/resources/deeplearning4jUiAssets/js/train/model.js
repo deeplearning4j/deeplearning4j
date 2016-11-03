@@ -23,8 +23,42 @@ function renderModelPage() {
             renderActivationsChart(data);
             renderLearningRateChart(data);
             renderParametersHistogram(data);
+            renderUpdatesHistogram(data);
+
         }
     });
+
+}
+
+function renderLayerTable() {
+
+    $.ajax({
+        url: "/train/model/data/" + selectedVertex,
+        async: true,
+        error: function (query, status, error) {
+            console.log("Error getting data: " + error);
+        },
+        success: function (data) {
+            console.log("Keys: " + Object.keys(data));
+
+            renderLayerTableData(data);
+        }
+    });
+}
+
+/* ---------- Layer Table Data ---------- */
+function renderLayerTableData(data) {
+
+    var layerInfo = data["layerInfo"];
+    var nRows = Object.keys(layerInfo);
+
+    console.log("Layer Info" + layerInfo);
+    console.log("Rows" + nRows);
+
+    //Generate row for each item in the table
+    for (i = 0; i < nRows.length; i++)  {
+        $('#layerInfo').append("<tr><td>" + layerInfo[i][0] + "</td><td>" + layerInfo[i][1] + "</td></tr>");
+    }
 
 }
 
@@ -322,85 +356,87 @@ function renderLearningRateChart(data) {
     }
 }
 
-/* ---------- Layer Table Data ---------- */
-function renderLayerTable() {
-
-    $.ajax({
-        url: "/train/model/graph",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            console.log("Keys: " + Object.keys(data));
-
-            /* Layer */
-            var layerName = data["vertexNames"][1];
-            var layerType = data["vertexTypes"][1];
-            var inputSize = data["vertexInfo"][1]["Input size"];
-            var outputSize = data["vertexInfo"][1]["Output size"];
-            var nParams = data["vertexInfo"][1]["Num Parameters"];
-            var activationFunction = data["vertexInfo"][1]["Activation Function"];
-            var lossFunction = data["vertexInfo"][1]["Loss Function"];
-
-            $("#layerName").html(layerName);
-            $("#layerType").html(layerType);
-            $("#inputSize").html(inputSize);
-            $("#outputSize").html(outputSize);
-            $("#nParams").html(nParams);
-            $("#activationFunction").html(activationFunction);
-            $("#lossFunction").html(lossFunction);
-        }
-    });
-
-}
-
-
-
-	/* ---------- Parameters Histogram ---------- */
+/* ---------- Parameters Histogram ---------- */
 
 function renderParametersHistogram(data) {
 
+    var bMin = data["paramHist"]["b"]["min"];
+    var bMax = data["paramHist"]["b"]["max"];
+    var bBins = data["paramHist"]["b"]["bins"];
+    var bCounts = data["paramHist"]["b"]["counts"];
+
+    var WMin = data["paramHist"]["W"]["min"];
+    var WMax = data["paramHist"]["W"]["max"];
+    var WBins = data["paramHist"]["W"]["bins"];
+    var WCounts = data["paramHist"]["W"]["counts"];
+
+    var binWidthB = (bMax - bMin)/bBins;
+    var binWidthW = (WMax - WMin)/WBins;
+
 	if($("#parametershistogram").length)
 	{
-		var d1 = [];
-		for (var i = 0; i <= 10; i += 1)
-		d1.push([i, parseInt(Math.random() * 30)]);
+		var bData = [];
+		var WData = [];
 
-		var d2 = [];
-		for (var i = 0; i <= 10; i += 1)
-			d2.push([i, parseInt(Math.random() * 30)]);
+        for (var i = 0; i < bCounts.length; i++) {
+            var binWidthChartB = (bMin + i * binWidthB)
+            bData.push([binWidthChartB, bCounts[i]]);
+            var binWidthChartW = (WMin + i * binWidthW)
+            WData.push([binWidthChartW, WCounts[i]]);
+         }
 
-		var d3 = [];
-		for (var i = 0; i <= 10; i += 1)
-			d3.push([i, parseInt(Math.random() * 30)]);
-
-		var stack = 0, bars = true, lines = false, steps = false;
-
-		function plotWithOptions() {
-			$.plot($("#parametershistogram"), [ d1, d2, d3 ], {
-				series: {
-					stack: stack,
-					lines: { show: lines, fill: true, steps: steps },
-					bars: { show: bars, barWidth: 0.6 },
-				},
-				colors: ["#FA5833", "#2FABE9", "#FABB3D"]
-			});
-		}
-
-		plotWithOptions();
-
-		$(".stackControls input").click(function (e) {
-			e.preventDefault();
-			stack = $(this).val() == "With stacking" ? true : null;
-			plotWithOptions();
-		});
-		$(".graphControls input").click(function (e) {
-			e.preventDefault();
-			bars = $(this).val().indexOf("Bars") != -1;
-			lines = $(this).val().indexOf("Lines") != -1;
-			steps = $(this).val().indexOf("steps") != -1;
-			plotWithOptions();
-		});
+        $.plot($("#parametershistogram"), [ bData, WData ], {
+            stack: null,
+            series: {
+                bars: { show: true, barWidth: binWidthW }
+            },
+            colors: ["#FA5833", "#2FABE9"]
+        });
 	}
 }
+
+/* ---------- Updates Histogram ---------- */
+
+function renderUpdatesHistogram(data) {
+
+    var bMin = data["updateHist"]["b"]["min"];
+    var bMax = data["updateHist"]["b"]["max"];
+    var bBins = data["updateHist"]["b"]["bins"];
+    var bCounts = data["updateHist"]["b"]["counts"];
+
+    var WMin = data["updateHist"]["W"]["min"];
+    var WMax = data["updateHist"]["W"]["max"];
+    var WBins = data["updateHist"]["W"]["bins"];
+    var WCounts = data["updateHist"]["W"]["counts"];
+
+    var binWidthB = (bMax - bMin)/bBins;
+    var binWidthW = (WMax - WMin)/WBins;
+
+	if($("#updateshistogram").length)
+	{
+		var bData = [];
+		var WData = [];
+
+        for (var i = 0; i < bCounts.length; i++) {
+            var binWidthChartB = (bMin + i * binWidthB)
+            bData.push([binWidthChartB, bCounts[i]]);
+            var binWidthChartW = (WMin + i * binWidthW)
+            WData.push([binWidthChartW, WCounts[i]]);
+         }
+
+        $.plot($("#updateshistogram"), [ bData, WData ], {
+            stack: null,
+            series: {
+                bars: { show: true, barWidth: binWidthW }
+            },
+            colors: ["#FA5833", "#2FABE9"]
+        });
+	}
+}
+
+/* ---------- Language Dropdown ---------- */
+
+	$('.dropmenu').click(function(e){
+		e.preventDefault();
+		$(this).parent().find('ul').slideToggle();
+	});

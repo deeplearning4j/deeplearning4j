@@ -4,7 +4,7 @@
 <head>
 
 	<meta charset="utf-8">
-	<title>System Page Demo</title>
+	<title>DL4J Training UI</title>
 	<!-- start: Mobile Specific -->
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!-- end: Mobile Specific -->
@@ -58,9 +58,11 @@
 							<a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
 							<ul>
 								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
-								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+								<li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
 							</ul>
 						</li>
 					</ul>
@@ -100,30 +102,7 @@
 							<h2><b>Layer Information</b></h2>
 						</div>
 						<div class="box-content">
-							<table class="table table-bordered table-striped table-condensed">
-								<thead>
-								<tr>
-									<th>Name</th>
-									<th>Type</th>
-									<th>Input Size</th>
-									<th>Output Size</th>
-									<th># Parameters</th>
-									<th>Activation Function</th>
-									<th>Loss Function</th>
-								</tr>
-								</thead>
-								<tbody>
-								<tr>
-									<td id="layerName">Loading...</td>
-									<td id="layerType">Loading...</td>
-									<td id="inputSize">Loading...</td>
-									<td id="outputSize">Loading...</td>
-									<td id="nParams">Loading...</td>
-									<td id="activationFunction">Loading...</td>
-									<td id="lossFunction">Loading...</td>
-								</tr>
-								</tbody>
-							</table>
+							<table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
 						</div>
 					</div>
 
@@ -163,17 +142,15 @@
 						</div>
 						<div class="box-content">
 							<div id="parametershistogram" class="center" style="height:300px;"></div>
+						</div>
+					</div>
 
-							<p class="stackControls center">
-								<input class="btn" type="button" value="With stacking">
-								<input class="btn" type="button" value="Without stacking">
-							</p>
-
-							<p class="graphControls center">
-								<input class="btn-primary" type="button" value="Bars">
-								<input class="btn-primary" type="button" value="Lines">
-								<input class="btn-primary" type="button" value="Lines with steps">
-							</p>
+					<div class="box">
+						<div class="box-header">
+							<h2><b>Updates Histogram</b></h2>
+						</div>
+						<div class="box-content">
+							<div id="updateshistogram" class="center" style="height:300px;"></div>
 						</div>
 					</div>
 
@@ -227,15 +204,14 @@
 		<script>
 				$(document).ready(function(){
 					renderModelGraph();
-					renderLayerTable();
 					renderModelPage();
+					renderLayerTable();
 				});
 		</script>
 
 		<!-- Execute periodically (every 2 sec) -->
 		<script>
 				setInterval(function(){
-					renderLayerTable();
 					renderModelPage();
 				}, 2000);
 		</script>
