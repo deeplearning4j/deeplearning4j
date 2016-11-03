@@ -215,16 +215,16 @@ public class TrainModule implements UIModule {
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
 
         //Collect update ratios for weights
-        //Collect variances: activations, gradients, updates
+        //Collect standard deviations: activations, gradients, updates
         Map<String,List<Double>> updateRatios = new HashMap<>();    //Mean magnitude (updates) / mean magnitude (parameters)
         result.put("updateRatios", updateRatios);
 
-        Map<String,List<Double>> varianceActivations = new HashMap<>();
-        Map<String,List<Double>> varianceGradients = new HashMap<>();
-        Map<String,List<Double>> varianceUpdates = new HashMap<>();
-        result.put("varianceActivations",varianceActivations);
-        result.put("varianceGradients", varianceGradients);
-        result.put("varianceUpdates", varianceUpdates);
+        Map<String,List<Double>> stdevActivations = new HashMap<>();
+        Map<String,List<Double>> stdevGradients = new HashMap<>();
+        Map<String,List<Double>> stdevUpdates = new HashMap<>();
+        result.put("stdevActivations",stdevActivations);
+        result.put("stdevGradients", stdevGradients);
+        result.put("stdevUpdates", stdevUpdates);
 
         if(!noData){
             Persistable u = updates.get(0);
@@ -233,23 +233,24 @@ public class TrainModule implements UIModule {
                 Map<String,Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
                 if(map != null){
                     for(String s : map.keySet()){
-                        if(s.toLowerCase().endsWith("w")) updateRatios.put(s,new ArrayList<>());    //TODO: more robust "weights only" approach...
-                        varianceGradients.put(s, new ArrayList<>());
-                        varianceUpdates.put(s, new ArrayList<>());
+                        if(!s.toLowerCase().endsWith("w")) continue;   //TODO: more robust "weights only" approach...
+                        updateRatios.put(s,new ArrayList<>());
                     }
                 }
 
                 Map<String,Double> stdGrad = sp.getStdev(StatsType.Gradients);
                 if(stdGrad != null){
                     for(String s : stdGrad.keySet()){
-                        varianceGradients.put(s, new ArrayList<>());
+                        if(!s.toLowerCase().endsWith("w")) continue; //TODO: more robust "weights only" approach...
+                        stdevGradients.put(s, new ArrayList<>());
                     }
                 }
 
                 Map<String,Double> stdUpdate = sp.getStdev(StatsType.Updates);
                 if(stdUpdate != null){
                     for(String s : stdUpdate.keySet()){
-                        varianceGradients.put(s, new ArrayList<>());
+                        if(!s.toLowerCase().endsWith("w")) continue;    //TODO: more robust "weights only" approach...
+                        stdevUpdates.put(s, new ArrayList<>());
                     }
                 }
 
@@ -257,7 +258,7 @@ public class TrainModule implements UIModule {
                 Map<String,Double> stdAct = sp.getStdev(StatsType.Activations);
                 if(stdAct != null){
                     for(String s : stdAct.keySet()){
-                        varianceActivations.put(s, new ArrayList<>());
+                        stdevActivations.put(s, new ArrayList<>());
                     }
                 }
             }
@@ -287,27 +288,27 @@ public class TrainModule implements UIModule {
                     }
                 }
 
-                //Variances: gradients, updates, activations
+                //Standard deviations: gradients, updates, activations
                 Map<String,Double> stdGrad = last.getStdev(StatsType.Gradients);
                 Map<String,Double> stdUpd = last.getStdev(StatsType.Updates);
                 Map<String,Double> stdAct = last.getStdev(StatsType.Activations);
 
                 if(stdGrad != null){
-                    for(String s : varianceGradients.keySet()){
+                    for(String s : stdevGradients.keySet()){
                         double d = stdGrad.get(s);
-                        varianceGradients.get(s).add(d*d);
+                        stdevGradients.get(s).add(d);
                     }
                 }
                 if(stdUpd != null){
-                    for(String s : varianceUpdates.keySet()){
+                    for(String s : stdevUpdates.keySet()){
                         double d = stdUpd.get(s);
-                        varianceUpdates.get(s).add(d*d);
+                        stdevUpdates.get(s).add(d);
                     }
                 }
                 if(stdAct != null){
-                    for(String s : varianceActivations.keySet()){
+                    for(String s : stdevActivations.keySet()){
                         double d = stdAct.get(s);
-                        varianceActivations.get(s).add(d*d);
+                        stdevActivations.get(s).add(d);
                     }
                 }
             }

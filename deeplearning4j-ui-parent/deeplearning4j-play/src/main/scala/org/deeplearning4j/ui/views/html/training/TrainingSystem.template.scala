@@ -83,9 +83,11 @@ Seq[Any](format.raw/*1.40*/("""
                             <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
                             <ul>
                                 <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
-                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
-                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+                                <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
                             </ul>
                         </li>
 					</ul>
@@ -114,14 +116,14 @@ Seq[Any](format.raw/*1.40*/("""
 
 							<!--Start System Tab -->
 							<div id="myTabContent" class="tab-content">
-								<div class="tab-pane active" id="machine1">
+								<div class="tab-pane active">
 
 									<!-- JVM Memory Utilization Chart -->
 									<div class="row-fluid">
 
                                         <div class="box span6">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*100.57*/i18n/*100.61*/.getMessage("train.system.chart.jvmTitle")),format.raw/*100.103*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*102.57*/i18n/*102.61*/.getMessage("train.system.chart.jvmTitle")),format.raw/*102.103*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
@@ -131,7 +133,7 @@ Seq[Any](format.raw/*1.40*/("""
                                         <!-- Off Heap Memory Utlization Chart -->
                                         <div class="box span6">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*110.57*/i18n/*110.61*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*110.107*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*112.57*/i18n/*112.61*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*112.107*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
@@ -147,7 +149,7 @@ Seq[Any](format.raw/*1.40*/("""
                                         <!-- Hardware Information -->
                                         <div class="box span12">
                                             <div class="box-header">
-                                                <h2><b>"""),_display_(/*126.57*/i18n/*126.61*/.getMessage("train.system.table.hardwareTitle")),format.raw/*126.108*/("""</b></h2>
+                                                <h2><b>"""),_display_(/*128.57*/i18n/*128.61*/.getMessage("train.system.table.hardwareTitle")),format.raw/*128.108*/("""</b></h2>
                                             </div>
                                             <div class="box-content">
                                                 <table class="table table-striped">
@@ -182,7 +184,7 @@ Seq[Any](format.raw/*1.40*/("""
 										<!-- Software Information -->
 										<div class="box span12">
 											<div class="box-header">
-												<h2><b>"""),_display_(/*161.21*/i18n/*161.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*161.72*/("""</b></h2>
+												<h2><b>"""),_display_(/*163.21*/i18n/*163.25*/.getMessage("train.system.table.softwareTitle")),format.raw/*163.72*/("""</b></h2>
 											</div>
 											<div class="box-content">
 												<table class="table table-striped">
@@ -250,17 +252,6 @@ Seq[Any](format.raw/*1.40*/("""
 									</div>
 								</div>
 								<!-- End System Tab -->
-								<div class="tab-pane" id="machine2">
-									<p>
-										Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-									</p>
-								</div>
-
-								<div class="tab-pane" id="machine3">
-									<p>
-										Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.
-									</p>
-								</div>
 							</div>
 						</div>
 					</div>
@@ -304,17 +295,18 @@ Seq[Any](format.raw/*1.40*/("""
 
 		<!-- Execute once on page load -->
 		<script>
-            $(document).ready(function()"""),format.raw/*283.41*/("""{"""),format.raw/*283.42*/("""
-				"""),format.raw/*284.5*/("""renderSystemPage();
-				renderMultipleTabs();
-            """),format.raw/*286.13*/("""}"""),format.raw/*286.14*/(""");
+            $(document).ready(function()"""),format.raw/*274.41*/("""{"""),format.raw/*274.42*/("""
+				"""),format.raw/*275.5*/("""renderSystemPage();
+				renderTabs();
+				selectMachine();
+            """),format.raw/*278.13*/("""}"""),format.raw/*278.14*/(""");
         </script>
 
 		 <!--Execute periodically (every 2 sec) -->
 		<script>
-            setInterval(function()"""),format.raw/*291.35*/("""{"""),format.raw/*291.36*/("""
-                """),format.raw/*292.17*/("""renderSystemPage();
-            """),format.raw/*293.13*/("""}"""),format.raw/*293.14*/(""", 2000);
+            setInterval(function()"""),format.raw/*283.35*/("""{"""),format.raw/*283.36*/("""
+                """),format.raw/*284.17*/("""renderSystemPage();
+            """),format.raw/*285.13*/("""}"""),format.raw/*285.14*/(""", 2000);
         </script>
 		 <!--End JavaScript-->
 
@@ -340,11 +332,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 20:14:42 AEDT 2016
+                  DATE: Thu Nov 03 16:15:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: cc450ae1585c1c4636b4266ed9b29c48782ed59a
-                  MATRIX: 600->1|733->39|761->41|5180->4432|5194->4436|5259->4478|6038->5229|6052->5233|6121->5279|7040->6170|7054->6174|7124->6221|9339->8408|9353->8412|9422->8459|15196->14204|15226->14205|15260->14211|15349->14271|15379->14272|15526->14390|15556->14391|15603->14409|15665->14442|15695->14443
-                  LINES: 20->1|25->1|26->2|124->100|124->100|124->100|134->110|134->110|134->110|150->126|150->126|150->126|185->161|185->161|185->161|307->283|307->283|308->284|310->286|310->286|315->291|315->291|316->292|317->293|317->293
+                  HASH: 8f5db7dfc10bd31ea7b36ce41e34cf7084cb14ec
+                  MATRIX: 600->1|733->39|761->41|5486->4738|5500->4742|5565->4784|6344->5535|6358->5539|6427->5585|7346->6476|7360->6480|7430->6527|9645->8714|9659->8718|9728->8765|14009->13017|14039->13018|14073->13024|14176->13098|14206->13099|14353->13217|14383->13218|14430->13236|14492->13269|14522->13270
+                  LINES: 20->1|25->1|26->2|126->102|126->102|126->102|136->112|136->112|136->112|152->128|152->128|152->128|187->163|187->163|187->163|298->274|298->274|299->275|302->278|302->278|307->283|307->283|308->284|309->285|309->285
                   -- GENERATED --
               */
           

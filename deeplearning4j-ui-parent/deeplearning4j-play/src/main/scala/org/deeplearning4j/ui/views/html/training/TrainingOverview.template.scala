@@ -83,9 +83,11 @@ Seq[Any](format.raw/*1.40*/("""
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet"> Language</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> English</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Japanese</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Chinese</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> Korean</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 日本語</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 中文</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> 한글</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> русский</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);"><i class="icon-file-alt"></i><span class="hidden-tablet"> український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -108,7 +110,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box span8">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*87.41*/i18n/*87.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*87.91*/("""</b></h2>
+                                <h2><b>"""),_display_(/*89.41*/i18n/*89.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*89.91*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
@@ -120,7 +122,7 @@ Seq[Any](format.raw/*1.40*/("""
                         <!-- Start Model Table-->
                         <div class="box span4">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*99.41*/i18n/*99.45*/.getMessage("train.overview.perftable.title")),format.raw/*99.90*/("""</b></h2>
+                                <h2><b>"""),_display_(/*101.41*/i18n/*101.45*/.getMessage("train.overview.perftable.title")),format.raw/*101.90*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
@@ -171,34 +173,29 @@ Seq[Any](format.raw/*1.40*/("""
                         <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Log10 - Ratio of Updates to Parameters: All Layers</b></h2>
+                                <h2><b>"""),_display_(/*152.41*/i18n/*152.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*152.97*/(""": log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>Log10 Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
+                                <p id="hoverdata"><b>Ratio:</b> <span id="yRatio">0</span>, <b>log<sub>10</sub> Ratio:</b> <span id="yLogRatio">0</span>, <b>Iteration:</b> <span id="xRatio">0</span></p>
                             </div>
                         </div>
                         <!--End Ratio Table -->
                         <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>Log10 - Variances</b></h2>
+                                <h2><b><h2><b>"""),_display_(/*163.48*/i18n/*163.52*/.getMessage("train.overview.chart.stdevTitle")),format.raw/*163.98*/(""": log<sub>10</sub></b></h2></b></h2>
                                 <div style="float: right">
                                     <p class="stackControls center">
-                                        <input class="btn btn-small" type="button" value="Activations">
-                                        <input class="btn btn-small" type="button" value="Gradients">
-                                        <input class="btn btn-small" type="button" value="Updates">
+                                        <input class="btn btn-small" type="button" value="Activations" onclick="selectStdevChart('stdevActivations')">
+                                        <input class="btn btn-small" type="button" value="Gradients" onclick="selectStdevChart('stdevGradients')">
+                                        <input class="btn btn-small" type="button" value="Updates" onclick="selectStdevChart('stdevUpdates')">
                                     </p>
                                 </div>
                             </div>
                             <div class="box-content">
-                                """),format.raw/*171.69*/("""
-                                    """),format.raw/*172.104*/("""
-                                    """),format.raw/*173.102*/("""
-                                    """),format.raw/*174.100*/("""
-                                """),format.raw/*175.41*/("""
-                                """),format.raw/*176.33*/("""<div id="varianceChart"  class="center" style="height:300px;" ></div>
-                                <p id="hoverdata"><b>Variance:</b> <span id="yVariance">0</span>, <b>Log10 Variance:</b> <span id="yLogVariance">0</span>, <b>Iteration:</b> <span id="xVariance">0</span></p>
+                                <div id="stdevChart"  class="center" style="height:300px;" ></div>
+                                <p id="hoverdata"><b>Standard Deviations:</b> <span id="yStdev">0</span>, <b>log<sub>10</sub> St. Dev:</b> <span id="yLogStdev">0</span>, <b>Iteration:</b> <span id="xStdev">0</span></p>
                             </div>
                         </div>
                         <!-- End Variance Table -->
@@ -241,16 +238,16 @@ Seq[Any](format.raw/*1.40*/("""
 
             <!-- Execute once on page load -->
             <script>
-                    $(document).ready(function()"""),format.raw/*220.49*/("""{"""),format.raw/*220.50*/("""
-                        """),format.raw/*221.25*/("""renderOverviewPage();
-                    """),format.raw/*222.21*/("""}"""),format.raw/*222.22*/(""");
+                    $(document).ready(function()"""),format.raw/*217.49*/("""{"""),format.raw/*217.50*/("""
+                        """),format.raw/*218.25*/("""renderOverviewPage();
+                    """),format.raw/*219.21*/("""}"""),format.raw/*219.22*/(""");
             </script>
 
             <!-- Execute periodically (every 2 sec) -->
             <script>
-                    setInterval(function()"""),format.raw/*227.43*/("""{"""),format.raw/*227.44*/("""
-                        """),format.raw/*228.25*/("""renderOverviewPage();
-                    """),format.raw/*229.21*/("""}"""),format.raw/*229.22*/(""", 2000);
+                    setInterval(function()"""),format.raw/*224.43*/("""{"""),format.raw/*224.44*/("""
+                        """),format.raw/*225.25*/("""renderOverviewPage();
+                    """),format.raw/*226.21*/("""}"""),format.raw/*226.22*/(""", 2000);
             </script>
             <!-- End JavaScript-->
 
@@ -276,11 +273,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Wed Nov 02 20:14:42 AEDT 2016
+                  DATE: Thu Nov 03 17:08:07 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 82926c21faccd39c44d8f5b17e16f53f64d3b1dd
-                  MATRIX: 604->1|737->39|765->41|5439->4688|5452->4692|5519->4738|6233->5425|6246->5429|6312->5474|10448->9617|10516->9722|10584->9825|10652->9926|10715->9968|10778->10002|13595->12790|13625->12791|13680->12817|13752->12860|13782->12861|13961->13011|13991->13012|14046->13038|14118->13081|14148->13082
-                  LINES: 20->1|25->1|26->2|111->87|111->87|111->87|123->99|123->99|123->99|195->171|196->172|197->173|198->174|199->175|200->176|244->220|244->220|245->221|246->222|246->222|251->227|251->227|252->228|253->229|253->229
+                  HASH: 67d96eca18aad3e774ce74cf494bdb2cbaadee64
+                  MATRIX: 604->1|737->39|765->41|5767->5016|5780->5020|5847->5066|6562->5753|6576->5757|6643->5802|9343->8474|9357->8478|9431->8530|10210->9281|10224->9285|10292->9331|13935->12945|13965->12946|14020->12972|14092->13015|14122->13016|14301->13166|14331->13167|14386->13193|14458->13236|14488->13237
+                  LINES: 20->1|25->1|26->2|113->89|113->89|113->89|125->101|125->101|125->101|176->152|176->152|176->152|187->163|187->163|187->163|241->217|241->217|242->218|243->219|243->219|248->224|248->224|249->225|250->226|250->226
                   -- GENERATED --
               */
           
