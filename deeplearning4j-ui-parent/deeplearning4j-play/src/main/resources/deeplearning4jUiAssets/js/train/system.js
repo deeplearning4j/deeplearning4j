@@ -217,9 +217,8 @@ function renderSystemInformation(data) {
 
 }
 
-/* Tabs */
 
-/* Render Tabs */
+/* ---------- Render Tabs ---------- */
 function renderMultipleTabs(data) {
 
     var nMachinesData = data["memory"];
@@ -250,3 +249,10 @@ function selectMachine() {
 
     return machineID;
 }
+
+/* ---------- Language Dropdown ---------- */
+
+	$('.dropmenu').click(function(e){
+		e.preventDefault();
+		$(this).parent().find('ul').slideToggle();
+	});
