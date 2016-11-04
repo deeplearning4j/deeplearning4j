@@ -193,6 +193,11 @@ public class ROCTest {
         roc.eval(labels, prediction);
 
         List<ROC.ROCValue> list = roc.getResults();
+        double[][] asArray = roc.getResultsAsArray();
+
+        assertEquals(2, asArray.length);
+        assertEquals(11, asArray[0].length);
+        assertEquals(11, asArray[1].length);
 
         assertEquals(11,list.size());   //0 + 10 steps
         for( int i=0; i<11; i++ ){
@@ -207,6 +212,9 @@ public class ROCTest {
             double etpr = expTPR.get(expThreshold);
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
+
+            assertEquals(v.getFalsePositiveRate(), asArray[0][i], 1e-6);
+            assertEquals(v.getTruePositiveRate(), asArray[1][i], 1e-6);
 
 //            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
         }
