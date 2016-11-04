@@ -38,11 +38,27 @@ public class ROC {
     public void eval(INDArray outcomes, INDArray predictions) {
 
         double step = 1.0 / thresholdSteps;
+        boolean singleOutput = outcomes.size(1) == 1;
 
         //For now: assume 2d data. Each row: has 2 values (TODO: single binary variable case)
-        INDArray positivePredictedClassColumn = predictions.getColumn(1);
-        INDArray positiveActualClassColumn = outcomes.getColumn(1);
-        INDArray negativeActualClassColumn = outcomes.getColumn(0);
+//        INDArray positivePredictedClassColumn = predictions.getColumn(1);
+//        INDArray positiveActualClassColumn = outcomes.getColumn(1);
+//        INDArray negativeActualClassColumn = outcomes.getColumn(0);
+        INDArray positivePredictedClassColumn;
+        INDArray positiveActualClassColumn;
+        INDArray negativeActualClassColumn;
+
+        if(singleOutput){
+            //Single binary variable case
+            positiveActualClassColumn = outcomes;
+            negativeActualClassColumn = outcomes.rsub(1.0); //1.0 - label
+            positivePredictedClassColumn = predictions;
+        } else {
+            //Standard case - 2 output variables (probability distribution)
+            positiveActualClassColumn = outcomes.getColumn(1);
+            negativeActualClassColumn = outcomes.getColumn(0);
+            positivePredictedClassColumn = predictions.getColumn(1);
+        }
 
         //Increment global counts - actual positive/negative observed
         countActualPositive += positiveActualClassColumn.sumNumber().intValue();
