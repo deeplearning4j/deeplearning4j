@@ -729,7 +729,7 @@ template<typename OpType>
                     int *xShape = shape::shapeOf(tadShapeShapeInfo);
                     int *xStride = shape::stride(tadShapeShapeInfo);
                     int rank = shape::rank(tadShapeShapeInfo);
-#pragma omp  parallel  for
+#pragma omp parallel for schedule(guided) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         int offset = tad.tadOffsets[i];
                         int shapeIter[MAX_RANK];
@@ -772,13 +772,12 @@ template<typename OpType>
                         int tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided) default(shared)
                         for (int i = 0; i < resultLength; i++) {
                             int baseOffset = tad.tadOffsets[i];
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[baseOffset]);
 // FIXME: reduction to be used here
-//#pragma omp simd
                             for (int j = 1; j < tadLength; j++) {
                                 SummaryStatsData<T> comp2;
                                 comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
@@ -788,8 +787,6 @@ template<typename OpType>
                             result[i] = OpType::getValue(biasCorrected, comp);
                         }
                     } else {
-                        int xCoord[MAX_RANK];
-
                         int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
 
                         int *tadShape = shape::shapeOf(tadShapeShapeInfo);
@@ -797,15 +794,15 @@ template<typename OpType>
                         int tadRank = shape::rank(tadShapeShapeInfo);
                         int tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) private(xCoord)
-                        for (int r = 0; r < resultLength; r ++) {
+#pragma omp parallel for schedule(guided) default(shared)
+                        for (int r = 0; r < resultLength; r++) {
+                            int xCoord[MAX_RANK];
                             int tadOffsetForBlock = tad.tadOffsets[r];
 
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[tadOffsetForBlock]);
 
 // FIXME: reduction should be fixed
-//#pragma omp simd private(xCoord)
                             for (int i = 1; i < tadLength; i ++) {
                                 shape::ind2subC(tadRank, tadShape, i, xCoord);
                                 int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);

@@ -461,7 +461,7 @@ template<typename OpType>
 						else {
 							BlockInformation info(length, ELEMENT_THRESHOLD);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
 
 							{
 								IndexValue<T> local;
@@ -511,18 +511,11 @@ template<typename OpType>
 							curr.index = i;
 							startingIndex = OpType::update(startingIndex, curr,
 												   extraParams);
-
 						}
-
-
-
 					}
-
-
 				}
 
 				return  startingIndex.index;
-
 			}
 
 			
@@ -549,7 +542,7 @@ template<typename OpType>
 				const int resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
-#pragma omp parallel for schedule(guided) if (resultLength > 32)
+#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 				for (Nd4jIndex i = 0; i < resultLength; i++) {
 					IndexValue<T> val;
 					val.value = OpType::startingValue(x);
@@ -568,6 +561,7 @@ template<typename OpType>
 
 					if (tad->dimensionLength < 1) {
 						delete tad;
+						delete[] startingIndex;
 						return;
 					}
 
@@ -595,7 +589,7 @@ template<typename OpType>
 					int *xStride = shape::stride(tadShapeShapeInfo);
 					int rank = shape::rank(tadShapeShapeInfo);
 
-#pragma omp  parallel for schedule(guided) if (resultLength > 32)
+#pragma omp  parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
 						int offset = tadOffsets[i];
 						int shapeIter[MAX_RANK];
@@ -638,7 +632,7 @@ template<typename OpType>
 					int tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
 					const int tadLength = shape::length(tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) if (resultLength > 32)
+#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
 						int baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue;
@@ -646,7 +640,6 @@ template<typename OpType>
 						indexValue.value = x[baseOffset];
 
 // FIXME: proper reduction required here
-//#pragma omp simd
 						for(int j = 1; j < tadLength; j++) {
 							IndexValue<T> comp;
 							comp.index = j;

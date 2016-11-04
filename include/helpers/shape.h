@@ -1780,7 +1780,7 @@ namespace shape {
         void createOffsets() {
 
             this->tadOffsets = new int[this->numTads];
-#pragma omp parallel for schedule(guided) proc_bind(close)
+#pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
 
@@ -2567,11 +2567,19 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
             }
             if (np != op) {
 /* different total sizes; no hope */
+                delete[] newStrides;
+                delete[] newShape;
+                delete[] oldstrides;
+                delete[] olddims;
                 return -1;
             }
 
             if (np == 0) {
 /* the current code does not handle 0-sized arrays, so give up */
+                delete[] newStrides;
+                delete[] newShape;
+                delete[] oldstrides;
+                delete[] olddims;
                 return -1;
             }
 
@@ -2598,12 +2606,20 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
                     if (isFOrder) {
                         if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
 /* not contiguous enough */
+                            delete[] newStrides;
+                            delete[] newShape;
+                            delete[] oldstrides;
+                            delete[] olddims;
                             return -1;
                         }
                     } else {
 /* C order */
                         if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
 /* not contiguous enough */
+                            delete[] newStrides;
+                            delete[] newShape;
+                            delete[] oldstrides;
+                            delete[] olddims;
                             return -1;
                         }
                     }

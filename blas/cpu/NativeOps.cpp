@@ -1442,7 +1442,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             memcpy(result, input, len* sizeof(T));
         }
         else if (resultEleStride >= 1 && inputEleStride >= 1) {
-            if (len < 8000) {
+            if (len < ELEMENT_THRESHOLD) {
 #pragma omp simd
                 for (int i = 0; i < len; i++) {
                     result[i * resultEleStride] = input[i * inputEleStride];
@@ -1462,6 +1462,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             int *xShape = shape::shapeOf(inputShapeInfo);
             int *xStride = shape::stride(inputShapeInfo);
             int len = shape::length(inputShapeInfo);
+			// FIXME: result[idx++] is bad idea, because of possible negative EWS
             if(order == 'f') {
                 for(int i = 0; i < len; i++) {
                     shape::ind2sub(rank, xShape, i, coord);
@@ -1488,7 +1489,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         int tadShape = xShape[dimension];
         shape::TAD tad(inputShapeInfo,&dimension,dimensionLength);
         tad.createTadOnlyShapeInfo();
-#pragma omp  parallel  for
+#pragma omp  parallel for schedule(guided) default(shared)
         for(int i = 0; i < numTads; i++) {
 
             int resultOffset;
@@ -2163,7 +2164,7 @@ void pullRowsGeneric(T *x,
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
     _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided)
+#pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided) default(shared)
     for (int idx = 0; idx < n; idx++) {
         int tadOffsetForBlock = tadOffsets[indexes[idx]];
 
@@ -2204,7 +2205,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 // aggregation step
 // TODO: this step should be improved, to exploit SIMD
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided) default(shared)
     for (Nd4jIndex i = 0; i < length; i++) {
         z[i] = 0.0;
 
@@ -2215,8 +2216,8 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
     }
 
 //div step
-    if (length > 8000) {
-#pragma omp parallel for simd schedule(guided)
+    if (length > ELEMENT_THRESHOLD) {
+#pragma omp parallel for simd schedule(guided) default(shared)
         for (Nd4jIndex i = 0; i < length; i++) {
             z[i] /= n;
         }
@@ -2229,7 +2230,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 //propagation step
     if (propagate) {
-#pragma omp parallel for if (n > 4 || length > 8000)
+#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) default(shared)
         for(int ar = 0; ar < n; ar++) {
 
 #pragma omp simd
@@ -2271,7 +2272,7 @@ template<typename T>
 void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
 
 
-#pragma omp parallel for if (N > 1)
+#pragma omp parallel for if (N > 1) default(shared)
     for (int f = 0; f < N; f++) {
         T *x = (T *) dX[f];
         //T *z = (T *) dZ[f];
@@ -2310,7 +2311,7 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
 
             } else {
                 // ind2sub branch
-#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
+#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512) default(shared)
                 for (Nd4jIndex i = 0; i < tadLength; i++) {
                     int xCoord[MAX_RANK];
                     int yCoord[MAX_RANK];
@@ -2537,7 +2538,7 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
     nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
     for (int i = 0; i < numAggregates; i++) {
         int **intArrays = new int *[maxIntArrays];
 
@@ -2565,7 +2566,7 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
     nd4j::PointersHelper<double> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread)
+#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
     for (int i = 0; i < numAggregates; i++) {
         int **intArrays = new int *[maxIntArrays];
 

@@ -613,7 +613,7 @@ namespace aggregateOps {
             int ngStarter = indexArguments[5];
             int negTableLength = indexArguments[6];
             int idxSyn0Length = indexArguments[7];
-            int initialIdx = indexArguments[8];
+            //int initialIdx = indexArguments[8];
             int numLabels = indexArguments[9];
             int trainWords = indexArguments[10];
             int isInference = indexArguments[11];

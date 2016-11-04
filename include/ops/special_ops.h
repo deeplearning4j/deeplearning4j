@@ -177,7 +177,7 @@ namespace simdOps {
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) collapse(2) proc_bind(AFFINITY) default(shared)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[6];
@@ -472,7 +472,7 @@ namespace simdOps {
 			T binSize = (max_val - min_val) / (numBins);
 
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close) default(shared)
 			{
 				int tid, start, end;
 
@@ -646,7 +646,7 @@ namespace simdOps {
 
 			T *fIn = dx;
 			T *fOut = result;
-#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
 				for (int d = depthFrom; d < depthTo; d++) {
 					int outIndices[4];
@@ -906,54 +906,60 @@ namespace simdOps {
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+
+#pragma omp simd reduction(max:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<T>(max, dx[i]);
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] = dx[i] - max;
 						}
 
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] = nd4j::math::nd4j_exp<T>(result[i]);
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							sum += result[i];
 						}
 
-
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i] /= sum;
 						}
-
-
 					}
 					else {
 
+#pragma omp simd reduction(max:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] = dx[i * elementWiseStride] - max;
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
-							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(
-								result[i * resultElementWiseStride]);
+							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * resultElementWiseStride]);
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							sum += result[i * resultElementWiseStride];
 						}
+
+#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] /= sum;
 						}
 					}
-
 				}
-
-
 			}
 		}
 
@@ -1037,8 +1043,11 @@ namespace simdOps {
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
 				std::vector <T> maxResult(shape[0]);
+
+#pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
+
 				int maxShape[2] = { shape[0], 1 };
 				int *maxResultShapeBuffer = shape::shapeBuffer(2, maxShape);
 				functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1,
@@ -1062,7 +1071,6 @@ namespace simdOps {
 				functions::transform::Transform<T>::template exec<simdOps::Log<T>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 
-
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
@@ -1072,38 +1080,38 @@ namespace simdOps {
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
-#pragma omp parallel for simd reduction(max:max) shared(result)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
 						sum += result[i];
 					}
 
-#pragma omp parallel for simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 						result[i] = nd4j::math::nd4j_log<T>(result[i]);
 					}
 				}
 				else {
-#pragma omp parallel for simd reduction(max:max) shared(result, elementWiseStride)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result, elementWiseStride)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp parallel for simd
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 						result[i * elementWiseStride] = nd4j::math::nd4j_log<T>(result[i * elementWiseStride]);
@@ -1266,12 +1274,12 @@ namespace simdOps {
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 
-#pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i]);
 					}
 
-#pragma omp parallel for simd reduction(+:sum)  shared(result) schedule(guided)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
@@ -1289,39 +1297,27 @@ namespace simdOps {
                     }
                 } else {
 
-#pragma omp parallel for simd reduction(max:max) shared(result) schedule(guided)
+#pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
 					}
 
 
-#pragma omp parallel for simd reduction(+:sum) shared(result, elementWiseStride) schedule(guided)
+#pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp parallel for simd schedule(guided)
+#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 					}
 
-					if (elementWiseStride >= 1) {
-						if (elementWiseStride == 1) {
 #pragma omp simd
-							for (int i = 0; i < length; i++) {
-								result[i] = result[i] * (1 - result[i]);
-							}
-
-						} else {
-#pragma omp simd
-							for (int i = 0; i < length; i++) {
-								result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
-							}
-						}
-					} else {
-						printf("Non element wise stride not supported right now\n");
+					for (int i = 0; i < length; i++) {
+						result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
 					}
 				}
 			}
@@ -1411,8 +1407,7 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-// FIXME: proper reduction required here
-//#pragma omp simd
+#pragma omp simd reduction (max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
 							if (currMax < dx[i]) {
 								currMax = dx[i];
@@ -1434,14 +1429,14 @@ namespace simdOps {
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
-#pragma omp for nowait
+
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
 							if (currMaxLocal < dx[i]) {
 								currMaxLocal = dx[i];
 								maxIdxLocal = i;
 							}
 							result[i] = 0.0;
-
 						}
 #pragma omp critical
 {
@@ -1459,8 +1454,7 @@ namespace simdOps {
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
 						T currMax = dx[0];
-// FIXME: proper reduction required here
-//#pragma omp simd
+#pragma omp simd reduction(max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
 							if (currMax < dx[i * eleStride]) {
@@ -1476,11 +1470,11 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 						int maxIdxLocal = maxIdx;
 						T currMaxLocal = currMax;
-#pragma omp for nowait
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = 0.0;
 							if (currMaxLocal < dx[i * eleStride]) {
@@ -1613,7 +1607,7 @@ namespace simdOps {
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
 
-#pragma omp simd
+#pragma omp simd reduction(max:maxIdx,currMax)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
 									currMax = dx[i];
@@ -1625,11 +1619,11 @@ namespace simdOps {
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
-#pragma omp for nowait
+#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i]) {
 									currMaxLocal = dx[i];
@@ -1640,12 +1634,12 @@ namespace simdOps {
 
 							}
 #pragma omp critical
-{
-							if (currMax < currMaxLocal) {
-								currMax = currMaxLocal;
-								maxIdx = maxIdxLocal;
-							}
-}
+                            {
+							    if (currMax < currMaxLocal) {
+								    currMax = currMaxLocal;
+								    maxIdx = maxIdxLocal;
+							    }
+                            }
 }
 						}
 
@@ -1658,23 +1652,23 @@ namespace simdOps {
 						int maxIdx = 0;
 						T currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-#pragma omp simd
+#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
 									currMax = dx[i * eleStride];
 									maxIdx = i;
 								}
 
-								dx[i] = 0.0;
-
+								result[i] = 0.0;
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY)
+#pragma omp parallel proc_bind(AFFINITY) default(shared)
 {
 							int maxIdxLocal = maxIdx;
 							T currMaxLocal = currMax;
-#pragma omp for nowait
+
+#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i * eleStride]) {
 									currMaxLocal = dx[i * eleStride];
@@ -1682,7 +1676,6 @@ namespace simdOps {
 								}
 
 								result[i] = 0.0;
-
 							}
 #pragma omp critical
 {
@@ -1695,7 +1688,6 @@ namespace simdOps {
 						}
 
 						result[maxIdx] = 1.0;
-
 					}
 				}
 
@@ -1704,6 +1696,8 @@ namespace simdOps {
 			else {
                 int dimensionLength = (int) extraParams[0];
                 int *dimension = new int[dimensionLength];
+
+#pragma omp simd
                 for (int i = 0; i < dimensionLength; i++) {
                     dimension[i] = (int) extraParams[i + 1];
                 }
@@ -1748,11 +1742,11 @@ namespace simdOps {
                             T maxValue = rX[0];
                             int maxIdx = 0;
                             if (tadEWS == 1 && zEWS == 1) {
+#pragma omp simd reduction(max:maxValue,maxIdx)
                                 for (int i = 0; i < tadLength; i++) {
-                                    T cValue = rX[i];
-                                    if (cValue > maxValue) {
+                                    if (rX[i] > maxValue) {
                                         maxIdx = i;
-                                        maxValue = cValue;
+                                        maxValue = rX[i];
                                     }
                                 }
 
@@ -1762,11 +1756,12 @@ namespace simdOps {
                                 }
 
                             } else {
+
+#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                                 for (int i = 0; i < tadLength; i++) {
-                                    T cValue = rX[i * tadEWS];
-                                    if (cValue > maxValue) {
+                                    if (rX[i * tadEWS] > maxValue) {
                                         maxIdx = i;
-                                        maxValue = cValue;
+                                        maxValue = rX[i * tadEWS];
                                     }
                                 }
 
@@ -1780,7 +1775,7 @@ namespace simdOps {
                             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                             num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
+#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                             for (int i = 0; i < tads; i++) {
                                 int offset = tadOffsets[i];
                                 int shapeIter[MAX_RANK];
