@@ -320,6 +320,9 @@ cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # or cross-build across Scala versions
 # ./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+## If you skipped CUDA you may need to add 
+## -pl '!:deeplearning4j-cuda-8.0' 
+## to the mvn clean install command to prevent the build from looking for cuda libs
 cd ..
 ```
 
