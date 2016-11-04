@@ -68,7 +68,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.16.4</lombok.version>
     </properties>
 
     <dependencyManagement>
