@@ -61,7 +61,7 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>    <!-- Issues: Dropwizard requires 2.5.1; Spark (local) requires 2.4.4 (spark submit will package correct version) -->
-        <lombok.version>1.16.4</lombok.version>
+        <lombok.version>1.16.10</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <dropwizard.version>0.8.0</dropwizard.version>
         <lucene.version>5.3.1</lucene.version>
