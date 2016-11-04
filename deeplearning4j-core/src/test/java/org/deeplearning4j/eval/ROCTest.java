@@ -3,7 +3,9 @@ package org.deeplearning4j.eval;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,5 +216,125 @@ public class ROCTest {
         double actAUC = roc.calculateAUC();
 
         assertEquals(expAUC, actAUC, 1e-6);
+    }
+
+
+    @Test
+    public void testRocTimeSeriesNoMasking(){
+        //Same as first test...
+
+        //2 outputs here - probability distribution over classes (softmax)
+        INDArray predictions2d = Nd4j.create(new double[][]{
+                {1.0, 0.001},   //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
+                {0.899, 0.101},
+                {0.799, 0.201},
+                {0.699, 0.301},
+                {0.599, 0.401},
+                {0.499, 0.501},
+                {0.399, 0.601},
+                {0.299, 0.701},
+                {0.199, 0.801},
+                {0.099, 0.901}});
+
+        INDArray actual2d = Nd4j.create(new double[][]{
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {0, 1},
+                {0, 1},
+                {0, 1},
+                {0, 1},
+                {0, 1}});
+
+        INDArray predictions3d = Nd4j.create(2,2,5);
+        predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(predictions2d.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(predictions2d.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+
+        INDArray labels3d = Nd4j.create(2,2,5);
+        labels3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(actual2d.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(actual2d.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+
+        ROC rocExp = new ROC(10);
+        rocExp.eval(actual2d, predictions2d);
+
+        ROC rocAct = new ROC(10);
+        rocAct.evalTimeSeries(labels3d, predictions3d);
+
+        assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
+        List<ROC.ROCValue> expValues = rocExp.getResults();
+        List<ROC.ROCValue> actValues = rocAct.getResults();
+
+        assertEquals(expValues, actValues);
+    }
+
+    @Test
+    public void testRocTimeSeriesMasking(){
+        //2 outputs here - probability distribution over classes (softmax)
+        INDArray predictions2d = Nd4j.create(new double[][]{
+                {1.0, 0.001},   //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
+                {0.899, 0.101},
+                {0.799, 0.201},
+                {0.699, 0.301},
+                {0.599, 0.401},
+                {0.499, 0.501},
+                {0.399, 0.601},
+                {0.299, 0.701},
+                {0.199, 0.801},
+                {0.099, 0.901}});
+
+        INDArray actual2d = Nd4j.create(new double[][]{
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {0, 1},
+                {0, 1},
+                {0, 1},
+                {0, 1},
+                {0, 1}});
+
+
+        //Create time series data... first time series: length 4. Second time series: length 6
+        INDArray predictions3d = Nd4j.create(2,2,6);
+        INDArray tad = predictions3d.tensorAlongDimension(0, 1,2).transpose();
+        tad.get(NDArrayIndex.interval(0,4), NDArrayIndex.all())
+                .assign(predictions2d.get(NDArrayIndex.interval(0,4), NDArrayIndex.all()));
+
+        tad = predictions3d.tensorAlongDimension(1, 1,2).transpose();
+        tad.assign(predictions2d.get(NDArrayIndex.interval(4,10), NDArrayIndex.all()));
+
+
+        INDArray labels3d = Nd4j.create(2,2,6);
+        tad = labels3d.tensorAlongDimension(0, 1,2).transpose();
+        tad.get(NDArrayIndex.interval(0,4), NDArrayIndex.all())
+                .assign(actual2d.get(NDArrayIndex.interval(0,4), NDArrayIndex.all()));
+
+        tad = labels3d.tensorAlongDimension(1, 1,2).transpose();
+        tad.assign(actual2d.get(NDArrayIndex.interval(4,10), NDArrayIndex.all()));
+
+
+        INDArray mask = Nd4j.zeros(2,6);
+        mask.get(NDArrayIndex.point(0),NDArrayIndex.interval(0,4)).assign(1);
+        mask.get(NDArrayIndex.point(1),NDArrayIndex.all()).assign(1);
+
+
+        ROC rocExp = new ROC(10);
+        rocExp.eval(actual2d, predictions2d);
+
+        ROC rocAct = new ROC(10);
+        rocAct.evalTimeSeries(labels3d, predictions3d, mask);
+
+        assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
+        List<ROC.ROCValue> expValues = rocExp.getResults();
+        List<ROC.ROCValue> actValues = rocAct.getResults();
+
+        assertEquals(expValues, actValues);
     }
 }
