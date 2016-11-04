@@ -297,6 +297,9 @@ cd ..
 git clone https://github.com/deeplearning4j/nd4j.git
 cd nd4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-7.5,!:nd4j-cuda-7.5-platform,!:nd4j-tests'
+## More recent 0.6.1 version of the above command
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
+
 # or when using GPU
 # mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
 cd ..
