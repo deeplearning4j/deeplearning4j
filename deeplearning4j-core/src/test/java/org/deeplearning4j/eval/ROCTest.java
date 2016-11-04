@@ -96,6 +96,11 @@ public class ROCTest {
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
         }
+
+
+        //Expect AUC == 1.0 here
+        double auc = roc.calculateAUC();
+        assertEquals(1.0, auc, 1e-6);
     }
 
     @Test
@@ -128,6 +133,10 @@ public class ROCTest {
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
         }
+
+        //Expect AUC == 1.0 here
+        double auc = roc.calculateAUC();
+        assertEquals(1.0, auc, 1e-6);
     }
 
 
@@ -197,7 +206,13 @@ public class ROCTest {
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
 
-            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
+//            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
         }
+
+        //AUC: expected values are based on plotting the ROC curve and manually calculating the area
+        double expAUC = 0.5 * 1.0/3.0 + (1-1/3.0)*1.0;
+        double actAUC = roc.calculateAUC();
+
+        assertEquals(expAUC, actAUC, 1e-6);
     }
 }
