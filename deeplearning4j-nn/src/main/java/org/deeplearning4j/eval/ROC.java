@@ -17,12 +17,12 @@ import java.util.*;
  * ROC (Receiver Operating Characteristic) for binary classifiers, using the specified number of threshold steps.
  * <p>
  * Some ROC implementations will automatically calculate the threshold points based on the data set to give a 'smoother'
- * ROC curve. This implementation currently uses fixed steps of size 1.0 / thresholdSteps, as this allows easy implementation
- * for batched and distributed evaluation scenarios (where the full data set is not available in memory on any one machine
- * at once).
+ * ROC curve (or optimal cut points for diagnostic purposes). This implementation currently uses fixed steps of size
+ * 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
+ * full data set is not available in memory on any one machine at once).
  * <p>
  * The data is assumed to be binary classification - nColumns == 1 (single binary output variable) or nColumns == 2
- * (probability distribution over 2 classes)
+ * (probability distribution over 2 classes, with column 1 being values for 'positive' examples)
  *
  * @author Alex Black
  */
@@ -37,7 +37,7 @@ public class ROC implements Serializable {
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
 
     /**
-     * @param thresholdSteps    Number of threshold steps to use for the calcu
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation
      */
     public ROC(int thresholdSteps) {
         this.thresholdSteps = thresholdSteps;
@@ -53,13 +53,17 @@ public class ROC implements Serializable {
     /**
      * Evaluate (collect statistics for) the given minibatch of data
      *
-     * @param outcomes       Labels / true outcomes
-     * @param predictions    Predictions
+     * @param labels    Labels / true outcomes
+     * @param predictions Predictions
      */
-    public void eval(INDArray outcomes, INDArray predictions) {
+    public void eval(INDArray labels, INDArray predictions) {
+        if(labels.size(1) >= 2 || predictions.size(1) >= 2 || labels.size(1) != predictions.size(1)){
+            throw new IllegalArgumentException("Invalid input data shape: labels shape = " + Arrays.toString(labels.shape()) +
+                    ", predictions shape = " + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
+        }
 
         double step = 1.0 / thresholdSteps;
-        boolean singleOutput = outcomes.size(1) == 1;
+        boolean singleOutput = labels.size(1) == 1;
 
         INDArray positivePredictedClassColumn;
         INDArray positiveActualClassColumn;
@@ -67,13 +71,13 @@ public class ROC implements Serializable {
 
         if (singleOutput) {
             //Single binary variable case
-            positiveActualClassColumn = outcomes;
-            negativeActualClassColumn = outcomes.rsub(1.0); //1.0 - label
+            positiveActualClassColumn = labels;
+            negativeActualClassColumn = labels.rsub(1.0); //1.0 - label
             positivePredictedClassColumn = predictions;
         } else {
             //Standard case - 2 output variables (probability distribution)
-            positiveActualClassColumn = outcomes.getColumn(1);
-            negativeActualClassColumn = outcomes.getColumn(0);
+            positiveActualClassColumn = labels.getColumn(1);
+            negativeActualClassColumn = labels.getColumn(0);
             positivePredictedClassColumn = predictions.getColumn(1);
         }
 
@@ -144,7 +148,6 @@ public class ROC implements Serializable {
         double[][] out = new double[2][thresholdSteps];
         int i = 0;
         for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
-            double t = entry.getKey();
             CountsForThreshold c = entry.getValue();
             double tpr = c.getCountTruePositive() / ((double) countActualPositive);
             double fpr = c.getCountFalsePositive() / ((double) countActualNegative);
@@ -154,6 +157,32 @@ public class ROC implements Serializable {
             i++;
         }
         return out;
+    }
+
+    /**
+     * Calculate the AUC - Area Under Curve<br>
+     * Utilizes trapezoidal integration internally
+     *
+     * @return AUC
+     */
+    public double calculateAUC() {
+        //Calculate AUC using trapezoidal rule
+        List<ROCValue> list = getResults();
+
+        //Given the points
+        double auc = 0.0;
+        for (int i = 0; i < list.size() - 1; i++) {
+            ROCValue left = list.get(i);
+            ROCValue right = list.get(i + 1);
+
+            //y axis: TPR
+            //x axis: FPR
+            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate());   //Iterating in threshold order, so FPR decreases as threshold increases
+            double avg = (left.getTruePositiveRate() + right.getTruePositiveRate()) / 2.0;
+
+            auc += deltaX * avg;
+        }
+        return auc;
     }
 
 
