@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
@@ -13,9 +14,20 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Created by Alex on 04/11/2016.
+ * ROC (Receiver Operating Characteristic) for binary classifiers, using the specified number of threshold steps.
+ * <p>
+ * Some ROC implementations will automatically calculate the threshold points based on the data set to give a 'smoother'
+ * ROC curve. This implementation currently uses fixed steps of size 1.0 / thresholdSteps, as this allows easy implementation
+ * for batched and distributed evaluation scenarios (where the full data set is not available in memory on any one machine
+ * at once).
+ * <p>
+ * The data is assumed to be binary classification - nColumns == 1 (single binary output variable) or nColumns == 2
+ * (probability distribution over 2 classes)
+ *
+ * @author Alex Black
  */
-public class ROC {
+@Getter
+public class ROC implements Serializable {
 
     private final int thresholdSteps;
 
@@ -24,6 +36,9 @@ public class ROC {
 
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
 
+    /**
+     * @param thresholdSteps    Number of threshold steps to use for the calcu
+     */
     public ROC(int thresholdSteps) {
         this.thresholdSteps = thresholdSteps;
 
@@ -35,20 +50,22 @@ public class ROC {
     }
 
 
+    /**
+     * Evaluate (collect statistics for) the given minibatch of data
+     *
+     * @param outcomes       Labels / true outcomes
+     * @param predictions    Predictions
+     */
     public void eval(INDArray outcomes, INDArray predictions) {
 
         double step = 1.0 / thresholdSteps;
         boolean singleOutput = outcomes.size(1) == 1;
 
-        //For now: assume 2d data. Each row: has 2 values (TODO: single binary variable case)
-//        INDArray positivePredictedClassColumn = predictions.getColumn(1);
-//        INDArray positiveActualClassColumn = outcomes.getColumn(1);
-//        INDArray negativeActualClassColumn = outcomes.getColumn(0);
         INDArray positivePredictedClassColumn;
         INDArray positiveActualClassColumn;
         INDArray negativeActualClassColumn;
 
-        if(singleOutput){
+        if (singleOutput) {
             //Single binary variable case
             positiveActualClassColumn = outcomes;
             negativeActualClassColumn = outcomes.rsub(1.0); //1.0 - label
@@ -95,6 +112,11 @@ public class ROC {
         }
     }
 
+    /**
+     * Get the ROC curve, as a set of points
+     *
+     * @return ROC curve, as a list of points
+     */
     public List<ROCValue> getResults() {
         List<ROCValue> out = new ArrayList<>(counts.size());
 
@@ -107,6 +129,30 @@ public class ROC {
             out.add(new ROCValue(t, tpr, fpr));
         }
 
+        return out;
+    }
+
+    /**
+     * Get the ROC curve, as a set of (falsePositive, truePositive) points
+     * <p>
+     * Returns a 2d array of {falsePositive, truePositive values}.<br>
+     * Size is [2][thresholdSteps], with out[0][.] being false positives, and out[1][.] being true positives
+     *
+     * @return ROC curve as double[][]
+     */
+    public double[][] getResultsAsArray() {
+        double[][] out = new double[2][thresholdSteps];
+        int i = 0;
+        for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
+            double t = entry.getKey();
+            CountsForThreshold c = entry.getValue();
+            double tpr = c.getCountTruePositive() / ((double) countActualPositive);
+            double fpr = c.getCountFalsePositive() / ((double) countActualNegative);
+
+            out[0][i] = fpr;
+            out[1][i] = tpr;
+            i++;
+        }
         return out;
     }
 
