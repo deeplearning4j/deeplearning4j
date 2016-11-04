@@ -1,8 +1,6 @@
-train.nav.sessionid=セッション
+train.pagetitle=DL4J学習UI
 train.nav.overview=概要
 train.nav.model=モデル
-train.nav.hwsw=システム
-train.nav.help=ユーザーガイド
+train.nav.system=システム
+train.nav.userguide=ユーザーガイド
 train.nav.language=言語
-train.nav.websitelink=http://deeplearning4j.org/ja-index
-train.nav.websitelinktext=deeplearning4j.org/ja-index
