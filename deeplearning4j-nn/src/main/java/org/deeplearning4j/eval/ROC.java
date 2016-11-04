@@ -222,7 +222,7 @@ public class ROC implements Serializable {
      * @return ROC curve as double[][]
      */
     public double[][] getResultsAsArray() {
-        double[][] out = new double[2][thresholdSteps];
+        double[][] out = new double[2][thresholdSteps+1];
         int i = 0;
         for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
             CountsForThreshold c = entry.getValue();
