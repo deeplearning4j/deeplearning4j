@@ -21,13 +21,14 @@ function createGraph(data){
     var vertexTypes = data["vertexTypes"];    //List<String>
     var vertexInputs = data["vertexInputs"];  //int[][]
     var vertexInfos = data["vertexInfo"];     //List<Map<String,String>>
+    var vertexCount = vertexNames.length;
 
     var nodes = [];
     var edges = [];
     for(var i=0; i<vertexNames.length; i++ ){
         var obj = {
             id: i,
-            name: vertexNames[i],
+            name: vertexTypes[i] + '\n(' + vertexNames[i] +')',
             faveColor: '#6FB1FC',   //TODO
             faveShape: 'triangle',   //TODO
             onclick: "renderLayerTable()"
@@ -63,13 +64,16 @@ function createGraph(data){
             .selector('node')
             .css({
                 'shape': 'data(faveShape)',
-                'width': 'mapData(weight, 40, 80, 20, 60)',
+                'width': '100',
+                'height': '50',
                 'content': 'data(name)',
                 'text-valign': 'center',
                 'text-outline-width': 2,
                 'text-outline-color': 'data(faveColor)',
                 'background-color': 'data(faveColor)',
-                'color': '#fff'
+                'color': '#fff',
+                'text-wrap': 'wrap',
+                'font-size': '17px'
             })
             .selector(':selected')
             .css({
@@ -102,10 +106,20 @@ function createGraph(data){
 
         ready: function () {
             window.cy = this;
+            if (vertexCount <= 4) {
+                cy.zoom(1.6);
+                cy.center();
+            } else if (vertexCount > 4 && vertexCount <=6) {
+                cy.zoom(1);
+                cy.center();
+            }
+            else {
+                cy.zoom(1);
+                cy.panBy({x: -50, y:0});
+            }
             cy.panningEnabled(true);
             cy.autoungrabify(true);
-            cy.maxZoom(5);
-            cy.minZoom(1);
+            cy.zoomingEnabled(false);
         }
     });
 
