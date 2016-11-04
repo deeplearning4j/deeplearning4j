@@ -53,15 +53,15 @@ public class ROCTest {
         //2 outputs here - probability distribution over classes (softmax)
         INDArray predictions = Nd4j.create(new double[][]{
                 {1.0, 0.001},   //add 0.001 to avoid numerical/rounding issues (float vs. double, etc)
-                {0.9, 0.101},
-                {0.8, 0.201},
-                {0.7, 0.301},
-                {0.6, 0.401},
-                {0.5, 0.501},
-                {0.4, 0.601},
-                {0.3, 0.701},
-                {0.2, 0.801},
-                {0.1, 0.901}});
+                {0.899, 0.101},
+                {0.799, 0.201},
+                {0.699, 0.301},
+                {0.599, 0.401},
+                {0.499, 0.501},
+                {0.399, 0.601},
+                {0.299, 0.701},
+                {0.199, 0.801},
+                {0.099, 0.901}});
 
         INDArray actual = Nd4j.create(new double[][]{
                 {1, 0},
@@ -127,6 +127,77 @@ public class ROCTest {
             double etpr = expTPR.get(expThreshold);
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testRoc(){
+        //Previous tests allowed for a perfect classifier with right threshold...
+
+        INDArray labels = Nd4j.create(new double[][]{
+                {0,1},
+                {0,1},
+                {1,0},
+                {1,0},
+                {1,0}});
+
+        INDArray prediction = Nd4j.create(new double[][]{
+                {0.199, 0.801},
+                {0.499, 0.501},
+                {0.399, 0.601},
+                {0.799, 0.201},
+                {0.899, 0.101}});
+
+        Map<Double,Double> expTPR = new HashMap<>();
+        double totalPositives = 2.0;
+        expTPR.put(0.0, 2.0/totalPositives);    //All predicted class 1 -> 2 true positives / 2 total positives
+        expTPR.put(0.1, 2.0/totalPositives);
+        expTPR.put(0.2, 2.0/totalPositives);
+        expTPR.put(0.3, 2.0/totalPositives);
+        expTPR.put(0.4, 2.0/totalPositives);
+        expTPR.put(0.5, 2.0/totalPositives);
+        expTPR.put(0.6, 1.0/totalPositives);    //At threshold of 0.6, only 1 of 2 positives are predicted positive
+        expTPR.put(0.7, 1.0/totalPositives);
+        expTPR.put(0.8, 1.0/totalPositives);
+        expTPR.put(0.9, 0.0/totalPositives);    //At threshold of 0.9, 0 of 2 positives are predicted positive
+        expTPR.put(1.0, 0.0/totalPositives);
+
+        Map<Double,Double> expFPR = new HashMap<>();
+        double totalNegatives = 3.0;
+        expFPR.put(0.0, 3.0/totalNegatives);    //All predicted class 1 -> 3 false positives / 3 total negatives
+        expFPR.put(0.1, 3.0/totalNegatives);
+        expFPR.put(0.2, 2.0/totalNegatives);    //At threshold of 0.2: 1 true negative, 2 false positives
+        expFPR.put(0.3, 1.0/totalNegatives);    //At threshold of 0.3: 2 true negative, 1 false positive
+        expFPR.put(0.4, 1.0/totalNegatives);
+        expFPR.put(0.5, 1.0/totalNegatives);
+        expFPR.put(0.6, 1.0/totalNegatives);
+        expFPR.put(0.7, 0.0/totalNegatives);    //At threshold of 0.7: 3 true negatives, 0 false positives
+        expFPR.put(0.8, 0.0/totalNegatives);
+        expFPR.put(0.9, 0.0/totalNegatives);
+        expFPR.put(1.0, 0.0/totalNegatives);
+
+
+        ROC roc = new ROC(10);
+        roc.eval(labels, prediction);
+
+        List<ROC.ROCValue> list = roc.getResults();
+
+        assertEquals(11,list.size());   //0 + 10 steps
+        for( int i=0; i<11; i++ ){
+            ROC.ROCValue v = list.get(i);
+            double expThreshold = i / 10.0;
+            assertEquals(expThreshold, v.getThreshold(), 1e-5);
+
+            double efpr = expFPR.get(expThreshold);
+            double afpr = v.getFalsePositiveRate();
+            assertEquals(efpr, afpr, 1e-5);
+
+            double etpr = expTPR.get(expThreshold);
+            double atpr = v.getTruePositiveRate();
+            assertEquals(etpr, atpr, 1e-5);
+
+            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
         }
     }
 }
