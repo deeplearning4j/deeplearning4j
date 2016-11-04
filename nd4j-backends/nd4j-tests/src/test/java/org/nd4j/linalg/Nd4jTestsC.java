@@ -3148,6 +3148,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, result);
     }
 
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation1() {
+        Nd4j.pullRows(Nd4j.create(10,10), 2, new int[]{0, 1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation2() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, -1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation3() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, 1, 10});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation4() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2, 3});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation5() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2},'e');
+    }
+
+
+
     @Test
     public void testVPull2() {
         int indexes[] = new int[]{0, 2, 4};

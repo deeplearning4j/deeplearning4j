@@ -4823,9 +4823,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
-        INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes);
-        logCreationIfNecessary(ret);
-        return ret;
+        return pullRows(source, sourceDimension, indexes, Nd4j.order());
     }
 
     /**
@@ -4837,6 +4835,20 @@ public class Nd4j {
      * @return
      */
     public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
+        if (sourceDimension >= source.rank())
+            throw new IllegalStateException("Source dimension can't be higher the rank of source tensor");
+
+        if (indexes == null || indexes.length == 0)
+            throw new IllegalStateException("Indexes shouldn't be empty");
+
+        if (order != 'c' && order != 'f' && order != 'a')
+            throw new IllegalStateException("Unknown order being passed in [" + order +"]");
+
+        for (int idx: indexes){
+            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1])
+                throw new IllegalStateException("Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+        }
+
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);
         logCreationIfNecessary(ret);
         return ret;
