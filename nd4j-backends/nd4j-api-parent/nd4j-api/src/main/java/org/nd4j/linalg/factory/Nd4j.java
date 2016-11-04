@@ -4827,7 +4827,10 @@ public class Nd4j {
     }
 
     /**
-     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     * This method produces concatenated array,
+     * that consist from tensors,
+     * fetched from source array,
+     * against some dimension and specified indexes
      *
      * @param source source tensor
      * @param sourceDimension dimension of source tensor
