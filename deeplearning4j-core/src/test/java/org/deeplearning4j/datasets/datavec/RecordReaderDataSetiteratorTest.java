@@ -20,7 +20,6 @@ package org.deeplearning4j.datasets.datavec;
 
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.RecordReaderMeta;
@@ -34,22 +33,13 @@ import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.meta.Prediction;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -680,6 +670,36 @@ public class RecordReaderDataSetiteratorTest {
         }
         assertEquals(3,countF);
         assertEquals(1,iteratorRegression.totalOutcomes());
+    }
+
+    @Test(expected = ZeroLengthSequenceException.class)
+    public void testSequenceRecordReaderSingleReaderWithEmptySequenceThrows() throws Exception {
+        SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
+        reader.initialize(new FileSplit(new ClassPathResource("empty.txt").getTempFileFromArchive()));
+
+        new SequenceRecordReaderDataSetIterator(reader, 1, -1, 1, true).next();
+    }
+
+    @Test(expected = ZeroLengthSequenceException.class)
+    public void testSequenceRecordReaderTwoReadersWithEmptyFeatureSequenceThrows() throws Exception {
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+
+        featureReader.initialize(new FileSplit(new ClassPathResource("empty.txt").getTempFileFromArchive()));
+        labelReader.initialize(new FileSplit(new ClassPathResource("csvsequencelabels_0.txt").getTempFileFromArchive()));
+
+        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, -1, true).next();
+    }
+
+    @Test(expected = ZeroLengthSequenceException.class)
+    public void testSequenceRecordReaderTwoReadersWithEmptyLabelSequenceThrows() throws Exception {
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
+
+        featureReader.initialize(new FileSplit(new ClassPathResource("csvsequence_0.txt").getTempFileFromArchive()));
+        labelReader.initialize(new FileSplit(new ClassPathResource("empty.txt").getTempFileFromArchive()));
+
+        new SequenceRecordReaderDataSetIterator(featureReader, labelReader, 1, -1, true).next();
     }
 
     @Test
