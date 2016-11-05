@@ -29,7 +29,9 @@
 
 #define INDEX_REDUCE_OPS \
         (0, simdOps::IndexMax), \
-        (1, simdOps::IndexMin)
+        (1, simdOps::IndexMin), \
+		(2, simdOps::IndexAbsoluteMax), \
+		(3, simdOps::IndexAbsoluteMin)
         
 
 namespace functions {

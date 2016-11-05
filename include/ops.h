@@ -1447,6 +1447,84 @@ namespace simdOps {
 
 
 	template<typename T>
+	class IndexAbsoluteMax  {
+	public:
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			return nd4j::math::nd4j_abs<T>(val);
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> update(
+				functions::indexreduce::IndexValue<T> old,
+		functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			opOutput.value = nd4j::math::nd4j_abs<T>(opOutput.value);
+			old.value = nd4j::math::nd4j_abs<T>(old.value);
+			if (opOutput.value > old.value)
+				return opOutput;
+#ifdef __CUDACC__
+			// workaround for cuda race condition at merge phase
+			else if (opOutput.value == old.value && opOutput.index < old.index)
+				return opOutput;
+#elif defined(__GNUC__)
+
+#endif
+			return old;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> merge(
+				functions::indexreduce::IndexValue<T> f1,
+		functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			if (nd4j::math::nd4j_abs<T>(f1.value) > nd4j::math::nd4j_abs<T>(f2.value))
+				return f2;
+			return f1;
+		}
+
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> postProcess(
+				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+				T *dx, int incx, T *extraParams, T *result) {
+			return reduction;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static T startingValue(T *input) {
+			return MIN_FLOAT;
+		}
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+		functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			return d1;
+		}
+	};
+
+	template<typename T>
 	class IndexMax  {
 	public:
 #ifdef __INTEL_COMPILER
@@ -1518,6 +1596,87 @@ namespace simdOps {
 #endif
         static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+			return d1;
+		}
+	};
+
+
+	template<typename T>
+	class IndexAbsoluteMin {
+	public:
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> op(
+				functions::indexreduce::IndexValue<T> val, T *extraParams) {
+			return val;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static T startingValue(T *input) {
+			return MAX_FLOAT;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> update(
+				functions::indexreduce::IndexValue<T> old,
+		functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+			opOutput.value = nd4j::math::nd4j_abs<T>(opOutput.value);
+			old.value = nd4j::math::nd4j_abs<T>(old.value);
+			if (opOutput.value < old.value)
+				return opOutput;
+
+#ifdef __CUDACC__
+			// workaround for cuda race condition at merge phase
+			else if (opOutput.value == old.value && opOutput.index < old.index)
+				return opOutput;
+#elif defined(__GNUC__)
+
+#endif
+			return old;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> merge(
+				functions::indexreduce::IndexValue<T> f1,
+		functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+			if (nd4j::math::nd4j_abs<T>(f1.value) < nd4j::math::nd4j_abs<T>(f2.value))
+				return f2;
+			return f1;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> postProcess(
+				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+				T *dx, int incx, T *extraParams, T *result) {
+			return reduction;
+		}
+
+#ifdef __INTEL_COMPILER
+		inline
+#else
+		op_def
+#endif
+		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+		functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
 	};
