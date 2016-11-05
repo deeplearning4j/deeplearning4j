@@ -97,7 +97,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             rows.putRow(i,weights.getRow(indexes[i]));
         }
         */
-        INDArray rows = Nd4j.pullRows(weights, 1, indexes, 'c');
+        INDArray rows = Nd4j.pullRows(weights, 1, indexes);
         rows.addiRowVector(bias);
 
         return rows;

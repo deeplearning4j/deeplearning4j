@@ -12,10 +12,14 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
 import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -240,20 +244,103 @@ public class TestGraphNodes {
     }
 
     @Test
+    public void testStackNode(){
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new StackVertex(null,"",-1);
+
+        INDArray in1 = Nd4j.rand(5,2);
+        INDArray in2 = Nd4j.rand(5,2);
+        INDArray in3 = Nd4j.rand(5,2);
+        unstack.setInputs(in1, in2, in3);
+        INDArray out = unstack.doForward(false);
+        assertEquals(in2, out.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+
+        unstack.setErrors(out);
+        INDArray backward = unstack.doBackward(false).getSecond()[2];
+        assertEquals(in3, backward);
+    }
+
+    @Test
+    public void testUnstackNode(){
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new UnstackVertex(null,"",-1,1,3);
+
+        INDArray in = Nd4j.rand(15,2);
+        unstack.setInputs(in);
+        INDArray out = unstack.doForward(false);
+        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()), out);
+
+        unstack.setErrors(out);
+        INDArray backward = unstack.doBackward(false).getSecond()[0];
+        assertEquals(Nd4j.zeros(5,2), backward.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,2), backward.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
+        assertEquals(out, backward.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+
+        //Test same for CNNs:
+        in = Nd4j.rand(new int[]{15, 10, 3, 3});
+        unstack.setInputs(in);
+        out = unstack.doForward(false);
+        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out);
+
+        unstack.setErrors(out);
+        backward = unstack.doBackward(false).getSecond()[0];
+        assertEquals(Nd4j.zeros(5,10,3,3),backward.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,10,3,3), backward.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(out, backward.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+    }
+
+    @Test
+    public void testL2Node(){
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex l2 = new L2Vertex(null,"",-1);
+
+        INDArray in1 = Nd4j.rand(5,2);
+        INDArray in2 = Nd4j.rand(5,2);
+
+        l2.setInputs(in1, in2);
+        INDArray out = l2.doForward(false);
+
+        INDArray forwardL2 = Nd4j.create(5,1);
+
+        int[] dimensions = new int[in1.rank()-1];
+        for( int i=1; i<in2.rank(); i++ ){
+            dimensions[i-1] = i;
+        }
+
+        for(int i=0; i<in1.size(0); i++) {
+            forwardL2.put(i, Nd4j.getExecutioner().exec(new EuclideanDistance(in1.getRow(i),in2.getRow(i)), dimensions));
+        }
+
+        assertEquals(out, forwardL2);
+
+        // should be a column vector of shape [numExamples, 1]
+        INDArray epsilon = Nd4j.rand(out.shape());
+
+        l2.setErrors(epsilon);
+        INDArray[] backward = l2.doBackward(false).getSecond();
+//        System.out.println(backward[0]);
+//        System.out.println(backward[1]);
+        assertEquals(backward[0].shape(), in1.shape());
+        assertEquals(backward[1].shape(), in2.shape());
+    }
+
+    @Test
     public void testJSON(){
         //The config here is non-sense, but that doesn't matter for config -> json -> config test
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addVertex("v1",new ElementWiseVertex(ElementWiseVertex.Op.Add),"in")
-                .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in","in")
-                .addVertex("v3", new PreprocessorVertex(new CnnToFeedForwardPreProcessor(1,2,1)), "in")
-                .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0,1),"in")
-                .addVertex("v5", new DuplicateToTimeSeriesVertex("in"),"in")
-                .addVertex("v6", new LastTimeStepVertex("in"), "in")
-                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                .setOutputs("out")
-                .build();
+            .graphBuilder()
+            .addInputs("in")
+            .addVertex("v1",new ElementWiseVertex(ElementWiseVertex.Op.Add),"in")
+            .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in","in")
+            .addVertex("v3", new PreprocessorVertex(new CnnToFeedForwardPreProcessor(1,2,1)), "in")
+            .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0,1),"in")
+            .addVertex("v5", new DuplicateToTimeSeriesVertex("in"),"in")
+            .addVertex("v6", new LastTimeStepVertex("in"), "in")
+            .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
+            .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0,1), "in")
+            .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+            .setOutputs("out")
+            .build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
