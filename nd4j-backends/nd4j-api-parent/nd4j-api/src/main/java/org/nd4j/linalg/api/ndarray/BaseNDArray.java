@@ -3837,7 +3837,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getRows(int[] rindices) {
-        return get(new SpecifiedIndex(rindices));
+        if(!isMatrix() && !isVector())
+            throw new IllegalArgumentException("Unable to get columns from a non matrix or vector");
+        if(isVector())
+            return Nd4j.pullRows(this,1,rindices);
+        else {
+            INDArray ret = Nd4j.create(rindices.length,columns());
+            for(int i = 0; i < rindices.length; i++)
+                ret.putRow(i,getRow(rindices[i]));
+            return ret;
+        }
     }
 
     /**
@@ -3910,7 +3919,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getColumns(int...cindices) {
-        return get(NDArrayIndex.all(),new SpecifiedIndex(cindices));
+        if(!isMatrix() && !isVector())
+            throw new IllegalArgumentException("Unable to get columns from a non matrix or vector");
+        if(isVector())
+            return Nd4j.pullRows(this,0,cindices);
+        else {
+            INDArray ret = Nd4j.create(rows(),cindices.length);
+            for(int i = 0; i < cindices.length; i++)
+                ret.putColumn(i,getColumn(cindices[i]));
+            return ret;
+        }
+
     }
 
     protected INDArray create(int rows, int length) {
