@@ -91,13 +91,14 @@ public class WeightInitUtilTest {
 
     @Test
     public void testXavier(){
+        Nd4j.getRandom().setSeed(123);
         INDArray params = Nd4j.create(shape,'f');
         INDArray weightsActual = WeightInitUtil.initWeights(fanIn, fanOut, shape, WeightInit.XAVIER, dist, params);
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         INDArray weightsExpected = Nd4j.randn('f',shape);
-        weightsExpected.divi(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+        weightsExpected.muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
 
         assertEquals(weightsExpected, weightsActual);
     }
