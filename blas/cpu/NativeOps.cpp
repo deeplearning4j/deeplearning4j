@@ -2178,14 +2178,30 @@ void pullRowsGeneric(T *x,
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i] = rX[i];
             }
-        } else if (xEWS > 1 && zEWS > 1) {
+        } else if (xEWS >= 1 && zEWS >= 1) {
 
 #pragma omp simd
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
         } else {
-            printf("Non-EWS pull() isn't implemented yet\n");
+            int *zShape = shape::shapeOf(zTadShapeInfo);
+            int *zStride = shape::stride(zTadShapeInfo);
+            int *xShape = shape::shapeOf(tadShapeInfo);
+            int *xStride = shape::stride(tadShapeInfo);
+            int zRank = shape::rank(zTadShapeInfo);
+            int tadRank = shape::rank(tadShapeInfo);
+
+            int xCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+
+            for (int i = 0; i < tadLength; i++) {
+                shape::ind2subC(tadRank,xShape, i, xCoord);
+                shape::ind2subC(zRank,zShape, i, zCoord);
+                Nd4jIndex xOffset = shape::getOffset(xTadOffsetForBlock, xShape, xStride, xCoord, tadRank);
+                Nd4jIndex zOffset = shape::getOffset(zTadOffsetForBlock, zShape, zStride, zCoord, zRank);
+                z[zOffset] = x[xOffset];
+            }
         }
     }
 }
