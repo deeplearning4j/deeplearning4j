@@ -164,6 +164,11 @@ public class KFoldIterator implements DataSetIterator {
         return train;
     }
 
+    @Override
+    public void remove() {
+        // no-op
+    }
+
     private void nextFold() {
         int left;
         int right;
