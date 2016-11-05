@@ -97,7 +97,6 @@ public class LayerVertex extends BaseGraphVertex {
         INDArray epsTotal = null;
         if(epsilons != null && epsilons.length == 1 ) epsTotal = epsilons[0];
         else if(epsilons != null && epsilons.length > 1 ){
-            //TODO: check the math on this... I think it's correct though
             //This is the "output connected to multiple other layers" case
             epsTotal = epsilons[0].dup();
             for( int i=1; i<epsilons.length; i++ ){
