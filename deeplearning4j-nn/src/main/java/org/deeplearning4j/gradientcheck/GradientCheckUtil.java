@@ -101,12 +101,12 @@ public class GradientCheckUtil {
             INDArray params = originalParams.dup();
             params.putScalar(i, params.getDouble(i) + epsilon);
             mln.setParameters(params);
-            double scorePlus = mln.score(ds);
+            double scorePlus = mln.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
             mln.setParameters(params);
-            double scoreMinus = mln.score(ds);
+            double scoreMinus = mln.score(ds, true);
 
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
