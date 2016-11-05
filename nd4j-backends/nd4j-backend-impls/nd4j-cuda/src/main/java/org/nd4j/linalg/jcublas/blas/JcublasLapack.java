@@ -89,9 +89,12 @@ public class JcublasLapack extends BaseLapack {
 			worksize
 			) ;
 
+		if( stat != CUSOLVER_STATUS_SUCCESS ) {
+ 		    throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat ) ;
+		}
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		BaseCudaDataBuffer work = new CudaFloatDataBuffer(worksize.get(0)) ;
-		BaseCudaDataBuffer ipiv = new CudaIntDataBuffer( Math.min(M, N) ) ;
+		BaseCudaDataBuffer ipiv = new CudaIntDataBuffer( lda ) ;
 		BaseCudaDataBuffer info = new CudaIntDataBuffer(1) ;
 
 		// DO the actual LU decomp
@@ -105,9 +108,14 @@ public class JcublasLapack extends BaseLapack {
 			(IntPointer)info.addressPointer() 
 			) ;
 
+		if( stat != CUSOLVER_STATUS_SUCCESS ) {
+ 		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
+		}
 		// Copy the results back to the input vectors
 		INFO.putScalar(0,info.asInt()[0] ) ;
-		IPIV.setData( new IntBuffer( ipiv.asInt() ) );
+//		IPIV.setData( new IntBuffer( ipiv.asInt() ) );
+		IPIV.setData( ipiv );
+		if( IPIV.getInt(2) != 4 ) { throw new RuntimeException( "WTF" ) ; }
 
 		// After we get an inplace result we should 
 		// transpose the array - because of differenes in 
