@@ -97,8 +97,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
                 INDArray[] out = new INDArray[nInForwardPass];
-                out[0] = epsilon;
-                for( int i=1; i<nInForwardPass; i++ ) out[i] = out[0];
+                for( int i=0; i<nInForwardPass; i++ ) out[i] = epsilon.dup();
                 return new Pair<>(null,out);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
