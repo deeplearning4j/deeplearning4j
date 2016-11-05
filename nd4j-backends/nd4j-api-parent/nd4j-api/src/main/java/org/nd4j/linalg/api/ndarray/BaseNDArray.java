@@ -3921,9 +3921,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray getColumns(int...cindices) {
         if(!isMatrix() && !isVector())
             throw new IllegalArgumentException("Unable to get columns from a non matrix or vector");
-        if(isVector())
-            return Nd4j.pullRows(this,0,cindices);
-        else {
+        if(isVector()) {
+            return Nd4j.pullRows(this, 0, cindices, this.ordering());
+        } else {
             INDArray ret = Nd4j.create(rows(),cindices.length);
             for(int i = 0; i < cindices.length; i++)
                 ret.putColumn(i,getColumn(cindices[i]));
