@@ -20,9 +20,11 @@ import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -253,40 +255,87 @@ public class TestGraphNodes {
         INDArray in3 = Nd4j.rand(5,2);
         unstack.setInputs(in1, in2, in3);
         INDArray out = unstack.doForward(false);
+        assertEquals(in1, out.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
         assertEquals(in2, out.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+        assertEquals(in3, out.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
 
         unstack.setErrors(out);
-        INDArray backward = unstack.doBackward(false).getSecond()[2];
-        assertEquals(in3, backward);
+        Pair<Gradient,INDArray[]> b = unstack.doBackward(false);
+
+        assertEquals(in1, b.getSecond()[0]);
+        assertEquals(in2, b.getSecond()[1]);
+        assertEquals(in3, b.getSecond()[2]);
     }
 
     @Test
     public void testUnstackNode(){
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex unstack = new UnstackVertex(null,"",-1,1,3);
+        GraphVertex unstack0 = new UnstackVertex(null,"",-1,0,3);
+        GraphVertex unstack1 = new UnstackVertex(null,"",-1,1,3);
+        GraphVertex unstack2 = new UnstackVertex(null,"",-1,2,3);
 
         INDArray in = Nd4j.rand(15,2);
-        unstack.setInputs(in);
-        INDArray out = unstack.doForward(false);
-        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()), out);
+        unstack0.setInputs(in);
+        unstack1.setInputs(in);
+        unstack2.setInputs(in);
+        INDArray out0 = unstack0.doForward(false);
+        INDArray out1 = unstack1.doForward(false);
+        INDArray out2 = unstack2.doForward(false);
+        assertEquals(in.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()), out0);
+        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()), out1);
+        assertEquals(in.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()), out2);
 
-        unstack.setErrors(out);
-        INDArray backward = unstack.doBackward(false).getSecond()[0];
-        assertEquals(Nd4j.zeros(5,2), backward.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5,2), backward.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
-        assertEquals(out, backward.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+        unstack0.setErrors(out0);
+        unstack1.setErrors(out1);
+        unstack2.setErrors(out2);
+        INDArray backward0 = unstack0.doBackward(false).getSecond()[0];
+        INDArray backward1 = unstack1.doBackward(false).getSecond()[0];
+        INDArray backward2 = unstack2.doBackward(false).getSecond()[0];
+        assertEquals(out0, backward0.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,2), backward0.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,2), backward0.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
+
+        assertEquals(Nd4j.zeros(5,2), backward1.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        assertEquals(out1, backward1.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,2), backward1.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
+
+        assertEquals(Nd4j.zeros(5,2), backward2.get(NDArrayIndex.interval(0,5), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,2), backward2.get(NDArrayIndex.interval(5,10), NDArrayIndex.all()));
+        assertEquals(out2, backward2.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
+
+
+
 
         //Test same for CNNs:
         in = Nd4j.rand(new int[]{15, 10, 3, 3});
-        unstack.setInputs(in);
-        out = unstack.doForward(false);
-        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out);
+        unstack0.setInputs(in);
+        unstack1.setInputs(in);
+        unstack2.setInputs(in);
+        out0 = unstack0.doForward(false);
+        out1 = unstack1.doForward(false);
+        out2 = unstack2.doForward(false);
 
-        unstack.setErrors(out);
-        backward = unstack.doBackward(false).getSecond()[0];
-        assertEquals(Nd4j.zeros(5,10,3,3),backward.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(Nd4j.zeros(5,10,3,3), backward.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(out, backward.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(in.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out0);
+        assertEquals(in.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out1);
+        assertEquals(in.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), out2);
+
+        unstack0.setErrors(out0);
+        unstack1.setErrors(out1);
+        unstack2.setErrors(out2);
+        backward0 = unstack0.doBackward(false).getSecond()[0];
+        backward1 = unstack1.doBackward(false).getSecond()[0];
+        backward2 = unstack2.doBackward(false).getSecond()[0];
+        assertEquals(out0, backward0.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,10,3,3), backward0.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,10,3,3), backward0.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+
+        assertEquals(Nd4j.zeros(5,10,3,3), backward1.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(out1, backward1.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,10,3,3), backward1.get(NDArrayIndex.interval(10,15), NDArrayIndex.all()));
+
+        assertEquals(Nd4j.zeros(5,10,3,3), backward2.get(NDArrayIndex.interval(0,5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(Nd4j.zeros(5,10,3,3), backward2.get(NDArrayIndex.interval(5,10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(out2, backward2.get(NDArrayIndex.interval(10,15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
     }
 
     @Test
@@ -300,28 +349,35 @@ public class TestGraphNodes {
         l2.setInputs(in1, in2);
         INDArray out = l2.doForward(false);
 
-        INDArray forwardL2 = Nd4j.create(5,1);
-
-        int[] dimensions = new int[in1.rank()-1];
-        for( int i=1; i<in2.rank(); i++ ){
-            dimensions[i-1] = i;
+        INDArray expOut = Nd4j.create(5,1);
+        for( int i=0; i<5; i++ ){
+            double d2 = 0.0;
+            for( int j=0; j<in1.size(1); j++ ){
+                double temp = (in1.getDouble(i,j) - in2.getDouble(i,j));
+                d2 += temp * temp;
+            }
+            d2 = Math.sqrt(d2);
+            expOut.putScalar(i,0,d2);
         }
 
-        for(int i=0; i<in1.size(0); i++) {
-            forwardL2.put(i, Nd4j.getExecutioner().exec(new EuclideanDistance(in1.getRow(i),in2.getRow(i)), dimensions));
-        }
+        assertEquals(expOut, out);
 
-        assertEquals(out, forwardL2);
 
-        // should be a column vector of shape [numExamples, 1]
-        INDArray epsilon = Nd4j.rand(out.shape());
+
+        INDArray epsilon = Nd4j.rand(5,1);      //dL/dlambda
+        INDArray diff = in1.sub(in2);
+        //Out == sqrt(s) = s^1/2. Therefore: s^(-1/2) = 1/out
+        INDArray sNegHalf = out.rdiv(1.0);
+
+        INDArray dLda = diff.mulColumnVector(epsilon.mul(sNegHalf));
+        INDArray dLdb = diff.mulColumnVector(epsilon.mul(sNegHalf)).neg();
+
+
 
         l2.setErrors(epsilon);
-        INDArray[] backward = l2.doBackward(false).getSecond();
-//        System.out.println(backward[0]);
-//        System.out.println(backward[1]);
-        assertArrayEquals(backward[0].shape(), in1.shape());
-        assertArrayEquals(backward[1].shape(), in2.shape());
+        Pair<Gradient,INDArray[]> p = l2.doBackward(false);
+        assertEquals(dLda, p.getSecond()[0]);
+        assertEquals(dLdb, p.getSecond()[1]);
     }
 
     @Test
