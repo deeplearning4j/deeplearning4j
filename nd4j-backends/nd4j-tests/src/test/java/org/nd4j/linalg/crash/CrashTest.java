@@ -167,11 +167,7 @@ public class CrashTest extends BaseNd4jTest {
 
         // logisoftmax, softmax & softmax derivative
         Nd4j.getExecutioner().exec(new SoftMax(x));
-
-
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
-
-
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 
         // BooleanIndexing
@@ -179,6 +175,13 @@ public class CrashTest extends BaseNd4jTest {
 
         // assing on view
         BooleanIndexing.assignIf(x, x1, Conditions.greaterThan(-1000000000f));
+
+        // std var along all dimensions
+        float std = x.stdNumber().floatValue();
+
+        // std var along row & col
+        INDArray xStd_0 = x.std(0);
+        INDArray xStd_1 = x.std(1);
 
         // blas call
         float dot = (float) Nd4j.getBlasWrapper().dot(x, x1);
