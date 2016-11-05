@@ -105,13 +105,13 @@ public class UnstackVertex extends BaseGraphVertex {
 
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilon);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen

@@ -47,7 +47,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     protected VertexIndices[] outputVertices;
 
     protected INDArray[] inputs;
-    protected INDArray[] epsilons;
+    protected INDArray epsilon;
 
     protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices){
         this.graph = graph;
@@ -57,7 +57,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
         this.outputVertices = outputVertices;
 
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
-        this.epsilons = new INDArray[(outputVertices != null ? outputVertices.length : 0)];
     }
 
     @Override
@@ -107,7 +106,6 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public void setOutputVertices(VertexIndices[] outputVertices){
         this.outputVertices = outputVertices;
-        this.epsilons = new INDArray[(outputVertices != null ? outputVertices.length : 0)];
     }
 
     @Override
@@ -125,20 +123,18 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public void setError(int errorNumber, INDArray error){
-        if(errorNumber >= getNumOutputConnections() ){
-            throw new IllegalArgumentException("Invalid error number: " + errorNumber
-                    + ", numOutputEdges = " + (outputVertices != null ? outputVertices.length : 0) );
-        }
-        epsilons[errorNumber] = error;
+        epsilon = error;
+    }
+
+    @Override
+    public void setEpsilon(INDArray epsilon){
+        this.epsilon = epsilon;
     }
 
     @Override
     public void clear(){
         for (int i = 0; i < inputs.length; i++) {
             inputs[i] = null;
-        }
-        for (int i = 0; i < epsilons.length; i++) {
-            epsilons[i] = null;
         }
     }
 
@@ -159,22 +155,22 @@ public abstract class BaseGraphVertex implements GraphVertex {
                 return false;
             }
         }
-        for (INDArray epsilon : epsilons) {
-            if (epsilon == null) {
-                return false;
-            }
-        }
-        return true;
+        return epsilon != null;
     }
 
     @Override
     public INDArray[] getErrors(){
-        return epsilons;
+        return new INDArray[]{epsilon};
     }
 
     @Override
     public void setErrors(INDArray... errors){
-        this.epsilons = errors;
+        this.epsilon = errors[0];
+    }
+
+    @Override
+    public INDArray getEpsilon(){
+        return epsilon;
     }
 
     @Override

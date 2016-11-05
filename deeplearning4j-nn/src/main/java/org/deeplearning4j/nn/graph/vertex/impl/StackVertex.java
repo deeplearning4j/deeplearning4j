@@ -107,18 +107,18 @@ public class StackVertex extends BaseGraphVertex {
         int nStack = inputs.length;
         INDArray[] out = new INDArray[nStack];
 
-        int step = epsilons[0].size(0)/nStack;
+        int step = epsilon.size(0)/nStack;
 
         for(int i=0; i<nStack; i++ ) {
-            switch (epsilons[0].rank()) {
+            switch (epsilon.rank()) {
                 case 2:
-                    out[i] = epsilons[0].get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all());
                     break;
                 case 3:
-                    out[i] = epsilons[0].get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all());
                     break;
                 case 4:
-                    out[i] = epsilons[0].get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                    out[i] = epsilon.get(NDArrayIndex.interval(i*step, (i+1)*step), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
                     break;
                 default:
                     throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
