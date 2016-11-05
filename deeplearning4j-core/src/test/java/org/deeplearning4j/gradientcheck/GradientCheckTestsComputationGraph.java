@@ -448,11 +448,8 @@ public class GradientCheckTestsComputationGraph {
             .addVertex("unstack2", new UnstackVertex(2,3), "l1")
             .addVertex("l2-1", new L2Vertex(), "unstack1", "unstack0") // x - x-
             .addVertex("l2-2", new L2Vertex(), "unstack1", "unstack2") // x - x+
-//            .addLayer("lossLayer", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-//                .activation("softmax").build(), "l2-1", "l2-2")
-            .addLayer("lossLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                    .nIn(2).nOut(2)
-                    .activation("softmax").build(), "l2-1", "l2-2")
+            .addLayer("lossLayer", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                .activation("softmax").build(), "l2-1", "l2-2")
             .setOutputs("lossLayer")
             .pretrain(false).backprop(true)
             .build();
@@ -547,6 +544,186 @@ public class GradientCheckTestsComputationGraph {
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2}, new INDArray[]{labels});
 
+            assertTrue(testName, gradOK);
+        }
+    }
+
+
+    @Test
+    public void testBasicStackUnstack(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .activation("tanh")
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("in1","in2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
+                .addVertex("stack", new StackVertex(), "d0", "d1")
+                .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "stack" )
+                .addVertex("u1", new UnstackVertex(0,2), "d2")
+                .addVertex("u2", new UnstackVertex(1,2), "d2")
+                .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2)
+                        .activation("identity").build(), "u1")
+                .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2)
+                        .activation("identity").build(), "u2")
+                .setOutputs("out1", "out2")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        int[] mbSizes = new int[]{1, 3, 10};
+        for( int minibatch : mbSizes) {
+
+            INDArray in1 = Nd4j.rand(minibatch, 2);
+            INDArray in2 = Nd4j.rand(minibatch, 2);
+
+            INDArray labels1 = Nd4j.rand(minibatch, 2);
+            INDArray labels2 = Nd4j.rand(minibatch, 2);
+
+            String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
+
+            if (PRINT_RESULTS) {
+                System.out.println(testName);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2}, new INDArray[]{labels1, labels2});
+
+            assertTrue(testName, gradOK);
+        }
+    }
+
+    @Test
+    public void testBasicStackUnstackDebug(){
+        Nd4j.getRandom().setSeed(12345);
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .activation("tanh")
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("in1","in2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
+                .addVertex("stack", new StackVertex(), "d0", "d1")
+                .addVertex("u0", new UnstackVertex(0,2), "stack")
+                .addVertex("u1", new UnstackVertex(1,2), "stack")
+                .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2)
+                        .activation("identity").build(), "u0")
+                .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2)
+                        .activation("identity").build(), "u1")
+                .setOutputs("out1", "out2")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        int[] mbSizes = new int[]{1, 3, 10};
+        for( int minibatch : mbSizes) {
+
+            INDArray in1 = Nd4j.rand(minibatch, 2);
+            INDArray in2 = Nd4j.rand(minibatch, 2);
+
+//            INDArray labels = Nd4j.rand(2*minibatch, 2);
+            INDArray labels1 = Nd4j.rand(minibatch, 2);
+            INDArray labels2 = Nd4j.rand(minibatch, 2);
+
+            String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
+
+            if (PRINT_RESULTS) {
+                System.out.println(testName);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2}, new INDArray[]{labels1, labels2});
+
+            assertTrue(testName, gradOK);
+        }
+    }
+
+
+
+    @Test
+    public void testBasicTwoOutputs(){
+        Nd4j.getRandom().setSeed(12345);
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .activation("tanh")
+                .updater(Updater.NONE).learningRate(1.0)
+                .graphBuilder()
+                .addInputs("in1","in2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
+                .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2).activation("identity").build(), "d0")
+                .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                        .nIn(2).nOut(2).activation("identity").build(), "d1")
+                .setOutputs("out1", "out2")
+                .pretrain(false).backprop(true)
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        System.out.println("Num layers: " + graph.getNumLayers());
+        System.out.println("Num params: " + graph.numParams());
+
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        int[] mbSizes = new int[]{1, 3, 10};
+        for( int minibatch : mbSizes) {
+
+            INDArray in1 = Nd4j.rand(minibatch, 2);
+            INDArray in2 = Nd4j.rand(minibatch, 2);
+            INDArray labels1 = Nd4j.rand(minibatch, 2);
+            INDArray labels2 = Nd4j.rand(minibatch, 2);
+
+            String testName = "testBasicStackUnstack() - minibatch = " + minibatch;
+
+            if (PRINT_RESULTS) {
+                System.out.println(testName);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2}, new INDArray[]{labels1, labels2});
             assertTrue(testName, gradOK);
         }
     }
