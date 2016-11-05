@@ -425,8 +425,146 @@ public class GradientCheckTestsComputationGraph {
 
         String msg = "testLSTMWithDuplicateToTimeSeries()";
         assertTrue(msg, gradOK);
-
-
     }
 
+
+    @Test
+    public void testMultipleInputsLayer(){
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .activation("tanh")
+                .graphBuilder()
+                .addInputs("i0","i1","i2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
+                .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
+                .addLayer("d3", new DenseLayer.Builder().nIn(6).nOut(2).build(), "d0", "d1", "d2")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                    .nIn(2).nOut(2).build(), "d3")
+                .setOutputs("out")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int[] minibatchSizes = {1,3};
+        for( int mb : minibatchSizes) {
+            INDArray[] inputs = new INDArray[3];
+            for (int i = 0; i < 3; i++) {
+                inputs[i] = Nd4j.rand(mb, 2);
+            }
+            INDArray out = Nd4j.rand(mb, 2);
+
+
+            String msg = "testMultipleInputsLayer() - minibatchSize = " + mb;
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, inputs, new INDArray[]{out});
+
+            assertTrue(msg, gradOK);
+        }
+    }
+
+    @Test
+    public void testMultipleOutputsLayer(){
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .activation("tanh")
+                .graphBuilder()
+                .addInputs("i0")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
+                .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
+                .addLayer("d3", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                        .nIn(6).nOut(2).build(), "d1", "d2", "d3")
+                .setOutputs("out")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int[] minibatchSizes = {1,3};
+        for( int mb : minibatchSizes) {
+            INDArray input = Nd4j.rand(mb, 2);
+            INDArray out = Nd4j.rand(mb, 2);
+
+
+            String msg = "testMultipleOutputsLayer() - minibatchSize = " + mb;
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{out});
+
+            assertTrue(msg, gradOK);
+        }
+    }
+
+    @Test
+    public void testMultipleOutputsMergeVertex(){
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .activation("tanh")
+                .graphBuilder()
+                .addInputs("i0", "i1", "i2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
+                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
+                .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
+                .addVertex("m", new MergeVertex(), "d0", "d1", "d2")
+                .addLayer("D0", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
+                .addLayer("D1", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
+                .addLayer("D2", new DenseLayer.Builder().nIn(6).nOut(2).build(), "m")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                        .nIn(6).nOut(2).build(), "D0", "D1", "D2")
+                .setOutputs("out")
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int[] minibatchSizes = {1,3};
+        for( int mb : minibatchSizes) {
+            INDArray[] input = new INDArray[3];
+            for( int i=0; i<3; i++ ){
+                input[i] = Nd4j.rand(mb, 2);
+            }
+            INDArray out = Nd4j.rand(mb, 2);
+
+
+            String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, new INDArray[]{out});
+
+            assertTrue(msg, gradOK);
+        }
+    }
 }
