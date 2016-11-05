@@ -30,11 +30,11 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            return ddot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
+            return ddot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(Y));
         else if (X.data().dataType() == DataBuffer.Type.FLOAT)
-            return sdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
+            return sdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(Y));
         else
-            return hdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
+            return hdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(Y));
     }
 
     @Override

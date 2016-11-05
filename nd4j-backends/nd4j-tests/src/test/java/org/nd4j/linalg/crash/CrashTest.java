@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -38,6 +39,7 @@ public class CrashTest extends BaseNd4jTest {
 
     @Test
     public void testArrays1() {
+        System.out.println("arrays 1");
         INDArray x = Nd4j.create(1024, 64);
         INDArray y = Nd4j.create(64, 1024);
 
@@ -47,7 +49,22 @@ public class CrashTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testArrays2() {
+        System.out.println("arrays 2");
+        INDArray x = Nd4j.create(1024, 64, 'f');
+        INDArray y = Nd4j.create(64, 1024, 'f');
+
+        for(int i = 0; i < ITERATIONS; i++) {
+            op(x, y, i);
+        }
+    }
+
+    /**
+     * tensorAlongDimension() produces shapeInfo without EWS defined
+     */
+    @Test
     public void testNonEWSViews1() {
+        System.out.println("non-EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
@@ -58,12 +75,40 @@ public class CrashTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testNonEWSViews2() {
+        System.out.println("non-EWS 2");
+        INDArray x = Nd4j.create(new int[] {64, 1024, 64}, 'f');
+        INDArray y = Nd4j.create(new int[] {64, 64, 1024}, 'f');
+
+        for(int i = 0; i < ITERATIONS; i++) {
+            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
+        }
+    }
+
+    /**
+     * slice() produces shapeInfo with EWS being 1 in our case
+     */
+    @Test
     public void testEWSViews1() {
+        System.out.println("EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for(int i = 0; i < ITERATIONS; i++) {
             int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            op(x.slice(slice), y.slice(slice), i);
+        }
+    }
+
+    @Test
+    public void testEWSViews2() {
+        System.out.println("EWS 2");
+        INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');
+        INDArray y = Nd4j.create(new int[] {96, 64, 1024}, 'f');
+
+        for(int i = 0; i < ITERATIONS; i++) {
+            int slice = 0; //RandomUtils.nextInt(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
     }
@@ -91,17 +136,20 @@ public class CrashTest extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new Sqrt(x, x));
 
         //  dup
-        INDArray x1 = x.dup();
-        INDArray x2 = x.dup();
-        INDArray x3 = x.dup();
-        INDArray x4 = x.dup();
+        INDArray x1 = x.dup('f');
+        INDArray x2 = x.dup('f');
+        INDArray x3 = x.dup('f');
+        INDArray x4 = x.dup('f');
+
 
         // vstack && hstack
         INDArray vstack = Nd4j.vstack(x1, x2, x3, x4);
+
         INDArray hstack = Nd4j.hstack(x1, x2, x3, x4);
 
         // reduce3 call
         Nd4j.getExecutioner().exec(new ManhattanDistance(x, x2));
+
 
         // flatten call
         INDArray flat = Nd4j.toFlattened(x, x1, x2, x3, x4);
@@ -111,13 +159,19 @@ public class CrashTest extends BaseNd4jTest {
         INDArray max_0 = x.max(0);
         INDArray max_1 = x.max(1);
 
+
         // index reduction along dimension: row & column
         INDArray imax_0 = Nd4j.argMax(x, 0);
         INDArray imax_1 = Nd4j.argMax(x, 1);
 
+
         // logisoftmax, softmax & softmax derivative
         Nd4j.getExecutioner().exec(new SoftMax(x));
+
+
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
+
+
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 
         // BooleanIndexing
