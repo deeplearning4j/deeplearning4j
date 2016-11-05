@@ -94,8 +94,12 @@ public interface GraphVertex extends Serializable {
      */
     void setInput(int inputNumber, INDArray input);
 
-    /** Set the errors (epsilons) for this GraphVertex */
+    /** @deprecated as of 0.6.1 - use {@link #setEpsilon(INDArray)} */
+    @Deprecated
     void setError(int errorNumber, INDArray error);
+
+    /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
+    void setEpsilon(INDArray epsilon);
 
     /** Clear the internal state (if any) of the GraphVertex. For example, any stored inputs/errors */
     void clear();
@@ -121,17 +125,20 @@ public interface GraphVertex extends Serializable {
     /** Get the array of inputs previously set for this GraphVertex */
     INDArray[] getInputs();
 
-    /** Get the array of errors previously set for this GraphVertex */
+    /**@deprecated as of 0.6.1 - use {@link #getEpsilon()} */
+    @Deprecated
     INDArray[] getErrors();
+
+    /** Get the epsilon/error (i.e., dL/dOutput) array previously set for this GraphVertex */
+    INDArray getEpsilon();
 
     /** Set all inputs for this GraphVertex
      * @see #setInput(int, INDArray)
      */
     void setInputs(INDArray... inputs);
 
-    /** Set all errors/epsilons for this GraphVertex
-     * @see #setError(int, INDArray)
-     */
+    /**@deprecated as of 0.6.1 - use {@link #setEpsilon(INDArray)} */
+    @Deprecated
     void setErrors(INDArray... errors);
 
     /**

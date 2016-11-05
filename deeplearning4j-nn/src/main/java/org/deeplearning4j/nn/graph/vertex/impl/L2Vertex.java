@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.util.Arrays;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -93,8 +88,7 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray b = inputs[1];
         INDArray out = doForward(tbptt);
 
-        // TODO do we merge all epsilons?
-        INDArray dLdlambda = epsilons[0];      //dL/dlambda aka 'epsilon' - from layer above
+        INDArray dLdlambda = epsilon;      //dL/dlambda aka 'epsilon' - from layer above
 
         INDArray sNegHalf = out.rdiv(1.0);      //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
