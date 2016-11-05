@@ -1587,7 +1587,7 @@ namespace simdOps {
         op_def
 #endif
         static T startingValue(T *input) {
-			return MIN_FLOAT;
+			return -MAX_FLOAT;
 		}
 #ifdef __INTEL_COMPILER
         inline
