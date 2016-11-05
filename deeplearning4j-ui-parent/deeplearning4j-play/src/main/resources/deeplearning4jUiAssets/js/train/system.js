@@ -31,14 +31,18 @@ function renderTabs() {
 }
 
 /* ---------- System Memory Utilization Chart ---------- */
-var systemMaxLastIter = 0;
+// var systemMaxLastIter = 0;
+var jvmMaxLastIter = 0;
+var offHeapMaxLastIter = 0;
 function renderSystemMemoryChart(data) {
 
     var jvmCurrentFrac = data["memory"][machineID]["values"][0];
     var offHeapFrac = data["memory"][machineID]["values"][1];
     var systemChart = $("#systemMemoryChartPlot");
 
-    systemMaxLastIter = data["memory"][machineID]["maxBytes"][0];
+    // systemMaxLastIter = data["memory"][machineID]["maxBytes"][0];
+    jvmMaxLastIter = data["memory"][machineID]["maxBytes"][0];
+    offHeapMaxLastIter = data["memory"][machineID]["maxBytes"][1];
 
     if (systemChart.length) {
 
@@ -86,11 +90,13 @@ function renderSystemMemoryChart(data) {
 
         var previousPoint = null;
         systemChart.bind("plothover", function (event, pos, item) {
-            $("#x").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#x").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             var tempY = Math.min(100.0,pos.y);
             tempY = Math.max(tempY, 0.0);
-            var asBytes = formatBytes(tempY * systemMaxLastIter / 100.0, 2);
-            $("#y").text(tempY.toFixed(2) + " (" + asBytes + ")");
+            var asBytesJvm = formatBytes(tempY * jvmMaxLastIter / 100.0, 2);
+            var asBytesOffHeap = formatBytes(tempY * offHeapMaxLastIter / 100.0, 2);
+            $("#y").text(tempY.toFixed(2) + "% (" + asBytesJvm + ", " + asBytesOffHeap + ")");
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
@@ -99,10 +105,17 @@ function renderSystemMemoryChart(data) {
                     $("#tooltip").remove();
                     var x = item.datapoint[0].toFixed(0);
                     var y = Math.min(100.0, item.datapoint[1]).toFixed(2);
-                    var bytes = (item.datapoint[1] * systemMaxLastIter / 100.0).toFixed(0);
+
+                    var label = item.series.label;
+                    var bytes;
+                    if(label.toLowerCase().startsWith("jvm")){
+                        bytes = (item.datapoint[1] * jvmMaxLastIter / 100.0).toFixed(0);
+                    } else {
+                        bytes = (item.datapoint[1] * offHeapMaxLastIter / 100.0).toFixed(0);
+                    }
 
                     showTooltip(item.pageX - systemChart.offset().left, item.pageY - systemChart.offset().top,
-                        "(" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
+                        item.series.label + " (" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
                 }
             }
             else {
