@@ -91,7 +91,7 @@ public class JcublasLapack extends BaseLapack {
 
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		BaseCudaDataBuffer work = new CudaFloatDataBuffer(worksize.get(0)) ;
-		BaseCudaDataBuffer ipiv = new CudaIntDataBuffer(IPIV.length()) ;
+		BaseCudaDataBuffer ipiv = new CudaIntDataBuffer( Math.min(M, N) ) ;
 		BaseCudaDataBuffer info = new CudaIntDataBuffer(1) ;
 
 		// DO the actual LU decomp
@@ -108,15 +108,11 @@ public class JcublasLapack extends BaseLapack {
 		// Copy the results back to the input vectors
 		INFO.putScalar(0,info.asInt()[0] ) ;
 		IPIV.setData( new IntBuffer( ipiv.asInt() ) );
-//		int perm [] = ipiv.asInt() ;
-//		for( int i=0 ; i<perm.length ; ++i) {
-//			IPIV.putScalar(i,perm[i] ) ;
-//		}	
 
 		// After we get an inplace result we should 
 		// transpose the array - because of differenes in 
 		// column- and row-major ordering between ND4J & CUDA
-        	A.setStride( A.stride()[1], A.stride()[0] );
+        	//A.setStride( A.stride()[1], A.stride()[0] );
 	}
 	// copy the result from GPU -> CPU memory
         allocator.registerAction(ctx, A );
