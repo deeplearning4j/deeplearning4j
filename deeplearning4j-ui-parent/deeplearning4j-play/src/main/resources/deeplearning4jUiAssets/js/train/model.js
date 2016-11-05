@@ -80,7 +80,9 @@ function renderMeanMagChart(data) {
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
                 if(isRatio){
-                    pairs.push([iter[j], Math.log10(r[j])]);
+                    var l10 = Math.log10(r[j]);
+                    if(l10 < -10 || !isFinite(l10)) l10 = -10;
+                    pairs.push([iter[j], l10]);
                 } else {
                     pairs.push([iter[j], r[j]]);
                 }
@@ -104,6 +106,7 @@ function renderMeanMagChart(data) {
 
             overallMax = Math.ceil(overallMax);
             overallMin = Math.floor(overallMin);
+            if(overallMin < -10) overallMin = -10;
         }
 
         //Trying to hide the "log10" part...
@@ -152,7 +155,8 @@ function renderMeanMagChart(data) {
 
         var previousPoint = null;
         $("#meanmag").bind("plothover", function (event, pos, item) {
-            $("#xMeanMagnitudes").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#xMeanMagnitudes").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yMeanMagnitudes").text(pos.y.toFixed(2));
 
             //Tooltip
@@ -247,7 +251,8 @@ function renderActivationsChart(data) {
 
         var previousPoint = null;
         $("#activations").bind("plothover", function (event, pos, item) {
-            $("#xActivations").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#xActivations").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yActivations").text(pos.y.toFixed(2));
 
 
@@ -350,7 +355,8 @@ function renderLearningRateChart(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
-            $("#xLearningRate").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#xLearningRate").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLearningRate").text(pos.y.toFixed(5));
 
 

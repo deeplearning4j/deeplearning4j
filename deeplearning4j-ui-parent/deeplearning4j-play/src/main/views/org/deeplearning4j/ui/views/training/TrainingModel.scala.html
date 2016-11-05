@@ -55,14 +55,21 @@
                             <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.system")</span></a></li>
                             <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.userguide")</span></a></li>
                             <li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet"> Language</span></a>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet">
+                                    Language</span></a>
                                 <ul>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 中文</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 한글</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> український</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        English</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        日本語</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        中文</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        한글</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        русский</span></a></li>
+                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
+                                        український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -73,7 +80,8 @@
                 <noscript>
                     <div class="alert alert-block span10">
                         <h4 class="alert-heading">Warning!</h4>
-                        <p>You need to have <a href="http://en.wikipedia.org/wiki/JavaScript" target="_blank">JavaScript</a>
+                        <p>You need to have <a href="http://en.wikipedia.org/wiki/JavaScript" target="_blank">
+                            JavaScript</a>
                             enabled to use this site.</p>
                     </div>
                 </noscript>
@@ -121,8 +129,11 @@
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")</b></span> <span id="yMeanMagnitudes">0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xMeanMagnitudes">0</span></p>
+                                <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>
+                                    10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")</b></span> <span id="yMeanMagnitudes">
+                                    0</span>
+                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                        :</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
 
@@ -132,8 +143,10 @@
                             </div>
                             <div class="box-content">
                                 <div id="activations" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.model.activationsChart.titleShort"):</b> <span id="yActivations">0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xActivations">0</span></p>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.model.activationsChart.titleShort")
+                                    :</b> <span id="yActivations">0</span>
+                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                        :</b> <span id="xActivations">0</span></p>
                             </div>
                         </div>
 
@@ -143,16 +156,18 @@
                             </div>
                             <div class="box-content">
                                 <div id="learningrate" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.model.lrChart.titleShort"):</b> <span id="yLearningRate">0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xLearningRate">0</span></p>
+                                <p id="hoverdata"><b>@i18n.getMessage("train.model.lrChart.titleShort")
+                                    :</b> <span id="yLearningRate">0</span>
+                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                        :</b> <span id="xLearningRate">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.model.paramHistChart.title")</b></h2>
-                                <div id="paramhistSelected" style="float:left"></div>
-                                <div id="paramHistButtonsDiv" style="float:right"></div>
+                                <div id="paramhistSelected" style="float: left"></div>
+                                <div id="paramHistButtonsDiv" style="float: right"></div>
                             </div>
                             <div class="box-content">
                                 <div id="parametershistogram" class="center" style="height: 300px;"></div>
@@ -162,8 +177,8 @@
                         <div class="box">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.model.updateHistChart.title")</b></h2>
-                                <div id="updatehistSelected" style="float:left"></div>
-                                <div id="updateHistButtonsDiv" style="float:right"></div>
+                                <div id="updatehistSelected" style="float: left"></div>
+                                <div id="updateHistButtonsDiv" style="float: right"></div>
                             </div>
                             <div class="box-content">
                                 <div id="updateshistogram" class="center" style="height: 300px;"></div>
@@ -171,9 +186,9 @@
                         </div>
 
                     </div>
-                    <!-- End Layer Details-->
+                        <!-- End Layer Details-->
 
-                    <!-- Begin Zero State -->
+                        <!-- Begin Zero State -->
                     <div class="row-fluid span6" id="zeroState">
                         <div class="box">
                             <div class="box-header">
@@ -192,17 +207,18 @@
                                         <h2>Actions</h2>
                                         <p>On the <b>left</b>, you will find an interactive layer visualization.</p>
                                         <p>
-                                        <ul>
-                                            <li><b>Clicking</b> - Click on a layer to load network performance metrics.</li>
-                                            <li><b>Scrolling</b> - Drag the GUI with your mouse or touchpad to move the model around. </li>
-                                        </ul>
+                                    <ul>
+                                        <li><b>Clicking</b> - Click on a layer to load network performance metrics.</li>
+                                        <li><b>Scrolling</b>
+                                            - Drag the GUI with your mouse or touchpad to move the model around. </li>
+                                    </ul>
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- End Zero State-->
+                        <!-- End Zero State-->
                 </div>
                     <!-- End Content -->
             </div> <!-- End Container -->
@@ -248,17 +264,17 @@
 
         <!-- Execute once on page load -->
         <script>
-				$(document).ready(function () {
+                $(document).ready(function () {
                     renderModelGraph();
                     renderModelPage();
                 });
-		</script>
+        </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
-				setInterval(function () {
+                setInterval(function () {
                     renderModelPage();
                 }, 2000);
-		</script>
+        </script>
     </body>
 </html>
