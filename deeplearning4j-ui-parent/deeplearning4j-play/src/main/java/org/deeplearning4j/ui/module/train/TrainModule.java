@@ -1,5 +1,7 @@
 package org.deeplearning4j.ui.module.train;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -221,48 +223,48 @@ public class TrainModule implements UIModule {
 
         //Collect update ratios for weights
         //Collect standard deviations: activations, gradients, updates
-        Map<String,List<Double>> updateRatios = new HashMap<>();    //Mean magnitude (updates) / mean magnitude (parameters)
+        Map<String, List<Double>> updateRatios = new HashMap<>();    //Mean magnitude (updates) / mean magnitude (parameters)
         result.put("updateRatios", updateRatios);
 
-        Map<String,List<Double>> stdevActivations = new HashMap<>();
-        Map<String,List<Double>> stdevGradients = new HashMap<>();
-        Map<String,List<Double>> stdevUpdates = new HashMap<>();
-        result.put("stdevActivations",stdevActivations);
+        Map<String, List<Double>> stdevActivations = new HashMap<>();
+        Map<String, List<Double>> stdevGradients = new HashMap<>();
+        Map<String, List<Double>> stdevUpdates = new HashMap<>();
+        result.put("stdevActivations", stdevActivations);
         result.put("stdevGradients", stdevGradients);
         result.put("stdevUpdates", stdevUpdates);
 
-        if(!noData){
+        if (!noData) {
             Persistable u = updates.get(0);
-            if (u instanceof StatsReport){
-                StatsReport sp = (StatsReport)u;
-                Map<String,Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
-                if(map != null){
-                    for(String s : map.keySet()){
-                        if(!s.toLowerCase().endsWith("w")) continue;   //TODO: more robust "weights only" approach...
-                        updateRatios.put(s,new ArrayList<>());
+            if (u instanceof StatsReport) {
+                StatsReport sp = (StatsReport) u;
+                Map<String, Double> map = sp.getMeanMagnitudes(StatsType.Parameters);
+                if (map != null) {
+                    for (String s : map.keySet()) {
+                        if (!s.toLowerCase().endsWith("w")) continue;   //TODO: more robust "weights only" approach...
+                        updateRatios.put(s, new ArrayList<>());
                     }
                 }
 
-                Map<String,Double> stdGrad = sp.getStdev(StatsType.Gradients);
-                if(stdGrad != null){
-                    for(String s : stdGrad.keySet()){
-                        if(!s.toLowerCase().endsWith("w")) continue; //TODO: more robust "weights only" approach...
+                Map<String, Double> stdGrad = sp.getStdev(StatsType.Gradients);
+                if (stdGrad != null) {
+                    for (String s : stdGrad.keySet()) {
+                        if (!s.toLowerCase().endsWith("w")) continue; //TODO: more robust "weights only" approach...
                         stdevGradients.put(s, new ArrayList<>());
                     }
                 }
 
-                Map<String,Double> stdUpdate = sp.getStdev(StatsType.Updates);
-                if(stdUpdate != null){
-                    for(String s : stdUpdate.keySet()){
-                        if(!s.toLowerCase().endsWith("w")) continue;    //TODO: more robust "weights only" approach...
+                Map<String, Double> stdUpdate = sp.getStdev(StatsType.Updates);
+                if (stdUpdate != null) {
+                    for (String s : stdUpdate.keySet()) {
+                        if (!s.toLowerCase().endsWith("w")) continue;    //TODO: more robust "weights only" approach...
                         stdevUpdates.put(s, new ArrayList<>());
                     }
                 }
 
 
-                Map<String,Double> stdAct = sp.getStdev(StatsType.Activations);
-                if(stdAct != null){
-                    for(String s : stdAct.keySet()){
+                Map<String, Double> stdAct = sp.getStdev(StatsType.Activations);
+                if (stdAct != null) {
+                    for (String s : stdAct.keySet()) {
                         stdevActivations.put(s, new ArrayList<>());
                     }
                 }
@@ -281,10 +283,10 @@ public class TrainModule implements UIModule {
                 scores.add(lastScore);
 
                 //Update ratios: mean magnitudes(updates) / mean magnitudes (parameters)
-                Map<String,Double> updateMM = last.getMeanMagnitudes(StatsType.Updates);
-                Map<String,Double> paramMM = last.getMeanMagnitudes(StatsType.Parameters);
-                if(updateMM != null && paramMM != null && updateMM.size() > 0 && paramMM.size() > 0){
-                    for(String s : updateRatios.keySet()){
+                Map<String, Double> updateMM = last.getMeanMagnitudes(StatsType.Updates);
+                Map<String, Double> paramMM = last.getMeanMagnitudes(StatsType.Parameters);
+                if (updateMM != null && paramMM != null && updateMM.size() > 0 && paramMM.size() > 0) {
+                    for (String s : updateRatios.keySet()) {
                         List<Double> ratioHistory = updateRatios.get(s);
                         double currUpdate = updateMM.get(s);
                         double currParam = paramMM.get(s);
@@ -294,24 +296,24 @@ public class TrainModule implements UIModule {
                 }
 
                 //Standard deviations: gradients, updates, activations
-                Map<String,Double> stdGrad = last.getStdev(StatsType.Gradients);
-                Map<String,Double> stdUpd = last.getStdev(StatsType.Updates);
-                Map<String,Double> stdAct = last.getStdev(StatsType.Activations);
+                Map<String, Double> stdGrad = last.getStdev(StatsType.Gradients);
+                Map<String, Double> stdUpd = last.getStdev(StatsType.Updates);
+                Map<String, Double> stdAct = last.getStdev(StatsType.Activations);
 
-                if(stdGrad != null){
-                    for(String s : stdevGradients.keySet()){
+                if (stdGrad != null) {
+                    for (String s : stdevGradients.keySet()) {
                         double d = stdGrad.get(s);
                         stdevGradients.get(s).add(d);
                     }
                 }
-                if(stdUpd != null){
-                    for(String s : stdevUpdates.keySet()){
+                if (stdUpd != null) {
+                    for (String s : stdevUpdates.keySet()) {
                         double d = stdUpd.get(s);
                         stdevUpdates.get(s).add(d);
                     }
                 }
-                if(stdAct != null){
-                    for(String s : stdevActivations.keySet()){
+                if (stdAct != null) {
+                    for (String s : stdevActivations.keySet()) {
                         double d = stdAct.get(s);
                         stdevActivations.get(s).add(d);
                     }
@@ -387,30 +389,30 @@ public class TrainModule implements UIModule {
         }
 
         TrainModuleUtils.GraphInfo gi = getGraphInfo();
-        if(gi == null) return ok();
+        if (gi == null) return ok();
         return ok(Json.toJson(gi));
     }
 
-    private TrainModuleUtils.GraphInfo getGraphInfo(){
-        Pair<MultiLayerConfiguration,ComputationGraphConfiguration> conf = getConfig();
-        if(conf == null){
+    private TrainModuleUtils.GraphInfo getGraphInfo() {
+        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        if (conf == null) {
             return null;
         }
 
-        if(conf.getFirst() != null){
+        if (conf.getFirst() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getFirst());
-        } else if(conf.getSecond() != null){
+        } else if (conf.getSecond() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getSecond());
         } else {
             return null;
         }
     }
 
-    private Pair<MultiLayerConfiguration,ComputationGraphConfiguration> getConfig(){
+    private Pair<MultiLayerConfiguration, ComputationGraphConfiguration> getConfig() {
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
-        if(allStatic.size() == 0) return null;
+        if (allStatic.size() == 0) return null;
 
         StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
         String modelClass = p.getModelClassName();
@@ -418,10 +420,10 @@ public class TrainModule implements UIModule {
 
         if (modelClass.endsWith("MultiLayerNetwork")) {
             MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-            return new Pair<>(conf,null);
+            return new Pair<>(conf, null);
         } else if (modelClass.endsWith("ComputationGraph")) {
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
-            return new Pair<>(null,conf);
+            return new Pair<>(null, conf);
         }
         return null;
     }
@@ -451,13 +453,13 @@ public class TrainModule implements UIModule {
 
         Map<String, Object> result = new HashMap<>();
 
-        Pair<MultiLayerConfiguration,ComputationGraphConfiguration> conf = getConfig();
-        if(conf == null){
+        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        if (conf == null) {
             return ok(Json.toJson(result));
         }
 
         TrainModuleUtils.GraphInfo gi = getGraphInfo();
-        if(gi == null){
+        if (gi == null) {
             return ok(Json.toJson(result));
         }
 
@@ -469,12 +471,15 @@ public class TrainModule implements UIModule {
 
         //Get mean magnitudes line chart
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
+//        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
+        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
         Map<String, Object> mmRatioMap = new HashMap<>();
-        mmRatioMap.put("layerParamNames", meanMagnitudes.getSecond().keySet());
-        mmRatioMap.put("iterCounts", meanMagnitudes.getFirst());
-        mmRatioMap.put("ratios", meanMagnitudes.getSecond());
-        result.put("meanMagRatio", mmRatioMap);
+        mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
+        mmRatioMap.put("iterCounts", mm.getIterations());
+        mmRatioMap.put("ratios", mm.getRatios());
+        mmRatioMap.put("paramMM", mm.getParamMM());
+        mmRatioMap.put("updateMM", mm.getUpdateMM());
+        result.put("meanMag", mmRatioMap);
 
         //Get activations line chart for layer
 
@@ -566,7 +571,7 @@ public class TrainModule implements UIModule {
                 NeuralNetConfiguration nnc = null;
                 if (modelClass.endsWith("MultiLayerNetwork")) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(configJson);
-                    int confIdx = layerIdx-1;   //-1 because of input
+                    int confIdx = layerIdx - 1;   //-1 because of input
                     if (confIdx >= 0) {
                         nnc = conf.getConf(confIdx);
                         layer = nnc.getLayer();
@@ -584,17 +589,17 @@ public class TrainModule implements UIModule {
                         LayerVertex lv = (LayerVertex) vertices.get(vertexName);
                         nnc = lv.getLayerConf();
                         layer = nnc.getLayer();
-                    } else if(conf.getNetworkInputs().contains(vertexName)){
+                    } else if (conf.getNetworkInputs().contains(vertexName)) {
                         layerType = "Input";
                     } else {
                         GraphVertex gv = conf.getVertices().get(vertexName);
-                        if(gv != null){
+                        if (gv != null) {
                             layerType = gv.getClass().getSimpleName();
                         }
                     }
                 }
 
-                if(layer != null) {
+                if (layer != null) {
                     layerType = getLayerType(layer);
                 }
 
@@ -657,24 +662,30 @@ public class TrainModule implements UIModule {
     }
 
     //TODO float precision for smaller transfers?
-    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
-                                                                                  List<Persistable> updates, boolean isMLN) {
-        if(gi == null){
-            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
+    //First: iteration. Second: ratios, by parameter
+//    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
+//                                                                                  List<Persistable> updates, boolean isMLN) {
+    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, boolean isMLN) {
+        if (gi == null) {
+            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+//            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
         }
 
         String layerName = gi.getVertexNames().get(layerIdx);
-        if(isMLN){
+        if (isMLN) {
             //Get the original name, for the index...
             layerName = gi.getOriginalVertexName().get(layerIdx);
         }
         String layerType = gi.getVertexTypes().get(layerIdx);
-        if("input".equalsIgnoreCase(layerType)){        //TODO better checking - other vertices, etc
-            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
+        if ("input".equalsIgnoreCase(layerType)) {        //TODO better checking - other vertices, etc
+//            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
+            return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
 
         List<Integer> iterCounts = new ArrayList<>();
         Map<String, List<Double>> ratioValues = new HashMap<>();
+        Map<String, List<Double>> outParamMM = new HashMap<>();
+        Map<String, List<Double>> outUpdateMM = new HashMap<>();
 
         if (updates != null) {
             for (Persistable u : updates) {
@@ -701,22 +712,36 @@ public class TrainModule implements UIModule {
                             ratioValues.put(layerParam, list);
                         }
                         list.add(ratio);
+
+                        List<Double> pmmList = outParamMM.get(layerParam);
+                        if (pmmList == null) {
+                            pmmList = new ArrayList<>();
+                            outParamMM.put(layerParam, pmmList);
+                        }
+                        pmmList.add(pmm);
+
+                        List<Double> ummList = outUpdateMM.get(layerParam);
+                        if (ummList == null) {
+                            ummList = new ArrayList<>();
+                            outUpdateMM.put(layerParam, ummList);
+                        }
+                        ummList.add(umm);
                     }
                 }
             }
         }
 
-        return new Pair<>(iterCounts, ratioValues);
+        return new MeanMagnitudes(iterCounts, ratioValues, outParamMM, outUpdateMM);
     }
 
 
     private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
-        if(gi == null){
+        if (gi == null) {
             return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
         }
 
         String type = gi.getVertexTypes().get(index);    //Index may be for an input, for example
-        if("input".equalsIgnoreCase(type)){
+        if ("input".equalsIgnoreCase(type)) {
             return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
         }
 
@@ -755,7 +780,7 @@ public class TrainModule implements UIModule {
     }
 
     private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates) {
-        if(gi == null){
+        if (gi == null) {
             return Collections.emptyMap();
         }
 //        String layerName = gi.getVertexNames().get(layerIdx);
@@ -812,17 +837,19 @@ public class TrainModule implements UIModule {
         List<String> paramNames = new ArrayList<>();
 
         Map<String, Object> ret = new HashMap<>();
-        for (String s : map.keySet()) {
-            if (s.startsWith(layerName)) {
-                String paramName = s.substring(layerName.length() + 1);
-                paramNames.add(paramName);
-                Histogram h = map.get(s);
-                Map<String, Object> thisHist = new HashMap<>();
-                thisHist.put("min", h.getMin());
-                thisHist.put("max", h.getMax());
-                thisHist.put("bins", h.getNBins());
-                thisHist.put("counts", h.getBinCounts());
-                ret.put(paramName, thisHist);
+        if (layerName != null) {
+            for (String s : map.keySet()) {
+                if (s.startsWith(layerName)) {
+                    String paramName = s.substring(layerName.length() + 1);
+                    paramNames.add(paramName);
+                    Histogram h = map.get(s);
+                    Map<String, Object> thisHist = new HashMap<>();
+                    thisHist.put("min", h.getMin());
+                    thisHist.put("max", h.getMax());
+                    thisHist.put("bins", h.getNBins());
+                    thisHist.put("counts", h.getBinCounts());
+                    ret.put(paramName, thisHist);
+                }
             }
         }
         ret.put("paramNames", paramNames);
@@ -1002,11 +1029,11 @@ public class TrainModule implements UIModule {
             //---- Software Info -----
 
             String nd4jBackend = sr.getSwNd4jBackendClass();
-            if(nd4jBackend != null && nd4jBackend.contains(".")){
+            if (nd4jBackend != null && nd4jBackend.contains(".")) {
                 int idx = nd4jBackend.lastIndexOf('.');
-                nd4jBackend = nd4jBackend.substring(idx+1);
+                nd4jBackend = nd4jBackend.substring(idx + 1);
                 String temp;
-                switch(nd4jBackend){
+                switch (nd4jBackend) {
                     case "CpuNDArrayFactory":
                         temp = "CPU";
                         break;
@@ -1020,7 +1047,7 @@ public class TrainModule implements UIModule {
             }
 
             String datatype = sr.getSwNd4jDataTypeName();
-            if(datatype == null) datatype = "";
+            if (datatype == null) datatype = "";
             else datatype = datatype.toLowerCase();
 
             List<String[]> swInfo = new ArrayList<>();
@@ -1038,5 +1065,15 @@ public class TrainModule implements UIModule {
         }
 
         return new Pair<>(retHw, retSw);
+    }
+
+
+    @AllArgsConstructor
+    @Data
+    private static class MeanMagnitudes {
+        private List<Integer> iterations;
+        private Map<String, List<Double>> ratios;
+        private Map<String, List<Double>> paramMM;
+        private Map<String, List<Double>> updateMM;
     }
 }
