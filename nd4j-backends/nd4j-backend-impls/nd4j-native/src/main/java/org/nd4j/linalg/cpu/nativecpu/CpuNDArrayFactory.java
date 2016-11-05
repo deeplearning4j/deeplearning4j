@@ -664,7 +664,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         else
             throw new UnsupportedOperationException("2D input is expected");
 
-        INDArray ret = Nd4j.create(shape, order);
+        INDArray ret = Nd4j.createUninitialized(shape, order);
 
         Nd4j.getCompressor().autoDecompress(source);
 

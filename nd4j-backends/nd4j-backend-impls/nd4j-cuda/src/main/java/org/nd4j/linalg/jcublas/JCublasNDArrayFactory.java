@@ -712,8 +712,15 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
 
-        int tadLength = source.tensorAlongDimension(0, sourceDimension).length();
-        INDArray ret = Nd4j.create(tadLength * indexes.length, order);
+        int[] shape = null;
+        if (sourceDimension == 1)
+            shape = new int[] {indexes.length, source.shape()[sourceDimension]};
+        else if (sourceDimension == 0)
+            shape = new int[] {source.shape()[sourceDimension], indexes.length};
+        else
+            throw new UnsupportedOperationException("2D input is expected");
+
+        INDArray ret = Nd4j.createUninitialized(shape, order);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         CudaContext context =  allocator.getFlowController().prepareAction(ret, source);
