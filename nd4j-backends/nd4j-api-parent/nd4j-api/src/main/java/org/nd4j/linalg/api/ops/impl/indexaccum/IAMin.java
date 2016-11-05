@@ -31,66 +31,66 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adam Gibson
  */
-public class IAMax extends BaseIndexAccumulation {
-    public IAMax() {
+public class IAMin extends BaseIndexAccumulation {
+    public IAMin() {
     }
 
-    public IAMax(INDArray x, INDArray y, long n) {
+    public IAMin(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 
-    public IAMax(INDArray x) {
+    public IAMin(INDArray x) {
         super(x);
     }
 
-    public IAMax(INDArray x, INDArray y) {
+    public IAMin(INDArray x, INDArray y) {
         super(x, y);
     }
 
 
     public int update(double accum, int accumIdx, double x, int xIdx) {
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : xIdx);
+        return (FastMath.abs(accum)<=FastMath.abs(x) ? accumIdx : xIdx);
     }
 
     public int update(float accum, int accumIdx, float x, int xIdx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : xIdx);
+        return (FastMath.abs(accum)<=FastMath.abs(x) ? accumIdx : xIdx);
     }
 
     public int update(double accum, int accumIdx, double x, double y, int idx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : idx);
+        return (FastMath.abs(accum)<=FastMath.abs(x) ? accumIdx : idx);
     }
 
     public int update(float accum, int accumIdx, float x, float y, int idx){
-        return (FastMath.abs(accum)>=FastMath.abs(x) ? accumIdx : idx);
+        return (FastMath.abs(accum)<=FastMath.abs(x) ? accumIdx : idx);
     }
 
     public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx){
-        return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : xIdx);
+        return (accum.absoluteValue().doubleValue()<=x.absoluteValue().doubleValue() ? accumIdx : xIdx);
     }
 
     @Override
     public int update(IComplexNumber accum, int accumIdx, double x, int idx) {
-        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+        return (accum.absoluteValue().doubleValue()<=FastMath.abs(x) ? accumIdx : idx);
     }
 
     @Override
     public int update(IComplexNumber accum, int accumIdx, double x, double y, int idx) {
-        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+        return (accum.absoluteValue().doubleValue()<=FastMath.abs(x) ? accumIdx : idx);
     }
 
     public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx){
-        return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : idx);
+        return (accum.absoluteValue().doubleValue()<=x.absoluteValue().doubleValue() ? accumIdx : idx);
     }
 
 
     @Override
     public int opNum() {
-        return 2;
+        return 3;
     }
 
     @Override
     public String name() {
-        return "iamax";
+        return "iamin";
     }
 
     @Override
@@ -153,9 +153,9 @@ public class IAMax extends BaseIndexAccumulation {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new IAMax(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IAMin(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new IAMax(x.vectorAlongDimension(index, dimension));
+            return new IAMin(x.vectorAlongDimension(index, dimension));
 
     }
 
@@ -164,8 +164,8 @@ public class IAMax extends BaseIndexAccumulation {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new IAMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new IAMin(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new IAMax(x.tensorAlongDimension(index, dimension));
+            return new IAMin(x.tensorAlongDimension(index, dimension));
     }
 }
