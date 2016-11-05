@@ -83,13 +83,13 @@ public class UnstackVertex extends BaseGraphVertex {
         int start = from*step;
         int end = (from+1)*step;
 
-        switch (inputs[0].rank()) {
+        switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             default:
                 throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
         }

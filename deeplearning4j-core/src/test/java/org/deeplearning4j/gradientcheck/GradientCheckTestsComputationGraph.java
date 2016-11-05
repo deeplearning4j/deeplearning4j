@@ -644,8 +644,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-//        int numParams = (4*5+5);
-        int numParams = (4*5+5) + (2*2 + 2);
+        int numParams = (4*5+5);
         assertEquals(numParams, graph.numParams());
 
         Nd4j.getRandom().setSeed(12345);
@@ -738,6 +737,9 @@ public class GradientCheckTestsComputationGraph {
 
     @Test
     public void testBasicStackUnstack(){
+
+        int layerSizes = 2;
+
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
@@ -747,17 +749,17 @@ public class GradientCheckTestsComputationGraph {
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("in1","in2")
-                .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
-                .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
+                .addLayer("d1", new DenseLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
                 .addVertex("stack", new StackVertex(), "d0", "d1")
-                .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "stack" )
+                .addLayer("d2", new DenseLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack" )
                 .addVertex("u1", new UnstackVertex(0,2), "d2")
                 .addVertex("u2", new UnstackVertex(1,2), "d2")
                 .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(2).nOut(2)
+                        .nIn(layerSizes).nOut(layerSizes)
                         .activation("identity").build(), "u1")
                 .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(2).nOut(2)
+                        .nIn(layerSizes).nOut(2)
                         .activation("identity").build(), "u2")
                 .setOutputs("out1", "out2")
                 .pretrain(false).backprop(true)
@@ -775,8 +777,8 @@ public class GradientCheckTestsComputationGraph {
         int[] mbSizes = new int[]{1, 3, 10};
         for( int minibatch : mbSizes) {
 
-            INDArray in1 = Nd4j.rand(minibatch, 2);
-            INDArray in2 = Nd4j.rand(minibatch, 2);
+            INDArray in1 = Nd4j.rand(minibatch, layerSizes);
+            INDArray in2 = Nd4j.rand(minibatch, layerSizes);
 
             INDArray labels1 = Nd4j.rand(minibatch, 2);
             INDArray labels2 = Nd4j.rand(minibatch, 2);
@@ -838,7 +840,6 @@ public class GradientCheckTestsComputationGraph {
             INDArray in1 = Nd4j.rand(minibatch, 2);
             INDArray in2 = Nd4j.rand(minibatch, 2);
 
-//            INDArray labels = Nd4j.rand(2*minibatch, 2);
             INDArray labels1 = Nd4j.rand(minibatch, 2);
             INDArray labels2 = Nd4j.rand(minibatch, 2);
 
