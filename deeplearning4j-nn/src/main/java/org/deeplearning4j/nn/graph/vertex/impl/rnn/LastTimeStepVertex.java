@@ -125,12 +125,12 @@ public class LastTimeStepVertex extends BaseGraphVertex {
         if(fwdPassTimeSteps == null){
             //Last time step for all examples
             epsilonsOut.put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(fwdPassShape[2]-1)},
-                    epsilons[0]);
+                    epsilon);
         } else {
             //Different time steps were extracted for each example
             for( int i=0; i<fwdPassTimeSteps.length; i++ ){
                 epsilonsOut.put(new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(),
-                        NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilons[0].getRow(i));
+                        NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilon.getRow(i));
             }
         }
         return new Pair<>(null,new INDArray[]{epsilonsOut});
