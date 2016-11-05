@@ -34,6 +34,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 
 /**
  * Convolution layer
@@ -194,6 +196,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
+        if(input.size(1) != inDepth){
+            throw new IllegalStateException("Cannot do forward pass: data input depth does not match CNN layer configuration"
+                    + " (data input depth = " + input.size(1) + ", shape=" + Arrays.toString(input.shape()) + "; expected"
+                    + " input depth = " + inDepth + ")");
+        }
         int kH = weights.size(2);
         int kW = weights.size(3);
 
