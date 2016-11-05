@@ -170,6 +170,7 @@ public class CrashTest extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 
+
         // BooleanIndexing
         BooleanIndexing.replaceWhere(x, 5f, Conditions.lessThan(8f));
 
