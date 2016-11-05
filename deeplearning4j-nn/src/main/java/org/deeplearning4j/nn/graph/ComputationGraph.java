@@ -1093,6 +1093,7 @@ public class ComputationGraph implements Serializable, Model {
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         //Do backprop according to the reverse of the topological ordering of the network
+        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length];   //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
             GraphVertex current = vertices[topologicalOrder[i]];
 
@@ -1110,7 +1111,8 @@ public class ComputationGraph implements Serializable, Model {
                     INDArray currLabels = labels[thisOutputNumber];
                     outputLayer.setLabels(currLabels);
                 } else {
-                    current.setErrors(externalEpsilons[thisOutputNumber]);
+                    current.setEpsilon(externalEpsilons[thisOutputNumber]);
+                    setVertexEpsilon[topologicalOrder[i]] = true;
                 }
             }
 
@@ -1120,13 +1122,21 @@ public class ComputationGraph implements Serializable, Model {
             //Inputs to the current GraphVertex:
             VertexIndices[] inputVertices = current.getInputVertices();
 
-            //Set epsilons for the input vertices:
+            //Set epsilons for the vertices that provide inputs to this vertex:
             if (inputVertices != null) {
                 int j = 0;
                 for (VertexIndices v : inputVertices) {
                     GraphVertex gv = vertices[v.getVertexIndex()];
                     int outputNumberOfInputVertex = v.getVertexEdgeNumber();
-                    gv.setError(outputNumberOfInputVertex, epsilons[j++]);
+                    if(setVertexEpsilon[topologicalOrder[i]]){
+                        //This vertex: must output to multiple vertices... we want to add the epsilons here
+                        INDArray currentEps = gv.getEpsilon();
+                        gv.setEpsilon(currentEps.add(epsilons[j++]));       //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                    } else {
+                        gv.setEpsilon(epsilons[j++]);
+                    }
+                    setVertexEpsilon[topologicalOrder[i]] = true;
+
                 }
             }
 

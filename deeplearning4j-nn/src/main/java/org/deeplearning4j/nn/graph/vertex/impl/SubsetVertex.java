@@ -95,13 +95,13 @@ public class SubsetVertex extends BaseGraphVertex {
         INDArray out = Nd4j.zeros(forwardShape);
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all()}, epsilon);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilons[0]);
+                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen
