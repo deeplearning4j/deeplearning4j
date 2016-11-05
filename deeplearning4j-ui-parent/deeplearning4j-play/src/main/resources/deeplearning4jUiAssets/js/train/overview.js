@@ -75,16 +75,17 @@ function renderScoreVsIterChart(data) {
 
         var previousPoint = null;
         scoreChart.bind("plothover", function (event, pos, item) {
-            $("#x").text(pos.x.toFixed(0));
-            $("#y").text(pos.y.toFixed(2));
+            var xPos = pos.x.toFixed(0);
+            $("#x").text(xPos < 0 || xPos == "-0" ? "" : xPos);
+            $("#y").text(pos.y.toFixed(5));
 
             if (item) {
                 if (previousPoint != item.dataIndex) {
                     previousPoint = item.dataIndex;
 
                     $("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(5);
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = item.datapoint[1].toFixed(5);
 
                     showTooltip(item.pageX - scoreChart.offset().left, item.pageY - scoreChart.offset().top,
                         "(" + x + ", " + y + ")");
@@ -209,7 +210,8 @@ function renderUpdatesRatio(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
-            $("#xRatio").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#xRatio").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogRatio").text(pos.y.toFixed(5));
             $("#yRatio").text(Math.pow(10, pos.y).toFixed(5));
 
@@ -313,7 +315,8 @@ function renderStdevChart(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
-            $("#xStdev").text(pos.x.toFixed(0));
+            var xPos = pos.x.toFixed(0);
+            $("#xStdev").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogStdev").text(pos.y.toFixed(5));
             $("#yStdev").text(Math.pow(10,pos.y).toFixed(5));
 

@@ -47,7 +47,7 @@ import static play.mvc.Results.redirect;
 public class TrainModule implements UIModule {
 
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
     private String currentSessionID;
 
@@ -705,7 +705,12 @@ public class TrainModule implements UIModule {
                         //TODO check and handle not collected case...
                         double pmm = paramMM.get(s);
                         double umm = updateMM.get(s);
-                        double ratio = umm / pmm;
+                        double ratio;
+                        if(umm == 0.0 && pmm == 0.0){
+                            ratio = 1.0;    //To avoid NaN from 0/0
+                        } else {
+                            ratio = umm / pmm;
+                        }
                         List<Double> list = ratioValues.get(layerParam);
                         if (list == null) {
                             list = new ArrayList<>();
