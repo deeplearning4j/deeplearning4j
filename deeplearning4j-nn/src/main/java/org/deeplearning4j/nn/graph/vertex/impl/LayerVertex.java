@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -154,7 +155,7 @@ public class LayerVertex extends BaseGraphVertex {
             }
         }
 
-        if (!(layer instanceof BaseOutputLayer)) {
+        if (!(layer instanceof IOutputLayer)) {
             if (epsilon == null) {
                 return false;
             }
