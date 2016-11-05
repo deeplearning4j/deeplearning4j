@@ -1237,6 +1237,8 @@ public class NativeOps extends Pointer {
     public native Pointer createEvent();
 
     public native Pointer createBlasHandle();
+    public native Pointer createSolverHandle();
+    public native int setSolverStream(Pointer handle, Pointer stream);
 
     public native int registerEvent(Pointer event, Pointer stream);
 

@@ -203,5 +203,10 @@
             <scope>test</scope>
         </dependency>
 
+ <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cuda</artifactId>
+            <version>8.0-1.2</version>
+        </dependency>
     </dependencies>
 </project>

@@ -21,7 +21,7 @@ public class CpuLapack extends BaseLapack {
      * @param INFO
      */
     @Override
-    public void getrf(int M, int N, INDArray A, int lda, int[] IPIV, int INFO) {
+    public void getrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
 
     }
 

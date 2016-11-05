@@ -9,6 +9,7 @@ import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -69,11 +70,13 @@ public class LimitedContextPool extends BasicContextPool {
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
 
             cublasHandle_t handle = createNewCublasHandle();
+	cusolverDnHandle_t solverHandle = createNewSolverHandle();
             for (int cnt = 0; cnt < numResources; cnt++ ) {
                 CudaContext context = createNewStream(device);
                 context.initOldStream();
                 getDeviceBuffers(context, device);
                 context.setHandle(handle);
+                context.setSolverHandle(solverHandle);
 
                 context.syncOldStream();
 

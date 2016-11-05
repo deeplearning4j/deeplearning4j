@@ -20,7 +20,7 @@ public interface Lapack {
      * @param IPIV
      * @param INFO
      */
-    void getrf(int M, int N, INDArray A, int lda, int[] IPIV, int INFO);
+    void getrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO);
 
     // generate inverse of a matrix given its LU decomposition
 

@@ -3,6 +3,8 @@ package org.nd4j.jita.allocator.context.impl;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
+
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -49,11 +51,26 @@ public class PackedContextPool extends BasicContextPool implements ContextPool {
                         context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
+
+                        logger.debug("Creating new cuSolver handle for device [{}]...", deviceId);
+
+                        cudaStream_t solverStream = createNewStream(deviceId).getOldStream();
+
+                        cusolverDnHandle_t solverhandle = createNewSolverHandle(solverStream);
+                        context.setSolverHandle(solverhandle);
+                        context.setSolverStream(solverStream);
+
+                        solverPool.put(deviceId, solverhandle);
+
                     } else {
                         // just pick handle out there
                         logger.debug("Reusing cuBLAS handle for device [{}]", deviceId);
                         cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
+
+                        logger.debug("Reusing solver here...");
+                        cusolverDnHandle_t solverHandle = solverPool.get(deviceId);
+                        context.setSolverHandle(solverHandle);
                     }
 
                     pack.addLane(c, context);
