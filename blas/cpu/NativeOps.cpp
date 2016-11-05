@@ -2166,10 +2166,11 @@ void pullRowsGeneric(T *x,
 
 #pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided) default(shared)
     for (int idx = 0; idx < n; idx++) {
-        int tadOffsetForBlock = tadOffsets[indexes[idx]];
+        int xTadOffsetForBlock = tadOffsets[indexes[idx]];
+        int zTadOffsetForBlock = zTadOffsets[idx];
 
-        T *rX = x + tadOffsetForBlock;
-        T *rZ = z + zTadOffsets[idx];
+        T *rX = x + xTadOffsetForBlock;
+        T *rZ = z + zTadOffsetForBlock;
 
         if (xEWS == 1 && zEWS == 1) {
 
@@ -2177,12 +2178,14 @@ void pullRowsGeneric(T *x,
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i] = rX[i];
             }
-        } else {
+        } else if (xEWS > 1 && zEWS > 1) {
 
 #pragma omp simd
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
+        } else {
+            printf("Non-EWS pull() isn't implemented yet\n");
         }
     }
 }
