@@ -1127,15 +1127,14 @@ public class ComputationGraph implements Serializable, Model {
                 int j = 0;
                 for (VertexIndices v : inputVertices) {
                     GraphVertex gv = vertices[v.getVertexIndex()];
-                    int outputNumberOfInputVertex = v.getVertexEdgeNumber();
-                    if(setVertexEpsilon[topologicalOrder[i]]){
+                    if(setVertexEpsilon[gv.getVertexIndex()]){
                         //This vertex: must output to multiple vertices... we want to add the epsilons here
                         INDArray currentEps = gv.getEpsilon();
                         gv.setEpsilon(currentEps.add(epsilons[j++]));       //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                     } else {
                         gv.setEpsilon(epsilons[j++]);
                     }
-                    setVertexEpsilon[topologicalOrder[i]] = true;
+                    setVertexEpsilon[gv.getVertexIndex()] = true;
 
                 }
             }
