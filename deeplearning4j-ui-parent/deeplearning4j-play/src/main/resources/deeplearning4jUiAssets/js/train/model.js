@@ -4,6 +4,11 @@ function setSelectedVertex(vertex){
     selectedVertex = vertex;
 }
 
+var selectedMeanMagChart = "ratios";
+function setSelectMeanMagChart(selectedChart){
+    selectedMeanMagChart = selectedChart;
+}
+
 function renderModelPage() {
 
     $.ajax({
@@ -53,12 +58,18 @@ function renderLayerTable(data) {
 
 /* ---------- Mean Magnitudes Chart ---------- */
 function renderMeanMagChart(data) {
-    var iter = data["meanMagRatio"]["iterCounts"];
+    var iter = data["meanMag"]["iterCounts"];
 
     var chart = $("#meanmag");
     if (chart.length) {
 
-        var ratios = data["meanMagRatio"]["ratios"];
+        if(!selectedMeanMagChart){
+            selectedMeanMagChart = "ratios";
+        }
+
+        var isRatio = selectedMeanMagChart == "ratios";
+
+        var ratios = data["meanMag"][selectedMeanMagChart];
         var keys = Object.keys(ratios);
         var toPlot = [];
         var overallMax = -Number.MAX_VALUE;
@@ -68,7 +79,11 @@ function renderMeanMagChart(data) {
 
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
-                pairs.push([iter[j], Math.log10(r[j])]);
+                if(isRatio){
+                    pairs.push([iter[j], Math.log10(r[j])]);
+                } else {
+                    pairs.push([iter[j], r[j]]);
+                }
             }
             toPlot.push({data: pairs, label: keys[i]});
 
@@ -82,12 +97,27 @@ function renderMeanMagChart(data) {
         if (overallMax == -Number.MAX_VALUE) overallMax = 1.0;
         if (overallMin == Number.MAX_VALUE) overallMin = 0.0;
 
-        overallMax = Math.log10(overallMax);
-        overallMin = Math.log10(overallMin);
-        overallMin = Math.max(overallMin, -10);
+        if(isRatio){
+            overallMax = Math.log10(overallMax);
+            overallMin = Math.log10(overallMin);
+            overallMin = Math.max(overallMin, -10);
 
-        overallMax = Math.ceil(overallMax);
-        overallMin = Math.floor(overallMin);
+            overallMax = Math.ceil(overallMax);
+            overallMin = Math.floor(overallMin);
+        }
+
+        //Trying to hide the "log10" part...
+        // if(isRatio){
+        //     $("#updateRatioTitleLog10").show();
+        // } else {
+        //     $("#updateRatioTitleLog10").hide();
+        // }
+
+        if(isRatio){
+            $("#updateRatioTitleSmallLog10").show();
+        } else {
+            $("#updateRatioTitleSmallLog10").hide();
+        }
 
         var plot = $.plot(chart,
             toPlot, {
@@ -135,8 +165,13 @@ function renderMeanMagChart(data) {
                     var logy = item.datapoint[1].toFixed(5);
                     var y = Math.pow(10, item.datapoint[1]).toFixed(5);
 
-                    showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
-                        item.series.label + " (" + x + ", logRatio=" + logy + ", ratio=" + y + ")");
+                    if(selectedMeanMagChart == "ratios"){
+                        showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
+                            item.series.label + " (" + x + ", logRatio=" + logy + ", ratio=" + y + ")");
+                    } else {
+                        showTooltip(item.pageX - chart.offset().left, item.pageY - chart.offset().top,
+                            item.series.label + " (" + x + ", " + y + ")");
+                    }
                 }
             }
             else {

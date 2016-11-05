@@ -109,11 +109,19 @@
                         <div class="box">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle"): log<sub>10</sub></b></h2>
+                                @*<h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><h2 id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></h2>*@
+                                @*<h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>*@
+                                <div style="float: right">
+                                    <p class="stackControls center">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.ratio")" onclick="setSelectMeanMagChart('ratios')">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.param")" onclick="setSelectMeanMagChart('paramMM')">
+                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.update")" onclick="setSelectMeanMagChart('updateMM')">
+                                    </p>
+                                </div>
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>log<sub>
-                                    10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")</b> <span id="yMeanMagnitudes">0</span>
+                                <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")</b></span> <span id="yMeanMagnitudes">0</span>
                                     , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
