@@ -128,9 +128,9 @@ public class CrashTest extends BaseNd4jTest {
         float sum = x.sumNumber().floatValue();
 
         // index reduction
-        IMax imax = new IMax(x);
-        Nd4j.getExecutioner().exec(imax, Integer.MAX_VALUE);
-        int max = imax.getFinalResult();
+        //IMax imax = new IMax(x);
+        //Nd4j.getExecutioner().exec(imax, Integer.MAX_VALUE);
+        //int max = imax.getFinalResult();
 
         // casual transform
         Nd4j.getExecutioner().exec(new Sqrt(x, x));
@@ -161,8 +161,8 @@ public class CrashTest extends BaseNd4jTest {
 
 
         // index reduction along dimension: row & column
-        INDArray imax_0 = Nd4j.argMax(x, 0);
-        INDArray imax_1 = Nd4j.argMax(x, 1);
+   //     INDArray imax_0 = Nd4j.argMax(x, 0);
+      //  INDArray imax_1 = Nd4j.argMax(x, 1);
 
 
         // logisoftmax, softmax & softmax derivative

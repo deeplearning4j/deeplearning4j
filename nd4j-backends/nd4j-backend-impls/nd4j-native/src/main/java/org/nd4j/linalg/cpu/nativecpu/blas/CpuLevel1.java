@@ -46,12 +46,11 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.sdot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
-        /*Dot dot = new Dot(X, Y);
+        //return nd4jBlas.sdot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        Dot dot = new Dot(X, Y);
         Nd4j.getExecutioner().exec(dot);
 
         return dot.getFinalResult().floatValue();
-        */
     }
 
     @Override
