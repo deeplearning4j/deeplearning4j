@@ -89,7 +89,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
-        return new Pair<>(null,new INDArray[]{epsilons[0].sum(2)});
+        return new Pair<>(null,new INDArray[]{epsilon.sum(2)});
     }
 
     @Override
