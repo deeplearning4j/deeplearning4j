@@ -35,7 +35,7 @@ import java.io.Serializable;
  */
 public interface GraphVertex extends Serializable {
 
-    /**Get the name/label of the GraphVertex
+    /** Get the name/label of the GraphVertex
      */
     String getVertexName();
 
@@ -53,7 +53,7 @@ public interface GraphVertex extends Serializable {
      */
     int getNumOutputConnections();
 
-    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
+    /** A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
      * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
      * then the Zth output connection (see {@link #getNumOutputConnections()} of vertex Y is the Xth input to this vertex
      */
@@ -64,7 +64,7 @@ public interface GraphVertex extends Serializable {
      */
     void setInputVertices(VertexIndices[] inputVertices);
 
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
+    /** A representation of the vertices that this vertex is connected to (outputs duing forward pass)
      * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
      * then the Xth output of this vertex is connected to the Zth input of vertex Y
      */
@@ -75,13 +75,13 @@ public interface GraphVertex extends Serializable {
      */
     void setOutputVertices(VertexIndices[] outputVertices);
 
-    /** whether the GraphVertex contains a {@link Layer} object or not */
+    /** Whether the GraphVertex contains a {@link Layer} object or not */
     boolean hasLayer();
 
     /** Whether the GraphVertex is an input vertex */
     boolean isInputVertex();
 
-    /** Whether the GraphVertexis an output vertex */
+    /** Whether the GraphVertex is an output vertex */
     boolean isOutputVertex();
 
     /** Get the Layer (if any). Returns null if {@link #hasLayer()} == false */
