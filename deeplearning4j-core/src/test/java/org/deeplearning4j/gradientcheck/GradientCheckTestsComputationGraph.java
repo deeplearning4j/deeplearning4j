@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -563,6 +564,53 @@ public class GradientCheckTestsComputationGraph {
 
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, new INDArray[]{out});
+
+            assertTrue(msg, gradOK);
+        }
+    }
+
+    @Test
+    public void testMultipleOutputsMergeCnn(){
+        int inH = 7;
+        int inW = 7;
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                .updater(Updater.NONE).learningRate(1.0)
+                .activation("tanh")
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "input")
+                .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "l0")
+                .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "l0")
+                .addVertex("m", new MergeVertex(), "l1", "l2")
+                .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation("tanh").build(), "m")
+                .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation("tanh").build(), "m")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2).build(), "l3", "l4")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(inH,inW,2))
+                .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int[] minibatchSizes = {1,3};
+        for( int mb : minibatchSizes) {
+            INDArray input = Nd4j.rand(new int[]{mb,2,inH,inW}); //Order: examples, channels, height, width
+            INDArray out = Nd4j.rand(mb, 2);
+
+            String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{out});
 
             assertTrue(msg, gradOK);
         }
