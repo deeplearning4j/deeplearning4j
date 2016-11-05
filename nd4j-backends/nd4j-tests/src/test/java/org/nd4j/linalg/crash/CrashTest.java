@@ -14,6 +14,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 /**
  * This set of test launches different ops in different order, to check for possible data corruption cases
@@ -103,6 +105,11 @@ public class CrashTest extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 
+        // BooleanIndexing
+        BooleanIndexing.replaceWhere(x, 5f, Conditions.lessThan(8f));
+
+        // assing on view
+        BooleanIndexing.assignIf(x, x1, Conditions.greaterThan(-1000000000f));
 
         // blas call
         float dot = (float) Nd4j.getBlasWrapper().dot(x, x1);
@@ -117,6 +124,9 @@ public class CrashTest extends BaseNd4jTest {
                 Nd4j.gemm(xT, yT, tA, tB);
             }
         }
+
+        // specially for views, checking here without dup and rollover
+        Nd4j.gemm(x, y, false, false);
 
         System.out.println("Iteration passed: " + i);
     }
