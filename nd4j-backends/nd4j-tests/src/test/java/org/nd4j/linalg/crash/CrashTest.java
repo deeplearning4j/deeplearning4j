@@ -1,5 +1,6 @@
 package org.nd4j.linalg.crash;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,11 +18,14 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+import java.util.Arrays;
+
 /**
  * This set of test launches different ops in different order, to check for possible data corruption cases
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class CrashTest extends BaseNd4jTest {
     public CrashTest(Nd4jBackend backend) {
@@ -43,13 +47,24 @@ public class CrashTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testViews1() {
+    public void testNonEWSViews1() {
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for(int i = 0; i < ITERATIONS; i++) {
             int slice = RandomUtils.nextInt(0, x.shape()[0]);
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
+        }
+    }
+
+    @Test
+    public void testEWSViews1() {
+        INDArray x = Nd4j.create(64, 1024, 64);
+        INDArray y = Nd4j.create(64, 64, 1024);
+
+        for(int i = 0; i < ITERATIONS; i++) {
+            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            op(x.slice(slice), y.slice(slice), i);
         }
     }
 
