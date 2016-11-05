@@ -120,28 +120,29 @@ Seq[Any](format.raw/*1.40*/("""
                                 <div id="myTabContent" class="tab-content">
                                     <div class="tab-pane active">
 
-                                            <!-- JVM Memory Utilization Chart -->
+                                            <!-- System Memory Utilization Chart -->
                                         <div class="row-fluid">
 
-                                            <div class="box span6">
+                                            <div class="box span12" id="systemMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>"""),_display_(/*104.61*/i18n/*104.65*/.getMessage("train.system.chart.jvmTitle")),format.raw/*104.107*/(""" """),format.raw/*104.108*/("""%</b></h2>
+                                                    <h2><b>"""),_display_(/*104.61*/i18n/*104.65*/.getMessage("train.system.chart.systemTitle")),format.raw/*104.110*/(""" """),format.raw/*104.111*/("""%</b></h2>
                                                 </div>
                                                 <div class="box-content">
-                                                    <div id="jvmmemorychart" class="center" style="height: 300px;" ></div>
+                                                    <div id="systemMemoryChartPlot" class="center" style="height: 300px;" ></div>
                                                     <p id="hoverdata"><b>"""),_display_(/*108.75*/i18n/*108.79*/.getMessage("train.system.chart.memoryShort")),format.raw/*108.124*/(""":</b> <span id="y">0</span>, <b>
                                                         """),_display_(/*109.58*/i18n/*109.62*/.getMessage("train.overview.charts.iteration")),format.raw/*109.108*/(""":</b> <span id="x">0</span></p>
                                                 </div>
                                             </div>
-                                                <!-- Off Heap Memory Utlization Chart -->
-                                            <div class="box span6">
+
+                                            <!-- GPU Memory Utlization Chart -->
+                                            <div class="box span6" id="gpuMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>"""),_display_(/*115.61*/i18n/*115.65*/.getMessage("train.system.chart.offHeapTitle")),format.raw/*115.111*/(""" """),format.raw/*115.112*/("""%</b></h2>
+                                                    <h2><b>"""),_display_(/*116.61*/i18n/*116.65*/.getMessage("train.system.chart.gpuTitle")),format.raw/*116.107*/(""" """),format.raw/*116.108*/("""%</b></h2>
                                                 </div>
                                                 <div class="box-content">
-                                                    <div id="offheapmemorychart" class="center" style="height: 300px;" ></div>
-                                                    <p id="hoverdata"><b>"""),_display_(/*119.75*/i18n/*119.79*/.getMessage("train.system.chart.memoryShort")),format.raw/*119.124*/(""":</b> <span id="y2">0</span>, <b>
-                                                        """),_display_(/*120.58*/i18n/*120.62*/.getMessage("train.overview.charts.iteration")),format.raw/*120.108*/(""":</b> <span id="x2">0</span></p>
+                                                    <div id="gpuMemoryChartPlot" class="center" style="height: 300px;" ></div>
+                                                    <p id="hoverdata"><b>"""),_display_(/*120.75*/i18n/*120.79*/.getMessage("train.system.chart.memoryShort")),format.raw/*120.124*/(""":</b> <span id="y2">0</span>, <b>
+                                                        """),_display_(/*121.58*/i18n/*121.62*/.getMessage("train.overview.charts.iteration")),format.raw/*121.108*/(""":</b> <span id="x2">0</span></p>
                                                 </div>
                                             </div>
 
@@ -153,18 +154,18 @@ Seq[Any](format.raw/*1.40*/("""
                                                 <!-- Hardware Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>"""),_display_(/*132.61*/i18n/*132.65*/.getMessage("train.system.hwTable.title")),format.raw/*132.106*/("""</b></h2>
+                                                    <h2><b>"""),_display_(/*133.61*/i18n/*133.65*/.getMessage("train.system.hwTable.title")),format.raw/*133.106*/("""</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>"""),_display_(/*138.70*/i18n/*138.74*/.getMessage("train.system.hwTable.jvmCurrent")),format.raw/*138.120*/("""</th>
-                                                                <th>"""),_display_(/*139.70*/i18n/*139.74*/.getMessage("train.system.hwTable.jvmMax")),format.raw/*139.116*/("""</th>
-                                                                <th>"""),_display_(/*140.70*/i18n/*140.74*/.getMessage("train.system.hwTable.offHeapCurrent")),format.raw/*140.124*/("""</th>
-                                                                <th>"""),_display_(/*141.70*/i18n/*141.74*/.getMessage("train.system.hwTable.offHeapMax")),format.raw/*141.120*/("""</th>
-                                                                <th>"""),_display_(/*142.70*/i18n/*142.74*/.getMessage("train.system.hwTable.jvmProcs")),format.raw/*142.118*/("""</th>
-                                                                <th>"""),_display_(/*143.70*/i18n/*143.74*/.getMessage("train.system.hwTable.computeDevices")),format.raw/*143.124*/("""</th>
+                                                                <th>"""),_display_(/*139.70*/i18n/*139.74*/.getMessage("train.system.hwTable.jvmCurrent")),format.raw/*139.120*/("""</th>
+                                                                <th>"""),_display_(/*140.70*/i18n/*140.74*/.getMessage("train.system.hwTable.jvmMax")),format.raw/*140.116*/("""</th>
+                                                                <th>"""),_display_(/*141.70*/i18n/*141.74*/.getMessage("train.system.hwTable.offHeapCurrent")),format.raw/*141.124*/("""</th>
+                                                                <th>"""),_display_(/*142.70*/i18n/*142.74*/.getMessage("train.system.hwTable.offHeapMax")),format.raw/*142.120*/("""</th>
+                                                                <th>"""),_display_(/*143.70*/i18n/*143.74*/.getMessage("train.system.hwTable.jvmProcs")),format.raw/*143.118*/("""</th>
+                                                                <th>"""),_display_(/*144.70*/i18n/*144.74*/.getMessage("train.system.hwTable.computeDevices")),format.raw/*144.124*/("""</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -188,19 +189,19 @@ Seq[Any](format.raw/*1.40*/("""
                                                 <!-- Software Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>"""),_display_(/*167.61*/i18n/*167.65*/.getMessage("train.system.swTable.title")),format.raw/*167.106*/("""</b></h2>
+                                                    <h2><b>"""),_display_(/*168.61*/i18n/*168.65*/.getMessage("train.system.swTable.title")),format.raw/*168.106*/("""</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>"""),_display_(/*173.70*/i18n/*173.74*/.getMessage("train.system.swTable.hostname")),format.raw/*173.118*/("""</th>
-                                                                <th>"""),_display_(/*174.70*/i18n/*174.74*/.getMessage("train.system.swTable.os")),format.raw/*174.112*/("""</th>
-                                                                <th>"""),_display_(/*175.70*/i18n/*175.74*/.getMessage("train.system.swTable.osArch")),format.raw/*175.116*/("""</th>
-                                                                <th>"""),_display_(/*176.70*/i18n/*176.74*/.getMessage("train.system.swTable.jvmName")),format.raw/*176.117*/("""</th>
-                                                                <th>"""),_display_(/*177.70*/i18n/*177.74*/.getMessage("train.system.swTable.jvmVersion")),format.raw/*177.120*/("""</th>
-                                                                <th>"""),_display_(/*178.70*/i18n/*178.74*/.getMessage("train.system.swTable.nd4jBackend")),format.raw/*178.121*/("""</th>
-                                                                <th>"""),_display_(/*179.70*/i18n/*179.74*/.getMessage("train.system.swTable.nd4jDataType")),format.raw/*179.122*/("""</th>
+                                                                <th>"""),_display_(/*174.70*/i18n/*174.74*/.getMessage("train.system.swTable.hostname")),format.raw/*174.118*/("""</th>
+                                                                <th>"""),_display_(/*175.70*/i18n/*175.74*/.getMessage("train.system.swTable.os")),format.raw/*175.112*/("""</th>
+                                                                <th>"""),_display_(/*176.70*/i18n/*176.74*/.getMessage("train.system.swTable.osArch")),format.raw/*176.116*/("""</th>
+                                                                <th>"""),_display_(/*177.70*/i18n/*177.74*/.getMessage("train.system.swTable.jvmName")),format.raw/*177.117*/("""</th>
+                                                                <th>"""),_display_(/*178.70*/i18n/*178.74*/.getMessage("train.system.swTable.jvmVersion")),format.raw/*178.120*/("""</th>
+                                                                <th>"""),_display_(/*179.70*/i18n/*179.74*/.getMessage("train.system.swTable.nd4jBackend")),format.raw/*179.121*/("""</th>
+                                                                <th>"""),_display_(/*180.70*/i18n/*180.74*/.getMessage("train.system.swTable.nd4jDataType")),format.raw/*180.122*/("""</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -220,11 +221,11 @@ Seq[Any](format.raw/*1.40*/("""
 
                                         </div>
 
-                                            <!-- GPU Chart -->
-                                        <div class="row-fluid">
+                                            <!-- GPU Information -->
+                                        <div class="row-fluid" id="gpuTable">
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>GPU Information (if isDevice == true)</b></h2>
+                                                    <h2><b>GPU Information</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
@@ -300,18 +301,18 @@ Seq[Any](format.raw/*1.40*/("""
 
         <!-- Execute once on page load -->
         <script>
-                $(document).ready(function () """),format.raw/*279.47*/("""{"""),format.raw/*279.48*/("""
-                    """),format.raw/*280.21*/("""renderSystemPage();
+                $(document).ready(function () """),format.raw/*280.47*/("""{"""),format.raw/*280.48*/("""
+                    """),format.raw/*281.21*/("""renderSystemPage();
                     renderTabs();
                     selectMachine();
-                """),format.raw/*283.17*/("""}"""),format.raw/*283.18*/(""");
+                """),format.raw/*284.17*/("""}"""),format.raw/*284.18*/(""");
         </script>
 
             <!--Execute periodically (every 2 sec) -->
         <script>
-                setInterval(function () """),format.raw/*288.41*/("""{"""),format.raw/*288.42*/("""
-                    """),format.raw/*289.21*/("""renderSystemPage();
-                """),format.raw/*290.17*/("""}"""),format.raw/*290.18*/(""", 2000);
+                setInterval(function () """),format.raw/*289.41*/("""{"""),format.raw/*289.42*/("""
+                    """),format.raw/*290.21*/("""renderSystemPage();
+                """),format.raw/*291.17*/("""}"""),format.raw/*291.18*/(""", 2000);
         </script>
             <!--End JavaScript-->
 
@@ -337,11 +338,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingSystem extends TrainingSystem_Scope0.TrainingSystem
               /*
                   -- GENERATED --
-                  DATE: Thu Nov 03 21:06:54 AEDT 2016
+                  DATE: Sat Nov 05 23:29:02 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingSystem.scala.html
-                  HASH: 280c9744139b2f0363660dd7c1381b5de77b20db
-                  MATRIX: 600->1|733->39|761->41|884->138|896->142|946->172|2731->1930|2744->1934|2795->1964|3359->2500|3373->2504|3428->2537|3578->2659|3592->2663|3644->2693|3827->2848|3841->2852|3894->2883|4042->3003|4056->3007|4112->3041|6577->5479|6590->5483|6644->5516|7425->6269|7439->6273|7504->6315|7535->6316|7904->6657|7918->6661|7986->6706|8105->6797|8119->6801|8188->6847|8651->7282|8665->7286|8734->7332|8765->7333|9138->7678|9152->7682|9220->7727|9340->7819|9354->7823|9423->7869|10056->8474|10070->8478|10134->8519|10593->8950|10607->8954|10676->9000|10780->9076|10794->9080|10859->9122|10963->9198|10977->9202|11050->9252|11154->9328|11168->9332|11237->9378|11341->9454|11355->9458|11422->9502|11526->9578|11540->9582|11613->9632|13260->11251|13274->11255|13338->11296|13797->11727|13811->11731|13878->11775|13982->11851|13996->11855|14057->11893|14161->11969|14175->11973|14240->12015|14344->12091|14358->12095|14424->12138|14528->12214|14542->12218|14611->12264|14715->12340|14729->12344|14799->12391|14903->12467|14917->12471|14988->12519|21626->19128|21656->19129|21707->19151|21846->19261|21876->19262|22044->19401|22074->19402|22125->19424|22191->19461|22221->19462
-                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|114->90|114->90|114->90|128->104|128->104|128->104|128->104|132->108|132->108|132->108|133->109|133->109|133->109|139->115|139->115|139->115|139->115|143->119|143->119|143->119|144->120|144->120|144->120|156->132|156->132|156->132|162->138|162->138|162->138|163->139|163->139|163->139|164->140|164->140|164->140|165->141|165->141|165->141|166->142|166->142|166->142|167->143|167->143|167->143|191->167|191->167|191->167|197->173|197->173|197->173|198->174|198->174|198->174|199->175|199->175|199->175|200->176|200->176|200->176|201->177|201->177|201->177|202->178|202->178|202->178|203->179|203->179|203->179|303->279|303->279|304->280|307->283|307->283|312->288|312->288|313->289|314->290|314->290
+                  HASH: e342d11537d69f80b3bf16ff26fdc6c36dbc8f3e
+                  MATRIX: 600->1|733->39|761->41|884->138|896->142|946->172|2731->1930|2744->1934|2795->1964|3359->2500|3373->2504|3428->2537|3578->2659|3592->2663|3644->2693|3827->2848|3841->2852|3894->2883|4042->3003|4056->3007|4112->3041|6577->5479|6590->5483|6644->5516|7452->6296|7466->6300|7534->6345|7565->6346|7941->6694|7955->6698|8023->6743|8142->6834|8156->6838|8225->6884|8701->7332|8715->7336|8780->7378|8811->7379|9184->7724|9198->7728|9266->7773|9386->7865|9400->7869|9469->7915|10102->8520|10116->8524|10180->8565|10639->8996|10653->9000|10722->9046|10826->9122|10840->9126|10905->9168|11009->9244|11023->9248|11096->9298|11200->9374|11214->9378|11283->9424|11387->9500|11401->9504|11468->9548|11572->9624|11586->9628|11659->9678|13306->11297|13320->11301|13384->11342|13843->11773|13857->11777|13924->11821|14028->11897|14042->11901|14103->11939|14207->12015|14221->12019|14286->12061|14390->12137|14404->12141|14470->12184|14574->12260|14588->12264|14657->12310|14761->12386|14775->12390|14845->12437|14949->12513|14963->12517|15034->12565|21670->19172|21700->19173|21751->19195|21890->19305|21920->19306|22088->19445|22118->19446|22169->19468|22235->19505|22265->19506
+                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|114->90|114->90|114->90|128->104|128->104|128->104|128->104|132->108|132->108|132->108|133->109|133->109|133->109|140->116|140->116|140->116|140->116|144->120|144->120|144->120|145->121|145->121|145->121|157->133|157->133|157->133|163->139|163->139|163->139|164->140|164->140|164->140|165->141|165->141|165->141|166->142|166->142|166->142|167->143|167->143|167->143|168->144|168->144|168->144|192->168|192->168|192->168|198->174|198->174|198->174|199->175|199->175|199->175|200->176|200->176|200->176|201->177|201->177|201->177|202->178|202->178|202->178|203->179|203->179|203->179|204->180|204->180|204->180|304->280|304->280|305->281|308->284|308->284|313->289|313->289|314->290|315->291|315->291
                   -- GENERATED --
               */
           
