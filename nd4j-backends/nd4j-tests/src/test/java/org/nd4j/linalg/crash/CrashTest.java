@@ -26,10 +26,13 @@ public class CrashTest extends BaseNd4jTest {
     }
 
     private static final int ITERATIONS = 100;
+    private static final boolean[] paramsA = new boolean[] {true, false};
+    private static final boolean[] paramsB = new boolean[] {true, false};
 
     @Test
     public void testArrays1() {
         INDArray x = Nd4j.create(1024, 64);
+        INDArray y = Nd4j.create(64, 1024);
 
         for(int i = 0; i < ITERATIONS; i++) {
 
@@ -87,6 +90,17 @@ public class CrashTest extends BaseNd4jTest {
 
             // blas call
             float dot = (float) Nd4j.getBlasWrapper().dot(x, x1);
+
+            // mmul
+            for (boolean tA : paramsA) {
+                for (boolean tB : paramsB) {
+
+                    INDArray xT = tA ? x.dup() : x.dup().transpose();
+                    INDArray yT = tB ? y.dup() : y.dup().transpose();
+
+                    Nd4j.gemm(xT, yT, tA, tB);
+                }
+            }
 
             System.out.println("Iteration passed: " + i);
         }
