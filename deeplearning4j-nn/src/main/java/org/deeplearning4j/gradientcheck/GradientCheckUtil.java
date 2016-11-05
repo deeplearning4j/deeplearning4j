@@ -13,6 +13,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,19 +95,18 @@ public class GradientCheckUtil {
 
         int totalNFailures = 0;
         double maxError = 0.0;
+        DataSet ds = new DataSet(input, labels);
         for(int i = 0; i < nParams; i++) {
             //(w+epsilon): Do forward pass and score
             INDArray params = originalParams.dup();
             params.putScalar(i, params.getDouble(i) + epsilon);
             mln.setParameters(params);
-            mln.computeGradientAndScore();
-            double scorePlus = mln.score();
+            double scorePlus = mln.score(ds);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
             mln.setParameters(params);
-            mln.computeGradientAndScore();
-            double scoreMinus = mln.score();
+            double scoreMinus = mln.score(ds);
 
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
@@ -212,19 +213,18 @@ public class GradientCheckUtil {
 
         int totalNFailures = 0;
         double maxError = 0.0;
+        MultiDataSet mds = new MultiDataSet(inputs, labels);
         for(int i = 0; i < nParams; i++) {
             //(w+epsilon): Do forward pass and score
             INDArray params = originalParams.dup();
             params.putScalar(i, params.getDouble(i) + epsilon);
             graph.setParams(params);
-            graph.computeGradientAndScore();
-            double scorePlus = graph.score();
+            double scorePlus = graph.score(mds);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
             graph.setParams(params);
-            graph.computeGradientAndScore();
-            double scoreMinus = graph.score();
+            double scoreMinus = graph.score(mds);
 
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
