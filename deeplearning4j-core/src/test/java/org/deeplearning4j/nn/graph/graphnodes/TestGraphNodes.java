@@ -320,8 +320,8 @@ public class TestGraphNodes {
         INDArray[] backward = l2.doBackward(false).getSecond();
 //        System.out.println(backward[0]);
 //        System.out.println(backward[1]);
-        assertEquals(backward[0].shape(), in1.shape());
-        assertEquals(backward[1].shape(), in2.shape());
+        assertArrayEquals(backward[0].shape(), in1.shape());
+        assertArrayEquals(backward[1].shape(), in2.shape());
     }
 
     @Test

@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -34,6 +36,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Justin Long (crockpotveggies)
  */
+@Getter
 public class UnstackVertex extends GraphVertex {
     protected int from;
     protected int stackSize;
