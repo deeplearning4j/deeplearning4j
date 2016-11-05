@@ -46,11 +46,14 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        //return nd4jBlas.sdot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
-        Dot dot = new Dot(X, Y);
-        Nd4j.getExecutioner().exec(dot);
-
-        return dot.getFinalResult().floatValue();
+        if (incX >= 1 && incY >= 1) {
+            return nd4jBlas.sdot(DUMMY, N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
+        } else {
+            // non-EWS dot variant
+            Dot dot = new Dot(X, Y);
+            Nd4j.getExecutioner().exec(dot);
+            return dot.getFinalResult().floatValue();
+        }
     }
 
     @Override
@@ -60,7 +63,14 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.ddot(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
+        if (incX >= 1 && incY >= 1) {
+            return nd4jBlas.ddot(DUMMY, N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY);
+        } else {
+            // non-EWS dot variant
+            Dot dot = new Dot(X, Y);
+            Nd4j.getExecutioner().exec(dot);
+            return dot.getFinalResult().floatValue();
+        }
     }
 
     @Override
