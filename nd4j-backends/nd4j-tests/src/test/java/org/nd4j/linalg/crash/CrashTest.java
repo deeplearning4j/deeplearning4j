@@ -1,5 +1,6 @@
 package org.nd4j.linalg.crash;
 
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -14,6 +15,11 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 public class CrashTest extends BaseNd4jTest {
     public CrashTest(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testPlaceholder() {
+
     }
 
     @Override
