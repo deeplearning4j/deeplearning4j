@@ -13,13 +13,10 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
-    @Deprecated
-    protected String customLossFunction;
 
     protected BaseOutputLayer(Builder builder) {
     	super(builder);
         this.lossFn = builder.lossFn;
-        this.customLossFunction = builder.customLossFunction;
     }
 
     /**
@@ -27,26 +24,25 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
      * @deprecated As of 0.6.0. Use {@link #getLossFn()} instead
      */
     @Deprecated
-    public LossFunction getLossFunction(){
+    public LossFunction getLossFunction() {
         //To maintain backward compatibility only (as much as possible)
-        if(lossFn instanceof LossNegativeLogLikelihood) {
+        if (lossFn instanceof LossNegativeLogLikelihood) {
             return LossFunction.NEGATIVELOGLIKELIHOOD;
-        } else if(lossFn instanceof LossMCXENT){
+        } else if (lossFn instanceof LossMCXENT) {
             return LossFunction.MCXENT;
-        } else if(lossFn instanceof LossMSE){
+        } else if (lossFn instanceof LossMSE) {
             return LossFunction.MSE;
-        } else if(lossFn instanceof LossBinaryXENT) {
+        } else if (lossFn instanceof LossBinaryXENT) {
             return LossFunction.XENT;
         } else {
             //TODO: are there any others??
             return null;
         }
     }
-    
+
+
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected ILossFunction lossFn = new LossMCXENT();
-        @Deprecated
-        protected String customLossFunction;
 
         public Builder() {}
 
@@ -64,13 +60,6 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
         public T lossFunction(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
-            return (T)this;
-        }
-
-
-        @Deprecated
-        public T customLossFunction(String customLossFunction) {
-            this.customLossFunction = customLossFunction;
             return (T)this;
         }
     }
