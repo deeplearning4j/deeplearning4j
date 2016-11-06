@@ -766,4 +766,27 @@ public class MultiLayerTest {
     }
 
 
+    @Test(expected = IllegalStateException.class)
+    public void testCnnInvalidData(){
+
+        int miniBatch = 3;
+        int depth = 2;
+        int width = 5;
+        int height = 5;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).padding(0,0).nIn(2).nOut(2).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nOut(2).build())
+                .setInputType(InputType.convolutional(height,width,depth))
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray inputWrongDepth = Nd4j.rand(new int[]{miniBatch,5,height,width}); //Order: examples, channels, height, width
+        net.feedForward(inputWrongDepth);
+
+    }
+
 }
