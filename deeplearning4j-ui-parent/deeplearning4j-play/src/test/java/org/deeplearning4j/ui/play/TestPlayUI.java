@@ -16,6 +16,7 @@ import org.deeplearning4j.ui.flow.beans.ModelInfo;
 import org.deeplearning4j.ui.module.train.TrainModuleUtils;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -31,7 +32,7 @@ public class TestPlayUI {
     @Test
     public void testUI() throws Exception {
 
-        StatsStorage ss = new MapDBStatsStorage();  //In-memory
+        StatsStorage ss = new InMemoryStatsStorage();
 
         UIServer uiServer = UIServer.getInstance();
         uiServer.attach(ss);
@@ -65,7 +66,7 @@ public class TestPlayUI {
 
         for( int session=0; session<3; session++ ) {
 
-            StatsStorage ss = new MapDBStatsStorage();  //In-memory
+            StatsStorage ss = new InMemoryStatsStorage();
 
             UIServer uiServer = UIServer.getInstance();
             uiServer.attach(ss);
@@ -96,7 +97,7 @@ public class TestPlayUI {
     @Test
     public void testUICompGraph() throws Exception {
 
-        StatsStorage ss = new MapDBStatsStorage();  //In-memory
+        StatsStorage ss = new InMemoryStatsStorage();
 
         UIServer uiServer = UIServer.getInstance();
         uiServer.attach(ss);
@@ -117,11 +118,10 @@ public class TestPlayUI {
 
         DataSetIterator iter = new IrisDataSetIterator(150,150);
 
-        for( int i=0; i<10; i++ ){
+        for( int i=0; i<100; i++ ){
             net.fit(iter);
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
-
 
         Thread.sleep(100000);
     }
