@@ -91,22 +91,21 @@ public class ElementWiseVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        if(nInForwardPass == 1) return new Pair<>(null,epsilons);
+        if(nInForwardPass == 1) return new Pair<>(null,new INDArray[]{epsilon});
 
         switch(op){
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
                 INDArray[] out = new INDArray[nInForwardPass];
-                out[0] = epsilons[0];
-                for( int i=1; i<nInForwardPass; i++ ) out[i] = out[0].dup();
+                for( int i=0; i<nInForwardPass; i++ ) out[i] = epsilon.dup();
                 return new Pair<>(null,out);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
-                out2[0] = epsilons[0];
-                out2[1] = epsilons[0].mul(-1);
+                out2[0] = epsilon;
+                out2[1] = epsilon.neg();
                 return new Pair<>(null,out2);
             case Product:
-                throw new UnsupportedOperationException("Not yet implemented");
+                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
