@@ -269,7 +269,7 @@ function renderGPULayout(data) {
         $("#systemMemoryChart").attr("class", "box span12");
     }
 }
-/* ---------- Render Tabs ---------- */
+/* ---------- Render Dropdown ---------- */
 function renderMultipleTabs(data) {
 
     var nMachinesData = data["memory"];
@@ -277,20 +277,11 @@ function renderMultipleTabs(data) {
 
     /* Generate Tabs Depending on nMachines.length*/
     for (i = 0; i < nMachines.length; i++)  {
-        $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
+        $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"javascript:void();\">Machine " + nMachines[i] + "</a></li>");
     }
-
-    /* Show/Hide Tabs on Click */
-    $('#systemTab a:first').tab('show');
-    $('#systemTab a').click(function (e) {
-      e.preventDefault();
-      $(this).tab('show');
-      renderGPULayout(data); // Check isDevice when switching tabs
-    });
-
 }
 
-/* Set Machine ID Depending on Tab Clicked */
+/* ---------- Set Machine ID Depending on Item Clicked ---------- */
 function selectMachine() {
 
     machineID = 0;
