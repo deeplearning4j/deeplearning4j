@@ -695,7 +695,7 @@ ul.messages li .message {
 #content {
 	background: #ffffff;
 	filter: none;
-	min-height: 100%;
+	min-height: 100vh;
 	padding: 20px 20px;
 	position: relative;
 }
