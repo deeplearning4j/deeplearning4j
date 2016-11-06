@@ -1,7 +1,10 @@
 train.system.title=System Details
+train.system.selectMachine=Select Machine
 train.system.chart.memoryShort=Memory
-train.system.chart.systemTitle=JVM and Off-Heap Memory Utilization
-train.system.chart.gpuTitle=GPU Memory Utilization
+train.system.chart.systemMemoryTitle=JVM and Off-Heap Memory Utilization
+train.system.chart.gpuMemoryTitle=GPU Memory Utilization
+train.system.chart.key.jvm=JVM Memory
+train.system.chart.key.offHeap=Off Heap Memory
 train.system.hwTable.title=Hardware Information
 train.system.hwTable.jvmCurrent=JVM Current Memory
 train.system.hwTable.jvmMax=JVM Max Memory
