@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -95,11 +96,11 @@ public class JcublasLapack extends BaseLapack {
 		}
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.get(0)) ;
-		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
-		DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
+		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
+		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
-		IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
-		IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
+		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
+		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -107,10 +108,9 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			(FloatPointer)AtomicAllocator.getInstance().getPointer(work, ctx),
-			//(IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ,
-			(IntPointer) ipiv.addressPointer(),
-			(IntPointer) AtomicAllocator.getInstance().getPointer(info, ctx)
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(work, ctx)).asFloatPointer(),
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(IPIV, ctx)).asIntPointer() ,
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(INFO, ctx)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
@@ -119,24 +119,25 @@ public class JcublasLapack extends BaseLapack {
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
 		}
-			// Copy the results back to the input vectors
-			INFO.putScalar(0,info.asInt()[0] ) ;
-			int xxx[] = ipiv.asInt() ;
+			// Copy the results back to the input vectors//
+			// INFO.putScalar(0,info.asInt()[0] ) ;
+			// int xxx[] = ipiv.asInt() ;
 			// obtain pointers
-			Pointer dst = AtomicAllocator.getInstance().getPointer(IPIV, ctx);
-			Pointer src = AtomicAllocator.getInstance().getPointer(ipiv, ctx);
+			// Pointer dst = AtomicAllocator.getInstance().getPointer(IPIV, ctx);
+			//	Pointer src = AtomicAllocator.getInstance().getPointer(ipiv, ctx);
 
 			// device to device copy
-			nativeOps.memcpyAsync(dst, src, IPIV.length() * 4, 3, ctx.getSpecialStream());
-			ctx.syncSpecialStream();
+			// nativeOps.memcpyAsync(dst, src, IPIV.length() * 4, 3, ctx.getSpecialStream());
+			// ctx.syncSpecialStream();
 
 			// notify that IPIV was modified on device side
 			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickDeviceWrite();
 
 			// A is modified on device side as well
+			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickDeviceWrite();
 			AtomicAllocator.getInstance().getAllocationPoint(A).tickDeviceWrite();
 
-IPIV.setData( ipiv );
+			//IPIV.setData( ipiv );
 			// now when you'll call getInt(), data will travel back to host
 //			if( IPIV.getInt(2) != 4 ) { 
 //				System.out.println( "WTF" + xxx[2] ) ; 
