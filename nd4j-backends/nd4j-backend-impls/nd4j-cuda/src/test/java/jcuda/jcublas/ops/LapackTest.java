@@ -14,6 +14,9 @@ import static org.junit.Assert.assertEquals;
  */
 @Ignore
 public class CublasTests {
+
+    java.util.Random rng = new java.util.Random(1230) ;
+
     @Test
     public void testSgetrf1() throws Exception {
 	int m = 3 ;
@@ -24,11 +27,14 @@ public class CublasTests {
 			3.f, 0.f,  3.f }, 
 			new int[] { m, n }, 'f' ) ;
 
-	int lda = Math.min(m, n) ;
-        INDArray INFO = Nd4j.create(1) ;
-        INDArray IPIV = Nd4j.create( lda ) ;
+        INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1), 
+        		Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, 1}));
 
-        Nd4j.getBlasWrapper().lapack().getrf(m,n,arr, lda,IPIV,INFO);
+        int mn = Math.min( m, n ) ;
+        INDArray IPIV = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(mn), 
+        		Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, mn}));
+
+        Nd4j.getBlasWrapper().lapack().getrf( m, n, arr, m, IPIV, INFO);
 	
         assertEquals( "getrf returned a non-zero code",  0, INFO.getInt(0) ) ;
 
@@ -48,54 +54,37 @@ public class CublasTests {
         assertEquals(  3.20930f, arr.getFloat(8), 0.00001f);
     }
 
-    public void testSgetrf2() throws Exception {
-	int m = 50 ;
-	int n = 50 ;
-	INDArray arr = Nd4j.rand( m, n ) ;
-	INDArray compare = arr.dup() ;
-
-	int lda = Math.min(m, n) ;
-        INDArray INFO = Nd4j.create(1) ;
-        INDArray IPIV = Nd4j.create( lda ) ;
-
-        Nd4j.getBlasWrapper().lapack().getrf( m, n, arr, lda, IPIV, INFO );
-        assertEquals( "getrf returned a non-zero code",  0, INFO.getInt(0) ) ;
-	
-	// Extract the L & U factors from the overwritten output
-        INDArray L = arr.dup() ;
-        INDArray U = arr.dup() ;
-        for( int r=0 ; r<L.size(0) ; r++ ) {
-            for( int c=0 ; c<L.size(1) ; c++ ) {
-            	if( r>c ) {
-            		U.putScalar(r, c, 0.f ) ;
-            	} else if( r<c ) {
-            		L.putScalar(r, c, 0.f ) ;
-            	} else {
-            		L.putScalar(r, c, 1.f ) ;
-            	}
-            }
+    public void testGetrf() throws Exception {
+	m = 150 ;
+	n = 100 ;
+	float f[] = new float[ m * n ] ;
+	for( int i=0 ; i<f.length ; i++ ) 
+		f[i] = rng.nextInt( 5 ) + 1 ;
+ 	// there is a very very small (non-zero) chance that the random matrix is singular
+	// and may fail a test
+        long start = System.currentTimeMillis() ;
+        
+        INDArray IPIV = null ;
+        final int N = 100 ;
+        for( int i=0 ; i<N ; i++ ) {
+            arr = Nd4j.create(f, new int[] { m, n }, 'f' ) ;
+        	IPIV = Nd4j.getBlasWrapper().lapack().getrf( arr );
         }
         
-	// Build the permutation matrix from the IPIV output
-        INDArray P = Nd4j.eye( lda ) ;
-        for( int i=0 ; i<lda ; i++ ) {
-        	if( IPIV.getInt(i) > (i+1) ) {
-        		INDArray r1 = P.getRow(i).dup() ;
-        		INDArray r2 = P.getRow( IPIV.getInt(i)-1) ;
-        		P.putRow( i, r2 ) ;
-        		P.putRow( IPIV.getInt(i)-1, r1 ) ;
-        	}
-        }
-	// The combined P x L x U should be the same as the original input matrix
+        INDArray L = Nd4j.getBlasWrapper().lapack().getLFactor(arr) ;
+        INDArray U = Nd4j.getBlasWrapper().lapack().getUFactor(arr) ;
+        INDArray P = Nd4j.getBlasWrapper().lapack().getPFactor(m, IPIV) ;
+
         INDArray orig = P.mmul( L ).mmul( U ) ;
+    
+	assertEquals( "PxLxU is not the expected size - rows", orig.size(0), arr.size(0) ) ;
+	assertEquals( "PxLxU is not the expected size - cols", orig.size(1), arr.size(1) ) ;
 
-        assertEquals( "LxUxP is not the expected size", orig.length(), compare.length() ) ;
-        for( int r=0 ; r<orig.size(1) ; r++ ) {
-            for( int c=0 ; c<orig.size(0) ; c++ ) {
-        	assertEquals( "Original matrix and recombined factors are not the same", orig.getFloat(r,c), compare.getFloat(r,c), 0.000001f ) ;
-	    }
-	}
-	
+        arr = Nd4j.create(f, new int[] { m, n }, 'f' ) ;
+        for( int r=0 ; r<orig.size(0) ; r++ ) {
+            for( int c=0 ; c<orig.size(1) ; c++ ) {
+		assertEquals( "Original & recombined matrices differ", orig.getFloat(r,c), arr.getFloat(r,c) ), 0.001f ) ;
+            }
+        }
     }
-
 }

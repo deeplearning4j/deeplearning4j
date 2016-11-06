@@ -9,18 +9,59 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface Lapack {
 
-    // LU decomoposition of a general matrix
-
     /**
      * LU decomposiiton of a matrix
-     * @param M
-     * @param N
-     * @param A
-     * @param lda
-     * @param IPIV
-     * @param INFO
+     * Factorize a matrix A
+     *
+     * The matrix A is overridden by the L & U combined.
+     * The permutation results are returned directly as a vector. To 
+     * create the permutation matrix use getPFactor method
+     * To split out the L & U matrix use getLFactor and getUFactor methods
+     *
+     * getrf = triangular factorization (TRF) of a general matrix (GE)
+     *
+     * @param A the input matrix, it will be overwritten with the factors
+     * @returns Permutation array
+     * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    void getrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO);
+    public INDArray getrf( INDArray A );
+
+
+
+    /** 
+    * This method takes one of the ipiv returns from LAPACK and creates
+    * the permutation matrix. When factorizing, it is useful to avoid underflows
+    * and overflows by reordering rows/and or columns of the input matrix (mostly
+    * these methods solve simultaneous equations, so order is not important). 
+    * The ipiv method assumes that only row ordering is done ( never seen column 
+    * ordering done )
+    *
+    * @param M - the size of the permutation matrix ( usu. the # rows in factored matrix )
+    * @param ipiv - the vector returned from a refactoring
+    * @returned the square permutation matrix - size is the M x M
+    */
+    public INDArray getPFactor( int M, INDArray ipiv ) ;
+
+
+    /**
+    * extracts the L (lower triangular) matrix from the LU factor result
+    * L will be the same dimensions as A
+    *
+    * @param A - the combined L & U matrices returned from factorization
+    * @returned the lower triangular with unit diagonal
+    */
+    public INDArray getLFactor( INDArray A ) ;
+
+
+    /**
+    * extracts the U (upper triangular) matrix from the LU factor result
+    * U will be n x n matrix where n = num cols in A
+    *
+    * @param A - the combined L & U matrices returned from factorization
+    * @returned the upper triangular matrix
+    */
+    public INDArray getUFactor( INDArray A ) ;
+
 
     // generate inverse of a matrix given its LU decomposition
 

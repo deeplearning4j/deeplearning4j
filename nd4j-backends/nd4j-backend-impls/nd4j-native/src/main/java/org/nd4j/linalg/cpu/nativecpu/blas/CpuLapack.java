@@ -8,22 +8,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class CpuLapack extends BaseLapack {
 
-
-
-    /**
-     * LU decomposiiton of a matrix
-     *
-     * @param M
-     * @param N
-     * @param A
-     * @param lda
-     * @param IPIV
-     * @param INFO
-     */
     @Override
-    public void getrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
+    public void sgetrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
 
     }
+
 
     /**
      * Generate inverse ggiven LU decomp

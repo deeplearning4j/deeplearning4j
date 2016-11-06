@@ -49,27 +49,18 @@ public class JcublasLapack extends BaseLapack {
 
 
 
-    /**
-     * LU decomposiiton of a matrix
-     *
-     * @param M
-     * @param N
-     * @param A
-     * @param lda
-     * @param IPIV
-     * @param INFO
-     */
+
     @Override
-    public void getrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
+    public void sgetrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
 	
 	if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT getrf called");
+            logger.warn("FLOAT getrf called in DOUBLE environment");
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
 	// Get context for current thread
-        CudaContext ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext() ;
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext() ;
 
 	// setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -83,6 +74,7 @@ public class JcublasLapack extends BaseLapack {
 
 		// transfer the INDArray into GPU memory
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
+
 		// this output - indicates how much memory we'll need for the real operation
 		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
 
@@ -97,20 +89,11 @@ public class JcublasLapack extends BaseLapack {
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat ) ;
 		}
-		logger.info("Worksize returned: {}", worksize.getInt(0));
 
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;
-		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
-		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
-		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
-		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
-
-
-
-		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickDeviceWrite();
-
+		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -118,49 +101,24 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(work, ctx)).asFloatPointer(),
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(IPIV, ctx)).asIntPointer() ,
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(INFO, ctx)).asIntPointer()
+			new CudaPointer(allocator.getPointer(work, ctx)).asFloatPointer(),
+			new CudaPointer(allocator.getPointer(IPIV, ctx)).asIntPointer() ,
+			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
 
-
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
 		}
-			// Copy the results back to the input vectors//
-			// INFO.putScalar(0,info.asInt()[0] ) ;
-			// int xxx[] = ipiv.asInt() ;
-			// obtain pointers
-			// Pointer dst = AtomicAllocator.getInstance().getPointer(IPIV, ctx);
-			//	Pointer src = AtomicAllocator.getInstance().getPointer(ipiv, ctx);
+		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
 
-			// device to device copy
-			// nativeOps.memcpyAsync(dst, src, IPIV.length() * 4, 3, ctx.getSpecialStream());
-			// ctx.syncSpecialStream();
-
-			// notify that IPIV was modified on device side
-			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickDeviceWrite();
-
-			// A is modified on device side as well
-			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickDeviceWrite();
-			AtomicAllocator.getInstance().getAllocationPoint(A).tickDeviceWrite();
-
-			//IPIV.setData( ipiv );
-			// now when you'll call getInt(), data will travel back to host
-//			if( IPIV.getInt(2) != 4 ) { 
-//				System.out.println( "WTF" + xxx[2] ) ; 
-//			}
-
-		// After we get an inplace result we should 
-		// transpose the array - because of differenes in 
-		// column- and row-major ordering between ND4J & CUDA
-        	//A.setStride( A.stride()[1], A.stride()[0] );
+		// A is modified on device side as well
+		allocator.getAllocationPoint(INFO).tickDeviceWrite();
+		allocator.getAllocationPoint(A).tickDeviceWrite();
 	}
-		// this op call is synchronous, so we don't need register action here
-        //allocator.registerAction(ctx, A );
+	// this op call is synchronous, so we don't need register action here
     }
 
     /**
