@@ -31,6 +31,8 @@ import org.bytedeco.javacpp.IntPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 import static org.bytedeco.javacpp.cusolver.*;
 
 /**
@@ -81,26 +83,30 @@ public class JcublasLapack extends BaseLapack {
 		// transfer the INDArray into GPU memory
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
 		// this output - indicates how much memory we'll need for the real operation
-		IntPointer worksize = new IntPointer(1) ;
+		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnSgetrf_bufferSize( 
 			solverDn, 
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			worksize
+			(IntPointer) worksize.addressPointer() // we intentionally use host pointer here
 			) ;
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat ) ;
 		}
+		logger.info("Worksize returned: {}", worksize.getInt(0));
+
 		// Now allocate memory for the workspace, the permutation matrix and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.get(0)) ;
+		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;
 		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
 		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
 		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
+
+		logger.info("IPIV data before: {}", Arrays.toString(INFO.data().asInt()));
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -108,13 +114,15 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(work, ctx)).asFloatPointer(),
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(IPIV, ctx)).asIntPointer() ,
-			new CudaPointer(AtomicAllocator.getInstance().getPointer(INFO, ctx)).asIntPointer()
+			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(work)).asFloatPointer(),
+			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer() ,
+			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(INFO)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
+
+			logger.info("IPIV data after: {}", Arrays.toString(INFO.data().asInt()));
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
