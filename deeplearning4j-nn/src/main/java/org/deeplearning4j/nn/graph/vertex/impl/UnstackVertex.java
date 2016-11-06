@@ -31,28 +31,31 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
-/** SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
- * For example, a subset of the activations out of a layer.<br>
- * Note that this subset is specifying by means of an interval of the original activations.
- * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
- * new SubsetVertex(0,9).<br>
- * In the case of convolutional (4d) activations, this is done along depth.
- * @author Alex Black
+/**
+ * UnstackVertex allows for unstacking of inputs so that they may be forwarded through
+ * a network. This is useful for cases such as Triplet Embedding, where embeddings can
+ * be separated and run through subsequent layers.
+ *
+ * Works similarly to SubsetVertex, except on dimension 0 of the input. stackSize is
+ * explicitly defined by the user to properly calculate an step.
+ *
+ * @author Justin Long (crockpotveggies)
  */
-public class SubsetVertex extends BaseGraphVertex {
+public class UnstackVertex extends BaseGraphVertex {
     private int from;
-    private int to; //inclusive
-    private int[] forwardShape;
+    private int stackSize;
+    private int forwardShape[];
+    private int step;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to){
-        this(graph,name,vertexIndex,null,null,from,to);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize){
+        this(graph,name,vertexIndex,null,null,from,stackSize);
     }
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices, VertexIndices[] outputVertices,
-                        int from, int to) {
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                         VertexIndices[] outputVertices, int from, int stackSize) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.from = from;
-        this.to = to;
+        this.stackSize = stackSize;
     }
 
     @Override
@@ -74,15 +77,19 @@ public class SubsetVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        // once we know the inputs, save the shape and interval size for doBackward
+        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        this.step = inputs[0].size(0)/stackSize;
+        int start = from*step;
+        int end = (from+1)*step;
 
-        switch (inputs[0].rank()) {
+        switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
             case 3:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             case 4:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all());
+                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             default:
                 throw new UnsupportedOperationException("Cannot get subset for activations of rank " + inputs[0].rank());
         }
@@ -93,15 +100,18 @@ public class SubsetVertex extends BaseGraphVertex {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = Nd4j.zeros(forwardShape);
+        int start = from*step;
+        int end = (from+1)*step;
+
         switch (forwardShape.length) {
             case 2:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all()}, epsilon);
                 break;
             case 3:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             case 4:
-                out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
+                out.put(new INDArrayIndex[]{NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, epsilon);
                 break;
             default:
                 throw new RuntimeException("Invalid activation rank");  //Should never happen
@@ -110,12 +120,12 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public String toString() {
-        return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",toIdx=" + to + ")";
+    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
+        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
-    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    public String toString() {
+        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from + ",forwardShape=" + forwardShape + ")";
     }
 }

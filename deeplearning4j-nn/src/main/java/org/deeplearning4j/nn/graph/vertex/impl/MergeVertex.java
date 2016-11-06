@@ -156,7 +156,7 @@ public class MergeVertex extends BaseGraphVertex {
 
         if(forwardPassShapes.length == 1){
             //No op case
-            return new Pair<>(null,epsilons);
+            return new Pair<>(null,new INDArray[]{epsilon});
         }
 
         //Split the epsilons in the opposite way that the activations were merged
@@ -168,14 +168,14 @@ public class MergeVertex extends BaseGraphVertex {
             case 2:
                 //Standard
                 for( int i=0; i<forwardPassShapes.length; i++ ){
-                    out[i].assign(epsilons[0].get(NDArrayIndex.all(),   //All rows
+                    out[i].assign(epsilon.get(NDArrayIndex.all(),   //All rows
                             NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1])));     //subset of columns
                     cumulative += forwardPassShapes[i][1];
                 }
                 break;
             case 3:
                 for( int i=0; i<forwardPassShapes.length; i++ ){
-                    out[i].assign(epsilons[0].get(NDArrayIndex.all(),   //All rows
+                    out[i].assign(epsilon.get(NDArrayIndex.all(),   //All rows
                             NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]), //subset of columns
                             NDArrayIndex.all()));   //All time steps
 
@@ -184,7 +184,7 @@ public class MergeVertex extends BaseGraphVertex {
                 break;
             case 4:
                 for( int i=0; i<forwardPassShapes.length; i++ ){
-                    out[i].assign(epsilons[0].get(NDArrayIndex.all(),
+                    out[i].assign(epsilon.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]),   //Subset of depth
                             NDArrayIndex.all(),     //Width
                             NDArrayIndex.all()));    //height
