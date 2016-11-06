@@ -3,6 +3,23 @@ var selectedChart = "stdevActivations";
 function selectStdevChart(fieldName) {
     selectedChart = fieldName;
     lastUpdateTime = -1;    //Reset update time to force reload
+
+    //Tab highlighting logic
+    if (selectedChart == "stdevActivations") {
+        $("#stdevActivations").attr("class", "active");
+        $("#stdevGradients").removeAttr("class");
+        $("#stdevUpdates").removeAttr("class");
+    }
+    else if (selectedChart == "stdevGradients") {
+        $("#stdevActivations").removeAttr("class");
+        $("#stdevGradients").attr("class", "active");
+        $("#stdevUpdates").removeAttr("class");
+    }
+    else {
+        $("#stdevActivations").removeAttr("class");
+        $("#stdevGradients").removeAttr("class");
+        $("#stdevUpdates").attr("class", "active");
+    }
 }
 
 /* ---------- Render page ---------- */
@@ -258,23 +275,6 @@ function renderUpdatesRatio(data) {
 function renderStdevChart(data) {
     var selected = selectedChart;
     var chart = $("#stdevChart");
-
-    //Tab highlighting logic
-    if (selected == "stdevActivations") {
-        $("#stdevActivations").attr("class", "active");
-        $("#stdevGradients").removeAttr("class");
-        $("#stdevUpdates").removeAttr("class");
-    }
-    else if (selected == "stdevGradients") {
-        $("#stdevActivations").removeAttr("class");
-        $("#stdevGradients").attr("class", "active");
-        $("#stdevUpdates").removeAttr("class");
-    }
-    else {
-        $("#stdevActivations").removeAttr("class");
-        $("#stdevGradients").removeAttr("class");
-        $("#stdevUpdates").attr("class", "active");
-    }
 
     if (chart.length) {
 
