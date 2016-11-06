@@ -175,13 +175,11 @@
                             <div class="box-header">
                                 <h2><b><h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>
                                     10</sub></b></h2></b></h2>
-                                <div style="float: right">
-                                    <p class="stackControls center">
-                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.activations")" onclick="selectStdevChart('stdevActivations')">
-                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.gradients")" onclick="selectStdevChart('stdevGradients')">
-                                        <input class="btn btn-small" type="button" value="@i18n.getMessage("train.overview.chart.stdevBtn.updates")" onclick="selectStdevChart('stdevUpdates')">
-                                    </p>
-                                </div>
+                                <ul class="nav tab-menu nav-tabs" style="position:relative; top: -11px; right: -12px;">
+                                    <li id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">@i18n.getMessage("train.overview.chart.stdevBtn.activations")</a></li>
+                                    <li id="stdevGradients"><a href="javascript:void(0);" onclick="selectStdevChart('stdevGradients')">@i18n.getMessage("train.overview.chart.stdevBtn.gradients")</a></li>
+                                    <li id="stdevUpdates"><a href="javascript:void(0);" onclick="selectStdevChart('stdevUpdates')">@i18n.getMessage("train.overview.chart.stdevBtn.updates")</a></li>
+                                </ul>
                             </div>
                             <div class="box-content">
                                 <div id="stdevChart" class="center" style="height: 300px;" ></div>
