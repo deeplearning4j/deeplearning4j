@@ -329,7 +329,7 @@ function renderGPULayout(data) {
         $("#systemMemoryChart").attr("class", "box span12");
     }
 }
-/* ---------- Render Dropdown ---------- */
+/* ---------- Render System Dropdown ---------- */
 function renderMultipleTabs(data) {
 
     var nMachinesData = data["memory"];
