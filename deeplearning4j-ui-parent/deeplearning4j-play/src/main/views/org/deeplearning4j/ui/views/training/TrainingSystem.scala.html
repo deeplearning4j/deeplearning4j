@@ -95,7 +95,7 @@
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.system.title")</b></h2>
                                 <div class="btn-group" style="margin-top: -11px; position:absolute; right: 40px;">
-                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">Select Machine <span class="caret"></span></button>
+                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">@i18n.getMessage("train.system.selectMachine") <span class="caret"></span></button>
                                     <ul class="dropdown-menu" id="systemTab"></ul>
                                 </div>
                             </div>
@@ -287,7 +287,7 @@
         <!-- Execute once on page load -->
         <script>
                 $(document).ready(function () {
-                    renderSystemPage();
+                    renderSystemPage(true);
                     renderTabs();
                     selectMachine();
                 });
@@ -296,7 +296,7 @@
             <!--Execute periodically (every 2 sec) -->
         <script>
                 setInterval(function () {
-                    renderSystemPage();
+                    renderSystemPage(false);
                 }, 2000);
         </script>
             <!--End JavaScript-->

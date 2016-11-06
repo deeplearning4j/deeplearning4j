@@ -37,6 +37,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
@@ -54,7 +55,7 @@ public class TrainModule implements UIModule {
     private int currentWorkerIdx;
     private Map<String,AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>());    //Key: session ID
     private Map<String,Map<Integer,String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
-
+    private Map<String,Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -76,17 +77,27 @@ public class TrainModule implements UIModule {
         Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
         Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+        Route r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function, this::getLastUpdateForSession);
         Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier, () -> ok(String.valueOf(currentWorkerIdx)));
         Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function, this::setWorkerByIdx);
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r7, r7a);
+
+        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r6d, r7, r7a);
     }
 
     @Override
-    public void reportStorageEvents(Collection<StatsStorageEvent> events) {
+    public synchronized void reportStorageEvents(Collection<StatsStorageEvent> events) {
         for (StatsStorageEvent sse : events) {
             if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
                 knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+                Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
+                if(lastUpdate == null){
+                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());
+                } else {
+                    if(sse.getTimestamp() > lastUpdate){
+                        lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());   //Should be thread safe - read only elsewhere
+                    }
+                }
             }
         }
 
@@ -237,6 +248,12 @@ public class TrainModule implements UIModule {
         }
     }
 
+    private Result getLastUpdateForSession(String sessionID){
+        Long lastUpdate = lastUpdateForSession.get(sessionID);
+        if(lastUpdate != null) return ok(String.valueOf(lastUpdate));
+        return ok("-1");
+    }
+
     private Result setWorkerByIdx(String newWorkerIdx){
         try{
             currentWorkerIdx = Integer.parseInt(newWorkerIdx);
@@ -247,6 +264,8 @@ public class TrainModule implements UIModule {
     }
 
     private Result getOverviewData() {
+        Long lastUpdate = lastUpdateForSession.get(currentSessionID);
+        if(lastUpdate == null) lastUpdate = -1L;
         I18N i18N = I18NProvider.getInstance();
 
         boolean noData = currentSessionID == null;
@@ -264,6 +283,7 @@ public class TrainModule implements UIModule {
         List<Double> scores = new ArrayList<>();
 
         Map<String, Object> result = new HashMap<>();
+        result.put("updateTimestamp", lastUpdate);
         result.put("scores", scores);
         result.put("scoresIter", scoresIterCount);
 
@@ -479,6 +499,9 @@ public class TrainModule implements UIModule {
 
 
     private Result getModelData(String str) {
+        Long lastUpdateTime = lastUpdateForSession.get(currentSessionID);
+        if(lastUpdateTime == null) lastUpdateTime = -1L;
+
         int layerIdx = Integer.parseInt(str);   //TODO validation
         I18N i18N = I18NProvider.getInstance();
 
@@ -496,6 +519,7 @@ public class TrainModule implements UIModule {
 
 
         Map<String, Object> result = new HashMap<>();
+        result.put("updateTimestamp", lastUpdateTime);
 
         Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
         if (conf == null) {
@@ -551,6 +575,9 @@ public class TrainModule implements UIModule {
     }
 
     public Result getSystemData() {
+        Long lastUpdate = lastUpdateForSession.get(currentSessionID);
+        if(lastUpdate == null) lastUpdate = -1L;
+
         I18N i18n = I18NProvider.getInstance();
 
         //First: get the MOST RECENT update...
@@ -578,6 +605,7 @@ public class TrainModule implements UIModule {
         Pair<Map<String, Object>, Map<String, Object>> hwSwInfo = getHardwareSoftwareInfo(allStatic, i18n);
 
         Map<String, Object> ret = new HashMap<>();
+        ret.put("updateTimestamp", lastUpdate);
         ret.put("memory", mem);
         ret.put("hardware", hwSwInfo.getFirst());
         ret.put("software", hwSwInfo.getSecond());

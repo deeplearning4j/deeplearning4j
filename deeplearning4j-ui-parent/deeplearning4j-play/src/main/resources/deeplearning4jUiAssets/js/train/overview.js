@@ -1,15 +1,36 @@
-
 /* ---------- Variances chart selection ---------- */
 var selectedChart = "stdevActivations";
-function selectStdevChart(fieldName){
+function selectStdevChart(fieldName) {
     selectedChart = fieldName;
+    lastUpdateTime = -1;    //Reset update time to force reload
 }
 
 /* ---------- Render page ---------- */
-
-function renderOverviewPage() {
+var lastUpdateTime = -1;
+var lastUpdateSession = "";
+function renderOverviewPage(firstLoad) {
     updateSessionWorkerSelect();
 
+    if(firstLoad || !lastUpdateSession || lastUpdateSession == "" || lastUpdateSession != currSession){
+        executeOverviewUpdate();
+    } else {
+        //Check last update time first - see if data has actually changed...
+        $.ajax({
+            url: "/train/sessions/lastUpdate/" + currSession,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                if(data > lastUpdateTime){
+                    executeOverviewUpdate();
+                }
+            }
+        });
+    }
+}
+
+function executeOverviewUpdate(){
     $.ajax({
         url: "/train/overview/data",
         async: true,
@@ -17,6 +38,8 @@ function renderOverviewPage() {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
+            lastUpdateSession = currSession;
+            lastUpdateTime = data["updateTimestamp"];
             renderScoreVsIterChart(data);
             renderModelPerformanceTable(data);
             renderUpdatesRatio(data);
@@ -60,7 +83,7 @@ function renderScoreVsIterChart(data) {
             });
 
         function showTooltip(x, y, contents) {
-            $('<div id="tooltip">' + contents + '</div>').css( {
+            $('<div id="tooltip">' + contents + '</div>').css({
                 position: 'absolute',
                 display: 'none',
                 top: y + 8,
@@ -231,8 +254,6 @@ function renderUpdatesRatio(data) {
 }
 
 
-
-
 /* ---------- Stdev Charts ---------- */
 function renderStdevChart(data) {
     var selected = selectedChart;
@@ -329,7 +350,7 @@ function renderStdevChart(data) {
             var xPos = pos.x.toFixed(0);
             $("#xStdev").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLogStdev").text(pos.y.toFixed(5));
-            $("#yStdev").text(Math.pow(10,pos.y).toFixed(5));
+            $("#yStdev").text(Math.pow(10, pos.y).toFixed(5));
 
             //Tooltip
             if (item) {

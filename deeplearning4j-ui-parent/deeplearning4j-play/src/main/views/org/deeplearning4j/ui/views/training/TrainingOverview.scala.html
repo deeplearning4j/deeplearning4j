@@ -245,14 +245,14 @@
         <!-- Execute once on page load -->
         <script>
                 $(document).ready(function () {
-                    renderOverviewPage();
+                    renderOverviewPage(true);
                 });
         </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
                 setInterval(function () {
-                    renderOverviewPage();
+                    renderOverviewPage(false);
                 }, 2000);
         </script>
             <!-- End JavaScript-->

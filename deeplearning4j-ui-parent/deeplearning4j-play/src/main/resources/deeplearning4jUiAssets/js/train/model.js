@@ -4,16 +4,40 @@ function setSelectedVertex(vertex){
     selectedVertex = vertex;
     currSelectedParamHist = null;   //Reset selected param
     currSelectedUpdateHist = null;  //Reset selected param
+    lastUpdateTimeModel = -1;       //Reset last update time on vertex change
 }
 
 var selectedMeanMagChart = "ratios";
 function setSelectMeanMagChart(selectedChart){
     selectedMeanMagChart = selectedChart;
+    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
 }
 
-function renderModelPage() {
+var lastUpdateTimeModel = -1;
+var lastUpdateSessionModel = "";
+function renderModelPage(firstLoad) {
     updateSessionWorkerSelect();
 
+    if(firstLoad || !lastUpdateSessionModel || lastUpdateSessionModel == "" || lastUpdateSessionModel != currSession){
+        executeModelUpdate();
+    } else {
+        //Check last update time first - see if data has actually changed...
+        $.ajax({
+            url: "/train/sessions/lastUpdate/" + currSession,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                if(data > lastUpdateTimeModel){
+                    executeModelUpdate();
+                }
+            }
+        });
+    }
+}
+
+function executeModelUpdate(){
     if(selectedVertex >= 0) {
         $.ajax({
             url: "/train/model/data/" + selectedVertex,
@@ -22,6 +46,8 @@ function renderModelPage() {
                 console.log("Error getting data: " + error);
             },
             success: function (data) {
+                lastUpdateSessionModel = currSession;
+                lastUpdateTimeModel = data["updateTimestamp"];
                 setZeroState(false);
                 renderLayerTable(data);
                 renderMeanMagChart(data);
@@ -421,6 +447,7 @@ function renderLearningRateChart(data) {
 
 function selectParamHist(paramName){
     currSelectedParamHist = paramName;
+    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
 }
 
 var currSelectedParamHist = null;
@@ -494,6 +521,7 @@ function renderParametersHistogram(data) {
 /* ---------- Updates Histogram ---------- */
 function selectUpdateHist(paramName){
     currSelectedUpdateHist = paramName;
+    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
 }
 
 var currSelectedUpdateHist = null;

@@ -283,14 +283,14 @@
         <script>
                 $(document).ready(function () {
                     renderModelGraph();
-                    renderModelPage();
+                    renderModelPage(true);
                 });
         </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
                 setInterval(function () {
-                    renderModelPage();
+                    renderModelPage(false);
                 }, 2000);
         </script>
     </body>
