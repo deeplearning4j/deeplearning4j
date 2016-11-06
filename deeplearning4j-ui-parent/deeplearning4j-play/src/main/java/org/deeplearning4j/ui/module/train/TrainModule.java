@@ -1031,8 +1031,8 @@ public class TrainModule implements UIModule {
             List<Long> timestamps = new ArrayList<>();
             List<Float> fracJvm = new ArrayList<>();
             List<Float> fracOffHeap = new ArrayList<>();
-            long[] lastBytes = new long[2];
-            long[] lastMaxBytes = new long[2];
+            long[] lastBytes = new long[2+numDevices];
+            long[] lastMaxBytes = new long[2+numDevices];
 
             List<List<Float>> fracDeviceMem = null;
             if (numDevices > 0) {
@@ -1073,9 +1073,10 @@ public class TrainModule implements UIModule {
                     for (int i = 0; i < numDevices; i++) {
                         double frac = devBytes[i] / ((double) devMaxBytes[i]);
                         fracDeviceMem.get(i).add((float) frac);
+                        lastBytes[2+i] = devBytes[i];
+                        lastMaxBytes[2+i] = devMaxBytes[i];
                     }
                 }
-
             }
 
             List<List<Float>> fracUtilized = new ArrayList<>();
@@ -1096,7 +1097,7 @@ public class TrainModule implements UIModule {
             jvmData.put("times", timestamps);
             jvmData.put("isDevice", isDevice);
             jvmData.put("seriesNames", seriesNames);
-            jvmData.put("values", Arrays.asList(fracJvm, fracOffHeap));
+            jvmData.put("values", fracUtilized);
             jvmData.put("currentBytes", lastBytes);
             jvmData.put("maxBytes", lastMaxBytes);
             ret.put(String.valueOf(count), jvmData);
