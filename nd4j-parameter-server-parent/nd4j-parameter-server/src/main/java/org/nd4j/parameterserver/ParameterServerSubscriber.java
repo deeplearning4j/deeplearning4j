@@ -1,9 +1,11 @@
-package org.nd4j.parameterserver.parameteraveraging;
+package org.nd4j.parameterserver;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.Parameters;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -13,7 +15,9 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayCallback;
+import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.aeron.ipc.response.AeronNDArrayResponder;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.model.MasterConnectionInfo;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.status.play.StatusServer;
@@ -22,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import play.server.Server;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
@@ -34,9 +39,10 @@ import java.util.concurrent.locks.LockSupport;
  */
 @NoArgsConstructor
 @Data
-public class ParameterAveragingSubscriber {
+@Parameters(separators = ",")
+public class ParameterServerSubscriber {
 
-    private static Logger log = LoggerFactory.getLogger(ParameterAveragingSubscriber.class);
+    private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
 
     @Parameter(names={"-p","--port"}, description = "The port to listen on for the daemon", arity = 1)
     private int port = 40123;
@@ -56,7 +62,8 @@ public class ParameterAveragingSubscriber {
     private String mediaDriverDirectoryName;
     @Parameter(names={"-sp","--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
     private int statusServerPort = 9000;
-
+    @Parameter(names={"-s","--shape"}, description = "The shape of the ndarray", arity = 1)
+    private List<Integer> shape;
 
     private Server server;
     private MediaDriver mediaDriver;
@@ -70,7 +77,7 @@ public class ParameterAveragingSubscriber {
      * media driver that already exists
      * @param mediaDriver
      */
-    public ParameterAveragingSubscriber(MediaDriver mediaDriver) {
+    public ParameterServerSubscriber(MediaDriver mediaDriver) {
         Preconditions.checkNotNull(mediaDriver);
         this.mediaDriver = mediaDriver;
     }
@@ -151,9 +158,10 @@ public class ParameterAveragingSubscriber {
 
 
         if(master) {
-            callback =  new ParameterAveragingListener(parameterLength);
+            //instantiate with shape instead of just length
+            callback =  new ParameterServerListener(Ints.toArray(shape));
             //start an extra daemon for responding to get queries
-            ParameterAveragingListener cast = (ParameterAveragingListener) callback;
+            ParameterServerListener cast = (ParameterServerListener) callback;
             responder = AeronNDArrayResponder.startSubscriber(
                     getContext(),
                     host,port + 1,
@@ -205,6 +213,12 @@ public class ParameterAveragingSubscriber {
         return ctx;
     }
 
+    public INDArray getMasterArray() {
+        NDArrayHolder holder = (NDArrayHolder) callback;
+        return holder.get();
+    }
+
+
     /**
      * Returns true if the subscriber is launched
      * @return
@@ -214,6 +228,6 @@ public class ParameterAveragingSubscriber {
     }
 
     public static void main(String[] args) {
-        new ParameterAveragingSubscriber().run(args);
+        new ParameterServerSubscriber().run(args);
     }
 }

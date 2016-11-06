@@ -1,4 +1,4 @@
-package org.nd4j.parameterserver.parameteraveraging;
+package org.nd4j.parameterserver;
 
 import io.aeron.Aeron;
 import lombok.AllArgsConstructor;
@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.aeron.ipc.AeronNDArrayPublisher;
 import org.nd4j.aeron.ipc.NDArrayCallback;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -21,6 +22,27 @@ public class PublishingListener implements NDArrayCallback {
     private String masterUrl;
     private int streamId;
     private Aeron.Context aeronContext;
+
+    /**
+     * Used for partial updates using tensor along
+     * dimension
+     *
+     * @param arr        the array to count as an update
+     * @param idx        the index for the tensor along dimension
+     * @param dimensions the dimensions to act on for the tensor along dimension
+     */
+    @Override
+    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+                .streamId(streamId)
+                .ctx(aeronContext).channel(masterUrl)
+                .build()) {
+            publisher.publish(NDArrayMessage.builder().arr(arr).dimensions(dimensions).index(idx).build());
+            log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Setup an ndarray

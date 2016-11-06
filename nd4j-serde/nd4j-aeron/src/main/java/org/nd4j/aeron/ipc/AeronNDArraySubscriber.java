@@ -12,7 +12,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
- * Subscriber for ndarray
+ * Subscriber for ndarrays.
+ * This is a pass through class for aeron
+ * that will pass ndarrays received from channels
+ * to an {@link NDArrayCallback} for operation after
+ * assembling the ndaray from a raw {@link org.agrona.concurrent.UnsafeBuffer}
  *
  * @author Adam Gibson
  */

@@ -6,6 +6,7 @@ import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,19 +47,20 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
     /**
      * Publish an ndarray to an aeron channel
-     * @param arr
+     * @param message
      * @throws Exception
      */
-    public void publish(INDArray arr) throws Exception {
+    public void publish(NDArrayMessage message) throws Exception {
         // Allocate enough buffer size to hold maximum message length
         // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
         log.debug("Publishing to " + channel + " on stream Id " + streamId);
         //ensure default values are set
-        while(!arr.isCompressed())
-            Nd4j.getCompressor().compressi(arr,"GZIP");
+        INDArray arr = message.getArr();
+        while(!message.getArr().isCompressed())
+            message.setArr(Nd4j.getCompressor().compress(arr,"GZIP"));
 
 
-        UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(arr);
+        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
 
         if(!init)
             init();
@@ -123,6 +125,16 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         log.debug("Done sending.");
 
+    }
+
+
+    /**
+     * Publish an ndarray to an aeron channel
+     * @param arr
+     * @throws Exception
+     */
+    public void publish(INDArray arr) throws Exception {
+        publish(NDArrayMessage.wholeArrayUpdate(arr));
     }
 
 
