@@ -262,7 +262,6 @@
         <script src="/assets/js/jquery.sparkline.min.js"></script>
         <script src="/assets/js/counter.js"></script>
         <script src="/assets/js/retina.js"></script>
-        <script src="/assets/js/custom.js"></script>
         <script src="/assets/js/cytoscape.min.js"></script>
         <script src="/assets/js/dagre.min.js"></script>
         <script src="/assets/js/cytoscape-dagre.js"></script>
@@ -270,15 +269,15 @@
         <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
         <script src="/assets/js/train/train.js"></script> <!-- Common (lang selection, etc) -->
 
-        <!-- Execute once on page load -->
-        <script>
-                $(document).ready(function () {
-                    renderModelGraph();
-                    renderModelPage(true);
-                });
-        </script>
+            <!-- Execute once on page load -->
+       <script>
+               $(document).ready(function () {
+                   renderModelGraph();
+                   renderModelPage(true);
+               });
+       </script>
 
-            <!-- Execute periodically (every 2 sec) -->
+               <!-- Execute periodically (every 2 sec) -->
         <script>
                 setInterval(function () {
                     renderModelPage(false);
