@@ -106,7 +106,7 @@ public class JcublasLapack extends BaseLapack {
 		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
 		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
-		logger.info("IPIV data before: {}", Arrays.toString(INFO.data().asInt()));
+		logger.info("IPIV data before: {}", Arrays.toString(IPIV.data().asInt()));
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -122,7 +122,7 @@ public class JcublasLapack extends BaseLapack {
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
 
-			logger.info("IPIV data after: {}", Arrays.toString(INFO.data().asInt()));
+			logger.info("IPIV data after: {}", Arrays.toString(IPIV.data().asInt()));
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
