@@ -302,7 +302,6 @@ function renderSystemInformation(data) {
 }
 
 /* ---------- GPU Layout ---------- */
-
 function renderGPULayout(data) {
 
     // var isDevice = data["memory"][machineID]["isDevice"][0];
@@ -310,7 +309,7 @@ function renderGPULayout(data) {
     var isDevice = data["memory"][machineID]["isDevice"];
     if(isDevice ){
         for(var i=0; i<isDevice.length; i++ ){
-            if(isDevice[i] == "true"){
+            if(isDevice[i] == true){
                 anyDevices = true;
                 break;
             }
@@ -337,24 +336,9 @@ function renderMultipleTabs(data) {
     var nMachines = Object.keys(nMachinesData);
 
     /* Generate Tabs Depending on nMachines.length*/
-// <<<<<<< HEAD
-//     for (i = 0; i < nMachines.length; i++) {
-//         $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
-//     }
-//
-//     /* Show/Hide Tabs on Click */
-//     $('#systemTab a:first').tab('show');
-//     $('#systemTab a').click(function (e) {
-//         e.preventDefault();
-//         $(this).tab('show');
-//         renderGPULayout(data); // Check isDevice when switching tabs
-//     });
-//
-// =======
     for (i = 0; i < nMachines.length; i++)  {
         $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"javascript:void();\">Machine " + nMachines[i] + "</a></li>");
     }
-// >>>>>>> ej_ui
 }
 
 /* ---------- Set Machine ID Depending on Item Clicked ---------- */

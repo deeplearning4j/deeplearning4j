@@ -1,8 +1,7 @@
-package org.deeplearning4j.spark.uistats;
+package org.deeplearning4j.spark.ui;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.rdd.RDD;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -16,29 +15,32 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by Alex on 12/10/2016.
+ * Created by Alex on 07/11/2016.
  */
-public class TestListeners extends BaseSparkTest {
+@Ignore
+public class TestSparkUI extends BaseSparkTest {
+
 
     @Test
-    public void testStatsCollection(){
+    public void testSparkUI() throws Exception {
 
         JavaSparkContext sc = getContext();
-        int nExecutors = numExecutors();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
@@ -66,52 +68,30 @@ public class TestListeners extends BaseSparkTest {
 
         TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
                 .batchSizePerWorker(5)
-                .averagingFrequency(6)
+                .averagingFrequency(4)
                 .build();
 
         SparkDl4jMultiLayer net = new SparkDl4jMultiLayer(sc,conf,tm);
-        StatsStorage ss = new MapDBStatsStorage();  //In-memory
+        StatsStorage ss = new InMemoryStatsStorage();
 
         net.setListeners(ss, Collections.singletonList(new StatsListener(null)));
 
-        List<DataSet> list = new IrisDataSetIterator(120,150).next().asList();
+        UIServer.getInstance().attach(ss);
+
+        List<DataSet> list = new IrisDataSetIterator(150,150).next().asList();
         //120 examples, 4 executors, 30 examples per executor -> 6 updates of size 5 per executor
 
         JavaRDD<DataSet> rdd = sc.parallelize(list);
 
-        net.fit(rdd);
-
-        List<String> sessions = ss.listSessionIDs();
-        System.out.println("Sessions: " + sessions);
-        assertEquals(1, sessions.size());
-
-        String sid = sessions.get(0);
-
-        List<String> typeIDs = ss.listTypeIDsForSession(sid);
-        List<String> workers = ss.listWorkerIDsForSession(sid);
-
-        System.out.println(sid + "\t" + typeIDs + "\t" + workers);
-
-        List<Persistable> lastUpdates = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
-        System.out.println(lastUpdates);
-
-        System.out.println("Static info:");
-        for(String wid : workers) {
-            Persistable staticInfo = ss.getStaticInfo(sid, StatsListener.TYPE_ID, wid);
-            System.out.println(sid + "\t" + wid );
+        int nEpochs = 5;
+        for(int i=0; i<nEpochs; i++ ) {
+            net.fit(rdd);
+            Thread.sleep(1000);
         }
 
-        assertEquals(1, typeIDs.size());
-        assertEquals(numExecutors(), workers.size());
-        String firstWorker = workers.get(0);
-        String firstWorkerSubstring = workers.get(0).substring(0,firstWorker.length()-1);
-        for(String wid : workers){
-            String widSubstring = wid.substring(0, wid.length()-1);
-            assertEquals(firstWorkerSubstring, widSubstring);
 
-            String counterVal = wid.substring(wid.length()-1,wid.length());
-            int cv = Integer.parseInt(counterVal);
-            assertTrue(0 <= cv && cv < numExecutors());
-        }
+
     }
+
+
 }
