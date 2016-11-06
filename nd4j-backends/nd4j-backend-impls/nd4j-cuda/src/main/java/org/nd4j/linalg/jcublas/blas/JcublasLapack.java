@@ -104,22 +104,13 @@ public class JcublasLapack extends BaseLapack {
 		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
 		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
-			AllocationPoint pointIPIV = AtomicAllocator.getInstance().getAllocationPoint(IPIV);
-
 		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
 		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
-		IntPointer ptr = new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer();
-			ptr.put(0, 1);
-			ptr.put(1, 1);
-			ptr.put(2, 1);
-
-		logger.info("IPIV data before: {}", Arrays.toString(IPIV.data().asInt()));
-
-		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
 
 
-		logger.info("ipiv HS: {}", pointIPIV.isActualOnHostSide());
+		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickDeviceWrite();
+
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -127,33 +118,14 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(work)).asFloatPointer(),
-			ptr ,
-			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(INFO)).asIntPointer()
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(work, ctx)).asFloatPointer(),
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(IPIV, ctx)).asIntPointer() ,
+			new CudaPointer(AtomicAllocator.getInstance().getPointer(INFO, ctx)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
 
-
-			logger.info("ipiv HS: {}", pointIPIV.isActualOnHostSide());
-
-
-
-			//AtomicAllocator.getInstance().getAllocationPoint(ipiv).tickHostWrite();
-
-			//ogger.info("ipiv: {}", Arrays.toString(ipiv.asInt()));
-			logger.info("ip2[0]: {}; ip2[1]: {}; ip2[2]: {};", ptr.get(0), ptr.get(1), ptr.get(2));
-
-			// notify that IPIV was modified on device side
-			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
-			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostRead();
-
-			// A is modified on device side as well
-			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickHostWrite();
-			AtomicAllocator.getInstance().getAllocationPoint(A).tickHostWrite();
-
-			logger.info("IPIV data after 2: {}", Arrays.toString(IPIV.data().asInt()));
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
