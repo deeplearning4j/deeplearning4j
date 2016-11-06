@@ -89,6 +89,7 @@ public class TrainModuleUtils {
         for (String s : networkInputs) {
             vertexToIndexMap.put(s, vertexCount++);
             layerNames.add(s);
+            originalVertexName.add(null);
             layerTypes.add(s);
             layerInputs.add(Collections.emptyList());
             layerInfo.add(Collections.emptyMap());

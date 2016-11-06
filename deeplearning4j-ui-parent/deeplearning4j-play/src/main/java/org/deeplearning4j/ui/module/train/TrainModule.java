@@ -789,12 +789,9 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-//    private Pair<List<Integer>, Map<String, List<Double>>> getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
-//                                                                                  List<Persistable> updates, boolean isMLN) {
     private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, boolean isMLN) {
         if (gi == null) {
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
-//            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
         }
 
         String layerName = gi.getVertexNames().get(layerIdx);
@@ -804,7 +801,6 @@ public class TrainModule implements UIModule {
         }
         String layerType = gi.getVertexTypes().get(layerIdx);
         if ("input".equalsIgnoreCase(layerType)) {        //TODO better checking - other vertices, etc
-//            return new Pair<>(Collections.emptyList(), Collections.emptyMap());
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
 
@@ -875,7 +871,6 @@ public class TrainModule implements UIModule {
         if ("input".equalsIgnoreCase(type)) {
             return EMPTY_TRIPLE;
         }
-
         String layerName = gi.getOriginalVertexName().get(index);
 
         int size = (updates == null ? 0 : updates.size());

@@ -37,7 +37,11 @@ public class MapDBStatsStorage implements StatsStorage {
         this(new Builder());
     }
 
-    public MapDBStatsStorage(Builder builder) {
+    public MapDBStatsStorage(File f){
+        this(new Builder().file(f));
+    }
+
+    private MapDBStatsStorage(Builder builder) {
         File f = builder.getFile();
 
         if (f == null) {
