@@ -14,6 +14,66 @@ function languageSelect(languageCode, redirect){
     });
 }
 
+var currSession = "";
+function updateSessionSelect(){
+
+    $.ajax({
+        url: "/train/sessions/current",
+        async: true,
+        error: function (query, status, error) {
+            console.log("Error getting data: " + error);
+        },
+        success: function (data) {
+            currSession = data;
+
+            $.ajax({
+                url: "/train/sessions/all",
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error getting data: " + error);
+                },
+                success: function (data) {
+                    if(data.length > 1) {   //only show session selector if there are multiple sessions
+
+                        var elem = $("#sessionSelect");
+                        elem.empty();
+
+                        var currSelectedIdx = 0;
+                        for (var i = 0; i < data.length; i++) {
+                            if(data[i] == currSession){
+                                currSelectedIdx = i;
+                            }
+                            elem.append("<option value='" + data[i] + "'>" + data[i] + "</option>");
+                        }
+
+                        $("#sessionSelect option[value='" + data[currSelectedIdx] +"']").attr("selected", "selected");
+                        $("#sessionSelectDiv").show();
+                    } else {
+                        $("#sessionSelectDiv").hide();
+                    }
+                }
+            });
+        }
+    });
+}
+
+function selectNewSession(){
+    var selector = $("#sessionSelect");
+    var currSelected = selector.val();
+
+    if(currSelected){
+        $.ajax({
+            url: "/train/sessions/set/" + currSelected,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error setting session: " + error);
+            },
+            success: function (data) {
+            }
+        });
+    }
+}
+
 
 function formatBytes(bytes, precision){
     var index = 0;

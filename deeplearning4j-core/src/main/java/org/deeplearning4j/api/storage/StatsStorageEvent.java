@@ -16,6 +16,7 @@ import org.deeplearning4j.api.storage.StatsStorageListener;
 @AllArgsConstructor
 @Data
 public class StatsStorageEvent {
+    private final StatsStorage statsStorage;
     private final StatsStorageListener.EventType eventType;
     private final String sessionID;
     private final String typeID;

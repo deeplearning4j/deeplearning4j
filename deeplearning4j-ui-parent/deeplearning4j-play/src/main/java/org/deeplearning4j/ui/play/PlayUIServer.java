@@ -19,6 +19,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
+import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import play.Mode;
 import play.api.routing.Router;
 import play.routing.RoutingDsl;
@@ -50,7 +51,7 @@ public class PlayUIServer extends UIServer {
     public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
 
     private Server server;
-    private final BlockingQueue<Pair<StatsStorage, StatsStorageEvent>> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<StatsStorageEvent> eventQueue = new LinkedBlockingQueue<>();
     private List<Pair<StatsStorage, StatsStorageListener>> listeners = new ArrayList<>();
     private List<StatsStorage> statsStorageInstances = new ArrayList<>();
 
@@ -148,7 +149,7 @@ public class PlayUIServer extends UIServer {
     public synchronized void attach(StatsStorage statsStorage) {
         if (statsStorage == null) throw new IllegalArgumentException("StatsStorage cannot be null");
         if (statsStorageInstances.contains(statsStorage)) return;
-        StatsStorageListener listener = new QueuePairStatsStorageListener(statsStorage, eventQueue);
+        StatsStorageListener listener = new QueueStatsStorageListener(eventQueue);
         listeners.add(new Pair<>(statsStorage, listener));
         statsStorage.registerStatsStorageListener(listener);
         statsStorageInstances.add(statsStorage);
@@ -207,55 +208,23 @@ public class PlayUIServer extends UIServer {
             //Idea: collect all event stats, and route them to the appropriate modules
             while (!shutdown.get()) {
 
-                List<Pair<StatsStorage, StatsStorageEvent>> events = new ArrayList<>();
-                Pair<StatsStorage, StatsStorageEvent> sse = eventQueue.take();  //Blocking operation
+                List<StatsStorageEvent> events = new ArrayList<>();
+                StatsStorageEvent sse = eventQueue.take();  //Blocking operation
                 events.add(sse);
                 eventQueue.drainTo(events); //Non-blocking
 
-                //First: group by StatsStorage
-                Map<StatsStorage, List<StatsStorageEvent>> eventsBySource = new HashMap<>();
-                for (Pair<StatsStorage, StatsStorageEvent> p : events) {
-                    List<StatsStorageEvent> list = eventsBySource.get(p.getFirst());
-                    if (list == null) {
-                        list = new ArrayList<>();
-                        eventsBySource.put(p.getFirst(), list);
-                    }
-                    list.add(p.getSecond());
-                }
+                for(UIModule m : uiModules){
 
-                //Second: for each StatsStorage instance, sort by UI module and route to the appropriate locations...
-                int count = 0;
-                int skipped = 0;
-                for (Map.Entry<StatsStorage, List<StatsStorageEvent>> entry : eventsBySource.entrySet()) {
-
-                    Map<UIModule, List<StatsStorageEvent>> eventsByModule = new HashMap<>();
-                    for (Pair<StatsStorage, StatsStorageEvent> event : events) {
-                        String typeID = event.getSecond().getTypeID();
-                        if (!typeIDModuleMap.containsKey(typeID)) {
-                            skipped++;
-                            continue;
+                    List<String> callbackTypes = m.getCallbackTypeIDs();
+                    List<StatsStorageEvent> out = new ArrayList<>();
+                    for(StatsStorageEvent e : events){
+                        if(callbackTypes.contains(e.getTypeID())){
+                            out.add(e);
                         }
-
-                        List<UIModule> moduleList = typeIDModuleMap.get(typeID);
-                        for (UIModule m : moduleList) {
-                            List<StatsStorageEvent> eventsForModule = eventsByModule.get(m);
-                            if (eventsForModule == null) {
-                                eventsForModule = new ArrayList<>();
-                                eventsByModule.put(m, eventsForModule);
-                            }
-                            eventsForModule.add(event.getSecond());
-                        }
-                        count++;
                     }
 
-                    //Actually report to the appropriate modules
-                    for (Map.Entry<UIModule, List<StatsStorageEvent>> entryModule : eventsByModule.entrySet()) {
-                        entryModule.getKey().reportStorageEvents(entry.getKey(), entryModule.getValue());
-                    }
+                    m.reportStorageEvents(out);
                 }
-
-
-                log.debug("Reported {} events to UI modules with {} skipped", count, skipped);
 
                 try {
                     Thread.sleep(uiProcessingDelay);

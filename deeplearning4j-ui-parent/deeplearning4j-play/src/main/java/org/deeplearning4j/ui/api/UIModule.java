@@ -43,10 +43,9 @@ public interface UIModule {
      * {@link #getCallbackTypeIDs()}.<br>
      * Typically, these will be batched together at least somewhat, rather than being reported individually.
      *
-     * @param statsStorage StatsStorage instance that reported the events
      * @param events       List of relevant events (type IDs match one of those from {@link #getCallbackTypeIDs()}
      */
-    void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events);
+    void reportStorageEvents(Collection<StatsStorageEvent> events);
 
     /**
      * Notify the UI module that the given {@link StatsStorage} instance has been attached to the UI

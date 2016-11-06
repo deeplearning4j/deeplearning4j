@@ -62,6 +62,12 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                     </a>
                     <a class="brand" href="index.html"><span>"""),_display_(/*40.63*/i18n/*40.67*/.getMessage("train.pagetitle")),format.raw/*40.97*/("""</span></a>
+                    <div id="sessionSelectDiv" style="display:none; float:right">
+                        Session:
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,10 +80,10 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">"""),_display_(/*53.112*/i18n/*53.116*/.getMessage("train.nav.overview")),format.raw/*53.149*/("""</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">"""),_display_(/*54.134*/i18n/*54.138*/.getMessage("train.nav.model")),format.raw/*54.168*/("""</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">"""),_display_(/*55.110*/i18n/*55.114*/.getMessage("train.nav.system")),format.raw/*55.145*/("""</span></a></li>
-                            <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">"""),_display_(/*56.103*/i18n/*56.107*/.getMessage("train.nav.userguide")),format.raw/*56.141*/("""</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">"""),_display_(/*59.112*/i18n/*59.116*/.getMessage("train.nav.overview")),format.raw/*59.149*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">"""),_display_(/*60.134*/i18n/*60.138*/.getMessage("train.nav.model")),format.raw/*60.168*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">"""),_display_(/*61.110*/i18n/*61.114*/.getMessage("train.nav.system")),format.raw/*61.145*/("""</span></a></li>
+                            <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">"""),_display_(/*62.103*/i18n/*62.107*/.getMessage("train.nav.userguide")),format.raw/*62.141*/("""</span></a></li>
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet">
                                     Language</span></a>
@@ -112,13 +118,13 @@ Seq[Any](format.raw/*1.40*/("""
 
                 <style>
                 /* Graph */
-                #layers """),format.raw/*91.25*/("""{"""),format.raw/*91.26*/("""
-                    """),format.raw/*92.21*/("""height: 725px; /* IE8 */
+                #layers """),format.raw/*97.25*/("""{"""),format.raw/*97.26*/("""
+                    """),format.raw/*98.21*/("""height: 725px; /* IE8 */
                     height: 90vh;
                     width: 100%;
                     border: 2px solid #eee;
-                """),format.raw/*96.17*/("""}"""),format.raw/*96.18*/("""
-                """),format.raw/*97.17*/("""</style>
+                """),format.raw/*102.17*/("""}"""),format.raw/*102.18*/("""
+                """),format.raw/*103.17*/("""</style>
 
                     <!-- Start Content -->
                 <div id="content" class="span10">
@@ -131,7 +137,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*110.41*/i18n/*110.45*/.getMessage("train.model.layerInfoTable.title")),format.raw/*110.92*/("""</b></h2>
+                                <h2><b>"""),_display_(/*116.41*/i18n/*116.45*/.getMessage("train.model.layerInfoTable.title")),format.raw/*116.92*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
@@ -140,56 +146,56 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*119.41*/i18n/*119.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*119.97*/(""": log<sub>10</sub></b></h2>
-                                """),format.raw/*120.171*/("""
-                                """),format.raw/*121.169*/("""
-                                """),format.raw/*122.33*/("""<div style="float: right">
+                                <h2><b>"""),_display_(/*125.41*/i18n/*125.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*125.97*/(""": log<sub>10</sub></b></h2>
+                                """),format.raw/*126.171*/("""
+                                """),format.raw/*127.169*/("""
+                                """),format.raw/*128.33*/("""<div style="float: right">
                                     <p class="stackControls center">
-                                        <input class="btn btn-small" type="button" value=""""),_display_(/*124.92*/i18n/*124.96*/.getMessage("train.model.meanmag.btn.ratio")),format.raw/*124.140*/("""" onclick="setSelectMeanMagChart('ratios')">
-                                        <input class="btn btn-small" type="button" value=""""),_display_(/*125.92*/i18n/*125.96*/.getMessage("train.model.meanmag.btn.param")),format.raw/*125.140*/("""" onclick="setSelectMeanMagChart('paramMM')">
-                                        <input class="btn btn-small" type="button" value=""""),_display_(/*126.92*/i18n/*126.96*/.getMessage("train.model.meanmag.btn.update")),format.raw/*126.141*/("""" onclick="setSelectMeanMagChart('updateMM')">
+                                        <input class="btn btn-small" type="button" value=""""),_display_(/*130.92*/i18n/*130.96*/.getMessage("train.model.meanmag.btn.ratio")),format.raw/*130.140*/("""" onclick="setSelectMeanMagChart('ratios')">
+                                        <input class="btn btn-small" type="button" value=""""),_display_(/*131.92*/i18n/*131.96*/.getMessage("train.model.meanmag.btn.param")),format.raw/*131.140*/("""" onclick="setSelectMeanMagChart('paramMM')">
+                                        <input class="btn btn-small" type="button" value=""""),_display_(/*132.92*/i18n/*132.96*/.getMessage("train.model.meanmag.btn.update")),format.raw/*132.141*/("""" onclick="setSelectMeanMagChart('updateMM')">
                                     </p>
                                 </div>
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
                                 <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>
-                                    10</sub> """),_display_(/*133.47*/i18n/*133.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*133.108*/("""</b></span> <span id="yMeanMagnitudes">
+                                    10</sub> """),_display_(/*139.47*/i18n/*139.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*139.108*/("""</b></span> <span id="yMeanMagnitudes">
                                     0</span>
-                                    , <b>"""),_display_(/*135.43*/i18n/*135.47*/.getMessage("train.overview.charts.iteration")),format.raw/*135.93*/("""
-                                        """),format.raw/*136.41*/(""":</b> <span id="xMeanMagnitudes">0</span></p>
+                                    , <b>"""),_display_(/*141.43*/i18n/*141.47*/.getMessage("train.overview.charts.iteration")),format.raw/*141.93*/("""
+                                        """),format.raw/*142.41*/(""":</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*142.41*/i18n/*142.45*/.getMessage("train.model.activationsChart.title")),format.raw/*142.94*/("""</b></h2>
+                                <h2><b>"""),_display_(/*148.41*/i18n/*148.45*/.getMessage("train.model.activationsChart.title")),format.raw/*148.94*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="activations" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*146.55*/i18n/*146.59*/.getMessage("train.model.activationsChart.titleShort")),format.raw/*146.113*/("""
-                                    """),format.raw/*147.37*/(""":</b> <span id="yActivations">0</span>
-                                    , <b>"""),_display_(/*148.43*/i18n/*148.47*/.getMessage("train.overview.charts.iteration")),format.raw/*148.93*/("""
-                                        """),format.raw/*149.41*/(""":</b> <span id="xActivations">0</span></p>
+                                <p id="hoverdata"><b>"""),_display_(/*152.55*/i18n/*152.59*/.getMessage("train.model.activationsChart.titleShort")),format.raw/*152.113*/("""
+                                    """),format.raw/*153.37*/(""":</b> <span id="yActivations">0</span>
+                                    , <b>"""),_display_(/*154.43*/i18n/*154.47*/.getMessage("train.overview.charts.iteration")),format.raw/*154.93*/("""
+                                        """),format.raw/*155.41*/(""":</b> <span id="xActivations">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*155.41*/i18n/*155.45*/.getMessage("train.model.lrChart.title")),format.raw/*155.85*/("""</b></h2>
+                                <h2><b>"""),_display_(/*161.41*/i18n/*161.45*/.getMessage("train.model.lrChart.title")),format.raw/*161.85*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="learningrate" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*159.55*/i18n/*159.59*/.getMessage("train.model.lrChart.titleShort")),format.raw/*159.104*/("""
-                                    """),format.raw/*160.37*/(""":</b> <span id="yLearningRate">0</span>
-                                    , <b>"""),_display_(/*161.43*/i18n/*161.47*/.getMessage("train.overview.charts.iteration")),format.raw/*161.93*/("""
-                                        """),format.raw/*162.41*/(""":</b> <span id="xLearningRate">0</span></p>
+                                <p id="hoverdata"><b>"""),_display_(/*165.55*/i18n/*165.59*/.getMessage("train.model.lrChart.titleShort")),format.raw/*165.104*/("""
+                                    """),format.raw/*166.37*/(""":</b> <span id="yLearningRate">0</span>
+                                    , <b>"""),_display_(/*167.43*/i18n/*167.47*/.getMessage("train.overview.charts.iteration")),format.raw/*167.93*/("""
+                                        """),format.raw/*168.41*/(""":</b> <span id="xLearningRate">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*168.41*/i18n/*168.45*/.getMessage("train.model.paramHistChart.title")),format.raw/*168.92*/("""</b></h2>
+                                <h2><b>"""),_display_(/*174.41*/i18n/*174.45*/.getMessage("train.model.paramHistChart.title")),format.raw/*174.92*/("""</b></h2>
                                 <div id="paramhistSelected" style="float: left"></div>
                                 <div id="paramHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -200,7 +206,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*179.41*/i18n/*179.45*/.getMessage("train.model.updateHistChart.title")),format.raw/*179.93*/("""</b></h2>
+                                <h2><b>"""),_display_(/*185.41*/i18n/*185.45*/.getMessage("train.model.updateHistChart.title")),format.raw/*185.93*/("""</b></h2>
                                 <div id="updatehistSelected" style="float: left"></div>
                                 <div id="updateHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -288,17 +294,17 @@ Seq[Any](format.raw/*1.40*/("""
 
         <!-- Execute once on page load -->
         <script>
-                $(document).ready(function () """),format.raw/*267.47*/("""{"""),format.raw/*267.48*/("""
-                    """),format.raw/*268.21*/("""renderModelGraph();
+                $(document).ready(function () """),format.raw/*273.47*/("""{"""),format.raw/*273.48*/("""
+                    """),format.raw/*274.21*/("""renderModelGraph();
                     renderModelPage();
-                """),format.raw/*270.17*/("""}"""),format.raw/*270.18*/(""");
+                """),format.raw/*276.17*/("""}"""),format.raw/*276.18*/(""");
         </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
-                setInterval(function () """),format.raw/*275.41*/("""{"""),format.raw/*275.42*/("""
-                    """),format.raw/*276.21*/("""renderModelPage();
-                """),format.raw/*277.17*/("""}"""),format.raw/*277.18*/(""", 2000);
+                setInterval(function () """),format.raw/*281.41*/("""{"""),format.raw/*281.42*/("""
+                    """),format.raw/*282.21*/("""renderModelPage();
+                """),format.raw/*283.17*/("""}"""),format.raw/*283.18*/(""", 2000);
         </script>
     </body>
 </html>
@@ -322,11 +328,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sun Nov 06 00:36:53 AEDT 2016
+                  DATE: Sun Nov 06 14:54:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: 40ff2ce20a387bcdc09da2c27d77501d525484e7
-                  MATRIX: 598->1|731->39|759->41|882->138|894->142|944->172|2729->1930|2742->1934|2793->1964|3357->2500|3371->2504|3426->2537|3605->2688|3619->2692|3671->2722|3826->2849|3840->2853|3893->2884|4041->3004|4055->3008|4111->3042|6637->5540|6666->5541|6716->5563|6900->5719|6929->5720|6975->5738|7502->6237|7516->6241|7585->6288|8045->6720|8059->6724|8133->6776|8224->6975|8288->7145|8351->7179|8568->7368|8582->7372|8649->7416|8814->7553|8828->7557|8895->7601|9061->7739|9075->7743|9143->7788|9636->8253|9650->8257|9730->8314|9887->8443|9901->8447|9969->8493|10040->8535|10322->8789|10336->8793|10407->8842|10692->9099|10706->9103|10783->9157|10850->9195|10960->9277|10974->9281|11042->9327|11113->9369|11392->9620|11406->9624|11468->9664|11754->9922|11768->9926|11836->9971|11903->10009|12014->10092|12028->10096|12096->10142|12167->10184|12447->10436|12461->10440|12530->10487|13154->11083|13168->11087|13238->11135|18487->16355|18517->16356|18568->16378|18674->16455|18704->16456|18873->16596|18903->16597|18954->16619|19019->16655|19049->16656
-                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|64->40|64->40|64->40|77->53|77->53|77->53|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|115->91|115->91|116->92|120->96|120->96|121->97|134->110|134->110|134->110|143->119|143->119|143->119|144->120|145->121|146->122|148->124|148->124|148->124|149->125|149->125|149->125|150->126|150->126|150->126|157->133|157->133|157->133|159->135|159->135|159->135|160->136|166->142|166->142|166->142|170->146|170->146|170->146|171->147|172->148|172->148|172->148|173->149|179->155|179->155|179->155|183->159|183->159|183->159|184->160|185->161|185->161|185->161|186->162|192->168|192->168|192->168|203->179|203->179|203->179|291->267|291->267|292->268|294->270|294->270|299->275|299->275|300->276|301->277|301->277
+                  HASH: dbf1b0599466f85970bfb626213324537a3bf637
+                  MATRIX: 598->1|731->39|759->41|882->138|894->142|944->172|2729->1930|2742->1934|2793->1964|3679->2822|3693->2826|3748->2859|3927->3010|3941->3014|3993->3044|4148->3171|4162->3175|4215->3206|4363->3326|4377->3330|4433->3364|6959->5862|6988->5863|7038->5885|7223->6041|7253->6042|7300->6060|7827->6559|7841->6563|7910->6610|8370->7042|8384->7046|8458->7098|8549->7297|8613->7467|8676->7501|8893->7690|8907->7694|8974->7738|9139->7875|9153->7879|9220->7923|9386->8061|9400->8065|9468->8110|9961->8575|9975->8579|10055->8636|10212->8765|10226->8769|10294->8815|10365->8857|10647->9111|10661->9115|10732->9164|11017->9421|11031->9425|11108->9479|11175->9517|11285->9599|11299->9603|11367->9649|11438->9691|11717->9942|11731->9946|11793->9986|12079->10244|12093->10248|12161->10293|12228->10331|12339->10414|12353->10418|12421->10464|12492->10506|12772->10758|12786->10762|12855->10809|13479->11405|13493->11409|13563->11457|18812->16677|18842->16678|18893->16700|18999->16777|19029->16778|19198->16918|19228->16919|19279->16941|19344->16977|19374->16978
+                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|64->40|64->40|64->40|83->59|83->59|83->59|84->60|84->60|84->60|85->61|85->61|85->61|86->62|86->62|86->62|121->97|121->97|122->98|126->102|126->102|127->103|140->116|140->116|140->116|149->125|149->125|149->125|150->126|151->127|152->128|154->130|154->130|154->130|155->131|155->131|155->131|156->132|156->132|156->132|163->139|163->139|163->139|165->141|165->141|165->141|166->142|172->148|172->148|172->148|176->152|176->152|176->152|177->153|178->154|178->154|178->154|179->155|185->161|185->161|185->161|189->165|189->165|189->165|190->166|191->167|191->167|191->167|192->168|198->174|198->174|198->174|209->185|209->185|209->185|297->273|297->273|298->274|300->276|300->276|305->281|305->281|306->282|307->283|307->283
                   -- GENERATED --
               */
           
