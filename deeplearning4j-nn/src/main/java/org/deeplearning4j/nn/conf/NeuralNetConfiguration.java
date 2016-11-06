@@ -123,9 +123,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             setLayerParamLR(variable);
         }
     }
-    
+
     public void clearVariables(){
-    	variables.clear();
+        variables.clear();
     }
 
 
@@ -208,7 +208,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             for(int i = 0; i < layerwise.size(); i++) {
                 if(layerwise.get(i) == null){
                     throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "
-                        + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                            + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
                 if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
                         "layer with index " + i + " is not defined)");
@@ -342,7 +342,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static void registerSubtypes(ObjectMapper mapper, Class<?>... baseClasses){
         //Register concrete subtypes for JSON serialization
-
+        //avoid unwanted files
+        ReflectionsHelper.registerUrlTypes();
         // First: scan the classpath and find all instances of the 'baseClasses' classes
         Reflections reflections = new Reflections();
         org.reflections.Store store = reflections.getStore();
@@ -615,7 +616,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
-            }
+        }
 
         /**
          * Constant for bias initialization. Default: 0.0
@@ -887,7 +888,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case Poly:
                     if (Double.isNaN(lrPolicyPower))
                         throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy power (lrPolicyPower) must be set to use " + learningRatePolicy);
-                        break;
+                    break;
                 case Step:
                 case Sigmoid:
                     if (Double.isNaN(lrPolicySteps))
@@ -925,9 +926,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                         layer.setL2(l2);
                 } else if (!useRegularization &&
                         ((!Double.isNaN(l1) && l1 > 0.0) ||
-                        (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
-                        (!Double.isNaN(l2) && l2 > 0.0) ||
-                        (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
+                                (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
+                                (!Double.isNaN(l2) && l2 > 0.0) ||
+                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
                     log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
                 if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
                     layer.setL2(0.0);
