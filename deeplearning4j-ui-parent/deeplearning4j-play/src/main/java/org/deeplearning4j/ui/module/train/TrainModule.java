@@ -36,6 +36,7 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
@@ -50,6 +51,9 @@ public class TrainModule implements UIModule {
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
+    private int currentWorkerIdx;
+    private Map<String,AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>());    //Key: session ID
+    private Map<String,Map<Integer,String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
 
 
     @Override
@@ -72,8 +76,10 @@ public class TrainModule implements UIModule {
         Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
         Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+        Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier, () -> ok(String.valueOf(currentWorkerIdx)));
+        Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function, this::setWorkerByIdx);
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c);
+        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r7, r7a);
     }
 
     @Override
@@ -107,7 +113,6 @@ public class TrainModule implements UIModule {
     private void getDefaultSession() {
         if (currentSessionID != null) return;
 
-        //TODO handle multiple workers, etc
         long mostRecentTime = Long.MIN_VALUE;
         String sessionID = null;
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
@@ -124,6 +129,44 @@ public class TrainModule implements UIModule {
         if (sessionID != null) {
             currentSessionID = sessionID;
         }
+    }
+
+    private synchronized String getWorkerIdForIndex(int workerIdx){
+        String sid = currentSessionID;
+        if(sid == null) return null;
+
+        Map<Integer,String> idxToId = workerIdxToName.get(sid);
+        if(idxToId == null){
+            idxToId = Collections.synchronizedMap(new HashMap<>());
+            workerIdxToName.put(sid, idxToId);
+        }
+
+        if(idxToId.containsKey(workerIdx)){
+            return idxToId.get(workerIdx);
+        }
+
+        //Need to record new worker...
+            //Get counter
+        AtomicInteger counter = workerIdxCount.get(sid);
+        if(counter == null){
+            counter = new AtomicInteger(0);
+            workerIdxCount.put(sid,counter);
+        }
+
+            //Get all worker IDs
+        StatsStorage ss = knownSessionIDs.get(sid);
+        List<String> allWorkerIds = new ArrayList<>(ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID));
+        Collections.sort(allWorkerIds);
+
+            //Ensure all workers have been assigned an index
+        for(String s : allWorkerIds){
+            if(idxToId.containsValue(s)) continue;
+            //Unknown worker ID:
+            idxToId.put(counter.getAndIncrement(), s);
+        }
+
+        //May still return null if index is wrong/too high...
+        return idxToId.get(workerIdx);
     }
 
     private Result listSessions() {
@@ -187,10 +230,20 @@ public class TrainModule implements UIModule {
     private Result setSession(String newSessionID) {
         if (knownSessionIDs.containsKey(newSessionID)) {
             currentSessionID = newSessionID;
+            currentWorkerIdx = 0;
             return ok();
         } else {
             return Results.badRequest("Unknown session ID: " + newSessionID);
         }
+    }
+
+    private Result setWorkerByIdx(String newWorkerIdx){
+        try{
+            currentWorkerIdx = Integer.parseInt(newWorkerIdx);
+        }catch (NumberFormatException e){
+            log.debug("Invaild call to setWorkerByIdx",e);
+        }
+        return ok();
     }
 
     private Result getOverviewData() {
@@ -201,14 +254,10 @@ public class TrainModule implements UIModule {
 
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
 
-        //TODO HANDLE MULTIPLE WORKERS (SPARK)
-        String wid = null;
-        if (!noData) {
-            List<String> workerIDs = ss.listWorkerIDsForSession(currentSessionID);
-            if (workerIDs == null || workerIDs.size() == 0) noData = true;
-            else {
-                wid = workerIDs.get(0);
-            }
+
+        String wid = getWorkerIdForIndex(currentWorkerIdx);
+        if(wid == null){
+            noData = true;
         }
 
         List<Integer> scoresIterCount = new ArrayList<>();
@@ -440,14 +489,9 @@ public class TrainModule implements UIModule {
 
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
 
-        //TODO HANDLE MULTIPLE WORKERS (SPARK)
-        String wid = null;
-        if (!noData) {
-            List<String> workerIDs = ss.listWorkerIDsForSession(currentSessionID);
-            if (workerIDs == null || workerIDs.size() == 0) noData = true;
-            else {
-                wid = workerIDs.get(0);
-            }
+        String wid = getWorkerIdForIndex(currentWorkerIdx);
+        if(wid == null){
+            noData = true;
         }
 
 
@@ -739,15 +783,15 @@ public class TrainModule implements UIModule {
         return new MeanMagnitudes(iterCounts, ratioValues, outParamMM, outUpdateMM);
     }
 
-
+    private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
     private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
         if (gi == null) {
-            return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
+            return EMPTY_TRIPLE;
         }
 
         String type = gi.getVertexTypes().get(index);    //Index may be for an input, for example
         if ("input".equalsIgnoreCase(type)) {
-            return new Triple<>(new int[0], new float[0], new float[0]);    //TODO reuse
+            return EMPTY_TRIPLE;
         }
 
         String layerName = gi.getOriginalVertexName().get(index);

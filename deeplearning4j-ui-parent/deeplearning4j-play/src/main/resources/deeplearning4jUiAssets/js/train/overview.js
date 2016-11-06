@@ -8,7 +8,7 @@ function selectStdevChart(fieldName){
 /* ---------- Render page ---------- */
 
 function renderOverviewPage() {
-    updateSessionSelect();
+    updateSessionWorkerSelect();
 
     $.ajax({
         url: "/train/overview/data",
@@ -17,7 +17,6 @@ function renderOverviewPage() {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
-            console.log("Keys: " + Object.keys(data));
             renderScoreVsIterChart(data);
             renderModelPerformanceTable(data);
             renderUpdatesRatio(data);
@@ -131,10 +130,7 @@ function renderModelPerformanceTable(data) {
 
 /* ---------- Ratio of Updates to Parameters Chart ---------- */
 function renderUpdatesRatio(data) {
-
     var ratios = data["updateRatios"];
-
-    console.log("Update ratio keys: " + Object.keys(ratios));
 
     var iter = data["scoresIter"];
 
@@ -171,8 +167,6 @@ function renderUpdatesRatio(data) {
 
         overallMax = Math.ceil(overallMax);
         overallMin = Math.floor(overallMin);
-
-        // console.log("Overall max/min: " + overallMax + "\t" + overallMin);
 
         var plot = $.plot(chart,
             toPlot, {

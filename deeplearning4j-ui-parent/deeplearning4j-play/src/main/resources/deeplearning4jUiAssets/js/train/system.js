@@ -1,7 +1,7 @@
 selectMachine(); //Make machineID Global
 
 function renderSystemPage() {
-    updateSessionSelect();
+    updateSessionWorkerSelect();
     $.ajax({
         url: "/train/system/data",
         async: true,
