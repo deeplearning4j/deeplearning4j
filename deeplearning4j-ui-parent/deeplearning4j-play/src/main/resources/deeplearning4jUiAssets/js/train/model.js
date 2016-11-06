@@ -1,7 +1,9 @@
 
-var selectedVertex = 0;
+var selectedVertex = -1;
 function setSelectedVertex(vertex){
     selectedVertex = vertex;
+    currSelectedParamHist = null;   //Reset selected param
+    currSelectedUpdateHist = null;  //Reset selected param
 }
 
 var selectedMeanMagChart = "ratios";
@@ -12,28 +14,33 @@ function setSelectMeanMagChart(selectedChart){
 function renderModelPage() {
     updateSessionWorkerSelect();
 
-    $.ajax({
-        url: "/train/model/data/" + selectedVertex,
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            renderLayerTable(data);
-            renderMeanMagChart(data);
-            renderActivationsChart(data);
-            renderLearningRateChart(data);
-            renderParametersHistogram(data);
-            renderUpdatesHistogram(data);
-        }
-    });
+    if(selectedVertex >= 0) {
+        $.ajax({
+            url: "/train/model/data/" + selectedVertex,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                setZeroState(false);
+                renderLayerTable(data);
+                renderMeanMagChart(data);
+                renderActivationsChart(data);
+                renderLearningRateChart(data);
+                renderParametersHistogram(data);
+                renderUpdatesHistogram(data);
+            }
+        });
+    } else {
+        setZeroState(true);
+    }
 }
 
 /* ---------- Zero State ---------- */
 
-function renderZeroState() { // Need to ask Alex how to deal with error when selectedVertex == 0.
+function setZeroState(enableZeroState) {
 
-    if (selectedVertex == 0) {
+    if (enableZeroState) {
         $("#layerDetails").hide();
         $("#zeroState").show();
     }
@@ -174,6 +181,11 @@ function renderMeanMagChart(data) {
 
         var previousPoint = null;
         $("#meanmag").bind("plothover", function (event, pos, item) {
+            if(!pos.x){//No data condition
+                $("#tooltipMMChart").remove();
+                previousPoint = null;
+                return;
+            }
             var xPos = pos.x.toFixed(0);
             $("#xMeanMagnitudes").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yMeanMagnitudes").text(pos.y.toFixed(2));
@@ -374,6 +386,11 @@ function renderLearningRateChart(data) {
 
         var previousPoint = null;
         chart.bind("plothover", function (event, pos, item) {
+            if(!pos.x){//No data condition
+                $("#tooltipLRChart").remove();
+                previousPoint = null;
+                return;
+            }
             var xPos = pos.x.toFixed(0);
             $("#xLearningRate").text(xPos < 0 || xPos == "-0" ? "" : xPos);
             $("#yLearningRate").text(pos.y.toFixed(5));
@@ -440,20 +457,29 @@ function renderParametersHistogram(data) {
         var label = $("#paramhistSelected");
         label.html("&nbsp&nbsp(" + currSelectedParamHist + ")");
 
-        var min = data["paramHist"][currSelectedParamHist]["min"];
-        var max = data["paramHist"][currSelectedParamHist]["max"];
+        var data;
+        if(data["paramHist"][currSelectedParamHist]){
 
-        var bins = data["paramHist"][currSelectedParamHist]["bins"];
-        var counts = data["paramHist"][currSelectedParamHist]["counts"];
+            var min = data["paramHist"][currSelectedParamHist]["min"];
+            var max = data["paramHist"][currSelectedParamHist]["max"];
 
-        var binWidth = (max-min)/bins;
-        var halfBin = binWidth/2.0;
+            var bins = data["paramHist"][currSelectedParamHist]["bins"];
+            var counts = data["paramHist"][currSelectedParamHist]["counts"];
 
-        var data = [];
-        for (var i = 0; i < counts.length; i++) {
-            var binPos = (min + i * binWidth - halfBin);
-            data.push([binPos, counts[i]]);
+            var binWidth = (max-min)/bins;
+            var halfBin = binWidth/2.0;
+
+            data = [];
+            for (var i = 0; i < counts.length; i++) {
+                var binPos = (min + i * binWidth - halfBin);
+                data.push([binPos, counts[i]]);
+            }
+
+        } else {
+            data = [];
         }
+
+
 
         $.plot($("#parametershistogram"), [ data ], {
             stack: null,
@@ -505,19 +531,25 @@ function renderUpdatesHistogram(data) {
         var label = $("#updatehistSelected");
         label.html("&nbsp&nbsp(" + currSelectedUpdateHist + ")");
 
-        var min = data["updateHist"][currSelectedUpdateHist]["min"];
-        var max = data["updateHist"][currSelectedUpdateHist]["max"];
+        var data;
+        if(data["updateHist"][currSelectedParamHist]) {
 
-        var bins = data["updateHist"][currSelectedUpdateHist]["bins"];
-        var counts = data["updateHist"][currSelectedUpdateHist]["counts"];
+            var min = data["updateHist"][currSelectedUpdateHist]["min"];
+            var max = data["updateHist"][currSelectedUpdateHist]["max"];
 
-        var binWidth = (max-min)/bins;
-        var halfBin = binWidth/2.0;
+            var bins = data["updateHist"][currSelectedUpdateHist]["bins"];
+            var counts = data["updateHist"][currSelectedUpdateHist]["counts"];
 
-        var data = [];
-        for (var i = 0; i < counts.length; i++) {
-            var binPos = (min + i * binWidth - halfBin);
-            data.push([binPos, counts[i]]);
+            var binWidth = (max - min) / bins;
+            var halfBin = binWidth / 2.0;
+
+            data = [];
+            for (var i = 0; i < counts.length; i++) {
+                var binPos = (min + i * binWidth - halfBin);
+                data.push([binPos, counts[i]]);
+            }
+        } else {
+            data = [];
         }
 
         $.plot(chart, [ data ], {

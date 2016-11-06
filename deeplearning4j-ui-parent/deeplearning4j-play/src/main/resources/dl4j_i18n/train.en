@@ -4,3 +4,5 @@ train.nav.model=Model
 train.nav.system=System
 train.nav.userguide=User Guide
 train.nav.language=Language
+train.session.label=Session
+train.session.worker.label=Worker

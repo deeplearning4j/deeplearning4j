@@ -40,13 +40,13 @@
                     </a>
                     <a class="brand" href="#"><span>@i18n.getMessage("train.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        Session:
+                        @i18n.getMessage("train.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
                     </div>
                     <div id="workerSelectDiv" style="display:none; float:right;">
-                        Worker:
+                        @i18n.getMessage("train.session.worker.label")
                         <select id="workerSelect" onchange='selectNewWorker()'>
                             <option>(Worker ID)</option>
                         </select>
