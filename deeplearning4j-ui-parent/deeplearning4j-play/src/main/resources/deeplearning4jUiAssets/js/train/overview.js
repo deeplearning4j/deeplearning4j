@@ -238,6 +238,23 @@ function renderStdevChart(data) {
     var selected = selectedChart;
     var chart = $("#stdevChart");
 
+    //Tab highlighting logic
+    if (selected == "stdevActivations") {
+        $("#stdevActivations").attr("class", "active");
+        $("#stdevGradients").removeAttr("class");
+        $("#stdevUpdates").removeAttr("class");
+    }
+    else if (selected == "stdevGradients") {
+        $("#stdevActivations").removeAttr("class");
+        $("#stdevGradients").attr("class", "active");
+        $("#stdevUpdates").removeAttr("class");
+    }
+    else {
+        $("#stdevActivations").removeAttr("class");
+        $("#stdevGradients").removeAttr("class");
+        $("#stdevUpdates").attr("class", "active");
+    }
+
     if (chart.length) {
 
         var stdevs = data[selected];
@@ -335,10 +352,3 @@ function renderStdevChart(data) {
         });
     }
 }
-
-/* ---------- Language Dropdown ---------- */
-
-	$('.dropmenu').click(function(e){
-		e.preventDefault();
-		$(this).parent().find('ul').slideToggle();
-	});
