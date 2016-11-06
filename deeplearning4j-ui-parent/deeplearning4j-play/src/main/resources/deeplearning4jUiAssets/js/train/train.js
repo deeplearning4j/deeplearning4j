@@ -44,3 +44,10 @@ function formatBytes(bytes, precision){
 
     return newValue.toFixed(precision) + " " + unit;
 }
+
+/* ---------- Language Dropdown ---------- */
+
+	$('.dropmenu').click(function(e){
+		e.preventDefault();
+		$(this).parent().find('ul').slideToggle();
+	});
