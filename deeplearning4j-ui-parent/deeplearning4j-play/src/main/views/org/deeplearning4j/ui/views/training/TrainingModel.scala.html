@@ -39,13 +39,13 @@
                     </a>
                     <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        Session:
+                        @i18n.getMessage("train.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
                     </div>
                     <div id="workerSelectDiv" style="display:none; float:right;">
-                        Worker:
+                        @i18n.getMessage("train.session.worker.label")
                         <select id="workerSelect" onchange='selectNewWorker()'>
                             <option>(Worker ID)</option>
                         </select>
@@ -68,7 +68,7 @@
                             <li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.userguide")</span></a></li>
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet">
-                                    Language</span></a>
+                                @i18n.getMessage("train.nav.language")</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
                                         English</span></a></li>

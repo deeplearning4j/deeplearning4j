@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
     <head>
 
         <meta charset="utf-8">
-        <title>DL4J Training UI</title>
+        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("train.pagetitle")),format.raw/*7.51*/("""</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -62,7 +62,7 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="#"><span>DL4J Training UI</span></a>
+                    <a class="brand" href="#"><span>"""),_display_(/*41.54*/i18n/*41.58*/.getMessage("train.pagetitle")),format.raw/*41.88*/("""</span></a>
                 </div>
             </div>
         </div>
@@ -75,16 +75,12 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet">
-                                Overview</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">
-                                Model</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">
-                                System</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-star"></i><span class="hidden-tablet">
-                                User Guide</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> """),_display_(/*54.112*/i18n/*54.116*/.getMessage("train.nav.overview")),format.raw/*54.149*/("""</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> """),_display_(/*55.105*/i18n/*55.109*/.getMessage("train.nav.model")),format.raw/*55.139*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> """),_display_(/*56.110*/i18n/*56.114*/.getMessage("train.nav.system")),format.raw/*56.145*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-star"></i><span class="hidden-tablet"> """),_display_(/*57.133*/i18n/*57.137*/.getMessage("train.nav.userguide")),format.raw/*57.171*/("""</span></a></li>
                             <li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">Language</span></a>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">"""),_display_(/*59.146*/i18n/*59.150*/.getMessage("train.nav.language")),format.raw/*59.183*/("""</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'help')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'help')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
@@ -295,8 +291,7 @@ Seq[Any](format.raw/*1.40*/("""
                                             <b>Off-Heap Current Memory</b> - What this means.<br>
                                             <b>JVM Available Processors</b> - What this means.<br>
                                             <b>Number Compute Devices</b> - What this means.
-         """),
-format.raw("""                               </p>
+                                        </p>
                                     </div>
                                     <div class="span6">
                                         <h2>Software Information</h2>
@@ -350,7 +345,8 @@ format.raw("""                               </p>
                         </div><!-- End Table of Contents -->
                     </div><!-- End Row Fluid -->
                 </div>
-                    <!-- End Content -->
+          """),
+format.raw("""          <!-- End Content -->
             </div><!--End Row Fluid -->
         </div><!-- End Container Fluid Full-->
 
@@ -410,11 +406,11 @@ format.raw("""                               </p>
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sun Nov 06 18:47:07 AEDT 2016
+                  DATE: Sun Nov 06 19:48:00 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: ec3ee4e9719fc7c78893d16b2d572d276184c689
-                  MATRIX: 596->1|729->39|757->41
-                  LINES: 20->1|25->1|26->2
+                  HASH: c850e11de6dceb6ef2c4f43a7b4adb40483f80d0
+                  MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2718->1921|2731->1925|2782->1955|3346->2491|3360->2495|3415->2528|3565->2650|3579->2654|3631->2684|3786->2811|3800->2815|3853->2846|4031->2996|4045->3000|4101->3034|4326->3231|4340->3235|4395->3268
+                  LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|83->59|83->59|83->59
                   -- GENERATED --
               */
           

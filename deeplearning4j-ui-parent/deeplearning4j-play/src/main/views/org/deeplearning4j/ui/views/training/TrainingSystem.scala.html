@@ -40,7 +40,7 @@
                     </a>
                     <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        Session:
+                        @i18n.getMessage("train.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
@@ -63,7 +63,7 @@
                             <li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.userguide")</span></a></li>
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">
-                                    Language</span></a>
+                                    @i18n.getMessage("train.nav.language")</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
@@ -110,7 +110,7 @@
 
                                             <div class="box span12" id="systemMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.systemTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.chart.systemMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="systemMemoryChartPlot" class="center" style="height: 300px;" ></div>
@@ -122,7 +122,7 @@
                                             <!-- GPU Memory Utlization Chart -->
                                             <div class="box span6" id="gpuMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.gpuTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("train.system.chart.gpuMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="gpuMemoryChartPlot" class="center" style="height: 300px;" ></div>
