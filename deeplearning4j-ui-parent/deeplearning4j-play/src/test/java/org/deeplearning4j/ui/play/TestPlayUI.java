@@ -49,8 +49,9 @@ public class TestPlayUI {
 
         DataSetIterator iter = new IrisDataSetIterator(150,150);
 
-        for( int i=0; i<100; i++ ){
+        for( int i=0; i<500; i++ ){
             net.fit(iter);
+//            Thread.sleep(100);
             Thread.sleep(100);
         }
 
