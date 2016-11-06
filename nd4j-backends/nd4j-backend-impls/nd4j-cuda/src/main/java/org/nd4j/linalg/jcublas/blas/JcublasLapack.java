@@ -95,8 +95,11 @@ public class JcublasLapack extends BaseLapack {
 		}
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.get(0)) ;
-		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( lda ) ;
+		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
 		DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
+
+		IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
+		IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -105,7 +108,8 @@ public class JcublasLapack extends BaseLapack {
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
 			(FloatPointer)AtomicAllocator.getInstance().getPointer(work, ctx),
-			(IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ,
+			//(IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ,
+			(IntPointer) ipiv.addressPointer(),
 			(IntPointer) AtomicAllocator.getInstance().getPointer(info, ctx)
 			) ;
 
@@ -117,13 +121,13 @@ public class JcublasLapack extends BaseLapack {
 		}
 			// Copy the results back to the input vectors
 			INFO.putScalar(0,info.asInt()[0] ) ;
-
+			int xxx[] = ipiv.asInt() ;
 			// obtain pointers
 			Pointer dst = AtomicAllocator.getInstance().getPointer(IPIV, ctx);
 			Pointer src = AtomicAllocator.getInstance().getPointer(ipiv, ctx);
 
 			// device to device copy
-			nativeOps.memcpyAsync(dst, src, lda * 4, 3, ctx.getSpecialStream());
+			nativeOps.memcpyAsync(dst, src, IPIV.length() * 4, 3, ctx.getSpecialStream());
 			ctx.syncSpecialStream();
 
 			// notify that IPIV was modified on device side
@@ -132,8 +136,11 @@ public class JcublasLapack extends BaseLapack {
 			// A is modified on device side as well
 			AtomicAllocator.getInstance().getAllocationPoint(A).tickDeviceWrite();
 
+IPIV.setData( ipiv );
 			// now when you'll call getInt(), data will travel back to host
-			if( IPIV.getInt(2) != 4 ) { throw new RuntimeException( "WTF" ) ; }
+//			if( IPIV.getInt(2) != 4 ) { 
+//				System.out.println( "WTF" + xxx[2] ) ; 
+//			}
 
 		// After we get an inplace result we should 
 		// transpose the array - because of differenes in 
