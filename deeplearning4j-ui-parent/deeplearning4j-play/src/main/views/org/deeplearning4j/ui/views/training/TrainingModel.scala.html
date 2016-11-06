@@ -38,6 +38,12 @@
                         <span class="icon-bar"></span>
                     </a>
                     <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                    <div id="sessionSelectDiv" style="display:none; float:right">
+                        Session:
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>

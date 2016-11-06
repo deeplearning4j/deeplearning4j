@@ -122,7 +122,7 @@ public class MapDBStatsStorage implements StatsStorage {
 
         //Is this a new session ID?
         if (!sessionIDs.contains(p.getSessionID())) {
-            newSID = new StatsStorageEvent(StatsStorageListener.EventType.NewSessionID,
+            newSID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewSessionID,
                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
@@ -161,13 +161,13 @@ public class MapDBStatsStorage implements StatsStorage {
         }
         if (!foundTypeId) {
             //New type ID
-            newTID = new StatsStorageEvent(StatsStorageListener.EventType.NewTypeID,
+            newTID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewTypeID,
                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
         if (!foundWorkerId) {
             //New worker ID
-            newWID = new StatsStorageEvent(StatsStorageListener.EventType.NewWorkerID,
+            newWID = new StatsStorageEvent(this, StatsStorageListener.EventType.NewWorkerID,
                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
             count++;
         }
@@ -394,7 +394,7 @@ public class MapDBStatsStorage implements StatsStorage {
         this.staticInfo.put(id, staticInfo);
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostStaticInfo,
+        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo,
                 staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID(), staticInfo.getTimeStamp());
         for (StatsStorageListener l : listeners) {
             l.notify(sse);
@@ -418,7 +418,7 @@ public class MapDBStatsStorage implements StatsStorage {
         db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostUpdate,
+        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate,
                 update.getSessionID(), update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
         for (StatsStorageListener l : listeners) {
             l.notify(sse);
@@ -441,7 +441,7 @@ public class MapDBStatsStorage implements StatsStorage {
         this.storageMetaData.put(id, storageMetaData);
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0) sse = new StatsStorageEvent(StatsStorageListener.EventType.PostMetaData,
+        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
                 storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
         for (StatsStorageListener l : listeners) {
             l.notify(sse);

@@ -48,7 +48,7 @@ public class TrainModule implements UIModule {
 
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private Map<String, StatsStorage> knownSessionIDs = new LinkedHashMap<>();
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
 
 
@@ -77,10 +77,10 @@ public class TrainModule implements UIModule {
     }
 
     @Override
-    public void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events) {
+    public void reportStorageEvents(Collection<StatsStorageEvent> events) {
         for (StatsStorageEvent sse : events) {
             if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
-                knownSessionIDs.put(sse.getSessionID(), statsStorage);
+                knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
             }
         }
 

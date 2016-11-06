@@ -43,11 +43,11 @@ Seq[Any](format.raw/*1.40*/("""
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
             <!--[if lt IE 9]>
 	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet">
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
 	<![endif]-->
 
             <!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet">
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
 	<![endif]-->
 
     </head>
@@ -63,6 +63,12 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                     </a>
                     <a class="brand" href="#"><span>DL4J Training UI</span></a>
+                    <div id="sessionSelectDiv" style="display:none; float:right">
+                        Session:
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -291,12 +297,12 @@ Seq[Any](format.raw/*1.40*/("""
                                             The table contains basic hardware metrics.<br><br>
                                             <b>JVM Current Memory</b> - What this means.<br>
                                             <b>JVM Max Memory</b> - What this means.<br>
-                                            <b>Off-Heap Current Memory</b> - What this means.<br>
+                                            <b>Off-Heap Current Memory</b> - Wh"""),
+format.raw("""at this means.<br>
                                             <b>Off-Heap Current Memory</b> - What this means.<br>
                                             <b>JVM Available Processors</b> - What this means.<br>
                                             <b>Number Compute Devices</b> - What this means.
-           """),
-format.raw("""                             </p>
+                                        </p>
                                     </div>
                                     <div class="span6">
                                         <h2>Software Information</h2>
@@ -410,9 +416,9 @@ format.raw("""                             </p>
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Sat Nov 05 23:29:02 AEDT 2016
+                  DATE: Sun Nov 06 14:54:16 AEDT 2016
                   SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: 2d24339971560bc97416ae77ac2dc91f012d2418
+                  HASH: 74b2e27ff41ae9128dd29d5d5f6e7e0c0a8638db
                   MATRIX: 596->1|729->39|757->41
                   LINES: 20->1|25->1|26->2
                   -- GENERATED --

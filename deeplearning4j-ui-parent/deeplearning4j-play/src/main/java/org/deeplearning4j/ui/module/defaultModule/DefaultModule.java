@@ -30,7 +30,7 @@ public class DefaultModule implements UIModule {
     }
 
     @Override
-    public void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events) {
+    public void reportStorageEvents(Collection<StatsStorageEvent> events) {
 
     }
 

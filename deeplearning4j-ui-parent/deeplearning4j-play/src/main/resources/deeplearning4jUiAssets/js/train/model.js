@@ -10,6 +10,7 @@ function setSelectMeanMagChart(selectedChart){
 }
 
 function renderModelPage() {
+    updateSessionSelect();
 
     $.ajax({
         url: "/train/model/data/" + selectedVertex,
