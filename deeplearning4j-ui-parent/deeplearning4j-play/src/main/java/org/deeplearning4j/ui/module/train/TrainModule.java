@@ -43,19 +43,40 @@ import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**
- * Created by Alex on 14/10/2016.
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class TrainModule implements UIModule {
-
+    public static final int DEFAULT_MAX_CHART_POINTS = 512;
+    public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
     private int currentWorkerIdx;
     private Map<String,AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>());    //Key: session ID
     private Map<String,Map<Integer,String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
     private Map<String,Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
+
+    public TrainModule(){
+        String maxChartPointsProp = System.getProperty(CHART_MAX_POINTS_PROPERTY);
+        int value = DEFAULT_MAX_CHART_POINTS;
+        if(maxChartPointsProp != null){
+            try{
+                value = Integer.parseInt(maxChartPointsProp);
+            }catch (NumberFormatException e){
+                log.warn("Invalid system property: {} = {}", CHART_MAX_POINTS_PROPERTY, maxChartPointsProp);
+            }
+        }
+        if(value >= 10){
+            maxChartPoints = value;
+        } else {
+            maxChartPoints = DEFAULT_MAX_CHART_POINTS;
+        }
+    }
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -88,15 +109,16 @@ public class TrainModule implements UIModule {
     @Override
     public synchronized void reportStorageEvents(Collection<StatsStorageEvent> events) {
         for (StatsStorageEvent sse : events) {
-            if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
-                knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+            if(StatsListener.TYPE_ID.equals(sse.getTypeID())){
+                if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
+                    knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+                }
+
                 Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
                 if(lastUpdate == null){
                     lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());
-                } else {
-                    if(sse.getTimestamp() > lastUpdate){
-                        lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());   //Should be thread safe - read only elsewhere
-                    }
+                } else if(sse.getTimestamp() > lastUpdate){
+                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());   //Should be thread safe - read only elsewhere
                 }
             }
         }
@@ -343,8 +365,22 @@ public class TrainModule implements UIModule {
         StatsReport last = null;
         if (!noData) {
             double lastScore;
+
+            int totalUpdates = updates.size();
+            int subsamplingFrequency = 1;
+            if(totalUpdates > maxChartPoints){
+                subsamplingFrequency = totalUpdates / maxChartPoints;
+            }
+
+            int pCount = -1;
+            int lastUpdateIdx = updates.size()-1;
             for (Persistable u : updates) {
+                pCount++;
                 if (!(u instanceof StatsReport)) continue;
+                if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
+                    //Skip this - subsample the data
+                    if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
+                }
                 last = (StatsReport) u;
                 int iterCount = last.getIterationCount();
                 scoresIterCount.add(iterCount);
@@ -537,9 +573,27 @@ public class TrainModule implements UIModule {
 
         result.put("layerInfo", layerInfoTable);
 
-        //Get mean magnitudes line chart
+        //First: get all data, and subsample it if necessary, to avoid returning too many points...
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
-//        Pair<List<Integer>, Map<String, List<Double>>> meanMagnitudes = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
+        if(updates != null && updates.size() > maxChartPoints){
+            int subsamplingFrequency = updates.size() / maxChartPoints;
+            List<Persistable> subsampled = new ArrayList<>();
+            int pCount=-1;
+            int lastUpdateIdx = updates.size()-1;
+            for(Persistable p : updates){
+                pCount++;
+                if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
+                    //Skip this to subsample the data
+                    if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
+                }
+
+                subsampled.add(p);
+            }
+
+            updates = subsampled;
+        }
+
+        //Get mean magnitudes line chart
         MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
@@ -550,7 +604,6 @@ public class TrainModule implements UIModule {
         result.put("meanMag", mmRatioMap);
 
         //Get activations line chart for layer
-
         Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, conf.getFirst(), conf.getSecond());
         Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
@@ -588,6 +641,7 @@ public class TrainModule implements UIModule {
 
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
         List<Persistable> latestUpdates = (noData ? Collections.EMPTY_LIST : ss.getLatestUpdateAllWorkers(currentSessionID, StatsListener.TYPE_ID));
+
 
         long lastUpdateTime = -1;
         if (latestUpdates == null || latestUpdates.size() == 0) {
