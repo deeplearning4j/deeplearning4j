@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -93,9 +94,9 @@ public class JcublasLapack extends BaseLapack {
  		    throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat ) ;
 		}
 		// Now allocate memory for the workspace, the permutation matrix and a return code
-		BaseCudaDataBuffer work = new CudaFloatDataBuffer(worksize.get(0)) ;
-		BaseCudaDataBuffer ipiv = new CudaIntDataBuffer( lda ) ;
-		BaseCudaDataBuffer info = new CudaIntDataBuffer(1) ;
+		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.get(0)) ;
+		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( lda ) ;
+		DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -103,27 +104,44 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
-			(FloatPointer)work.addressPointer() ,
-			(IntPointer)ipiv.addressPointer() ,
-			(IntPointer)info.addressPointer() 
+			(FloatPointer)AtomicAllocator.getInstance().getPointer(work, ctx),
+			(IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ,
+			(IntPointer) AtomicAllocator.getInstance().getPointer(info, ctx)
 			) ;
+
+			// we do sync to make sure getr is finished
+			ctx.syncOldStream();
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
 		}
-		// Copy the results back to the input vectors
-		INFO.putScalar(0,info.asInt()[0] ) ;
-//		IPIV.setData( new IntBuffer( ipiv.asInt() ) );
-		IPIV.setData( ipiv );
-		if( IPIV.getInt(2) != 4 ) { throw new RuntimeException( "WTF" ) ; }
+			// Copy the results back to the input vectors
+			INFO.putScalar(0,info.asInt()[0] ) ;
+
+			// obtain pointers
+			Pointer dst = AtomicAllocator.getInstance().getPointer(IPIV, ctx);
+			Pointer src = AtomicAllocator.getInstance().getPointer(ipiv, ctx);
+
+			// device to device copy
+			nativeOps.memcpyAsync(dst, src, lda * 4, 3, ctx.getSpecialStream());
+			ctx.syncSpecialStream();
+
+			// notify that IPIV was modified on device side
+			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickDeviceWrite();
+
+			// A is modified on device side as well
+			AtomicAllocator.getInstance().getAllocationPoint(A).tickDeviceWrite();
+
+			// now when you'll call getInt(), data will travel back to host
+			if( IPIV.getInt(2) != 4 ) { throw new RuntimeException( "WTF" ) ; }
 
 		// After we get an inplace result we should 
 		// transpose the array - because of differenes in 
 		// column- and row-major ordering between ND4J & CUDA
         	//A.setStride( A.stride()[1], A.stride()[0] );
 	}
-	// copy the result from GPU -> CPU memory
-        allocator.registerAction(ctx, A );
+		// this op call is synchronous, so we don't need register action here
+        //allocator.registerAction(ctx, A );
     }
 
     /**
