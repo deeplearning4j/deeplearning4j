@@ -45,8 +45,6 @@ public class FlowListenerModule implements UIModule {
 
     @Override
     public void reportStorageEvents(Collection<StatsStorageEvent> events) {
-        log.info("EVENTS: " + events);
-
         //We should only be getting relevant session IDs...
         for (StatsStorageEvent sse : events) {
             if (!knownSessionIDs.containsKey(sse.getSessionID())) {

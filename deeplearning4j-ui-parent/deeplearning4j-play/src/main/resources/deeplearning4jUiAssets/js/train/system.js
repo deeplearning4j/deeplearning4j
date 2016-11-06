@@ -12,8 +12,7 @@ function renderSystemPage() {
             renderSystemMemoryChart(data);
             renderSystemInformation(data);
             renderGPULayout(data);
-//            renderGpuMemoryChart(data);
-
+           renderGpuMemoryChart(data);
         }
     });
 }
@@ -55,8 +54,8 @@ function renderSystemMemoryChart(data) {
             offHeapValuesData.push([i, 100.0 * offHeapFrac[i]]);
         }
 
-        console.log("JVM:" + jvmValuesData);
-        console.log("Off-Heap:" + offHeapValuesData);
+        // console.log("JVM:" + jvmValuesData);
+        // console.log("Off-Heap:" + offHeapValuesData);
 
         var plot = $.plot(systemChart,
             [{data: jvmValuesData, label: "JVM Memory"}, {data: offHeapValuesData, label: "Off-Heap Memory"}], {
@@ -77,7 +76,7 @@ function renderSystemMemoryChart(data) {
             });
 
         function showTooltip(x, y, contents) {
-            $('<div id="tooltip">' + contents + '</div>').css( {
+            $('<div id="tooltip">' + contents + '</div>').css({
                 position: 'absolute',
                 display: 'none',
                 top: y + 8,
@@ -93,7 +92,7 @@ function renderSystemMemoryChart(data) {
         systemChart.bind("plothover", function (event, pos, item) {
             var xPos = pos.x.toFixed(0);
             $("#x").text(xPos < 0 || xPos == "-0" ? "" : xPos);
-            var tempY = Math.min(100.0,pos.y);
+            var tempY = Math.min(100.0, pos.y);
             tempY = Math.max(tempY, 0.0);
             var asBytesJvm = formatBytes(tempY * jvmMaxLastIter / 100.0, 2);
             var asBytesOffHeap = formatBytes(tempY * offHeapMaxLastIter / 100.0, 2);
@@ -109,14 +108,14 @@ function renderSystemMemoryChart(data) {
 
                     var label = item.series.label;
                     var bytes;
-                    if(label.toLowerCase().startsWith("jvm")){
+                    if (label.toLowerCase().startsWith("jvm")) {
                         bytes = (item.datapoint[1] * jvmMaxLastIter / 100.0).toFixed(0);
                     } else {
                         bytes = (item.datapoint[1] * offHeapMaxLastIter / 100.0).toFixed(0);
                     }
 
                     showTooltip(item.pageX - systemChart.offset().left, item.pageY - systemChart.offset().top,
-                        item.series.label + " (" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
+                        item.series.label + " (" + x + ", " + y + "%; " + formatBytes(bytes, 2) + ")");
                 }
             }
             else {
@@ -127,83 +126,107 @@ function renderSystemMemoryChart(data) {
     }
 }
 
-///* ---------- GPU Utilization Chart (TBD) ---------- */
-////var gpuMaxLastIter = 0;
-////function renderGpuMemoryChart(data) {
-////
-////    var gpuFrac = data["memory"][machineID]["values"][1];
-////    var gpuChart = $("#gpuMemoryChartPlot");
-////
-////    gpuMaxLastIter = data["memory"][machineID]["maxBytes"][1];
-////
-////    if (gpuChart.length) {
-////
-////        var gpuValuesData = [];
-////
-////        for (var i = 0; i < gpuFrac.length; i++) {
-////            gpuValuesData.push([i, 100.0 * gpuFrac[i]]);
-////        }
-////
-////        var plot = $.plot(gpuChart,
-////            [{data: gpuValuesData, label: "Off Heap Memory"}], {
-////                series: {
-////                    lines: {
-////                        show: true,
-////                        lineWidth: 2
-////                    }
-////                },
-////                grid: {
-////                    hoverable: true,
-////                    clickable: true,
-////                    tickColor: "#dddddd",
-////                    borderWidth: 0
-////                },
-////                yaxis: {min: 0, max: 100.0},
-////                colors: ["#FA5833", "#2FABE9"]
-////            });
-////
-////        function showTooltip(x, y, contents) {
-////            $('<div id="tooltipGpu">' + contents + '</div>').css( {
-////                position: 'absolute',
-////                display: 'none',
-////                top: y + 8,
-////                left: x + 10,
-////                border: '1px solid #fdd',
-////                padding: '2px',
-////                'background-color': '#dfeffc',
-////                opacity: 0.80
-////            }).appendTo("#gpuMemoryChartPlot").fadeIn(200);
-////        }
-////
-////        var previousPoint = null;
-////        gpuChart.bind("plothover", function (event, pos, item) {
-////            $("#x2").text(pos.x.toFixed(0));
-////            var tempY = Math.min(100.0,pos.y);
-////            tempY = Math.max(0.0, tempY);
-////            var asBytes = formatBytes(tempY * gpuMaxLastIter / 100.0, 2);
-////            $("#y2").text(tempY.toFixed(2) + " (" + asBytes + ")");
-////
-////            if (item) {
-////                if (previousPoint != item.dataIndex) {
-////                    previousPoint = item.dataIndex;
-////
-////                    $("#tooltipGpu").remove();
-////                    var x = item.datapoint[0].toFixed(0);
-////                    var y = Math.min(100.0, item.datapoint[1]).toFixed(2);
-////                    var bytes = (item.datapoint[1] * gpuMaxLastIter / 100.0).toFixed(0);
-////
-////                    showTooltip(item.pageX - gpuChart.offset().left, item.pageY - gpuChart.offset().top,
-////                        "(" + x + ", " + y + "%; " + formatBytes(bytes,2) + ")");
-////                }
-////            }
-////            else {
-////                $("#tooltipGpu").remove();
-////                previousPoint = null;
-////            }
-////        });
-////    }
-////}
-//
+/* ---------- GPU Utilization Chart (TBD) ---------- */
+var gpuMaxLastIter = {};
+function renderGpuMemoryChart(data) {
+
+    var gpuFrac = data["memory"][machineID]["values"][1];
+    var gpuChart = $("#gpuMemoryChartPlot");
+
+    var isDevice = data["memory"][machineID]["isDevice"];
+    var deviceIdxs = [];
+    if(isDevice ){
+        for(var i=0; i<isDevice.length; i++ ){
+            //if(isDevice[i] == false){     //For testing GPU chart on non-GPU system...
+            if(isDevice[i] == true){
+                deviceIdxs.push(i);
+            }
+        }
+    }
+
+    if(deviceIdxs.length == 0){
+        return;
+    }
+
+    //Do have devices -> render them...
+    if (gpuChart.length) {
+
+        var toRender = [];
+
+        for(var i=0; i<deviceIdxs.length; i++ ){
+            var seriesName = data["memory"][machineID]["seriesNames"][deviceIdxs[i]];
+            var thisDeviceMemFrac = data["memory"][machineID]["values"][deviceIdxs[i]];
+            gpuMaxLastIter[seriesName] = data["memory"][machineID]["maxBytes"][deviceIdxs[i]];
+            var xy = [];
+            for( var j=0; j<thisDeviceMemFrac.length; j++ ){
+                xy.push([j, 100.0 * thisDeviceMemFrac[j]])
+            }
+            toRender.push({data: xy, label: seriesName});
+        }
+
+        var plot = $.plot(gpuChart,
+            toRender, {
+                series: {
+                    lines: {
+                        show: true,
+                        lineWidth: 2
+                    }
+                },
+                grid: {
+                    hoverable: true,
+                    clickable: true,
+                    tickColor: "#dddddd",
+                    borderWidth: 0
+                },
+                yaxis: {min: 0, max: 100.0},
+                colors: ["#FA5833", "#2FABE9"]
+            });
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltipGpu">' + contents + '</div>').css({
+                position: 'absolute',
+                display: 'none',
+                top: y + 8,
+                left: x + 10,
+                border: '1px solid #fdd',
+                padding: '2px',
+                'background-color': '#dfeffc',
+                opacity: 0.80
+            }).appendTo("#gpuMemoryChartPlot").fadeIn(200);
+        }
+
+        var previousPoint = null;
+        gpuChart.bind("plothover", function (event, pos, item) {
+            var xPos = pos.x.toFixed(0);
+            $("#x2").text(xPos < 0 || xPos == "-0" ? "" : xPos);
+            var tempY = Math.min(100.0, pos.y);
+            tempY = Math.max(tempY, 0.0);
+            $("#y2").text(tempY.toFixed(2) + "%");
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltipGpu").remove();
+                    var x = item.datapoint[0].toFixed(0);
+                    var y = Math.min(100.0, item.datapoint[1]).toFixed(2);
+
+                    var label = item.series.label;
+                    var max = gpuMaxLastIter[item.series.label];
+                    var bytes = (item.datapoint[1] * jvmMaxLastIter / 100.0).toFixed(0);
+
+                    showTooltip(item.pageX - gpuChart.offset().left, item.pageY - gpuChart.offset().top,
+                        item.series.label + " (" + x + ", " + y + "%; " + formatBytes(bytes, 2) + ")");
+                }
+            }
+            else {
+                $("#tooltipGpu").remove();
+                previousPoint = null;
+            }
+        });
+    }
+}
+
 /* ---------- System Information ---------- */
 function renderSystemInformation(data) {
 
@@ -242,12 +265,12 @@ function renderSystemInformation(data) {
     $("#nd4jDataType").html(nd4jDataType);
 
     /* Inject Memory Information */
-    $("#currentBytesJVM").html(formatBytes(currentBytesJVM,2));
-    $("#currentBytesOffHeap").html(formatBytes(currentBytesOffHeap,2));
+    $("#currentBytesJVM").html(formatBytes(currentBytesJVM, 2));
+    $("#currentBytesOffHeap").html(formatBytes(currentBytesOffHeap, 2));
     $("#isDeviceJVM").html(isDeviceJVM);
     $("#isDeviceOffHeap").html(isDeviceOffHeap);
-    $("#maxBytesJVM").html(formatBytes(maxBytesJVM,2));
-    $("#maxBytesOffHeap").html(formatBytes(maxBytesOffHeap,2));
+    $("#maxBytesJVM").html(formatBytes(maxBytesJVM, 2));
+    $("#maxBytesOffHeap").html(formatBytes(maxBytesOffHeap, 2));
 
     /* Inject GPU Information (TBD) */
 
@@ -257,9 +280,21 @@ function renderSystemInformation(data) {
 
 function renderGPULayout(data) {
 
-    var isDevice = data["memory"][machineID]["isDevice"][0];
+    // var isDevice = data["memory"][machineID]["isDevice"][0];
+    var anyDevices = false;
+    var isDevice = data["memory"][machineID]["isDevice"];
+    if(isDevice ){
+        for(var i=0; i<isDevice.length; i++ ){
+            if(isDevice[i] == "true"){
+                anyDevices = true;
+                break;
+            }
+        }
+    }
 
-    if (isDevice == true) {
+    //anyDevices = true;    //For testing GPU charts on non-GPU system...
+
+    if (anyDevices == true) {
         $("#gpuTable").show();
         $("#gpuMemoryChart").show();
         $("#systemMemoryChart").attr("class", "box span6");
@@ -277,16 +312,16 @@ function renderMultipleTabs(data) {
     var nMachines = Object.keys(nMachinesData);
 
     /* Generate Tabs Depending on nMachines.length*/
-    for (i = 0; i < nMachines.length; i++)  {
+    for (i = 0; i < nMachines.length; i++) {
         $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"#machine" + nMachines[i] + "\">Machine" + nMachines[i] + "</a></li>");
     }
 
     /* Show/Hide Tabs on Click */
     $('#systemTab a:first').tab('show');
     $('#systemTab a').click(function (e) {
-      e.preventDefault();
-      $(this).tab('show');
-      renderGPULayout(data); // Check isDevice when switching tabs
+        e.preventDefault();
+        $(this).tab('show');
+        renderGPULayout(data); // Check isDevice when switching tabs
     });
 
 }
@@ -296,9 +331,9 @@ function selectMachine() {
 
     machineID = 0;
 
-    $('#systemTab').on("click", "li", function() {
+    $('#systemTab').on("click", "li", function () {
         machineID = $(this).attr('id');
-     });
+    });
 
     return machineID;
 }
