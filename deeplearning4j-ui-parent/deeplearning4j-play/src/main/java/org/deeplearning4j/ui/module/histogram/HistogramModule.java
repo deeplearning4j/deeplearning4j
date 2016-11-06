@@ -47,13 +47,13 @@ public class HistogramModule implements UIModule {
     }
 
     @Override
-    public void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events) {
+    public void reportStorageEvents(Collection<StatsStorageEvent> events) {
         log.info("Received events: {}", events);
 
         //We should only be getting relevant session IDs...
         for (StatsStorageEvent sse : events) {
             if (!knownSessionIDs.containsKey(sse.getSessionID())) {
-                knownSessionIDs.put(sse.getSessionID(), statsStorage);
+                knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
             }
         }
     }

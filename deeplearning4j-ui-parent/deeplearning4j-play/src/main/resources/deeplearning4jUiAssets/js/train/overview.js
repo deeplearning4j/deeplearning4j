@@ -8,6 +8,8 @@ function selectStdevChart(fieldName){
 /* ---------- Render page ---------- */
 
 function renderOverviewPage() {
+    updateSessionSelect();
+
     $.ajax({
         url: "/train/overview/data",
         async: true,
@@ -16,8 +18,6 @@ function renderOverviewPage() {
         },
         success: function (data) {
             console.log("Keys: " + Object.keys(data));
-
-
             renderScoreVsIterChart(data);
             renderModelPerformanceTable(data);
             renderUpdatesRatio(data);

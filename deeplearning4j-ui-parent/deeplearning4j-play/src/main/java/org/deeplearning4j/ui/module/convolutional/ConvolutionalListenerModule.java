@@ -47,12 +47,12 @@ public class ConvolutionalListenerModule implements UIModule {
     }
 
     @Override
-    public synchronized void reportStorageEvents(StatsStorage statsStorage, Collection<StatsStorageEvent> events) {
+    public synchronized void reportStorageEvents(Collection<StatsStorageEvent> events) {
         log.info("EVENTS: " + events);
         for(StatsStorageEvent sse : events){
             if(TYPE_ID.equals(sse.getTypeID()) && sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo){
                 if(sse.getTimestamp() > lastTimeStamp){
-                    lastStorage = statsStorage;
+                    lastStorage = sse.getStatsStorage();
                     lastSessionID = sse.getSessionID();
                     lastWorkerID = sse.getWorkerID();
                     lastTimeStamp = sse.getTimestamp();
