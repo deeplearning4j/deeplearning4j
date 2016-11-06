@@ -510,7 +510,6 @@ a.brand span {
 	border-right: 9px solid transparent;
 	border-bottom: 9px solid #222 !important;
 	border-left: 9px solid transparent;
-	content: '';
 }
 
 .dropdown-menu {

@@ -88,12 +88,15 @@
                         <div class="box span12">
                             <div class="box-header">
                                 <h2><b>@i18n.getMessage("train.system.title")</b></h2>
+                                <div class="btn-group" style="margin-top: -11px; position:absolute; right: 40px;">
+                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">Select Machine <span class="caret"></span></button>
+                                    <ul class="dropdown-menu" id="systemTab"></ul>
+                                </div>
                             </div>
                             <div class="box-content">
-                                <ul class="nav tab-menu nav-tabs" id="systemTab"></ul>
 
-                                    <!--Start System Tab -->
-                                <div id="myTabContent" class="tab-content">
+                                    <!--Start System Information -->
+                                <div class="tab-content">
                                     <div class="tab-pane active">
 
                                             <!-- System Memory Utilization Chart -->
