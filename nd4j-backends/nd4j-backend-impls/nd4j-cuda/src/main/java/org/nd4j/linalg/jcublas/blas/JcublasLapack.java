@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -100,15 +101,25 @@ public class JcublasLapack extends BaseLapack {
 
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;
-		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
+		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
 		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
+			AllocationPoint pointIPIV = AtomicAllocator.getInstance().getAllocationPoint(IPIV);
+
 		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
-		IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
+		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
+
+		IntPointer ptr = new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer();
+			ptr.put(0, 1);
+			ptr.put(1, 1);
+			ptr.put(2, 1);
 
 		logger.info("IPIV data before: {}", Arrays.toString(IPIV.data().asInt()));
+
 		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
-		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostRead();
+
+
+		logger.info("ipiv HS: {}", pointIPIV.isActualOnHostSide());
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -117,17 +128,22 @@ public class JcublasLapack extends BaseLapack {
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
 			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(work)).asFloatPointer(),
-			ip2, //new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer() ,
+			ptr ,
 			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(INFO)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
 
-			AtomicAllocator.getInstance().getAllocationPoint(ipiv).tickHostWrite();
 
-			logger.info("ipiv: {}", Arrays.toString(ipiv.asInt()));
-			logger.info("ip2[0]: {}; ip2[1]: {}; ip2[2]: {};", ip2.get(0), ip2.get(1), ip2.get(2));
+			logger.info("ipiv HS: {}", pointIPIV.isActualOnHostSide());
+
+
+
+			//AtomicAllocator.getInstance().getAllocationPoint(ipiv).tickHostWrite();
+
+			//ogger.info("ipiv: {}", Arrays.toString(ipiv.asInt()));
+			logger.info("ip2[0]: {}; ip2[1]: {}; ip2[2]: {};", ptr.get(0), ptr.get(1), ptr.get(2));
 
 			// notify that IPIV was modified on device side
 			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
@@ -137,7 +153,7 @@ public class JcublasLapack extends BaseLapack {
 			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickHostWrite();
 			AtomicAllocator.getInstance().getAllocationPoint(A).tickHostWrite();
 
-			logger.info("IPIV data after: {}", Arrays.toString(IPIV.data().asInt()));
+			logger.info("IPIV data after 2: {}", Arrays.toString(IPIV.data().asInt()));
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
