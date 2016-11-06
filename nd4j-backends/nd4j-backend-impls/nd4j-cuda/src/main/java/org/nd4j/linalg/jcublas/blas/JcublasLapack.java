@@ -100,11 +100,11 @@ public class JcublasLapack extends BaseLapack {
 
 		// Now allocate memory for the workspace, the permutation matrix and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;
-		//DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
+		DataBuffer ipiv = Nd4j.getDataBufferFactory().createInt( IPIV.length() ) ;
 		//DataBuffer info = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		//IntPointer ip1 = (IntPointer) AtomicAllocator.getInstance().getPointer(ipiv, ctx) ;
-		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
+		IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
 		logger.info("IPIV data before: {}", Arrays.toString(IPIV.data().asInt()));
 		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
@@ -117,12 +117,17 @@ public class JcublasLapack extends BaseLapack {
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			lda, 
 			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(work)).asFloatPointer(),
-			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer() ,
+			ip2, //new CudaPointer(AtomicAllocator.getInstance().getHostPointer(IPIV)).asIntPointer() ,
 			new CudaPointer(AtomicAllocator.getInstance().getHostPointer(INFO)).asIntPointer()
 			) ;
 
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
+
+			AtomicAllocator.getInstance().getAllocationPoint(ipiv).tickHostWrite();
+
+			logger.info("ipiv: {}", Arrays.toString(ipiv.asInt()));
+			logger.info("ip2[0]: {}; ip2[1]: {}; ip2[2]: {};", ip2.get(0), ip2.get(1), ip2.get(2));
 
 			// notify that IPIV was modified on device side
 			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
