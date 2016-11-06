@@ -68,6 +68,24 @@ function renderMeanMagChart(data) {
             selectedMeanMagChart = "ratios";
         }
 
+        //Tab highlighting logic
+        if (selectedMeanMagChart == "ratios") {
+            $("#mmRatioTab").attr("class", "active");
+            $("#mmParamTab").removeAttr("class");
+            $("#mmUpdateTab").removeAttr("class");
+        }
+        else if (selectedMeanMagChart == "paramMM") {
+            $("#mmRatioTab").removeAttr("class");
+            $("#mmParamTab").attr("class", "active");
+            $("#mmUpdateTab").removeAttr("class");
+        }
+        else {
+            $("#mmRatioTab").removeAttr("class");
+            $("#mmParamTab").removeAttr("class");
+            $("#mmUpdateTab").attr("class", "active");
+        }
+
+
         var isRatio = selectedMeanMagChart == "ratios";
 
         var ratios = data["meanMag"][selectedMeanMagChart];
