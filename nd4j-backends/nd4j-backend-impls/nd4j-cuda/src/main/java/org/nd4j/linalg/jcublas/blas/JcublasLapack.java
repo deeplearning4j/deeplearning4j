@@ -107,6 +107,8 @@ public class JcublasLapack extends BaseLapack {
 		//IntPointer ip2 = (IntPointer) ipiv.addressPointer() ;
 
 		logger.info("IPIV data before: {}", Arrays.toString(IPIV.data().asInt()));
+		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
+		AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostRead();
 
 		// DO the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -124,6 +126,7 @@ public class JcublasLapack extends BaseLapack {
 
 			// notify that IPIV was modified on device side
 			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
+			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostRead();
 
 			// A is modified on device side as well
 			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickHostWrite();
