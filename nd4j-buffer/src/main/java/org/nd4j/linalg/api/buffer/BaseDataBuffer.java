@@ -138,18 +138,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
         }
 
-        if(underlyingBuffer.dataType() == Type.DOUBLE) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.FLOAT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.INT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
+
+        pointer = underlyingBuffer.pointer();
+        indexer = underlyingBuffer.indexer();
     }
 
     /**
