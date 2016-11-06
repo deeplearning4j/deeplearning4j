@@ -122,6 +122,13 @@ public class JcublasLapack extends BaseLapack {
 			// we do sync to make sure getr is finished
 			ctx.syncOldStream();
 
+			// notify that IPIV was modified on device side
+			AtomicAllocator.getInstance().getAllocationPoint(IPIV).tickHostWrite();
+
+			// A is modified on device side as well
+			AtomicAllocator.getInstance().getAllocationPoint(INFO).tickHostWrite();
+			AtomicAllocator.getInstance().getAllocationPoint(A).tickHostWrite();
+
 			logger.info("IPIV data after: {}", Arrays.toString(IPIV.data().asInt()));
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
