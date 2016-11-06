@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
@@ -45,7 +46,14 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.sdot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        if (incX >= 1 && incY >= 1) {
+            return nd4jBlas.sdot(DUMMY, N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
+        } else {
+            // non-EWS dot variant
+            Dot dot = new Dot(X, Y);
+            Nd4j.getExecutioner().exec(dot);
+            return dot.getFinalResult().floatValue();
+        }
     }
 
     @Override
@@ -55,7 +63,14 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.ddot(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
+        if (incX >= 1 && incY >= 1) {
+            return nd4jBlas.ddot(DUMMY, N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY);
+        } else {
+            // non-EWS dot variant
+            Dot dot = new Dot(X, Y);
+            Nd4j.getExecutioner().exec(dot);
+            return dot.getFinalResult().floatValue();
+        }
     }
 
     @Override

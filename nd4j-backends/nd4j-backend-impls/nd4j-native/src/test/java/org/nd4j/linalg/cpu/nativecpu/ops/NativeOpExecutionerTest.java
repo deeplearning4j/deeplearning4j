@@ -387,4 +387,48 @@ public class NativeOpExecutionerTest {
         assertEquals(1, imin, 0.0);
         assertEquals(3, iamin, 0.0);
     }
+
+    @Test
+    public void testViewData1() {
+        INDArray in = Nd4j.create(new double[][]{
+                {1, 2},
+                {3, 4}}, 'c');
+
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+
+        INDArray out = in.getRow(1);
+        System.out.println("Out:        " + out);
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+
+
+        assertTrue(out.isView());
+        assertEquals(2, out.data().length());
+
+        out.addi(2f);
+
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+    }
+
+    @Test
+    public void testViewData2() {
+        INDArray in = Nd4j.create(new double[][]{
+                {1, 2},
+                {3, 4}}, 'f');
+
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+
+        INDArray out = in.getRow(1);
+        System.out.println("Out:        " + out);
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+
+
+        assertTrue(out.isView());
+        assertEquals(2, out.data().length());
+
+        out.addi(2f);
+
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+    }
 }
