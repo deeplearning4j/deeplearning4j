@@ -61,7 +61,7 @@ function updateSessionWorkerSelect(){
                         var elem = $("#workerSelect");
                         elem.empty();
 
-                        if(numWorkers > 0){
+                        if(numWorkers > 1){
                         // if(numWorkers >= 0){    //For testing
                             for(var i=0; i<numWorkers; i++){
                                 elem.append("<option value='" + i + "'>" + i + "</option>");
