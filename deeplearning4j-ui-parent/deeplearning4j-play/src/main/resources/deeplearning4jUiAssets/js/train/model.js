@@ -11,6 +11,23 @@ var selectedMeanMagChart = "ratios";
 function setSelectMeanMagChart(selectedChart){
     selectedMeanMagChart = selectedChart;
     lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
+
+    //Tab highlighting logic 
+    if (selectedMeanMagChart == "ratios") { 
+        $("#ratios").attr("class", "active"); 
+        $("#paramMM").removeAttr("class"); 
+        $("#updateMM").removeAttr("class"); 
+    } 
+    else if (selectedMeanMagChart == "paramMM") { 
+        $("#ratios").removeAttr("class"); 
+        $("#paramMM").attr("class", "active"); 
+        $("#updateMM").removeAttr("class"); 
+    } 
+    else { 
+        $("#ratios").removeAttr("class"); 
+        $("#paramMM").removeAttr("class"); 
+        $("#updateMM").attr("class", "active"); 
+    }
 }
 
 var lastUpdateTimeModel = -1;

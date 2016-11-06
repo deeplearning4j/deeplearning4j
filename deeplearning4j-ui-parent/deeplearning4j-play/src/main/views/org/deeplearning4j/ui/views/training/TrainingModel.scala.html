@@ -111,11 +111,11 @@
                     <!-- Start Content -->
                 <div id="content" class="span10">
 
-                    <div class="row-fluid span6">
+                    <div class="row-fluid span5">
                         <div id="layers"></div>
                     </div>
                         <!-- Start Layer Details -->
-                    <div class="row-fluid span6" id="layerDetails">
+                    <div class="row-fluid span7" id="layerDetails">
 
                         <div class="box">
                             <div class="box-header">
@@ -128,16 +128,7 @@
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle"): log<sub>10</sub></b></h2>
-                                @*<h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><h2 id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></h2>*@
-                                @*<h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>*@
-                                @*<div style="float: right">*@
-                                    @*<p class="stackControls center">*@
-                                        @*<input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.ratio")" onclick="setSelectMeanMagChart('ratios')">*@
-                                        @*<input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.param")" onclick="setSelectMeanMagChart('paramMM')">*@
-                                        @*<input class="btn btn-small" type="button" value="@i18n.getMessage("train.model.meanmag.btn.update")" onclick="setSelectMeanMagChart('updateMM')">*@
-                                    @*</p>*@
-                                @*</div>*@
+                                <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>
                                 <ul class="nav tab-menu nav-tabs" style="position:relative; top: -11px; right: -12px;">
                                     <li id="mmRatioTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('ratios')">@i18n.getMessage("train.model.meanmag.btn.ratio")</a></li>
                                     <li id="mmParamTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('paramMM')">@i18n.getMessage("train.model.meanmag.btn.param")</a></li>
