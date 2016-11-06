@@ -1,7 +1,30 @@
 selectMachine(); //Make machineID Global
 
-function renderSystemPage() {
+var lastUpdateTimeSystem = -1;
+var lastUpdateSessionSystem = "";
+function renderSystemPage(firstLoad) {
     updateSessionWorkerSelect();
+
+    if(firstLoad || !lastUpdateSessionSystem || lastUpdateSessionSystem == "" || lastUpdateSessionSystem != currSession){
+        executeSystemUpdate();
+    } else {
+        //Check last update time first - see if data has actually changed...
+        $.ajax({
+            url: "/train/sessions/lastUpdate/" + currSession,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                if(data > lastUpdateTimeSystem){
+                    executeSystemUpdate();
+                }
+            }
+        });
+    }
+}
+
+function executeSystemUpdate(){
     $.ajax({
         url: "/train/system/data",
         async: true,
@@ -9,6 +32,8 @@ function renderSystemPage() {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
+            lastUpdateSessionSystem = currSession;
+            lastUpdateTimeSystem = data["updateTimestamp"];
             renderSystemMemoryChart(data);
             renderSystemInformation(data);
             renderGPULayout(data);
@@ -339,6 +364,7 @@ function selectMachine() {
 
     $('#systemTab').on("click", "li", function () {
         machineID = $(this).attr('id');
+        lastUpdateTimeSystem = -1;      //Reset last update time to force chart refresh
     });
 
     return machineID;
