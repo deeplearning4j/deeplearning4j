@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-play</artifactId>
+    <artifactId>deeplearning4j-play_2.10</artifactId>
 
     <dependencies>
         <dependency>
@@ -20,13 +20,13 @@
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
+            <artifactId>play-java_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
+            <artifactId>play-netty-server_2.10</artifactId>
             <version>${playframework.version}</version>
         </dependency>
 
