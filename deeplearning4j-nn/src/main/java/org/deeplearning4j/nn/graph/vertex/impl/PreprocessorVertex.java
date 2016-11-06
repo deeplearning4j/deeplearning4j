@@ -67,7 +67,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        return new Pair<>(null,new INDArray[]{preProcessor.backprop(epsilons[0],graph.batchSize())});
+        return new Pair<>(null,new INDArray[]{preProcessor.backprop(epsilon,graph.batchSize())});
     }
 
     @Override

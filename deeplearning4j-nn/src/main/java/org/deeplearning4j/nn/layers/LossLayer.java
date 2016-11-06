@@ -18,44 +18,36 @@
 
 package org.deeplearning4j.nn.layers;
 
+
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossCalculation;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
-import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
-
 
 /**
- * Output layer with different objective
- * in co-occurrences for different objectives.
- * This includes classification as well as prediction
- * @author Adam Gibson
+ * LossLayer is a flexible output "layer" that performs a loss function on
+ * an input without MLP logic.
  *
+ * @author Justin Long (crockpotveggies)
  */
-public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
-        extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
+public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossLayer>
+    implements Serializable, IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -65,11 +57,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     private double fullNetworkL1;
     private double fullNetworkL2;
 
-    public BaseOutputLayer(NeuralNetConfiguration conf) {
+    public LossLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    public BaseOutputLayer(NeuralNetConfiguration conf, INDArray input) {
+    public LossLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
 
@@ -86,7 +78,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             throw new IllegalStateException("Cannot calculate score without input and labels");
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+        INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -109,7 +101,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2){
         if( input == null || labels == null )
             throw new IllegalStateException("Cannot calculate score without input and labels");
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
@@ -125,7 +117,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true);
+        INDArray preOut = input;
         Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
@@ -134,7 +126,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-//        setScore(z, null);
         throw new RuntimeException("Not yet implemented");
     }
 
@@ -145,11 +136,20 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient,INDArray> pair = getGradientsAndDelta(preOutput2d(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getSecond();
+        return getGradientsAndDelta(input);
+    }
 
-        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        return new Pair<>(pair.getFirst(),epsilonNext);
+
+    /** Returns tuple: {Gradient,Delta,Output} given preOut */
+    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
+        // delta calculation
+        ILossFunction lossFunction = layerConf().getLossFn();
+        INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(), maskArray);
+
+        // grab the empty gradient
+        Gradient gradient = new DefaultGradient();
+
+        return new Pair<>(gradient, delta);
     }
 
     /**
@@ -161,25 +161,36 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return gradient;
     }
 
-    /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
-        ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray);
+    @Override
+    public double calcL2() {return 0; }
 
-        Gradient gradient = new DefaultGradient();
-
-        INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-
-        Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-        biasGradView.assign(delta.sum(0));
-
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightGradView);
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradView);
-
-        return new Pair<>(gradient, delta);
+    @Override
+    public double calcL1() {
+        return 0;
     }
 
+    @Override
+    public Type type() {
+        return Type.FEED_FORWARD;
+    }
+
+    @Override
+    public void fit(INDArray input) {
+        // no-op
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        INDArray z = input;
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+            conf.getLayer().getActivationFunction(), z.dup(), conf.getExtraArgs() ));
+
+        if(maskArray != null){
+            ret.muliColumnVector(maskArray);
+        }
+
+        return ret;
+    }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
@@ -217,11 +228,34 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public  INDArray output(boolean training) {
+    public INDArray output(boolean training) {
         if(input == null)
             throw new IllegalArgumentException("No null input allowed");
-        return super.activate(training);
+        return activate(training);
     }
+
+    @Override
+    public Layer transpose(){
+        throw new UnsupportedOperationException("Not applicable");
+    }
+
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        throw new UnsupportedOperationException("Not applicable");
+    }
+
+    @Override
+    public void merge(Layer layer, int batchSize) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray params(){
+        return null;
+    }
+
+
 
 
     /**
@@ -265,8 +299,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public void fit(DataSetIterator iter) {
-        while(iter.hasNext())
-            fit(iter.next());
+        // no-op
     }
 
     /**
@@ -324,9 +357,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         applyDropOutIfNecessary(true);
         if( solver == null ){
             solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+                .configure(conf())
+                .listeners(getListeners())
+                .model(this).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
             int updaterStateSize = updater.stateSizeForLayer(this);
@@ -368,17 +401,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         solver = null;
     }
 
-    /**
-     * Fit the model to the given data
-     *
-     * @param data the data to fit the model to
-     */
-    @Override
-    public void fit(INDArray data) {
-        //no-op
-
-    }
-
     @Override
     public void iterate(INDArray input) {
         throw new UnsupportedOperationException();
@@ -392,11 +414,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }
-
-    protected INDArray preOutput2d(boolean training){
-        return preOutput(training);
-    }
-
 
     protected INDArray getLabels2d(){
         if(labels.rank() > 2) {
