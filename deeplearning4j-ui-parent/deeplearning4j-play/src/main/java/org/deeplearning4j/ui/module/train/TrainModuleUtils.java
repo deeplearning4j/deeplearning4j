@@ -89,7 +89,7 @@ public class TrainModuleUtils {
         for (String s : networkInputs) {
             vertexToIndexMap.put(s, vertexCount++);
             layerNames.add(s);
-            originalVertexName.add(null);
+            originalVertexName.add(s);
             layerTypes.add(s);
             layerInputs.add(Collections.emptyList());
             layerInfo.add(Collections.emptyMap());
@@ -122,14 +122,13 @@ public class TrainModuleUtils {
                 //Extract layer info
                 Map<String, String> map = getLayerInfo(c, layer);
                 layerInfo.add(map);
-
-                originalVertexName.add(String.valueOf(layerCount++));
             } else {
                 String layerType = gv.getClass().getSimpleName();
                 layerTypes.add(layerType);
                 Map<String, String> thisVertexInfo = Collections.emptyMap(); //TODO
                 layerInfo.add(thisVertexInfo);
             }
+            originalVertexName.add(entry.getKey());
         }
 
         return new GraphInfo(layerNames, layerTypes, layerInputs, layerInfo, originalVertexName);
