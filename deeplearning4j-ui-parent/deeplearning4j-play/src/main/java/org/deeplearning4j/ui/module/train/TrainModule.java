@@ -1058,6 +1058,8 @@ public class TrainModule implements UIModule {
 
                 double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
                 double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
+                if(Double.isNaN(jvmFrac)) jvmFrac = 0.0;
+                if(Double.isNaN(offheapFrac)) offheapFrac = 0.0;
                 fracJvm.add((float) jvmFrac);
                 fracOffHeap.add((float) offheapFrac);
 
@@ -1072,6 +1074,7 @@ public class TrainModule implements UIModule {
                     long[] devMaxBytes = sp.getDeviceMaxBytes();
                     for (int i = 0; i < numDevices; i++) {
                         double frac = devBytes[i] / ((double) devMaxBytes[i]);
+                        if(Double.isNaN(frac)) frac = 0.0;
                         fracDeviceMem.get(i).add((float) frac);
                         lastBytes[2+i] = devBytes[i];
                         lastMaxBytes[2+i] = devMaxBytes[i];
@@ -1142,7 +1145,7 @@ public class TrainModule implements UIModule {
             hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmProcs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
             hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.computeDevices"), String.valueOf(numDevices)});
             for (int i = 0; i < numDevices; i++) {
-                String label = i18n.getMessage("train.system.hardwareinfo.deviceName") + " (" + i + ")";
+                String label = i18n.getMessage("train.system.hwTable.deviceName") + " (" + i + ")";
                 String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i) : deviceDescription[i]);
                 hwInfo.add(new String[]{label, name});
 

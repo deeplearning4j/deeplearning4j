@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.stats;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
@@ -15,7 +14,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.stats.api.*;
-import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
@@ -33,7 +31,9 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
@@ -265,6 +265,20 @@ public class StatsListener implements RoutingIterationListener {
             if (nDevices > 0) {
                 gpuCurrentBytes = new long[nDevices];
                 gpuMaxBytes = new long[nDevices];
+                for(int i=0; i<nDevices; i++ ){
+                    try{
+                        Pointer p = getDevicePointer(i);
+                        if(p == null){
+                            gpuMaxBytes[i] = 0;
+                            gpuCurrentBytes[i] = 0;
+                        } else {
+                            gpuMaxBytes[i] = nativeOps.getDeviceTotalMemory(p);
+                            gpuCurrentBytes[i] = gpuMaxBytes[i] - nativeOps.getDeviceFreeMemory(p);
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
             }
 
             report.reportMemoryUse(jvmTotal, jvmMax, offheapTotal, offheapMax, gpuCurrentBytes, gpuMaxBytes);
@@ -495,16 +509,30 @@ public class StatsListener implements RoutingIterationListener {
             int nDevices = nativeOps.getAvailableDevices();
 
             long[] deviceTotalMem = null;
+            String[] deviceDescription = null;  //TODO
             if (nDevices > 0) {
                 deviceTotalMem = new long[nDevices];
+                deviceDescription = new String[nDevices];
                 for (int i = 0; i < nDevices; i++) {
-                    deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(new IntPointer(i));
+                    try{
+                        Pointer p = getDevicePointer(i);
+                        if(p == null){
+                            deviceTotalMem[i] = 0;
+                            deviceDescription[i] = "Device(" + i + ")";
+                        } else {
+                            deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(p);
+                            deviceDescription[i] = nativeOps.getDeviceName(p);
+                            if(nDevices > 1){
+                                deviceDescription[i] = deviceDescription[i] + " (" + i + ")";
+                            }
+                        }
+                    }catch(Exception e){
+                        log.debug("Error getting device info",e);
+                    }
                 }
             }
             long jvmMaxMemory = Runtime.getRuntime().maxMemory();
             long offheapMaxMemory = Pointer.maxBytes();
-
-            String[] deviceDescription = null;  //TODO
 
             initReport.reportHardwareInfo(availableProcessors, nDevices, jvmMaxMemory, offheapMaxMemory, deviceTotalMem,
                     deviceDescription, UIDProvider.getHardwareUID());
@@ -564,6 +592,23 @@ public class StatsListener implements RoutingIterationListener {
 //                    throw new RuntimeException(e);
 //            }
 //        }
+    }
+
+    private Map<Integer,Pointer> devPointers = new HashMap<>();
+    private synchronized Pointer getDevicePointer(int device){
+        if(devPointers.containsKey(device)){
+            return devPointers.get(device);
+        }
+        try{
+            Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
+            Constructor<?> constructor = c.getConstructor(long.class);
+            Pointer p = (Pointer)constructor.newInstance((long)device);
+            devPointers.put(device, p);
+            return p;
+        }catch (Throwable t){
+            devPointers.put(device, null);  //Stops attempting the failure again later...
+            return null;
+        }
     }
 
     private void updateExamplesMinibatchesCounts(Model model) {
