@@ -9,6 +9,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -155,6 +156,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             } else {
                 sequence = recordReader.sequenceRecord();
             }
+            assertNonZeroLengthSequence(sequence, "combined features and labels");
+
             INDArray[] fl = getFeaturesLabelsSingleReader(sequence);
             if (i == 0) {
                 minLength = fl[0].size(0);
@@ -232,6 +235,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 featureSequence = recordReader.sequenceRecord();
                 labelSequence = labelsReader.sequenceRecord();
             }
+            assertNonZeroLengthSequence(featureSequence, "features");
+            assertNonZeroLengthSequence(labelSequence, "labels");
 
             INDArray features = getFeatures(featureSequence);
             INDArray labels = getLabels(labelSequence); //2d time series, with shape [timeSeriesLength,vectorSize]
@@ -241,6 +246,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         }
 
         return nextMultipleSequenceReaders(featureList, labelList, meta);
+    }
+
+    private void assertNonZeroLengthSequence(List<?> sequence, String type) {
+        if (sequence.size() == 0) {
+            throw new ZeroLengthSequenceException(type);
+        }
     }
 
     private DataSet nextMultipleSequenceReaders(List<INDArray> featureList, List<INDArray> labelList, List<RecordMetaData> meta ){
