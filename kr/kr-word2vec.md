@@ -26,13 +26,13 @@ Word2vec은 텍스트를 처리하는 인공 신경망이며 두 개의 층으�
 
 Word2vec의 응용 분야는 매우 다양합니다. 가장 흔한 예는 텍스트로 된 문장을 이해하는 것 입니다. 그 외에도 word2vec의 구조는 <a href="#sequence">DNA 염기서열, 코드, 음악 재생목록, 소셜 미디어에서 사람들의 관계망 (graph)</a>를 이해하는데 사용합니다. [Deeplearning4j](kr-quickstart)는 Spark 기반의 Java에서 GPU 연산 [Scala](http://deeplearning4j.org/scala.html)을 위한 분산 구조 Word2vec을 제공합니다.
 
-Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습은 사람이 간여하지 않으며 말뭉치 데이터만을 사용합니다.
+Word2vec을 이용하면 단어간 유사성을 구할 수 있습니다. 원래 word embeddings의 목적이 유사한 단어일 수록 가까운 거리에 위치하도록 각 단어에 해당하는 벡터 값을 찾는 것 입니다. 이 학습은 사람이 관여하지 않으며 말뭉치 데이터만을 사용합니다.
 
 데이터의 양이 충분하면 Word2vec은 단어의 의미를 꽤 정확하게 파악합니다. 그리고 이를 이용하면 단어의 뜻 뿐만 아니라 여러 단어의 관계를 알아냅니다. 예를 들어 단어의 관계를 이용해 '남자':'소년' = '여자':x 같은 관계식을 주면 x='소녀'라는 답을 구할 수 있습니다. 단어 뿐만 아니라 더 큰 단위의 텍스트인 문장이나 문서를 분류하는데에도 Word2vec을 사용합니다. 예를 들어 문서를 군집화한 뒤에 결과를 이용하면 검색 엔진에서 문서의 분야별 검색(과학, 법률, 경제 등)이나 [문장의 감정 분석](../sentiment_analysis_word2vec), 추천 시스템을 만들 수 있습니다.
 
 정리하면, Word2vec은 각 단어마다 단어에 해당하는 벡터를 구해줍니다. 이 벡터를 다시 심층 신경망에 집어넣어서 추가적인 일을 할 수도 있고 단어의 유사성 등 관계를 파악할 수 있습니다.
 
-유사성을 구하는 방법은 여러 가지가 있습니다. 흔히 쓰이는 방법은 [코사인 유사도](../glossary.html#cosine)입니다. 코사인 유사도는 두 벡터의 각도를 측정하는 것으로 각도가 같은 경우, 즉 두 벡터가 이루는 각이 0도인 경우엔 유사도의 최대값인 1.0이 나옵니다. 그리고 가장 유사도가 낮은 경우는 두 벡터의 각도가 90도가 되는 경우입니다 (실제로 90도가 나오는 경우는 잘 없습니다). 예를 들어 '스웨덴'과 '노르웨이'의 유사성을 구하면 0.760124 라는 제법 높은 유사도가 나올 것 입니다.
+유사성을 구하는 방법은 여러 가지가 있습니다. 흔히 쓰이는 방법은 [코사인 유사도](../glossary.html#cosine)입니다. 코사인 유사도는 두 벡터의 각도를 측정하는 것으로 각도가 같은 경우, 즉 두 벡터가 이루는 각이 0도인 경우엔 유사도의 최대값인 1.0이 나옵니다. 그리고 가장 유사도가 낮은 경우는 두 벡터의 각도가 90도가 되는 경우입니다 (실제로 90도가 나오는 경우는 거의 없습니다). 예를 들어 '스웨덴'과 '노르웨이'의 유사성을 구하면 0.760124 라는 제법 높은 유사도가 나올 것 입니다.
 
 아래에 Word2vec을 이용해 구한 단어의 embeddings 중에서 '스웨덴'과 가장 거리가 가까운, 즉 가장 유사한 단어를 모아놓았습니다.
 
@@ -66,7 +66,7 @@ Word2vec의 학습 과정은 큰 틀에서 일반적인 인공 신경망의 학�
 
 ![Alt text](../img/countries_capitals.png)
 
-## <a name="crazy">재미있는 Word2Vec 사용 예</a>
+## <a name="crazy">재미있는 Word2Vec 사용 결과</a>
 
 Word2vec을 이용한 다른 연산을 보겠습니다.
 
@@ -122,7 +122,7 @@ Deeplearning4je는 자연어 처리 도구는 아래와 같습니다.
 * **VocabCache**: 단어의 개수, 단어를 포함하고 있는 문서의 개수, 토큰의 개수와 종류, [Bog-of-Words](../bagofwords-tf-idf), 단어 벡터 룩업테이블(Look Up Table, 순람표)) 등 메타 데이터를 저장하는데 쓰입니다.
 * **Inverted Index**: 단어가 발견된 위치를 메타 데이터에 저장합니다. 이 값은 데이터 셋을 이해하는데 사용할 수 있습니다. Lucene implementation[1]에 기반한 Lucene 색인이 자동으로 생성됩니다.
 
-Word2vec은 위에서 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2vec은 <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling을 사용해 구현했습니다.
+Word2vec은 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2vec은 <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling을 사용해 구현했습니다.
 
 ## <a name="setup">Word2Vec 설정</a>
 
@@ -195,20 +195,9 @@ Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트
 Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같이 불러온 텍스트는 단어 단위로, 그리고 단어도 다시 어근으로 변환해야 합니다. 토큰화를 잘 모르신다면 텍스트를 구성하는 최소 단위로 원자화했다고 이해하시면 됩니다.
 
 ``` java
-        log.info("Tokenize data....");
-        final EndingPreProcessor preProcessor = new EndingPreProcessor();
-        TokenizerFactory tokenizer = new DefaultTokenizerFactory();
-        tokenizer.setTokenPreProcessor(new TokenPreProcess() {
-            @Override
-            public String preProcess(String token) {
-                token = token.toLowerCase();
-                String base = preProcessor.preProcess(token);
-                base = base.replaceAll("\\d", "d");
-                if (base.endsWith("ly") || base.endsWith("ing"))
-                    System.out.println();
-                return base;
-            }
-        });
+	// Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
 ```
 
 이렇게 하면 한 줄에 토큰 하나씩 결과를 출력합니다.
@@ -256,12 +245,15 @@ Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같�
 아래 코드는 얼마나 모델이 학습이 잘 되었는지를 확인하는 코드입니다.
 
 ``` java
-        log.info("Evaluate model....");
-        double sim = vec.similarity("people", "money");
-        log.info("Similarity between people and money: " + sim);
-        Collection<String> similar = vec.wordsNearest("day", 10);
-        log.info("Similar words to 'day' : " + similar);
+        // Write word vectors
+        WordVectorSerializer.writeWordVectors(vec, "pathToWriteto.txt");
 
+        log.info("Closest Words:");
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        System.out.println(lst);
+        UiServer server = UiServer.getInstance();
+        System.out.println("Started on port " + server.getPort());
+        
         //output: [night, week, year, game, season, during, office, until, -]
 ```
 
@@ -306,7 +298,7 @@ Word embeddings 벡터의 차원을 확 줄여서 시각화 하는 방법이 있
 
 ``` java
         log.info("Save vectors....");
-        WordVectorSerializer.writeWordVectors(vec, "words.txt");
+        WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
 ```
 
 위의 코드는 모델이 저장된 폴더에 `words.txt`를 저장합니다. 이 텍스트 파일은 한 줄에 하나의 단어(의 벡터)를 적어 놓은 형태가 됩니다.
@@ -326,7 +318,7 @@ Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man -
 아래 코드는 벡터를 다시 메모리에 올립니다.
 
 ``` java
-        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
+        Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
 ```
 
 그리고 나면 Word2vec을 룩업 테이블로 쓸 수 있습니다.
