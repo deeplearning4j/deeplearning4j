@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -250,9 +251,9 @@ public class WordVectorSerializerTest {
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
 
-        logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
+        //logger.info("Original word 0: " + cache.wordFor(cache.wordAtIndex(0)));
 
-        logger.info("Closest Words:");
+        //logger.info("Closest Words:");
         Collection<String> lst = vec.wordsNearest("day", 10);
         System.out.println(lst);
 
@@ -271,8 +272,8 @@ public class WordVectorSerializerTest {
 
         assertEquals(vec.getConfiguration(), vec2.getConfiguration());
 
-        logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
-        logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
+        //logger.info("Source ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable) table).getExpTable()));
+        //logger.info("Dest  ExpTable: " + ArrayUtils.toString(((InMemoryLookupTable)  vec2.getLookupTable()).getExpTable()));
         assertTrue(ArrayUtils.isEquals(((InMemoryLookupTable) table).getExpTable(), ((InMemoryLookupTable) vec2.getLookupTable()).getExpTable()));
 
 
@@ -302,8 +303,8 @@ public class WordVectorSerializerTest {
         INDArray rSyn0_1 = restoredTable.getSyn0().slice(1);
         INDArray oSyn0_1 = ((InMemoryLookupTable) table).getSyn0().slice(1);
 
-        logger.info("Restored syn0: " + rSyn0_1);
-        logger.info("Original syn0: " + oSyn0_1);
+        //logger.info("Restored syn0: " + rSyn0_1);
+        //logger.info("Original syn0: " + oSyn0_1);
 
         assertEquals(oSyn0_1, rSyn0_1);
 
@@ -321,8 +322,8 @@ public class WordVectorSerializerTest {
 
             assertEquals(rSyn1, oSyn1);
             if (arraysSimilarity(rSyn1, oSyn1) < 0.98) {
-                logger.info("Restored syn1: " + rSyn1);
-                logger.info("Original  syn1: " + oSyn1);
+             //   logger.info("Restored syn1: " + rSyn1);
+             //   logger.info("Original  syn1: " + oSyn1);
             }
             // we exclude word 222 since it has syn1 full of zeroes
             if (cnt != 222) assertEquals(1.0, arraysSimilarity(rSyn1, oSyn1), 0.001);
@@ -451,7 +452,7 @@ public class WordVectorSerializerTest {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         for (int i = 0; i < 100; i++) {
-            VocabWord word = new VocabWord(1.0f, "word_" + i);
+            VocabWord word = new VocabWord((float) i, "word_" + i);
             List<Integer> points = new ArrayList<>();
             List<Integer> codes = new ArrayList<>();
             int num = org.apache.commons.lang3.RandomUtils.nextInt(1,20);
@@ -498,6 +499,7 @@ public class WordVectorSerializerTest {
         for (int i = 0; i < cache.numWords(); i++) {
             assertEquals(cache.elementAtIndex(i).isLabel(), restoredVocab.elementAtIndex(i).isLabel());
             assertEquals(cache.wordAtIndex(i), restoredVocab.wordAtIndex(i));
+            assertEquals(cache.elementAtIndex(i).getElementFrequency(), restoredVocab.elementAtIndex(i).getElementFrequency(), 0.1f);
             List<Integer> originalPoints = cache.elementAtIndex(i).getPoints();
             List<Integer> restoredPoints = restoredVocab.elementAtIndex(i).getPoints();
             assertEquals(originalPoints.size(), restoredPoints.size());
@@ -681,5 +683,75 @@ public class WordVectorSerializerTest {
 
         assertNotEquals(null, arrayLive);
         assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Ignore
+    @Test
+    public void testBiggerParavecLoader() throws Exception {
+        ParagraphVectors vectors = WordVectorSerializer.readParagraphVectors("C:\\Users\\raver\\Downloads\\10kNews.zip");
+    }
+
+
+    @Test
+    public void testMalformedLabels1() throws Exception {
+        List<String> words = new ArrayList<>();
+        words.add("test A");
+        words.add("test B");
+        words.add("test\nC");
+        words.add("test`D");
+        words.add("test_E");
+        words.add("test 5");
+
+        AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+        int cnt = 0;
+        for(String word: words) {
+            vocabCache.addToken(new VocabWord(1.0, word));
+            vocabCache.addWordToIndex(cnt, word);
+            cnt++;
+        }
+
+        vocabCache.elementAtIndex(1).markAsLabel(true);
+
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>(vocabCache, 10, false, 0.01, new DefaultRandom(), 0.0);
+        lookupTable.resetWeights(true);
+
+        assertNotEquals(null, lookupTable.getSyn0());
+        assertNotEquals(null, lookupTable.getSyn1());
+        assertNotEquals(null, lookupTable.getExpTable());
+        assertEquals(null, lookupTable.getSyn1Neg());
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .lookupTable(lookupTable)
+                .vocabCache(vocabCache)
+                .build();
+
+        File tempFile = File.createTempFile("temp","w2v");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeParagraphVectors(vec, tempFile);
+
+
+        ParagraphVectors restoredVec = WordVectorSerializer.readParagraphVectors(tempFile);
+
+        for (String word: words) {
+            assertEquals(true, restoredVec.hasWord(word));
+        }
+
+        assertTrue(restoredVec.getVocab().elementAtIndex(1).isLabel());
+    }
+
+    @Test
+    public void testB64_1() throws Exception {
+        String wordA = "night";
+        String wordB = "night day";
+        String encA = WordVectorSerializer.encodeB64(wordA);
+        String encB = WordVectorSerializer.encodeB64(wordB);
+
+        assertEquals(wordA, WordVectorSerializer.decodeB64(encA));
+        assertEquals(wordB, WordVectorSerializer.decodeB64(encB));
+
+        assertEquals(wordA, WordVectorSerializer.decodeB64(wordA));
+        assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
+
     }
 }

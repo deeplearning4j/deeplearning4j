@@ -56,6 +56,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
      */
     @Override
     public void removeHook(TrainingHook trainingHook) {
+        if(trainingHooks == null) return;
         trainingHooks.remove(trainingHook);
     }
 
@@ -67,6 +68,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
      */
     @Override
     public void addHook(TrainingHook trainingHook) {
+        if(trainingHooks == null) trainingHooks = new ArrayList<>();
         trainingHooks.add(trainingHook);
     }
 
@@ -122,13 +124,19 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     public ParameterAveragingTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
 
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.preUpdate(dataSet,network);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks) {
+                trainingHook.preUpdate(dataSet, network);
+            }
+        }
 
         network.fit(dataSet);
 
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.postUpdate(dataSet,network);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks) {
+                trainingHook.postUpdate(dataSet, network);
+            }
+        }
 
 
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.numExamples());
@@ -150,14 +158,20 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
     public ParameterAveragingTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
         if(configuration.isCollectTrainingStats()) stats.logFitStart();
        //pre training hooks
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.preUpdate(dataSet,graph);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks) {
+                trainingHook.preUpdate(dataSet, graph);
+            }
+        }
 
         graph.fit(dataSet);
 
         //post training hooks
-        for(TrainingHook trainingHook : trainingHooks)
-            trainingHook.postUpdate(dataSet,graph);
+        if (trainingHooks != null) {
+            for (TrainingHook trainingHook : trainingHooks) {
+                trainingHook.postUpdate(dataSet, graph);
+            }
+        }
 
 
         if(configuration.isCollectTrainingStats()) stats.logFitEnd(dataSet.getFeatures(0).size(0));

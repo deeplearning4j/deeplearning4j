@@ -760,23 +760,29 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
 
         if (collectTrainingStats) stats.logProcessParamsUpdaterStart();
-        params.divi(aggCount);
-        INDArray updaterState = tuple.getUpdaterStateSum();
-        if (updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
+        if(params != null){
+            params.divi(aggCount);
+            INDArray updaterState = tuple.getUpdaterStateSum();
+            if (updaterState != null) updaterState.divi(aggCount);   //May be null if all SGD updaters, for example
 
-        if (network != null) {
-            MultiLayerNetwork net = network.getNetwork();
-            net.setParameters(params);
-            if (updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
+            if (network != null) {
+                MultiLayerNetwork net = network.getNetwork();
+                net.setParameters(params);
+                if (updaterState != null) net.getUpdater().setStateViewArray(null, updaterState, false);
 
-            network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
+                network.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
+            } else {
+                ComputationGraph g = graph.getNetwork();
+                g.setParams(params);
+                if (updaterState != null) g.getUpdater().setStateViewArray(updaterState);
+
+                graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
+            }
         } else {
-            ComputationGraph g = graph.getNetwork();
-            g.setParams(params);
-            if (updaterState != null) g.getUpdater().setStateViewArray(updaterState);
-
-            graph.setScore(tuple.getScoreSum() / tuple.getAggregationsCount());
+            log.info("Skipping imbalanced split with no data for all executors");
         }
+
+
 
         if (collectTrainingStats) {
             stats.logProcessParamsUpdaterEnd();
@@ -973,10 +979,10 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
          * with the desired hooks for training.
          * This can allow for tings like parameter servers
          * and async updates as well as collecting statistics.
-         * @param trainingHooks the training hooks to ad
+         * @param hooks the training hooks to ad
          * @return
          */
-        public Builder trainingHooks(TrainingHook...hooks) {
+        public Builder trainingHooks(TrainingHook... hooks) {
             this.trainingHooks = Arrays.asList(hooks);
             return this;
         }
