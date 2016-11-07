@@ -31,7 +31,7 @@ public class Assets implements Function<String,Result> {
         try{
             inputStream = new ClassPathResource(fullPath).getInputStream();
         }catch (Exception e){
-            log.info("Could not find asset: {}", s);    //TODO switch to debug later...
+            log.debug("Could not find asset: {}", s);
             return ok();
         } catch (Throwable t){
             return ok();

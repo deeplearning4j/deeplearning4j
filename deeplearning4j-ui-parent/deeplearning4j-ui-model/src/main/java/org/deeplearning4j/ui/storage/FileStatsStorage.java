@@ -14,7 +14,15 @@ import java.io.File;
  */
 public class FileStatsStorage extends MapDBStatsStorage {
 
+    private final File file;
+
     public FileStatsStorage(File f) {
         super(f);
+        this.file = f;
+    }
+
+    @Override
+    public String toString(){
+        return "FileStatsStorage(" + file.getPath() + ")";
     }
 }
