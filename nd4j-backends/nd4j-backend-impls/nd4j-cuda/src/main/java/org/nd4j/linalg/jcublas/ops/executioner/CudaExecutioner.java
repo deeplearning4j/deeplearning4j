@@ -2158,12 +2158,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Properties props = super.getEnvironmentInformation();
 
             List<Map<String, Object>> devicesList = new ArrayList<>();
-            int currentDevice = nativeOps.getDevice();
 
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> deviceProps = new HashMap<>();
 
-                CudaPointer devPtr = new CudaPointer(1);
+                CudaPointer devPtr = new CudaPointer(i);
 
                 deviceProps.put("cuda.deviceName", nativeOps.getDeviceName(devPtr));
                 deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(devPtr));
@@ -2179,7 +2178,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             props.put("cuda.devicesInformation", devicesList);
             props.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
 
-            nativeOps.setDevice(new CudaPointer(currentDevice));
+
             properties = props;
         }
         return properties;
