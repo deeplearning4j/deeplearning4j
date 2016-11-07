@@ -521,6 +521,8 @@ a.brand span {
   	float: left;
   	min-width: 160px;
 	max-width: 300px;
+	height: 50vh;
+	overflow: auto;
   	padding: 0px 0;
   	margin: 5px 0 0 0;
   	list-style: none;
@@ -695,7 +697,7 @@ ul.messages li .message {
 #content {
 	background: #ffffff;
 	filter: none;
-	min-height: 100%;
+	min-height: 100vh;
 	padding: 20px 20px;
 	position: relative;
 }
