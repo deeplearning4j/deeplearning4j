@@ -147,7 +147,7 @@ public class ParallelWrapper implements AutoCloseable {
                             score += zoo[cnt].getModel().score();
                         }
 
-                        params.divi(workers);
+                        params.divi(cnt);
                         model.setParams(params);
                     }
 
@@ -246,6 +246,7 @@ public class ParallelWrapper implements AutoCloseable {
                 /*
                     average model, and propagate it to whole
                 */
+                GridExecutioner executioner = (GridExecutioner) Nd4j.getExecutioner();
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
                     if (!legacyAveraging) {
@@ -262,8 +263,7 @@ public class ParallelWrapper implements AutoCloseable {
                             params.addi(zoo[cnt].getModel().params());
                             score += zoo[cnt].getModel().score();
                         }
-
-                        params.divi(workers);
+                        params.divi(cnt);
                         model.setParams(params);
                     }
 
