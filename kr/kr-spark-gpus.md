@@ -245,35 +245,3 @@ teenth Annual Conference of the International Speech Communication Association, 
 deep learning. CoRR, abs/1511.05950, 2015. http://arxiv.org/abs/1511.05950.
 
 [6]: http://arxiv.org/abs/1404.5997
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
