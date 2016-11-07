@@ -38,21 +38,17 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
  * <p>
- * Stats are collected and passed on to a {@link StatsStorageRouter}.
+ * Stats are collected and passed on to a {@link StatsStorageRouter} - for example, for storage and/or displaying in the UI,
+ * use {@link org.deeplearning4j.ui.storage.InMemoryStatsStorage} or {@link org.deeplearning4j.ui.storage.FileStatsStorage}.
  *
  * @author Alex Black
  */
 @Slf4j
 public class StatsListener implements RoutingIterationListener {
-
     public static final String TYPE_ID = "StatsListener";
 
     private enum StatType {Mean, Stdev, MeanMagnitude}
 
-    //    public enum ErrorHandling {LogAndContinue, Fail};
-//    private ErrorHandling errorHandling = ErrorHandling.LogAndContinue;
-//    private int maxErrorMessages = 10;
-//    private int printedErrorMessages = 0;
     private StatsStorageRouter router;
     private final StatsInitializationConfiguration initConfig;
     private final StatsUpdateConfiguration updateConfig;
@@ -77,8 +73,26 @@ public class StatsListener implements RoutingIterationListener {
     private Map<String, INDArray> activationsMap;
     private Map<String, INDArray> gradientsPreUpdateMap = new HashMap<>();
 
+    /**
+     * Create a StatsListener with network information collected at every iteration. Equivalent to {@link #StatsListener(StatsStorageRouter, int)}
+     * with {@code listenerFrequency == 1}
+     *
+     * @param router Where/how to store the calculated stats. For example, {@link org.deeplearning4j.ui.storage.InMemoryStatsStorage} or
+     *               {@link org.deeplearning4j.ui.storage.FileStatsStorage}
+     */
     public StatsListener(StatsStorageRouter router) {
         this(router, null, null, null, null);
+    }
+
+    /**
+     * Create a StatsListener with network information collected every n >= 1 time steps
+     *
+     * @param router            Where/how to store the calculated stats. For example, {@link org.deeplearning4j.ui.storage.InMemoryStatsStorage} or
+     *                          {@link org.deeplearning4j.ui.storage.FileStatsStorage}
+     * @param listenerFrequency Frequency with which to collect stats information
+     */
+    public StatsListener(StatsStorageRouter router, int listenerFrequency) {
+        this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(), null, null);
     }
 
     public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
@@ -265,17 +279,17 @@ public class StatsListener implements RoutingIterationListener {
             if (nDevices > 0) {
                 gpuCurrentBytes = new long[nDevices];
                 gpuMaxBytes = new long[nDevices];
-                for(int i=0; i<nDevices; i++ ){
-                    try{
+                for (int i = 0; i < nDevices; i++) {
+                    try {
                         Pointer p = getDevicePointer(i);
-                        if(p == null){
+                        if (p == null) {
                             gpuMaxBytes[i] = 0;
                             gpuCurrentBytes[i] = 0;
                         } else {
                             gpuMaxBytes[i] = nativeOps.getDeviceTotalMemory(p);
                             gpuCurrentBytes[i] = gpuMaxBytes[i] - nativeOps.getDeviceFreeMemory(p);
                         }
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -436,22 +450,7 @@ public class StatsListener implements RoutingIterationListener {
 
         this.router.putUpdate(report);
 
-        //TODO error handling as per below
-//        try{
-//        }catch(IOException e){
-//            switch (errorHandling){
-//                case LogAndContinue:
-//                    if(printedErrorMessages++ < maxErrorMessages) {
-//                        log.warn("Exception thrown by storage layer when posting update", e);
-//                    }
-//                    if(printedErrorMessages == maxErrorMessages){
-//                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
-//                    }
-//                    break;
-//                case Fail:
-//                    throw new RuntimeException(e);
-//            }
-//        }
+        //TODO error handling
 
         iterCount++;
         activationsMap = null;
@@ -514,20 +513,20 @@ public class StatsListener implements RoutingIterationListener {
                 deviceTotalMem = new long[nDevices];
                 deviceDescription = new String[nDevices];
                 for (int i = 0; i < nDevices; i++) {
-                    try{
+                    try {
                         Pointer p = getDevicePointer(i);
-                        if(p == null){
+                        if (p == null) {
                             deviceTotalMem[i] = 0;
                             deviceDescription[i] = "Device(" + i + ")";
                         } else {
                             deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(p);
                             deviceDescription[i] = nativeOps.getDeviceName(p);
-                            if(nDevices > 1){
+                            if (nDevices > 1) {
                                 deviceDescription[i] = deviceDescription[i] + " (" + i + ")";
                             }
                         }
-                    }catch(Exception e){
-                        log.debug("Error getting device info",e);
+                    } catch (Exception e) {
+                        log.debug("Error getting device info", e);
                     }
                 }
             }
@@ -575,37 +574,22 @@ public class StatsListener implements RoutingIterationListener {
         this.paramNames = paramNames.toArray(new String[paramNames.size()]);
 
         router.putStorageMetaData(meta);
-        router.putStaticInfo(initReport);   //TODO error handling as per below
-
-//        try{
-//        }catch(IOException e){
-//            switch (errorHandling){
-//                case LogAndContinue:
-//                    if(printedErrorMessages++ < maxErrorMessages) {
-//                        log.warn("Exception thrown by storage layer when posting initialization report", e);
-//                    }
-//                    if(printedErrorMessages == maxErrorMessages){
-//                        log.warn("Max error messages ({}) logged; printing no more messages",maxErrorMessages);
-//                    }
-//                    break;
-//                case Fail:
-//                    throw new RuntimeException(e);
-//            }
-//        }
+        router.putStaticInfo(initReport);   //TODO error handling
     }
 
-    private Map<Integer,Pointer> devPointers = new HashMap<>();
-    private synchronized Pointer getDevicePointer(int device){
-        if(devPointers.containsKey(device)){
+    private Map<Integer, Pointer> devPointers = new HashMap<>();
+
+    private synchronized Pointer getDevicePointer(int device) {
+        if (devPointers.containsKey(device)) {
             return devPointers.get(device);
         }
-        try{
+        try {
             Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
             Constructor<?> constructor = c.getConstructor(long.class);
-            Pointer p = (Pointer)constructor.newInstance((long)device);
+            Pointer p = (Pointer) constructor.newInstance((long) device);
             devPointers.put(device, p);
             return p;
-        }catch (Throwable t){
+        } catch (Throwable t) {
             devPointers.put(device, null);  //Stops attempting the failure again later...
             return null;
         }

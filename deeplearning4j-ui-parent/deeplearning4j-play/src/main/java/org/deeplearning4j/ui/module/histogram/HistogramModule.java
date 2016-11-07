@@ -48,7 +48,7 @@ public class HistogramModule implements UIModule {
 
     @Override
     public void reportStorageEvents(Collection<StatsStorageEvent> events) {
-        log.info("Received events: {}", events);
+        log.trace("Received events: {}", events);
 
         //We should only be getting relevant session IDs...
         for (StatsStorageEvent sse : events) {
@@ -118,7 +118,7 @@ public class HistogramModule implements UIModule {
         StatsReport last = null;
         for (Persistable p : list) {
             if (!(p instanceof StatsReport)) {
-                log.warn("Unexpected type: {}", p);
+                log.debug("Encountered unexpected type: {}", p);
                 continue;
             }
             StatsReport sp = (StatsReport) p;

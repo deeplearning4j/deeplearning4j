@@ -133,7 +133,14 @@ public class PlayUIServer extends UIServer {
         server = Server.forRouter(router, Mode.DEV, port);
         this.port = port;
 
-        log.info("UI Server started at {}", server.mainAddress());
+        String addr = server.mainAddress().toString();
+        if(addr.startsWith("/0:0:0:0:0:0:0:0")){
+            int last = addr.lastIndexOf(':');
+            if(last > 0) {
+                addr = "http://localhost:" + addr.substring(last+1);
+            }
+        }
+        log.info("UI Server started at {}", addr);
 
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
