@@ -292,7 +292,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     pushToGrid(last, false);
 
                     //|| op instanceof ScalarOp
-                    if ((op instanceof TransformOp && op.y() != null) ) {
+                    if ((op instanceof TransformOp && op.y() != null) && onCurrentDeviceXYZ(op)) {
                         enqueueOp(new OpDescriptor(op, dimension));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension), false);
@@ -324,7 +324,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         } else {
             //&& Nd4j.dataType() != DataBuffer.Type.HALF
-            if ((op instanceof TransformOp && op.y() != null ) ) {
+            if ((op instanceof TransformOp && op.y() != null && onCurrentDeviceXYZ(op)) ) {
                 enqueueOp(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
@@ -334,6 +334,15 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      //   AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
         //return op;
+    }
+
+    protected boolean onCurrentDeviceXYZ(Op op) {
+        int deviceId = AtomicAllocator.getInstance().getDeviceId();
+        int deviceX = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int deviceY = AtomicAllocator.getInstance().getDeviceId(op.y());
+        int deviceZ = AtomicAllocator.getInstance().getDeviceId(op.y());
+
+        return deviceId == deviceX && deviceY == deviceZ && deviceZ == deviceX;
     }
 
     protected void enqueueOp(OpDescriptor descriptor) {

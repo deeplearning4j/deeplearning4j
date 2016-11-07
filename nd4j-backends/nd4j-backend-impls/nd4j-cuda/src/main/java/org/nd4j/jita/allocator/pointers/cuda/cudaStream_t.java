@@ -14,9 +14,9 @@ public class cudaStream_t extends CudaPointer {
         super(pointer);
     }
 
-    public void synchronize() {
+    public int synchronize() {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        nativeOps.streamSynchronize(this);
+        return nativeOps.streamSynchronize(this);
     }
 }
