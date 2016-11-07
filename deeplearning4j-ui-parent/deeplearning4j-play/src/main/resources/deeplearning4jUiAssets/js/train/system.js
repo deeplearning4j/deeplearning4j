@@ -317,7 +317,6 @@ function renderGPULayout(data) {
     }
 
     //anyDevices = true;    //For testing GPU charts on non-GPU system...
-
     if (anyDevices == true) {
         $("#gpuTable").show();
         $("#gpuMemoryChart").show();
@@ -329,6 +328,7 @@ function renderGPULayout(data) {
         $("#systemMemoryChart").attr("class", "box span12");
     }
 }
+
 /* ---------- Render System Dropdown ---------- */
 function renderMultipleTabs(data) {
 
