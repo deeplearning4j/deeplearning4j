@@ -321,7 +321,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public Integer getDeviceId(INDArray array) {
-        return memoryHandler.getDeviceId();
+        return getAllocationPoint(array).getDeviceId();
     }
 
 
