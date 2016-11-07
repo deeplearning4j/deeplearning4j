@@ -62,6 +62,7 @@
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>2.4.4</spark.jackson.version>
+        <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.16.10</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene.version>5.3.1</lucene.version>
@@ -77,6 +78,7 @@
         <mapdb.version>3.0.2</mapdb.version>
         <playframework.version>2.4.6</playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <reflections.version>0.9.10</reflections.version>
+        <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
