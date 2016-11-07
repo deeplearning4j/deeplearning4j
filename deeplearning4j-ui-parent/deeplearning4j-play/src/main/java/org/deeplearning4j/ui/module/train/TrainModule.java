@@ -931,7 +931,11 @@ public class TrainModule implements UIModule {
         if ("input".equalsIgnoreCase(type)) {
             return EMPTY_TRIPLE;
         }
-        String layerName = gi.getOriginalVertexName().get(index);
+        List<String> origNames = gi.getOriginalVertexName();
+        if(index < 0 || index >= origNames.size()){
+            return EMPTY_TRIPLE;
+        }
+        String layerName = origNames.get(index);
 
         int size = (updates == null ? 0 : updates.size());
         int[] iterCounts = new int[size];
@@ -976,7 +980,6 @@ public class TrainModule implements UIModule {
         if (gi == null) {
             return Collections.emptyMap();
         }
-//        String layerName = gi.getVertexNames().get(layerIdx);
         String layerName = gi.getOriginalVertexName().get(layerIdx);
 
         int size = (updates == null ? 0 : updates.size());
