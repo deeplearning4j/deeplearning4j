@@ -9,13 +9,23 @@ Make sure you follow the instructions in order (its proved to work so far, and i
 
 3. Make sure you have brew (if not get it http://brew.sh)
 
-4. run `brew install gcc5` in terminal (this will install GCC (at time of writing 5.4.0). Also please note: openblas is optional, Apple Accelerate library is supported as well.
+4. run `brew install gcc5 cmake` in terminal (this will install GCC (at time of writing 5.4.0). Also please note: openblas is optional, Apple Accelerate library is supported as well.
 
 4.1 Add following symbolic links:
 ```
 ln -s /usr/local/Cellar/gcc5/5.4.0/bin/gcc-5 /usr/local/bin/gcc-5
 ln -s /usr/local/Cellar/gcc5/5.4.0/bin/g++-5 /usr/local/bin/g++-5
 ln -s /usr/local/Cellar/gcc5/5.4.0/bin/gfortran-5 /usr/local/bin/gfortran-5
+```
+
+4.2 Optional: Remove gcc-6 by running 
+```
+brew remove gcc
+```
+CMake is unable to operate if you have both gcc (currently at version 6) and gcc-5
+You can restore gcc after successful build by running:
+```
+brew insall gcc
 ```
 
 5. Clone the libnd4j repo from the deeplearning4j (and unzip if its not automatically done)
