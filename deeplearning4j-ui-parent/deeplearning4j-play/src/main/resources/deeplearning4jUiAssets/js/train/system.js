@@ -238,7 +238,7 @@ function renderGpuMemoryChart(data) {
 
                     var label = item.series.label;
                     var max = gpuMaxLastIter[item.series.label];
-                    var bytes = (item.datapoint[1] * jvmMaxLastIter / 100.0).toFixed(0);
+                    var bytes = (item.datapoint[1] * max / 100.0).toFixed(0);
 
                     showTooltip(item.pageX - gpuChart.offset().left, item.pageY - gpuChart.offset().top,
                         item.series.label + " (" + x + ", " + y + "%; " + formatBytes(bytes, 2) + ")");
@@ -319,12 +319,12 @@ function renderGPULayout(data) {
     //anyDevices = true;    //For testing GPU charts on non-GPU system...
 
     if (anyDevices == true) {
-        $("#gpuTable").show();
+        //$("#gpuTable").show();
         $("#gpuMemoryChart").show();
         $("#systemMemoryChart").attr("class", "box span6");
     }
     else {
-        $("#gpuTable").hide();
+        //$("#gpuTable").hide();
         $("#gpuMemoryChart").hide();
         $("#systemMemoryChart").attr("class", "box span12");
     }
