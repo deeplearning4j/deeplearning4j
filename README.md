@@ -9,7 +9,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
-The most recent stable release in Maven Central is `0.5.0`, and the current master is `0.5.1-SNAPSHOT`. For more on working with snapshots, see this [page](http://deeplearning4j.org/snapshot). 
+The most recent stable release in Maven Central is `0.6.0`, and the current master is `0.6.1-SNAPSHOT`. 
 
 ---
 ## Using Deeplearning4j
@@ -19,12 +19,12 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 ## Main Features
 - Versatile n-dimensional array class
 - GPU integration(Supports devices starting from Kepler,cc3.0. You can check your device's compute compatibility [here](https://developer.nvidia.com/cuda-gpus).)
-- Scalable on Hadoop, Spark and Akka + AWS et al
+
 
 ---
 ## Modules
-- cli = command line interface for deeplearning4j
-- core = core neural net structures and supporting components such as datasets, iterators, clustering algorithms, optimization methods, evaluation tools and plots.
+- datavec = Library for converting images, text and CSV data into format suitable for Deep Learning
+- core = core neural net structures MultiLayer Network and Computation graph for designing Neural Net structures
 - scaleout = integrations
     - aws = loading data to and from aws resources EC2 and S3
     - nlp = natural language processing components including vectorizers, models, sample datasets and renderers
@@ -55,6 +55,7 @@ Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplear
 
 Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
+<!--
 #### Yum Install / Load RPM (Fedora or CentOS)
 Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
@@ -76,6 +77,7 @@ Then run the following command on the dl4j repo packages to install them on your
 
 Note, be sure to install the ND4J modules you need first, especially the backend and then install DataVec and DL4J.
 
+-->
 ---
 ## Contribute
 

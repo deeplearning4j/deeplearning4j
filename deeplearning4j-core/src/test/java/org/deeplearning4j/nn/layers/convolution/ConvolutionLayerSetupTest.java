@@ -196,7 +196,7 @@ public class ConvolutionLayerSetupTest {
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nIn(1).nOut(20)
                         .build())
                 .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2,2},new int[]{2,2}).build())
-                .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(50)
+                .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(20).nOut(50)
                         .build())
                 .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2,2},new int[]{2,2}).build())
                 .layer(4,new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(500)

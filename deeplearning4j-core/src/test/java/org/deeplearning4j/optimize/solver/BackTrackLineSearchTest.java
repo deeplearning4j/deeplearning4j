@@ -212,7 +212,7 @@ public class BackTrackLineSearchTest {
 
     }
 
-    @Test(expected=UnsupportedOperationException.class)
+    @Test(expected=Exception.class)
     public void testBackTrackLineHessian() {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
         DataSet data = irisIter.next();
