@@ -18,12 +18,12 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * Default internationalization implementation.
- * Content for internationalization is implemented using resource files.
- * For the resource files: they should be specified as follows:
- * 1. In the /dl4j_i18n/ directory in resources
- * 2. Filenames should be "somekey.langcode" - for example, "index.en" or "index.ja"
- * 3. Each key should be unique across all files. Any key can appear in any file; files may be split for convenience
+ * Default internationalization implementation.<br>
+ * Content for internationalization is implemented using resource files.<br>
+ * For the resource files: they should be specified as follows:<br>
+ * 1. In the /dl4j_i18n/ directory in resources<br>
+ * 2. Filenames should be "somekey.langcode" - for example, "index.en" or "index.ja"<br>
+ * 3. Each key should be unique across all files. Any key can appear in any file; files may be split for convenience<br>
  * <p>
  * Loading of these UI resources is done as follows:<br>
  * - On initialization of the DefaultI18N:<br>
@@ -40,8 +40,6 @@ public class DefaultI18N implements I18N {
     public static final String DEFAULT_LANGUAGE = "en";
     public static final String FALLBACK_LANGUAGE = "en";    //use this if the specified language doesn't have the requested message
     public static final String DEFAULT_I8N_RESOURCES_DIR = "dl4j_i18n";
-
-    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
     private static DefaultI18N instance;
 
@@ -81,7 +79,7 @@ public class DefaultI18N implements I18N {
         for (String s : resources) {
             if (!s.endsWith(languageCode)) continue;
 
-            log.info("Attempting to parse file: {}", s);
+            log.trace("Attempting to parse file: {}", s);
             parseFile(s, messages);
         }
 
@@ -95,7 +93,7 @@ public class DefaultI18N implements I18N {
         List<String> lines;
         try {
             String path;
-            if(filename.startsWith(DEFAULT_I8N_RESOURCES_DIR)){
+            if (filename.startsWith(DEFAULT_I8N_RESOURCES_DIR)) {
                 //As a resource from JAR file - already has dir at the start...
                 path = "/" + filename;
             } else {
@@ -105,7 +103,7 @@ public class DefaultI18N implements I18N {
             InputStream is = this.getClass().getResourceAsStream(path);
             lines = IOUtils.readLines(is);
         } catch (Exception e) {
-            log.warn("Error parsing UI I18N content file; skipping: {}", filename, e.getMessage());
+            log.debug("Error parsing UI I18N content file; skipping: {}", filename, e.getMessage());
             return;
         }
 
@@ -113,7 +111,7 @@ public class DefaultI18N implements I18N {
         int count = 0;
         for (String line : lines) {
             if (!line.matches(".+=.*")) {
-                log.warn("Invalid line in I18N file: {}, \"{}\"", filename, line);
+                log.debug("Invalid line in I18N file: {}, \"{}\"", filename, line);
                 continue;
             }
             int idx = line.indexOf('=');
@@ -123,8 +121,7 @@ public class DefaultI18N implements I18N {
             count++;
         }
 
-        //TODO don't log (only for development)
-        log.info("Loaded {} messages from file {}", count, filename);
+        log.trace("Loaded {} messages from file {}", count, filename);
     }
 
     @Override
@@ -161,8 +158,7 @@ public class DefaultI18N implements I18N {
 
     @Override
     public void setDefaultLanguage(String langCode) {
-        //TODO Validation
         this.currentLanguage = langCode;
-        log.info("UI: Set language to {}", langCode);
+        log.debug("UI: Set language to {}", langCode);
     }
 }
