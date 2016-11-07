@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static play.mvc.Results.ok;
+import static play.mvc.Results.redirect;
 
 /**
  * Created by Alex on 25/10/2016.
@@ -24,7 +25,8 @@ public class DefaultModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
+//        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
+        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
 
         return Collections.singletonList(r);
     }

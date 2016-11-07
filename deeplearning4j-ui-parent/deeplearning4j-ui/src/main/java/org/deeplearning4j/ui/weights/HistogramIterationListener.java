@@ -12,6 +12,7 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 
 /**
@@ -39,7 +40,7 @@ public class HistogramIterationListener extends StatsListener {
     }
 
     public HistogramIterationListener(int iterations, boolean openBrowser) {
-        this(new MapDBStatsStorage(), iterations, openBrowser);
+        this(new InMemoryStatsStorage(), iterations, openBrowser);
     }
 
     public HistogramIterationListener(StatsStorage ssr, int iterations, boolean openBrowser){
@@ -99,7 +100,7 @@ public class HistogramIterationListener extends StatsListener {
                 .collectStdevActivations(false)
 
                 .collectMeanMagnitudesParameters(true)
-                .collectMeanMagnitudesParameters(false)
+                .collectMeanMagnitudesGradients(false)
                 .collectMeanMagnitudesUpdates(true)
                 .collectMeanMagnitudesActivations(false)
                 .build();
