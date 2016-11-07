@@ -363,6 +363,8 @@ public class TrainModule implements UIModule {
         }
 
         StatsReport last = null;
+        int offset = 0;
+        int countSinceLastOffsetReset = 0;
         if (!noData) {
             double lastScore;
 
@@ -377,12 +379,23 @@ public class TrainModule implements UIModule {
             for (Persistable u : updates) {
                 pCount++;
                 if (!(u instanceof StatsReport)) continue;
+
+                last = (StatsReport) u;
+                int iterCount = last.getIterationCount();
+
+                //Issue - Spark training - iteration counts are currently reset... which means: could go 0, 1, 2, 0, 1, 2, etc...
+                countSinceLastOffsetReset++;
+                if(iterCount == 0){
+                    offset += countSinceLastOffsetReset;
+                    countSinceLastOffsetReset = 0;
+                }
+                iterCount += offset;    //For non-spark cases: offset should always be 0...
+
                 if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
                     //Skip this - subsample the data
                     if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
                 }
-                last = (StatsReport) u;
-                int iterCount = last.getIterationCount();
+
                 scoresIterCount.add(iterCount);
                 lastScore = last.getScore();
                 scores.add(lastScore);
@@ -575,26 +588,64 @@ public class TrainModule implements UIModule {
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        List<Integer> iterationCounts = null;
         if(updates != null && updates.size() > maxChartPoints){
             int subsamplingFrequency = updates.size() / maxChartPoints;
             List<Persistable> subsampled = new ArrayList<>();
+            iterationCounts = new ArrayList<>();
             int pCount=-1;
             int lastUpdateIdx = updates.size()-1;
+
+            int offset = 0;
+            int countSinceLastOffsetReset = 0;
             for(Persistable p : updates){
+                if(!(p instanceof StatsReport)) continue;;
+                StatsReport sr = (StatsReport)p;
                 pCount++;
+
+                //Issue - Spark training - iteration counts are currently reset... which means: could go 0, 1, 2, 0, 1, 2, etc...
+                countSinceLastOffsetReset++;
+                int iterCount = sr.getIterationCount();
+                if(iterCount == 0){
+                    offset += countSinceLastOffsetReset;
+                    countSinceLastOffsetReset = 0;
+                }
+                iterCount += offset;    //For non-spark cases: offset should always be 0...
+
                 if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
                     //Skip this to subsample the data
                     if(pCount != lastUpdateIdx) continue;        //Always keep the most recent value
                 }
 
                 subsampled.add(p);
+                iterationCounts.add(iterCount);
             }
 
             updates = subsampled;
+        } else if(updates != null){
+            //Handle Spark case... iterCounts may go 0,1,2,0,1,2, etc
+            int offset = 0;
+            int countSinceLastOffsetReset = 0;
+            iterationCounts = new ArrayList<>(updates.size());
+            int pCount=-1;
+            for(Persistable p : updates){
+                if(!(p instanceof StatsReport)) continue;;
+                StatsReport sr = (StatsReport)p;
+                pCount++;
+
+                countSinceLastOffsetReset++;
+                int iterCount = sr.getIterationCount();
+                if(iterCount == 0){
+                    offset += countSinceLastOffsetReset;
+                    countSinceLastOffsetReset = 0;
+                }
+                iterCount += offset;    //For non-spark cases: offset should always be 0...
+                iterationCounts.add(iterCount);
+            }
         }
 
         //Get mean magnitudes line chart
-        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, conf.getFirst() != null);
+        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, conf.getFirst() != null);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
         mmRatioMap.put("iterCounts", mm.getIterations());
@@ -604,7 +655,7 @@ public class TrainModule implements UIModule {
         result.put("meanMag", mmRatioMap);
 
         //Get activations line chart for layer
-        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, conf.getFirst(), conf.getSecond());
+        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, iterationCounts, conf.getFirst(), conf.getSecond());
         Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
         activationMap.put("mean", activationsData.getSecond());
@@ -612,7 +663,7 @@ public class TrainModule implements UIModule {
         result.put("activations", activationMap);
 
         //Get learning rate vs. time chart for layer
-        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates);
+        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates, iterationCounts);
         result.put("learningRates", lrs);
 
         //Parameters histogram data
@@ -789,7 +840,7 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, boolean isMLN) {
+    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, boolean isMLN) {
         if (gi == null) {
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
@@ -810,11 +861,18 @@ public class TrainModule implements UIModule {
         Map<String, List<Double>> outUpdateMM = new HashMap<>();
 
         if (updates != null) {
+            int pCount = -1;
             for (Persistable u : updates) {
+                pCount++;
                 if (!(u instanceof StatsReport)) continue;
                 StatsReport sp = (StatsReport) u;
-                int iterCount = sp.getIterationCount();
-                iterCounts.add(iterCount);
+                if(iterationCounts != null){
+                    iterCounts.add(iterationCounts.get(pCount));
+                } else {
+                    int iterCount = sp.getIterationCount();
+                    iterCounts.add(iterCount);
+                }
+
 
                 //Info we want, for each parameter in this layer: mean magnitudes for parameters, updates AND the ratio of these
                 Map<String, Double> paramMM = sp.getMeanMagnitudes(StatsType.Parameters);
@@ -862,7 +920,9 @@ public class TrainModule implements UIModule {
     }
 
     private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
-    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
+    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
+                                                                List<Integer> iterationCounts,
+                                                                MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
         if (gi == null) {
             return EMPTY_TRIPLE;
         }
@@ -879,10 +939,16 @@ public class TrainModule implements UIModule {
         float[] stdev = new float[size];
         int used = 0;
         if (updates != null) {
+            int uCount = -1;
             for (Persistable u : updates) {
+                uCount++;
                 if (!(u instanceof StatsReport)) continue;
                 StatsReport sp = (StatsReport) u;
-                iterCounts[used] = sp.getIterationCount();
+                if(iterationCounts == null){
+                    iterCounts[used] = sp.getIterationCount();
+                } else {
+                    iterCounts[used] = iterationCounts.get(uCount);
+                }
 
                 Map<String, Double> means = sp.getMean(StatsType.Activations);
                 Map<String, Double> stdevs = sp.getStdev(StatsType.Activations);
@@ -905,7 +971,8 @@ public class TrainModule implements UIModule {
         return new Triple<>(iterCounts, mean, stdev);
     }
 
-    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates) {
+    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
+                                                      List<Integer> iterationCounts) {
         if (gi == null) {
             return Collections.emptyMap();
         }
@@ -917,10 +984,16 @@ public class TrainModule implements UIModule {
         Map<String, float[]> byName = new HashMap<>();
         int used = 0;
         if (updates != null) {
+            int uCount = -1;
             for (Persistable u : updates) {
+                uCount++;
                 if (!(u instanceof StatsReport)) continue;
                 StatsReport sp = (StatsReport) u;
-                iterCounts[used] = sp.getIterationCount();
+                if(iterationCounts == null){
+                    iterCounts[used] = sp.getIterationCount();
+                } else {
+                    iterCounts[used] = iterationCounts.get(uCount);
+                }
 
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
                 Map<String, Double> lrs = sp.getLearningRates();
