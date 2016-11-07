@@ -13,6 +13,7 @@ train.system.hwTable.offHeapMax=Off-Heap Max Memory
 train.system.hwTable.jvmProcs=JVM Available Processors
 train.system.hwTable.computeDevices=# Compute Devices
 train.system.hwTable.deviceMemory=Device Memory
+train.system.hwTable.deviceName=Device Name
 train.system.swTable.title=Software Information
 train.system.swTable.hostname=Host Name
 train.system.swTable.os=OS
