@@ -2,6 +2,7 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,9 +47,9 @@ public class DistributionStats {
     }
 
     public static class Builder {
-        private int n = 0;
-        private INDArray mean;
-        private INDArray M2;
+        private int runningCount = 0;
+        private INDArray runningMean;
+        private INDArray runningVariance;
 
         public Builder addFeatures(@NonNull DataSet dataSet) {
             return add(dataSet.getFeatures(), dataSet.getFeaturesMaskArray());
@@ -61,26 +62,38 @@ public class DistributionStats {
         public Builder add(@NonNull INDArray data, INDArray mask) {
             data = DataSetUtil.tailor2d(data, mask);
 
-            // Using https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-            if (mean == null) {
-                // Initialize means and deviations as zeros now that we know the width of the (tailored) data
-                mean = Nd4j.zeros(data.size(1));
-                M2 = Nd4j.zeros(data.size(1));
-            }
-            // TODO: find a way to vectorize this to speed things up
-            for (int i = 0; i < data.rows(); i++) {
-                INDArray x = data.getRow(i);
-                n += 1;
-                INDArray delta = x.subRowVector(mean);
-                mean.addiRowVector(delta.div(n));
-                M2.addiRowVector(delta.mul(x.sub(mean)));
+            // Using https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+            INDArray mean = data.mean(0);
+            INDArray variance = data.var(false, 0);
+            int count = data.size(0);
+
+            if (runningMean == null) {
+                // First batch
+                runningMean = mean;
+                runningVariance = variance;
+                runningCount = count;
+            } else {
+                // Update running variance
+                INDArray deltaSquared = Transforms.pow(mean.subRowVector(runningMean), 2);
+                INDArray mB = variance.muli(count);
+                runningVariance.muli(runningCount)
+                    .addiRowVector(mB)
+                    .addiRowVector(deltaSquared.muli((float)(runningCount * count) / (runningCount + count)))
+                    .divi(runningCount + count);
+
+                // Update running count
+                runningCount += count;
+
+                // Update running mean
+                INDArray xMinusMean = data.subRowVector(runningMean);
+                runningMean.addi(xMinusMean.sum(0).divi(runningCount));
             }
 
             return this;
         }
 
         public DistributionStats build() {
-            return new DistributionStats(mean, Transforms.sqrt(M2.div(n), false));
+            return new DistributionStats(runningMean, Transforms.sqrt(runningVariance, false));
         }
 
         public static List<DistributionStats> buildList(@NonNull List<Builder> builders) {

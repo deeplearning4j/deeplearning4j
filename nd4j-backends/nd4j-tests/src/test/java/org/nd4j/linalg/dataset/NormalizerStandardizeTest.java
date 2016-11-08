@@ -1,10 +1,13 @@
 package org.nd4j.linalg.dataset;
 
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -115,6 +118,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         tolerancePerc = 10.0; //within 10%
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
+
         assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0,0) < tolerancePerc);
 
         normIterator.setPreProcessor(myNormalizer);
@@ -134,6 +138,30 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
            //System.out.println(expected);
            assertTrue(maxDeltaPerc < tolerancePerc);
         }
+    }
+
+    @Test
+    public void testDifferentBatchSizes() {
+        // Create 6x1 matrix of the numbers 1 through 6
+        INDArray values = Nd4j.linspace(1, 6, 6).transpose();
+
+        DataSet dataSet = new DataSet(values, values);
+        NormalizerStandardize norm1 = new NormalizerStandardize();
+        norm1.fit(dataSet);
+        assertEquals(3.5f, norm1.getMean().getFloat(0), 1e-6);
+        assertEquals(1.70783f, norm1.getStd().getFloat(0), 1e-4);
+
+        DataSetIterator testIter1 = new TestDataSetIterator(dataSet, 3); // Will yield 2 batches of 3 rows
+        NormalizerStandardize norm2 = new NormalizerStandardize();
+        norm2.fit(testIter1);
+        assertEquals(3.5f, norm2.getMean().getFloat(0), 1e-6);
+        assertEquals(1.70783f, norm2.getStd().getFloat(0), 1e-4);
+
+        DataSetIterator testIter2 = new TestDataSetIterator(dataSet, 4); // Will yield batch of 4 and batch of 2 rows
+        NormalizerStandardize norm3 = new NormalizerStandardize();
+        norm3.fit(testIter2);
+        assertEquals(3.5f, norm3.getMean().getFloat(0), 1e-6);
+        assertEquals(1.70783f, norm3.getStd().getFloat(0), 1e-4);
     }
 
     @Test
@@ -189,7 +217,6 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures())).div(sampleDataSet.getFeatures());
         double maxdeltaPerc = delta.max(0,1).mul(100).getDouble(0,0);
         assertTrue(maxdeltaPerc < tolerancePerc);
-
     }
 
     @Test
