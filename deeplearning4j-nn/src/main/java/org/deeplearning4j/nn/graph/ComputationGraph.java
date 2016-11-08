@@ -675,10 +675,7 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSet
      */
     public void fit(MultiDataSet multiDataSet) {
-        if (multiDataSet.hasMaskArrays()) {
-            setLayerMaskArrays(multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
-        }
-        fit(multiDataSet.getFeatures(), multiDataSet.getLabels());
+        fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
         if (multiDataSet.hasMaskArrays()) clearLayerMaskArrays();
     }
 
@@ -758,7 +755,7 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, null, null);
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
             } else {
                 if (solver == null) {
                     solver = new Solver.Builder()
