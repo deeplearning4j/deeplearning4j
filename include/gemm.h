@@ -33,9 +33,10 @@ namespace nd4j {
 #pragma omp parallel for proc_bind(close)
                 for (int r = 0; r < rows; r++) {
                     for (int c = 0; c < cols; c++) {
-                        int zIdx = order == CblasColMajor ? linearIndexF(rows, cols, c, r) : linearIndexC(rows, cols, c, r);
+                        int zIdx = order == CblasColMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);
                         int xIdx = order == CblasColMajor ? linearIndexF(rows, cols, r, c) : linearIndexC(rows, cols, r, c);
 
+                        //printf("zIdx: [%i]; xIdx: [%i]; x.y: [%i.%i]\n", zIdx, xIdx, r, c);
                         ret[zIdx] = source[xIdx];
                     }
                 }
@@ -52,34 +53,58 @@ namespace nd4j {
                       T *B, int ldb,
                       T beta,
                       T *C, int ldc) {
+                int aRows = M;
+                int aColumns = K;
+                int bRows = K;
+                int bColumns = N;
 
                 // optionally handle transpose
-                T *aT = TransA == CblasTrans ? transpose(Order, M, N, A) : A;
-                T *bT = TransA == CblasTrans ? transpose(Order, N, K, B) : B;
+                T *aT = A; //TransA != CblasTrans ? transpose(Order, M, K, A) : A;
+                T *bT = B; //TransB != CblasTrans ? transpose(Order, K, N, B) : B;
+
+                if (beta == (T) 0.0f) {
+#pragma omp simd
+                    for (int r = 0; r < M * N; r++) {
+                        C[r] = (T) 0.0f;
+                    }
+                }
 
 
 #pragma omp parallel for proc_bind(close)
-                for (int r = 0; r < N; r++) {
+                for (int r = 0; r < M; r++) {
 
-                    for (int c = 0; c < K; c++) {
-                        int zIdx = order == CblasColMajor ? linearIndexF(rows, cols, c, r) : linearIndexC(rows, cols, c, r);
+                    for (int c = 0; c < N; c++) {
+                        int zIdx = linearIndexF(M, N, r, c);
 
-                        int rAi = order == CblasColMajor ? linearIndexF(M, N, r, 0) : linearIndexC(M, N, r, 0);
-                        int rBi = order == CblasColMajor ? linearIndexF(N, K, r, 0) : linearIndexC(N, K, r, 0);
-                        T *rA = &A[rAi];
-                        T *rB = &B[rBi];
+                        T dot = (T) 0.0f;
 
-                        C[zIdx] = nd4j::math::nd4j_dot(rA, rB, M);
+                        if (alpha != (T) 0.0f) {
+                            for (int k = 0; k < K; k++) {
+                                int aIdx = TransA == CblasTrans ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k);
+                                int bIdx = TransB == CblasTrans ? linearIndexC(K, N, k, c) : linearIndexF(K, N, k, c);
+
+                                //alpha * aT[aIdx] * bT[bIdx] + beta * C[zIdx];
+                                dot += aT[aIdx] * bT[bIdx];
+                            }
+
+                            dot *= alpha;
+                        }
+
+                        if (beta != (T) 0.0f) {
+                            C[zIdx] = dot + beta * C[zIdx];
+                        } else {
+                            C[zIdx] = dot;
+                        }
                     }
                 }
 
 
                 // if transpose was applied - dismiss transposed arrays
-                if (TransA == CblasTrans)
-                    delete[] aT;
+                //if (TransA == CblasTrans)
+                //    delete[] aT;
 
-                if (TransB == CblasTrans)
-                    delete[] bT;
+                //if (TransB == CblasTrans)
+                //    delete[] bT;
             }
         };
     }
