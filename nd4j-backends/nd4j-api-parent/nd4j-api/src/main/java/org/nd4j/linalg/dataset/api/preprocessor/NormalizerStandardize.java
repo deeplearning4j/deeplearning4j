@@ -94,16 +94,13 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     /**
      * Revert the data to what it was before transform
      *
-     * @param toPreProcess the dataset to revert back
+     * @param data the dataset to revert back
      */
-    public void revert(DataSet toPreProcess) {
+    public void revert(DataSet data) {
         assertIsFit();
-        if (toPreProcess.getFeatures().rank() == 2) {
-            toPreProcess.getFeatures().muliRowVector(featureStats.getStd());
-            toPreProcess.getFeatures().addiRowVector(featureStats.getMean());
-        } else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getFeatures(), featureStats.getStd(), toPreProcess.getFeatures(), 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getFeatures(), featureStats.getMean(), toPreProcess.getFeatures(), 1));
+        revert(data.getFeatures(), featureStats);
+        if (fitLabels) {
+            revert(data.getLabels(), labelStats);
         }
     }
 

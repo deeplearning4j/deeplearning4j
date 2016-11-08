@@ -1,7 +1,9 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,4 +47,14 @@ abstract class AbstractNormalizerStandardize {
     }
 
     abstract protected boolean isFit();
+
+    void revert(INDArray data, DistributionStats distribution) {
+        if (data.rank() == 2) {
+            data.muliRowVector(distribution.getStd());
+            data.addiRowVector(distribution.getMean());
+        } else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(data, distribution.getStd(), data, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(data, distribution.getMean(), data, 1));
+        }
+    }
 }

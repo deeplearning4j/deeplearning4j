@@ -337,6 +337,31 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         }
     }
 
+    /**
+     * Clone the dataset
+     *
+     * @return a clone of the dataset
+     */
+    @Override
+    public MultiDataSet copy() {
+        MultiDataSet ret = new MultiDataSet(copy(getFeatures()), copy(getLabels()));
+        if (labelsMaskArrays != null) {
+            ret.setLabelsMaskArray(copy(labelsMaskArrays));
+        }
+        if (featuresMaskArrays != null) {
+            ret.setFeaturesMaskArrays(copy(featuresMaskArrays));
+        }
+        return ret;
+    }
+
+    private INDArray[] copy(INDArray[] arrays) {
+        INDArray[] result = new INDArray[arrays.length];
+        for (int i = 0; i < arrays.length; i ++) {
+            result[i] = arrays[i].dup();
+        }
+        return result;
+    }
+
 
     /** Merge a collection of MultiDataSet objects into a single MultiDataSet.
      * Merging is done by concatenating along dimension 0 (example number in batch)

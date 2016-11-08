@@ -7,11 +7,11 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertTrue;
 
@@ -70,6 +70,37 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(data, 5);
         SUT.fit(iter);
         assertExpectedMeanStd();
+    }
+
+    @Test
+    public void testRevert() {
+        SUT.fit(data);
+
+        MultiDataSet transformed = data.copy();
+
+        SUT.preProcess(transformed);
+
+        double diffBeforeRevert = getMaxRelativeDifference(data, transformed);
+        assertTrue(diffBeforeRevert > TOLERANCE_PERC);
+
+        SUT.revert(transformed);
+
+        double diffAfterRevert = getMaxRelativeDifference(data, transformed);
+        assertTrue(diffAfterRevert < TOLERANCE_PERC);
+    }
+
+    private double getMaxRelativeDifference(MultiDataSet a, MultiDataSet b) {
+        double max = 0;
+        for (int i = 0; i < a.getFeatures().length; i++) {
+            INDArray inputA = a.getFeatures()[i];
+            INDArray inputB = b.getFeatures()[i];
+            INDArray delta = Transforms.abs(inputA.sub(inputB)).div(inputB);
+            double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+            if (maxdeltaPerc > max) {
+                max = maxdeltaPerc;
+            }
+        }
+        return max;
     }
 
     private void assertExpectedMeanStd() {

@@ -106,6 +106,27 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
         }
     }
 
+    /**
+     * Revert the data to what it was before transform
+     *
+     * @param data the dataset to revert back
+     */
+    public void revert(@NonNull MultiDataSet data) {
+        assertIsFit();
+
+        INDArray[] inputs = data.getFeatures();
+        for (int i = 0; i < inputs.length; i++) {
+            revert(inputs[i], featureStats.get(i));
+        }
+        if (fitLabels) {
+            INDArray[] outputs = data.getLabels();
+            for (int i = 0; i < outputs.length; i++) {
+                revert(outputs[i], labelStats.get(i));
+            }
+        }
+    }
+
+
     public INDArray getFeatureMean(int input) {
         assertIsFit();
         return featureStats.get(input).getMean();
