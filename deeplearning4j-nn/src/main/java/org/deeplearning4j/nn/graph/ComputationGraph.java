@@ -1876,12 +1876,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         int fwdLen = configuration.getTbpttFwdLength();
-        if (fwdLen > timeSeriesLength) {
-            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
-            return;
-        }
-
         int nSubsets = timeSeriesLength / fwdLen;
+        if(timeSeriesLength % fwdLen != 0) nSubsets++;
 
         rnnClearPreviousState();
 
@@ -1893,6 +1889,7 @@ public class ComputationGraph implements Serializable, Model {
         for (int i = 0; i < nSubsets; i++) {
             int startTimeIdx = i * fwdLen;
             int endTimeIdx = startTimeIdx + fwdLen;
+            if(endTimeIdx > timeSeriesLength) endTimeIdx = timeSeriesLength;
 
             for (int j = 0; j < inputs.length; j++) {
                 if (inputs[j].rank() != 3) newInputs[j] = inputs[j];
