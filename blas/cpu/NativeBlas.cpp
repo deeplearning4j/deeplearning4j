@@ -919,9 +919,16 @@ void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      float beta,
                      float *C, int ldc) {
 
-
+// TODO: remove this line after OpenBLAS gets fixed
+#ifdef __POWER
+#ifdef __OPENBLAS
     nd4j::blas::GEMM<float>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
-   // cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#else
+    cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
+#else
+    cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
 }
 
 void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
@@ -931,7 +938,16 @@ void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      double *B, int ldb,
                      double beta,
                      double *C, int ldc){
+    // TODO: remove this line after OpenBLAS gets fixed
+#ifdef __POWER
+    #ifdef __OPENBLAS
+    nd4j::blas::GEMM<double>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#else
     cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
+#else
+    cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
 }
 
 /*
