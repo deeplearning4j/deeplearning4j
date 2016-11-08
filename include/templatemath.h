@@ -126,6 +126,21 @@ template<typename T>
 			T y = (T) 1.0f + nd4j_abs(val);
 			return (T) 1.0f / (y * y);
 		}
+
+#ifndef __CUDACC__
+		template<typename T>
+		static inline T nd4j_dot(T *x, T *y, int length) {
+			T dot = (T) 0.0f;
+
+#pragma omp simd reduction(+:dot)
+			for(int e = 0; e < length; e++) {
+				dot += x[e] * y[e];
+			}
+
+			return dot;
+		}
+#endif
+
 		template<typename T>
         math_def inline T nd4j_acos(T val);
 

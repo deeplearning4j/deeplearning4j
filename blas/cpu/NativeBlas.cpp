@@ -6,12 +6,14 @@
 #include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
+#include <gemm.h>
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
 #include <dlfcn.h>
 #endif
+
 
 
 
@@ -915,6 +917,8 @@ void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      float *B, int ldb,
                      float beta,
                      float *C, int ldc) {
+
+
     cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
 }
 
