@@ -4,8 +4,8 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.DistributionStats;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -13,10 +13,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Created by susaneraly on 5/25/16.
- * Standard scaler calculates a moving column wise
- * variance and mean
- * http://www.johndcook.com/blog/standard_deviation/
+ * Pre processor for DataSet that normalizes feature values (and optionally label values) to have 0 mean and a standard
+ * deviation of 1
  */
 public class NormalizerStandardize extends AbstractNormalizerStandardize implements DataNormalization {
     private DistributionStats featureStats;
@@ -135,10 +133,9 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     }
 
     /**
-     * Load the given mean and std
+     * Load the means and standard deviations from the file system
      *
-     * @param files the statistics to laod
-     * @throws IOException
+     * @param files the files to load from. Needs 4 files if normalizing labels, otherwise 2.
      */
     @Override
     public void load(File... files) throws IOException {
@@ -149,10 +146,9 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     }
 
     /**
-     * Save the current mean and std
+     * Save the current means and standard deviations to the file system
      *
-     * @param files the statistics to save
-     * @throws IOException
+     * @param files the files to save to. Needs 4 files if normalizing labels, otherwise 2.
      */
     @Override
     public void save(File... files) throws IOException {

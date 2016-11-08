@@ -3,9 +3,12 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.dataset.api.DistributionStats;
+import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.factory.Nd4j;
 
+/**
+ * Base class with common functionality for standardize normalizers
+ */
 abstract class AbstractNormalizerStandardize {
     boolean fitLabels = false;
 

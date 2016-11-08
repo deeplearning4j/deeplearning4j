@@ -1,9 +1,10 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.NonNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.DistributionStats;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
@@ -11,13 +12,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pre processor for MultiDataSet that normalizes feature values (and optionally label values) to have 0 mean and
+ * a standard deviation of 1
+ *
+ * @author Ede Meijer
+ */
 public class MultiNormalizerStandardize extends AbstractNormalizerStandardize implements MultiDataSetPreProcessor {
     private List<DistributionStats> featureStats;
     private List<DistributionStats> labelStats;
 
     /**
-     * Fit the given model with dataset
-     * to calculate mean and std dev with
+     * Fit the model with a MultiDataSet to calculate means and standard deviations with
      *
      * @param dataSet
      */
@@ -34,8 +40,7 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
-     * Fit the given model with a given iterator
-     * to calculate mean and std dev with
+     * FFit the model with a MultiDataSetIterator to calculate means and standard deviations with
      *
      * @param iterator
      */
@@ -101,13 +106,33 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
         }
     }
 
+    public INDArray getFeatureMean(int input) {
+        assertIsFit();
+        return featureStats.get(input).getMean();
+    }
+
+    public INDArray getLabelMean(int output) {
+        assertIsFit();
+        return labelStats.get(output).getMean();
+    }
+
+    public INDArray getFeatureStd(int input) {
+        assertIsFit();
+        return featureStats.get(input).getStd();
+    }
+
+    public INDArray getLabelStd(int output) {
+        assertIsFit();
+        return labelStats.get(output).getStd();
+    }
+
     @Override
     protected boolean isFit() {
         return featureStats != null;
     }
 
     /**
-     * Load means and stddevs
+     * Load means and standard deviations from the file system
      *
      * @param featureFiles source files for features, requires 2 files per input, alternating mean and stddev files
      * @param labelFiles   source files for labels, requires 2 files per output, alternating mean and stddev files
@@ -128,7 +153,7 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
-     * Save the current means and standard deviations.
+     * Save the current means and standard deviations to the file system
      *
      * @param featureFiles target files for features, requires 2 files per input, alternating mean and stddev files
      * @param labelFiles   target files for labels, requires 2 files per output, alternating mean and stddev files

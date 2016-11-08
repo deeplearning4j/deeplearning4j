@@ -1,13 +1,9 @@
 package org.nd4j.linalg.dataset;
 
-
-import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -17,7 +13,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
-
 
 /**
  * Created by susaneraly on 5/25/16.
@@ -56,7 +51,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
-        INDArray stdDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
+        INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
         double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
@@ -72,7 +67,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
-        stdDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
+        stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
         maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0,0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
@@ -144,24 +139,34 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     public void testDifferentBatchSizes() {
         // Create 6x1 matrix of the numbers 1 through 6
         INDArray values = Nd4j.linspace(1, 6, 6).transpose();
-
         DataSet dataSet = new DataSet(values, values);
+
+        // Test fitting a DataSet
         NormalizerStandardize norm1 = new NormalizerStandardize();
         norm1.fit(dataSet);
         assertEquals(3.5f, norm1.getMean().getFloat(0), 1e-6);
         assertEquals(1.70783f, norm1.getStd().getFloat(0), 1e-4);
 
+        // Test fitting an iterator with equal batch sizes
         DataSetIterator testIter1 = new TestDataSetIterator(dataSet, 3); // Will yield 2 batches of 3 rows
         NormalizerStandardize norm2 = new NormalizerStandardize();
         norm2.fit(testIter1);
         assertEquals(3.5f, norm2.getMean().getFloat(0), 1e-6);
         assertEquals(1.70783f, norm2.getStd().getFloat(0), 1e-4);
 
+        // Test fitting an iterator with varying batch sizes
         DataSetIterator testIter2 = new TestDataSetIterator(dataSet, 4); // Will yield batch of 4 and batch of 2 rows
         NormalizerStandardize norm3 = new NormalizerStandardize();
         norm3.fit(testIter2);
         assertEquals(3.5f, norm3.getMean().getFloat(0), 1e-6);
         assertEquals(1.70783f, norm3.getStd().getFloat(0), 1e-4);
+
+        // Test fitting an iterator with batches of single rows
+        DataSetIterator testIter3 = new TestDataSetIterator(dataSet, 1); // Will yield 6 batches of 1 row
+        NormalizerStandardize norm4 = new NormalizerStandardize();
+        norm4.fit(testIter3);
+        assertEquals(3.5f, norm4.getMean().getFloat(0), 1e-6);
+        assertEquals(1.70783f, norm4.getStd().getFloat(0), 1e-4);
     }
 
     @Test
