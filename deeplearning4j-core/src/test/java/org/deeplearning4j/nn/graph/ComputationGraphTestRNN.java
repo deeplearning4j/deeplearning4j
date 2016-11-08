@@ -427,4 +427,46 @@ public class ComputationGraphTestRNN {
         graph.fit(new INDArray[]{inputLong}, new INDArray[]{labelsLong});
     }
 
+    @Test
+    public void testTBPTTLongerThanTS() {
+        int tbpttLength = 100;
+        int timeSeriesLength = 20;
+        int miniBatchSize = 7;
+        int nIn = 5;
+        int nOut = 4;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "0")
+                .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "1")
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray inputLong = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+        INDArray labelsLong = Nd4j.rand(new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+        INDArray initialParams = graph.params().dup();
+        graph.fit(new INDArray[]{inputLong}, new INDArray[]{labelsLong});
+        INDArray afterParams = graph.params();
+
+        assertNotEquals(initialParams, afterParams);
+    }
+
 }
