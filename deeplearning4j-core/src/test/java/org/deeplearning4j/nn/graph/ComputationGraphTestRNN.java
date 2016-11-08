@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -467,6 +468,32 @@ public class ComputationGraphTestRNN {
         INDArray afterParams = graph.params();
 
         assertNotEquals(initialParams, afterParams);
+    }
+
+    @Test
+    public void testTbpttMasking(){
+        //Simple "does it throw an exception" type test...
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(1)
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("out",new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                .activation("identity").nIn(1).nOut(1).build(), "in")
+                .setOutputs("out").backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        MultiDataSet data = new MultiDataSet(
+                new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
+                new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
+                null,
+                new INDArray[]{Nd4j.ones(10)}
+        );
+
+        net.fit(data);
     }
 
 }
