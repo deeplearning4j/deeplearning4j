@@ -609,4 +609,48 @@ public class MultiLayerTestRNN {
         INDArray in = Nd4j.rand(1, 10);
         net.rnnTimeStep(in);
     }
+
+
+    @Test
+    public void testTBPTTLongerThanTS() {
+        //Extremely simple test of the 'does it throw an exception' variety
+        int timeSeriesLength = 20;
+        int tbpttLength = 1000;
+        int miniBatchSize = 7;
+        int nIn = 5;
+        int nOut = 4;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").build())
+                .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE)
+                        .nIn(8).nOut(nOut).activation("identity").build())
+                .pretrain(false).backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
+
+        INDArray features = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
+        INDArray labels = Nd4j.rand(new int[]{miniBatchSize, nOut, timeSeriesLength});
+
+        INDArray maskArrayInput = Nd4j.ones(miniBatchSize, timeSeriesLength);
+        INDArray maskArrayOutput = Nd4j.ones(miniBatchSize, timeSeriesLength);
+
+        DataSet ds = new DataSet(features, labels, maskArrayInput, maskArrayOutput);
+
+        INDArray initialParams = mln.params().dup();
+        mln.fit(ds);
+        INDArray afterParams = mln.params();
+        assertNotEquals(initialParams, afterParams);
+    }
 }

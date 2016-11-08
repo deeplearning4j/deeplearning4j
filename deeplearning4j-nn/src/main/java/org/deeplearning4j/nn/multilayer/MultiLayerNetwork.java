@@ -1187,16 +1187,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         update(TaskUtils.buildTask(input, labels));
         int timeSeriesLength = input.size(2);
         int nSubsets = timeSeriesLength / fwdLen;
-        if(fwdLen > timeSeriesLength) {
-            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
-            return;
-        }
+        if(timeSeriesLength % fwdLen != 0) nSubsets++;  //Example: 100 fwdLen with timeSeriesLength=100 -> want 2 subsets (1 of size 100, 1 of size 20)
 
         rnnClearPreviousState();
 
         for( int i=0; i<nSubsets; i++ ){
             int startTimeIdx = i*fwdLen;
             int endTimeIdx = startTimeIdx + fwdLen;
+            if(endTimeIdx > timeSeriesLength) endTimeIdx = timeSeriesLength;
 
             INDArray inputSubset = input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
             INDArray labelSubset = labels.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
