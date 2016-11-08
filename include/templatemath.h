@@ -44,6 +44,11 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
+#ifndef __CUDACC__
+        template<typename T>
+        math_def inline T nd4j_dot(T *x, T *y, int length);
+#endif
+
 		template<typename T>
         math_def inline T nd4j_ceil(T val1);
 
@@ -126,6 +131,34 @@ template<typename T>
 			T y = (T) 1.0f + nd4j_abs(val);
 			return (T) 1.0f / (y * y);
 		}
+
+#ifndef __CUDACC__
+
+        template<>
+        math_def inline float16 nd4j_dot<float16>(float16 *x, float16 *y, int length) {
+            float16 dot = (float16) 0.0f;
+
+            // TODO: since we can't use simd on unions, we might use something else here.
+            for(int e = 0; e < length; e++) {
+                dot += x[e] * y[e];
+            }
+
+            return dot;
+        }
+
+		template<typename T>
+        math_def inline T nd4j_dot(T *x, T *y, int length) {
+            T dot = (T) 0.0f;
+
+#pragma omp simd reduction(+:dot)
+			for(int e = 0; e < length; e++) {
+				dot += x[e] * y[e];
+			}
+
+			return dot;
+		}
+#endif
+
 		template<typename T>
         math_def inline T nd4j_acos(T val);
 

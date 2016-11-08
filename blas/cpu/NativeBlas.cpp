@@ -6,12 +6,14 @@
 #include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
+#include <gemm.h>
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
 #include <dlfcn.h>
 #endif
+
 
 
 
@@ -905,7 +907,8 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      float16 *B, int ldb,
                      float beta,
                      float16 *C, int ldc) {
-    // no-op
+    // SIMD should be disabled for T = float16
+    nd4j::blas::GEMM<float16>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,(float16) alpha,A,lda,B,ldb,(float16) beta,C,ldc);
 }
 
 void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
@@ -915,7 +918,17 @@ void Nd4jBlas::sgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      float *B, int ldb,
                      float beta,
                      float *C, int ldc) {
+
+// TODO: remove this line after OpenBLAS gets fixed
+#ifdef __POWER
+#ifdef __OPENBLAS
+    nd4j::blas::GEMM<float>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#else
     cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
+#else
+    cblas_sgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
 }
 
 void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
@@ -925,7 +938,16 @@ void Nd4jBlas::dgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      double *B, int ldb,
                      double beta,
                      double *C, int ldc){
+    // TODO: remove this line after OpenBLAS gets fixed
+#ifdef __POWER
+    #ifdef __OPENBLAS
+    nd4j::blas::GEMM<double>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#else
     cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
+#else
+    cblas_dgemm(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,A,lda,B,ldb,beta,C,ldc);
+#endif
 }
 
 /*
