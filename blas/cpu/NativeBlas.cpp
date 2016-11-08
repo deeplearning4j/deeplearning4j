@@ -907,6 +907,7 @@ void Nd4jBlas::hgemm(Nd4jPointer *extraParams,int Order, int TransA, int TransB,
                      float16 *B, int ldb,
                      float beta,
                      float16 *C, int ldc) {
+    // SIMD should be disabled for T = float16
     nd4j::blas::GEMM<float16>::op(convertOrder(Order),convertTranspose(TransA),convertTranspose(TransB),M,N,K,(float16) alpha,A,lda,B,ldb,(float16) beta,C,ldc);
 }
 
