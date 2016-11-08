@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
@@ -217,6 +218,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             //logger.info("Sending TransformOp to CudaExecutioner");
             super.invoke(t);
+        } else if (op instanceof Variance) {
+            Variance acc = (Variance) op;
+            if (flush) flushQueue();
+
+            logger.info("Sending Variance to CudaExecutioner: {}", Arrays.toString(dimensions));
+            super.naiveExec(acc, dimensions);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             if (flush) flushQueue();
