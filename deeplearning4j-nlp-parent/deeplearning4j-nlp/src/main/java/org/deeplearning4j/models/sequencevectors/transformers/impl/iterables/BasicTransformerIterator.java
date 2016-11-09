@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -12,6 +13,7 @@ import java.util.Iterator;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
     protected final LabelAwareIterator iterator;
     protected boolean allowMultithreading;
