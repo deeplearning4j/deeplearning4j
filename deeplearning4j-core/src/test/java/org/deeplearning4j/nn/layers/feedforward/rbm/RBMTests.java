@@ -43,7 +43,10 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -62,49 +65,6 @@ import static org.junit.Assert.assertEquals;
 public class RBMTests {
     private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
 
-
-    @Test
-    public void testRBMBiasInit() {
-        org.deeplearning4j.nn.conf.layers.RBM cnn = new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                .nIn(1)
-                .nOut(3)
-                .biasInit(1)
-                .build();
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(cnn)
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-
-        assertEquals(1, layer.getParam("b").size(0));
-    }
-
-    @Test
-    public void testLfw() throws Exception {
-        DataSet d = new MnistDataSetIterator(10, true, 12345).next();
-
-        int nOut = 600;
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(d.numInputs()).nOut(nOut)
-                        .weightInit(WeightInit.XAVIER)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                        .build())
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(1e-3f)
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)), 0, params, true);
-
-        rbm.fit(d.getFeatureMatrix());
-    }
-
     @Test
     public void testIrisGaussianHidden() {
         IrisDataFetcher fetcher = new IrisDataFetcher();
@@ -112,72 +72,25 @@ public class RBMTests {
         DataSet d = fetcher.next();
         d.normalizeZeroMeanZeroUnitVariance();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(
-                        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(d.numInputs()).nOut(3)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM r = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
-        r.fit(d.getFeatureMatrix());
+        INDArray params = Nd4j.create(1, 4*3+4+3);
+        RBM rbm = getRBMLayer(4, 3, HiddenUnit.GAUSSIAN, VisibleUnit.GAUSSIAN, params, true, false);
 
+        rbm.fit(d.getFeatureMatrix());
     }
 
-
     @Test
-    public void testIris() {
+    public void testIrisRectifiedHidden() {
         IrisDataFetcher fetcher = new IrisDataFetcher();
         fetcher.fetch(150);
         DataSet d = fetcher.next();
         d.normalizeZeroMeanZeroUnitVariance();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(d.numInputs()).nOut(3)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
+        INDArray params = Nd4j.create(1, 4*3+4+3);
+        RBM rbm = getRBMLayer(4, 3, HiddenUnit.RECTIFIED, VisibleUnit.LINEAR, params, true, false);
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM r = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
-        r.fit(d.getFeatureMatrix());
+        rbm.fit(d.getFeatureMatrix());
 
-    }
-
-
-    @Test
-    public void testBasic() {
-        float[][] data = new float[][]
-                {
-                        {1, 1, 1, 0, 0, 0},
-                        {1, 0, 1, 0, 0, 0},
-                        {1, 1, 1, 0, 0, 0},
-                        {0, 0, 1, 1, 1, 0},
-                        {0, 0, 1, 1, 0, 0},
-                        {0, 0, 1, 1, 1, 0},
-                        {0, 0, 1, 1, 1, 0}
-                };
-
-        INDArray input = Nd4j.create(data);
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
-        rbm.fit(input);
-
-        assertEquals(24, rbm.gradient().getGradientFor("W").length());
     }
 
     @Test
@@ -196,6 +109,7 @@ public class RBMTests {
                         .build())
                 .build();
 
+        conf.setPretrain(true);
         org.deeplearning4j.nn.conf.layers.RBM layerConf =
                 (org.deeplearning4j.nn.conf.layers.RBM) conf.getLayer();
 
@@ -216,53 +130,14 @@ public class RBMTests {
 
     @Test
     public void testSetGetParams() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        INDArray params = Nd4j.create(1, 6*4+6+4);
+        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
         rbm.computeGradientAndScore();
         INDArray getParams = rbm.params();
         assertEquals(rand2, getParams);
-    }
-
-    @Test
-    public void testCg() {
-        float[][] data = new float[][]
-                {
-                        {1, 1, 1, 0, 0, 0},
-                        {1, 0, 1, 0, 0, 0},
-                        {1, 1, 1, 0, 0, 0},
-                        {0, 0, 1, 1, 1, 0},
-                        {0, 0, 1, 1, 0, 0},
-                        {0, 0, 1, 1, 1, 0},
-                        {0, 0, 1, 1, 1, 0}
-                };
-
-        INDArray input = Nd4j.create(data);
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
-        double value = rbm.score();
-        rbm.fit(input);
-        value = rbm.score();
-
     }
 
 
@@ -281,22 +156,13 @@ public class RBMTests {
 
 
         INDArray input = Nd4j.create(data);
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .learningRate(1e-1f)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .nIn(6).nOut(4)
-                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        INDArray params = Nd4j.create(1, 6*4+6+4);
+        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
 
         rbm.fit(input);
         double value = rbm.score();
-
         Gradient grad2 = rbm.gradient();
+        assertEquals(24, grad2.getGradientFor("W").length());
 
     }
 
@@ -331,17 +197,29 @@ public class RBMTests {
     @Test
     public void testActivate(){
         INDArray input = Nd4j.linspace(1, 10, 10);
-        INDArray expectedActivations = Nd4j.ones(5);
+        List<HiddenUnit> hiddenUnits = getHiddenUnits();
+        INDArray expectedActivations = Nd4j.vstack( // Values pulled from running manually on different code base to compare
+                Nd4j.create(new double [] {0.8575946457626977,0.9767640857282572,2.3468148832508044E-4,0.12777206541559458,0.08908197315015978}),
+                Nd4j.create(new double [] {0.9296185362708878,4.120228176817934,-9.200094357639074,-2.3413283688824484,-1.9073211296725048}),
+                Nd4j.create(new double [] {1.7954539487645431,3.7385460441831007,0.0,0.0,0.0}),
+                Nd4j.create(new double [] {0.12467422539953836,0.8702636692829344,4.859613197293396E-6,0.00303268190332571,0.0020245638010041433})
+        );
         INDArray params = getStandardParams(10, 5);
-        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true);
-        rbm.setInput(input);
-        INDArray actualActivations = rbm.activate();
 
-        assertEquals(expectedActivations, actualActivations);
+        INDArray actualActivations;
+        int idx = 0;
+        for (HiddenUnit hidden: hiddenUnits) {
+            RBM rbm = getRBMLayer(10, 5, hidden, VisibleUnit.BINARY, params, true, true);
+            rbm.setInput(input);
+            actualActivations = rbm.activate();
+            assertEquals(expectedActivations.get(NDArrayIndex.point(idx), NDArrayIndex.all()), actualActivations);
+            idx++;
+        }
     }
 
     @Test
     public void testComputeGradientAndScore(){
+        //TODO finish building this out - currently just a template
         INDArray input = Nd4j.linspace(1, 10, 10);
         INDArray params = getStandardParams(10, 5);
 
@@ -359,18 +237,6 @@ public class RBMTests {
         expectedGradient.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         expectedGradient.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
 
-
-        INDArray params3 = Nd4j.create(new double[] {0.50, 0.50, -0.50, -0.50, -0.50});
-        INDArray params2 = Nd4j.create(new double[] {
-                0.00, 1.00, 3.00, 4.00, 5.00, 5.00, 6.00, 7.00, 8.00, 9.00});
-        INDArray params4 = Nd4j.create(new double[] {
-                0.50, 0.50, -0.50, -0.50, -0.50, 1.50, 1.50, -0.50, -0.50, -0.50,
-                3.00, 3.00, 0.00, 0.00, 0.00, 4.00, 4.00, 0.00, 0.00, 0.00,
-                5.00, 5.00, 0.00, 0.00, 0.00, 5.50, 5.50, -0.50, -0.50, -0.50,
-                6.50, 6.50, -0.50, -0.50, -0.50, 7.50, 7.50, -0.50, -0.50, -0.50,
-                8.50, 8.50, -0.50, -0.50, -0.50, 9.50, 9.50, -0.50, -0.50, -0.50
-        }).reshape(10,5);
-
         double expectedScore = 0.0;
 
         assertEquals(expectedGradient, pair.getFirst());
@@ -387,10 +253,10 @@ public class RBMTests {
         INDArray features = input.getFeatures();
         mnistIter.reset();
 
-        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features);
+        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 50, 10, WeightInit.UNIFORM);
         rbm.fit(mnistIter);
 
-        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features);
+        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 50, 10, WeightInit.UNIFORM);
         rbm2.fit(mnistIter);
 
         DataSet test = mnistIter.next();
@@ -415,12 +281,12 @@ public class RBMTests {
         INDArray features = Nd4j.rand(new int[]{100, 10});
 
         System.out.println("Training RBM network, initialized with Xavier");
-        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features);
+        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);
         rbm.fit(features);
         double v = rbm.score();
 
         System.out.println("Training RBM network, initialized with correct solution");
-        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features);
+        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
 
         rbm2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("0_W")))));
         rbm2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("1_W")))));
@@ -433,7 +299,7 @@ public class RBMTests {
 
 
     private static INDArray getStandardParams(int nIn, int nOut){
-        return Nd4j.hstack(Nd4j.ones(nIn & nOut), Nd4j.zeros(nOut + nIn));
+        return Nd4j.hstack(Nd4j.ones(nIn * nOut), Nd4j.zeros(nOut + nIn));
 
     }
 
@@ -442,10 +308,14 @@ public class RBMTests {
                 Nd4j.linspace(1, nIn * nOut, nIn * nOut), Nd4j.ones(nOut + nIn));
     }
 
+    private List<HiddenUnit> getHiddenUnits(){
+        return Arrays.asList(HiddenUnit.BINARY, HiddenUnit.GAUSSIAN, HiddenUnit.RECTIFIED, HiddenUnit.SOFTMAX);
+    }
 
-//    TODO run through all options
-//        List<HiddenUnit> hiddenUnits = Arrays.asList(HiddenUnit.BINARY, HiddenUnit.GAUSSIAN, HiddenUnit.SOFTMAX, HiddenUnit.RECTIFIED);
-//        List<VisibleUnit> visibleUnits = Arrays.asList(VisibleUnit.BINARY, VisibleUnit.GAUSSIAN, VisibleUnit.SOFTMAX, VisibleUnit.LINEAR);
+    private List<VisibleUnit> getVisibleUnits(){
+        return Arrays.asList(VisibleUnit.BINARY, VisibleUnit.GAUSSIAN, VisibleUnit.LINEAR, VisibleUnit.SOFTMAX);
+    }
+
 
     private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params, boolean pretrain, boolean initialize) {
         org.deeplearning4j.nn.conf.layers.RBM layer = new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit)
@@ -465,7 +335,7 @@ public class RBMTests {
         return (RBM) conf.getLayer().instantiate(conf, null, 0, params, initialize);
     }
 
-    private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input) {
+    private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1, int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
                 .seed(0xDEADBEEF)
                 .iterations(1000)
@@ -473,15 +343,15 @@ public class RBMTests {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
                 .epsilon(1)
-                .weightInit(WeightInit.UNIFORM)
+                .weightInit(weightInit)
                 .list(
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                 .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
                                 .activation("identity")
-                                .nOut(input.columns()).build(),
+                                .nOut(nOut1).build(),
                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
                                 .activation("identity")
-                                .nOut(input.columns()).build()
+                                .nOut(nOut2).build()
                 )
                 .pretrain(pretrain)
                 .backprop(backprop)
