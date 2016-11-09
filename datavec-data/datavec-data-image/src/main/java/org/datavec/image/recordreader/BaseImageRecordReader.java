@@ -114,8 +114,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader implements 
                         if (labelGenerator != null) {
                             name = labelGenerator.getLabelForPath(location).toString();
                         }
-                        if (!labels.contains(name))
+                        if (!labels.contains(name)) {
                             labels.add(name);
+                        }
                         if (pattern != null) {
                             String label = name.split(pattern)[patternPosition];
                             fileNameMap.put(imgFile.toString(), label);
@@ -140,6 +141,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader implements 
             FileSplit split1 = (FileSplit) split;
             labels.remove(split1.getRootDir());
         }
+
+        //To ensure consistent order for label assignment (irrespective of file iteration order), we want to sort the list of labels
+        Collections.sort(labels);
     }
 
 

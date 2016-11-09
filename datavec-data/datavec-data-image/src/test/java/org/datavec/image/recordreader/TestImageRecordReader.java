@@ -19,6 +19,7 @@ package org.datavec.image.recordreader;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
@@ -26,7 +27,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -73,5 +76,33 @@ public class TestImageRecordReader {
 
         List<Record> fromMeta = rr.loadFromMetaData(meta);
         assertEquals(out3, fromMeta);
+    }
+
+    @Test
+    public void testImageRecordReaderLabelsOrder() throws Exception {
+        //Labels order should be consistent, regardless of file iteration order
+
+        //Idea: labels order should be consistent regardless of input file order
+        File f0 = new ClassPathResource("testImages/class0/0.jpg").getFile();
+        File f1 = new ClassPathResource("testImages/class1/A.jpg").getFile();
+
+        List<URI> order0 = Arrays.asList(f0.toURI(), f1.toURI());
+        List<URI> order1 = Arrays.asList(f1.toURI(), f0.toURI());
+
+        ParentPathLabelGenerator labelMaker0 = new ParentPathLabelGenerator();
+        ImageRecordReader rr0 = new ImageRecordReader(32,32,3, labelMaker0);
+        rr0.initialize(new CollectionInputSplit(order0));
+
+        ParentPathLabelGenerator labelMaker1 = new ParentPathLabelGenerator();
+        ImageRecordReader rr1 = new ImageRecordReader(32,32,3, labelMaker1);
+        rr1.initialize(new CollectionInputSplit(order1));
+
+        List<String> labels0 = rr0.getLabels();
+        List<String> labels1 = rr1.getLabels();
+
+        System.out.println(labels0);
+        System.out.println(labels1);
+
+        assertEquals(labels0, labels1);
     }
 }
