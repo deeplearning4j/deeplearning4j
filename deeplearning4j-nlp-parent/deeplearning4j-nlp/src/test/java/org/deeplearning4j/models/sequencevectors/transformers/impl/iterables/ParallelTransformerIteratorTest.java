@@ -5,6 +5,9 @@ import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.text.documentiterator.AsyncLabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.MutipleEpochsSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
@@ -101,12 +104,20 @@ public class ParallelTransformerIteratorTest {
         SentenceIterator baseIterator = iterator;
         baseIterator.reset();
 
-        iterator = new PrefetchingSentenceIterator.Builder(baseIterator)
-                .setFetchSize(1024)
+
+        LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25))
                 .build();
 
+        LabelAwareIterator alai = new AsyncLabelAwareIterator(lai, 1024);
+
+        transformer = new SentenceTransformer.Builder()
+                .iterator(alai)
+                .allowMultithreading(false)
+                .tokenizerFactory(factory)
+                .build();
 
         iter = transformer.iterator();
+
         time1 = System.currentTimeMillis();
         while (iter.hasNext()) {
             Sequence<VocabWord> sequence = iter.next();
@@ -117,10 +128,10 @@ public class ParallelTransformerIteratorTest {
         time2 = System.currentTimeMillis();
 
         log.info("Prefetched Single-threaded time: {} ms", time2 - time1);
-        iterator.reset();
+        alai.reset();
 
         transformer = new SentenceTransformer.Builder()
-                .iterator(iterator)
+                .iterator(alai)
                 .allowMultithreading(true)
                 .tokenizerFactory(factory)
                 .build();
