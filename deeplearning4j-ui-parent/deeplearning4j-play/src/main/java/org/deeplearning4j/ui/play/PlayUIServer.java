@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.play;
 
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.Route;
@@ -20,6 +21,8 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
+import org.reflections.ReflectionUtils;
+import org.reflections.Reflections;
 import play.Mode;
 import play.api.routing.Router;
 import play.routing.RoutingDsl;
@@ -47,6 +50,12 @@ public class PlayUIServer extends UIServer {
      */
     public static final String UI_SERVER_PORT_PROPERTY = "org.deeplearning4j.ui.port";
     public static final int DEFAULT_UI_PORT = 9000;
+
+    /**
+     * System property to enable classpath scanning for custom UI modules. Disabled by default.
+     */
+    public static final String UI_CUSTOM_MODULE_PROPERTY = "org.deeplearning4j.ui.custommodule.enable";
+
 
     public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
 
@@ -86,6 +95,22 @@ public class PlayUIServer extends UIServer {
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new FlowListenerModule());
         uiModules.add(new TsneModule());
+
+        //Check if custom UI modules are enabled...
+        String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
+        boolean useCustomModules = false;
+        if(customModulePropertyStr != null){
+            useCustomModules = Boolean.parseBoolean(customModulePropertyStr);
+        }
+
+        if(useCustomModules){
+            List<Class<?>> excludeClasses = new ArrayList<>();
+            for(UIModule u : uiModules){
+                excludeClasses.add(u.getClass());
+            }
+            List<UIModule> list = getCustomUIModules(excludeClasses);
+            uiModules.addAll(list);
+        }
 
 
         for (UIModule m : uiModules) {
@@ -145,6 +170,36 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
+    }
+
+    private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses){
+        //Scan classpath for UI module instances, but ignore the 'excludeClasses' classes
+        List<String> classNames = Collections.singletonList(UIModule.class.getName());
+        Reflections reflections = new Reflections();
+        org.reflections.Store store = reflections.getStore();
+        Iterable<String> subtypesByName = store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
+        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+
+        List<Class<?>> toCreate = new ArrayList<>();
+        for(Class<?> c : subtypeClasses){
+            if(excludeClasses.contains(c)) continue;;
+            toCreate.add(c);
+        }
+
+        List<UIModule> ret = new ArrayList<>(toCreate.size());
+        for (Class<?> c : toCreate) {
+            UIModule m;
+            try {
+                m = (UIModule) c.newInstance();
+            }catch (Exception e){
+                log.warn("Could not create instance of custom UIModule of type {}; skipping",c,e);
+                continue;
+            }
+            log.debug("Created instance of custom UI module: {}", c);
+            ret.add(m);
+        }
+
+        return ret;
     }
 
     @Override
