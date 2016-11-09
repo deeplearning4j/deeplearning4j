@@ -25,6 +25,8 @@ public class PerformanceTests {
     @Test
     public void testWord2VecCBOWBig() throws Exception {
         SentenceIterator iter = new BasicLineIterator("/home/raver119/Downloads/corpus/namuwiki_raw.txt");
+        //SentenceIterator iter = new BasicLineIterator("/home/raver119/Downloads/corpus/ru_sentences.txt");
+        //SentenceIterator iter = new BasicLineIterator("/ext/DATASETS/ru/Socials/ru_sentences.txt");
 
         TokenizerFactory t = new KoreanTokenizerFactory();
         //t.setTokenPreProcessor(new CommonPreprocessor());
