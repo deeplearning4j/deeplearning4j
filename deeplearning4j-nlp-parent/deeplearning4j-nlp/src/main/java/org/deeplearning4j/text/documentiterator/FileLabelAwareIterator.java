@@ -71,6 +71,21 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
     }
 
     @Override
+    public boolean hasNext() {
+        return hasNextDocument();
+    }
+
+    @Override
+    public LabelledDocument next() {
+        return nextDocument();
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
+
+    @Override
     public void reset() {
         position.set(0);
     }

@@ -59,6 +59,21 @@ public class DocumentIteratorConverter implements LabelAwareIterator {
     }
 
     @Override
+    public boolean hasNext() {
+        return hasNextDocument();
+    }
+
+    @Override
+    public LabelledDocument next() {
+        return nextDocument();
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
+
+    @Override
     public LabelsSource getLabelsSource() {
         return generator;
     }

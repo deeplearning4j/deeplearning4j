@@ -52,7 +52,9 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         try {
             int cnt = 0;
             while (cnt < 100 && stringBuffer.size() < 1000 && iterator.hasNextDocument()) {
-                stringBuffer.add(iterator.nextDocument());
+                Object object = iterator.nextDocument();
+                if (object != null && object instanceof LabelledDocument)
+                    stringBuffer.add((LabelledDocument) object);
                 cnt++;
             }
 
