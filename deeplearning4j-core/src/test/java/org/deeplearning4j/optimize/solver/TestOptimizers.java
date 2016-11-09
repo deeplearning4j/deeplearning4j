@@ -969,5 +969,8 @@ public class TestOptimizers {
 
         @Override
         public void setMaskArray(INDArray maskArray) { }
+
+        @Override
+        public INDArray getMaskArray(){ return null; }
     }
 }

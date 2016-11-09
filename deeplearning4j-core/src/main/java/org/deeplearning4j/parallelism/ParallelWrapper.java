@@ -147,7 +147,7 @@ public class ParallelWrapper implements AutoCloseable {
                             score += zoo[cnt].getModel().score();
                         }
 
-                        params.divi(workers);
+                        params.divi(cnt);
                         model.setParams(params);
                     }
 
@@ -246,6 +246,7 @@ public class ParallelWrapper implements AutoCloseable {
                 /*
                     average model, and propagate it to whole
                 */
+                GridExecutioner executioner = (GridExecutioner) Nd4j.getExecutioner();
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
                     if (!legacyAveraging) {
@@ -262,8 +263,7 @@ public class ParallelWrapper implements AutoCloseable {
                             params.addi(zoo[cnt].getModel().params());
                             score += zoo[cnt].getModel().score();
                         }
-
-                        params.divi(workers);
+                        params.divi(cnt);
                         model.setParams(params);
                     }
 
@@ -522,19 +522,33 @@ public class ParallelWrapper implements AutoCloseable {
             if (replicatedModel instanceof MultiLayerNetwork) {
                 replicatedModel.setParams(model.params().dup());
 
-                Updater updater = ((MultiLayerNetwork) originalModel).getUpdater();
+                Updater updater = ((MultiLayerNetwork) model).getUpdater();
                 INDArray view = updater.getStateViewArray();
 
-                updater = ((MultiLayerNetwork) replicatedModel).getUpdater();
-                updater.setStateViewArray((MultiLayerNetwork) replicatedModel, view.dup(), false);
+                if (view != null) {
+                    updater = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                    INDArray viewD = view.dup();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                    updater.setStateViewArray((MultiLayerNetwork) replicatedModel, viewD, false);
+                }
             } else if (replicatedModel instanceof  ComputationGraph) {
                 replicatedModel.setParams(model.params().dup());
 
-                ComputationGraphUpdater updater = ((ComputationGraph) originalModel).getUpdater();
+                ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
                 INDArray view = updater.getStateViewArray();
 
-                updater = ((ComputationGraph) replicatedModel).getUpdater();
-                updater.setStateViewArray(view.dup());
+                if (view != null) {
+                    INDArray viewD = view.dup();
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+                    updater = ((ComputationGraph) replicatedModel).getUpdater();
+                    updater.setStateViewArray(viewD);
+                }
             }
 
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
