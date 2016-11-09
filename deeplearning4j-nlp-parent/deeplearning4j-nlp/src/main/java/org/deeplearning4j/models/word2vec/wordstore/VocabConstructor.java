@@ -161,6 +161,10 @@ public class VocabConstructor<T extends SequenceElement> {
      */
     public VocabCache<T> buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
         long lastTime = System.currentTimeMillis();
+        long lastSequences = 0;
+        long lastElements = 0;
+        long startTime = lastTime;
+        long startWords = cache.numWords();
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
@@ -241,8 +245,17 @@ public class VocabConstructor<T extends SequenceElement> {
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
                     long currentTime = System.currentTimeMillis();
-                    log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
+                    long currentSequences = seqCount.get();
+                    long currentElements = tempHolder.numWords();
+
+                    double seconds = (currentTime - lastTime) / (double) 1000;
+
+                    double seqPerSec = (currentSequences - lastSequences) / seconds;
+                    double elPerSec = (currentElements - lastElements) / seconds;
+                    log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Seqs per second: {}; Words per second: {};", seqCount.get(), elementsCounter.get(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
+                    lastElements = currentElements;
+                    lastSequences = currentSequences;
                 }
             }
             // apply minWordFrequency set for this source
@@ -260,7 +273,6 @@ public class VocabConstructor<T extends SequenceElement> {
             }
 
             log.debug("Vocab size after truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
-
             // at this moment we're ready to transfer
             topHolder.importVocabulary(tempHolder);
         }
@@ -299,7 +311,11 @@ public class VocabConstructor<T extends SequenceElement> {
             }
         }
 
-        log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + cache.numWords() +"]");
+        long endSequences = seqCount.get();
+        long endTime = System.currentTimeMillis();
+        double seconds = (endTime - startTime) / (double) 1000;
+        double seqPerSec = endSequences / seconds;
+        log.info("Sequences checked: [{}], Current vocabulary size: [{}]; Sequences/sec: [{}];", seqCount.get(), cache.numWords(), String.format("%.2f", seqPerSec));
         return cache;
     }
 
