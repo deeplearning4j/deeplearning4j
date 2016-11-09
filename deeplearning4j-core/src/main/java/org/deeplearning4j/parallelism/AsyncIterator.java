@@ -50,6 +50,8 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public T next() {
         T temp = nextElement;
+        if (temp == null)
+            throw new IllegalStateException("temp is NULL");
         nextElement = null;
         return temp;
     }
@@ -57,6 +59,11 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public void remove() {
         // no-op
+    }
+
+    public void shutdown() {
+        thread.interrupt();
+        nextElement = terminator;
     }
 
 
@@ -81,7 +88,10 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
                     buffer.put(iterator.next());
                 }
                 buffer.put(terminator);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
+                // TODO: pass that forward
                 throw new RuntimeException(e);
             }
         }
