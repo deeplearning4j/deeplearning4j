@@ -607,10 +607,11 @@ public class ComputationGraph implements Serializable, Model {
         if (hasMaskArrays) {
             INDArray[] fMask = (dataSet.getFeaturesMaskArray() != null ? new INDArray[]{dataSet.getFeaturesMaskArray()} : null);
             INDArray[] lMask = (dataSet.getLabelsMaskArray() != null ? new INDArray[]{dataSet.getLabelsMaskArray()} : null);
-            setLayerMaskArrays(fMask, lMask);
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()}, fMask, lMask);
+        } else {
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         }
 
-        fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         if (hasMaskArrays) clearLayerMaskArrays();
     }
 
@@ -766,6 +767,10 @@ public class ComputationGraph implements Serializable, Model {
 
                 solver.optimize();
             }
+        }
+
+        if(featureMaskArrays != null || labelMaskArrays != null){
+            clearLayerMaskArrays();
         }
     }
 
