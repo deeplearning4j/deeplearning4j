@@ -431,4 +431,34 @@ public class NativeOpExecutionerTest {
         System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
         System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
     }
+
+    @Test
+    public void testMmulC1() throws Exception {
+        INDArray A = Nd4j.linspace(0, 11, 12).reshape('c', 4, 3);
+        INDArray B = Nd4j.linspace(0, 11, 12).reshape('c', 3, 4);
+
+        System.out.println("A: \n" + A);
+
+        INDArray C = A.mmul(B);
+
+        INDArray expC = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape(4, 4);
+
+        assertEquals(expC, C);
+    }
+
+    @Test
+    public void testMmulF1() throws Exception {
+        INDArray A = Nd4j.linspace(0, 11, 12).reshape('f', 4, 3);
+        INDArray B = Nd4j.linspace(0, 11, 12).reshape('f', 3, 4);
+
+        System.out.println("A: \n" + A);
+
+        INDArray C = A.mmul(B);
+
+        System.out.println("C: \n" + Arrays.toString(C.data().asFloat()));
+
+        INDArray expF = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape('f', 4, 4);
+
+        assertEquals(expF, C);
+    }
 }

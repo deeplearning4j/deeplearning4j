@@ -390,4 +390,15 @@ public class SporadicTests {
             System.out.println();
         }
     }
+
+    @Test
+    public void testStd() {
+        INDArray values = Nd4j.linspace(1, 4, 4).transpose();
+
+        double corrected = values.std(true, 0).getDouble(0);
+        double notCorrected = values.std(false, 0).getDouble(0);
+
+        System.out.println(String.format("Corrected: %f, non corrected: %f", corrected, notCorrected));
+
+    }
 }
