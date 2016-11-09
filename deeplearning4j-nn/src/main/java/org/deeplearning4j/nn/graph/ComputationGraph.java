@@ -607,10 +607,11 @@ public class ComputationGraph implements Serializable, Model {
         if (hasMaskArrays) {
             INDArray[] fMask = (dataSet.getFeaturesMaskArray() != null ? new INDArray[]{dataSet.getFeaturesMaskArray()} : null);
             INDArray[] lMask = (dataSet.getLabelsMaskArray() != null ? new INDArray[]{dataSet.getLabelsMaskArray()} : null);
-            setLayerMaskArrays(fMask, lMask);
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()}, fMask, lMask);
+        } else {
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         }
 
-        fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         if (hasMaskArrays) clearLayerMaskArrays();
     }
 
@@ -675,10 +676,7 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSet
      */
     public void fit(MultiDataSet multiDataSet) {
-        if (multiDataSet.hasMaskArrays()) {
-            setLayerMaskArrays(multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
-        }
-        fit(multiDataSet.getFeatures(), multiDataSet.getLabels());
+        fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
         if (multiDataSet.hasMaskArrays()) clearLayerMaskArrays();
     }
 
@@ -758,7 +756,7 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, null, null);
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
             } else {
                 if (solver == null) {
                     solver = new Solver.Builder()
@@ -769,6 +767,10 @@ public class ComputationGraph implements Serializable, Model {
 
                 solver.optimize();
             }
+        }
+
+        if(featureMaskArrays != null || labelMaskArrays != null){
+            clearLayerMaskArrays();
         }
     }
 
@@ -1876,12 +1878,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         int fwdLen = configuration.getTbpttFwdLength();
-        if (fwdLen > timeSeriesLength) {
-            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
-            return;
-        }
-
         int nSubsets = timeSeriesLength / fwdLen;
+        if(timeSeriesLength % fwdLen != 0) nSubsets++;
 
         rnnClearPreviousState();
 
@@ -1893,6 +1891,7 @@ public class ComputationGraph implements Serializable, Model {
         for (int i = 0; i < nSubsets; i++) {
             int startTimeIdx = i * fwdLen;
             int endTimeIdx = startTimeIdx + fwdLen;
+            if(endTimeIdx > timeSeriesLength) endTimeIdx = timeSeriesLength;
 
             for (int j = 0; j < inputs.length; j++) {
                 if (inputs[j].rank() != 3) newInputs[j] = inputs[j];
@@ -1936,6 +1935,10 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         rnnClearPreviousState();
+
+        if(featureMasks != null || labelMasks != null){
+            clearLayerMaskArrays();
+        }
     }
 
     /**
