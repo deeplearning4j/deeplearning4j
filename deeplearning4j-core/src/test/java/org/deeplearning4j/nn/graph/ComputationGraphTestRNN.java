@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -19,10 +21,13 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -501,44 +506,62 @@ public class ComputationGraphTestRNN {
 
     @Test
     public void checkMaskArrayClearance(){
-        //Simple "does it throw an exception" type test...
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1).seed(12345).graphBuilder()
-                .addInputs("in")
-                .addLayer("out",new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .activation("identity").nIn(1).nOut(1).build(), "in")
-                .setOutputs("out").backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(8).tBPTTBackwardLength(8)
-                .build();
+        for(boolean tbptt : new boolean[]{true, false}) {
+            //Simple "does it throw an exception" type test...
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .iterations(1).seed(12345).graphBuilder()
+                    .addInputs("in")
+                    .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                            .activation("identity").nIn(1).nOut(1).build(), "in")
+                    .setOutputs("out").backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                    .build();
 
-        ComputationGraph net = new ComputationGraph(conf);
-        net.init();
+            ComputationGraph net = new ComputationGraph(conf);
+            net.init();
 
-        MultiDataSet data = new MultiDataSet(
-                new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
-                new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
-                new INDArray[]{Nd4j.ones(10)},
-                new INDArray[]{Nd4j.ones(10)});
+            MultiDataSet data = new MultiDataSet(
+                    new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
+                    new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
+                    new INDArray[]{Nd4j.ones(10)},
+                    new INDArray[]{Nd4j.ones(10)});
 
-        net.fit(data);
-        assertNull(net.getInputMaskArrays());
-        assertNull(net.getLabelMaskArrays());
-        for(Layer l : net.getLayers()){
-            assertNull(l.getMaskArray());
-        }
+            net.fit(data);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
 
-        DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
-        net.fit(ds);
-        assertNull(net.getInputMaskArrays());
-        assertNull(net.getLabelMaskArrays());
-        for(Layer l : net.getLayers()){
-            assertNull(l.getMaskArray());
-        }
+            DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
+            net.fit(ds);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
 
-        net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
-        assertNull(net.getInputMaskArrays());
-        assertNull(net.getLabelMaskArrays());
-        for(Layer l : net.getLayers()){
-            assertNull(l.getMaskArray());
+            net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            MultiDataSetIterator iter = new IteratorMultiDataSetIterator(Collections.singletonList((org.nd4j.linalg.dataset.api.MultiDataSet) data).iterator(), 1);
+            net.fit(iter);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            DataSetIterator iter2 = new IteratorDataSetIterator(Collections.singletonList(ds).iterator(), 1);
+            net.fit(iter2);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
         }
     }
 
