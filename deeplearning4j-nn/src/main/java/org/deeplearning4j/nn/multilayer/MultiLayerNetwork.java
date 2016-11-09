@@ -2031,6 +2031,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         this.mask = mask;
     }
 
+    public INDArray getMaskArray(){
+        return mask;
+    }
+
     //==========
     //Layer methods
 
