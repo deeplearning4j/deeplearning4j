@@ -113,6 +113,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         int k = layerConf().getK();
 
         //POSITIVE PHASE
+        // hprob0, hstate0
         Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());
 
 		/*
@@ -126,6 +127,8 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 * and exploring the search space.
 		 */
         Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> matrices;
+        //negative value samples
+        INDArray nvMeans = null;
         //negative value samples
         INDArray nvSamples = null;
         //negative hidden means or expected values
@@ -151,13 +154,14 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 matrices = gibbhVh(nhSamples);
 
             //get the cost updates for sampling in the chain after k iterations
+            nvMeans = matrices.getFirst().getFirst();
             nvSamples = matrices.getFirst().getSecond();
             nhMeans = matrices.getSecond().getFirst();
             nhSamples = matrices.getSecond().getSecond();
         }
 
 		/*
-		 * Update gradient parameters
+		 * Update gradient parameters - note taking mean based on batchsize is handled in LayerUpdater
 		 */
         INDArray wGradient = input().transposei().mmul(probHidden.getSecond()).subi(
                 nvSamples.transpose().mmul(nhMeans)
@@ -211,6 +215,18 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         Distribution dist;
 
         switch (layerConf().getHiddenUnit()) {
+            case BINARY: {
+                dist = Nd4j.getDistributions().createBinomial(1, h1Mean);
+                dist.reseedRandomGenerator(seed);
+                h1Sample = dist.sample(h1Mean.shape());
+                break;
+            }
+            case GAUSSIAN: {
+                dist = Nd4j.getDistributions().createNormal(h1Mean, 1);
+                dist.reseedRandomGenerator(seed);
+                h1Sample = dist.sample(h1Mean.shape());
+                break;
+            }
             case RECTIFIED: {
                 INDArray sigH1Mean = sigmoid(h1Mean);
 		/*
@@ -223,20 +239,8 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 h1Sample = max(h1Sample, 0.0);
                 break;
             }
-            case GAUSSIAN: {
-                dist = Nd4j.getDistributions().createNormal(h1Mean, 1);
-                dist.reseedRandomGenerator(seed);
-                h1Sample = dist.sample(h1Mean.shape());
-                break;
-            }
             case SOFTMAX: {
                 h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean));
-                break;
-            }
-            case BINARY: {
-                dist = Nd4j.getDistributions().createBinomial(1, h1Mean);
-                dist.reseedRandomGenerator(seed);
-                h1Sample = dist.sample(h1Mean.shape());
                 break;
             }
             default:
@@ -258,6 +262,12 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray v1Sample;
 
         switch (layerConf().getVisibleUnit()) {
+            case BINARY: {
+                Distribution dist = Nd4j.getDistributions().createBinomial(1, v1Mean);
+                dist.reseedRandomGenerator(seed);
+                v1Sample = dist.sample(v1Mean.shape());
+                break;
+            }
             case GAUSSIAN:
             case LINEAR: {
                 Distribution dist = Nd4j.getDistributions().createNormal(v1Mean, 1);
@@ -268,12 +278,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             }
             case SOFTMAX: {
                 v1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", v1Mean));
-                break;
-            }
-            case BINARY: {
-                Distribution dist = Nd4j.getDistributions().createBinomial(1, v1Mean);
-                dist.reseedRandomGenerator(seed);
-                v1Sample = dist.sample(v1Mean.shape());
                 break;
             }
             default: {
@@ -310,16 +314,16 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray preSig = v.mmul(W).addiRowVector(hBias);
 
         switch (layerConf().getHiddenUnit()) {
-            case RECTIFIED:
-                preSig = max(preSig, 0.0);
-                return preSig;
+            case BINARY:
+                return sigmoid(preSig);
             case GAUSSIAN:
                 Distribution dist = Nd4j.getDistributions().createNormal(preSig, 1);
                 dist.reseedRandomGenerator(seed);
                 preSig = dist.sample(preSig.shape());
                 return preSig;
-            case BINARY:
-                return sigmoid(preSig);
+            case RECTIFIED:
+                preSig = max(preSig, 0.0);
+                return preSig;
             case SOFTMAX:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig));
             default:
@@ -341,6 +345,8 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray vMean = h.mmul(W).addiRowVector(vBias);
 
         switch (layerConf().getVisibleUnit()) {
+            case BINARY:
+                return sigmoid(vMean);
             case GAUSSIAN:
                 Distribution dist = Nd4j.getDistributions().createNormal(vMean, 1);
                 dist.reseedRandomGenerator(seed);
@@ -348,8 +354,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 return vMean;
             case LINEAR:
                 return vMean;
-            case BINARY:
-                return sigmoid(vMean);
             case SOFTMAX:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", vMean));
             default:

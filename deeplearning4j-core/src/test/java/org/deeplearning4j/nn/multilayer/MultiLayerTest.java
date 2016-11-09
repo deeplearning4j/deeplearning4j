@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -789,4 +790,58 @@ public class MultiLayerTest {
 
     }
 
+    @Test
+    public void testParamsWithAndWithoutPreTrain(){
+        int nIn = 10;
+        int nOut = 10;
+
+        // Test pretrain true
+        MultiLayerNetwork rbmPre = getRBMModel(true, nIn, nOut);
+        int actualNP = rbmPre.numParams();
+        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
+        INDArray params = rbmPre.params();
+        assertEquals(params.length(), actualNP);
+        Map<String, INDArray> paramTable = rbmPre.paramTable();
+        assertTrue(paramTable.containsKey("0_vb"));
+        rbmPre.setParam("0_vb", Nd4j.ones(10));
+        params = rbmPre.getParam("0_vb");
+        assertEquals(Nd4j.ones(10), params);
+
+
+        // Test pretrain false, expect same for true because its not changed when applying update
+        MultiLayerNetwork rbmNoPre = getRBMModel(false, nIn, nOut);
+        actualNP = rbmNoPre.numParams();
+        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
+        params = rbmNoPre.params();
+        assertEquals(params.length(), actualNP);
+        paramTable = rbmPre.paramTable();
+        assertTrue(paramTable.containsKey("0_vb"));
+
+    }
+
+
+    public MultiLayerNetwork getRBMModel(boolean preTrain, int nIn, int nOut){
+        MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
+                .seed(42)
+                .iterations(1)
+                .updater(Updater.NONE)
+                .epsilon(1)
+                .weightInit(WeightInit.UNIFORM)
+                .list(
+                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                                .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .activation("identity")
+                                .nOut(nIn).build(),
+                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .activation("identity")
+                                .nOut(nOut).build()
+                )
+                .pretrain(preTrain)
+                .setInputType(InputType.feedForward(nOut))
+                .build();
+        MultiLayerNetwork network = new MultiLayerNetwork(rbm);
+        network.init();
+        return network;
+
+    }
 }
