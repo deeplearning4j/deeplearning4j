@@ -160,6 +160,7 @@ public class VocabConstructor<T extends SequenceElement> {
      * @return
      */
     public VocabCache<T> buildJointVocabulary(boolean resetCounters, boolean buildHuffmanTree) {
+        long lastTime = System.currentTimeMillis();
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
@@ -238,7 +239,11 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 sequences++;
-                if (seqCount.get() % 100000 == 0) log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
+                if (seqCount.get() % 100000 == 0) {
+                    long currentTime = System.currentTimeMillis();
+                    log.info("Sequences checked: [" + seqCount.get() +"], Current vocabulary size: [" + elementsCounter.get() +"]");
+                    lastTime = currentTime;
+                }
             }
             // apply minWordFrequency set for this source
             log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
