@@ -1935,6 +1935,10 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         rnnClearPreviousState();
+
+        if(featureMasks != null || labelMasks != null){
+            clearLayerMaskArrays();
+        }
     }
 
     /**
