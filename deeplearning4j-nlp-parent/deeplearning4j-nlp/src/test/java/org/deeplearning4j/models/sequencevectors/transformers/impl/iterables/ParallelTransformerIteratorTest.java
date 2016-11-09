@@ -96,6 +96,48 @@ public class ParallelTransformerIteratorTest {
         time2 = System.currentTimeMillis();
 
         log.info("Multi-threaded time: {} ms", time2 - time1);
+
+
+        SentenceIterator baseIterator = iterator;
+        baseIterator.reset();
+
+        iterator = new PrefetchingSentenceIterator.Builder(baseIterator)
+                .setFetchSize(1024)
+                .build();
+
+
+        iter = transformer.iterator();
+        time1 = System.currentTimeMillis();
+        while (iter.hasNext()) {
+            Sequence<VocabWord> sequence = iter.next();
+            assertNotEquals("Failed on [" + cnt + "] iteration", null, sequence);
+            assertNotEquals("Failed on [" + cnt + "] iteration", 0, sequence.size());
+            cnt++;
+        }
+        time2 = System.currentTimeMillis();
+
+        log.info("Prefetched Single-threaded time: {} ms", time2 - time1);
+        iterator.reset();
+
+        transformer = new SentenceTransformer.Builder()
+                .iterator(iterator)
+                .allowMultithreading(true)
+                .tokenizerFactory(factory)
+                .build();
+
+        iter = transformer.iterator();
+
+        time1 = System.currentTimeMillis();
+        while (iter.hasNext()) {
+            Sequence<VocabWord> sequence = iter.next();
+            assertNotEquals("Failed on [" + cnt + "] iteration", null, sequence);
+            assertNotEquals("Failed on [" + cnt + "] iteration", 0, sequence.size());
+            cnt++;
+        }
+        time2 = System.currentTimeMillis();
+
+        log.info("Prefetched Multi-threaded time: {} ms", time2 - time1);
+
     }
 
 }
