@@ -26,7 +26,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     protected LinkedBlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
     protected Queue<LabelledDocument> stringBuffer = new ConcurrentLinkedQueue<>();
-    protected TokenizerThread[] threads = new TokenizerThread[5];
+    protected TokenizerThread[] threads = new TokenizerThread[6];
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
@@ -94,6 +94,12 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
+                } else {
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }
