@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -16,6 +17,7 @@ import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -494,6 +496,50 @@ public class ComputationGraphTestRNN {
         );
 
         net.fit(data);
+    }
+
+
+    @Test
+    public void checkMaskArrayClearance(){
+        //Simple "does it throw an exception" type test...
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(1).seed(12345).graphBuilder()
+                .addInputs("in")
+                .addLayer("out",new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                        .activation("identity").nIn(1).nOut(1).build(), "in")
+                .setOutputs("out").backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        MultiDataSet data = new MultiDataSet(
+                new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
+                new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
+                new INDArray[]{Nd4j.ones(10)},
+                new INDArray[]{Nd4j.ones(10)});
+
+        net.fit(data);
+        assertNull(net.getInputMaskArrays());
+        assertNull(net.getLabelMaskArrays());
+        for(Layer l : net.getLayers()){
+            assertNull(l.getMaskArray());
+        }
+
+        DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
+        net.fit(ds);
+        assertNull(net.getInputMaskArrays());
+        assertNull(net.getLabelMaskArrays());
+        for(Layer l : net.getLayers()){
+            assertNull(l.getMaskArray());
+        }
+
+        net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
+        assertNull(net.getInputMaskArrays());
+        assertNull(net.getLabelMaskArrays());
+        for(Layer l : net.getLayers()){
+            assertNull(l.getMaskArray());
+        }
     }
 
 }
