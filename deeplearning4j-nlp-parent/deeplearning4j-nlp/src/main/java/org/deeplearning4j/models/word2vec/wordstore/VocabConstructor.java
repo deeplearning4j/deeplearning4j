@@ -164,7 +164,8 @@ public class VocabConstructor<T extends SequenceElement> {
         long lastSequences = 0;
         long lastElements = 0;
         long startTime = lastTime;
-        long startWords = cache.numWords();
+        long startWords = 0;
+        AtomicLong parsedCount = new AtomicLong(0);
         if (resetCounters && buildHuffmanTree) throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
@@ -191,6 +192,7 @@ public class VocabConstructor<T extends SequenceElement> {
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
                 seqCount.incrementAndGet();
+                parsedCount.addAndGet(document.size());
 
                 tempHolder.incrementTotalDocCount();
 
@@ -246,13 +248,13 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (seqCount.get() % 100000 == 0) {
                     long currentTime = System.currentTimeMillis();
                     long currentSequences = seqCount.get();
-                    long currentElements = tempHolder.numWords();
+                    long currentElements = parsedCount.get();
 
                     double seconds = (currentTime - lastTime) / (double) 1000;
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
-                    log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Seqs per second: {}; Words per second: {};", seqCount.get(), elementsCounter.get(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
+                    log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), elementsCounter.get(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
                     lastSequences = currentSequences;
