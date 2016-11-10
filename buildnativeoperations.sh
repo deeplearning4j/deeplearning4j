@@ -123,18 +123,21 @@ case "$OS" in
     generic)
     ;;
 
-    macosx)
+    linux*)
+    ;;
+
+    macosx*)
     # Do something under Mac OS X platform
     if [ "$CHIP" == "cuda" ]; then
         export CC=clang
         export CXX=clang++
     else
-        export CC=$(ls /usr/local/bin/gcc-?)
-        export CXX=$(ls /usr/local/bin/g++-?)
+        export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
+        export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
     fi
     ;;
 
-    windows)
+    windows*)
     # Do something under Windows NT platform
     if [ "$CHIP" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
