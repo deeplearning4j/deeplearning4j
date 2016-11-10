@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Slf4j
 public class AsyncIterator<T extends Object> implements Iterator<T> {
-    protected LinkedBlockingQueue<T> buffer;
+    @Getter protected LinkedBlockingQueue<T> buffer;
     protected ReaderThread<T> thread;
     protected Iterator<T> iterator;
     protected T terminator = (T) new Object();
@@ -50,8 +51,6 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public T next() {
         T temp = nextElement;
-        if (temp == null)
-            throw new IllegalStateException("temp is NULL");
         nextElement = null;
         return temp;
     }
