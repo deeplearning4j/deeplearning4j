@@ -30,9 +30,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     protected LinkedBlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
     protected LinkedBlockingQueue<LabelledDocument> stringBuffer;
-    protected TokenizerThread[] threads = new TokenizerThread[Runtime.getRuntime().availableProcessors()];
+    protected TokenizerThread[] threads;
     protected boolean underlyingHas = true;
-    protected boolean exhausted = false;
     protected AtomicInteger processing = new AtomicInteger(0);
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
@@ -44,9 +43,11 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>();
 
+        threads = new TokenizerThread[allowMultithreading ? Runtime.getRuntime().availableProcessors() : 1];
+
         try {
             int cnt = 0;
-            while (this.iterator.hasNextDocument() && cnt < 32) {
+            while (this.iterator.hasNextDocument() && cnt < 64) {
                 stringBuffer.put(this.iterator.nextDocument());
                 cnt++;
             }

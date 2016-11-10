@@ -783,6 +783,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .useAdaGrad(this.useAdaGrad)
                         .cache(vocabCache)
                         .negative(negative)
+                        .useHierarchicSoftmax(useHierarchicSoftmax)
                         .vectorLength(layerSize)
                         .lr(learningRate)
                         .seed(seed)
