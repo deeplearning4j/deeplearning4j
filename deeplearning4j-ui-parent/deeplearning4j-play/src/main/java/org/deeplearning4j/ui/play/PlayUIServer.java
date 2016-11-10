@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.play;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
@@ -10,6 +11,7 @@ import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.flow.FlowListenerModule;
+import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.histogram.HistogramModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
@@ -19,6 +21,7 @@ import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.reflections.ReflectionUtils;
@@ -65,6 +68,7 @@ public class PlayUIServer extends UIServer {
     private List<StatsStorage> statsStorageInstances = new ArrayList<>();
 
     private List<UIModule> uiModules = new ArrayList<>();
+    private RemoteReceiverModule remoteReceiverModule;
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
 
@@ -95,6 +99,8 @@ public class PlayUIServer extends UIServer {
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new FlowListenerModule());
         uiModules.add(new TsneModule());
+        remoteReceiverModule = new RemoteReceiverModule();
+        uiModules.add(remoteReceiverModule);
 
         //Check if custom UI modules are enabled...
         String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
@@ -251,6 +257,31 @@ public class PlayUIServer extends UIServer {
     @Override
     public List<StatsStorage> getStatsStorageInstances() {
         return new ArrayList<>(statsStorageInstances);
+    }
+
+    @Override
+    public void enableRemoteListener() {
+        if(remoteReceiverModule.isEnabled()) return;
+        enableRemoteListener(new InMemoryStatsStorage(), true);
+    }
+
+    @Override
+    public void enableRemoteListener(StatsStorageRouter statsStorage, boolean attach) {
+        remoteReceiverModule.setEnabled(true);
+        remoteReceiverModule.setStatsStorage(statsStorage);
+        if(attach && statsStorage instanceof StatsStorage){
+            attach((StatsStorage)statsStorage);
+        }
+    }
+
+    @Override
+    public void disableRemoteListener() {
+        remoteReceiverModule.setEnabled(false);
+    }
+
+    @Override
+    public boolean isRemoteListenerEnabled() {
+        return remoteReceiverModule.isEnabled();
     }
 
 
