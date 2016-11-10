@@ -216,10 +216,18 @@ public class NormalizerStandardize implements DataNormalization {
         if (featureRank == 2) {
             toPreProcess.getFeatures().muliRowVector(featureStd);
             toPreProcess.getFeatures().addiRowVector(featureMean);
+            if(fitLabels) {
+                toPreProcess.getLabels().muliRowVector(labelStd);
+                toPreProcess.getLabels().addiRowVector(labelMean);
+            }
         }
         else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getFeatures(),featureStd,toPreProcess.getFeatures(),1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getFeatures(),featureMean,toPreProcess.getFeatures(),1));
+            if (fitLabels) {
+                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getLabels(),labelStd,toPreProcess.getLabels(),1));
+                Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getLabels(),labelMean,toPreProcess.getLabels(),1));
+            }
         }
     }
 
