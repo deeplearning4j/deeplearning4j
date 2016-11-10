@@ -5,8 +5,8 @@
 #ifndef LIBND4J_GEMM_H
 #define LIBND4J_GEMM_H
 
-#include <cblas.h>
-#include <templatemath.h>
+#include "../cblas.h"
+#include "../templatemath.h"
 
 namespace nd4j {
      namespace blas {
