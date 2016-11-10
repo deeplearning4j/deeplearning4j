@@ -1098,7 +1098,7 @@ namespace simdOps {
 						result[i] = nd4j::math::nd4j_log<T>(result[i]);
 					}
 				}
-				else {
+				else if (elementWiseStride > 1) {
 #pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<T>(max, result[i * elementWiseStride]);
@@ -1258,10 +1258,19 @@ namespace simdOps {
 
 					}
 				}
-
 				else {
-					printf("Non element wise stride not supported right now\n");
-				}
+                    int *zShape = shape::shapeOf(resultShapeBuffer);
+                    int *zStride = shape::stride(resultShapeBuffer);
+                    int zRank = shape::rank(resultShapeBuffer);
+
+                    int zCoord[MAX_RANK];
+
+                    for (int i = 0; i < len; i++) {
+                        shape::ind2subC(zRank,zShape, i, zCoord);
+                        Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                        result[zOffset] = result[zOffset] * (1 - result[zOffset]);
+                    }
+                }
 
 
 				delete[] maxResultShapeBuffer;
@@ -1295,7 +1304,7 @@ namespace simdOps {
                     for (int i = 0; i < length; i++) {
                         result[i] = result[i] * (1 - result[i]);
                     }
-                } else {
+                } else if (elementWiseStride >= 1) {
 
 #pragma omp simd reduction(max:max)
 					for (int i = 0; i < length; i++) {
@@ -1319,7 +1328,9 @@ namespace simdOps {
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] = result[i * elementWiseStride] * (1 - result[i * elementWiseStride]);
 					}
-				}
+				} else {
+                    printf("non-ews access on row not implemented yet");
+                }
 			}
 		}
 

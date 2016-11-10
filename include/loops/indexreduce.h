@@ -29,7 +29,9 @@
 
 #define INDEX_REDUCE_OPS \
         (0, simdOps::IndexMax), \
-        (1, simdOps::IndexMin)
+        (1, simdOps::IndexMin), \
+		(2, simdOps::IndexAbsoluteMax), \
+		(3, simdOps::IndexAbsoluteMin)
         
 
 namespace functions {
@@ -402,43 +404,22 @@ template<typename OpType>
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if(xElementWiseStride < 1) {
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int xStridesIter[MAX_RANK];
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int tadRank = shape::rank(xShapeInfo);
+                    int xCoord[MAX_RANK];
 
-					int *xShape = shape::shapeOf(xShapeInfo);
-					int *xStride = shape::stride(xShapeInfo);
-					int rank = shape::rank(xShapeInfo);
-					if(PrepareOneRawArrayIter<T>(rank,
-												 xShape,
-												 x,
-												 xStride,
-												 &rank,
-												 shapeIter,
-												 &x,
-												 xStridesIter) >= 0) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
+                        shape::ind2subC(tadRank,xShape, i, xCoord);
+                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, tadRank);
 
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-							/* Process the innermost dimension */
-							int i = shape::getOffset(0,xShape,xStride,coord,rank);
-							IndexValue<T> curr;
-							curr.value = x[i];
-							curr.index = i;
-							startingIndex = OpType::update(startingIndex, curr,
-												   extraParams);
-						} ND4J_RAW_ITER_ONE_NEXT(dim,
-												 rank,
-												 coord,
-												 shapeIter,
-												 x,
-												 xStridesIter);
-						return startingIndex.index;
-					}
-					else {
-						printf("Unable to prepare array\n");
-					}
+                        IndexValue<T> curr;
+                        curr.value = x[xOffset];
+                        curr.index = i;
 
+                        startingIndex = OpType::update(startingIndex, curr, extraParams);
+                    }
+                    return startingIndex.index;
 				}
 				else {
 
@@ -450,10 +431,7 @@ template<typename OpType>
 								IndexValue<T> curr;
 								curr.value = x[i];
 								curr.index = i;
-								startingIndex = OpType::update(startingIndex, curr,
-													   extraParams);
-
-
+								startingIndex = OpType::update(startingIndex, curr, extraParams);
 
 							}
 							return startingIndex.index;

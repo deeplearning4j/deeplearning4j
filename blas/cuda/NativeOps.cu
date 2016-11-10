@@ -5101,28 +5101,43 @@ int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
 
 Nd4jIndex NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
 	int device = getDeviceId(ptrToDeviceId);
+	int orig = -1;
 
-	if (device >= 0) {
-		setDevice(ptrToDeviceId);
+	cudaGetDevice(&orig);
+
+	if (device >= 0 && device != orig) {
+		cudaSetDevice(device);
 	}
+
 	size_t memFree = 0;
 	size_t memTotal = 0;
 
 	cudaMemGetInfo(&memFree, &memTotal);
+
+	if (device >= 0 && device != orig) {
+		cudaSetDevice(orig);
+	}
 
 	return (Nd4jIndex) memFree;
 }
 
 Nd4jIndex NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
 	int device = getDeviceId(ptrToDeviceId);
+	int orig = -1;
 
-	if (device >= 0) {
-		setDevice(ptrToDeviceId);
+	cudaGetDevice(&orig);
+
+	if (device >= 0 && device != orig) {
+		cudaSetDevice(device);
 	}
 	size_t memFree = 0;
 	size_t memTotal = 0;
 
 	cudaMemGetInfo(&memFree, &memTotal);
+
+	if (device >= 0 && device != orig) {
+		cudaSetDevice(orig);
+	}
 
 	return (Nd4jIndex) memTotal;
 }
