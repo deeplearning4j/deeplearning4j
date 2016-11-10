@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Asynchronous Iterator for better performance of iterators in dl4j-nn & dl4j-nlp
@@ -35,7 +36,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public boolean hasNext() {
         try {
-            if (nextElement != null) {
+            if (nextElement != null && nextElement != terminator) {
                 return true;
             }
             nextElement = buffer.take();
