@@ -34,6 +34,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     protected boolean underlyingHas = true;
     protected AtomicInteger processing = new AtomicInteger(0);
 
+    protected static final AtomicInteger count = new AtomicInteger(0);
+
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
     }
@@ -47,8 +49,17 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
         try {
             int cnt = 0;
-            while (this.iterator.hasNextDocument() && cnt < 64) {
-                stringBuffer.put(this.iterator.nextDocument());
+            while (cnt < 64) {
+                boolean before = underlyingHas;
+
+                if (before)
+                    underlyingHas = this.iterator.hasNextDocument();
+
+                if (underlyingHas)
+                    stringBuffer.put(this.iterator.nextDocument());
+                else
+                    cnt += 65;
+
                 cnt++;
             }
         } catch (InterruptedException e) {
@@ -62,11 +73,28 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     }
 
     @Override
+    public void reset() {
+        log.info("Reset called");
+        this.iterator.shutdown();
+
+        for (int x = 0; x < threads.length; x++) {
+            threads[x].shutdown();
+            try {
+                threads[x].interrupt();
+            } catch (Exception e) {
+                //
+            }
+        }
+    }
+
+    @Override
     public boolean hasNext() {
         boolean before = underlyingHas;
 
         if (before)
             underlyingHas = iterator.hasNextDocument();
+        else
+            underlyingHas = false;
 
         return (underlyingHas || buffer.size() > 0 || stringBuffer.size() > 0 || processing.get() > 0);
     }
@@ -108,9 +136,16 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                 while (shouldWork.get()) {
                     LabelledDocument document = stringsBuffer.take();
 
+                    if (document == null || document.getContent() == null)
+                        break;
+
                     processing.incrementAndGet();
 
                     Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
+
+                    for (String label: document.getLabels()) {
+                        sequence.addSequenceLabel(new VocabWord(1.0, label));
+                    }
 
                     if (sequence != null)
                         sequencesBuffer.put(sequence);

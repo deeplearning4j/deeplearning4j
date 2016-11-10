@@ -49,6 +49,11 @@ public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
         return sequence;
     }
 
+
+    public void reset() {
+        //
+    }
+
     @Override
     public void remove() {
         throw new UnsupportedOperationException();

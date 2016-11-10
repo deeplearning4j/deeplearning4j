@@ -81,6 +81,12 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
     public void remove() {
         // no-op
     }
+
+    @Override
+    public void shutdown() {
+        // no-op
+    }
+
     @Override
     public void reset() {
         position.set(0);

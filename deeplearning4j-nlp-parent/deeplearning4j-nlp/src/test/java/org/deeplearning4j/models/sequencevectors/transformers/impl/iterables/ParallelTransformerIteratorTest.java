@@ -55,7 +55,7 @@ public class ParallelTransformerIteratorTest {
 
      //   log.info("Last element: {}", sequence.asLabels());
 
-     //   assertEquals(97162, cnt);
+        assertEquals(97162, cnt);
     }
 
     @Test

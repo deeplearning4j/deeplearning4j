@@ -21,4 +21,6 @@ public interface LabelAwareIterator extends Iterator<LabelledDocument> {
     void reset();
 
     LabelsSource getLabelsSource();
+
+    void shutdown();
 }
