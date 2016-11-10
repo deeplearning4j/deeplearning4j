@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
@@ -604,6 +605,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.vertexInputs = this.vertexInputs;
 
             conf.defaultConfiguration = globalConfiguration.build();
+            conf.getDefaultConfiguration().setPretrain(pretrain);
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {
@@ -615,6 +617,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     throw new IllegalStateException("Invalid configuration: InputPreProcessor defined for GraphVertex \"" + entry.getKey()
                             + "\", but this vertex is not a LayerVertex");
                 }
+
+            }
+
+            for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+                if (gv.getValue() instanceof LayerVertex) {
+                    LayerVertex lv = (LayerVertex) gv.getValue();
+                    Layer l = lv.getLayerConf().getLayer();
+                    if (l instanceof BasePretrainNetwork) lv.getLayerConf().setPretrain(pretrain);
+                }
+
             }
 
             conf.validate();    //throws exception for invalid configuration
