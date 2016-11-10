@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.api;
 
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.play.PlayUIServer;
 import org.deeplearning4j.api.storage.StatsStorage;
 
@@ -26,5 +27,13 @@ public abstract class UIServer {
     public abstract boolean isAttached(StatsStorage statsStorage);
 
     public abstract List<StatsStorage> getStatsStorageInstances();
+
+    public abstract void enableRemoteListener();
+
+    public abstract void enableRemoteListener(StatsStorageRouter statsStorage, boolean attach);
+
+    public abstract void disableRemoteListener();
+
+    public abstract boolean isRemoteListenerEnabled();
 
 }
