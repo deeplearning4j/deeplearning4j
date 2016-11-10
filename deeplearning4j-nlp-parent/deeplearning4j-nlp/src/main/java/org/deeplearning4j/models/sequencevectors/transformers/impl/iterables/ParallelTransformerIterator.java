@@ -51,6 +51,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public Sequence<VocabWord> next() {
         try {
             int cnt = 0;
+            stringBuffer.add(iterator.nextDocument());
             while (cnt < 100 && stringBuffer.size() < 1000 && iterator.hasNextDocument()) {
                 Object object = iterator.nextDocument();
                 if (object != null && object instanceof LabelledDocument)
