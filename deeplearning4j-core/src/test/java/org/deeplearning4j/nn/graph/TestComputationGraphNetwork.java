@@ -770,4 +770,34 @@ public class TestComputationGraphNetwork {
 
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 0e-4);
     }
+
+    @Test
+    public void testOptimizationAlgorithmsSearchBasic(){
+        DataSetIterator iter = new IrisDataSetIterator(1,1);
+
+        OptimizationAlgorithm[] oas = new OptimizationAlgorithm[]{
+                OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+                OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+                OptimizationAlgorithm.CONJUGATE_GRADIENT,
+                OptimizationAlgorithm.LBFGS};
+
+        for(OptimizationAlgorithm oa : oas) {
+            System.out.println(oa);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(oa).iterations(1)
+                    .graphBuilder()
+                    .addInputs("input")
+                    .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
+                    .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first")
+                    .setOutputs("output")
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            ComputationGraph net = new ComputationGraph(conf);
+            net.init();
+            net.fit(iter.next());
+
+        }
+
+    }
 }
