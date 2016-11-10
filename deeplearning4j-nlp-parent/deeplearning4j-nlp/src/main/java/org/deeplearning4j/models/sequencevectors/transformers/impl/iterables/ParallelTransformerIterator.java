@@ -5,6 +5,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.SequenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.text.documentiterator.AsyncLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
@@ -25,19 +26,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     protected LinkedBlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
-    protected Queue<LabelledDocument> stringBuffer = new ConcurrentLinkedQueue<>();
+    protected LinkedBlockingQueue<LabelledDocument> stringBuffer;
     protected TokenizerThread[] threads = new TokenizerThread[6];
+    protected LabelledDocument terminator;
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
     }
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer, boolean allowMultithreading) {
-        super(iterator, transformer);
+        super(new AsyncLabelAwareIterator(iterator, 256), transformer);
         this.allowMultithreading = allowMultithreading;
+        this.stringBuffer = ((AsyncLabelAwareIterator) this.iterator).getAsyncIterator().getBuffer();
+
+        this.terminator = ((AsyncLabelAwareIterator) this.iterator).getAsyncIterator().getTerminator();
 
         for (int x = 0; x < threads.length; x++) {
-            threads[x] = new TokenizerThread(x, transformer,stringBuffer, buffer);
+            threads[x] = new TokenizerThread(x, transformer,stringBuffer, buffer, this.terminator);
             threads[x].start();
         }
     }
@@ -70,14 +75,16 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     private static class TokenizerThread extends Thread implements Runnable {
         protected LinkedBlockingQueue<Sequence<VocabWord>> sequencesBuffer;
-        protected Queue<LabelledDocument> stringsBuffer;
+        protected LinkedBlockingQueue<LabelledDocument> stringsBuffer;
         protected SentenceTransformer sentenceTransformer;
         protected AtomicBoolean shouldWork = new AtomicBoolean(true);
+        protected LabelledDocument terminator;
 
-        public TokenizerThread(int threadIdx, SentenceTransformer transformer, Queue<LabelledDocument> stringsBuffer, LinkedBlockingQueue<Sequence<VocabWord>> sequencesBuffer) {
+        public TokenizerThread(int threadIdx, SentenceTransformer transformer, LinkedBlockingQueue<LabelledDocument> stringsBuffer, LinkedBlockingQueue<Sequence<VocabWord>> sequencesBuffer, LabelledDocument terminator) {
             this.stringsBuffer = stringsBuffer;
             this.sequencesBuffer = sequencesBuffer;
             this.sentenceTransformer = transformer;
+            this.terminator = terminator;
 
             this.setDaemon(true);
             this.setName("Tokenization thread " + threadIdx);
@@ -85,25 +92,22 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
         @Override
         public void run() {
-            while (shouldWork.get()) {
-                LabelledDocument document = stringsBuffer.poll();
+            try {
+                while (shouldWork.get()) {
+                    LabelledDocument document = stringsBuffer.take();
 
-                if (document != null) {
+                    if (document == terminator)
+                        throw new RuntimeException("Terminator met");
+
                     Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
                     if (sequence != null)
-                        try {
-                            sequencesBuffer.put(sequence);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                } else {
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                        sequencesBuffer.put(sequence);
                 }
+            } catch (InterruptedException e) {
+                // do nothing
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
 

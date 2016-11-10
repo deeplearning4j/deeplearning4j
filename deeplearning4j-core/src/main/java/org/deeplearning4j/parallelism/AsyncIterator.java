@@ -17,7 +17,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Getter protected LinkedBlockingQueue<T> buffer;
     protected ReaderThread<T> thread;
     protected Iterator<T> iterator;
-    protected T terminator = (T) new Object();
+    @Getter protected T terminator = (T) new Object();
     protected T nextElement;
 
     public AsyncIterator(@NonNull Iterator<T> iterator, int bufferSize) {
