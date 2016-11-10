@@ -69,6 +69,11 @@ public class BasicLabelAwareIterator implements LabelAwareIterator {
     }
 
     @Override
+    public void shutdown() {
+        // no-op
+    }
+
+    @Override
     public void remove() {
         // no-op
     }

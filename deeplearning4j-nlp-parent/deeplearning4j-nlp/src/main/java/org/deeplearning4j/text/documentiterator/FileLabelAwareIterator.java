@@ -86,6 +86,11 @@ public class FileLabelAwareIterator implements LabelAwareIterator {
     }
 
     @Override
+    public void shutdown() {
+        // no-op
+    }
+
+    @Override
     public void reset() {
         position.set(0);
     }

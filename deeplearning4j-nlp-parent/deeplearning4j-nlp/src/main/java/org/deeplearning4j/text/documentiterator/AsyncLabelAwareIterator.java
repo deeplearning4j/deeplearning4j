@@ -45,6 +45,12 @@ public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<Lab
     }
 
     @Override
+    public void shutdown() {
+        asyncIterator.shutdown();
+        backedIterator.shutdown();
+    }
+
+    @Override
     public LabelsSource getLabelsSource() {
         return backedIterator.getLabelsSource();
     }
