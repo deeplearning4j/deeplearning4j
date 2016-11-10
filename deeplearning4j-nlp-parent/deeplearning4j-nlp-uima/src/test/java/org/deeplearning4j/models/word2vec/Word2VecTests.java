@@ -221,6 +221,7 @@ public class Word2VecTests {
                 //.negativeSample(10)
                 .epochs(1)
                 .windowSize(5)
+                .allowParallelTokenization(true)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
                 .tokenizerFactory(t)
