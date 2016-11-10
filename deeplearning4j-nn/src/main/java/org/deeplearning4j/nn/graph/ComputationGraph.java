@@ -348,6 +348,8 @@ public class ComputationGraph implements Serializable, Model {
 
         int numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
+        defaultConfiguration.clearVariables();
+        List<String> variables = defaultConfiguration.variables(false);
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
@@ -355,7 +357,14 @@ public class ComputationGraph implements Serializable, Model {
 
             if (gv.hasLayer()) {
                 numLayers++;
-                tempLayerList.add(gv.getLayer());
+                Layer l = gv.getLayer();
+                tempLayerList.add(l);
+                List<String> layerVariables = l.conf().variables();
+                if(layerVariables != null){
+                    for(String s : layerVariables ){
+                        variables.add(gv.getVertexName() + "_" + s);
+                    }
+                }
             }
 
             allNamesReverse.put(name, vertexNumber);
