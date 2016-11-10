@@ -74,6 +74,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     protected INDArray table,syn1Neg;
     protected boolean useAdaGrad;
     protected double negative = 0;
+    protected boolean useHS = true;
     protected VocabCache<T> vocab;
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
@@ -84,6 +85,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Getter @Setter protected Long tableId;
 
     public InMemoryLookupTable() {}
+
+    public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
+                               double lr, Random gen, double negative, boolean useHS) {
+        this(vocab, vectorLength, useAdaGrad, lr, gen, negative);
+        useHS = true;
+    }
 
     public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
                                double lr, Random gen, double negative) {
@@ -136,7 +143,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 //            putVector(Word2Vec.UNK, randUnk);
         }
         if(syn1 == null || reset)
-            syn1 = Nd4j.create(syn0.shape());
+            if (useHS)
+                syn1 = Nd4j.create(syn0.shape());
         initNegative();
     }
 
@@ -574,10 +582,15 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         protected long seed = 123;
         protected double negative = 0;
         protected VocabCache<T> vocabCache;
+        protected boolean useHS = true;
 
 
 
 
+        public Builder<T> useHierarchicSoftmax(boolean reallyUse) {
+            this.useHS = reallyUse;
+            return this;
+        }
 
         public Builder<T> cache(@NonNull VocabCache<T> vocab) {
             this.vocabCache = vocab;
@@ -626,7 +639,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if(vocabCache == null)
                 throw new IllegalStateException("Vocab cache must be specified");
 
-            InMemoryLookupTable table = new InMemoryLookupTable(vocabCache,vectorLength,useAdaGrad,lr,gen,negative);
+            InMemoryLookupTable<T> table = new InMemoryLookupTable<>(vocabCache,vectorLength,useAdaGrad,lr,gen,negative, useHS);
             table.seed = seed;
 
             return table;

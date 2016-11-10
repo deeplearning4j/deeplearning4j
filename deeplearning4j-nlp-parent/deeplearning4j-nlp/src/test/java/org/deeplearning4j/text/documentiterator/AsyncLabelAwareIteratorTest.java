@@ -30,8 +30,11 @@ public class AsyncLabelAwareIteratorTest {
         while (iterator.hasNext()) {
             iterator.next();
             cnt++;
+
+            if (cnt == 10)
+                iterator.reset();
         }
-        assertEquals(97162, cnt);
+        assertEquals(97172, cnt);
     }
 
 }
