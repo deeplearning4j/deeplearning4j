@@ -78,6 +78,11 @@ public class DocumentIteratorConverter implements LabelAwareIterator {
         return generator;
     }
 
+    @Override
+    public void shutdown() {
+
+    }
+
     protected String readStream(InputStream stream) throws IOException {
         StringBuilder builder = new StringBuilder();
 

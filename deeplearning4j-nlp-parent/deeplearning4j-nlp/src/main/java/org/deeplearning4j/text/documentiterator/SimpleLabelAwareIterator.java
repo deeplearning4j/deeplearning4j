@@ -70,6 +70,12 @@ public class SimpleLabelAwareIterator implements LabelAwareIterator {
     public void remove() {
         // no-op
     }
+
+    @Override
+    public void shutdown() {
+        // no-op
+    }
+
     /**
      * This methods resets LabelAwareIterator by creating new Iterator from Iterable internally
      */

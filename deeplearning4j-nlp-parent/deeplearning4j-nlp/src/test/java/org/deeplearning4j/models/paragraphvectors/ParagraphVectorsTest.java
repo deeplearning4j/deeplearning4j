@@ -469,6 +469,7 @@ public class ParagraphVectorsTest {
                 .vocabCache(cache)
                 .tokenizerFactory(t)
                 .negativeSample(0)
+                .allowParallelTokenization(true)
                 .useHierarchicSoftmax(true)
                 .sampling(0)
                 .workers(2)

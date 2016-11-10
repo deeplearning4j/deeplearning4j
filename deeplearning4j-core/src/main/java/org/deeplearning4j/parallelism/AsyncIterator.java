@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -20,6 +21,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     protected Iterator<T> iterator;
     @Getter protected T terminator = (T) new Object();
     protected T nextElement;
+    protected AtomicBoolean shouldWork = new AtomicBoolean(true);
 
     public AsyncIterator(@NonNull Iterator<T> iterator, int bufferSize) {
         this.buffer = new LinkedBlockingQueue<>(bufferSize);
@@ -62,8 +64,11 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     }
 
     public void shutdown() {
-        thread.interrupt();
-        nextElement = terminator;
+        if (shouldWork.get()) {
+            shouldWork.set(false);
+            thread.interrupt();
+            nextElement = terminator;
+        }
     }
 
 
@@ -84,12 +89,13 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
         @Override
         public void run() {
             try {
-                while (iterator.hasNext()) {
+                while (iterator.hasNext() && shouldWork.get()) {
                     buffer.put(iterator.next());
                 }
                 buffer.put(terminator);
             } catch (InterruptedException e) {
                 // do nothing
+                shouldWork.set(false);
             } catch (Exception e) {
                 // TODO: pass that forward
                 throw new RuntimeException(e);

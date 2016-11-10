@@ -73,4 +73,9 @@ public class SentenceIteratorConverter implements LabelAwareIterator {
     public LabelsSource getLabelsSource() {
         return generator;
     }
+
+    @Override
+    public void shutdown() {
+        // no-op
+    }
 }

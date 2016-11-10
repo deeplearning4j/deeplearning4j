@@ -25,4 +25,7 @@ public interface SequenceTransformer<T extends SequenceElement, V extends Object
      * @return
      */
     Sequence<T> transformToSequence(V object);
+
+
+    void reset();
 }

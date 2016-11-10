@@ -34,7 +34,8 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     protected LabelAwareIterator iterator;
     protected boolean readOnly = false;
     protected AtomicInteger sentenceCounter = new AtomicInteger(0);
-    protected boolean allowMultithreading = true;
+    protected boolean allowMultithreading = false;
+    protected BasicTransformerIterator currentIterator;
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
@@ -62,10 +63,21 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
-        if (allowMultithreading == false)
-            return new BasicTransformerIterator(iterator, this);
+        if (currentIterator != null)
+            reset();
+
+        if (!allowMultithreading)
+            currentIterator = new BasicTransformerIterator(iterator, this);
         else
-            return new ParallelTransformerIterator(iterator, this, true);
+            currentIterator = new ParallelTransformerIterator(iterator, this, true);
+
+        return currentIterator;
+    }
+
+    @Override
+    public void reset() {
+        if (currentIterator != null)
+            currentIterator.reset();
     }
 
 
@@ -74,7 +86,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
         protected LabelAwareIterator iterator;
         protected VocabCache<VocabWord> vocabCache;
         protected boolean readOnly = false;
-        protected boolean allowMultithreading = true;
+        protected boolean allowMultithreading = false;
 
         public Builder() {
 
