@@ -783,6 +783,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .useAdaGrad(this.useAdaGrad)
                         .cache(vocabCache)
                         .negative(negative)
+                        .useHierarchicSoftmax(useHierarchicSoftmax)
                         .vectorLength(layerSize)
                         .lr(learningRate)
                         .seed(seed)
@@ -1060,7 +1061,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 
-                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
+                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / ((double) this.totalWordsCount) / numIterations)));
 
                             trainSequence(sequence, nextRandom, alpha);
 

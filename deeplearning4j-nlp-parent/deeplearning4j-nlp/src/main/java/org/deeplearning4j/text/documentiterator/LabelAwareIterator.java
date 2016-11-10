@@ -1,5 +1,7 @@
 package org.deeplearning4j.text.documentiterator;
 
+import java.util.Iterator;
+
 /**
  * This simple iterator interface assumes, that all documents are packed into strings OR into references to VocabWords.
  * Basic idea is: for tasks like ParagraphVectors we need unified interface for reading Sentences (read: lines of text) or Documents (read: set of lines) with label support.
@@ -10,7 +12,7 @@ package org.deeplearning4j.text.documentiterator;
  *
  * @author raver119@gmail.com
  */
-public interface LabelAwareIterator {
+public interface LabelAwareIterator extends Iterator<LabelledDocument> {
 
     boolean hasNextDocument();
 
@@ -19,4 +21,6 @@ public interface LabelAwareIterator {
     void reset();
 
     LabelsSource getLabelsSource();
+
+    void shutdown();
 }
