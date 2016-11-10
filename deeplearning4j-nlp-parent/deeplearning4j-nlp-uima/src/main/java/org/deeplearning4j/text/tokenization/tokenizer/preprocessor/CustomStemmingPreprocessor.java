@@ -7,7 +7,7 @@ import org.tartarus.snowball.SnowballProgram;
  * This is StemmingPreprocessor compatible with different StemmingProcessors defined as lucene/tartarus SnowballProgram
  * Like, but not limited to: RussianStemmer, DutchStemmer, FrenchStemmer etc
  *
- * PLEASE NOTE: This preprocessor is NOT thread-safe.
+ * PLEASE NOTE: This preprocessor is thread-safe by using synchronized method
  *
  * @author raver119@gmail.com
  */
@@ -18,7 +18,7 @@ public class CustomStemmingPreprocessor extends CommonPreprocessor {
     }
 
     @Override
-    public String preProcess(String token) {
+    public synchronized String preProcess(String token) {
         String prep = super.preProcess(token);
         stemmer.setCurrent(prep);
         stemmer.stem();
