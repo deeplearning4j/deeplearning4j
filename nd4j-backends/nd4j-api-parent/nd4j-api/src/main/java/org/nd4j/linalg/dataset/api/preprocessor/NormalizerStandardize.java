@@ -31,6 +31,23 @@ public class NormalizerStandardize implements DataNormalization {
     private INDArray featureMean, featureStd, labelMean, labelStd;
     private boolean fitLabels = false;
 
+    public NormalizerStandardize() {
+    }
+
+    public NormalizerStandardize(INDArray featureMean, INDArray featureStd) {
+        this.featureMean = featureMean;
+        this.featureStd = featureStd;
+        this.fitLabels = false;
+    }
+
+    public NormalizerStandardize(INDArray featureMean, INDArray featureStd, INDArray labelMean, INDArray labelStd) {
+        this.featureMean = featureMean;
+        this.featureStd = featureStd;
+        this.labelMean = labelMean;
+        this.labelStd = labelStd;
+        this.fitLabels = true;
+    }
+
     private INDArray fit(INDArray theArray) {
         INDArray theMean, theStd;
         theMean = theArray.mean(0);
