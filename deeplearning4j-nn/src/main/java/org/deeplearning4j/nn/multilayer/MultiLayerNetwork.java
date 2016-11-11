@@ -42,6 +42,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -86,6 +87,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     protected boolean initCalled = false;
     private Collection<IterationListener> listeners = new ArrayList<>();
+    private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
@@ -1034,6 +1036,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter = iterator;
         }
 
+        if (trainingListeners.size() > 0) {
+            for(TrainingListener tl : trainingListeners){
+                tl.onEpochStart(this);
+            }
+        }
+
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             if(iter.resetSupported()){
@@ -1082,6 +1090,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             log.warn("Warning: finetune is not applied.");
         }
 
+        if (trainingListeners.size() > 0) {
+            for(TrainingListener tl : trainingListeners){
+                tl.onEpochEnd(this);
+            }
+        }
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
@@ -1330,6 +1343,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if(solver != null){
             solver.setListeners(listeners);
+        }
+
+        this.trainingListeners.clear();
+        if(listeners != null) {
+            for (IterationListener il : listeners){
+                if(il instanceof TrainingListener){
+                    this.trainingListeners.add((TrainingListener) il);
+                }
+            }
         }
     }
 
@@ -1834,26 +1856,45 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
-        if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            rnnActivateUsingStoredState(getInput(), true, true);
+        if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+            List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
+            if (trainingListeners.size() > 0) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
+                }
+            }
             truncatedBPTTGradient();
-        }
-        else {
+        } else {
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
-            List<INDArray> activations = feedForwardToLayer(layers.length-2,true);
-            INDArray actSecondLastLayer = activations.get(activations.size()-1);
-            if(layerWiseConfigurations.getInputPreProcess(layers.length-1) != null)
-                actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length-1).preProcess(actSecondLastLayer,getInputMiniBatchSize());
+            List<INDArray> activations = feedForwardToLayer(layers.length - 2, true);
+            if (trainingListeners.size() > 0) {
+                //TODO: We possibly do want output layer activations in some cases here...
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
+                }
+            }
+            INDArray actSecondLastLayer = activations.get(activations.size() - 1);
+            if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null)
+                actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1).preProcess(actSecondLastLayer, getInputMiniBatchSize());
             getOutputLayer().setInput(actSecondLastLayer);
             //Then: compute gradients
             backprop();
         }
-        if(!(getOutputLayer() instanceof IOutputLayer)){
+
+        //Calculate score
+        if (!(getOutputLayer() instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
         }
-        score = ((IOutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2(), true);
+        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(), calcL2(), true);
+
+        //Listeners
+        if (trainingListeners.size() > 0) {
+            for (TrainingListener tl : trainingListeners) {
+                tl.onBackwardPass(this);
+            }
+        }
     }
 
     @Override
