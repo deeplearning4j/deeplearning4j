@@ -22,7 +22,9 @@ import static play.mvc.Http.Context.Implicit.request;
 /**
  *
  * Used to receive UI updates remotely.
- * Used in conjunction with {@link org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter}
+ * Used in conjunction with {@link org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter}, which posts to the UI.
+ * UI information is then deserialized and routed to the specified StatsStorageRouter, which may (or may not)
+ * be attached to the UI
  *
  * @author Alex Black
  */
@@ -31,8 +33,6 @@ public class RemoteReceiverModule implements UIModule {
 
     private AtomicBoolean enabled = new AtomicBoolean(false);
     private StatsStorageRouter statsStorage;
-
-    private Map<String,Class<?>> classMap = Collections.synchronizedMap(new HashMap<>());
 
     public void setEnabled(boolean enabled){
         this.enabled.set(enabled);
@@ -90,9 +90,12 @@ public class RemoteReceiverModule implements UIModule {
         JsonNode dataClass = jn.get("class");
         JsonNode data = jn.get("data");
 
-        System.out.println(type.asText());
-        System.out.println(dataClass.asText());
-        System.out.println(data.asText());
+        if(type == null || dataClass == null || data == null){
+
+            log.warn("Received incorrectly formatted data from remote listener (has type = " + (type != null)
+            + ", has data class = " + (dataClass != null) + ", has data = " + (data != null) + ")");
+            return Results.badRequest("Received incorrectly formatted data");
+        }
 
         String dc = dataClass.asText();
         String content = data.asText();
