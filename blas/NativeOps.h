@@ -1290,6 +1290,21 @@ public:
     void execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments);
 
 
+    void execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments);
+
+    void execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments);
+
+    void execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments);
+
+
+    void execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments);
+
+    void execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments);
+
+    void execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments);
+
+
+
     Nd4jPointer initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer);
 
     void refreshBuffer(long seed, Nd4jPointer ptrRandom);

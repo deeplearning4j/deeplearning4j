@@ -199,6 +199,14 @@ local_def half cpu_float2half_rn(float f)
         assign((float)rhs);
     }
 
+    local_def void assign(long unsigned int rhs) {
+        assign((float)rhs);
+    }
+
+    local_def void assign(long long unsigned int rhs) {
+        assign((float)rhs);
+    }
+
     local_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
       data.x = __float2half_rn(rhs);

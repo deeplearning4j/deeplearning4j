@@ -51,7 +51,7 @@ namespace randomOps {
                 for (int e = 0; e < zLength; e++) {
                     T prob = helper.nextT();
                     T cumProb = (T) 0.0f;
-                    for (int f; f < yLength; f++) {
+                    for (int f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
                         cumProb += relProb;
 

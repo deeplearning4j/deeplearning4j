@@ -2622,6 +2622,34 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
 }
 
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
+}
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+}
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+}
+
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+	NativeOpExcutioner<float16>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
+}
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+	NativeOpExcutioner<float16>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+}
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+	NativeOpExcutioner<float16>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+}
+
+
+
 Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
     long *ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
     nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrBuf);

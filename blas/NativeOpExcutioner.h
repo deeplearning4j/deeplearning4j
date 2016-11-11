@@ -542,15 +542,15 @@ public:
 	}
 
 
-    static void execRandom(int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
+    static void execRandom(int opNum, Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
         functions::random::RandomFunction<T>::execTransform(opNum, state, z, zShapeBuffer, extraArguments);
     }
 
-	static void execRandom(int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+	static void execRandom(int opNum, Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
 		functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
 	}
 
-	static void execRandom(int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+	static void execRandom(int opNum, Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
 		functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
 	}
 };
