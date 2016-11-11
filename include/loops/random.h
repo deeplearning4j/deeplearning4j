@@ -310,7 +310,7 @@ namespace functions {
                     }
                 }
 
-                helper.rewind(length);
+                //helper.rewind(length);
             }
 #endif
 

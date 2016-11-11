@@ -6193,11 +6193,18 @@ Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToB
     unsigned long long *ptrBuf = reinterpret_cast<unsigned long long *>(ptrToBuffer);
     nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrBuf);
 
-    curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_PSEUDO_DEFAULT);
+    curandStatus_t err = curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_QUASI_SOBOL64);
 
-    curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
+    if (err != CURAND_STATUS_SUCCESS)
+        printf("CURAND_ERROR_CODE: %i\n", err);
 
-    curandGenerateLongLong(buffer->getGenerator(), ptrBuf, bufferSize);
+    err = curandGenerateLongLong(buffer->getGenerator(), ptrBuf, bufferSize);
+
+    if (err != CURAND_STATUS_SUCCESS)
+        printf("CURAND_ERROR_CODE: %i\n", err);
+
+
+    return buffer;
 }
 
 

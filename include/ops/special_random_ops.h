@@ -338,8 +338,8 @@ namespace randomOps {
             __shared__ int zEWS;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
-            nd4j::random::RandomHelper<T> *helper = new nd4j::random::RandomHelper<T>(generator);
+            nd4j::random::Xoroshiro128 generator(buffer);
+            nd4j::random::RandomHelper<T> helper(&generator);
 
             if (threadIdx.x == 0) {
                 zLength = shape::length(zShapeBuffer);
@@ -353,7 +353,7 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
                 for (int t = 1; t <= trials; t++) {
-                    T randVal = helper->relativeT(e * t);
+                    T randVal = helper.relativeT(e * t);
                     if (y != z) {
                         // we're using external probs
                         prob = y[(t-1) * yEWS];
