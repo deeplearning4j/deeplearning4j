@@ -20,6 +20,12 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 
+#ifdef __CUDACC__
+        __device__ static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+
+        }
+#endif
+
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             /**
              * X holds data,
@@ -81,6 +87,12 @@ namespace randomOps {
         method_idx
 
         static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+        __device__ static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+
+        }
+#endif
 
 
         static inline void
@@ -164,6 +176,11 @@ namespace randomOps {
 
         static const bool requiresSpecial = true;
 
+#ifdef __CUDACC__
+        __device__ static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+
+        }
+#endif
 
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
