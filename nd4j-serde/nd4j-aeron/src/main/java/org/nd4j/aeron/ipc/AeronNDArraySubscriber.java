@@ -12,7 +12,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
- * Subscriber for ndarray
+ * Subscriber for ndarrays.
+ * This is a pass through class for aeron
+ * that will pass ndarrays received from channels
+ * to an {@link NDArrayCallback} for operation after
+ * assembling the ndaray from a raw {@link org.agrona.concurrent.UnsafeBuffer}
  *
  * @author Adam Gibson
  */
@@ -80,6 +84,7 @@ public class AeronNDArraySubscriber {
             init();
 
         log.info("Subscribing to " + channel + " on stream Id " + streamId);
+        log.info("Using aeron directory " + ctx.aeronDirectoryName());
 
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
@@ -110,7 +115,7 @@ public class AeronNDArraySubscriber {
 
                 }
             }catch(Exception e) {
-                log.warn("Unable to connect...trying again on channel " + channel);
+                log.warn("Unable to connect...trying again on channel " + channel,e);
             }
         }
 

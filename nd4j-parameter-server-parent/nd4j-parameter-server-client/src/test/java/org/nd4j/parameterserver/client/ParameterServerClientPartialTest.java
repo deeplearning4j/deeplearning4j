@@ -7,6 +7,7 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.ParameterServerListener;
@@ -21,12 +22,12 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 10/3/16.
  */
-public class ParameterServerClientTest {
+public class ParameterServerClientPartialTest {
     private MediaDriver mediaDriver;
-    private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);
+    private static Logger log = LoggerFactory.getLogger(ParameterServerClientPartialTest.class);
     private Aeron.Context ctx;
     private ParameterServerSubscriber masterNode,slaveNode;
-    private int parameterLength = 1000;
+    private int[] shape = {2,2};
 
     @Before
     public void before() throws Exception {
@@ -42,12 +43,12 @@ public class ParameterServerClientTest {
         masterNode = new ParameterServerSubscriber(mediaDriver);
         masterNode.run(new String[] {
                 "-m","true",
-                "-l",String.valueOf(parameterLength),
                 "-p","40123",
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "10000"
+                "-sp", "10000",
+                "-s","2,2"
         });
 
         assertTrue(masterNode.isMaster());
@@ -56,10 +57,10 @@ public class ParameterServerClientTest {
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
         assertEquals(12,masterNode.getResponder().getStreamId());
+        assertEquals(masterNode.getMasterArray(),Nd4j.create(new int[]{2,2}));
 
         slaveNode = new ParameterServerSubscriber(mediaDriver);
         slaveNode.run(new String[] {
-                "-l",String.valueOf(parameterLength),
                 "-p","40126",
                 "-h","localhost",
                 "-id","10",
@@ -108,14 +109,16 @@ public class ParameterServerClientTest {
          * which adds the array for parameter averaging.
          * In this case totalN should be 1.
          */
-        client.pushNDArray(Nd4j.ones(parameterLength));
+        client.pushNDArrayMessage(NDArrayMessage.of(Nd4j.ones(2),new int[]{0},0));
         log.info("Pushed ndarray");
         Thread.sleep(10000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
         assertEquals(1,listener.getTotalN().get());
-        assertEquals(Nd4j.ones(parameterLength),listener.getArr());
+        INDArray assertion = Nd4j.create(new int[]{2,2});
+        assertion.getColumn(0).addi(1.0);
+        assertEquals(assertion,listener.getArr());
         INDArray arr = client.getArray();
-        assertEquals(Nd4j.ones(1000),arr);
+        assertEquals(assertion,arr);
     }
 
 

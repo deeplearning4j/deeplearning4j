@@ -31,6 +31,23 @@ public class NormalizerStandardize implements DataNormalization {
     private INDArray featureMean, featureStd, labelMean, labelStd;
     private boolean fitLabels = false;
 
+    public NormalizerStandardize() {
+    }
+
+    public NormalizerStandardize(INDArray featureMean, INDArray featureStd) {
+        this.featureMean = featureMean;
+        this.featureStd = featureStd;
+        this.fitLabels = false;
+    }
+
+    public NormalizerStandardize(INDArray featureMean, INDArray featureStd, INDArray labelMean, INDArray labelStd) {
+        this.featureMean = featureMean;
+        this.featureStd = featureStd;
+        this.labelMean = labelMean;
+        this.labelStd = labelStd;
+        this.fitLabels = true;
+    }
+
     private INDArray fit(INDArray theArray) {
         INDArray theMean, theStd;
         theMean = theArray.mean(0);
@@ -216,10 +233,18 @@ public class NormalizerStandardize implements DataNormalization {
         if (featureRank == 2) {
             toPreProcess.getFeatures().muliRowVector(featureStd);
             toPreProcess.getFeatures().addiRowVector(featureMean);
+            if(fitLabels) {
+                toPreProcess.getLabels().muliRowVector(labelStd);
+                toPreProcess.getLabels().addiRowVector(labelMean);
+            }
         }
         else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getFeatures(),featureStd,toPreProcess.getFeatures(),1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getFeatures(),featureMean,toPreProcess.getFeatures(),1));
+            if (fitLabels) {
+                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getLabels(),labelStd,toPreProcess.getLabels(),1));
+                Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getLabels(),labelMean,toPreProcess.getLabels(),1));
+            }
         }
     }
 

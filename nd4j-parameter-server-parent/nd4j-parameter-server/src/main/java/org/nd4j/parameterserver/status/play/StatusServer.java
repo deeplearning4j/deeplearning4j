@@ -1,7 +1,7 @@
 package org.nd4j.parameterserver.status.play;
 
 import org.nd4j.parameterserver.model.*;
-import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingSubscriber;
+import org.nd4j.parameterserver.ParameterServerSubscriber;
 
 import play.routing.RoutingDsl;
 import play.server.Server;
@@ -39,7 +39,7 @@ public class StatusServer {
      *                   the status server on
      * @return the started server
      */
-    public static Server startServer(final ParameterAveragingSubscriber subscriber) {
+    public static Server startServer(final ParameterServerSubscriber subscriber) {
         RoutingDsl dsl = new RoutingDsl();
         dsl.GET("/type").routeTo(() -> ok(toJson(
                 ServerTypeJson.builder().type(subscriber.isMaster()

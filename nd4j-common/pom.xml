@@ -12,8 +12,6 @@
     <name>nd4j-common</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <junit.version>4.12</junit.version>
-        <lombok.version>1.16.4</lombok.version>
     </properties>
 
     <dependencyManagement>

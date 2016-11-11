@@ -72,6 +72,21 @@ public class AeronNDArrayResponseTest {
                    public INDArray get() {
                        return Nd4j.scalar(1.0);
                    }
+
+                   /**
+                    * Retrieve a partial view of the ndarray.
+                    * This method uses tensor along dimension internally
+                    * Note this will call dup()
+                    *
+                    * @param idx        the index of the tad to get
+                    * @param dimensions the dimensions to use
+                    * @return the tensor along dimension based on the index and dimensions
+                    * from the master array.
+                    */
+                   @Override
+                   public INDArray getTad(int idx, int... dimensions) {
+                       return Nd4j.scalar(1.0);
+                   }
                }
 
                 ,responderStreamId);
@@ -82,8 +97,18 @@ public class AeronNDArrayResponseTest {
                 getContext(),
                 host,
                 40123,
-                arr -> count.incrementAndGet()
-                ,streamId,running);
+                new NDArrayCallback() {
+                    @Override
+                    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                        count.incrementAndGet();
+                    }
+
+                    @Override
+                    public void onNDArray(INDArray arr) {
+                        count.incrementAndGet();
+                    }
+                }
+                , streamId, running);
 
         int expectedResponses = 10;
         HostPortPublisher publisher = HostPortPublisher

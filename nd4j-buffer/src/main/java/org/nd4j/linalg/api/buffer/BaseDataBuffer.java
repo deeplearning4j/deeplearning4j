@@ -138,18 +138,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
         }
 
-        if(underlyingBuffer.dataType() == Type.DOUBLE) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.FLOAT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.INT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
+
+        pointer = underlyingBuffer.pointer();
+        indexer = underlyingBuffer.indexer();
     }
 
     /**
@@ -1354,7 +1345,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    protected float toFloat(int hbits) {
+    public float toFloat(int hbits) {
         int mant = hbits & 0x03ff;            // 10 bits mantissa
         int exp =  hbits & 0x7c00;            // 5 bits exponent
         if( exp == 0x7c00 )                   // NaN/Inf

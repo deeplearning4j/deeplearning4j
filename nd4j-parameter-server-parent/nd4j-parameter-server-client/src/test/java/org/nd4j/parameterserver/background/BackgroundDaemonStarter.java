@@ -2,7 +2,7 @@ package org.nd4j.parameterserver.background;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.parameteraveraging.ParameterAveragingSubscriber;
+import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
@@ -33,7 +33,7 @@ public class BackgroundDaemonStarter {
      * @throws InterruptedException
      */
     public static int startSlave(int parameterLength,String masterUrl,String mediaDriverDirectory) throws Exception {
-        return exec(ParameterAveragingSubscriber.class,
+        return exec(ParameterServerSubscriber.class,
                 mediaDriverDirectory,
                 "-l",
                 String.valueOf(parameterLength),
@@ -88,7 +88,7 @@ public class BackgroundDaemonStarter {
      * @throws InterruptedException
      */
     public static int startMaster(int parameterLength,String mediaDriverDirectory) throws Exception {
-        return exec(ParameterAveragingSubscriber.class,
+        return exec(ParameterServerSubscriber.class,
                 mediaDriverDirectory,
                 "-m","true",
                 "-l",String.valueOf(parameterLength),

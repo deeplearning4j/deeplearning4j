@@ -11,6 +11,10 @@ import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
@@ -355,5 +359,106 @@ public class NativeOpExecutionerTest {
         INDArray array = Nd4j.zeros(100, 100);
 
         assertFalse(array.isView());
+    }
+
+    @Test
+    public void testIMaxIAMax(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imax = Nd4j.getExecutioner().execAndReturn(new IMax(arr.dup())).getFinalResult();
+        double iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(arr.dup())).getFinalResult();
+        System.out.println("IMAX: " + imax);
+        System.out.println("IAMAX: " + iamax);
+
+        assertEquals(3, imax, 0.0);
+        assertEquals(1, iamax, 0.0);
+    }
+
+
+    @Test
+    public void testIMinIAMin(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imin = Nd4j.getExecutioner().execAndReturn(new IMin(arr.dup())).getFinalResult();
+        double iamin = Nd4j.getExecutioner().execAndReturn(new IAMin(arr.dup())).getFinalResult();
+        System.out.println("IMin: " + imin);
+        System.out.println("IAMin: " + iamin);
+
+        assertEquals(1, imin, 0.0);
+        assertEquals(3, iamin, 0.0);
+    }
+
+    @Test
+    public void testViewData1() {
+        INDArray in = Nd4j.create(new double[][]{
+                {1, 2},
+                {3, 4}}, 'c');
+
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+
+        INDArray out = in.getRow(1);
+        System.out.println("Out:        " + out);
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+
+
+        assertTrue(out.isView());
+        assertEquals(2, out.data().length());
+
+        out.addi(2f);
+
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+    }
+
+    @Test
+    public void testViewData2() {
+        INDArray in = Nd4j.create(new double[][]{
+                {1, 2},
+                {3, 4}}, 'f');
+
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+
+        INDArray out = in.getRow(1);
+        System.out.println("Out:        " + out);
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+
+
+        assertTrue(out.isView());
+        assertEquals(2, out.data().length());
+
+        out.addi(2f);
+
+        System.out.println("Out data:   " + Arrays.toString(out.data().asFloat()));
+        System.out.println("Input data: " + Arrays.toString(in.data().asDouble()));
+    }
+
+    @Test
+    public void testMmulC1() throws Exception {
+        INDArray A = Nd4j.linspace(0, 11, 12).reshape('c', 4, 3);
+        INDArray B = Nd4j.linspace(0, 11, 12).reshape('c', 3, 4);
+
+        System.out.println("A: \n" + A);
+
+        INDArray C = A.mmul(B);
+
+        INDArray expC = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape(4, 4);
+
+        assertEquals(expC, C);
+    }
+
+    @Test
+    public void testMmulF1() throws Exception {
+        INDArray A = Nd4j.linspace(0, 11, 12).reshape('f', 4, 3);
+        INDArray B = Nd4j.linspace(0, 11, 12).reshape('f', 3, 4);
+
+        System.out.println("A: \n" + A);
+
+        INDArray C = A.mmul(B);
+
+        System.out.println("C: \n" + Arrays.toString(C.data().asFloat()));
+
+        INDArray expF = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape('f', 4, 4);
+
+        assertEquals(expF, C);
     }
 }

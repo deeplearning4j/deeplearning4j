@@ -24,4 +24,15 @@ public interface NDArrayHolder extends Serializable {
      * @return
      */
     INDArray get();
+
+    /**
+     * Retrieve a partial view of the ndarray.
+     * This method uses tensor along dimension internally
+     * Note this will call dup()
+     * @param idx the index of the tad to get
+     * @param dimensions the dimensions to use
+     * @return the tensor along dimension based on the index and dimensions
+     * from the master array.
+     */
+    INDArray getTad(int idx,int...dimensions);
 }

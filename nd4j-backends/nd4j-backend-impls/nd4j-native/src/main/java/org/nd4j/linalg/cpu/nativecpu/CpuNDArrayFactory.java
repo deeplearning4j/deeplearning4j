@@ -653,8 +653,18 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
-        int vectorLength = source.shape()[sourceDimension];
-        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order);
+        if (indexes == null || indexes.length < 1)
+            throw new IllegalStateException("Indexes can't be null or zero-length");
+
+        int[] shape = null;
+        if (sourceDimension == 1)
+            shape = new int[] {indexes.length, source.shape()[sourceDimension]};
+        else if (sourceDimension == 0)
+            shape = new int[] {source.shape()[sourceDimension], indexes.length};
+        else
+            throw new UnsupportedOperationException("2D input is expected");
+
+        INDArray ret = Nd4j.createUninitialized(shape, order);
 
         Nd4j.getCompressor().autoDecompress(source);
 
@@ -676,6 +686,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
         DataBuffer zOffsets = zTadBuffers.getSecond();
+
         Pointer zTadOffsets = zOffsets == null ? null : zOffsets.addressPointer();
 
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {

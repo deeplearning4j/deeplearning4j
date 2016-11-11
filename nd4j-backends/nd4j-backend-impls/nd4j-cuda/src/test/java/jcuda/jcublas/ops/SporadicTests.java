@@ -21,9 +21,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -379,4 +377,28 @@ public class SporadicTests {
         }
     }
 
+
+    @Test
+    public void testEnvInfo() throws Exception {
+        Properties props = Nd4j.getExecutioner().getEnvironmentInformation();
+
+        List<Map<String, Object>> list = (List<Map<String,Object>>) props.get("cuda.devicesInformation");
+        for (Map<String, Object> map: list) {
+            log.error("devName: {}", map.get("cuda.deviceName"));
+            log.error("totalMem: {}", map.get("cuda.totalMemory"));
+            log.error("freeMem: {}", map.get("cuda.freeMemory"));
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void testStd() {
+        INDArray values = Nd4j.linspace(1, 4, 4).transpose();
+
+        double corrected = values.std(true, 0).getDouble(0);
+        double notCorrected = values.std(false, 0).getDouble(0);
+
+        System.out.println(String.format("Corrected: %f, non corrected: %f", corrected, notCorrected));
+
+    }
 }

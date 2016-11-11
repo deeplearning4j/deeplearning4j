@@ -37,6 +37,10 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -3134,29 +3138,64 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVPull1() {
+        int indexes[] = new int[]{0, 2, 4};
         INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
-        INDArray assertion = Nd4j.create(new float[]{1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25}).reshape(3,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'f');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
 
-
-        INDArray result = Nd4j.pullRows(array, 1, new int[]{0, 2, 4});
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'f');
 
         assertEquals(3, result.rows());
         assertEquals(5, result.columns());
         assertEquals(assertion, result);
     }
 
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation1() {
+        Nd4j.pullRows(Nd4j.create(10,10), 2, new int[]{0, 1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation2() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, -1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation3() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, 1, 10});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation4() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2, 3});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation5() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2},'e');
+    }
+
+
+
     @Test
     public void testVPull2() {
-        INDArray array = Nd4j.linspace(1,24,24).reshape(4, 6);
-        INDArray assertion = Nd4j.create(new float[]{1, 7, 13, 19, 3, 9, 15, 21, 4, 10, 16, 22}).reshape(3, 4);
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'c');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
 
-
-        INDArray result = Nd4j.pullRows(array, 0, new int[]{0, 2, 3});
-        System.out.println(result);
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'c');
 
         assertEquals(3, result.rows());
-        assertEquals(4, result.columns());
+        assertEquals(5, result.columns());
         assertEquals(assertion, result);
+
+        System.out.println(assertion.toString());
+        System.out.println(result.toString());
     }
 
 
@@ -3279,6 +3318,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(array2.equalsWithEps(array3, Nd4j.EPS_THRESHOLD));
         assertTrue(array1.equalsWithEps(array2, 0.7f));
         assertEquals(array2, array3);
+    }
+
+    @Test
+    public void testIMaxIAMax(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imax = Nd4j.getExecutioner().execAndReturn(new IMax(arr.dup())).getFinalResult();
+        double iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(arr.dup())).getFinalResult();
+        System.out.println("IMAX: " + imax);
+        System.out.println("IAMAX: " + iamax);
+
+        assertEquals(3, imax, 0.0);
+        assertEquals(1, iamax, 0.0);
+    }
+
+
+    @Test
+    public void testIMinIAMin(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imin = Nd4j.getExecutioner().execAndReturn(new IMin(arr.dup())).getFinalResult();
+        double iamin = Nd4j.getExecutioner().execAndReturn(new IAMin(arr.dup())).getFinalResult();
+        System.out.println("IMin: " + imin);
+        System.out.println("IAMin: " + iamin);
+
+        assertEquals(1, imin, 0.0);
+        assertEquals(3, iamin, 0.0);
     }
 
     @Override
