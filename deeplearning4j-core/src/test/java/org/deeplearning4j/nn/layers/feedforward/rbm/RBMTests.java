@@ -74,7 +74,7 @@ public class RBMTests {
 
 
         INDArray params = Nd4j.create(1, 4*3+4+3);
-        RBM rbm = getRBMLayer(4, 3, HiddenUnit.GAUSSIAN, VisibleUnit.GAUSSIAN, params, true, false);
+        RBM rbm = getRBMLayer(4, 3, HiddenUnit.GAUSSIAN, VisibleUnit.GAUSSIAN, params, true, false, 1);
 
         rbm.fit(d.getFeatureMatrix());
     }
@@ -87,7 +87,7 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         INDArray params = Nd4j.create(1, 4*3+4+3);
-        RBM rbm = getRBMLayer(4, 3, HiddenUnit.RECTIFIED, VisibleUnit.LINEAR, params, true, false);
+        RBM rbm = getRBMLayer(4, 3, HiddenUnit.RECTIFIED, VisibleUnit.LINEAR, params, true, false, 1);
 
         rbm.fit(d.getFeatureMatrix());
 
@@ -131,7 +131,7 @@ public class RBMTests {
     @Test
     public void testSetGetParams() {
         INDArray params = Nd4j.create(1, 6*4+6+4);
-        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
+        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
@@ -157,7 +157,7 @@ public class RBMTests {
 
         INDArray input = Nd4j.create(data);
         INDArray params = Nd4j.create(1, 6*4+6+4);
-        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
+        RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1);
 
         rbm.fit(input);
         double value = rbm.score();
@@ -171,7 +171,7 @@ public class RBMTests {
         INDArray input = Nd4j.linspace(1, 10, 10);
         INDArray params = getLinParams(10, 5);
 
-        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
+        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1);
 
         INDArray actualParams = rbm.params();
         assertEquals(params, actualParams);
@@ -209,7 +209,7 @@ public class RBMTests {
         INDArray actualActivations;
         int idx = 0;
         for (HiddenUnit hidden: hiddenUnits) {
-            RBM rbm = getRBMLayer(10, 5, hidden, VisibleUnit.BINARY, params, true, true);
+            RBM rbm = getRBMLayer(10, 5, hidden, VisibleUnit.BINARY, params, true, true, 1);
             rbm.setInput(input);
             actualActivations = rbm.activate();
             assertEquals(expectedActivations.get(NDArrayIndex.point(idx), NDArrayIndex.all()), actualActivations);
@@ -223,7 +223,7 @@ public class RBMTests {
         INDArray input = Nd4j.linspace(1, 10, 10);
         INDArray params = getStandardParams(10, 5);
 
-        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false);
+        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1);
         rbm.setInput(input);
         rbm.computeGradientAndScore();
         Pair<Gradient, Double> pair = rbm.gradientAndScore();
@@ -281,12 +281,12 @@ public class RBMTests {
         INDArray features = Nd4j.rand(new int[]{100, 10});
 
         System.out.println("Training RBM network, initialized with Xavier");
-        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);
+        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
         rbm.fit(features);
         double v = rbm.score();
 
         System.out.println("Training RBM network, initialized with correct solution");
-        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
+        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);
 
         rbm2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("0_W")))));
         rbm2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("1_W")))));
@@ -294,6 +294,25 @@ public class RBMTests {
         rbm2.fit(features);
         double x = rbm2.score();
     }
+
+    @Test
+    public void testRBM2() {
+        INDArray features = Nd4j.create(new double[]{
+                1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1,
+                0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0
+        }).reshape(6,6);
+
+        INDArray params = getStandardParams(6, 2);
+
+        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 500);
+        rbm.setListeners(new ScoreIterationListener(10));
+        rbm.fit(features);
+
+        INDArray paramResults = rbm.params();
+
+        double x = rbm.score();
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -317,7 +336,7 @@ public class RBMTests {
     }
 
 
-    private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params, boolean pretrain, boolean initialize) {
+    private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params, boolean pretrain, boolean initialize, int iterations) {
         org.deeplearning4j.nn.conf.layers.RBM layer = new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit)
                 .nIn(nIn)
                 .nOut(nOut)
@@ -326,7 +345,7 @@ public class RBMTests {
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1)
+                .iterations(iterations)
                 .seed(42)
                 .layer(layer)
                 .build();

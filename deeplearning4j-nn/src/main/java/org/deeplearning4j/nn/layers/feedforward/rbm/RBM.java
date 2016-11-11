@@ -164,7 +164,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 * Update gradient parameters - note taking mean based on batchsize is handled in LayerUpdater
 		 */
         INDArray wGradient = input().transposei().mmul(probHidden.getSecond()).subi(
-                nvSamples.transpose().mmul(nhMeans)
+                nvSamples.transpose().mmul(nhMeans) // TODO swap with nvMeans based on literature...
         );
 
         INDArray hBiasGradient;
