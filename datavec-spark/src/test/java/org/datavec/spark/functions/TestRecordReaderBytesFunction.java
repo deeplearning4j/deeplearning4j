@@ -103,6 +103,10 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
                 }
             }
         }
+
+
+
+
         int count = 0;
         for (boolean b : found) if (b) count++;
         assertEquals(4, count);  //Expect all 4 and exactly 4 pairwise matches between spark and local versions
