@@ -12,6 +12,72 @@
     <artifactId>deeplearning4j-play_2.10</artifactId>
     <name>deeplearning4j-play</name>
 
+    <profiles>
+        <!-- To build UI templates: run "mvn compile -P buildUiTemplates" -->
+        <profile>
+            <id>buildUiTemplates</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.code.play2-maven-plugin</groupId>
+                        <artifactId>play2-maven-plugin</artifactId>
+                        <version>${maven-play2-plugin.version}</version>
+
+                        <!-- Generate Scala Page Templates
+                        The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
+                        data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
+                        code generation. This is done here during the Maven compile phase.
+                        However, the Maven Play framework plugin does not allow proper customization of the output directory. Thus,
+                        we generate these Scala classes in the default location (in the target/twirl/main/ directory) and use the
+                        maven resources plugin to copy them to the actual location we want.
+                        To generate the latest versions of these templates (after modifying or adding a new template), just run
+                        "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
+                        -->
+                        <executions>
+                            <execution>
+                                <id>GenerateTemplates</id>
+                                <phase>compile</phase>
+                                <configuration>
+                                </configuration>
+                                <goals>
+                                    <goal>template-compile</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Copy the generated Scala templates to the appropriate directory. See templates comment above. -->
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>${maven-resources-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>CopyTemplates</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${basedir}/src/main/scala/org/deeplearning4j/ui/views/html</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${basedir}/target/twirl/main/org/deeplearning4j/ui/views/html</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -91,26 +157,6 @@
             <version>${typesafe.config.version}</version>
         </dependency>
 
-
-        <!-- Test forcing akka versions: -->
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.3.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.10</artifactId>
-            <version>2.3.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.10</artifactId>
-            <version>2.3.11</version>
-        </dependency>
-
         <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -156,62 +202,6 @@
                                 <source>src/main/java</source>
                                 <source>src/main/views</source>
                             </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-
-
-
-            <plugin>
-                <groupId>com.google.code.play2-maven-plugin</groupId>
-                <artifactId>play2-maven-plugin</artifactId>
-                <version>${maven-play2-plugin.version}</version>
-
-                <!-- Generate Scala Page Templates
-                The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
-                data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
-                code generation. This is done here during the Maven compile phase.
-                However, the Maven Play framework plugin does not allow proper customization of the output directory. Thus,
-                we generate these Scala classes in the default location (in the target/twirl/main/ directory) and use the
-                maven resources plugin to copy them to the actual location we want.
-                To generate the latest versions of these templates (after modifying or adding a new template), just run
-                "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
-                -->
-                <executions>
-                    <execution>
-                        <id>GenerateTemplates</id>
-                        <phase>compile</phase>
-                        <configuration>
-                        </configuration>
-                        <goals>
-                            <goal>template-compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Copy the generated Scala templates to the appropriate directory. See templates comment above. -->
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>${maven-resources-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>CopyTemplates</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${basedir}/src/main/scala/org/deeplearning4j/ui/views/html</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/target/twirl/main/org/deeplearning4j/ui/views/html</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
                         </configuration>
                     </execution>
                 </executions>

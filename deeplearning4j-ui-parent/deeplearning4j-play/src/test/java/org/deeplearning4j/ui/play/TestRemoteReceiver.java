@@ -127,7 +127,7 @@ public class TestRemoteReceiver {
         UIServer s = UIServer.getInstance();
         s.enableRemoteListener();
 
-        Thread.sleep(100000);
+        Thread.sleep(1000000);
     }
 
 }
