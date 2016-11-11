@@ -200,7 +200,7 @@ namespace randomOps {
                         T randVal = helper->relativeT(e * t);
                         if (y != z) {
                             // we're using external probs
-                            prob = y[t-1];
+                            prob = y[(t-1) * yEWS];
                         }
 
                         if (randVal < prob)
