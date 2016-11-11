@@ -10,7 +10,7 @@
 
     </parent>
 
-    <artifactId>datavec-tablesaw</artifactId>
+    <artifactId>datavec-dataframe</artifactId>
     <name>datavec-dataframe</name>
     <description>High-performance Java Dataframe with integrated columnar storage (fork of tablesaw)</description>
 

@@ -27,6 +27,7 @@ public enum ColumnType {
     Float,
     Categorical,
     Time,
-    Bytes    //Arbitrary byte[] data
+    Bytes, //Arbitrary byte[] data
+    Boolean
 
 }
