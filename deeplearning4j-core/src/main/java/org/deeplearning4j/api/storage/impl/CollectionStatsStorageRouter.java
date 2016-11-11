@@ -8,7 +8,10 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import java.util.Collection;
 
 /**
- * Created by Alex on 10/11/2016.
+ * A simple StatsStorageRouter that simply stores the metadata, static info and updates in the specified
+ * collections. Typically used for testing.
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class CollectionStatsStorageRouter implements StatsStorageRouter {

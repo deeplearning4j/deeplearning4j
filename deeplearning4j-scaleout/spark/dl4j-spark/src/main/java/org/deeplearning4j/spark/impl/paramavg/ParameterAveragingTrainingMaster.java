@@ -106,7 +106,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
     //Listeners etc
     private Collection<IterationListener> listeners;
-//    private StatsStorageRouterProvider routerProvider;
     private StatsStorageRouter statsStorage;
 
     private ParameterAveragingTrainingMaster() {
@@ -828,23 +827,6 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
-
-        //Old listeners: master only...
-//        if (listeners != null) {
-//            if (network != null) {
-//                MultiLayerNetwork net = network.getNetwork();
-//                net.setScore(network.getScore());
-//                for (IterationListener il : listeners) {
-//                    il.iterationDone(net, iterationCount);
-//                }
-//            } else {
-//                ComputationGraph g = graph.getNetwork();
-//                g.setScore(graph.getScore());
-//                for (IterationListener il : listeners) {
-//                    il.iterationDone(g, iterationCount);
-//                }
-//            }
-//        }
 
         iterationCount++;
     }

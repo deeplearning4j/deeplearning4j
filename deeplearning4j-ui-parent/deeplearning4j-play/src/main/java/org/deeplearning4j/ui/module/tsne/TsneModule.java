@@ -31,9 +31,10 @@ public class TsneModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/tsne", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.tsne.Tsne.apply()));
-        Route r2 = new Route("/tsne/posttest", HttpMethod.POST, FunctionType.Supplier, this::testPost );
-        return Arrays.asList(r1, r2);
+//        Route r1 = new Route("/tsne", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.tsne.Tsne.apply()));
+//        Route r2 = new Route("/tsne/posttest", HttpMethod.POST, FunctionType.Supplier, this::testPost );
+//        return Arrays.asList(r1, r2);
+        return Collections.emptyList();
     }
 
     @Override
@@ -49,20 +50,5 @@ public class TsneModule implements UIModule {
     @Override
     public void onDetach(StatsStorage statsStorage) {
 
-    }
-
-    private Result testPost(){
-        Http.RequestBody body = request().body();
-
-        if(body != null) {
-            JsonNode json = body.asJson();
-
-            System.out.println("GOT: " + json);
-            System.out.println("GOT2: " + body);
-        } else {
-            System.out.println("GOT: " + null);
-        }
-
-        return ok("Got text: " + body.asText());
     }
 }

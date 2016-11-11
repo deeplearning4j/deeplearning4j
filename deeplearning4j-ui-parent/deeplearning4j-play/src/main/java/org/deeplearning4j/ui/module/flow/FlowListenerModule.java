@@ -1,6 +1,5 @@
 package org.deeplearning4j.ui.module.flow;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -19,7 +18,9 @@ import java.util.*;
 import static play.mvc.Results.ok;
 
 /**
- * Created by Alex on 25/10/2016.
+ * Module for FlowIterationListener
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class FlowListenerModule implements UIModule {

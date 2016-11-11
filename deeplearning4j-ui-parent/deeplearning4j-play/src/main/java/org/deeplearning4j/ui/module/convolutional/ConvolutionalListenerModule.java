@@ -21,7 +21,9 @@ import java.util.*;
 import static play.mvc.Results.ok;
 
 /**
- * Created by Alex on 24/10/2016.
+ * Used for plotting results from the ConvolutionalIterationListener
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class ConvolutionalListenerModule implements UIModule {

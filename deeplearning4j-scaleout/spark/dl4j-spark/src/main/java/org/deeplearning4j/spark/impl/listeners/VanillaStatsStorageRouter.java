@@ -12,7 +12,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by Alex on 12/10/2016.
+ * Standard router for use in Spark: simply collect the data for later serialization and passing back to the master.
+ *
+ * @author Alex Black
  */
 @Data
 public class VanillaStatsStorageRouter implements StatsStorageRouter {
