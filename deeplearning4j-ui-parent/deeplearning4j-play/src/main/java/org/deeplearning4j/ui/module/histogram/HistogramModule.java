@@ -23,7 +23,9 @@ import java.util.*;
 import static play.mvc.Results.ok;
 
 /**
- * Created by Alex on 08/10/2016.
+ * Module for the HistogramIterationListener
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class HistogramModule implements UIModule {

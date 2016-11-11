@@ -88,13 +88,12 @@ public class PlayUIServer extends UIServer {
         // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
         //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
         // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
-//        routingDsl.GET("/").routeTo(FunctionUtil.function0(new Index()));
         routingDsl.GET("/setlang/:to").routeTo(FunctionUtil.function(new I18NRoute()));
         routingDsl.GET("/lang/getCurrent").routeTo(() -> ok(I18NProvider.getInstance().getDefaultLanguage()));
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
         uiModules.add(new DefaultModule());         //For: navigation page "/"
-        uiModules.add(new HistogramModule());       //TODO don't hardcode and/or add reflection...
+        uiModules.add(new HistogramModule());
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new FlowListenerModule());

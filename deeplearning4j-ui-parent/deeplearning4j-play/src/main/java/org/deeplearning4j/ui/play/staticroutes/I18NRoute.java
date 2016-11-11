@@ -8,7 +8,9 @@ import java.util.function.Function;
 import static play.mvc.Results.ok;
 
 /**
- * Created by Alex on 15/10/2016.
+ * Route for global internationalization setting
+ *
+ * @author Alex Black
  */
 public class I18NRoute implements Function<String,Result> {
     @Override

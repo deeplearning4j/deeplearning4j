@@ -10,7 +10,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Created by Alex on 08/10/2016.
+ * A Route specifies an endpoint that can be queried in the UI - along with how it should be handled
+ *
+ * @author Alex Black
  */
 @Data
 @AllArgsConstructor

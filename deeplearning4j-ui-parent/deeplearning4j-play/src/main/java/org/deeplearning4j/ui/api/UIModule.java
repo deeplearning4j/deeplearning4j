@@ -11,7 +11,7 @@ import java.util.List;
  * from a {@link StatsStorage} instance.<br>
  * When a {@link StatsStorage} object is attached to a {@link UIServer}, the UI server will
  * start receiving {@link StatsStorageEvent} instances; some of these (only the appropriate ones based on the specified
- * TypeIDs from the {@link #getCallbackTypeIDs()} method) will be routed to the UIModule, via {@link #reportStorageEvents(StatsStorage, Collection)}.
+ * TypeIDs from the {@link #getCallbackTypeIDs()} method) will be routed to the UIModule, via {@link #reportStorageEvents(Collection)}.
  * Each UIModule will generally handle one (or at most a few) different types of data (Type IDs); note however that events
  * for a single Type ID can be routed to multiple UI modules, if required.
  * <p>
@@ -24,7 +24,7 @@ public interface UIModule {
 
     /**
      * Get the list of Type IDs that should be collected from the registered {@link StatsStorage} instances, and
-     * passed on to the {@link #reportStorageEvents(StatsStorage, Collection)} method.
+     * passed on to the {@link #reportStorageEvents(Collection)} method.
      *
      * @return List of relevant Type IDs
      */
