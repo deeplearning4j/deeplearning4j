@@ -92,6 +92,25 @@
         </dependency>
 
 
+        <!-- Test forcing akka versions: -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_2.10</artifactId>
+            <version>2.3.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote_2.10</artifactId>
+            <version>2.3.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-slf4j_2.10</artifactId>
+            <version>2.3.11</version>
+        </dependency>
+
         <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>junit</groupId>
