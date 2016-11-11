@@ -297,7 +297,7 @@ public class PlayUIServer extends UIServer {
         }
 
         private void runHelper() throws Exception {
-            log.info("PlayUIServer.StatsEventRouterRunnable started");
+            log.debug("PlayUIServer.StatsEventRouterRunnable started");
             //Idea: collect all event stats, and route them to the appropriate modules
             while (!shutdown.get()) {
 
