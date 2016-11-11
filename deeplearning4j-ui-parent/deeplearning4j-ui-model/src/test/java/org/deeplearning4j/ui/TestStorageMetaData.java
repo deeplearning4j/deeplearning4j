@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui;
 
-import org.deeplearning4j.ui.storage.StorageMetaData;
+import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -19,20 +20,20 @@ public class TestStorageMetaData {
 
         Serializable extraMeta = "ExtraMetaData";
         long timeStamp = 123456;
-        StorageMetaData m = new StorageMetaData( timeStamp,
+        StorageMetaData m = new SbeStorageMetaData( timeStamp,
                 "sessionID", "typeID", "workerID", "org.some.class.InitType", "org.some.class.UpdateType", extraMeta);
 
         byte[] bytes = m.encode();
-        StorageMetaData m2 = new StorageMetaData();
+        StorageMetaData m2 = new SbeStorageMetaData();
         m2.decode(bytes);
 
         assertEquals(m, m2);
         assertArrayEquals(bytes, m2.encode());
 
         //Sanity check: null values
-        m = new StorageMetaData(0, null,null,null,null,(String)null);
+        m = new SbeStorageMetaData(0, null,null,null,null,(String)null);
         bytes = m.encode();
-        m2 = new StorageMetaData();
+        m2 = new SbeStorageMetaData();
         m2.decode(bytes);
         //In practice, we don't want these things to ever be null anyway...
         assertNullOrZeroLength(m2.getSessionID());

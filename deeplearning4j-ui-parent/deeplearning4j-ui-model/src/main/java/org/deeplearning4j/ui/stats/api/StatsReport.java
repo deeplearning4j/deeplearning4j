@@ -2,7 +2,7 @@ package org.deeplearning4j.ui.stats.api;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.Persistable;
+import org.deeplearning4j.api.storage.Persistable;
 
 import java.io.Serializable;
 import java.util.List;

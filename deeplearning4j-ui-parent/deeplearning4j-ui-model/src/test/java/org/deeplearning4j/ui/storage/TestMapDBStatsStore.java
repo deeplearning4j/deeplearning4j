@@ -2,6 +2,10 @@ package org.deeplearning4j.ui.storage;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
@@ -13,8 +17,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -39,9 +44,6 @@ public class TestMapDBStatsStore {
         assertEquals(0, ss.listSessionIDs().size());
         assertNull(ss.getLatestUpdate("sessionID","typeID","workerID"));
         assertEquals(0, ss.listSessionIDs().size());
-
-
-        byte[] b0 = randomBytes(123);
 
 
         ss.putStaticInfo(getInitReport(0));
@@ -104,24 +106,20 @@ public class TestMapDBStatsStore {
         assertEquals(2, ss.getLatestUpdateAllWorkers("sid0","tid0").size());
     }
 
-    private static byte[] randomBytes(int length){
-        Random r = new Random(12345);
-        byte[] bytes = new byte[length];
-        r.nextBytes(bytes);
-        return bytes;
-    }
-
     private static StatsInitializationReport getInitReport(int idNumber){
         StatsInitializationReport rep = new SbeStatsInitializationReport();
         rep.reportModelInfo("classname","jsonconfig",new String[]{"p0","p1"},1,10);
         rep.reportIDs("sid"+idNumber,"tid"+idNumber,"wid"+idNumber,12345);
         rep.reportHardwareInfo(0,2,1000,2000,new long[]{3000,4000},new String[]{"dev0","dev1"},"hardwareuid");
-        rep.reportSoftwareInfo("arch","osName","jvmName","jvmVersion","1.8","backend","dtype","hostname","jvmuid");
+        Map<String,String> envInfo = new HashMap<>();
+        envInfo.put("envInfo0","value0");
+        envInfo.put("envInfo1", "value1");
+        rep.reportSoftwareInfo("arch","osName","jvmName","jvmVersion","1.8","backend","dtype","hostname","jvmuid", envInfo);
         return rep;
     }
 
     private static StatsReport getReport(int sid, int tid, int wid, long time){
-        StatsReport rep = new SbeStatsReport(new String[]{"p0","p1"});
+        StatsReport rep = new SbeStatsReport();
         rep.reportIDs("sid"+sid,"tid"+tid,"wid"+wid,time);
         rep.reportScore(100.0);
         rep.reportPerformance(1000,1001,1002,1003.0,1004.0);
@@ -139,33 +137,28 @@ public class TestMapDBStatsStore {
         private int countMetaData;
 
         @Override
-        public void notifyNewSession(String sessionID) {
-            countNewSession++;
-        }
-
-        @Override
-        public void notifyNewTypeID(String sessionID, String typeID) {
-            countNewTypeID++;
-        }
-
-        @Override
-        public void notifyNewWorkerID(String sessionID, String workerID) {
-            countNewWorkerId++;
-        }
-
-        @Override
-        public void notifyStaticInfo(String sessionID, String typeID, String workerID) {
-            countStaticInfo++;
-        }
-
-        @Override
-        public void notifyStatusUpdate(String sessionID, String typeID, String workerID, long timestamp) {
-            countUpdate++;
-        }
-
-        @Override
-        public void notifyStorageMetaData(String sessionID, String typeID) {
-            countMetaData++;
+        public void notify(StatsStorageEvent event) {
+            System.out.println("Event: " + event);
+            switch (event.getEventType()){
+                case NewSessionID:
+                    countNewSession++;
+                    break;
+                case NewTypeID:
+                    countNewTypeID++;
+                    break;
+                case NewWorkerID:
+                    countNewWorkerId++;
+                    break;
+                case PostMetaData:
+                    countMetaData++;
+                    break;
+                case PostStaticInfo:
+                    countStaticInfo++;
+                    break;
+                case PostUpdate:
+                    countUpdate++;
+                    break;
+            }
         }
     }
 
