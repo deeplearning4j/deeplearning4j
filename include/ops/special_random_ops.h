@@ -22,7 +22,118 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            /**
+             * X holds data,
+             * Y holds probabilities
+             * Z will hold results
+             */
 
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::random::Xoroshiro128 generator(buffer);
+            nd4j::random::RandomHelper<T> helper(&generator);
+
+            // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
+            //T probSum = extraArguments[0];
+
+            __shared__ int xLength;
+            __shared__ int yLength;
+            __shared__ int zLength;
+
+            __shared__ int xEWS;
+            __shared__ int yEWS;
+            __shared__ int zEWS;
+
+            if (threadIdx.x == 0) {
+                xLength = shape::length(xShapeBuffer);
+                yLength = shape::length(yShapeBuffer);
+                zLength = shape::length(zShapeBuffer);
+
+                xEWS = shape::elementWiseStride(xShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
+                for (int e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
+                    T prob = helper.relativeT(e);
+                    T cumProb = (T) 0.0f;
+                    for (int f = 0; f < yLength; f++) {
+                        T relProb = y[f * yEWS];
+                        cumProb += relProb;
+
+                        if (prob <= cumProb || f == yLength - 1) {
+                            z[e * zEWS] = x[f * xEWS];
+                        }
+                    }
+                    __syncthreads();
+                }
+            } else {
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+                int zCoord[MAX_RANK];
+
+                __shared__ int xRank;
+                __shared__ int yRank;
+                __shared__ int zRank;
+
+                __shared__ int *xShape;
+                __shared__ int *yShape;
+                __shared__ int *zShape;
+
+                __shared__ int *xStride;
+                __shared__ int *yStride;
+                __shared__ int *zStride;
+
+                __shared__ int xOffset;
+                __shared__ int yOffset;
+                __shared__ int zOffset;
+
+                if (threadIdx.x == 0) {
+                    xRank = shape::rank(xShapeBuffer);
+                    yRank = shape::rank(yShapeBuffer);
+                    zRank = shape::rank(zShapeBuffer);
+
+                    xShape = shape::shapeOf(xShapeBuffer);
+                    yShape = shape::shapeOf(yShapeBuffer);
+                    zShape = shape::shapeOf(zShapeBuffer);
+
+                    xStride = shape::stride(xShapeBuffer);
+                    yStride = shape::stride(yShapeBuffer);
+                    zStride = shape::stride(zShapeBuffer);
+
+                    xOffset = shape::offset(xShapeBuffer);
+                    yOffset = shape::offset(yShapeBuffer);
+                    zOffset = shape::offset(zShapeBuffer);
+                }
+                __syncthreads();
+
+                for (int i = tid; i < zLength; i+=blockDim.x * gridDim.x) {
+                    shape::ind2sub(zRank, zShape, i, zCoord);
+
+                    Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
+
+                    T prob = helper.relativeT(i);
+                    T cumProb = (T) 0.0f;
+                    for (int f = 0; f < yLength; f++) {
+                        shape::ind2sub(yRank, yShape, i, yCoord);
+                        Nd4jIndex yOffset2 = shape::getOffset(yOffset, yShape, yStride, yCoord, yRank);
+
+                        T relProb = y[yOffset2];
+                        cumProb += relProb;
+
+                        if (prob <= cumProb || f == yLength - 1) {
+                            shape::ind2sub(xRank, xShape, f, xCoord);
+                            Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
+
+                            z[zOffset2] = x[xOffset2];
+                        }
+                    }
+                    __syncthreads();
+                }
+            }
         }
 #endif
 
@@ -88,7 +199,7 @@ namespace randomOps {
                 int zOffset = shape::offset(zShapeBuffer);
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                for (int i = 0; i < yLength; i++) {
+                for (int i = 0; i < zLength; i++) {
                     shape::ind2sub(zRank, zShape, i, zCoord);
 
                     Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
@@ -241,22 +352,22 @@ namespace randomOps {
 
             for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
-                    for (int t = 1; t <= trials; t++) {
-                        T randVal = helper->relativeT(e * t);
-                        if (y != z) {
-                            // we're using external probs
-                            prob = y[(t-1) * yEWS];
-                        }
-
-                        if (randVal < prob)
-                            success++;
+                for (int t = 1; t <= trials; t++) {
+                    T randVal = helper->relativeT(e * t);
+                    if (y != z) {
+                        // we're using external probs
+                        prob = y[(t-1) * yEWS];
                     }
 
-                    // we need this, to eliminate excessive code branching in runtime
-                    __syncthreads();
+                    if (randVal < prob)
+                        success++;
+                }
 
-                    // if trials is set to 0, effectively we just have successful memset
-                    z[e * zEWS] = (T) success;
+                // we need this, to eliminate excessive code branching in runtime
+                __syncthreads();
+
+                // if trials is set to 0, effectively we just have successful memset
+                z[e * zEWS] = (T) success;
             }
         }
 #endif
