@@ -143,6 +143,7 @@ public class RandomTests extends BaseNd4jTest {
 
         INDArray z1 = Nd4j.create(100000);
         INDArray z2 = Nd4j.create(100000);
+        INDArray zDup = z1.dup();
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
@@ -150,6 +151,7 @@ public class RandomTests extends BaseNd4jTest {
         GaussianDistribution op2 = new GaussianDistribution(z2, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op2, random2);
 
+        assertNotEquals(zDup, z1);
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
 
         assertEquals(z1, z2);
