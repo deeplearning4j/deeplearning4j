@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -52,17 +53,18 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     public static final int SEED = 123;
 
+    DataBuffer.Type initialType;
 
     public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
 
     @Before
     public void before() throws Exception {
         super.before();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(SEED);
 
     }
@@ -70,8 +72,7 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     @After
     public void after() throws Exception {
         super.after();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
     @Override

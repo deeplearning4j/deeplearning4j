@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -72,17 +73,18 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public  class Nd4jTestsC extends BaseNd4jTest {
 
+    DataBuffer.Type initialType;
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
 
     @Before
     public void before() throws  Exception {
         super.before();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -90,9 +92,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @After
     public void after() throws Exception {
         super.after();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
