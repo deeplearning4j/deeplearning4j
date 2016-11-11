@@ -1,7 +1,9 @@
 package org.deeplearning4j.ui.api;
 
 /**
- * Created by Alex on 08/10/2016.
+ * Enumeration for the type of HTTP method. Mainly used in specifying {@link Route} instances
+ *
+ * @author Alex Black
  */
 public enum HttpMethod {
     GET,

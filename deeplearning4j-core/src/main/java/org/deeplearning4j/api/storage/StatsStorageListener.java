@@ -19,6 +19,12 @@ public interface StatsStorageListener {
         PostUpdate
     }
 
+    /**
+     * Notify will be called whenever an event (new information posted, etc) occurs.
+     * Processing these events should ideally be done asynchronously.
+     *
+     * @param event    Event that occurred
+     */
     void notify(StatsStorageEvent event);
 
 }

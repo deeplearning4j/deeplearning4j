@@ -17,7 +17,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by Alex on 17/10/2016.
+ *
+ * Utility methods for {@link TrainModule}
+ *
+ * @author Alex Black
  */
 public class TrainModuleUtils {
 

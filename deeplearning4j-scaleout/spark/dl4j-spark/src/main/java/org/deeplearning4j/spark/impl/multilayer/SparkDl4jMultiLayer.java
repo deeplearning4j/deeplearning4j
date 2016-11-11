@@ -293,22 +293,24 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model.
-     * <p>
-     * PLEASE NOTE:
-     * 1. These iteration listeners should be configured to use remote UiServer
-     * 2. Remote UiServer should be accessible via network from Spark master node.
+     * This method allows you to specify IterationListeners for this model. The listeners will be
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
-     * @param listeners
+     * @param listeners    Listeners to set
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
-//        this.listeners.clear();
-//        this.listeners.addAll(listeners);
-//        if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
         setListeners(null, listeners);
     }
 
-    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners){
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
         if(listeners != null ){

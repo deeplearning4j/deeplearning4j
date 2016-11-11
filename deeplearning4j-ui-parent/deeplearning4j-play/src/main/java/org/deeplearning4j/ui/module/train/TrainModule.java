@@ -45,6 +45,7 @@ import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**
+ * Main DL4J Training UI
  *
  * @author Alex Black
  */
@@ -142,7 +143,11 @@ public class TrainModule implements UIModule {
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-        //TODO
+        for(String s : knownSessionIDs.keySet()){
+            if(knownSessionIDs.get(s) == statsStorage){
+                knownSessionIDs.remove(s);
+            }
+        }
     }
 
     private void getDefaultSession() {

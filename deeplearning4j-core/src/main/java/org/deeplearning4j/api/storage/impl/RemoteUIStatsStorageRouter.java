@@ -22,7 +22,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Asynchronously post all updates to a remote UI that has remote listening enabled.
+ * Asynchronously post all updates to a remote UI that has remote listening enabled.<br>
+ * Typically used with UIServer (don't forget to enable remote listener support - UIServer.getInstance().enableRemoteListener()
  *
  * @author Alex Black
  */

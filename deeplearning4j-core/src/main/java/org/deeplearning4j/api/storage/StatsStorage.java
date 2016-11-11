@@ -62,7 +62,13 @@ public interface StatsStorage extends StatsStorageRouter {
      */
     Persistable getStaticInfo(String sessionID, String typeID, String workerID);
 
-
+    /**
+     * Get all static informations for the given session and type ID
+     *
+     * @param sessionID    Session ID to get static info for
+     * @param typeID       Type ID to get static info for
+     * @return             All static info instances matching both the session and type IDs
+     */
     List<Persistable> getAllStaticInfos(String sessionID, String typeID);
 
     /**

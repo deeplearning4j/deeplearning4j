@@ -1,7 +1,9 @@
 package org.deeplearning4j.api.storage;
 
 /**
- * Created by Alex on 10/11/2016.
+ * Type of storage information
+ *
+ * @author Alex Black
  */
 public enum StorageType {
     MetaData,

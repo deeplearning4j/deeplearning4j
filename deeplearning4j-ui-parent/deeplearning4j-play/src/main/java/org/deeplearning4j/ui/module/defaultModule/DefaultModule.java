@@ -15,7 +15,8 @@ import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**
- * Created by Alex on 25/10/2016.
+ * Landing page - i.e., "/" route
+ * @author Alex Black
  */
 public class DefaultModule implements UIModule {
     @Override
@@ -25,6 +26,7 @@ public class DefaultModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
+        //TODO
 //        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
         Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
 

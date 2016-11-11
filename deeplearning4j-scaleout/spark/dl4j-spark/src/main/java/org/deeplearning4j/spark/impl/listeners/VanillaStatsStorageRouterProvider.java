@@ -4,7 +4,9 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 
 /**
- * Created by Alex on 12/10/2016.
+ * Returns a new instance of a {@link VanillaStatsStorageRouter}
+ *
+ * @author Alex Black
  */
 public class VanillaStatsStorageRouterProvider implements StatsStorageRouterProvider {
 
