@@ -226,6 +226,10 @@ namespace randomOps {
             __shared__ int yEWS;
             __shared__ int zEWS;
 
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
+            nd4j::random::RandomHelper<T> *helper = new nd4j::random::RandomHelper<T>(generator);
+
             if (threadIdx.x == 0) {
                 zLength = shape::length(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -235,7 +239,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (int e = tid; e < end; e += blockDim.x * gridDim.x) {
+            for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
                     for (int t = 1; t <= trials; t++) {
                         T randVal = helper->relativeT(e * t);
