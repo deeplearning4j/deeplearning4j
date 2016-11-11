@@ -1476,6 +1476,21 @@ public class NativeOps extends Pointer {
 
     public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
 
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer x, IntPointer xShapeBuffer, DoublePointer y, IntPointer yShapeBuffer, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer x, IntPointer xShapeBuffer, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer x, IntPointer xShapeBuffer, @Cast("float16*") ShortPointer y, IntPointer yShapeBuffer, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer x, IntPointer xShapeBuffer, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+
     public native Pointer initRandom(long seed, long numberOfElements, Pointer pointerToBuffer);
 
     public native void refreshBuffer(long seed, Pointer pointer);

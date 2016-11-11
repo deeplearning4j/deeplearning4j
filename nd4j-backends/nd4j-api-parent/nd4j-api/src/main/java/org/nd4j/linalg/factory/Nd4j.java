@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -2799,7 +2800,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape) {
-        INDArray ret = INSTANCE.randn(shape, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2811,7 +2812,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      */
     public static INDArray randn(char order, int[] shape) {
-        INDArray ret = INSTANCE.randn(order,shape);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2824,6 +2825,7 @@ public class Nd4j {
      */
     public static INDArray randn(int[] shape, long seed) {
         Nd4j.getRandom().setSeed(seed);
+        Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         return randn(shape, Nd4j.getRandom());
     }
 
@@ -2836,7 +2838,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns) {
-        INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2849,7 +2851,7 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      */
     public static INDArray randn(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.randn(order, rows, columns);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2862,7 +2864,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.randn(rows, columns, seed);
+        Nd4j.getRandom().setSeed(seed);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2876,7 +2879,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(rows, columns, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2889,7 +2892,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(shape, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }

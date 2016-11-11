@@ -1026,29 +1026,55 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray exec(RandomOp op, Random rng) {
+        if (rng.getStateBuffer() == null)
+            throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");
+
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
-            loop.execRandomFloat(null, op.opNum(),
-                    rng.getStatePointer(), // rng state ptr
-                    (FloatPointer) op.x().data().addressPointer(),
-                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.y().data().addressPointer(),
-                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.z().data().addressPointer(),
-                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.extraArgsDataBuff().addressPointer()
-            );
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer()
+                );
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer()
+                );
+            }
         } else if (op.x() != null && op.z() != null) {
             //double arg call
-            loop.execRandomFloat(null, op.opNum(),
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
                     rng.getStatePointer(), // rng state ptr
                     (FloatPointer) op.x().data().addressPointer(),
                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                     (FloatPointer) op.z().data().addressPointer(),
                     (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.extraArgsDataBuff().addressPointer()
-            );
+                    (FloatPointer) op.extraArgsDataBuff().addressPointer());
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer());
+            }
+
         } else {
             // single arg call
 
@@ -1059,6 +1085,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         (FloatPointer) op.extraArgsDataBuff().addressPointer()
                         );
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer()
+                );
             }
         }
 
