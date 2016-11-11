@@ -52,10 +52,10 @@ namespace randomOps {
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            if (zEWS >= 1) {
+            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                 for (int e = 0; e < zLength; e++) {
-                    T prob = helper.nextT();
+                    T prob = helper.relativeT(e);
                     T cumProb = (T) 0.0f;
                     for (int f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
@@ -67,7 +67,49 @@ namespace randomOps {
                     }
                 }
             } else {
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+                int zCoord[MAX_RANK];
 
+                int xRank = shape::rank(xShapeBuffer);
+                int yRank = shape::rank(yShapeBuffer);
+                int zRank = shape::rank(zShapeBuffer);
+
+                int *xShape = shape::shapeOf(xShapeBuffer);
+                int *yShape = shape::shapeOf(yShapeBuffer);
+                int *zShape = shape::shapeOf(zShapeBuffer);
+
+                int *xStride = shape::stride(xShapeBuffer);
+                int *yStride = shape::stride(yShapeBuffer);
+                int *zStride = shape::stride(zShapeBuffer);
+
+                int xOffset = shape::offset(xShapeBuffer);
+                int yOffset = shape::offset(yShapeBuffer);
+                int zOffset = shape::offset(zShapeBuffer);
+
+#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+                for (int i = 0; i < yLength; i++) {
+                    shape::ind2sub(zRank, zShape, i, zCoord);
+
+                    Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
+
+                    T prob = helper.relativeT(i);
+                    T cumProb = (T) 0.0f;
+                    for (int f = 0; f < yLength; f++) {
+                        shape::ind2sub(yRank, yShape, i, yCoord);
+                        Nd4jIndex yOffset2 = shape::getOffset(yOffset, yShape, yStride, yCoord, yRank);
+
+                        T relProb = y[yOffset2];
+                        cumProb += relProb;
+
+                        if (prob <= cumProb || f == yLength - 1) {
+                            shape::ind2sub(xRank, xShape, f, xCoord);
+                            Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
+
+                            z[zOffset2] = x[xOffset2];
+                        }
+                    }
+                }
             }
 
         }
@@ -90,7 +132,7 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-
+            // FIXME: we use cuRAND for this op, due to undesired code branching
         }
 #endif
 
@@ -98,7 +140,6 @@ namespace randomOps {
         static inline void
         specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             const T epsilon = (T) 1e-15;
-            const T maxT = std::numeric_limits<T>::max();
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
 
             int zLength = shape::length(zShapeBuffer);
@@ -178,13 +219,46 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            int trials = (int) extraArguments[0];
+            T prob = extraArguments[1];
 
+            __shared__ int zLength;
+            __shared__ int yEWS;
+            __shared__ int zEWS;
+
+            if (threadIdx.x == 0) {
+                zLength = shape::length(zShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            for (int e = tid; e < end; e += blockDim.x * gridDim.x) {
+                int success = 0;
+                    for (int t = 1; t <= trials; t++) {
+                        T randVal = helper->relativeT(e * t);
+                        if (y != z) {
+                            // we're using external probs
+                            prob = y[(t-1) * yEWS];
+                        }
+
+                        if (randVal < prob)
+                            success++;
+                    }
+
+                    // we need this, to eliminate excessive code branching in runtime
+                    __syncthreads();
+
+                    // if trials is set to 0, effectively we just have successful memset
+                    z[e * zEWS] = (T) success;
+            }
         }
 #endif
 
         static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
-
 
             int zLength = shape::length(zShapeBuffer);
 

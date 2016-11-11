@@ -17,7 +17,12 @@
 #define method_XY  random_def T op(T valueX, T valueY, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) { return -3.0f; }
 
 #define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
+
+#ifdef __CUDACC__
 #define no_exec_special_cuda __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
+#else
+#define no_exec_special_cuda
+#endif
 
 #include <helpers/helper_random.h>
 
