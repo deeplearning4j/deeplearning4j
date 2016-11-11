@@ -4419,6 +4419,25 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * This method creates an *uninitialized* ndarray of specified length and default ordering.
+     *
+     * PLEASE NOTE: Do not use this method unless you're 100% sure why you use it.
+     *
+     * @param length
+     * @return
+     */
+    public static INDArray createUninitialized(int length) {
+        if (length < 1)
+            throw new IllegalStateException("Length should be positive value");
+
+        int[] shape = new int[]{1, length};
+
+        INDArray ret = INSTANCE.createUninitialized(shape, order());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
 
     /**

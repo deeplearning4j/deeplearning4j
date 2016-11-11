@@ -20,6 +20,8 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Arrays;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -383,6 +385,81 @@ public class RandomTests extends BaseNd4jTest {
 
         BooleanIndexing.and(z1, Conditions.lessThanOrEqual(5.0));
         BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
+    }
+
+    @Test
+    public void testMultithreading1() throws Exception {
+
+        final AtomicInteger cnt = new AtomicInteger(0);
+        final CopyOnWriteArrayList<float[]> list = new CopyOnWriteArrayList<>();
+
+        Thread[] threads = new Thread[10];
+        for (int x = 0; x < threads.length; x++) {
+            list.add(null);
+        }
+
+        for(int x = 0; x < threads.length; x++) {
+            threads[x] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Random rnd = Nd4j.getRandom();
+                    rnd.setSeed(119);
+                    float[] array = new float[10];
+
+                    for (int e = 0; e < array.length; e++) {
+                        array[e] = rnd.nextFloat();
+                    }
+                    list.set(cnt.getAndIncrement(), array);
+                }
+            });
+            threads[x].start();
+        }
+
+        for(int x = 0; x < threads.length; x++) {
+            threads[x].join();
+
+            assertNotEquals(null, list.get(x));
+
+            if (x > 0) {
+                assertArrayEquals(list.get(0), list.get(x), 1e-5f);
+            }
+        }
+    }
+
+    @Test
+    public void testMultithreading2() throws Exception {
+
+        final AtomicInteger cnt = new AtomicInteger(0);
+        final CopyOnWriteArrayList<INDArray> list = new CopyOnWriteArrayList<>();
+
+        Thread[] threads = new Thread[10];
+        for (int x = 0; x < threads.length; x++) {
+            list.add(null);
+        }
+
+        for(int x = 0; x < threads.length; x++) {
+            threads[x] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Random rnd = Nd4j.getRandom();
+                    rnd.setSeed(119);
+                    INDArray array = Nd4j.getExecutioner().exec(new UniformDistribution(Nd4j.createUninitialized(25)));
+
+                    list.set(cnt.getAndIncrement(), array);
+                }
+            });
+            threads[x].start();
+        }
+
+        for(int x = 0; x < threads.length; x++) {
+            threads[x].join();
+            
+            assertNotEquals(null, list.get(x));
+
+            if (x > 0) {
+                assertEquals(list.get(0), list.get(x));
+            }
+        }
     }
 
     @Ignore
