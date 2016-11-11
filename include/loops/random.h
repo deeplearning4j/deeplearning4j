@@ -50,10 +50,6 @@ namespace functions {
                 nd4j::random::Xoroshiro128 generator(buffer);
                 nd4j::random::RandomHelper<T> helper(&generator);
 
-                int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-                _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
-
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
@@ -175,7 +171,7 @@ namespace functions {
 
 #ifdef __CUDACC__
             template<typename OpClass>
-            static inline void execTransformCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            __device__ static inline void execTransformCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
                 int length = shape::length(zShapeBuffer);
                 int xEWS = shape::elementWiseStride(xShapeBuffer);
                 int zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -183,10 +179,6 @@ namespace functions {
                 nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 nd4j::random::Xoroshiro128 generator(buffer);
                 nd4j::random::RandomHelper<T> helper(&generator);
-
-                int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-                _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -288,17 +280,13 @@ namespace functions {
 
 #ifdef __CUDACC__
             template<typename OpClass>
-            static inline void execTransform(Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
+            __device__ static inline void execTransformCuda(Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
                 int length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
                 nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 nd4j::random::Xoroshiro128 generator(buffer);
                 nd4j::random::RandomHelper<T> helper(&generator);
-
-                int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-                _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -386,5 +374,78 @@ namespace functions {
         };
     }
 }
+
+
+template <typename T, typename OpClass>
+__device__ void randomSingleGeneric(
+        Nd4jPointer state,
+        T *z,
+        int *zShapeBuffer,
+        T *extraArguments) {
+
+
+    functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(
+            state,
+            z,
+            zShapeBuffer,
+            extraArguments);
+}
+
+template <typename T, typename OpClass>
+__device__ void randomDoubleGeneric(
+        Nd4jPointer state,
+        T *x,
+        int *xShapeBuffer,
+        T *z,
+        int *zShapeBuffer,
+        T *extraArguments) {
+
+
+    functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(
+            state,
+            x,
+            xShapeBuffer,
+            z,
+            zShapeBuffer,
+            extraArguments);
+}
+
+
+template <typename T, typename OpClass>
+__device__ void randomTripleGeneric(
+        Nd4jPointer state,
+        T *x,
+        int *xShapeBuffer,
+        T *y,
+        int *yShapeBuffer,
+        T *z,
+        int *zShapeBuffer,
+        T *extraArguments) {
+
+
+    functions::random::RandomFunction<T>::template execTransformCuda<OpClass>(
+            state,
+            x,
+            xShapeBuffer,
+            y,
+            yShapeBuffer,
+            z,
+            zShapeBuffer,
+            extraArguments);
+}
+
+
+
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double, INPUT(Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16, INPUT(Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float, INPUT(Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double, INPUT(Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16, INPUT(Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float, INPUT(Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double, INPUT(Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16, INPUT(Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
 #endif //LIBND4J_RANDOM_H

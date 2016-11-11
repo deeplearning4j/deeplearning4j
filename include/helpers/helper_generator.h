@@ -62,6 +62,9 @@ namespace nd4j {
              * @param size
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             RandomBuffer(long seed, long size, uint64_t *buffer) {
                 this->buffer = buffer;
                 this->seed = seed;
@@ -73,49 +76,76 @@ namespace nd4j {
                 this->synchronizer = 0;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t *getBuffer() {
                 return this->buffer;
             }
 
 #ifdef __CUDACC__
-            curandGenerator_t *getGeneratorPointer() {
+            __device__ __host__ curandGenerator_t *getGeneratorPointer() {
                 return &gen;
             }
 
-            curandGenerator_t getGenerator() {
+            __host__ __device__ curandGenerator_t getGenerator() {
                 return gen;
             }
 #endif
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getSize() {
                 return this->size;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getSeed() {
                 return this->seed;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void setSeed(long seed) {
                 this->seed = seed;
                 this->amplifier = seed;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getAllocatedSize() {
                 return this->size * sizeof(long);
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getOffset() {
                 return this->currentPosition;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void setOffset(long offset) {
                 this->currentPosition = offset;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void reSeed(long amplifier) {
                 this->amplifier = amplifier;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t getElement(long position) {
                 long actualPosition = this->getOffset() + position;
                 long tempGen = generation;
@@ -135,10 +165,16 @@ namespace nd4j {
                 return ret;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void incrementGeneration() {
                 this->generation++;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getNextIndex() {
                 mtx.lock();
                 currentPosition++;
@@ -152,6 +188,9 @@ namespace nd4j {
                 return ret;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t getNextElement() {
                 // TODO: proper implementation needed here
                 return generation == 1 ? buffer[getNextIndex()] : buffer[getNextIndex()]  * generation;
@@ -163,6 +202,9 @@ namespace nd4j {
              *
              * @param numberOfElements number of elements to skip
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void rewind(long numberOfElements) {
                 long newPos = this->getOffset() + numberOfElements;
                 if (newPos > this->getSize()) {
@@ -185,6 +227,9 @@ namespace nd4j {
 
         public:
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             IGenerator(nd4j::random::RandomBuffer *buffer) {
                 this->limit = buffer->getSize();
                 this->buffer = (uint64_t *) buffer->getBuffer();
@@ -192,22 +237,37 @@ namespace nd4j {
                 this->seed = buffer->getSeed();
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             RandomBuffer *getBuffer() {
                 return realBuffer;
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void setOffset(long offset) {
                 this->realBuffer->setOffset(offset);
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getElementAbsolute(long position) {
                 return buffer[position];
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             long getElementRelative(long position) {
                 return buffer[realBuffer->getOffset() + position];
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             virtual void refreshBuffer() = 0;
         };
 
@@ -217,7 +277,9 @@ namespace nd4j {
         protected:
             uint64_t state[2];
 
-
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             static inline uint64_t rotl(const uint64_t x, int k) {
                 return (x << k) | (x >> (64 - k));
             }
@@ -226,6 +288,9 @@ namespace nd4j {
              * This method returns 64 random bits
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t next64() {
                 const uint64_t s0 = state[0];
                 uint64_t s1 = state[1];
@@ -238,7 +303,9 @@ namespace nd4j {
                 return result;
             }
 
-
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t seedConv(long seed) {
                 uint64_t x = (uint64_t) seed;
                 uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
@@ -247,6 +314,9 @@ namespace nd4j {
                 return z ^ (z >> 31);
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void jump(void) {
                 static const uint64_t JUMP[] = { 0xbeac0467eba5facb, 0xd86b048b86aa9922 };
 
@@ -266,10 +336,16 @@ namespace nd4j {
             }
 
         public:
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             Xoroshiro128(nd4j::random::RandomBuffer *buffer) : IGenerator(buffer) {
                 //
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void refreshBuffer() {
                 state[0] = seedConv(this->seed);
                 state[1] = seedConv(this->seed * 119 + 3);

@@ -31,12 +31,17 @@ namespace nd4j {
 
 
         public:
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             RandomHelper(nd4j::random::IGenerator *generator) {
                 this->generator = generator;
                 this->buffer = generator->getBuffer();
             }
 
-
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             RandomHelper(nd4j::random::RandomBuffer *buffer) {
                 this->buffer = buffer;
             }
@@ -46,11 +51,17 @@ namespace nd4j {
              * This method returns random int in range [0..MAX_INT]
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int nextInt() {
                 int r = (int) nextUInt();
                 return r < 0 ? -1 * r : r;
             };
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t nextUInt() {
                 return buffer->getNextElement();
             }
@@ -60,6 +71,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int nextInt(int to) {
                 int r = nextInt();
                 int m = to - 1;
@@ -79,6 +93,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int nextInt(int from, int to) {
                 if (from == 0)
                     return nextInt(to);
@@ -91,6 +108,9 @@ namespace nd4j {
              * This method returns random T in range of [0..MAX_FLOAT]
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T nextMaxT() {
                 T rnd = (T) buffer->getNextElement();
                 return rnd < 0 ? -1 * rnd : rnd;
@@ -101,6 +121,9 @@ namespace nd4j {
              * This method returns random T in range of [0..1]
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T nextT() {
                 return (T) nextUInt() / (T) MAX_UINT;
             }
@@ -110,6 +133,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T nextT(T to) {
                 if (to == (T) 1.0f)
                     return nextT();
@@ -123,10 +149,16 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T nextT(T from, T to) {
                 return from + (nextT() * (to - from));
             }
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             uint64_t relativeUInt(int index) {
                 return buffer->getElement(index);
             }
@@ -135,6 +167,9 @@ namespace nd4j {
              *  relative methods are made as workaround for lock-free concurrent execution
              */
 
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int relativeInt(int index) {
                 return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
@@ -146,6 +181,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int relativeInt(int index, int to) {
                 int rel = relativeInt(index);
                 return rel % to;
@@ -159,6 +197,9 @@ namespace nd4j {
              * @param from
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             int relativeInt(int index, int to, int from) {
                 if (from == 0)
                     return relativeInt(index, to);
@@ -172,6 +213,9 @@ namespace nd4j {
              * @param index
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T relativeT(int index) {
                 return (T) relativeUInt(index) / (T) MAX_UINT;
             }
@@ -183,6 +227,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T relativeT(int index, T to) {
                 if (to == (T) 1.0f)
                     return relativeT(index);
@@ -198,6 +245,9 @@ namespace nd4j {
              * @param to
              * @return
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             T relativeT(int index, T from, T to) {
                 return from + (relativeT(index) * (to - from));
             }
@@ -208,6 +258,9 @@ namespace nd4j {
              *
              * @param numberOfElements number of elements to skip
              */
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
             void rewind(long numberOfElements) {
                 buffer->rewind(numberOfElements);
             }

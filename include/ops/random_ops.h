@@ -6,7 +6,7 @@
 #define LIBND4J_RANDOM_OPS_H
 
 #ifdef __CUDACC__
-#define random_def __device__ inline static
+#define random_def __device__ __host__ inline static
 #else
 #define random_def inline static
 #endif
@@ -17,6 +17,7 @@
 #define method_XY  random_def T op(T valueX, T valueY, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) { return -3.0f; }
 
 #define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
+#define no_exec_special_cuda __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) { }
 
 #include <helpers/helper_random.h>
 
@@ -30,6 +31,7 @@ namespace randomOps {
     public:
 
         no_exec_special
+        no_exec_special_cuda
 
         method_idx
         method_X
@@ -50,6 +52,7 @@ namespace randomOps {
     public:
 
         no_exec_special
+        no_exec_special_cuda
 
         method_XY
         method_X
@@ -66,6 +69,7 @@ namespace randomOps {
     class BernoulliDistribution {
     public:
         no_exec_special
+        no_exec_special_cuda
 
         method_XY
         method_X
@@ -84,6 +88,7 @@ namespace randomOps {
     public:
 
         no_exec_special
+        no_exec_special_cuda
 
         method_idx
         method_XY
@@ -102,6 +107,7 @@ namespace randomOps {
     public:
 
         no_exec_special
+        no_exec_special_cuda
 
         method_idx
         method_XY
@@ -119,6 +125,7 @@ namespace randomOps {
     public:
 
         no_exec_special
+        no_exec_special_cuda
 
         method_X
         method_XY
