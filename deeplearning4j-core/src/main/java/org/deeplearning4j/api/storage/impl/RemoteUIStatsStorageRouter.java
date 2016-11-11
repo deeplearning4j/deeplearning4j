@@ -19,15 +19,32 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Created by Alex on 10/11/2016.
+ * Asynchronously post all updates to a remote UI that has remote listening enabled.
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
+    /**
+     * Default path for posting data to the UI - i.e., http://localhost:9000/remoteReceive or similar
+     */
+    public static final String DEFAULT_PATH = "remoteReceive";
+    /**
+     * Default maximum number of (consecutive) retries on failure
+     */
+    public static final int DEFAULT_MAX_RETRIES = 10;
+    /**
+     * Base delay for retries
+     */
+    public static final long DEFAULT_BASE_RETR_DELAY_MS = 1000;
+    /**
+     * Default backoff multiplicative factor for retrying
+     */
+    public static final double DEFAULT_RETRY_BACKOFF_FACTOR = 2.0;
 
     private final String USER_AGENT = "Mozilla/5.0";
 
@@ -44,14 +61,48 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public RemoteUIStatsStorageRouter(String url) throws Exception {
-        this(url, 10, 1000, 2.0);
+    /**
+     * Create remote UI with defaults for all values except address
+     *
+     * @param address Address of the remote UI: for example, "http://localhost:9000"
+     */
+    public RemoteUIStatsStorageRouter(String address) {
+        this(address, DEFAULT_MAX_RETRIES, DEFAULT_BASE_RETR_DELAY_MS, DEFAULT_RETRY_BACKOFF_FACTOR);
     }
 
-    public RemoteUIStatsStorageRouter(String url, int maxRetryCount, long retryDelayMS, double retryBackoffFactor) {
+    /**
+     * @param address            Address of the remote UI: for example, "http://localhost:9000"
+     * @param maxRetryCount      Maximum number of retries before failing. Set to -1 to always retry
+     * @param retryDelayMS       Base delay before retrying, in milliseconds
+     * @param retryBackoffFactor Backoff factor for retrying: 2.0 for example gives delays of 1000, 2000, 4000, 8000,
+     *                           etc milliseconds, with a base retry delay of 1000
+     */
+    public RemoteUIStatsStorageRouter(String address, int maxRetryCount, long retryDelayMS, double retryBackoffFactor) {
+        this(address, DEFAULT_PATH, maxRetryCount, retryDelayMS, retryBackoffFactor);
+    }
+
+    /**
+     * @param address            Address of the remote UI: for example, "http://localhost:9000"
+     * @param path               Path/endpoint to post to: for example "remoteReceive" -> added to path to become like
+     *                           "http://localhost:9000/remoteReceive"
+     * @param maxRetryCount      Maximum number of retries before failing. Set to -1 to always retry
+     * @param retryDelayMS       Base delay before retrying, in milliseconds
+     * @param retryBackoffFactor Backoff factor for retrying: 2.0 for example gives delays of 1000, 2000, 4000, 8000,
+     *                           etc milliseconds, with a base retry delay of 1000
+     */
+    public RemoteUIStatsStorageRouter(String address, String path, int maxRetryCount, long retryDelayMS, double retryBackoffFactor) {
         this.maxRetryCount = maxRetryCount;
         this.retryDelayMS = retryDelayMS;
         this.retryBackoffFactor = retryBackoffFactor;
+
+        String url = address;
+        if (path != null) {
+            if (url.endsWith("/")) {
+                url = url + path;
+            } else {
+                url = url + "/" + path;
+            }
+        }
 
         try {
             this.url = new URL(url);
@@ -108,10 +159,11 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
         private final Persistable update;
     }
 
+    //Runnable class for doing async posting
     private class PostRunnable implements Runnable {
 
         private int failureCount = 0;
-        private long lastDelayMs = retryDelayMS;
+        private long nextDelayMs = retryDelayMS;
 
 
         @Override
@@ -119,8 +171,8 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
             try {
                 runHelper();
             } catch (Exception e) {
-                e.printStackTrace();
-                //TODO
+                log.error("Exception encountered in remote UI posting thread. Shutting down.", e);
+                shutdown.set(true);
             }
         }
 
@@ -144,7 +196,9 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                     try {
                         success = tryPost(toPost);
                     } catch (IOException e) {
-                        log.warn("Error posting to remote UI, failure count = {}", failureCount, e);
+                        failureCount++;
+                        log.warn("Error posting to remote UI at {}, consecutive failure count = {}. Waiting {} ms before retrying",
+                                url, failureCount, nextDelayMs, e);
                         success = false;
                     }
                     if (!success) {
@@ -156,17 +210,26 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                     } else {
                         successCount++;
                         failureCount = 0;
-                        lastDelayMs = retryDelayMS;
+                        nextDelayMs = retryDelayMS;
                     }
                 }
             }
+        }
 
+        private void waitForRetry() {
+            if (maxRetryCount >= 0 && failureCount > maxRetryCount) {
+                throw new RuntimeException("RemoteUIStatsStorageRouter: hit maximum consecutive failures(" + maxRetryCount +
+                        "). Shutting down remote router thread");
+            } else {
+                try {
+                    Thread.sleep(nextDelayMs);
+                } catch (InterruptedException e) {
+                }
+                nextDelayMs *= retryBackoffFactor;
+            }
         }
     }
 
-    private void waitForRetry() {
-
-    }
 
     private HttpURLConnection getConnection() throws IOException {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -215,31 +278,40 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
             throw new RuntimeException(e);  //Should never get an exception from simple Map<String,String>
         }
 
-        log.info("Attempting to post data: {}", str);
-
         DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
         dos.writeBytes(str);
         dos.flush();
         dos.close();
 
-        int responseCode = connection.getResponseCode();
-        System.out.println("\nSending 'POST' request to URL : " + url);
-//        System.out.println("Post parameters : " + urlParameters);
-        System.out.println("Response Code : " + responseCode);
+        try {
+            int responseCode = connection.getResponseCode();
 
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
+            if (responseCode != 200) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuilder response = new StringBuilder();
 
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                log.warn("Error posting to remote UI - received response code {}\tContent: {}", response, response.toString());
+
+                return false;
+            }
+        } catch (IOException e){
+            String msg = e.getMessage();
+            if(msg.contains("403 for URL")){
+                log.warn("Error posting to remote UI at {} (Response code: 403)." +
+                        " Remote listener support is not enabled? use UIServer.getInstance().enableRemoteListener()",url, e);
+            } else {
+                log.warn("Error posting to remote UI at {}", url, e);
+            }
+
+            return false;
         }
-        in.close();
 
-        //print result
-        System.out.println(response.toString());
-
-        return responseCode == 200;
+        return true;
     }
 }

@@ -18,6 +18,7 @@ import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -27,9 +28,10 @@ import java.util.List;
 /**
  * Created by Alex on 08/10/2016.
  */
+@Ignore
 public class TestPlayUI {
 
-    @Test
+    @Test @Ignore
     public void testUI() throws Exception {
 
         StatsStorage ss = new InMemoryStatsStorage();
@@ -61,7 +63,7 @@ public class TestPlayUI {
     }
 
 
-    @Test
+    @Test @Ignore
     public void testUIMultipleSessions() throws Exception {
 
         for( int session=0; session<3; session++ ) {
@@ -94,7 +96,7 @@ public class TestPlayUI {
         Thread.sleep(1000000);
     }
 
-    @Test
+    @Test @Ignore
     public void testUICompGraph() throws Exception {
 
         StatsStorage ss = new InMemoryStatsStorage();
