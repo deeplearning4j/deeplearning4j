@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.api.Model;
 import java.io.Serializable;
 
 /**
- * Each epoch the listener is called, mainly used for debugging or visualizations
+ * Each iteration the listener is called, mainly used for debugging or visualizations
  * @author Adam Gibson
  *
  */

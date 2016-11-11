@@ -49,54 +49,89 @@ public class UpdateFieldsPresentDecoder
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 4));
     }
 
-    public boolean histogramUpdates()
+    public boolean histogramGradients()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 5));
     }
 
-    public boolean histogramActivations()
+    public boolean histogramUpdates()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 6));
     }
 
-    public boolean meanParameters()
+    public boolean histogramActivations()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 7));
     }
 
-    public boolean meanUpdates()
+    public boolean meanParameters()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 8));
     }
 
-    public boolean meanActivations()
+    public boolean meanGradients()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 9));
     }
 
-    public boolean meanMagnitudeParameters()
+    public boolean meanUpdates()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 10));
     }
 
-    public boolean meanMagnitudeUpdates()
+    public boolean meanActivations()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 11));
     }
 
-    public boolean meanMagnitudeActivations()
+    public boolean stdevParameters()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 12));
     }
 
-    public boolean learningRatesPresent()
+    public boolean stdevGradients()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 13));
     }
 
-    public boolean dataSetMetaDataPresent()
+    public boolean stdevUpdates()
     {
         return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 14));
+    }
+
+    public boolean stdevActivations()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 15));
+    }
+
+    public boolean meanMagnitudeParameters()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 16));
+    }
+
+    public boolean meanMagnitudeGradients()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 17));
+    }
+
+    public boolean meanMagnitudeUpdates()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 18));
+    }
+
+    public boolean meanMagnitudeActivations()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 19));
+    }
+
+    public boolean learningRatesPresent()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 20));
+    }
+
+    public boolean dataSetMetaDataPresent()
+    {
+        return 0 != (buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN) & (1 << 21));
     }
     public String toString()
     {
@@ -152,6 +187,15 @@ public class UpdateFieldsPresentDecoder
             builder.append("histogramParameters");
             atLeastOne = true;
         }
+        if (histogramGradients())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("histogramGradients");
+            atLeastOne = true;
+        }
         if (histogramUpdates())
         {
             if (atLeastOne)
@@ -179,6 +223,15 @@ public class UpdateFieldsPresentDecoder
             builder.append("meanParameters");
             atLeastOne = true;
         }
+        if (meanGradients())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("meanGradients");
+            atLeastOne = true;
+        }
         if (meanUpdates())
         {
             if (atLeastOne)
@@ -197,6 +250,42 @@ public class UpdateFieldsPresentDecoder
             builder.append("meanActivations");
             atLeastOne = true;
         }
+        if (stdevParameters())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("stdevParameters");
+            atLeastOne = true;
+        }
+        if (stdevGradients())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("stdevGradients");
+            atLeastOne = true;
+        }
+        if (stdevUpdates())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("stdevUpdates");
+            atLeastOne = true;
+        }
+        if (stdevActivations())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("stdevActivations");
+            atLeastOne = true;
+        }
         if (meanMagnitudeParameters())
         {
             if (atLeastOne)
@@ -204,6 +293,15 @@ public class UpdateFieldsPresentDecoder
                 builder.append(',');
             }
             builder.append("meanMagnitudeParameters");
+            atLeastOne = true;
+        }
+        if (meanMagnitudeGradients())
+        {
+            if (atLeastOne)
+            {
+                builder.append(',');
+            }
+            builder.append("meanMagnitudeGradients");
             atLeastOne = true;
         }
         if (meanMagnitudeUpdates())
