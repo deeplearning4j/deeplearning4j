@@ -24,8 +24,8 @@ import java.io.IOException;
  */
 public class NormalizerStandardize implements DataNormalization {
     private static Logger logger = LoggerFactory.getLogger(NormalizerStandardize.class);
-    private int runningTotal , labelRunningTotal = 0;
-    private int batchCount,labelbatchCount = 0;
+    private int runningTotal, labelRunningTotal = 0;
+    private int batchCount, labelbatchCount = 0;
     private int featureRank = 2;
     private INDArray featureMeanStd, labelMeanStd;
     private INDArray featureMean, featureStd, labelMean, labelStd;
@@ -55,7 +55,7 @@ public class NormalizerStandardize implements DataNormalization {
         theStd.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
         if (theStd.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
             logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
-        return Nd4j.vstack(theMean,theStd).dup();
+        return Nd4j.vstack(theMean, theStd).dup();
     }
 
     private void runningFit(INDArray thenewArray, INDArray currentMeanStd, int runningTotal, boolean allDone) {
@@ -79,11 +79,10 @@ public class NormalizerStandardize implements DataNormalization {
             mtwoB.muli(batchCount);
             currentStd.addi(mtwoB);
             currentStd.addi(deltaSqScaled);
-            currentMeanStd.putRow(0,newMean);
-        }
-        else {
+            currentMeanStd.putRow(0, newMean);
+        } else {
             currentStd.divi(runningTotal);
-            Transforms.sqrt(currentStd,false);
+            Transforms.sqrt(currentStd, false);
             currentStd.addi(Nd4j.scalar(Nd4j.EPS_THRESHOLD));
             if (currentMeanStd.getRow(0).min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD))
                 logger.info("API_INFO: Std deviation found to be zero. Transform will round upto epsilon to avoid nans.");
@@ -93,25 +92,33 @@ public class NormalizerStandardize implements DataNormalization {
     /**
      * Flag to specify if the labels/outputs in the dataset should be also normalized
      * default value is false
+     *
      * @param fitLabels
      */
-
+    @Override
     public void fitLabel(boolean fitLabels) {
         this.fitLabels = fitLabels;
+    }
+
+    @Override
+    public boolean isFitLabel() {
+        return this.fitLabels;
     }
 
     /**
      * Fit the given model with dataset
      * to calculate mean and std dev with
+     *
      * @param dataSet
      */
+    @Override
     public void fit(DataSet dataSet) {
         //int size, sizeExcludeMask;
         featureRank = dataSet.getFeatures().rank();
 
         INDArray theFeatures = dataSet.getFeatures();
-        if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet,true);
-        if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet,true);
+        if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet, true);
+        if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet, true);
 
         featureMeanStd = fit(theFeatures);
         featureMean = featureMeanStd.getRow(0).dup();
@@ -119,8 +126,8 @@ public class NormalizerStandardize implements DataNormalization {
 
         if (fitLabels) {
             INDArray theLabels = dataSet.getLabels();
-            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet,false);
-            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet,false);
+            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet, false);
+            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet, false);
             labelMeanStd = fit(theLabels);
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
@@ -131,8 +138,10 @@ public class NormalizerStandardize implements DataNormalization {
     /**
      * Fit the given model with a given iterator
      * to calculate mean and std dev with
+     *
      * @param iterator
      */
+    @Override
     public void fit(DataSetIterator iterator) {
         featureMeanStd = null;
         batchCount = 0;
@@ -140,12 +149,12 @@ public class NormalizerStandardize implements DataNormalization {
         runningTotal = 0;
         labelRunningTotal = 0;
         INDArray theFeatures, theLabels;
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             DataSet next = iterator.next();
             theFeatures = next.getFeatures();
             theLabels = next.getLabels();
-            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next,true);
-            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next,true);
+            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next, true);
+            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next, true);
             batchCount = theFeatures.size(0);
             runningTotal += batchCount;
             if (fitLabels) {
@@ -154,21 +163,21 @@ public class NormalizerStandardize implements DataNormalization {
                 labelbatchCount = theLabels.size(0);
                 labelRunningTotal += labelbatchCount;
             }
-            if(featureMeanStd == null) {
+            if (featureMeanStd == null) {
                 this.fit(next);
-            }
-            else {
-                this.runningFit(theFeatures,featureMeanStd,runningTotal,false);
+            } else {
+                this.runningFit(theFeatures, featureMeanStd, runningTotal, false);
                 if (fitLabels) {
-                    this.runningFit(theLabels,labelMeanStd,labelRunningTotal,false);
+                    this.runningFit(theLabels, labelMeanStd, labelRunningTotal, false);
                 }
             }
         }
-        if (runningTotal != batchCount) this.runningFit(featureMeanStd,featureMeanStd,runningTotal,true);
+        if (runningTotal != batchCount) this.runningFit(featureMeanStd, featureMeanStd, runningTotal, true);
         featureMean = featureMeanStd.getRow(0).dup();
         featureStd = featureMeanStd.getRow(1).dup();
         if (fitLabels) {
-            if (labelRunningTotal != labelbatchCount) this.runningFit(labelMeanStd,labelMeanStd,labelRunningTotal,true);
+            if (labelRunningTotal != labelbatchCount)
+                this.runningFit(labelMeanStd, labelMeanStd, labelRunningTotal, true);
             labelMean = labelMeanStd.getRow(0).dup();
             labelStd = labelMeanStd.getRow(1).dup();
         }
@@ -177,11 +186,12 @@ public class NormalizerStandardize implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMean == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         INDArray theFeatures = toPreProcess.getFeatures();
         INDArray theLabels = toPreProcess.getLabels();
-        this.preProcess(theFeatures,true);
-        if (fitLabels) this.preProcess(theLabels,false);
+        this.preProcess(theFeatures, true);
+        if (fitLabels) this.preProcess(theLabels, false);
     }
 
     private void preProcess(INDArray theFeatures, boolean isFeatures) {
@@ -196,14 +206,14 @@ public class NormalizerStandardize implements DataNormalization {
         // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
         // both cases operations should be carried out in dimension 1
         else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(theFeatures,mean,theFeatures,1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theFeatures,std,theFeatures,1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(theFeatures, mean, theFeatures, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theFeatures, std, theFeatures, 1));
         }
-
     }
 
     /**
      * Transform the given dataset
+     *
      * @param toPreProcess
      */
     @Override
@@ -213,68 +223,94 @@ public class NormalizerStandardize implements DataNormalization {
 
     /**
      * Transform the given INDArray
+     *
      * @param theFeatures
      */
     @Override
     public void transform(INDArray theFeatures) {
-        this.transform(theFeatures,true);
+        this.transform(theFeatures, true);
+    }
+
+    @Override
+    public void transformLabel(INDArray label){
+        transform(label, false);
     }
 
     public void transform(INDArray theArray, boolean isFeatures) {
-        this.preProcess(theArray,isFeatures);
+        this.preProcess(theArray, isFeatures);
     }
 
     /**
      * Revert the data to what it was before transform
+     *
      * @param toPreProcess the dataset to revert back
      */
+    @Override
     public void revert(DataSet toPreProcess) {
-        if (featureMean== null || featureStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMean == null || featureStd == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        revertFeatures(toPreProcess.getFeatures());
+        revertLabels(toPreProcess.getLabels());
+    }
+
+    @Override
+    public void revertFeatures(INDArray features) {
+        if (featureMean == null || featureStd == null)
+            throw new IllegalStateException("Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+
         if (featureRank == 2) {
-            toPreProcess.getFeatures().muliRowVector(featureStd);
-            toPreProcess.getFeatures().addiRowVector(featureMean);
-            if(fitLabels) {
-                toPreProcess.getLabels().muliRowVector(labelStd);
-                toPreProcess.getLabels().addiRowVector(labelMean);
-            }
+            features.muliRowVector(featureStd).addiRowVector(featureMean);
+        } else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(features, featureStd, features, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(features, featureMean, features, 1));
         }
-        else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getFeatures(),featureStd,toPreProcess.getFeatures(),1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getFeatures(),featureMean,toPreProcess.getFeatures(),1));
-            if (fitLabels) {
-                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(toPreProcess.getLabels(),labelStd,toPreProcess.getLabels(),1));
-                Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(toPreProcess.getLabels(),labelMean,toPreProcess.getLabels(),1));
-            }
+    }
+
+    @Override
+    public void revertLabels(INDArray labels) {
+        if (!fitLabels) return;
+
+        if (featureRank == 2) {
+            labels.muliRowVector(labelStd);
+            labels.addiRowVector(labelMean);
+        } else {
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(labels, labelStd, labels, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(labels, labelMean, labels, 1));
         }
     }
 
     public INDArray getMean() {
-        if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMean == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         return featureMean;
     }
 
     public INDArray getLabelMean() {
-        if (featureMean == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureMean == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         return labelMean;
     }
 
     public INDArray getStd() {
-        if (featureStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureStd == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         return featureStd;
     }
 
     public INDArray getLabelStd() {
-        if (featureStd == null) throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
+        if (featureStd == null)
+            throw new RuntimeException("API_USE_ERROR: Preprocessors have to be explicitly fit before use. Usage: .fit(dataset) or .fit(datasetiterator)");
         return labelStd;
     }
 
     /**
      * Load the given mean and std
-     *@param statistics the statistics to laod
+     *
+     * @param statistics the statistics to laod
      * @throws IOException
      */
     @Override
-    public void load(File...statistics) throws IOException {
+    public void load(File... statistics) throws IOException {
         this.featureMean = Nd4j.readBinary(statistics[0]);
         this.featureStd = Nd4j.readBinary(statistics[1]);
         if (fitLabels) {
@@ -285,16 +321,17 @@ public class NormalizerStandardize implements DataNormalization {
 
     /**
      * Save the current mean and std
+     *
      * @param statistics the statistics to save
      * @throws IOException
      */
     @Override
-    public void save(File...statistics) throws IOException {
-        Nd4j.saveBinary(this.featureMean,statistics[0]);
-        Nd4j.saveBinary(this.featureStd,statistics[1]);
+    public void save(File... statistics) throws IOException {
+        Nd4j.saveBinary(this.featureMean, statistics[0]);
+        Nd4j.saveBinary(this.featureStd, statistics[1]);
         if (fitLabels) {
-            Nd4j.saveBinary(this.labelMean,statistics[2]);
-            Nd4j.saveBinary(this.labelStd,statistics[3]);
+            Nd4j.saveBinary(this.labelMean, statistics[2]);
+            Nd4j.saveBinary(this.labelStd, statistics[3]);
         }
     }
 
