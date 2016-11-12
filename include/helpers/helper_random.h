@@ -259,7 +259,7 @@ namespace nd4j {
              * @param numberOfElements number of elements to skip
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             void rewind(long numberOfElements) {
                 buffer->rewind(numberOfElements);

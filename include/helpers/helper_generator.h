@@ -47,7 +47,7 @@ namespace nd4j {
             long generation;
             long currentPosition;
             long amplifier;
-            int synchronizer;
+            unsigned int synchronizer;
 
 #ifdef __CUDACC__
             curandGenerator_t gen;
@@ -203,8 +203,46 @@ namespace nd4j {
              * @param numberOfElements number of elements to skip
              */
 #ifdef __CUDACC__
-            __host__ __device__
-#endif
+            __device__
+            void rewind(long numberOfElements) {
+                if (gridDim.x > 1) {
+                    __shared__ bool amLast;
+
+                    if (threadIdx.x == 0) {
+						unsigned int ticket = atomicInc(&synchronizer, gridDim.x);
+						amLast = (ticket == gridDim.x - 1);
+					}
+					__syncthreads();
+
+					if (amLast) {
+					    if (threadIdx.x == 0) {
+					        synchronizer = 0;
+
+					        long newPos = this->getOffset() + numberOfElements;
+                            if (newPos > this->getSize()) {
+                                newPos = numberOfElements - (this->getSize() - this->getOffset());
+                                this->incrementGeneration();
+                            } else if (newPos == this->getSize())
+                                newPos = 0;
+
+                            this->setOffset(newPos);
+					    }
+					}
+                } else {
+                    if (threadIdx.x == 0) {
+                        long newPos = this->getOffset() + numberOfElements;
+                        if (newPos > this->getSize()) {
+                            newPos = numberOfElements - (this->getSize() - this->getOffset());
+                            this->incrementGeneration();
+                        } else if (newPos == this->getSize())
+                            newPos = 0;
+
+                        this->setOffset(newPos);
+                    }
+                }
+            }
+        };
+#else
             void rewind(long numberOfElements) {
                 long newPos = this->getOffset() + numberOfElements;
                 if (newPos > this->getSize()) {
@@ -217,6 +255,8 @@ namespace nd4j {
                 this->setOffset(newPos);
             }
         };
+
+#endif
 
         class IGenerator {
         protected:

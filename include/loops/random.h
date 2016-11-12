@@ -91,6 +91,9 @@ namespace functions {
                         z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, &helper, extraArguments);
                     }
                 }
+
+                __syncthreads();
+                helper.rewind(length);
             }
 #endif
 
@@ -214,6 +217,7 @@ namespace functions {
                     }
                 }
 
+                __syncthreads();
                 helper.rewind(length);
             }
 #endif
@@ -310,7 +314,8 @@ namespace functions {
                     }
                 }
 
-                //helper.rewind(length);
+                __syncthreads();
+                helper.rewind(length);
             }
 #endif
 

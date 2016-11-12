@@ -369,6 +369,10 @@ namespace randomOps {
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = (T) success;
             }
+
+            __syncthreads();
+            if (trials > 0)
+                helper.rewind(zLength * trials);
         }
 #endif
 
