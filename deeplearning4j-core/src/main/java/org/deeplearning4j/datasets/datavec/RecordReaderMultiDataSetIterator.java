@@ -259,7 +259,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         else if(details.oneHot) arr = Nd4j.zeros(minValues, details.oneHotNumClasses);
         else arr = Nd4j.create(minValues, details.subsetEndInclusive-details.subsetStart + 1);
 
-        for( int i=0; i<minValues; i++){
+        for( int i = 0; i < minValues; i++) {
             List<Writable> c = list.get(i);
             if(details.entireReader) {
                 //Convert entire reader contents, without modification

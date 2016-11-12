@@ -45,15 +45,15 @@ import java.util.concurrent.locks.LockSupport;
 public class ParallelWrapper implements AutoCloseable {
     private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
-    private int workers = 2;
-    private int prefetchSize = 2;
-    private int averagingFrequency = 1;
+    private int workers;
+    private int prefetchSize;
+    private int averagingFrequency;
     private Trainer[] zoo;
     private AtomicLong iterationsCounter = new AtomicLong(0);
-    private boolean reportScore = false;
-    private boolean averageUpdaters = true;
-    private boolean legacyAveraging = false;
-    private boolean useParameterServer = false;
+    private boolean reportScore;
+    private boolean averageUpdaters;
+    private boolean legacyAveraging;
+    private boolean useParameterServer;
 
     private ParameterServerSubscriber parameterServer;
     private ParameterServerClient parameterServerClient;
@@ -62,11 +62,16 @@ public class ParallelWrapper implements AutoCloseable {
     private int parameterServerStatusPort = 10000;
     private String parameterServerHost = "0.0.0.0";
     private Aeron.Context ctx;
+
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
+        this(model,workers,prefetchSize,false);
+    }
+
+    protected ParallelWrapper(Model model, int workers, int prefetchSize,boolean useParameterServer) {
         this.model = model;
         this.workers = workers;
         this.prefetchSize = prefetchSize;
-
+        this.useParameterServer = useParameterServer;
         if (this.model instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) this.model).getUpdater();
         } else if (this.model instanceof ComputationGraph) {
@@ -79,6 +84,11 @@ public class ParallelWrapper implements AutoCloseable {
             zoo[cnt].start();
         }
 
+
+
+    }
+
+    private void initParamServer() {
         if(useParameterServer) {
             final MediaDriver.Context ctx = new MediaDriver.Context()
                     .threadingMode(ThreadingMode.DEDICATED)
@@ -91,7 +101,7 @@ public class ParallelWrapper implements AutoCloseable {
             parameterServer = new ParameterServerSubscriber(mediaDriver);
             parameterServer.run(new String[] {
                     "-m","true",
-                    "-l",String.valueOf(model.params().length()),
+                    "-s","1," + String.valueOf(model.params().length()),
                     "-p",String.valueOf(parameterServerPort),
                     "-h",parameterServerHost,
                     "-id","11",
@@ -110,7 +120,6 @@ public class ParallelWrapper implements AutoCloseable {
 
 
         }
-
     }
 
     private Aeron.Context getContext() {
@@ -282,6 +291,9 @@ public class ParallelWrapper implements AutoCloseable {
         }
         source.reset();
 
+        if(useParameterServer && parameterServer == null)
+            initParamServer();
+
         DataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
             iterator = new AsyncDataSetIterator(source, prefetchSize);
@@ -324,7 +336,12 @@ public class ParallelWrapper implements AutoCloseable {
                             score += zoo[cnt].getModel().score();
                         }
                         Nd4j.averageAndPropagate(model.params(), params);
-                    } else {
+                        parameterServerClient.pushNDArray(model.params());
+                    }
+                    else if(useParameterServer) {
+                        parameterServerClient.pushNDArray(model.params());
+                    }
+                    else {
                         INDArray params = Nd4j.zeros(model.params().shape());
                         int cnt = 0;
                         for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -568,7 +585,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @return
          */
         public ParallelWrapper build() {
-            ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize);
+            ParallelWrapper wrapper = new ParallelWrapper(model, workers, prefetchSize,useParameterServer);
             wrapper.averagingFrequency = this.averagingFrequency;
             wrapper.reportScore = this.reportScore;
             wrapper.averageUpdaters = this.averageUpdaters;
