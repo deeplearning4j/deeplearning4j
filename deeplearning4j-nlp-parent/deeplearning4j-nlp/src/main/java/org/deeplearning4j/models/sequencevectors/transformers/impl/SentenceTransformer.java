@@ -3,6 +3,8 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl;
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.SequenceTransformer;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;
@@ -32,6 +34,8 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     protected LabelAwareIterator iterator;
     protected boolean readOnly = false;
     protected AtomicInteger sentenceCounter = new AtomicInteger(0);
+    protected boolean allowMultithreading = false;
+    protected BasicTransformerIterator currentIterator;
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
 
@@ -42,8 +46,6 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     @Override
     public Sequence<VocabWord> transformToSequence(String object) {
         Sequence<VocabWord> sequence = new Sequence<>();
-
-        //log.info("Tokenizing string: '" + object + "'");
 
         Tokenizer tokenizer = tokenizerFactory.create(object);
         List<String> list = tokenizer.getTokens();
@@ -61,43 +63,30 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
-        iterator.reset();
+        if (currentIterator != null)
+            reset();
 
-        return new Iterator<Sequence<VocabWord>>() {
-            @Override
-            public boolean hasNext() {
-                return SentenceTransformer.this.iterator.hasNextDocument();
-            }
+        if (!allowMultithreading)
+            currentIterator = new BasicTransformerIterator(iterator, this);
+        else
+            currentIterator = new ParallelTransformerIterator(iterator, this, true);
 
-            @Override
-            public Sequence<VocabWord> next() {
-                LabelledDocument document = iterator.nextDocument();
-                if  (document.getContent() == null) return new Sequence<>();
-                Sequence<VocabWord> sequence = SentenceTransformer.this.transformToSequence(document.getContent());
-
-                for (String label: document.getLabels()) {
-                    sequence.addSequenceLabel(new VocabWord(1.0, label));
-                }
-                /*
-                if (document.getLabel() != null && !document.getLabel().isEmpty()) {
-                    sequence.setSequenceLabel(new VocabWord(1.0, document.getLabel()));
-                }*/
-
-                return sequence;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
+        return currentIterator;
     }
+
+    @Override
+    public void reset() {
+        if (currentIterator != null)
+            currentIterator.reset();
+    }
+
 
     public static class Builder {
         protected TokenizerFactory tokenizerFactory;
         protected LabelAwareIterator iterator;
         protected VocabCache<VocabWord> vocabCache;
         protected boolean readOnly = false;
+        protected boolean allowMultithreading = false;
 
         public Builder() {
 
@@ -128,10 +117,22 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             return this;
         }
 
+        /**
+         * This method enables/disables parallel processing over sentences
+         *
+         * @param reallyAllow
+         * @return
+         */
+        public Builder allowMultithreading(boolean reallyAllow) {
+            this.allowMultithreading = reallyAllow;
+            return this;
+        }
+
         public SentenceTransformer build() {
             SentenceTransformer transformer = new SentenceTransformer(this.iterator);
             transformer.tokenizerFactory = this.tokenizerFactory;
             transformer.readOnly = this.readOnly;
+            transformer.allowMultithreading = this.allowMultithreading;
 
             return transformer;
         }

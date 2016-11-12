@@ -70,7 +70,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder histogramUpdates(final boolean value)
+    public UpdateFieldsPresentEncoder histogramGradients(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 5) : bits & ~(1 << 5);
@@ -78,7 +78,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder histogramActivations(final boolean value)
+    public UpdateFieldsPresentEncoder histogramUpdates(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 6) : bits & ~(1 << 6);
@@ -86,7 +86,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanParameters(final boolean value)
+    public UpdateFieldsPresentEncoder histogramActivations(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 7) : bits & ~(1 << 7);
@@ -94,7 +94,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanUpdates(final boolean value)
+    public UpdateFieldsPresentEncoder meanParameters(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 8) : bits & ~(1 << 8);
@@ -102,7 +102,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanActivations(final boolean value)
+    public UpdateFieldsPresentEncoder meanGradients(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 9) : bits & ~(1 << 9);
@@ -110,7 +110,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanMagnitudeParameters(final boolean value)
+    public UpdateFieldsPresentEncoder meanUpdates(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 10) : bits & ~(1 << 10);
@@ -118,7 +118,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanMagnitudeUpdates(final boolean value)
+    public UpdateFieldsPresentEncoder meanActivations(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 11) : bits & ~(1 << 11);
@@ -126,7 +126,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder meanMagnitudeActivations(final boolean value)
+    public UpdateFieldsPresentEncoder stdevParameters(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 12) : bits & ~(1 << 12);
@@ -134,7 +134,7 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder learningRatesPresent(final boolean value)
+    public UpdateFieldsPresentEncoder stdevGradients(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 13) : bits & ~(1 << 13);
@@ -142,10 +142,66 @@ public class UpdateFieldsPresentEncoder
         return this;
     }
 
-    public UpdateFieldsPresentEncoder dataSetMetaDataPresent(final boolean value)
+    public UpdateFieldsPresentEncoder stdevUpdates(final boolean value)
     {
         int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
         bits = value ? bits | (1 << 14) : bits & ~(1 << 14);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder stdevActivations(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 15) : bits & ~(1 << 15);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder meanMagnitudeParameters(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 16) : bits & ~(1 << 16);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder meanMagnitudeGradients(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 17) : bits & ~(1 << 17);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder meanMagnitudeUpdates(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 18) : bits & ~(1 << 18);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder meanMagnitudeActivations(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 19) : bits & ~(1 << 19);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder learningRatesPresent(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 20) : bits & ~(1 << 20);
+        buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public UpdateFieldsPresentEncoder dataSetMetaDataPresent(final boolean value)
+    {
+        int bits = buffer.getInt(offset, java.nio.ByteOrder.LITTLE_ENDIAN);
+        bits = value ? bits | (1 << 21) : bits & ~(1 << 21);
         buffer.putInt(offset, bits, java.nio.ByteOrder.LITTLE_ENDIAN);
         return this;
     }

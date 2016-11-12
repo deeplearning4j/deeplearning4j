@@ -33,6 +33,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -194,6 +195,9 @@ public class Word2VecTests {
     }
 
 
+
+
+
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
@@ -217,6 +221,7 @@ public class Word2VecTests {
                 //.negativeSample(10)
                 .epochs(1)
                 .windowSize(5)
+                .allowParallelTokenization(true)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
                 .tokenizerFactory(t)

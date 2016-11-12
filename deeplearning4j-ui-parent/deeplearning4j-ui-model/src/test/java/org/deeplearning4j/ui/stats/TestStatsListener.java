@@ -6,8 +6,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.ui.storage.Persistable;
-import org.deeplearning4j.ui.storage.StatsStorage;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -47,7 +47,8 @@ public class TestStatsListener {
             net.fit(ds);
         }
 
-        assertEquals(1, ss.listSessionIDs().size());
+        List<String> sids = ss.listSessionIDs();
+        assertEquals(1, sids.size());
         String sessionID = ss.listSessionIDs().get(0);
         assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
         String typeID = ss.listTypeIDsForSession(sessionID).get(0);

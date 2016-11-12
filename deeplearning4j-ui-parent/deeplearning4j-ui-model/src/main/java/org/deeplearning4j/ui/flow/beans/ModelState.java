@@ -2,13 +2,14 @@ package org.deeplearning4j.ui.flow.beans;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * @author raver119@gmail.com
  */
 @Data
-public class ModelState {
+public class ModelState implements Serializable {
     private float score = 0.0f;
     private String trainingTime;
     private List<Float> scores = new ArrayList<>();
