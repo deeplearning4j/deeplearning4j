@@ -46,7 +46,8 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>openblas</artifactId>
-            <version>0.2.19-1.2.5-SNAPSHOT</version>
+<!--            <version>${javacpp.version}-1.2</version> -->
+            <version>0.2.19-1.2.5-SNAPSHOT</version> 
         </dependency>
     </dependencies>
 

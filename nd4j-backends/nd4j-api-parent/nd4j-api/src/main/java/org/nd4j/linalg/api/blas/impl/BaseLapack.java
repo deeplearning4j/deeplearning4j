@@ -31,9 +31,9 @@ public  abstract  class BaseLapack implements Lapack {
         		Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, mn}));
         
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-	    throw new UnsupportedOperationException() ;
+	    dgetrf(m,n,A,IPIV,INFO) ;
         else if (A.data().dataType() == DataBuffer.Type.FLOAT)
-	    sgetrf(m,n,A,m,IPIV,INFO);
+	    sgetrf(m,n,A,IPIV,INFO);
         else
 	    throw new UnsupportedOperationException() ;
 
@@ -55,11 +55,11 @@ public  abstract  class BaseLapack implements Lapack {
     * @param M  the number of rows in the matrix A
     * @param N  the number of cols in the matrix A
     * @param A  the matrix to factorize - data must be in column order ( create with 'f' ordering )
-    * @param lda  leading diagonal of the matrix ( i.e. for compatability with FORTRAN arrays - just use M )
     * @param IPIV an output array for the permutations ( must be int based storage )
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
-    public abstract void sgetrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) ;
+    public abstract void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) ;
+    public abstract void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) ;
 
 
     @Override

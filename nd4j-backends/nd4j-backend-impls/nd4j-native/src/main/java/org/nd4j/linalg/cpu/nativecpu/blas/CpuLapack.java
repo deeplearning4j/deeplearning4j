@@ -9,15 +9,25 @@ import static org.bytedeco.javacpp.openblas.*;
  * CPU lapack implementation
  */
 public class CpuLapack extends BaseLapack {
+    protected static int getColumnOrder( INDArray A ) {
+	return A.ordering() == 'f' ? LAPACK_COL_MAJOR : LAPACK_ROW_MAJOR ;
+    }
+    protected static int getLda( INDArray A ) {
+	return A.ordering() == 'f' ? A.rows() : A.columns() ;
+    }
 
     @Override
-    public void sgetrf(int M, int N, INDArray A, int lda, INDArray IPIV, INDArray INFO) {
+    public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
 	
-	//public static native int LAPACKE_sgetrf( int matrix_layout, int m, int n,
-        //                   FloatPointer a, int lda, IntPointer ipiv );
+	int status = org.bytedeco.javacpp.openblas.LAPACKE_sgetrf(
+			getColumnOrder(A), M, N, A.data().asNioFloat(), getLda(A), IPIV.data().asNioInt() ) ;
+    }
 
-	int status = LAPACKE_sgetrf(LAPACK_ROW_MAJOR, M, N, A.data().asNioFloat(), lda, IPIV.data().asNioInt() ) ;
-
+    @Override
+    public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
+	
+	int status = org.bytedeco.javacpp.openblas.LAPACKE_dgetrf(
+			getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
 
