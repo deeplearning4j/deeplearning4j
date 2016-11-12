@@ -249,6 +249,7 @@ namespace randomOps {
 
             __shared__ int zLength;
             __shared__ int zEWS;
+            __shared__ int yEWS;
             __shared__ T mean;
             __shared__ T stddev;
             __shared__ int step;
@@ -264,6 +265,7 @@ namespace randomOps {
                 tZ = (T *) shmem;
 
                 zLength = shape::length(zShapeBuffer);
+                zLength = shape::length(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
 
                 epsilon = (T) 1e-15;
@@ -295,7 +297,9 @@ namespace randomOps {
                         tZ[threadIdx.x+1] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
                 }
                 __syncthreads();
-                z[e *zEWS] =  tZ[threadIdx.x] * stddev + mean;
+                T realMean = y == z ? mean : y[e * yEWS];
+
+                z[e *zEWS] =  tZ[threadIdx.x] * stddev + realMean;
             }
 
             __syncthreads();
@@ -310,6 +314,7 @@ namespace randomOps {
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
 
             int zLength = shape::length(zShapeBuffer);
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
             int zEWS = shape::elementWiseStride(zShapeBuffer);
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
@@ -353,9 +358,13 @@ namespace randomOps {
 
                         generated = true;
 
-                        z[e * zEWS] = z0 * stddev + mean;
+                        T realMean = y == z ? mean : y[e * yEWS];
+
+                        z[e * zEWS] = z0 * stddev + realMean;
                     } else {
-                        z[e * zEWS] = z1 * stddev + mean;
+                        T realMean = y == z ? mean : y[e * yEWS];
+
+                        z[e * zEWS] = z1 * stddev + realMean;
 
                         generated = false;
                     }
