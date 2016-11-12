@@ -34,17 +34,24 @@ public class TestFormatting extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new float[]{1f,20000000f,40.838383f,3f}, new int[]{2,2});
 
         //default
-        String expected1 = "[[         1.00,20,000,000.00],\n" +
-                " [        40.84,         3.00]]";
+        String expected1 = "[[1.00,40.84],\n" +
+                           " [20,000,000.00,3.00]]";
         String serializedData1 = new NDArrayStrings(",",2).format(arr);
         Assert.assertTrue(serializedData1.equals(expected1));
 
         //remove commas
-        String expected2 = "[[       1.00,20000000.00],\n" +
-                " [      40.84,       3.00]]";
+        String expected2 = "[[1.00,40.84],\n" +
+                " [20000000.00,3.00]]";
         String serializedData2 = new NDArrayStrings(",",2,"######0").format(arr);
         Assert.assertTrue(serializedData2.equals(expected2));
 
+    }
+
+    @Test
+    public void blah() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arrA = Nd4j.create(new float[] {1.0f,2.0f,3.0f,4.0f}, new int[] {2,2});
+        String b = new NDArrayStrings(",",2,"######0").format(arr);
     }
 
 
