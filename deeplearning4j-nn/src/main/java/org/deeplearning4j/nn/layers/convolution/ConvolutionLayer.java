@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -190,6 +191,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
         }
 
+        //Input validation: expect rank 4 matrix
+        if(input.rank() != 4){
+            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to ConvolutionLayer with shape "
+                    + Arrays.toString(input.shape()) + ". "
+                    + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
+                    + (input.rank() == 2 ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)" : "")
+            );
+        }
+
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -197,8 +207,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if(input.size(1) != inDepth){
-            throw new IllegalStateException("Cannot do forward pass: data input depth does not match CNN layer configuration"
-                    + " (data input depth = " + input.size(1) + ", shape=" + Arrays.toString(input.shape()) + "; expected"
+            throw new DL4JInvalidInputException("Cannot do forward pass: input array depth does not match CNN layer configuration"
+                    + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]=" + Arrays.toString(input.shape()) + "; expected"
                     + " input depth = " + inDepth + ")");
         }
         int kH = weights.size(2);
