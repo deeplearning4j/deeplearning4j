@@ -47,14 +47,6 @@ public class TestFormatting extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void blah() {
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray arrA = Nd4j.create(new float[] {1.0f,2.0f,3.0f,4.0f}, new int[] {2,2});
-        String b = new NDArrayStrings(",",2,"######0").format(arr);
-    }
-
-
     @Override
     public char ordering() {
         return 'f';
