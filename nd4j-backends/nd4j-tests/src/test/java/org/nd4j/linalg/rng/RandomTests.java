@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
@@ -459,6 +460,9 @@ public class RandomTests extends BaseNd4jTest {
                     Random rnd = Nd4j.getRandom();
                     rnd.setSeed(119);
                     INDArray array = Nd4j.getExecutioner().exec(new UniformDistribution(Nd4j.createUninitialized(25)));
+
+                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
                     list.set(cnt.getAndIncrement(), array);
                 }

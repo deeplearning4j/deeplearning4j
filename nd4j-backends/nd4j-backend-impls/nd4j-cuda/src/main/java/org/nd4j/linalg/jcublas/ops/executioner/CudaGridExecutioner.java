@@ -224,7 +224,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Variance acc = (Variance) op;
             if (flush) flushQueue();
 
-            logger.info("Sending Variance to CudaExecutioner: {}", Arrays.toString(dimensions));
             super.naiveExec(acc, dimensions);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
