@@ -304,7 +304,7 @@ public class RBMTests {
 
         INDArray params = getStandardParams(6, 2);
 
-        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 500);
+        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 5000);
         rbm.setListeners(new ScoreIterationListener(10));
         rbm.fit(features);
 
@@ -341,7 +341,7 @@ public class RBMTests {
                 .nIn(nIn)
                 .nOut(nOut)
                 .learningRate(1e-1f)
-                .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
+                .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
