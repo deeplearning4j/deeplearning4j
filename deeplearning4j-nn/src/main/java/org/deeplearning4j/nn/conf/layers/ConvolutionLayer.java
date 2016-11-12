@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -64,6 +65,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
+
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret
                 = new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         ret.setListeners(iterationListeners);
