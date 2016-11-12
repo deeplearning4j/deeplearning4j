@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
+import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
@@ -25,12 +26,18 @@ public class MultiLayerUpdater implements Updater {
 
     public MultiLayerUpdater(MultiLayerNetwork network) {
         Layer[] layers = network.getLayers();
+        for(int i = 0; i < layers.length; i++) {
+           while(layers[i] == null)
+               layers = network.getLayers();
+        }
         layerUpdaters = new Updater[layers.length];
 
         int updaterStateSize = 0;
         for (int i = 0; i < layers.length; i++) {
-            layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
-            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layers[i]);
+            Layer layer = layers[i];
+            Preconditions.checkNotNull(layer);
+            layerUpdaters[i] = UpdaterCreator.getUpdater(layer);
+            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
         }
 
         //Initialize the updater state:

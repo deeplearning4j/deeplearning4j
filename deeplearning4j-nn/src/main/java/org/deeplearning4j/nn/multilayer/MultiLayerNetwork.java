@@ -2066,7 +2066,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @return
      */
-    public Layer[] getLayers() {
+    public synchronized Layer[] getLayers() {
         return layers;
     }
 

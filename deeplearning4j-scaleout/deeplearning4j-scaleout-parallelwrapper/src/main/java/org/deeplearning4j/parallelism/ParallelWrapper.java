@@ -1,9 +1,12 @@
 package org.deeplearning4j.parallelism;
 
+import io.aeron.Aeron;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import lombok.NonNull;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -11,6 +14,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -18,6 +22,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.ParameterServerSubscriber;
+import org.nd4j.parameterserver.client.ParameterServerClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +34,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 /**
- * This is simple data-parallel wrapper suitable for multi-cpu/multi-gpu environments.
+ * This is simple data-parallel
+ * wrapper suitable for multi-cpu/multi-gpu environments.
  *
  * @author raver119@gmail.com
  */
@@ -40,12 +48,20 @@ public class ParallelWrapper implements AutoCloseable {
     private int workers = 2;
     private int prefetchSize = 2;
     private int averagingFrequency = 1;
-    private Trainer zoo[];
+    private Trainer[] zoo;
     private AtomicLong iterationsCounter = new AtomicLong(0);
     private boolean reportScore = false;
     private boolean averageUpdaters = true;
     private boolean legacyAveraging = false;
+    private boolean useParameterServer = false;
 
+    private ParameterServerSubscriber parameterServer;
+    private ParameterServerClient parameterServerClient;
+    private MediaDriver mediaDriver;
+    private int parameterServerPort = 40123;
+    private int parameterServerStatusPort = 10000;
+    private String parameterServerHost = "0.0.0.0";
+    private Aeron.Context ctx;
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
         this.workers = workers;
@@ -62,7 +78,52 @@ public class ParallelWrapper implements AutoCloseable {
             zoo[cnt] = new Trainer(cnt, model);
             zoo[cnt].start();
         }
+
+        if(useParameterServer) {
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                    .threadingMode(ThreadingMode.DEDICATED)
+                    .dirsDeleteOnStart(true)
+                    .termBufferSparseFile(false)
+                    .conductorIdleStrategy(new BusySpinIdleStrategy())
+                    .receiverIdleStrategy(new BusySpinIdleStrategy())
+                    .senderIdleStrategy(new BusySpinIdleStrategy());
+            mediaDriver = MediaDriver.launch(ctx);
+            parameterServer = new ParameterServerSubscriber(mediaDriver);
+            parameterServer.run(new String[] {
+                    "-m","true",
+                    "-l",String.valueOf(model.params().length()),
+                    "-p",String.valueOf(parameterServerPort),
+                    "-h",parameterServerHost,
+                    "-id","11",
+                    "-md", mediaDriver.aeronDirectoryName(),
+                    "-sp", String.valueOf(parameterServerStatusPort)
+            });
+
+            parameterServerClient = ParameterServerClient
+                    .builder()
+                    .ctx(getContext())
+                    .ndarrayRetrieveUrl(parameterServer.getResponder().connectionUrl())
+                    .ndarraySendUrl(parameterServer.getSubscriber().connectionUrl())
+                    .subscriberHost(parameterServerHost)
+                    .subscriberPort(40125)
+                    .subscriberStream(12).build();
+
+
+        }
+
     }
+
+    private Aeron.Context getContext() {
+        if(ctx == null)
+            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+                    .availableImageHandler(AeronUtil::printAvailableImage)
+                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                    .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                    .keepAliveInterval(1000)
+                    .errorHandler(e -> logger.error(e.toString(), e));
+        return ctx;
+    }
+
 
     @Override
     public void close() throws Exception {
@@ -73,6 +134,14 @@ public class ParallelWrapper implements AutoCloseable {
             }
             zoo = null;
         }
+
+        if(mediaDriver != null) {
+            mediaDriver.close();
+            mediaDriver = null;
+        }
+
+
+
     }
 
     /**
@@ -246,7 +315,6 @@ public class ParallelWrapper implements AutoCloseable {
                 /*
                     average model, and propagate it to whole
                 */
-                GridExecutioner executioner = (GridExecutioner) Nd4j.getExecutioner();
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
                     if (!legacyAveraging) {
@@ -346,6 +414,51 @@ public class ParallelWrapper implements AutoCloseable {
         private boolean reportScore = false;
         private boolean averageUpdaters = true;
         private boolean legacyAveraging = true;
+        private boolean useParameterServer = false;
+        private int parameterServerPort = 40123;
+        private int parameterServerStatusPort = 10000;
+        private String parameterServerHost = "localhost";
+
+        /**
+         * Parameter server host
+         * @param parameterServerHost the host to use (default 0.0.0.0)
+         * @return
+         */
+        public Builder parameterServerHost(String parameterServerHost) {
+            this.parameterServerHost = parameterServerHost;
+            return this;
+        }
+
+        /**
+         * Parameter server status port for displaying
+         * status of parameter server
+         * @param parameterServerStatusPort the port to use
+         * @return
+         */
+        public Builder parameterServerStatusPort(int parameterServerStatusPort) {
+            this.parameterServerStatusPort = parameterServerStatusPort;
+            return this;
+        }
+
+        /**
+         * Parameter server status port
+         * @param parameterServerPort the parameter server status port
+         * @return
+         */
+        public Builder parameterServerPort(int parameterServerPort) {
+            this.parameterServerPort = parameterServerPort;
+            return this;
+        }
+
+        /**
+         * Whether to use a parameter server or not
+         * @param useParameterServer
+         * @return
+         */
+        public Builder useParameterServer(boolean useParameterServer) {
+            this.useParameterServer = useParameterServer;
+            return this;
+        }
 
         /**
          * Build ParallelWrapper for MultiLayerNetwork
@@ -460,7 +573,10 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.reportScore = this.reportScore;
             wrapper.averageUpdaters = this.averageUpdaters;
             wrapper.legacyAveraging = this.legacyAveraging;
-
+            wrapper.useParameterServer = useParameterServer;
+            wrapper.parameterServerPort = parameterServerPort;
+            wrapper.parameterServerStatusPort = parameterServerStatusPort;
+            wrapper.parameterServerHost = parameterServerHost;
             return wrapper;
         }
     }
@@ -476,11 +592,17 @@ public class ParallelWrapper implements AutoCloseable {
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
         private boolean useMDS = false;
+        private boolean useParameterServer = false;
+        private ParameterServerClient parameterServerClient;
 
-
-        public Trainer(int threadId, Model model, boolean useMDS) {
+        public Trainer(int threadId, Model model, boolean useMDS,boolean useParameterServer) {
             this(threadId, model);
             this.useMDS = useMDS;
+            this.useParameterServer = useParameterServer;
+        }
+
+        public Trainer(int threadId, Model model, boolean useMDS) {
+            this(threadId,model,useMDS,false);
         }
 
         public Trainer(int threadId, Model model) {
@@ -490,9 +612,10 @@ public class ParallelWrapper implements AutoCloseable {
 
             this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
-
-//                if (threadId != 0)
-//                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+                MultiLayerNetwork cloned = (MultiLayerNetwork) model;
+                this.replicatedModel = cloned.clone();
+                if (threadId != 0)
+                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             } else if (model instanceof ComputationGraph) {
                 this.replicatedModel = ((ComputationGraph) model).clone();
 
@@ -516,7 +639,6 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         public void updateModel(@NonNull Model model) {
-
             this.shouldUpdate.set(true);
 
             if (replicatedModel instanceof MultiLayerNetwork) {
@@ -555,7 +677,7 @@ public class ParallelWrapper implements AutoCloseable {
                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
 
-        public boolean isRunning(){
+        public boolean isRunning() {
             // if Trainer thread got exception during training - rethrow it here
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
@@ -619,17 +741,13 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         public void waitTillRunning() {
-            while (running.get() != 0) {
+            while (isRunning()) {
 
                 // if Trainer thread got exception during training - rethrow it here
                 if (thrownException != null)
                     throw new RuntimeException(thrownException);
 
-                try {
-                    Thread.sleep(10);
-                } catch (Exception e) {
-                    ;
-                }
+                LockSupport.parkNanos(1000);
             }
         }
     }
