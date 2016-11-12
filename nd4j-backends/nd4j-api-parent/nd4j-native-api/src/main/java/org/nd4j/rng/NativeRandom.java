@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
@@ -89,7 +90,7 @@ public abstract class NativeRandom implements Random {
         synchronized (this) {
             this.seed = seed;
             this.amplifier = seed;
-            nativeOps.refreshBuffer(seed, statePointer);
+            nativeOps.refreshBuffer(getExtraPointers(), seed, statePointer);
         }
     }
 
@@ -139,6 +140,8 @@ public abstract class NativeRandom implements Random {
 
         return next < 0 ? -1 * next : next;
     }
+
+    public abstract PointerPointer getExtraPointers();
 
     @Override
     public boolean nextBoolean() {
@@ -242,7 +245,7 @@ public abstract class NativeRandom implements Random {
     public void reSeed(long amplifier) {
         this.amplifier = amplifier;
 
-        nativeOps.reSeedBuffer(amplifier, getStatePointer());
+        nativeOps.reSeedBuffer(getExtraPointers(), amplifier, getStatePointer());
     }
 
     @Override

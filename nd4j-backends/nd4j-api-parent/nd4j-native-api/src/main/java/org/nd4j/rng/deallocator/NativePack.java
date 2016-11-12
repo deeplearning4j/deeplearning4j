@@ -3,6 +3,7 @@ package org.nd4j.rng.deallocator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**

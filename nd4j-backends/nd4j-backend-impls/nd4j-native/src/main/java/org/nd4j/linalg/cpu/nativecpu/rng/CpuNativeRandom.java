@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu.rng;
 
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.rng.NativeRandom;
 
 /**
@@ -23,6 +24,11 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        statePointer = nativeOps.initRandom(seed, numberOfElements, stateBuffer.addressPointer());
+        statePointer = nativeOps.initRandom(getExtraPointers(), seed, numberOfElements, stateBuffer.addressPointer());
+    }
+
+    @Override
+    public PointerPointer getExtraPointers() {
+        return null;
     }
 }

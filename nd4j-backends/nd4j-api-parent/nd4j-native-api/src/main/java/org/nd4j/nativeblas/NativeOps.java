@@ -1491,11 +1491,11 @@ public class NativeOps extends Pointer {
     public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer x, IntPointer xShapeBuffer, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
 
 
-    public native Pointer initRandom(long seed, long numberOfElements, Pointer pointerToBuffer);
+    public native Pointer initRandom(PointerPointer extraPointers, long seed, long numberOfElements, Pointer pointerToBuffer);
 
-    public native void refreshBuffer(long seed, Pointer pointer);
+    public native void refreshBuffer(PointerPointer extraPointers, long seed, Pointer pointer);
 
-    public native void reSeedBuffer(long seed, Pointer pointer);
+    public native void reSeedBuffer(PointerPointer extraPointers, long seed, Pointer pointer);
 
     public native void destroyRandom(Pointer pointer);
 }
