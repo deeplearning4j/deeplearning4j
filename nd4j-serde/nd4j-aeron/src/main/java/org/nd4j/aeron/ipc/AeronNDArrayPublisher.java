@@ -195,5 +195,6 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
                 publication.close();
             }catch(Exception e) {}
         }
+
     }
 }

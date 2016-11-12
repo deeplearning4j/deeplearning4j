@@ -85,9 +85,12 @@ public class NdArrayIpcTest {
         AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
                 .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
                 .build();
-        for(int i = 0; i< 1000 && running.get(); i++)
+        for(int i = 0; i< 10 && running.get(); i++) {
             publisher.publish(arr);
+            Thread.sleep(10);
+        }
         publisher.close();
+        Thread.sleep(10000);
         assertFalse(running.get());
 
     }

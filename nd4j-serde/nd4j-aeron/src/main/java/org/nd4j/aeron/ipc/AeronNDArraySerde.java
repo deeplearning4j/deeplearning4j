@@ -163,6 +163,8 @@ public class AeronNDArraySerde {
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);
         int rank = byteBuffer.getInt();
+        if(rank < 0)
+            throw new IllegalStateException("Found negative integer. Corrupt serialization?");
         //get the shape buffer length to create the shape information buffer
         int shapeBufferLength = Shape.shapeInfoLength(rank);
         //create the ndarray shape information
