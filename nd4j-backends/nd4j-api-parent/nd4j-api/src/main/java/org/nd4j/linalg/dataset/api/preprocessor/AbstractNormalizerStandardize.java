@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Base class with common functionality for standardize normalizers
  */
-abstract class AbstractNormalizerStandardize implements DataNormalization{
+abstract class AbstractNormalizerStandardize {
 
     void assertIsFit() {
         if (!isFit()) {

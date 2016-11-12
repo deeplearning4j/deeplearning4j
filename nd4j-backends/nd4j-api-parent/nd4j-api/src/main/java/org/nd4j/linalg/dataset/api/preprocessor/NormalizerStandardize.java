@@ -174,6 +174,13 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
         assertIsFit();
         return labelStats.getStd();
     }
+
+
+    @Override
+    protected boolean isFit() {
+        return featureStats != null;
+    }
+
     /**
      * Load the means and standard deviations from the file system
      *

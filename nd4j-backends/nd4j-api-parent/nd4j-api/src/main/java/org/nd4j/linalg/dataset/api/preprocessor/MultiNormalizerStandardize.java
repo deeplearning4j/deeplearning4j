@@ -21,6 +21,15 @@ import java.util.List;
 public class MultiNormalizerStandardize extends AbstractNormalizerStandardize implements MultiDataSetPreProcessor {
     private List<DistributionStats> featureStats;
     private List<DistributionStats> labelStats;
+    private boolean fitLabels = false;
+
+    public void fitLabel(boolean fitLabels) {
+        this.fitLabels = fitLabels;
+    }
+
+    public boolean isFitLabel() {
+        return this.fitLabels;
+    }
 
     /**
      * Fit the model with a MultiDataSet to calculate means and standard deviations with
