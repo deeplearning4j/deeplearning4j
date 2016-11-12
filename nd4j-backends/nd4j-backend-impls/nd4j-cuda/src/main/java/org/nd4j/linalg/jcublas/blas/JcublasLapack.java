@@ -117,7 +117,9 @@ public class JcublasLapack extends BaseLapack {
 		allocator.getAllocationPoint(INFO).tickDeviceWrite();
 		allocator.getAllocationPoint(A).tickDeviceWrite();
 	}
-	// this op call is synchronous, so we don't need register action here
+	allocator.registerAction(ctx, A );
+	allocator.registerAction(ctx, INFO );
+	allocator.registerAction(ctx, IPIV );
     }
 
 
@@ -191,7 +193,9 @@ public class JcublasLapack extends BaseLapack {
 		allocator.getAllocationPoint(INFO).tickDeviceWrite();
 		allocator.getAllocationPoint(A).tickDeviceWrite();
 	}
-	// this op call is synchronous, so we don't need register action here
+	allocator.registerAction(ctx, A );
+	allocator.registerAction(ctx, INFO );
+	allocator.registerAction(ctx, IPIV );
     }
 
 
