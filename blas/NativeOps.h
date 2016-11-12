@@ -1305,11 +1305,11 @@ public:
 
 
 
-    Nd4jPointer initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer);
+    Nd4jPointer initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer);
 
-    void refreshBuffer(long seed, Nd4jPointer ptrRandom);
+    void refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom);
 
-    void reSeedBuffer(long seed, Nd4jPointer ptrRandom);
+    void reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom);
 
     void destroyRandom(Nd4jPointer ptrRandom);
 

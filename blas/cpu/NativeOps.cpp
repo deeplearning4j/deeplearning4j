@@ -2650,7 +2650,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 
 
 
-Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
+Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
     long *ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
     nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrBuf);
 
@@ -2660,7 +2660,7 @@ Nd4jPointer NativeOps::initRandom(long seed, long bufferSize, Nd4jPointer ptrToB
     return (Nd4jPointer) buffer;
 }
 
-void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
+void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
 	nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
 
 	buffer->setSeed(seed);
@@ -2669,7 +2669,7 @@ void NativeOps::refreshBuffer(long seed, Nd4jPointer ptrRandom) {
 	generator.refreshBuffer();
 }
 
-void NativeOps::reSeedBuffer(long seed, Nd4jPointer ptrRandom) {
+void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
 
     buffer->reSeed(seed);

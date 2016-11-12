@@ -22,15 +22,16 @@ namespace nd4j {
         public:
             void *operator new(size_t len) {
                 void *ptr;
-                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-//                cudaMallocManaged(&ptr, len);
-//                cudaDeviceSynchronize();
+//                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+                cudaMallocManaged(&ptr, len);
+                cudaDeviceSynchronize();
                 return ptr;
              }
 
             void operator delete(void *ptr) {
-//                cudaDeviceSynchronize();
-                cudaFreeHost(ptr);
+                cudaDeviceSynchronize();
+                cudaFree(ptr);
+//                cudaFreeHost(ptr);
             }
         };
 
@@ -90,6 +91,11 @@ namespace nd4j {
 
             __host__ __device__ curandGenerator_t getGenerator() {
                 return gen;
+            }
+
+            __host__
+            void setBuffer(uint64_t *ptr) {
+                this->buffer = ptr;
             }
 #endif
 
