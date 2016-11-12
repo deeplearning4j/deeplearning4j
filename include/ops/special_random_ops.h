@@ -290,7 +290,9 @@ namespace randomOps {
                     } while(u1 <= epsilon);
 
                     tZ[threadIdx.x] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                    tZ[threadIdx.x+1] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+
+                    if (threadIdx.x + 1 < blockDim.x)
+                        tZ[threadIdx.x+1] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
                 }
                 __syncthreads();
                 z[e *zEWS] =  tZ[threadIdx.x] * stddev + mean;

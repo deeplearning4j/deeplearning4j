@@ -1319,10 +1319,11 @@ namespace simdOps {
             if (d1 == d2) {
                 return 0.0f;
             } else if (d1 == (T) 0.0f || d2 == (T) 0.0f || diff < (T) FLOAT_MIN_NORMAL) {
-                if (eps > 0.1)
-                    return diff < eps ? 0.0f : 1.0f;
+                //if (eps > 0.1)
+                return diff < eps ? 0.0f : 1.0f;
 
-                return diff <  (T) (eps * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+                //return diff <  (T) (eps * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
+                //return res;
             } else {
                 T xDiff = (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE));
                 return  xDiff < eps ? 0.0f : 1.0f;
