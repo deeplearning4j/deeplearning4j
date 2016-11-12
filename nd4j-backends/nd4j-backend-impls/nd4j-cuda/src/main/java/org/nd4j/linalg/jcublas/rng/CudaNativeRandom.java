@@ -31,9 +31,9 @@ public class CudaNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        statePointer = nativeOps.initRandom(seed, numberOfElements, AtomicAllocator.getInstance().getPointer(stateBuffer));
+        statePointer = nativeOps.initRandom(seed, numberOfElements, AtomicAllocator.getInstance().getHostPointer(stateBuffer));
 
-        AtomicAllocator.getInstance().getAllocationPoint(stateBuffer).tickDeviceWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(stateBuffer).tickHostWrite();
     }
 
 

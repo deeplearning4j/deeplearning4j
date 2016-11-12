@@ -113,6 +113,10 @@ public class RandomTests extends BaseNd4jTest {
 
         assertNotEquals(zDup, z1);
 
+
+        for (int x = 0; x < z1.length(); x++) {
+            assertEquals("Failed on element: [" + x + "]",z1.getFloat(x), z2.getFloat(x), 0.01f);
+        }
         assertEquals(z1, z2);
     }
 
@@ -220,7 +224,16 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(distribution12, random2);
 
 
+        for (int x = 0; x < z01.length(); x++) {
+            assertEquals("Failed on element: [" + x + "]",z01.getFloat(x), z11.getFloat(x), 0.01f);
+        }
+
         assertEquals(z01, z11);
+
+        for (int x = 0; x < z02.length(); x++) {
+            assertEquals("Failed on element: [" + x + "]",z02.getFloat(x), z12.getFloat(x), 0.01f);
+        }
+
         assertEquals(z02, z12);
     }
 
