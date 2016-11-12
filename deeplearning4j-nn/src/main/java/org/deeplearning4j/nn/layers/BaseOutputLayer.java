@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -164,7 +165,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray);
+        INDArray labels2d = getLabels2d();
+        if(labels2d.size(1) != preOut.size(1)){
+            throw new DL4JInvalidInputException("Labels array numColumns (size(1) = " + labels2d.size(1) + ") does not match output layer"
+                    + " number of outputs (nOut = " + preOut.size(1) + ")");
+        }
+        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
 
         Gradient gradient = new DefaultGradient();
 
