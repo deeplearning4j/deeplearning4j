@@ -29,6 +29,7 @@ import org.apache.commons.math3.special.Erf;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -333,6 +334,12 @@ public class NormalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
+        if (means != null) {
+            return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
+        } else  {
+            return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
+        }
+        /*
         INDArray ret = Nd4j.create(shape);
         Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
         int len = ret.length();
@@ -347,5 +354,6 @@ public class NormalDistribution extends BaseDistribution {
         	}
         }
         return ret;
+        */
     }
 }

@@ -29,6 +29,20 @@ public class GaussianDistribution extends BaseRandomOp {
         this.extraArgs = new Object[]{this.mean, this.stddev};
     }
 
+
+    public GaussianDistribution(INDArray z, INDArray means, double stddev) {
+        if (z.length() != means.length())
+            throw new IllegalStateException("Result length should be equal to provided Means length");
+
+        if (means.elementWiseStride() < 1)
+            throw new IllegalStateException("Means array can't have negative EWS");
+
+        init(z, means, z, z.length());
+        this.mean = 0.0;
+        this.stddev = stddev;
+        this.extraArgs = new Object[]{this.mean, this.stddev};
+    }
+
     /**
      * This op fills Z with random values within -1.0..0..1.0
      * @param z

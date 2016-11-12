@@ -22,8 +22,12 @@ package org.nd4j.linalg.api.rng.distribution.impl;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Iterator;
 
 /**
  * Base distribution derived from apache commons math
@@ -188,5 +192,20 @@ public class UniformDistribution extends BaseDistribution {
     public double sample() {
         final double u = random.nextDouble();
         return u * upper + (1 - u) * lower;
+    }
+
+
+    @Override
+    public INDArray sample(int[] shape) {
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), lower, upper), random);
+        /*
+        INDArray ret = Nd4j.create(shape);
+        Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
+        int len = ret.length();
+        for( int i=0; i<len; i++ ){
+            ret.putScalar(idxIter.next(), sample());
+        }
+        return ret;
+        */
     }
 }
