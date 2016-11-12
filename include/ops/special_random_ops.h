@@ -244,6 +244,60 @@ namespace randomOps {
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             // FIXME: we use cuRAND for this op, due to undesired code branching
+            __shared__ T epsilon;
+            __shared__ T two_pi;
+
+            __shared__ int zLength;
+            __shared__ int zEWS;
+            __shared__ T mean;
+            __shared__ T stddev;
+            __shared__ int step;
+
+            __shared__ T *tZ;
+
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::random::Xoroshiro128 generator(buffer);
+            nd4j::random::RandomHelper<T> helper(&generator);
+
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                tZ = (T *) shmem;
+
+                zLength = shape::length(zShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+
+                epsilon = (T) 1e-15;
+                two_pi = (T) 2.0 * 3.14159265358979323846;
+
+                mean = extraArguments[0];
+                stddev = extraArguments[1];
+
+                step = (blockDim.x * gridDim.x);
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+            T u0, u1;
+
+            for (int e = tid; e < zLength; e += step) {
+                // we need to get random values
+                if (e % 2 == 0) {
+                    int attempt = 1;
+                    do {
+                        u0 = helper.relativeT(e * attempt);
+                        u1 = helper.relativeT((e+1) * attempt);
+                        attempt++;
+                    } while(u1 <= epsilon);
+
+                    tZ[threadIdx.x] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                    tZ[threadIdx.x+1] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                }
+                __syncthreads();
+                z[e *zEWS] =  tZ[threadIdx.x] * stddev + mean;
+            }
+
+            __syncthreads();
+            helper.rewind(zLength * 2);
         }
 #endif
 
@@ -287,7 +341,7 @@ namespace randomOps {
                         int attempt = 1;
                         do {
                             u0 = helper->relativeT(e * attempt);
-                            u1 = helper->relativeT(e + (zLength * attempt));
+                            u1 = helper->relativeT((e + 1) * attempt);
                             attempt++;
                         } while (u0 <= epsilon );
 
