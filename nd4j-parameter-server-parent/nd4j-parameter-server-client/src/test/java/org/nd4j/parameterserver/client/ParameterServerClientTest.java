@@ -42,7 +42,7 @@ public class ParameterServerClientTest {
         masterNode = new ParameterServerSubscriber(mediaDriver);
         masterNode.run(new String[] {
                 "-m","true",
-                "-l",String.valueOf(parameterLength),
+                "-s","1," + String.valueOf(parameterLength),
                 "-p","40123",
                 "-h","localhost",
                 "-id","11",
