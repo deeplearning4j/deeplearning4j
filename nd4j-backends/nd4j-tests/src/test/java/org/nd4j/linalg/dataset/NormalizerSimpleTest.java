@@ -37,12 +37,12 @@ public class NormalizerSimpleTest  extends BaseNd4jTest {
     private int batchCount;
     private int lastBatch;
     private DataSetIterator dataIter;
-    private final float thresholdPerc = 0.01f;
+    private final float thresholdPerc = 0.01f; //this is the difference in percentage!
 
     @Before
     public void randomData() {
         batchSize = 13;
-        batchCount = 20;
+        batchCount = 7;
         lastBatch = batchSize/2;
         INDArray origFeatures = Nd4j.rand(batchCount*batchSize+lastBatch,10);
         INDArray origLabels = Nd4j.rand(batchCount*batchSize+lastBatch,3);
