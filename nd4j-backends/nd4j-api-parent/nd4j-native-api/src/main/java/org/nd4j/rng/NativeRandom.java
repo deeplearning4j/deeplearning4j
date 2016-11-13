@@ -37,6 +37,12 @@ public abstract class NativeRandom implements Random {
     protected boolean isDestroyed = false;
     protected NativeRandomDeallocator deallocator;
 
+    // special stuff for gaussian
+    protected double z0, z1, u0, u1;
+    protected boolean generated = false;
+    protected double mean = 0.0;
+    protected double stdDev = 1.0;
+
     // hack to attach deallocator
     protected NativePack pack;
 
@@ -160,7 +166,26 @@ public abstract class NativeRandom implements Random {
 
     @Override
     public double nextGaussian() {
-        throw new UnsupportedOperationException();
+        double epsilon = 1e-15;
+        double two_pi = 2.0 * 3.14159265358979323846;
+
+        if (!generated) {
+            do {
+                u0 = nextDouble();
+                u1 = nextDouble();
+            } while (u0 <= epsilon);
+
+            z0 = Math.sqrt(-2.0 * Math.log(u0)) * Math.cos(two_pi * u1);
+            z1 = Math.sqrt(-2.0 * Math.log(u0)) * Math.sin(two_pi * u1);
+
+            generated = true;
+
+            return z0 * stdDev + mean;
+        } else {
+            generated = false;
+
+            return z1 * stdDev + mean;
+        }
     }
 
     @Override
