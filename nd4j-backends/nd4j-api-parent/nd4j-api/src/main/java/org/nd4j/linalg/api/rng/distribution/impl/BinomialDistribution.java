@@ -255,28 +255,30 @@ public class BinomialDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
-        if (p != null) {
-            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, p), random);
-        } else {
-            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, probabilityOfSuccess), random);
-        }
-        /*
-        INDArray ret = Nd4j.create(shape);
-        Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
-        int len = ret.length();
-        if (p != null){
-            for (int i = 0; i < len; i++) {
-            	int[] idx = idxIter.next();
-                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, p.getDouble(idx));
-                ret.putScalar(idx, binomialDistribution.sample());
+        if (random.getStatePointer() != null) {
+            if (p != null) {
+                return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, p), random);
+            } else {
+                return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.BinomialDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), numberOfTrials, probabilityOfSuccess), random);
             }
         } else {
-        	org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, probabilityOfSuccess);
-            for (int i = 0; i < len; i++) {
-                ret.putScalar(idxIter.next(), binomialDistribution.sample());
+            INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+            Iterator<int[]> idxIter = new NdIndexIterator(shape);    //For consistent values irrespective of c vs. fortran ordering
+            int len = ret.length();
+            if (p != null) {
+                for (int i = 0; i < len; i++) {
+                    int[] idx = idxIter.next();
+                    org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, p.getDouble(idx));
+                    ret.putScalar(idx, binomialDistribution.sample());
+                }
+            } else {
+                org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, probabilityOfSuccess);
+                for (int i = 0; i < len; i++) {
+                    ret.putScalar(idxIter.next(), binomialDistribution.sample());
+                }
             }
+            return ret;
         }
-        return ret;
-        */
+
     }
 }

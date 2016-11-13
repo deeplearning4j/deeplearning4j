@@ -45,7 +45,7 @@ public abstract class NativeRandom implements Random {
     }
 
     public NativeRandom(long seed) {
-        this(seed, 5000000);
+        this(seed, 10000000);
     }
 
     public NativeRandom(long seed, long numberOfElements) {

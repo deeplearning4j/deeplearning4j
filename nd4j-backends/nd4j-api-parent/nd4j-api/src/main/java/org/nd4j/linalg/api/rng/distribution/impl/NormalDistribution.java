@@ -106,6 +106,11 @@ public class NormalDistribution extends BaseDistribution {
         this(mean, sd, DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
     }
 
+    public NormalDistribution(Random rng, double mean, double sd)
+            throws NotStrictlyPositiveException {
+        this(rng, mean, sd, DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+    }
+
     /**
      * Create a normal distribution using the given mean, standard deviation and
      * inverse cumulative distribution accuracy.
@@ -334,26 +339,27 @@ public class NormalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
-        if (means != null) {
-            return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
-        } else  {
-            return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
-        }
-        /*
-        INDArray ret = Nd4j.create(shape);
-        Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
-        int len = ret.length();
-        if( means != null ){
-        	for( int i=0; i<len; i++ ){
-        		int[] idx = idxIter.next();
-        		ret.putScalar(idx, standardDeviation * random.nextGaussian() + means.getDouble(idx));
-        	}
+        if (random.getStatePointer() != null) {
+            if (means != null) {
+                return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
+            } else {
+                return Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
+            }
         } else {
-        	for( int i=0; i<len; i++ ){
-        		ret.putScalar(idxIter.next(), standardDeviation * random.nextGaussian() + mean);
-        	}
+            INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+            Iterator<int[]> idxIter = new NdIndexIterator(shape);    //For consistent values irrespective of c vs. fortran ordering
+            int len = ret.length();
+            if (means != null) {
+                for (int i = 0; i < len; i++) {
+                    int[] idx = idxIter.next();
+                    ret.putScalar(idx, standardDeviation * random.nextGaussian() + means.getDouble(idx));
+                }
+            } else {
+                for (int i = 0; i < len; i++) {
+                    ret.putScalar(idxIter.next(), standardDeviation * random.nextGaussian() + mean);
+                }
+            }
+            return ret;
         }
-        return ret;
-        */
     }
 }

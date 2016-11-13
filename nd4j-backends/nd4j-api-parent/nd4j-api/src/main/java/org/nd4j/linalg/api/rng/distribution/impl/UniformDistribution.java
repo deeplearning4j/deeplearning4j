@@ -197,15 +197,16 @@ public class UniformDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
-        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), lower, upper), random);
-        /*
-        INDArray ret = Nd4j.create(shape);
-        Iterator<int[]> idxIter = new NdIndexIterator(shape);	//For consistent values irrespective of c vs. fortran ordering
-        int len = ret.length();
-        for( int i=0; i<len; i++ ){
-            ret.putScalar(idxIter.next(), sample());
+        if (random.getStatePointer() != null) {
+            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(Nd4j.createUninitialized(shape, Nd4j.order()), lower, upper), random);
+        } else {
+            INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+            Iterator<int[]> idxIter = new NdIndexIterator(shape);    //For consistent values irrespective of c vs. fortran ordering
+            int len = ret.length();
+            for (int i = 0; i < len; i++) {
+                ret.putScalar(idxIter.next(), sample());
+            }
+            return ret;
         }
-        return ret;
-        */
     }
 }

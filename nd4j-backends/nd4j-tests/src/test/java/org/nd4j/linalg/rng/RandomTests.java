@@ -1,5 +1,6 @@
 package org.nd4j.linalg.rng;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class RandomTests extends BaseNd4jTest {
 
@@ -200,6 +202,38 @@ public class RandomTests extends BaseNd4jTest {
         assertNotEquals(z1, z3);
         assertNotEquals(z2, z4);
         assertNotEquals(z3, z4);
+    }
+
+    @Test
+    public void testStepOver1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+
+        INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
+
+        assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
+
+        random1.setSeed(119);
+
+        INDArray z1 = Nd4j.createUninitialized(30000000);
+
+        GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        log.info("End: [{}, {}, {}, {}]", z1.getFloat(29000000), z1.getFloat(29000001), z1.getFloat(29000002), z1.getFloat(29000003));
+
+        assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
+        assertEquals(2.0, z1.stdNumber().doubleValue(), 0.01);
+    }
+
+    @Test
+    public void testLegacyDistribution1() throws Exception {
+        NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
+        INDArray z1 = distribution.sample(new int[] {1, 30000000});
+
+        assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
+        assertEquals(2.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
     @Test
