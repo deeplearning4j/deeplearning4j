@@ -66,6 +66,15 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static final Logger log = LoggerFactory.getLogger(NeuralNetConfiguration.class);
 
+    /**
+     * System property for custom layers, preprocessors, graph vertices etc. Enabled by default.
+     * Run JVM with "-Dorg.deeplearning4j.config.custom.enabled=false" to disable classpath scanning for
+     * Overriding the default (i.e., disabling) this is only useful if (a) no custom layers/preprocessors etc will be
+     * used, and (b) minimizing startup/initialization time for new JVMs is very important.
+     * Results are cached, so there is no cost to custom layers after the first network has been constructed.
+     */
+    public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
+
     protected Layer layer;
     protected double leakyreluAlpha;
     //batch size: primarily used for conv nets. Will be reinforced if set.
@@ -352,50 +361,59 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
         if(subtypesClassCache == null){
-            List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class);
-            List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
-            Collection<URL> urls = ClasspathHelper.forClassLoader();
-            List<URL> scanUrls = new ArrayList<>();
-            for(URL u : urls){
-                String path = u.getPath();
-                if(!path.matches(".*/jre/lib/.*jar") ){    //Skip JRE/JDK JARs
-                    scanUrls.add(u);
+            //Check system property:
+            String prop = System.getProperty(CUSTOM_FUNCTIONALITY);
+            if(prop != null && !Boolean.parseBoolean(prop)){
+
+                subtypesClassCache = Collections.emptySet();
+            } else {
+
+                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class);
+                List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
+
+                Collection<URL> urls = ClasspathHelper.forClassLoader();
+                List<URL> scanUrls = new ArrayList<>();
+                for (URL u : urls) {
+                    String path = u.getPath();
+                    if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
+                        scanUrls.add(u);
+                    }
                 }
-            }
 
-            Reflections reflections = new Reflections(new ConfigurationBuilder()
-                    .filterInputsBy(new FilterBuilder()
-                            .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                            //Exclude the following: the assumption here is that no custom functionality will ever be present
-                            // under these package name prefixes. These are all common dependencies for DL4J
-                            .exclude("^org.nd4j.*")
-                            .exclude("^org.datavec.*")
-                            .exclude("^org.bytedeco.*") //JavaCPP
-                            .exclude("^com.fasterxml.*")//Jackson
-                            .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
-                            .exclude("^org.projectlombok.*")
-                            .exclude("^com.twelvemonkeys.*")
-                            .exclude("^org.joda.*")
-                            .exclude("^org.slf4j.*")
-                            .exclude("^com.google.*")
-                            .exclude("^org.reflections.*")
-                            .exclude("^ch.qos.*")       //Logback
-                    )
-                    .addUrls(scanUrls)
-                    .setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
-            org.reflections.Store store = reflections.getStore();
+                Reflections reflections = new Reflections(new ConfigurationBuilder()
+                        .filterInputsBy(new FilterBuilder()
+                                .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                //Exclude the following: the assumption here is that no custom functionality will ever be present
+                                // under these package name prefixes. These are all common dependencies for DL4J
+                                .exclude("^org.nd4j.*")
+                                .exclude("^org.datavec.*")
+                                .exclude("^org.bytedeco.*") //JavaCPP
+                                .exclude("^com.fasterxml.*")//Jackson
+                                .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
+                                .exclude("^org.projectlombok.*")
+                                .exclude("^com.twelvemonkeys.*")
+                                .exclude("^org.joda.*")
+                                .exclude("^org.slf4j.*")
+                                .exclude("^com.google.*")
+                                .exclude("^org.reflections.*")
+                                .exclude("^ch.qos.*")       //Logback
+                        )
+                        .addUrls(scanUrls)
+                        .setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
+                org.reflections.Store store = reflections.getStore();
 
-            Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
+                Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
 
-            Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-            subtypesClassCache = new HashSet<>();
-            for(Class<?> c : subtypeClasses){
-                if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
-                    //log.info("Skipping abstract/interface: {}",c);
-                    continue;
+                Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+                subtypesClassCache = new HashSet<>();
+                for (Class<?> c : subtypeClasses) {
+                    if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
+                        //log.info("Skipping abstract/interface: {}",c);
+                        continue;
+                    }
+                    subtypesClassCache.add(c);
                 }
-                subtypesClassCache.add(c);
             }
         }
 
