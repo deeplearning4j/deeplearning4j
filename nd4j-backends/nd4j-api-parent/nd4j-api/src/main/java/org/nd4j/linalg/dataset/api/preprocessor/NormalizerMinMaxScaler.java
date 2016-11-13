@@ -57,18 +57,14 @@ public class NormalizerMinMaxScaler implements DataNormalization {
     public void fit(DataSet dataSet) {
         featureRank = dataSet.getFeatures().rank();
 
-        INDArray theFeatures = dataSet.getFeatures();
-        if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(dataSet, true);
-        if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(dataSet, true);
+        INDArray theFeatures = DataSetUtil.tailor2d(dataSet, true);
         featureMaxMin = fit(theFeatures);
         featureMin = featureMaxMin.getRow(0).dup();
         featureMax = featureMaxMin.getRow(1).dup();
         featureMaxMin = featureMax.sub(featureMin);
 
         if (fitLabels) {
-            INDArray theLabels = dataSet.getLabels();
-            if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(dataSet, false);
-            if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(dataSet, false);
+            INDArray theLabels = DataSetUtil.tailor2d(dataSet, false);
             labelMaxMin = fit(theLabels);
             labelMin = labelMaxMin.getRow(0).dup();
             labelMax = labelMaxMin.getRow(1).dup();
@@ -96,13 +92,10 @@ public class NormalizerMinMaxScaler implements DataNormalization {
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
             featureRank = next.getFeatures().rank();
-            INDArray theFeatures = next.getFeatures();
-            INDArray theLabels = next.getLabels();
-            if (featureRank == 3) theFeatures = DataSetUtil.tailor3d2d(next, true);
-            if (featureRank == 4) theFeatures = DataSetUtil.tailor4d2d(next, true);
+            INDArray theFeatures = DataSetUtil.tailor2d(next, true);
+            INDArray theLabels = null;
             if (fitLabels) {
-                if (theLabels.rank() == 3) theLabels = DataSetUtil.tailor3d2d(next, false);
-                if (theLabels.rank() == 4) theLabels = DataSetUtil.tailor4d2d(next, false);
+                theLabels = DataSetUtil.tailor2d(next, false);
             }
             if (featureMin == null) {
                 this.fit(next);
@@ -113,8 +106,8 @@ public class NormalizerMinMaxScaler implements DataNormalization {
                 featureMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax, featureMax, featureMax, featureMax.length()));
 
                 if (fitLabels) {
-                    nextMin = theLabels.min(0);
-                    labelMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin, labelMin, labelMin, labelMin.length()));
+                    nextMin =  theLabels.min(0);
+                    labelMin = Nd4j.getExecutioner().execAndReturn(new Min(nextMin,labelMin,labelMin,labelMin.length()));
 
                     nextMax = theLabels.max(0);
                     labelMax = Nd4j.getExecutioner().execAndReturn(new Max(nextMax, labelMax, labelMax, labelMax.length()));
