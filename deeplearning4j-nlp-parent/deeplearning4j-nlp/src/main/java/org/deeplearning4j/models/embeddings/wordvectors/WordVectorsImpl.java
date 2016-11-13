@@ -51,7 +51,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter protected int minWordFrequency = 5;
     @Getter protected WeightLookupTable<T> lookupTable;
     @Getter protected VocabCache<T> vocab;
-    @Getter protected int layerSize = 100;
+    protected int layerSize = 100;
     @Getter protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
     private boolean initDone = false;
 
@@ -73,6 +73,17 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected boolean useUnknown = false;
     protected int[] variableWindows;
 
+
+    /**
+     * This method returns word vector size
+     *
+     * @return
+     */
+    public int getLayerSize() {
+        if (lookupTable != null && lookupTable.getWeights() != null) {
+            return lookupTable.getWeights().columns();
+        } else return layerSize;
+    }
 
     public final static String DEFAULT_UNK = "UNK";
     @Getter @Setter private String UNK = DEFAULT_UNK;
