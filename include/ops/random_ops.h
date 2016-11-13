@@ -120,7 +120,6 @@ namespace randomOps {
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomHelper<T> *helper, T *extraParams) {
             T prob = extraParams[0];
             T randVal = helper->relativeT(idx);
-            printf("Index: [%i]; prob: [%f]; randVal: [%f]\n", idx, prob, randVal);
             return randVal >= prob ? (T) 0.0f : valueX / prob;
         }
     };
