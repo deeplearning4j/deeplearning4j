@@ -305,9 +305,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
-//        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-//        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-//        ret.enable(SerializationFeature.INDENT_OUTPUT);
         configureMapper(ret);
         return ret;
     }
@@ -349,10 +346,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static synchronized void registerSubtypes(ObjectMapper mapper){
         //Register concrete subtypes for JSON serialization
 
+        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class);
+        List<String> classNames = new ArrayList<>(4);
+        for(Class<?> c : classes) classNames.add(c.getClass().getName());
+
         // First: scan the classpath and find all instances of the 'baseClasses' classes
         if(subtypesClassCache == null){
             List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class);
-            List<Class<?>> classes = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
+            List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
             List<URL> scanUrls = new ArrayList<>();
@@ -382,13 +383,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                             .exclude("^ch.qos.*")       //Logback
                     )
                     .addUrls(scanUrls)
-                    .setScanners(new DL4JSubTypesScanner(interfaces, classes)));
+                    .setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
             org.reflections.Store store = reflections.getStore();
-
-            List<String> classNames = new ArrayList<>();
-            for(Class<?> c : baseClasses){
-                classNames.add(c.getName());
-            }
 
             Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
 
@@ -403,10 +399,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             }
         }
 
-
         //Second: get all currently registered subtypes for this mapper
         Set<Class<?>> registeredSubtypes = new HashSet<>();
-        for (Class<?> c : baseClasses) {
+        for (Class<?> c : classes) {
             AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
             Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
@@ -433,7 +428,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 }
                 toRegister.add(new NamedType(c, name));
                 if(log.isDebugEnabled()){
-                    for(Class<?> baseClass : baseClasses){
+                    for(Class<?> baseClass : classes){
                         if(baseClass.isAssignableFrom(c)){
                             log.debug("Registering class for JSON serialization: {} as subtype of {}",c.getName(),baseClass.getName());
                             break;
