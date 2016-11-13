@@ -27,6 +27,24 @@ public interface Lapack {
     public INDArray getrf( INDArray A );
 
 
+    /**
+     * SVD decomposiiton of a matrix
+     * Factorize a matrix into its singular vectors and eigenvalues
+     * The decomposition is such that:
+     *
+     * 		A = U x S x VT
+     *
+     * gesvd = singular value decomposition (SVD) of a general matrix (GE)
+     *
+     * @param A the input matrix
+     * @param S the eigenvalues as a vector
+     * @param U the left singular vectors as a matrix. Maybe null if no S required
+     * @param VT the right singular vectors as a (transposed) matrix. Maybe null if no V required
+     * @throws Error - with a message to indicate failure (usu. bad params)
+     */
+    public void sgesvd( INDArray A, INDArray S, INDArray U, INDArray VT ) ;
+
+
 
     /** 
     * This method takes one of the ipiv returns from LAPACK and creates

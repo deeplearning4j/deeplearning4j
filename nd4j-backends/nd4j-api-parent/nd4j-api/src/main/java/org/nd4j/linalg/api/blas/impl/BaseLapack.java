@@ -47,6 +47,8 @@ public  abstract  class BaseLapack implements Lapack {
     }
 
 
+
+
     /**
     * Float version of LU decomp.
     * This is the official LAPACK interface (in case you want to call this directly)
@@ -60,6 +62,37 @@ public  abstract  class BaseLapack implements Lapack {
     */
     public abstract void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) ;
     public abstract void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) ;
+
+
+    
+    @Override
+    public void sgesvd( INDArray A, INDArray S, INDArray U, INDArray VT ) {
+ 	int m = A.rows() ;
+	int n = A.columns() ;
+
+	byte jobu  = (byte)( U==null ? 'N' : 'A' ) ;
+	byte jobvt = (byte)( VT==null ? 'N' : 'A' ) ;
+
+        INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1), 
+        		Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, 1}));
+
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+	    throw new UnsupportedOperationException() ;
+        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+	    sgesvd( jobu, jobvt, m, n, A, S, U, VT, INFO ) ;
+        else
+	    throw new UnsupportedOperationException() ;
+
+	if( INFO.getInt(0) < 0 ) {
+	    throw new Error( "Parameter #" + INFO.getInt(0) + " to gesvd() was not valid" ) ;
+	} else if ( INFO.getInt(0) > 0 ) {
+	    logger.warn( "The matrix contains singularelements. Check S matrix at row " + INFO.getInt(0) ) ;
+        }
+    }
+
+    public abstract void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) ;
+    public void dgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
+    }
 
 
     @Override

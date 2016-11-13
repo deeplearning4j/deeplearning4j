@@ -30,6 +30,9 @@ public class CpuLapack extends BaseLapack {
 			getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
+    @Override
+    public void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
+    }
 
     /**
      * Generate inverse ggiven LU decomp

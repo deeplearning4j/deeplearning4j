@@ -214,4 +214,88 @@ public class JcublasLapack extends BaseLapack {
     public void getri(int N, INDArray A, int lda, int[] IPIV, INDArray WORK, int lwork, int INFO) {
 
     }
+
+
+    @Override
+    public void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
+	
+	if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            logger.warn("FLOAT getrf called in DOUBLE environment");
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+	// Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext() ;
+
+	// setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+	cusolverDnContext solverDn = new cusolverDnContext( handle ) ;
+
+	// synchronized on the solver
+        synchronized (handle) {
+		long result = nativeOps.setSolverStream(handle, ctx.getOldStream());
+           	if (result == 0)
+	               	throw new IllegalStateException("solverSetStream failed");
+
+		// transfer the INDArray into GPU memory
+        	CublasPointer xAPointer = new CublasPointer(A, ctx);
+
+		// this output - indicates how much memory we'll need for the real operation
+		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
+
+		int stat = cusolverDnSgesvd_bufferSize( 
+			solverDn, 
+			M, N, 
+			(IntPointer)worksize.addressPointer() // we intentionally use host pointer here
+			) ;
+
+		if( stat != CUSOLVER_STATUS_SUCCESS ) {
+ 		    throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat ) ;
+		}
+
+		// Now allocate memory for the workspace, the non-converging row buffer and a return code
+		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;		
+		DataBuffer rwork = Nd4j.getDataBufferFactory().createFloat( (M<N?M:N)-1 ) ;
+
+		allocator.getAllocationPoint(rwork).tickDeviceWrite();
+
+		// Do the actual decomp
+		stat = cusolverDnSgesvd(
+			solverDn,
+			jobu,
+			jobvt,
+			M, N, 
+			(FloatPointer)xAPointer.getDevicePointer(), 
+			M, 
+			new CudaPointer(allocator.getPointer(S, ctx)).asFloatPointer() ,
+			new CudaPointer(allocator.getPointer(U, ctx)).asFloatPointer() ,
+			M,
+			new CudaPointer(allocator.getPointer(VT, ctx)).asFloatPointer() ,
+			M,
+			new CudaPointer(allocator.getPointer(work, ctx)).asFloatPointer(),
+			worksize.getInt(0),
+			new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),			
+			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
+			) ;
+
+			// we do sync to make sure getrf is finished
+			//ctx.syncOldStream();
+
+		if( stat != CUSOLVER_STATUS_SUCCESS ) {
+ 		    throw new IllegalStateException("cusolverDnDgesvd failed with code: " + stat ) ;
+		}
+		allocator.getAllocationPoint(rwork).tickDeviceWrite();
+
+		// A is modified on device side as well
+		allocator.getAllocationPoint(INFO).tickDeviceWrite();
+//		allocator.getAllocationPoint(A).tickDeviceWrite();
+	}
+	allocator.registerAction(ctx, INFO );
+	allocator.registerAction(ctx, S );
+	allocator.registerAction(ctx, U );
+	allocator.registerAction(ctx, VT );
+    }
+
+
 }
