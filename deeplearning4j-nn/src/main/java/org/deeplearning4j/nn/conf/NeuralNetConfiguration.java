@@ -357,7 +357,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class);
         List<String> classNames = new ArrayList<>(4);
-        for(Class<?> c : classes) classNames.add(c.getClass().getName());
+        for(Class<?> c : classes) classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
         if(subtypesClassCache == null){
