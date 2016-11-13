@@ -18,13 +18,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
-import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
-import org.nd4j.shade.jackson.databind.jsontype.NamedType;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,18 +28,29 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 
 
@@ -88,6 +92,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double lrPolicyDecayRate;
     protected double lrPolicySteps;
     protected double lrPolicyPower;
+
+
+    private static ObjectMapper mapper = initMapper();
+    private static final ObjectMapper mapperYaml = initMapperYaml();
+    private static Set<Class<?>> subtypesClassCache = null;
+
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -293,8 +303,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapperYaml;
     }
 
-    private static final ObjectMapper mapperYaml = initMapperYaml();
-
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
 //        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -323,8 +331,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return mapper;
     }
 
-    private static ObjectMapper mapper = initMapper();
-
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
         configureMapper(ret);
@@ -337,22 +343,66 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
 
-        registerSubtypes(ret, Layer.class, InputPreProcessor.class, GraphVertex.class, ILossFunction.class );
+        registerSubtypes(ret);
     }
 
-    private static void registerSubtypes(ObjectMapper mapper, Class<?>... baseClasses){
+    private static synchronized void registerSubtypes(ObjectMapper mapper){
         //Register concrete subtypes for JSON serialization
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
-        Reflections reflections = new Reflections();
-        org.reflections.Store store = reflections.getStore();
-        List<String> classNames = new ArrayList<>();
-        for(Class<?> c : baseClasses){
-            classNames.add(c.getName());
+        if(subtypesClassCache == null){
+            List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class);
+            List<Class<?>> classes = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
+
+            Collection<URL> urls = ClasspathHelper.forClassLoader();
+            List<URL> scanUrls = new ArrayList<>();
+            for(URL u : urls){
+                String path = u.getPath();
+                if(!path.matches(".*/jre/lib/.*jar") ){    //Skip JRE/JDK JARs
+                    scanUrls.add(u);
+                }
+            }
+
+            Reflections reflections = new Reflections(new ConfigurationBuilder()
+                    .filterInputsBy(new FilterBuilder()
+                            .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                            // under these package name prefixes. These are all common dependencies for DL4J
+                            .exclude("^org.nd4j.*")
+                            .exclude("^org.datavec.*")
+                            .exclude("^org.bytedeco.*") //JavaCPP
+                            .exclude("^com.fasterxml.*")//Jackson
+                            .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
+                            .exclude("^org.projectlombok.*")
+                            .exclude("^com.twelvemonkeys.*")
+                            .exclude("^org.joda.*")
+                            .exclude("^org.slf4j.*")
+                            .exclude("^com.google.*")
+                            .exclude("^org.reflections.*")
+                            .exclude("^ch.qos.*")       //Logback
+                    )
+                    .addUrls(scanUrls)
+                    .setScanners(new DL4JSubTypesScanner(interfaces, classes)));
+            org.reflections.Store store = reflections.getStore();
+
+            List<String> classNames = new ArrayList<>();
+            for(Class<?> c : baseClasses){
+                classNames.add(c.getName());
+            }
+
+            Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
+
+            Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+            subtypesClassCache = new HashSet<>();
+            for(Class<?> c : subtypeClasses){
+                if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
+                    //log.info("Skipping abstract/interface: {}",c);
+                    continue;
+                }
+                subtypesClassCache.add(c);
+            }
         }
 
-        Iterable<String> subtypesByName = store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
-        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
 
         //Second: get all currently registered subtypes for this mapper
         Set<Class<?>> registeredSubtypes = new HashSet<>();
@@ -366,7 +416,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         //Third: register all _concrete_ subtypes that are not already registered
         List<NamedType> toRegister = new ArrayList<>();
-        for (Class<?> c : subtypeClasses) {
+        for (Class<?> c : subtypesClassCache) {
             //Check if it's concrete or abstract...
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
                 //log.info("Skipping abstract/interface: {}",c);
@@ -395,6 +445,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
+
+
 
     public Object[] getExtraArgs() {
         if(layer == null || layer.getActivationFunction() == null) return new Object[0];
