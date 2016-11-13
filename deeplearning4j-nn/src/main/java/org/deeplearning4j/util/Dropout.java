@@ -2,8 +2,8 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.DropOut;
-import org.nd4j.linalg.api.ops.impl.transforms.DropOutInverted;
+import org.nd4j.linalg.api.ops.random.impl.DropOut;
+import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 
 
