@@ -159,6 +159,8 @@ public class RandomTests extends BaseNd4jTest {
         assertNotEquals(zDup, z1);
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
 
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
+
         assertEquals(z1, z2);
     }
 
@@ -191,6 +193,7 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(op4, random4);
 
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
 
         assertEquals(z1, z2);
 
