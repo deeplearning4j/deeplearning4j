@@ -158,17 +158,15 @@ namespace nd4j {
                 if (actualPosition > this->size) {
                     tempGen += actualPosition / this->size;
                     actualPosition = actualPosition % this->size;
-                    //printf("Size: %i; Generation: %i; tempGen: %i; position: %i; actualPosition: %i\n",this->size, generation, tempGen, position, actualPosition);
-                    //fflush(stdout);
                 }
 
                 uint64_t ret = tempGen == generation ? buffer[actualPosition] : buffer[actualPosition] ^ tempGen + 11;
 
                 if(generation > 1)
-                    ret = ret * generation + 11;
+                    ret = ret ^ generation + 11;
 
                 if (amplifier != seed)
-                    ret = ret * amplifier + 11;
+                    ret = ret ^ amplifier + 11;
 
                 return ret;
             }
@@ -228,10 +226,12 @@ namespace nd4j {
 
 					        long newPos = this->getOffset() + numberOfElements;
                             if (newPos > this->getSize()) {
-                                newPos = numberOfElements - (this->getSize() - this->getOffset());
-                                this->incrementGeneration();
-                            } else if (newPos == this->getSize())
+                                generation += newPos / this->size;
+                                newPos = newPos % this->size;
+                            } else if (newPos == this->getSize()) {
                                 newPos = 0;
+                                generation++;
+                            }
 
                             this->setOffset(newPos);
 					    }
@@ -240,9 +240,10 @@ namespace nd4j {
                     if (threadIdx.x == 0) {
                         long newPos = this->getOffset() + numberOfElements;
                         if (newPos > this->getSize()) {
-                            newPos = numberOfElements - (this->getSize() - this->getOffset());
-                            this->incrementGeneration();
+                            generation += newPos / this->size;
+                            newPos = newPos % this->size;
                         } else if (newPos == this->getSize())
+                            generation++;
                             newPos = 0;
 
                         this->setOffset(newPos);
@@ -254,11 +255,13 @@ namespace nd4j {
             void rewind(long numberOfElements) {
                 long newPos = this->getOffset() + numberOfElements;
                 if (newPos > this->getSize()) {
-                    newPos = numberOfElements - (this->getSize() - this->getOffset());
-                    this->incrementGeneration();
+                    generation += newPos / this->size;
+                    newPos = newPos % this->size;
                 }
-                else if (newPos == this->getSize())
+                else if (newPos == this->getSize()) {
+                    generation++;
                     newPos = 0;
+                }
 
                 this->setOffset(newPos);
             }
