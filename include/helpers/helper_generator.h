@@ -156,11 +156,13 @@ namespace nd4j {
                 long actualPosition = this->getOffset() + position;
                 long tempGen = generation;
                 if (actualPosition > this->size) {
+                    tempGen += actualPosition / this->size;
                     actualPosition = actualPosition % this->size;
-                    tempGen++;
+                    //printf("Size: %i; Generation: %i; tempGen: %i; position: %i; actualPosition: %i\n",this->size, generation, tempGen, position, actualPosition);
+                    //fflush(stdout);
                 }
 
-                uint64_t ret = tempGen == 1 ? buffer[actualPosition] : buffer[actualPosition] * tempGen + 11;
+                uint64_t ret = tempGen == generation ? buffer[actualPosition] : buffer[actualPosition] ^ tempGen + 11;
 
                 if(generation > 1)
                     ret = ret * generation + 11;
