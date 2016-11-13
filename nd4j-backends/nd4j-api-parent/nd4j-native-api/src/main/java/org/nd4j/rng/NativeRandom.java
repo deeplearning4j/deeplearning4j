@@ -109,6 +109,7 @@ public abstract class NativeRandom implements Random {
         synchronized (this) {
             this.seed = seed;
             this.amplifier = seed;
+            this.position.set(0);
             nativeOps.refreshBuffer(getExtraPointers(), seed, statePointer);
         }
     }
