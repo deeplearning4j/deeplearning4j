@@ -41,7 +41,9 @@ public class DL4JSubTypesScanner implements org.reflections.scanners.Scanner {
         String className = configuration.getMetadataAdapter().getClassName(cls);
         String superclass = configuration.getMetadataAdapter().getSuperclassName(cls);
 
-        if(classNames.contains(className)){
+        //Unfortunately: can't simply check if superclass is one of the classes we want
+        // as this doesn't take into account the class heirarchy properly
+        if(!"java.lang.Object".equals(superclass) ){
             getStore().put(superclass, className);
         }
 
