@@ -90,6 +90,7 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
         if (fitLabels) {
             labelStats = labelNormBuilder.build();
         }
+        iterator.reset();
     }
 
     @Override
