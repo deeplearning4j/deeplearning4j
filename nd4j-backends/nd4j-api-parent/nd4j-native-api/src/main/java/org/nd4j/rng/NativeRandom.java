@@ -46,6 +46,19 @@ public abstract class NativeRandom implements Random {
     // hack to attach deallocator
     protected NativePack pack;
 
+
+    public long getBufferSize(){
+        return numberOfElements;
+    }
+
+    public int getPosition() {
+        return position.get();
+    }
+
+    public long getGeneration() {
+        return generation;
+    }
+
     public NativeRandom() {
         this(System.currentTimeMillis());
     }
@@ -140,8 +153,12 @@ public abstract class NativeRandom implements Random {
             }
 
             next = hostPointer.get(position.getAndIncrement());
+
             if (generation > 1)
-                next = next * generation + 27;
+                next = next ^ generation + 11;
+
+            if (amplifier != seed)
+                next = next ^ amplifier + 11;
         }
 
         return next < 0 ? -1 * next : next;

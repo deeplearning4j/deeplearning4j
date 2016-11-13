@@ -20,6 +20,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.rng.NativeRandom;
 
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -516,6 +517,34 @@ public class RandomTests extends BaseNd4jTest {
                 assertEquals(list.get(0), list.get(x));
             }
         }
+    }
+
+    @Test
+    public void testStepOver2() throws Exception {
+        Random random = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        if (random instanceof NativeRandom) {
+            NativeRandom rng = (NativeRandom) random;
+            assertTrue(rng.getBufferSize() > 1000000L);
+
+            assertEquals(0, rng.getPosition());
+
+            rng.nextLong();
+
+            assertEquals(1, rng.getPosition());
+
+
+            assertEquals(1, rng.getGeneration());
+            for (long e = 0; e <= rng.getBufferSize(); e++) {
+                rng.nextLong();
+            }
+            assertEquals(2, rng.getPosition());
+            assertEquals(2, rng.getGeneration());
+
+            rng.reSeed(8792);
+            assertEquals(2, rng.getGeneration());
+            assertEquals(2, rng.getPosition());
+
+        } else log.warn("Not a NativeRandom object received, skipping test");
     }
 
     @Ignore
