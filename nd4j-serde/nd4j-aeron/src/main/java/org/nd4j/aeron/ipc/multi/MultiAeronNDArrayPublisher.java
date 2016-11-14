@@ -1,19 +1,21 @@
-package org.nd4j.aeron.ipc;
+package org.nd4j.aeron.ipc.multi;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
-
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.Arrays;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,41 +25,46 @@ import java.util.concurrent.TimeUnit;
  */
 @Data
 @Builder
-public class AeronNDArrayPublisher implements  AutoCloseable {
+public class MultiAeronNDArrayPublisher implements  AutoCloseable {
     // A unique identifier for a stream within a channel. Stream ID 0 is reserved
     // for internal use and should not be used by applications.
-    private int streamId;
+    private int[] streamIds;
     // The channel (an endpoint identifier) to send the message to
     private String channel;
     private boolean init = false;
     private Aeron.Context ctx;
     private Aeron aeron;
-    private Publication publication;
-    private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
+    private Publication[] publications;
+    private Executor executors;
+    private static Logger log = LoggerFactory.getLogger(MultiAeronNDArrayPublisher.class);
 
 
 
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
-        streamId = streamId == 0 ? 10 : streamId;
+        streamIds = streamIds == null ? new int[] {10} : streamIds;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
-        log.debug("Channel publisher" + channel + " and stream " + streamId);
+        executors = Executors.newFixedThreadPool(streamIds.length);
+        log.debug("Channel publisher" + channel + " and streams " + Arrays.toString(streamIds));
     }
 
     /**
      * Publish an ndarray to an aeron channel
-     * @param message
+     * @param message the message to publish
+     * @param streamsToPublish the stream ids to publish on
      * @throws Exception
      */
-    public void publish(NDArrayMessage message) throws Exception {
+    public void publish(NDArrayMessage message,int...streamsToPublish) throws Exception {
+       if(streamsToPublish == null)
+           streamsToPublish = streamIds;
         // Allocate enough buffer size to hold maximum message length
         // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        log.debug("Publishing to " + channel + " on stream Id " + streamId);
+        log.debug("Publishing to " + channel + " on stream Ids " + Arrays.toString(streamIds));
         //ensure default values are set
         INDArray arr = message.getArr();
         while(!message.getArr().isCompressed())
-           Nd4j.getCompressor().compressi(arr,"GZIP");
+            Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
         DirectBuffer buffer = NDArrayMessage.toBuffer(message);
@@ -82,51 +89,57 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
             }
         }
 
-        int connectionTries = 0;
-        while(publication == null && connectionTries < 3) {
-            try {
-                publication = aeron.addPublication(channel, streamId);
-            }catch (DriverTimeoutException e) {
-                Thread.sleep(1000 * (connectionTries + 1));
-                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamId + "...retrying in " + connectionTries + " seconds");
-                connectionTries++;
+        for(int i = 0; i < publications.length; i++) {
+            int connectionTries = 0;
+            while(publications == null && connectionTries < 3) {
+                try {
+                    publications[i] = aeron.addPublication(channel, streamIds[i]);
+                }catch (DriverTimeoutException e) {
+                    Thread.sleep(1000 * (connectionTries + 1));
+                    log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamIds[i] + "...retrying in " + connectionTries + " seconds");
+                    connectionTries++;
+                }
+            }
+
+            if(!connected && connectionTries >= 3 || publications[i] == null) {
+                throw new IllegalStateException("Publisher unable to connect to channel " + channel + " and stream " + streamIds[i]);
             }
         }
 
-        if(!connected && connectionTries >= 3 || publication == null) {
-            throw new IllegalStateException("Publisher unable to connect to channel " + channel + " and stream " + streamId);
-        }
 
 
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
-        long result;
-        log.debug("Begin publish " + channel + " and stream " + streamId);
-        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
-            if (result == Publication.BACK_PRESSURED) {
-                log.debug(" Offer failed due to back pressure");
-            }
-            else if (result == Publication.NOT_CONNECTED) {
-                log.debug(" Offer failed because publisher is not connected to subscriber");
-            }
-            else if (result == Publication.ADMIN_ACTION) {
-                log.debug("Offer failed because of an administration action in the system");
-            }
-            else if (result == Publication.CLOSED) {
-                log.debug("Offer failed publication is closed");
-            }
-            else {
-                log.debug(" Offer failed due to unknown reason");
-            }
+      for(int i = 0; i < streamsToPublish.length; i++) {
+          long result;
+          log.debug("Begin publish " + channel + " and stream " + streamsToPublish[i]);
+          while ((result = publications[streamsToPublish[i]].offer(buffer, 0, buffer.capacity())) < 0L) {
+              if (result == Publication.BACK_PRESSURED) {
+                  log.debug(" Offer failed due to back pressure");
+              }
+              else if (result == Publication.NOT_CONNECTED) {
+                  log.debug(" Offer failed because publisher is not connected to subscriber");
+              }
+              else if (result == Publication.ADMIN_ACTION) {
+                  log.debug("Offer failed because of an administration action in the system");
+              }
+              else if (result == Publication.CLOSED) {
+                  log.debug("Offer failed publication is closed");
+              }
+              else {
+                  log.debug(" Offer failed due to unknown reason");
+              }
 
 
-            if (!publication.isConnected()) {
-                log.debug("No active subscribers detected");
-            }
+              if (!publications[streamsToPublish[i]].isConnected()) {
+                  log.debug("No active subscribers detected");
+              }
 
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+              Thread.sleep(TimeUnit.SECONDS.toMillis(1));
 
+          }
         }
+
 
 
         log.debug("Done sending.");
@@ -196,11 +209,16 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
                 aeron.close();
             }catch (Exception e) {}
         }
-        if(publication != null) {
-            try {
-                publication.close();
-            }catch(Exception e) {}
+
+        for(int i = 0; i < publications.length; i++) {
+            if(publications[i] != null) {
+                try {
+                    publications[i].close();
+                }catch(Exception e) {}
+            }
         }
+
+
 
     }
 }

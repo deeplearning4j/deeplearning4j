@@ -204,8 +204,7 @@ public class NDArrayMessage implements Serializable {
     public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
         Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
         INDArray arr = pair.getKey();
-        if(arr.isCompressed())
-            arr = Nd4j.getCompressor().decompress(arr);
+        Nd4j.getCompressor().decompressi(arr);
         //use the rest of the buffer, of note here the offset is already set, we should only need to use
         ByteBuffer rest = pair.getRight();
         long time = rest.getLong();

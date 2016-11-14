@@ -37,7 +37,6 @@ public class NDArrayFragmentHandler implements FragmentHandler {
      */
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
-        buffer = new UnsafeBuffer(buffer,offset,length);
         NDArrayMessage message = NDArrayMessage.fromBuffer(buffer,offset);
         INDArray arr = message.getArr();
         //of note for ndarrays
