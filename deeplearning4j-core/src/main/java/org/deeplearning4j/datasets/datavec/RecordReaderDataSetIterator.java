@@ -79,6 +79,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
 
+    /**
+     * Main constructor for classification. This will convert the input class index (at position labelIndex, with integer
+     * values 0 to numPossibleLabels-1 inclusive) to the appropriate one-hot output/labels representation.
+     *
+     * @param recordReader         RecordReader: provides the source of the data
+     * @param batchSize            Batch size (number of examples) for the output DataSet objects
+     * @param labelIndex           Index of the label Writable (usually an IntWritable), as obtained by recordReader.next()
+     * @param numPossibleLabels    Number of classes (possible labels) for classification
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
     }
