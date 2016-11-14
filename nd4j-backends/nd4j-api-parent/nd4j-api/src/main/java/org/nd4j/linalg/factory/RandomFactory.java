@@ -3,6 +3,8 @@ package org.nd4j.linalg.factory;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.lang.reflect.Constructor;
+
 /**
  * This class acts as factory for new Random objects and thread-isolated holder for previously created Random instances
  *
@@ -53,6 +55,7 @@ public class RandomFactory {
     /**
      * This method returns new onject implementing Random interface, initialized with seed value
      *
+     * @param seed seed for this rng object
      * @return object implementing Random interface
      */
     public Random getNewRandomInstance(long seed) {
@@ -63,6 +66,24 @@ public class RandomFactory {
                 // if it's stateless random - we just don't care then
             }
             t.setSeed(seed);
+            return t;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method returns new onject implementing Random interface, initialized with seed value, with size of elements in buffer
+     *
+     * @param seed rng seed
+     * @param size size of underlying buffer
+     * @return object implementing Random interface
+     */
+    public Random getNewRandomInstance(long seed, long size) {
+        try {
+            Class<?> c = randomClass;
+            Constructor<?> constructor = c.getConstructor(long.class, long.class);
+            Random t = (Random) constructor.newInstance(seed, size);
             return t;
         } catch (Exception e) {
             throw new RuntimeException(e);
