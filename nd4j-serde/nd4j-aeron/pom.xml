@@ -76,7 +76,7 @@
     <dependency>
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-all</artifactId>
-      <version>1.5.1</version>
+      <version>${sbe.version}</version>
     </dependency>
   </dependencies>
 </project>

@@ -13,6 +13,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
@@ -44,6 +46,71 @@ public class NdArrayIpcTest {
         CloseHelper.quietClose(mediaDriver);
     }
 
+
+    @Test
+    public void testMultiThreadedIpc() throws Exception {
+        //LowLatencyMediaDriver.main(new String[]{});
+
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        INDArray arr = Nd4j.scalar(1.0);
+
+
+        final AtomicBoolean running = new AtomicBoolean(true);
+        Aeron aeron = Aeron.connect(getContext());
+        for(int i = 0; i < 10; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(10)
+                    .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+                    .running(running)
+                    .ndArrayCallback(new NDArrayCallback() {
+                        @Override
+                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+
+                        }
+
+                        @Override
+                        public void onNDArray(INDArray arr) {
+                            running.set(false);
+                        }
+                    }).build();
+
+
+            Thread t = new Thread(() -> {
+                try {
+                    subscriber.launch();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            });
+
+            t.start();
+        }
+
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
+                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+                .build();
+
+        Thread.sleep(10000);
+
+        for(int i = 0; i< 10 && running.get(); i++) {
+            executorService.execute(() -> {
+                try {
+                    log.info("About to send array.");
+                    publisher.publish(arr);
+                    log.info("Sent array");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+        }
+
+        Thread.sleep(100000);
+
+
+
+        assertFalse(running.get());
+    }
 
     @Test
     public void testIpc() throws Exception {
@@ -97,7 +164,7 @@ public class NdArrayIpcTest {
 
 
     private Aeron.Context getContext() {
-       if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
                 .errorHandler(e -> log.error(e.toString(), e));

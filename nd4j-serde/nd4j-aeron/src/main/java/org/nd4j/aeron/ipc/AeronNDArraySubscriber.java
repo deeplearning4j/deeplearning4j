@@ -7,6 +7,8 @@ import lombok.Data;
 import org.agrona.concurrent.SigInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -42,6 +44,7 @@ public class AeronNDArraySubscriber {
     private Aeron aeron;
     private Subscription subscription;
     private AtomicBoolean launched = new AtomicBoolean(false);
+    private Executor executors;
 
 
 
@@ -100,21 +103,18 @@ public class AeronNDArraySubscriber {
 
         boolean started = false;
         while(!started) {
-            try {
-                try (final Aeron aeron = Aeron.connect(ctx);
-                     final Subscription subscription = aeron.addSubscription(channel, streamId)) {
-                    this.aeron = aeron;
-                    this.subscription = subscription;
-                    log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-                    AeronUtil.subscriberLoop(
-                            new NDArrayFragmentHandler(ndArrayCallback),
-                            fragmentLimitCount,
-                            running,launched)
-                            .accept(subscription);
-                    started = true;
+            try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
+                this.subscription = subscription;
+                log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
+                AeronUtil.subscriberLoop(
+                        new NDArrayFragmentHandler(ndArrayCallback),
+                        fragmentLimitCount,
+                        running,launched)
+                        .accept(subscription);
+                started = true;
 
-                }
-            }catch(Exception e) {
+            }
+            catch(Exception e) {
                 log.warn("Unable to connect...trying again on channel " + channel,e);
             }
         }
