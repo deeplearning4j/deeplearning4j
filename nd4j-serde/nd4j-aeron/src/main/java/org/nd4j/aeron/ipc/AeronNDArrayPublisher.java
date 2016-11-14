@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private Aeron aeron;
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
-
+    public final static int NUM_RETRIES = 5;
 
 
     private void init() {
@@ -57,7 +56,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         //ensure default values are set
         INDArray arr = message.getArr();
         while(!message.getArr().isCompressed())
-            message.setArr(Nd4j.getCompressor().compress(arr,"GZIP"));
+            Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
         DirectBuffer buffer = NDArrayMessage.toBuffer(message);
@@ -81,14 +80,20 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
                 log.warn("Reconnecting on publisher...failed to connect");
             }
         }
+
         int connectionTries = 0;
-        while(publication == null && connectionTries < 3) {
+        while(publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
             }catch (DriverTimeoutException e) {
-                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream" + streamId);
+                Thread.sleep(1000 * (connectionTries + 1));
+                log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamId + "...retrying in " + connectionTries + " seconds");
                 connectionTries++;
             }
+        }
+
+        if(!connected && connectionTries >= 3 || publication == null) {
+            throw new IllegalStateException("Publisher unable to connect to channel " + channel + " and stream " + streamId);
         }
 
 
