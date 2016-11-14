@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 
 /**
  * A message sent over the wire for ndarrays
- * including the timestamp sent (in nanoseconds),
+ * includ   ing the timestamp sent (in nanoseconds),
  * index (for tensor along dimension view based updates)
  * and dimensions.
  *

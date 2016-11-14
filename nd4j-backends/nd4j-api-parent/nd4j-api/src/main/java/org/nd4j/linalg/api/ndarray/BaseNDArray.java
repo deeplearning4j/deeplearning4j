@@ -4119,7 +4119,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(dimension >= rank())
-            throw new IllegalArgumentException("Invalid size index " + dimension + " wher it's >= rank " + rank());
+            throw new IllegalArgumentException("Invalid size index " + dimension + " where its >= rank " + rank());
 
 
         return shapeOf().getInt(dimension);

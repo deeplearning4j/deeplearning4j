@@ -161,7 +161,7 @@ public class ParameterServerClient implements NDArrayCallback {
 
 
     /**
-     * Get the connection url for the subscrber
+     * Get the connection url for the subscriber
      * in the format:
      * host:port:stream
      * @return the connection url for the subscriber
