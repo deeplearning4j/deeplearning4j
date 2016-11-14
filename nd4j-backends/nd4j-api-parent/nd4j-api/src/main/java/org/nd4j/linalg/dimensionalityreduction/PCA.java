@@ -91,4 +91,52 @@ public class PCA {
     }
 
 
+    /**
+     * Calculates pca vectors of a matrix, for a given variance. A larger variance (99%)
+     * will result in a higher order feature set.
+     *
+     *
+     *
+     * @param A the array of features, rows are results, columns are features
+     * @param variance the amount of variance to preserve as a float 0 - 1
+     * @return the matrix to mulitiply a feature by to get a reduced feature set
+     */
+    public static INDArray pca(INDArray A, double variance) {
+
+        // Calculate the covariance matrix for the features
+        INDArray cov = A.mmul( A.transpose() ) ;
+        cov.divi( cov.meanNumber() );
+
+        // Prepare SVD results, we'll decomp the covariance
+        INDArray s = Nd4j.create( cov.rows() ) ;
+        INDArray U = Nd4j.create( cov.rows(), cov.columns(), 'f' ) ;
+
+        // Note - we don't care about VT (esp. since it will be the same as U for any AxA' )
+        Nd4j.getBlasWrapper().lapack().sgesvd( cov, s, U, null );
+
+        // Now find how many features we need to preserve the required variance
+        // Which is the same percentage as a cumulative sum of the eigenvalues' percentages
+        double totalEigSum = s.sumNumber().doubleValue() * variance ;
+        int numEigsToKeep = -1 ;
+        double runningTotal = 0 ;
+        for( int i=0 ; i<s.length() ; i++ ) {
+                runningTotal += s.getDouble(i) ;
+                if( runningTotal >= totalEigSum ) {  // OK I know it's a float, but what else can we do ?
+                        numEigsToKeep = i+1 ;	     // we will keep this many features to preserve the reqd. variance
+                        break ;
+                }
+        }
+	if( numEigsToKeep == -1 ) {   // if we need everything
+		throw new RuntimeException( "No reduction possible for reqd. variance - use a smaller variance or don't use PCA" ) ;
+	}
+        // So now let's rip out the appropriate number of left singular vectors from
+        // the U output
+        INDArray factor = Nd4j.create( A.rows(), numEigsToKeep, 'f' ) ;
+        for( int i=0 ; i<numEigsToKeep ; i++ ) {
+                factor.putColumn( i, U.getColumn(i) ) ;
+        }
+
+        return factor  ;
+    }
+
 }

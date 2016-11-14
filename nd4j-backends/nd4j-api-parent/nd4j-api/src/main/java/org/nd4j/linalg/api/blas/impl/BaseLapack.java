@@ -77,7 +77,7 @@ public  abstract  class BaseLapack implements Lapack {
         		Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, 1}));
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-	    throw new UnsupportedOperationException() ;
+	    dgesvd( jobu, jobvt, m, n, A, S, U, VT, INFO ) ;
         else if (A.data().dataType() == DataBuffer.Type.FLOAT)
 	    sgesvd( jobu, jobvt, m, n, A, S, U, VT, INFO ) ;
         else
@@ -86,14 +86,12 @@ public  abstract  class BaseLapack implements Lapack {
 	if( INFO.getInt(0) < 0 ) {
 	    throw new Error( "Parameter #" + INFO.getInt(0) + " to gesvd() was not valid" ) ;
 	} else if ( INFO.getInt(0) > 0 ) {
-	    logger.warn( "The matrix contains singularelements. Check S matrix at row " + INFO.getInt(0) ) ;
+	    logger.warn( "The matrix contains singular elements. Check S matrix at row " + INFO.getInt(0) ) ;
         }
     }
 
     public abstract void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) ;
-    public void dgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
-    }
-
+    public abstract void dgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) ;
 
     @Override
     public INDArray getPFactor( int M, INDArray ipiv ) {

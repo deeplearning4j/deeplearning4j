@@ -18,24 +18,34 @@ public class CpuLapack extends BaseLapack {
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-	
 	int status = org.bytedeco.javacpp.openblas.LAPACKE_sgetrf(
 			getColumnOrder(A), M, N, A.data().asNioFloat(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
     @Override
     public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-	
 	int status = org.bytedeco.javacpp.openblas.LAPACKE_dgetrf(
 			getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
+
     @Override
     public void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
+	int status = org.bytedeco.javacpp.openblas.LAPACKE_sgesvd(
+		getColumnOrder(A),
+		jobu, jobvt, M, N, A.data().asNioFloat(), getLda(A), S.data().asNioFloat(), 
+		U.data().asNioFloat(), getLda(U), VT.data().asNioFloat(), getLda(VT), null ) ;
+    }
+    @Override
+    public void dgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
+	int status = org.bytedeco.javacpp.openblas.LAPACKE_dgesvd(
+		getColumnOrder(A),
+		jobu, jobvt, M, N, A.data().asNioDouble(), getLda(A), S.data().asNioDouble(), 
+		U.data().asNioDouble(), getLda(U), VT.data().asNioDouble(), getLda(VT), null ) ;
     }
 
     /**
-     * Generate inverse ggiven LU decomp
+     * Generate inverse given LU decomp
      *
      * @param N
      * @param A
