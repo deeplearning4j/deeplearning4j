@@ -37,7 +37,7 @@ This tutorial shows you how a multilayer perceptron can be used as a linear clas
 
 Video lecture by instructor Tom Hanlon on Machine Learning. Tom provides an overview of how to build a simple neural net in this introductory tutorial. This screencast shows how to build a Linear Classifier using Deeplearning4j.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BN_g2t0ykxg" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8EIBIfVlgmU" frameborder="0" allowfullscreen></iframe>
 
 ### XOR Tutorial
 
@@ -49,7 +49,7 @@ XOR is a digital logic gate that implements an exclusive or. XOR means that a tr
 
 This tutorial shows how to use Skymind's DataVec to ingest Comma Separated Values from a text file, convert the fields to numeric using a DataVec Transform Process in Spark, and save the modified data. Transforming non-numeric data to numeric data is a key preliminary step to using a Neural Network to analyze the data.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/L5DtC8_4F-c" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/MLEMw2NxjxE" frameborder="0" allowfullscreen></iframe>
 
 ### Beginners Guide to Recurrent Networks and LSTM's
 
