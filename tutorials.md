@@ -51,6 +51,36 @@ This tutorial shows how to use Skymind's DataVec to ingest Comma Separated Value
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/MLEMw2NxjxE" frameborder="0" allowfullscreen></iframe>
 
+### Image Pipeline Tutorial
+
+#### Image Ingestion and Labelling
+This tutorial is a series of videos and code examples that show a complete data pipeline. 
+
+The first example demonstrates using some of DataVec's tools to read a directory of images and generate a label for the image using ParentPathLabelGenerator. Once the data is read and labelled the image data is scaled so that the pixel values fall between 0 and 1, instead of 0 and 255. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
+
+
+#### Adding in a Neural Network
+
+This tutorial builds on the Image Ingestion and Labelling tutorial by taking the DataVec image pipeline and adding a Neural Network to train on the images. Topics covered include MultiLayerNetwork, DataSetIterator, Training the network, monitoring scores as the model trains. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ECA6y6ahH5E" frameborder="0" allowfullscreen></iframe>
+
+#### Saving and Loading a Trained Network
+
+Once you have a trained your network you may want to save the trained network for use in building an application. This tutorial demonstrates what is needed to save the trained model, and to load the trained model. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/zrTSs715Ylo" frameborder="0" allowfullscreen></iframe>
+
+#### Testing the Trained Network against user selected images
+
+Once your network is trained and tested it is time to deploy the network in an application. This tutorial demonstrates Loading a training model, and adding a simple interface of a filechooser to allow the user to get the models opinion on what digit the image passed in might be. In the video I test a simple Feed Forward Neural Network that has been trained on the MNist dataset of handwritten digits, against an image of the digit 3 found in a google search. 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/DRHIpeJpJDI" frameborder="0" allowfullscreen></iframe>
+
+
+
 ### Beginners Guide to Recurrent Networks and LSTM's
 
 Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, genomes, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
