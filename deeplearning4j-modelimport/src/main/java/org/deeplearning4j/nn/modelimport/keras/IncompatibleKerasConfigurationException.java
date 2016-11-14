@@ -1,4 +1,4 @@
-package org.deeplearning4j.modelimport;
+package org.deeplearning4j.nn.modelimport.keras;
 
 
 public class IncompatibleKerasConfigurationException extends RuntimeException {
