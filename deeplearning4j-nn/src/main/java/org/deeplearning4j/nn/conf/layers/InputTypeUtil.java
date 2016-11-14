@@ -69,9 +69,15 @@ public class InputTypeUtil {
 
 
         if ((inWidth - kW + 2 * padW) % sW != 0) {
-            throw new IllegalStateException("Invalid input configuration (layer name = \"" + layerName + "\") for width: inWidth=" + inWidth + ", kernelW="
-                    + kW + ", padW=" + padW + ", strideW=" + sW + "; (" + inWidth + "-" + kW + "+2*" + padW + ")/" + sW
-                    + " is not an integer");
+            double d = (inWidth - kW + 2 * padW) / ((double)sW) + 1.0;
+            String str = String.format("%.2f",d);
+            throw new DL4JInvalidConfigException(
+                    getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false )
+                            + "\nCombination of kernel size, stride and padding are not valid for given input width.\n"
+                            + "Require: (input - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
+                            + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
+                            + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/\n"
+                            + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
@@ -83,7 +89,7 @@ public class InputTypeUtil {
         String name = layerName == null ? "(not named)" : layerName;
         String layerType = layerClass.getSimpleName();
 
-        return "Invalid configuration for convolutional layer (idx=" + layerIdx + ", name=" + name + ", type=" + layerType
+        return "Invalid configuration for layer (idx=" + layerIdx + ", name=" + name + ", type=" + layerType
                 + ") for " + (isHeight ? "height" : "width") + " dimension: ";
     }
 
