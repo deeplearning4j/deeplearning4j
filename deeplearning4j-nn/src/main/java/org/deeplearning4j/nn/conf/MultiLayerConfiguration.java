@@ -440,7 +440,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     }
                     l.setNIn(currentInputType, false);  //Don't override the nIn setting, if it's manually set by the user
 
-                    currentInputType = l.getOutputType(currentInputType);
+                    currentInputType = l.getOutputType(i, currentInputType);
                 }
             }
 
