@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -136,7 +137,7 @@ public class ConvolutionLayerTest {
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DL4JException.class)
     public void testCNNTooLargeKernel(){
         int imageHeight= 20;
         int imageWidth= 23;
