@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -122,6 +124,13 @@ public class LSTMHelpers {
         }
 
         Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
+
+        //Input validation: check input data matches nIn
+        if(input.size(1) != inputWeights.size(0)){
+            throw new DL4JInvalidInputException(
+                    "Received input with size(1) = " + input.size(1) + " (input array shape = " + Arrays.toString(input.shape()) +
+                            "); input.size(1) must match layer nIn size (nIn = " + inputWeights.size(0) + ")");
+        }
 
         //initialize prevOutputActivations to zeroes
         if (prevOutputActivations == null) {

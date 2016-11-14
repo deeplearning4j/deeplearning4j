@@ -194,19 +194,71 @@ public class TestInvalidInput {
     @Test
     public void testInputNinMismatchLSTM(){
 
-        fail();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        try{
+            net.fit(Nd4j.create(1,10,5), Nd4j.create(1,5,5));
+            fail("Expected DL4JException");
+        }catch (DL4JException e){
+            System.out.println("testInputNinMismatchLSTM(): " + e.getMessage());
+        }catch (Exception e){
+            e.printStackTrace();
+            fail("Expected DL4JException");
+        }
     }
 
     @Test
     public void testInputNinMismatchBidirectionalLSTM(){
 
-        fail();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).build())
+                .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        try{
+            net.fit(Nd4j.create(1,10,5), Nd4j.create(1,5,5));
+            fail("Expected DL4JException");
+        }catch (DL4JException e){
+            System.out.println("testInputNinMismatchBidirectionalLSTM(): " + e.getMessage());
+        }catch (Exception e){
+            e.printStackTrace();
+            fail("Expected DL4JException");
+        }
+
     }
 
     @Test
     public void testInputNinMismatchEmbeddingLayer(){
 
-        fail();
-    }
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new EmbeddingLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .build();
 
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        try{
+            net.feedForward(Nd4j.create(10,5));
+            fail("Expected DL4JException");
+        }catch (DL4JException e){
+            System.out.println("testInputNinMismatchDense(): " + e.getMessage());
+        }catch (Exception e){
+            e.printStackTrace();
+            fail("Expected DL4JException");
+        }
+    }
+    
 }
