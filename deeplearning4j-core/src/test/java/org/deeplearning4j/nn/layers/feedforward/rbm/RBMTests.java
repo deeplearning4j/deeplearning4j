@@ -308,9 +308,9 @@ public class RBMTests {
         rbm.setListeners(new ScoreIterationListener(10));
         rbm.fit(features);
 
-        INDArray paramResults = rbm.params();
-
-        double x = rbm.score();
+//        INDArray paramResults = rbm.params();
+//
+//        double x = rbm.score();
     }
 
 
