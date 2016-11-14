@@ -61,9 +61,10 @@ public class LocalResponseNormalization extends Layer {
 
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
+            throw new IllegalStateException("Invalid input type for LRN layer (layer index = " + layerIndex +
+                    ", layer name = \"" + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
         }
         return inputType;
     }
