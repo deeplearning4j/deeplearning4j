@@ -27,7 +27,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers
            The obtained values are compared to the theoretical mean and std dev
          */
-        double tolerancePerc = 5;
+        double tolerancePerc = 0.01;
         int nSamples = 5120;
         int x = 1,y = 2, z = 3;
 
@@ -68,7 +68,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         // SAME TEST WITH THE ITERATOR
         int bSize = 10;
-        tolerancePerc = 1; // 1% of correct value
+        tolerancePerc = 0.1; // 1% of correct value
         DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet,bSize);
         myNormalizer.fit(sampleIter);
 
@@ -91,13 +91,13 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             Obtained mean and std dev are compared to theoretical
             Transformed values should be the same as X with the same seed.
          */
-        long randSeed = 7139183;
+        long randSeed = 2227724;
 
         int nFeatures = 2;
         int nSamples = 6400;
         int bsize = 8;
-        int a = 2;
-        int b = 10;
+        int a = 5;
+        int b = 100;
         INDArray sampleMean, sampleStd, sampleMeanDelta, sampleStdDelta, delta, deltaPerc;
         double maxDeltaPerc, sampleMeanSEM;
 
@@ -113,7 +113,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         myNormalizer.fit(normIterator);
 
-        double tolerancePerc = 5.0; //within 5%
+        double tolerancePerc = 0.5; //within 0.5%
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
         assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0,0) < tolerancePerc);
@@ -121,11 +121,12 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0,0);
         assertTrue(sampleMeanSEM < 2.6 ); //99% of the time it should be within this many SEMs
 
-        tolerancePerc = 10.0; //within 10%
+        tolerancePerc = 5; //within 5%
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
         assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0,0) < tolerancePerc);
 
+        tolerancePerc = 1; //within 1%
         normIterator.setPreProcessor(myNormalizer);
         while (normIterator.hasNext()) {
             INDArray before = beforeTransformIterator.next().getFeatures();
@@ -157,11 +158,14 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray theoreticalStd;
         INDArray theoreticalSEM;
         public genRandomDataSet(int nSamples, int nFeatures, int a, int b , long randSeed) {
+            /* if a =1 and b = 0,normal distribution
+                otherwise with some random mean and some random distribution
+             */
             int i = 0;
             // Randomly generate scaling constants and add offsets
             // to get aA and bB
-            INDArray aA = Nd4j.rand(1, nFeatures, randSeed).add(a);
-            INDArray bB = Nd4j.rand(1, nFeatures, randSeed).add(b);
+            INDArray aA = a == 1? Nd4j.ones(1,nFeatures): Nd4j.rand(1, nFeatures, randSeed).mul(a); //a = 1, don't scale
+            INDArray bB = Nd4j.rand(1, nFeatures, randSeed).mul(b); //b = 0 this zeros out
             // transform ndarray as X = aA + bB * X
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
             while (i < nFeatures) {
