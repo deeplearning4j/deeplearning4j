@@ -591,6 +591,19 @@ public class RandomTests extends BaseNd4jTest {
         } else log.warn("Not a NativeRandom object received, skipping test");
     }
 
+    @Test
+    public void testStepOver4() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
+
+        for (int x = 0; x < 1000; x++) {
+            INDArray z1 = Nd4j.rand(1, 10000, random1);
+            INDArray z2 = Nd4j.rand(1, 10000, random2);
+
+            assertEquals(z1, z2);
+        }
+    }
+
     @Ignore
     @Test
     public void testDeallocation1() throws Exception {
