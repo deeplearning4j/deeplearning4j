@@ -416,7 +416,7 @@ namespace nd4j {
             }
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __host__
 #endif
             void jump(void) {
                 static const uint64_t JUMP[] = { 0xbeac0467eba5facb, 0xd86b048b86aa9922 };
