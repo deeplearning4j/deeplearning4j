@@ -10,6 +10,7 @@ import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -71,6 +72,19 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private boolean collectMetaData = false;
 
     /**
+     * Constructor where features and labels come from different RecordReaders (for example, different files),
+     * and labels are for classification.
+     *
+     * @param featuresReader       SequenceRecordReader for the features
+     * @param labels               Labels: assume single value per time step, where values are integers in the range 0 to numPossibleLables-1
+     * @param miniBatchSize        Minibatch size for each call of next()
+     * @param numPossibleLabels    Number of classes for the labels
+     */
+    public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
+                                               int miniBatchSize, int numPossibleLabels) {
+        this(featuresReader, labels, miniBatchSize, numPossibleLabels, false);
+    }
+    /**
      * Constructor where features and labels come from different RecordReaders (for example, different files)
      */
     public SequenceRecordReaderDataSetIterator(SequenceRecordReader featuresReader, SequenceRecordReader labels,
@@ -91,6 +105,17 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         this.regression = regression;
         this.alignmentMode = alignmentMode;
         this.singleSequenceReaderMode = false;
+    }
+
+    /** Constructor where features and labels come from the SAME RecordReader (i.e., target/label is a column in the
+     * same data as the features). Defaults to regression = false - i.e., for classification
+     * @param reader SequenceRecordReader with data
+     * @param miniBatchSize size of each minibatch
+     * @param numPossibleLabels number of labels/classes for classification (or not used if regression == true)
+     * @param labelIndex index in input of the label index
+     */
+    public SequenceRecordReaderDataSetIterator(SequenceRecordReader reader, int miniBatchSize, int numPossibleLabels, int labelIndex){
+        this(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
     }
 
     /** Constructor where features and labels come from the SAME RecordReader (i.e., target/label is a column in the
@@ -567,6 +592,11 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 //Expect a single value (index) -> convert to one-hot vector
                 Writable value = timeStepIter.next();
                 int idx = value.toInt();
+                if(idx < 0 || idx >= numPossibleLabels){
+                    throw new DL4JInvalidInputException("Invalid classification data: expect label value to be in range 0 to " +
+                            (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
+                            + "); got label value of " + idx);
+                }
                 INDArray line = FeatureUtil.toOutcomeVector(idx, numPossibleLabels);
                 out.getRow(i).assign(line);
             }
@@ -631,6 +661,12 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                             labels.put(i,0,current.toDouble());
                         }
                     } else {
+                        int idx = current.toInt();
+                        if(idx < 0 || idx >= numPossibleLabels){
+                            throw new DL4JInvalidInputException("Invalid classification data: expect label value (at label index column = " + labelIndex
+                                    + ") to be in range 0 to " + (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
+                                    + "); got label value of " + current);
+                        }
                         labels.putScalar(i,current.toInt(),1.0);    //Labels initialized as 0s
                     }
                 } else {

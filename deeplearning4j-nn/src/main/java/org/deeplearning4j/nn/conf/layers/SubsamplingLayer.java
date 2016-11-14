@@ -77,12 +77,13 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType getOutputType(int layerIndex, InputType inputType) {
         if(inputType == null || inputType.getType() != InputType.Type.CNN){
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, ((InputType.InputTypeConvolutional) inputType).getDepth(), getLayerName());
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, ((InputType.InputTypeConvolutional) inputType).getDepth(),
+                layerIndex, getLayerName(), SubsamplingLayer.class);
     }
 
     @Override

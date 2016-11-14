@@ -88,7 +88,7 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
             throw new InvalidInputTypeException("LayerVertex expects exactly one input. Got: " + Arrays.toString(vertexInputs));
         }
@@ -98,6 +98,6 @@ public class LayerVertex extends GraphVertex {
         if (preProcessor == null) afterPreprocessor = vertexInputs[0];
         else afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
-        return layerConf.getLayer().getOutputType(afterPreprocessor);
+        return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
     }
 }

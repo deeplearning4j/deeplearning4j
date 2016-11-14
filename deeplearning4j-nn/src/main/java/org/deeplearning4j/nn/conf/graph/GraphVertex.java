@@ -80,10 +80,11 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * processing or modifications of the inputs, the output types can be quite different to the input type(s).<br>
      * This is generally used to determine when to add preprocessors, as well as the input sizes etc for layers
      *
+     * @param layerIndex The index of the layer (if appropriate/necessary).
      * @param vertexInputs The inputs to this vertex
      * @return The type of output for this vertex
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */
-    public abstract InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException;
+    public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
 
 }
