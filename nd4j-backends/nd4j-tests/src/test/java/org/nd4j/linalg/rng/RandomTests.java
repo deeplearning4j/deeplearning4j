@@ -604,6 +604,17 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testSignatures1() throws Exception {
+
+        for (int x = 0; x < 100; x++) {
+            INDArray z1 = Nd4j.randn(128, 1, 5325235);
+            INDArray z2 = Nd4j.randn(128, 1, 5325235);
+
+            assertEquals(z1, z2);
+        }
+    }
+
     @Ignore
     @Test
     public void testDeallocation1() throws Exception {
