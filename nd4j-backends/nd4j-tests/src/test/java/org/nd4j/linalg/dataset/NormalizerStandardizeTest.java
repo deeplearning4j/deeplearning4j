@@ -58,7 +58,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         // SAME TEST WITH THE ITERATOR
         int bSize = 10;
-        tolerancePerc = 1; // 1% of correct value
+        tolerancePerc = 0.1; // 0.1% of correct value
         DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet,bSize);
         myNormalizer.fit(sampleIter);
 
@@ -81,28 +81,30 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             Obtained mean and std dev are compared to theoretical
             Transformed values should be the same as X with the same seed.
          */
-        long randSeed = 2227724;
+        long randSeed = 41732786;
 
         int nFeatures = 2;
         int nSamples = 6400;
         int bsize = 8;
-        int a = 2;
-        int b = 10;
+        int a = 5;
+        int b = 100;
         INDArray sampleMean, sampleStd, sampleMeanDelta, sampleStdDelta, delta, deltaPerc;
         double maxDeltaPerc, sampleMeanSEM;
 
         genRandomDataSet normData = new genRandomDataSet(nSamples, nFeatures, a, b, randSeed);
+        DataSet genRandExpected = normData.theoreticalTransform;
         genRandomDataSet expectedData = new genRandomDataSet(nSamples,nFeatures,1,0, randSeed);
         genRandomDataSet beforeTransformData = new genRandomDataSet(nSamples,nFeatures,a,b, randSeed);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         DataSetIterator normIterator = normData.getIter(bsize);
+        DataSetIterator genRandExpectedIter = new TestDataSetIterator(genRandExpected ,bsize);
         DataSetIterator expectedIterator = expectedData.getIter(bsize);
         DataSetIterator beforeTransformIterator = beforeTransformData.getIter(bsize);
 
         myNormalizer.fit(normIterator);
 
-        double tolerancePerc = 5.0; //within 5%
+        double tolerancePerc = 0.10; //within 0.1%
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
         assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0,0) < tolerancePerc);
@@ -110,28 +112,35 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0,0);
         assertTrue(sampleMeanSEM < 2.6 ); //99% of the time it should be within this many SEMs
 
-        tolerancePerc = 10.0; //within 10%
+        tolerancePerc = 1; //within 1% - std dev value
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
 
         assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0,0) < tolerancePerc);
 
+        tolerancePerc = 1; //within 1%
         normIterator.setPreProcessor(myNormalizer);
         while (normIterator.hasNext()) {
            INDArray before = beforeTransformIterator.next().getFeatures();
+            INDArray origBefore = genRandExpectedIter.next().getFeatures();
            INDArray after = normIterator.next().getFeatures();
            INDArray expected = expectedIterator.next().getFeatures();
            delta = Transforms.abs(after.sub(expected));
-           deltaPerc = delta.div(before.sub(expected));
+           deltaPerc = delta.div(Transforms.abs(before.sub(expected)));
            deltaPerc.muli(100);
            maxDeltaPerc = deltaPerc.max(0,1).getDouble(0,0);
-           //System.out.println("=== BEFORE ===");
-           //System.out.println(before);
-           //System.out.println("=== AFTER ===");
-           //System.out.println(after);
-           //System.out.println("=== SHOULD BE ===");
-           //System.out.println(expected);
-           //assertTrue(maxDeltaPerc < tolerancePerc);
+           /*
+           System.out.println("=== BEFORE ===");
+           System.out.println(before);
+           System.out.println("=== ORIG BEFORE ===");
+           System.out.println(origBefore);
+           System.out.println("=== AFTER ===");
+           System.out.println(after);
+           System.out.println("=== SHOULD BE ===");
+           System.out.println(expected);
+           System.out.println("% diff, "+ maxDeltaPerc);
+           */
+           assertTrue(maxDeltaPerc < tolerancePerc);
         }
     }
 
@@ -261,16 +270,22 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         INDArray theoreticalMean;
         INDArray theoreticalStd;
         INDArray theoreticalSEM;
+        DataSet theoreticalTransform;
         public genRandomDataSet(int nSamples, int nFeatures, int a, int b , long randSeed) {
+            /* if a =1 and b = 0,normal distribution
+                otherwise with some random mean and some random distribution
+             */
             int i = 0;
             // Randomly generate scaling constants and add offsets
             // to get aA and bB
-            INDArray aA = Nd4j.rand(1, nFeatures, randSeed).add(b).mul(a);
-            INDArray bB = Nd4j.rand(1, nFeatures, randSeed).add(b).mul(a);
+            INDArray aA = a == 1? Nd4j.ones(1,nFeatures): Nd4j.rand(1, nFeatures, randSeed).mul(a); //a = 1, don't scale
+            INDArray bB = Nd4j.rand(1, nFeatures, randSeed).mul(b); //b = 0 this zeros out
             // transform ndarray as X = aA + bB * X
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
+            INDArray randomFeaturesTransform = Nd4j.zeros(nSamples, nFeatures);
             while (i < nFeatures) {
                 INDArray randomSlice = Nd4j.randn(nSamples, 1, randSeed);
+                randomFeaturesTransform.putColumn(i, randomSlice);
                 randomSlice.muli(aA.getScalar(0, i));
                 randomSlice.addi(bB.getScalar(0, i));
                 randomFeatures.putColumn(i, randomSlice);
@@ -278,6 +293,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             }
             INDArray randomLabels = Nd4j.zeros(nSamples, 1);
             this.sampleDataSet = new DataSet(randomFeatures, randomLabels);
+            this.theoreticalTransform = new DataSet(randomFeaturesTransform,randomLabels);
             this.theoreticalMean = bB;
             this.theoreticalStd = aA;
             this.theoreticalSEM = this.theoreticalStd.div(Math.sqrt(nSamples));
