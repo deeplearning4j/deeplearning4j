@@ -31,6 +31,7 @@ import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -253,8 +254,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     label = Nd4j.scalar(current.toDouble());
                 } else {
                     int curr = current.toInt();
-                    if (curr >= numPossibleLabels)
-                        curr--;
+                    if (curr < 0 || curr >= numPossibleLabels) {
+                        throw new DL4JInvalidInputException("Invalid classification data: expect label value (at label index column = " + labelIndex
+                            + ") to be in range 0 to " + (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
+                            + "); got label value of " + current);
+                    }
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
