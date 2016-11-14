@@ -246,7 +246,7 @@ public class ComputationGraphConfigurationTest {
         }
 
         @Override
-        public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+        public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
             throw new UnsupportedOperationException();
         }
     }

@@ -81,7 +81,7 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if(vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input type: cannot get last time step of more than 1 input");
         if(vertexInputs[0].getType() != InputType.Type.RNN){
             throw new InvalidInputTypeException("Invalid input type: cannot get subset of non RNN input (got: " + vertexInputs[0] + ")");

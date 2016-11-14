@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -122,6 +124,19 @@ public class LSTMHelpers {
         }
 
         Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
+
+        //Input validation: check input data matches nIn
+        if(input.size(1) != inputWeights.size(0)){
+            throw new DL4JInvalidInputException("Received input with size(1) = " + input.size(1) + " (input array shape = "
+                    + Arrays.toString(input.shape()) + "); input.size(1) must match layer nIn size (nIn = " + inputWeights.size(0) + ")");
+        }
+        //Input validation: check that if past state is provided, that it has same
+        //These can be different if user forgets to call rnnClearPreviousState() between calls of rnnTimeStep
+        if(prevOutputActivations != null && prevOutputActivations.size(0) != input.size(0)){
+            throw new DL4JInvalidInputException("Previous activations (stored state) number of examples = " + prevOutputActivations.size(0)
+                + " but input array number of examples = " + input.size(0) + ". Possible cause: using rnnTimeStep() without calling"
+                + " rnnClearPreviousState() between different sequences?");
+        }
 
         //initialize prevOutputActivations to zeroes
         if (prevOutputActivations == null) {
