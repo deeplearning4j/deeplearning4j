@@ -59,7 +59,7 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
             if (backendStream instanceof FileInputStream) {
                 ((FileInputStream) backendStream).getChannel().position(0);
             } else backendStream.reset();
-            reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(backendStream, 8192)));
+            reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(backendStream, 10 * 10 * 1024)));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

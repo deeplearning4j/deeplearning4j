@@ -1,6 +1,5 @@
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
@@ -18,8 +17,8 @@ import java.io.InputStream;
  * @author Adam Gibson
  */
 public abstract class BaseUiServerTest {
-    protected static UiServer uiServer;
-    protected static Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+//    protected static UiServer uiServer;
+//    protected static Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
     @BeforeClass
     public static void before() throws Exception {
@@ -32,12 +31,12 @@ public abstract class BaseUiServerTest {
         bos.close();
         is.close();
         tmpConfig.deleteOnExit();
-        uiServer = new UiServer();
-        try {
-            uiServer.run("server", tmpConfig.getAbsolutePath());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        uiServer = new UiServer();
+//        try {
+//            uiServer.run("server", tmpConfig.getAbsolutePath());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @AfterClass

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -22,12 +23,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -608,5 +611,85 @@ public class MultiLayerTestRNN {
 
         INDArray in = Nd4j.rand(1, 10);
         net.rnnTimeStep(in);
+    }
+
+
+    @Test
+    public void testTBPTTLongerThanTS() {
+        //Extremely simple test of the 'does it throw an exception' variety
+        int timeSeriesLength = 20;
+        int tbpttLength = 1000;
+        int miniBatchSize = 7;
+        int nIn = 5;
+        int nOut = 4;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").build())
+                .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE)
+                        .nIn(8).nOut(nOut).activation("identity").build())
+                .pretrain(false).backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
+
+        INDArray features = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
+        INDArray labels = Nd4j.rand(new int[]{miniBatchSize, nOut, timeSeriesLength});
+
+        INDArray maskArrayInput = Nd4j.ones(miniBatchSize, timeSeriesLength);
+        INDArray maskArrayOutput = Nd4j.ones(miniBatchSize, timeSeriesLength);
+
+        DataSet ds = new DataSet(features, labels, maskArrayInput, maskArrayOutput);
+
+        INDArray initialParams = mln.params().dup();
+        mln.fit(ds);
+        INDArray afterParams = mln.params();
+        assertNotEquals(initialParams, afterParams);
+    }
+
+    @Test
+    public void checkMaskArrayClearance(){
+        for(boolean tbptt : new boolean[]{true, false}) {
+            //Simple "does it throw an exception" type test...
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .iterations(1).seed(12345).list()
+                    .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                            .activation("identity").nIn(1).nOut(1).build())
+                    .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10), Nd4j.linspace(2, 20, 10).reshape(1, 1, 10),
+                    Nd4j.ones(10), Nd4j.ones(10));
+
+            net.fit(data);
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+
+            net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(data).iterator());
+            net.fit(iter);
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+        }
     }
 }

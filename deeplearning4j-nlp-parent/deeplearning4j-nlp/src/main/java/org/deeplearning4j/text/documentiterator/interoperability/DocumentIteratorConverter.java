@@ -59,8 +59,28 @@ public class DocumentIteratorConverter implements LabelAwareIterator {
     }
 
     @Override
+    public boolean hasNext() {
+        return hasNextDocument();
+    }
+
+    @Override
+    public LabelledDocument next() {
+        return nextDocument();
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
+
+    @Override
     public LabelsSource getLabelsSource() {
         return generator;
+    }
+
+    @Override
+    public void shutdown() {
+
     }
 
     protected String readStream(InputStream stream) throws IOException {

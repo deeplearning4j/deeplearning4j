@@ -69,6 +69,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
     public static class Builder extends SequenceVectors.Builder<VocabWord> {
         protected SentenceIterator sentenceIterator;
         protected TokenizerFactory tokenizerFactory;
+        protected boolean allowParallelTokenization = true;
 
 
         public Builder() {
@@ -445,6 +446,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method enables/disables parallel tokenization.
+         *
+         * Default value: TRUE
+         * @param allow
+         * @return
+         */
+        public Builder allowParallelTokenization(boolean allow) {
+            this.allowParallelTokenization = allow;
+            return this;
+        }
+
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
@@ -468,6 +481,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                 SentenceTransformer transformer = new SentenceTransformer.Builder()
                         .iterator(sentenceIterator)
                         .tokenizerFactory(tokenizerFactory)
+                        .allowMultithreading(allowParallelTokenization)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }

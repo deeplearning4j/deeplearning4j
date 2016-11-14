@@ -47,8 +47,6 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))){
             writeModel(model, stream, saveUpdater);
-            stream.flush();
-            stream.close();
         }
     }
 
@@ -63,8 +61,6 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull String path, boolean saveUpdater) throws IOException {
         try(BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(path))){
             writeModel(model, stream, saveUpdater);
-            stream.flush();
-            stream.close();
         }
     }
 
@@ -94,14 +90,23 @@ public class ModelSerializer {
         ZipEntry coefficients = new ZipEntry("coefficients.bin");
         zipfile.putNextEntry(coefficients);
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        File tempFile = File.createTempFile("model", "saver");
+        tempFile.deleteOnExit();
+
+        FileOutputStream fos = new FileOutputStream(tempFile);
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(model.params(), dos);
         dos.flush();
         dos.close();
+        bos.close();
+        fos.close();
 
-        InputStream inputStream = new ByteArrayInputStream(bos.toByteArray());
+
+
+        InputStream inputStream = new BufferedInputStream(new FileInputStream(tempFile));
         writeEntry(inputStream, zipfile);
+        inputStream.close();
 
         if (saveUpdater) {
             INDArray updaterState = null;
@@ -115,14 +120,18 @@ public class ModelSerializer {
                 ZipEntry updater = new ZipEntry(UPDATER_BIN);
                 zipfile.putNextEntry(updater);
 
-                bos = new ByteArrayOutputStream();
+                fos = new FileOutputStream(tempFile);
+                bos = new BufferedOutputStream(fos);
                 dos = new DataOutputStream(bos);
                 Nd4j.write(updaterState, dos);
                 dos.flush();
                 dos.close();
+                bos.close();
+                fos.close();
 
-                inputStream = new ByteArrayInputStream(bos.toByteArray());
+                inputStream = new BufferedInputStream(new FileInputStream(tempFile));
                 writeEntry(inputStream, zipfile);
+                inputStream.close();
             }
         }
 

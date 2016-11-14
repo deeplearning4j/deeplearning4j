@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -16,10 +19,15 @@ import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -425,6 +433,136 @@ public class ComputationGraphTestRNN {
         INDArray labelsLong = Nd4j.rand(new int[]{miniBatchSize,nOut,nTimeSlices*timeSeriesLength});
 
         graph.fit(new INDArray[]{inputLong}, new INDArray[]{labelsLong});
+    }
+
+    @Test
+    public void testTBPTTLongerThanTS() {
+        int tbpttLength = 100;
+        int timeSeriesLength = 20;
+        int miniBatchSize = 7;
+        int nIn = 5;
+        int nOut = 4;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "0")
+                .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.5)).build(), "1")
+                .setOutputs("out")
+                .pretrain(false).backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength)
+                .build();
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray inputLong = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+        INDArray labelsLong = Nd4j.rand(new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+        INDArray initialParams = graph.params().dup();
+        graph.fit(new INDArray[]{inputLong}, new INDArray[]{labelsLong});
+        INDArray afterParams = graph.params();
+
+        assertNotEquals(initialParams, afterParams);
+    }
+
+    @Test
+    public void testTbpttMasking(){
+        //Simple "does it throw an exception" type test...
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .iterations(1)
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("out",new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                .activation("identity").nIn(1).nOut(1).build(), "in")
+                .setOutputs("out").backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        MultiDataSet data = new MultiDataSet(
+                new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
+                new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
+                null,
+                new INDArray[]{Nd4j.ones(10)}
+        );
+
+        net.fit(data);
+    }
+
+
+    @Test
+    public void checkMaskArrayClearance(){
+        for(boolean tbptt : new boolean[]{true, false}) {
+            //Simple "does it throw an exception" type test...
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .iterations(1).seed(12345).graphBuilder()
+                    .addInputs("in")
+                    .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                            .activation("identity").nIn(1).nOut(1).build(), "in")
+                    .setOutputs("out").backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard).tBPTTForwardLength(8).tBPTTBackwardLength(8)
+                    .build();
+
+            ComputationGraph net = new ComputationGraph(conf);
+            net.init();
+
+            MultiDataSet data = new MultiDataSet(
+                    new INDArray[]{Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
+                    new INDArray[]{Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)},
+                    new INDArray[]{Nd4j.ones(10)},
+                    new INDArray[]{Nd4j.ones(10)});
+
+            net.fit(data);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
+            net.fit(ds);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            MultiDataSetIterator iter = new IteratorMultiDataSetIterator(Collections.singletonList((org.nd4j.linalg.dataset.api.MultiDataSet) data).iterator(), 1);
+            net.fit(iter);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+
+            DataSetIterator iter2 = new IteratorDataSetIterator(Collections.singletonList(ds).iterator(), 1);
+            net.fit(iter2);
+            assertNull(net.getInputMaskArrays());
+            assertNull(net.getLabelMaskArrays());
+            for (Layer l : net.getLayers()) {
+                assertNull(l.getMaskArray());
+            }
+        }
     }
 
 }
