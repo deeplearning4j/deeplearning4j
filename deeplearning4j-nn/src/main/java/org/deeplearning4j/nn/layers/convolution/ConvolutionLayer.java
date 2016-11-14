@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -106,8 +107,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int outH = outSize[0];
+        int outW = outSize[1];
+
+
 
 
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
@@ -207,7 +211,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if(input.size(1) != inDepth){
-            throw new DL4JInvalidInputException("Cannot do forward pass: input array depth does not match CNN layer configuration"
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer: input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]=" + Arrays.toString(input.shape()) + "; expected"
                     + " input depth = " + inDepth + ")");
         }
@@ -218,8 +222,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int outH = outSize[0];
+        int outW = outSize[1];
+
 
         if (helper != null) {
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode());
