@@ -19,7 +19,12 @@
 package org.deeplearning4j.util;
 
 
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
 
 /**
  * Convolutional shape utilities
@@ -30,6 +35,70 @@ public class ConvolutionUtils {
 
 
     private ConvolutionUtils() {
+    }
+
+    /**
+     * Get the output size (height/width) for the given inpud data and CNN configuration
+     *
+     * @param inputData    Input data
+     * @param kernel       Kernel size (height/width)
+     * @param strides      Strides (height/width)
+     * @param padding      Padding (height/width)
+     * @return             Output size: int[2] with output height/width
+     */
+    public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding){
+        int inH = inputData.size(2);
+        int inW = inputData.size(3);
+
+        if( kernel[0] <= 0 || kernel[0] > inH + 2*padding[0]){
+            throw new DL4JInvalidInputException(
+                    "Invalid input data or configuration: kernel height and input height must satisfy 0 < kernel height <= input height + 2 * padding height. "
+                    + "\nGot kernel height = " + kernel[0] + ", input height = " + inH + " and padding height = " + padding[0] +
+                            " which do not satisfy 0 < " + kernel[0] + " <= " + (inH + 2 * padding[0])
+                    + getCommonErrorMsg(inputData, kernel, strides, padding));
+        }
+
+        if( kernel[1] <= 0 || kernel[1] > inW + 2*padding[1]){
+            throw new DL4JInvalidInputException(
+                    "Invalid input data or configuration: kernel width and input width must satisfy  0 < kernel width <= input width + 2 * padding width. "
+                            + "\nGot kernel width = " + kernel[1] + ", input width = " + inW + " and padding width = " + padding[1]
+                            + " which do not satisfy 0 < " + kernel[1] + " <= " + (inW + 2 * padding[1])
+                            + "\nInput size: [numExamples,inputDepth,inputHeight,inputWidth]=" + Arrays.toString(inputData.shape())
+                            + getCommonErrorMsg(inputData, kernel, strides, padding));
+        }
+
+
+        if ((inH - kernel[0] + 2 * padding[0]) % strides[0] != 0) {
+            double d = (inH - kernel[0] + 2 * padding[0]) / ((double)strides[0]) + 1.0;
+            String str = String.format("%.2f",d);
+            throw new DL4JInvalidConfigException(
+                    "Invalid input data or configuration: Combination of kernel size, stride and padding are not valid for given input height.\n"
+                            + "Require: (input - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
+                            + inH + " - " + kernel[0] + " + 2*" + padding[0] + ")/" + strides[0] + " + 1 = " + str + "\n"
+                            + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/"
+                            + getCommonErrorMsg(inputData, kernel, strides, padding));
+        }
+
+        if ((inW - kernel[1] + 2 * padding[1]) % strides[1] != 0) {
+            double d = (inW - kernel[1] + 2 * padding[1]) / ((double)strides[1]) + 1.0;
+            String str = String.format("%.2f",d);
+            throw new DL4JInvalidConfigException(
+                    "Invalid input data or configuration: Combination of kernel size, stride and padding are not valid for given input width.\n"
+                            + "Require: (input - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
+                            + inW + " - " + kernel[1] + " + 2*" + padding[1] + ")/" + strides[1] + " + 1 = " + str + "\n"
+                            + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/"
+                            + getCommonErrorMsg(inputData, kernel, strides, padding));
+        }
+
+        int hOut = (inH - kernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int wOut = (inW - kernel[1] + 2 * padding[1]) / strides[1] + 1;
+
+        return new int[]{hOut, wOut};
+    }
+
+    private static String getCommonErrorMsg(INDArray inputData, int[] kernel, int[] strides, int[] padding){
+        return "\nInput size: [numExamples,inputDepth,inputHeight,inputWidth]=" + Arrays.toString(inputData.shape())
+                + ", kernel=" + Arrays.toString(kernel) + ", strides=" + Arrays.toString(strides) + ", padding=" + Arrays.toString(padding);
     }
 
     /**
