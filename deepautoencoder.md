@@ -77,7 +77,7 @@ A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwor
 
 The code would look something like this:
 
-final int numRows = 28;
+        final int numRows = 28;
         final int numColumns = 28;
         int seed = 123;
         int numSamples = MnistDataFetcher.NUM_EXAMPLES;
