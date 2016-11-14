@@ -1359,11 +1359,13 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
         }
 
         // div step & write out step
-        T *wdata = dz + baseIdx;
+        if (dz != nullptr) {
+            T *wdata = dz + baseIdx;
 
-        if (baseIdx + threadIdx.x < length) {
-            shmem[threadIdx.x] /= n;
-            wdata[threadIdx.x] = shmem[threadIdx.x];
+            if (baseIdx + threadIdx.x < length) {
+                shmem[threadIdx.x] /= n;
+                wdata[threadIdx.x] = shmem[threadIdx.x];
+            }
         }
 
         if (propagate)

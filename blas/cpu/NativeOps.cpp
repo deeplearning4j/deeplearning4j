@@ -2222,6 +2222,12 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShap
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
 
+    bool tempZ = false;
+    if (z == nullptr) {
+        z = new T[length];
+        tempZ = true;
+    }
+
 // aggregation step
 // TODO: this step should be improved, to exploit SIMD
 #pragma omp parallel for schedule(guided) default(shared)
@@ -2258,6 +2264,9 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
             }
         }
     }
+
+    if (tempZ)
+        delete[] z;
 }
 
 void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer *dx, float16 *dz, int n, Nd4jIndex length, bool propagate) {
