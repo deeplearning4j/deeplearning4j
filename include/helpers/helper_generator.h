@@ -9,6 +9,8 @@
 #include <inttypes.h>
 #endif
 
+#define MAX_UINT 18446744073709551615LLU
+
 
 #include <mutex>
 
@@ -160,15 +162,63 @@ namespace nd4j {
                     actualPosition = actualPosition % this->size;
                 }
 
-                uint64_t ret = tempGen == generation ? buffer[actualPosition] : buffer[actualPosition] ^ tempGen + 11;
+                uint64_t ret = buffer[actualPosition];
+
+                if (tempGen != generation)
+                    ret = safeShift(ret, tempGen);
 
                 if(generation > 1)
-                    ret = ret ^ generation + 11;
+                    ret = safeShift(ret, generation);
 
                 if (amplifier != seed)
-                    ret = ret ^ amplifier + 11;
+                    ret = safeShift(ret, amplifier);
+
+                if (amplifier != seed || generation > 1 || tempGen != generation)
+                    ret = next64(seedConv((long) ret));
 
                 return ret;
+            }
+
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            uint64_t next64(uint64_t shiftedSeed) {
+                const uint64_t s0 = (uint64_t) shiftedSeed;
+                uint64_t s1 = (uint64_t) (shiftedSeed % MAX_INT >= 0 ? (shiftedSeed % MAX_INT) * 3 + 11 : shiftedSeed + 11);
+                uint64_t r0, r1;
+
+                s1 ^= s0;
+                r0 = rotl(s0, 55) ^ s1 ^ (s1 << 14); // a, b
+                r1 = rotl(s1, 36); // c
+
+                return r0 + r1;
+            }
+
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            static inline uint64_t rotl(const uint64_t x, int k) {
+                return (x << k) | (x >> (64 - k));
+            }
+
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            uint64_t static inline safeShift(uint64_t x, uint64_t y) {
+                if (y != 0 && x > MAX_UINT / y) {
+                    return x / y + 11;
+                } else return (x * y) + 11;
+            }
+
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            uint64_t seedConv(long seed) {
+                uint64_t x = (uint64_t) seed;
+                uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
+                z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+                z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
+                return z ^ (z >> 31);
             }
 
 #ifdef __CUDACC__
