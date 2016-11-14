@@ -825,6 +825,162 @@ public class UpdateEncoder
         }
     }
 
+    private final LayerNamesEncoder layerNames = new LayerNamesEncoder();
+
+    public static long layerNamesId()
+    {
+        return 351;
+    }
+
+    public LayerNamesEncoder layerNamesCount(final int count)
+    {
+        layerNames.wrap(parentMessage, buffer, count);
+        return layerNames;
+    }
+
+    public static class LayerNamesEncoder
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
+        private UpdateEncoder parentMessage;
+        private MutableDirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final UpdateEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
+        {
+            if (count < 0 || count > 65534)
+            {
+                throw new IllegalArgumentException("count outside allowed range: count=" + count);
+            }
+
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            actingVersion = SCHEMA_VERSION;
+            dimensions.wrap(buffer, parentMessage.limit());
+            dimensions.blockLength((int)0);
+            dimensions.numInGroup((int)count);
+            index = -1;
+            this.count = count;
+            blockLength = 0;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public LayerNamesEncoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        public static int layerNameId()
+        {
+            return 1101;
+        }
+
+        public static String layerNameCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String layerNameMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int layerNameHeaderLength()
+        {
+            return 4;
+        }
+
+        public LayerNamesEncoder putLayerName(final DirectBuffer src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public LayerNamesEncoder putLayerName(final byte[] src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public LayerNamesEncoder layerName(final String value)
+        {
+            final byte[] bytes;
+            try
+            {
+                bytes = value.getBytes("UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            final int length = bytes.length;
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+            return this;
+        }
+    }
+
     private final PerParameterStatsEncoder perParameterStats = new PerParameterStatsEncoder();
 
     public static long perParameterStatsId()

@@ -42,6 +42,7 @@ public class TestComputationGraphNetwork {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration(){
         return new NeuralNetConfiguration.Builder()
+                .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .graphBuilder()
                 .addInputs("input")
@@ -53,6 +54,7 @@ public class TestComputationGraphNetwork {
 
     private static MultiLayerConfiguration getIrisMLNConfiguration(){
         return new NeuralNetConfiguration.Builder()
+                .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
@@ -769,10 +771,12 @@ public class TestComputationGraphNetwork {
     @Test
     public void testCGEvaluation(){
 
+        Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
         ComputationGraph graph = new ComputationGraph(configuration);
         graph.init();
 
+        Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration mlnConfig = getIrisMLNConfiguration();
         MultiLayerNetwork net = new MultiLayerNetwork(mlnConfig);
         net.init();
@@ -830,5 +834,33 @@ public class TestComputationGraphNetwork {
 
     }
 
+    @Test
+    public void testOptimizationAlgorithmsSearchBasic(){
+        DataSetIterator iter = new IrisDataSetIterator(1,1);
 
+        OptimizationAlgorithm[] oas = new OptimizationAlgorithm[]{
+                OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+                OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+                OptimizationAlgorithm.CONJUGATE_GRADIENT,
+                OptimizationAlgorithm.LBFGS};
+
+        for(OptimizationAlgorithm oa : oas) {
+            System.out.println(oa);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(oa).iterations(1)
+                    .graphBuilder()
+                    .addInputs("input")
+                    .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
+                    .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(), "first")
+                    .setOutputs("output")
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            ComputationGraph net = new ComputationGraph(conf);
+            net.init();
+            net.fit(iter.next());
+
+        }
+
+    }
 }

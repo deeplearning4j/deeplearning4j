@@ -56,6 +56,26 @@ public class SimpleLabelAwareIterator implements LabelAwareIterator {
         return document;
     }
 
+    @Override
+    public boolean hasNext() {
+        return hasNextDocument();
+    }
+
+    @Override
+    public LabelledDocument next() {
+        return nextDocument();
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
+
+    @Override
+    public void shutdown() {
+        // no-op
+    }
+
     /**
      * This methods resets LabelAwareIterator by creating new Iterator from Iterable internally
      */

@@ -638,4 +638,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void setMaskArray(INDArray maskArray) {
         this.maskArray = maskArray;
     }
+
+    @Override
+    public INDArray getMaskArray(){
+        return maskArray;
+    }
 }

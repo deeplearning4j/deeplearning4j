@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 /**
  * Histogram: values for a single histogram.
  * Assumption here is that the N bins are equally split between the min and max.
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class Histogram {
+public class Histogram implements Serializable {
     private double min;
     private double max;
     private int nBins;

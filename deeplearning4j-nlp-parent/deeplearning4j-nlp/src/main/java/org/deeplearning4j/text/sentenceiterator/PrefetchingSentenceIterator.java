@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class PrefetchingSentenceIterator implements SentenceIterator {
 
     private SentenceIterator sourceIterator;

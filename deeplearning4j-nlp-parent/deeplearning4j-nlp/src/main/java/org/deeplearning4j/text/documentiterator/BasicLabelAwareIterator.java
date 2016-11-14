@@ -58,6 +58,26 @@ public class BasicLabelAwareIterator implements LabelAwareIterator {
         return generator;
     }
 
+    @Override
+    public boolean hasNext() {
+        return hasNextDocument();
+    }
+
+    @Override
+    public LabelledDocument next() {
+        return nextDocument();
+    }
+
+    @Override
+    public void shutdown() {
+        // no-op
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
+
     public static class Builder {
         private String labelTemplate = "DOC_";
 
