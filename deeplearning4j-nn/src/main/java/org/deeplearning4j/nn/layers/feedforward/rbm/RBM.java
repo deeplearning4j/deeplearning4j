@@ -166,7 +166,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 //                nvSamples.transpose().mmul(nhMeans) // TODO swap with nvMeans based on literature...
 //        );
         INDArray wGradient = input().transposei().mmul(probHidden.getFirst()).subi(
-                negVProb.transpose().mmul(negHProb)
+                negVSamples.transpose().mmul(negHProb)
         );
 
         INDArray hBiasGradient;
@@ -182,7 +182,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
 //        INDArray  delta = input.sub(nvSamples);
-        INDArray  delta = input.sub(negVProb);
+        INDArray  delta = input.sub(negVSamples);
         INDArray  vBiasGradient = delta.sum(0);
 
         Gradient ret = new DefaultGradient();
