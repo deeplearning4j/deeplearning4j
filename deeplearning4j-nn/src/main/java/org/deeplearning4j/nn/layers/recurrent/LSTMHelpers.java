@@ -127,9 +127,15 @@ public class LSTMHelpers {
 
         //Input validation: check input data matches nIn
         if(input.size(1) != inputWeights.size(0)){
-            throw new DL4JInvalidInputException(
-                    "Received input with size(1) = " + input.size(1) + " (input array shape = " + Arrays.toString(input.shape()) +
-                            "); input.size(1) must match layer nIn size (nIn = " + inputWeights.size(0) + ")");
+            throw new DL4JInvalidInputException("Received input with size(1) = " + input.size(1) + " (input array shape = "
+                    + Arrays.toString(input.shape()) + "); input.size(1) must match layer nIn size (nIn = " + inputWeights.size(0) + ")");
+        }
+        //Input validation: check that if past state is provided, that it has same
+        //These can be different if user forgets to call rnnClearPreviousState() between calls of rnnTimeStep
+        if(prevOutputActivations != null && prevOutputActivations.size(0) != input.size(0)){
+            throw new DL4JInvalidInputException("Previous activations (stored state) number of examples = " + prevOutputActivations.size(0)
+                + " but input array number of examples = " + input.size(0) + ". Possible cause: using rnnTimeStep() without calling"
+                + " rnnClearPreviousState() between different sequences?");
         }
 
         //initialize prevOutputActivations to zeroes
