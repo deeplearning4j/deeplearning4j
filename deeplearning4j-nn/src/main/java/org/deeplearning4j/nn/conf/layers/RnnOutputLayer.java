@@ -50,9 +50,10 @@ public class RnnOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+            throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex +
+                    ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         return InputType.recurrent(nOut);
     }
