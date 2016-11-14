@@ -23,6 +23,7 @@ import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -766,7 +767,7 @@ public class MultiLayerTest {
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DL4JException.class)
     public void testCnnInvalidData(){
 
         int miniBatch = 3;

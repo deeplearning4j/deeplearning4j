@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -136,7 +137,7 @@ public class ConvolutionLayerTest {
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DL4JException.class)
     public void testCNNTooLargeKernel(){
         int imageHeight= 20;
         int imageWidth= 23;
@@ -249,7 +250,7 @@ public class ConvolutionLayerTest {
     @Test
     public void testFeatureMapShapeMNIST() throws Exception  {
         int inputWidth = 28;
-        int[] stride = new int[] {2, 2};
+        int[] stride = new int[] {1, 1};
         int[] padding = new int[] {0,0};
         int[] kernelSize = new int[] {9, 9};
         int nChannelsIn = 1;
@@ -307,7 +308,7 @@ public class ConvolutionLayerTest {
 
     public Layer getMNISTConfig(){
         int[] kernelSize = new int[] {9, 9};
-        int[] stride = new int[] {2,2};
+        int[] stride = new int[] {1,1};
         int[] padding = new int[] {1,1};
         int nChannelsIn = 1;
         int depth = 20;
