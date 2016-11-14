@@ -37,7 +37,7 @@ public class NormalizerSimpleTest  extends BaseNd4jTest {
     private int batchCount;
     private int lastBatch;
     private DataSetIterator dataIter;
-    private final float thresholdPerc = 0.01f; //this is the difference in percentage!
+    private final float thresholdPerc = 1.0f; //this is the difference in percentage
 
     @Before
     public void randomData() {
