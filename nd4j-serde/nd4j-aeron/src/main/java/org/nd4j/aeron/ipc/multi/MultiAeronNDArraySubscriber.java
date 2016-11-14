@@ -113,27 +113,24 @@ public class MultiAeronNDArraySubscriber {
 
         boolean started = false;
         while(!started) {
-            for(int i  = 0; i< streamIds.length; i++) {
+            for(int i  = 0; i < streamIds.length; i++) {
                 final int streamId = streamIds[i];
                 final int j = i;
-                executors.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try (final Aeron aeron = Aeron.connect(ctx);
-                             final Subscription subscription = aeron.addSubscription(channel, streamId)) {
-                            MultiAeronNDArraySubscriber.this.aeron[j] = aeron;
-                            MultiAeronNDArraySubscriber.this.subscriptions[j] = subscription;
-                            log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-                            AeronUtil.subscriberLoop(
-                                    new NDArrayFragmentHandler(ndArrayCallback),
-                                    fragmentLimitCount,
-                                    running,launched)
-                                    .accept(subscription);
+                executors.execute(() -> {
+                    try (final Aeron aeron1 = Aeron.connect(ctx);
+                         final Subscription subscription = aeron1.addSubscription(channel, streamId)) {
+                        MultiAeronNDArraySubscriber.this.aeron[j] = aeron1;
+                        MultiAeronNDArraySubscriber.this.subscriptions[j] = subscription;
+                        log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
+                        AeronUtil.subscriberLoop(
+                                new NDArrayFragmentHandler(ndArrayCallback),
+                                fragmentLimitCount,
+                                running,launched)
+                                .accept(subscription);
 
-                        }
-                        catch(Exception e) {
-                            log.warn("Unable to connect...trying again on channel " + channel,e);
-                        }
+                    }
+                    catch(Exception e) {
+                        log.warn("Unable to connect...trying again on channel " + channel,e);
                     }
                 });
 

@@ -56,55 +56,52 @@ public class NdArrayIpcTest {
 
 
         final AtomicBoolean running = new AtomicBoolean(true);
+        Aeron aeron = Aeron.connect(getContext());
+        for(int i = 0; i < 10; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(10)
+                    .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+                    .running(running)
+                    .ndArrayCallback(new NDArrayCallback() {
+                        @Override
+                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+
+                        }
+
+                        @Override
+                        public void onNDArray(INDArray arr) {
+                            running.set(false);
+                        }
+                    }).build();
 
 
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(10)
-                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
-                .running(running)
-                .ndArrayCallback(new NDArrayCallback() {
-                    @Override
-                    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+            Thread t = new Thread(() -> {
+                try {
+                    subscriber.launch();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-                    }
+            });
 
-                    @Override
-                    public void onNDArray(INDArray arr) {
-                        System.out.println(arr);
-                        running.set(false);
-                    }
-                }).build();
+            t.start();
+        }
 
-
-        Thread t = new Thread(() -> {
-            try {
-                subscriber.launch();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        });
-
-        t.start();
-
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
+                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+                .build();
 
         Thread.sleep(10000);
 
         for(int i = 0; i< 10 && running.get(); i++) {
-           executorService.execute(() -> {
-               try {
-                   log.info("About to send array.");
-                   try(AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
-                           .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
-                           .build()) {
-                       publisher.publish(arr);
-                       log.info("Sent array in pool");
-                       Thread.sleep(10);
-                   }
-
-               } catch (Exception e) {
-                   e.printStackTrace();
-               }
-           });
+            executorService.execute(() -> {
+                try {
+                    log.info("About to send array.");
+                    publisher.publish(arr);
+                    log.info("Sent array");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
 
         }
 
@@ -167,7 +164,7 @@ public class NdArrayIpcTest {
 
 
     private Aeron.Context getContext() {
-       if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
                 .errorHandler(e -> log.error(e.toString(), e));

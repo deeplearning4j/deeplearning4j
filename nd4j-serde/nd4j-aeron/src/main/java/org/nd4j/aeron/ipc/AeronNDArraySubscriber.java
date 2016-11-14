@@ -103,9 +103,7 @@ public class AeronNDArraySubscriber {
 
         boolean started = false;
         while(!started) {
-            try (final Aeron aeron = Aeron.connect(ctx);
-                 final Subscription subscription = aeron.addSubscription(channel, streamId)) {
-                this.aeron = aeron;
+            try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                 this.subscription = subscription;
                 log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
                 AeronUtil.subscriberLoop(

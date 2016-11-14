@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private Aeron aeron;
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
-
+    public final static int NUM_RETRIES = 5;
 
 
     private void init() {
@@ -57,7 +56,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         //ensure default values are set
         INDArray arr = message.getArr();
         while(!message.getArr().isCompressed())
-           Nd4j.getCompressor().compressi(arr,"GZIP");
+            Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
         DirectBuffer buffer = NDArrayMessage.toBuffer(message);
@@ -83,7 +82,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         }
 
         int connectionTries = 0;
-        while(publication == null && connectionTries < 3) {
+        while(publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
             }catch (DriverTimeoutException e) {
