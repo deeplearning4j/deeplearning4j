@@ -81,7 +81,7 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) {
             throw new InvalidInputTypeException("SubsetVertex expects single input type. Received: " + Arrays.toString(vertexInputs));
         }

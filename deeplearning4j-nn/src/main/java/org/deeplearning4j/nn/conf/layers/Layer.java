@@ -135,11 +135,12 @@ public abstract class Layer implements Serializable, Cloneable {
     /**
      * For a given type of input to this layer, what is the type of the output?
      *
+     * @param layerIndex Index of the layer
      * @param inputType Type of input for the layer
      * @return Type of output from the layer
      * @throws IllegalStateException if input type is invalid for this layer
      */
-    public abstract InputType getOutputType(InputType inputType);
+    public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
     /**
      * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type

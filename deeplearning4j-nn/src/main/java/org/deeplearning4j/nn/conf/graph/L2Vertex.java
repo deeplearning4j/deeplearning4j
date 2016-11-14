@@ -65,7 +65,7 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         return InputType.feedForward(1);
     }
 }

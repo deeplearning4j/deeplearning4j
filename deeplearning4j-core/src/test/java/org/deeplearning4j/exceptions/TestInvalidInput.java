@@ -254,11 +254,38 @@ public class TestInvalidInput {
             net.feedForward(Nd4j.create(10,5));
             fail("Expected DL4JException");
         }catch (DL4JException e){
-            System.out.println("testInputNinMismatchDense(): " + e.getMessage());
+            System.out.println("testInputNinMismatchEmbeddingLayer(): " + e.getMessage());
         }catch (Exception e){
             e.printStackTrace();
             fail("Expected DL4JException");
         }
     }
-    
+
+
+    @Test
+    public void testInvalidRnnTimeStep(){
+        //Idea: Using rnnTimeStep with a different number of examples between calls
+        //(i.e., not calling reset between time steps)
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        net.rnnTimeStep(Nd4j.create(3,5,10));
+
+        try{
+            net.rnnTimeStep(Nd4j.create(5,5,10));
+            fail("Expected DL4JException");
+        }catch (DL4JException e){
+            System.out.println("testInvalidRnnTimeStep(): " + e.getMessage());
+        }catch (Exception e){
+            e.printStackTrace();
+            fail("Expected DL4JException");
+        }
+    }
 }
