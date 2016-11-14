@@ -330,6 +330,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         //Now, given the topological sort: do equivalent of forward pass
         Map<String, InputType> vertexOutputs = new HashMap<>();
+        int currLayerIdx = -1;
         for (String s : topologicalOrdering) {
             int inputIdx = networkInputs.indexOf(s);
             if (inputIdx != -1) {
@@ -365,6 +366,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
                 l.setNIn(afterPreproc, false);
 
+                currLayerIdx++;
             } else {
                 List<String> inputs = vertexInputs.get(s);
                 if (inputs != null) {
@@ -374,7 +376,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
             }
 
-            InputType outputFromVertex = gv.getOutputType(inputTypeList.toArray(new InputType[inputTypeList.size()]));
+            InputType outputFromVertex = gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
         }
     }
