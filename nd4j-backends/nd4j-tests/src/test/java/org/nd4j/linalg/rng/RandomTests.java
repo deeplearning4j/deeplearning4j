@@ -1,11 +1,15 @@
 package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -37,8 +41,21 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class RandomTests extends BaseNd4jTest {
 
+    private DataBuffer.Type initialType;
+
     public RandomTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
     @Test
@@ -225,7 +242,7 @@ public class RandomTests extends BaseNd4jTest {
         log.info("End: [{}, {}, {}, {}]", z1.getFloat(29000000), z1.getFloat(29000001), z1.getFloat(29000002), z1.getFloat(29000003));
 
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
-        assertTrue(2.0 > z1.stdNumber().doubleValue());
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
     @Test
@@ -234,7 +251,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = distribution.sample(new int[] {1, 30000000});
 
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
-        assertTrue(2.0 > z1.stdNumber().doubleValue());
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
     @Test
