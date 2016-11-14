@@ -2657,7 +2657,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns) {
-        INDArray ret =  create(rows, columns);//INSTANCE.rand(rows, columns, Nd4j.getRandom());
+        INDArray ret = createUninitialized(new int[]{rows, columns}, Nd4j.order());//INSTANCE.rand(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
@@ -2670,7 +2670,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int rows, int columns) {
-        INDArray ret = create(new int[]{rows, columns}, order);//INSTANCE.rand(order, rows, columns);
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
@@ -2684,7 +2684,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = create(shape);//;INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
         Nd4j.getRandom().setSeed(seed);
         return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
@@ -2698,7 +2698,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed,int...shape) {
-        INDArray ret = create(shape);//INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
         Nd4j.getRandom().setSeed(seed);
         return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
@@ -2713,7 +2713,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = create(rows, columns);INSTANCE.rand(rows, columns, seed);
+        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         logCreationIfNecessary(ret);
         Nd4j.getRandom().setSeed(seed);
         return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
@@ -2727,7 +2727,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = create(shape); //INSTANCE.rand(shape, rng);
+        INDArray ret = createUninitialized(shape, Nd4j.order()); //INSTANCE.rand(shape, rng);
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
@@ -2753,9 +2753,8 @@ public class Nd4j {
      * @param rng       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    @Deprecated
     public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = create(rows, columns);//INSTANCE.rand(rows, columns, rng);
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order());//INSTANCE.rand(rows, columns, rng);
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
@@ -2770,7 +2769,7 @@ public class Nd4j {
      * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = create(shape); //INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
     }
@@ -2787,9 +2786,22 @@ public class Nd4j {
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
-        INDArray ret = create(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
+        INDArray ret = createUninitialized(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
         return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
+    }
+
+    /**
+     * This method returns uninitialized 2D array of rows x columns
+     *
+     * PLEASE NOTE: memory of underlying array will be NOT initialized, and won't be set to 0.0
+     *
+     * @param rows
+     * @param columns
+     * @return
+     */
+    public static INDArray createUninitialized(int rows, int columns) {
+        return createUninitialized(new int[]{rows, columns});
     }
 
     /**
@@ -4420,6 +4432,18 @@ public class Nd4j {
         INDArray ret = INSTANCE.createUninitialized(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    /**
+     * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
+     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray createUninitialized(int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        return createUninitialized(shape, Nd4j.order());
     }
 
     /**
