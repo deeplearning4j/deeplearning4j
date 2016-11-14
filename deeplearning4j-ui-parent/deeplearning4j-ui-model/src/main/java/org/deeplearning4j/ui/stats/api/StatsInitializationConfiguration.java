@@ -2,13 +2,15 @@ package org.deeplearning4j.ui.stats.api;
 
 import org.deeplearning4j.ui.stats.StatsListener;
 
+import java.io.Serializable;
+
 /**
  * Configuration interface for static (unchanging) information, to be reported by {@link StatsListener}.
  * This interface allows for software/hardware/model information to be collected (or, not)
  *
  * @author Alex Black
  */
-public interface StatsInitializationConfiguration {
+public interface StatsInitializationConfiguration extends Serializable {
 
     /**
      * Should software configuration information be collected? For example, OS, JVM, and ND4J backend details

@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.stats.impl;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 
@@ -16,23 +17,47 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
     private boolean collectGarbageCollectionStats = true;
     private boolean collectLearningRates = true;
     private boolean collectHistogramsParameters = true;
+    private boolean collectHistogramsGradients = true;
     private boolean collectHistogramsUpdates = true;
-    private boolean isCollectHistogramsActivations = true;
+    private boolean collectHistogramsActivations = true;
     private int numHistogramBins = 20;
     private boolean collectMeanParameters = true;
+    private boolean collectMeanGradients = true;
     private boolean collectMeanUpdates = true;
     private boolean collectMeanActivations = true;
     private boolean collectStdevParameters = true;
+    private boolean collectStdevGradients = true;
     private boolean collectStdevUpdates = true;
     private boolean collectStdevActivations = true;
     private boolean collectMeanMagnitudesParameters = true;
+    private boolean collectMeanMagnitudesGradients = true;
     private boolean collectMeanMagnitudesUpdates = true;
     private boolean collectMeanMagnitudesActivations = true;
 
-    public static DefaultStatsUpdateConfigurationBuilder builder() {
-        return new DefaultStatsUpdateConfigurationBuilder();
+    private DefaultStatsUpdateConfiguration(Builder b){
+        this.reportingFrequency = b.reportingFrequency;
+        this.collectPerformanceStats = b.collectPerformanceStats;
+        this.collectMemoryStats = b.collectMemoryStats;
+        this.collectGarbageCollectionStats = b.collectGarbageCollectionStats;
+        this.collectLearningRates = b.collectLearningRates;
+        this.collectHistogramsParameters = b.collectHistogramsParameters;
+        this.collectHistogramsGradients = b.collectHistogramsGradients;
+        this.collectHistogramsUpdates = b.collectHistogramsUpdates;
+        this.collectHistogramsActivations = b.collectHistogramsActivations;
+        this.numHistogramBins = b.numHistogramBins;
+        this.collectMeanParameters = b.collectMeanParameters;
+        this.collectMeanGradients = b.collectMeanGradients;
+        this.collectMeanUpdates = b.collectMeanUpdates;
+        this.collectMeanActivations = b.collectMeanActivations;
+        this.collectStdevParameters = b.collectStdevParameters;
+        this.collectStdevGradients = b.collectStdevGradients;
+        this.collectStdevUpdates = b.collectStdevUpdates;
+        this.collectStdevActivations = b.collectStdevActivations;
+        this.collectMeanMagnitudesParameters = b.collectMeanMagnitudesParameters;
+        this.collectMeanMagnitudesGradients = b.collectMeanMagnitudesGradients;
+        this.collectMeanMagnitudesUpdates = b.collectMeanMagnitudesUpdates;
+        this.collectMeanMagnitudesActivations = b.collectMeanMagnitudesActivations;
     }
-
 
     @Override
     public int reportingFrequency() {
@@ -61,13 +86,15 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
 
     @Override
     public boolean collectHistograms(StatsType type) {
-        switch (type){
+        switch (type) {
             case Parameters:
                 return collectHistogramsParameters;
+            case Gradients:
+                return collectStdevGradients;
             case Updates:
                 return collectHistogramsUpdates;
             case Activations:
-                return isCollectHistogramsActivations;
+                return collectHistogramsActivations;
         }
         return false;
     }
@@ -79,9 +106,11 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
 
     @Override
     public boolean collectMean(StatsType type) {
-        switch(type){
+        switch (type) {
             case Parameters:
                 return collectMeanParameters;
+            case Gradients:
+                return collectMeanGradients;
             case Updates:
                 return collectMeanUpdates;
             case Activations:
@@ -92,9 +121,11 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
 
     @Override
     public boolean collectStdev(StatsType type) {
-        switch(type){
+        switch (type) {
             case Parameters:
                 return collectStdevParameters;
+            case Gradients:
+                return collectStdevGradients;
             case Updates:
                 return collectStdevUpdates;
             case Activations:
@@ -105,9 +136,11 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
 
     @Override
     public boolean collectMeanMagnitudes(StatsType type) {
-        switch(type){
+        switch (type) {
             case Parameters:
                 return collectMeanMagnitudesParameters;
+            case Gradients:
+                return collectMeanMagnitudesGradients;
             case Updates:
                 return collectMeanMagnitudesUpdates;
             case Activations:
@@ -116,125 +149,142 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
         return false;
     }
 
-    public static class DefaultStatsUpdateConfigurationBuilder {
+    public static class Builder {
         private int reportingFrequency = 1;
         private boolean collectPerformanceStats = true;
         private boolean collectMemoryStats = true;
         private boolean collectGarbageCollectionStats = true;
         private boolean collectLearningRates = true;
         private boolean collectHistogramsParameters = true;
+        private boolean collectHistogramsGradients = true;
         private boolean collectHistogramsUpdates = true;
-        private boolean isCollectHistogramsActivations = true;
+        private boolean collectHistogramsActivations = true;
         private int numHistogramBins = 20;
         private boolean collectMeanParameters = true;
+        private boolean collectMeanGradients = true;
         private boolean collectMeanUpdates = true;
         private boolean collectMeanActivations = true;
         private boolean collectStdevParameters = true;
+        private boolean collectStdevGradients = true;
         private boolean collectStdevUpdates = true;
         private boolean collectStdevActivations = true;
         private boolean collectMeanMagnitudesParameters = true;
+        private boolean collectMeanMagnitudesGradients = true;
         private boolean collectMeanMagnitudesUpdates = true;
         private boolean collectMeanMagnitudesActivations = true;
 
-        DefaultStatsUpdateConfigurationBuilder() {
-        }
-
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder reportingFrequency(int reportingFrequency) {
+        public Builder reportingFrequency(int reportingFrequency) {
             this.reportingFrequency = reportingFrequency;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectPerformanceStats(boolean collectPerformanceStats) {
+        public Builder collectPerformanceStats(boolean collectPerformanceStats) {
             this.collectPerformanceStats = collectPerformanceStats;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMemoryStats(boolean collectMemoryStats) {
+        public Builder collectMemoryStats(boolean collectMemoryStats) {
             this.collectMemoryStats = collectMemoryStats;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectGarbageCollectionStats(boolean collectGarbageCollectionStats) {
+        public Builder collectGarbageCollectionStats(boolean collectGarbageCollectionStats) {
             this.collectGarbageCollectionStats = collectGarbageCollectionStats;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectLearningRates(boolean collectLearningRates) {
+        public Builder collectLearningRates(boolean collectLearningRates) {
             this.collectLearningRates = collectLearningRates;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectHistogramsParameters(boolean collectHistogramsParameters) {
+        public Builder collectHistogramsParameters(boolean collectHistogramsParameters) {
             this.collectHistogramsParameters = collectHistogramsParameters;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectHistogramsUpdates(boolean collectHistogramsUpdates) {
+        public Builder collectHistogramsGradients(boolean collectHistogramsGradients){
+            this.collectHistogramsGradients = collectHistogramsGradients;
+            return this;
+        }
+
+        public Builder collectHistogramsUpdates(boolean collectHistogramsUpdates) {
             this.collectHistogramsUpdates = collectHistogramsUpdates;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder isCollectHistogramsActivations(boolean isCollectHistogramsActivations) {
-            this.isCollectHistogramsActivations = isCollectHistogramsActivations;
+        public Builder collectHistogramsActivations(boolean isCollectHistogramsActivations) {
+            this.collectHistogramsActivations = isCollectHistogramsActivations;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder numHistogramBins(int numHistogramBins) {
+        public Builder numHistogramBins(int numHistogramBins) {
             this.numHistogramBins = numHistogramBins;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanParameters(boolean collectMeanParameters) {
+        public Builder collectMeanParameters(boolean collectMeanParameters) {
             this.collectMeanParameters = collectMeanParameters;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanUpdates(boolean collectMeanUpdates) {
+        public Builder collectMeanGradients(boolean collectMeanGradients) {
+            this.collectMeanGradients = collectMeanGradients;
+            return this;
+        }
+
+        public Builder collectMeanUpdates(boolean collectMeanUpdates) {
             this.collectMeanUpdates = collectMeanUpdates;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanActivations(boolean collectMeanActivations) {
+        public Builder collectMeanActivations(boolean collectMeanActivations) {
             this.collectMeanActivations = collectMeanActivations;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectStdevParameters(boolean collectStdevParameters) {
+        public Builder collectStdevParameters(boolean collectStdevParameters) {
             this.collectStdevParameters = collectStdevParameters;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectStdevUpdates(boolean collectStdevUpdates) {
+        public Builder collectStdevGradients(boolean collectStdevGradients) {
+            this.collectStdevGradients = collectStdevGradients;
+            return this;
+        }
+
+        public Builder collectStdevUpdates(boolean collectStdevUpdates) {
             this.collectStdevUpdates = collectStdevUpdates;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectStdevActivations(boolean collectStdevActivations) {
+        public Builder collectStdevActivations(boolean collectStdevActivations) {
             this.collectStdevActivations = collectStdevActivations;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanMagnitudesParameters(boolean collectMeanMagnitudesParameters) {
+        public Builder collectMeanMagnitudesParameters(boolean collectMeanMagnitudesParameters) {
             this.collectMeanMagnitudesParameters = collectMeanMagnitudesParameters;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanMagnitudesUpdates(boolean collectMeanMagnitudesUpdates) {
+        public Builder collectMeanMagnitudesGradients(boolean collectMeanMagnitudesGradients) {
+            this.collectMeanMagnitudesGradients = collectMeanMagnitudesGradients;
+            return this;
+        }
+
+        public Builder collectMeanMagnitudesUpdates(boolean collectMeanMagnitudesUpdates) {
             this.collectMeanMagnitudesUpdates = collectMeanMagnitudesUpdates;
             return this;
         }
 
-        public DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder collectMeanMagnitudesActivations(boolean collectMeanMagnitudesActivations) {
+        public Builder collectMeanMagnitudesActivations(boolean collectMeanMagnitudesActivations) {
             this.collectMeanMagnitudesActivations = collectMeanMagnitudesActivations;
             return this;
         }
 
         public DefaultStatsUpdateConfiguration build() {
-            return new DefaultStatsUpdateConfiguration(reportingFrequency, collectPerformanceStats, collectMemoryStats, collectGarbageCollectionStats, collectLearningRates, collectHistogramsParameters, collectHistogramsUpdates, isCollectHistogramsActivations, numHistogramBins, collectMeanParameters, collectMeanUpdates, collectMeanActivations, collectStdevParameters, collectStdevUpdates, collectStdevActivations, collectMeanMagnitudesParameters, collectMeanMagnitudesUpdates, collectMeanMagnitudesActivations);
-        }
-
-        public String toString() {
-            return "org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration.DefaultStatsUpdateConfigurationBuilder(reportingFrequency=" + this.reportingFrequency + ", collectPerformanceStats=" + this.collectPerformanceStats + ", collectMemoryStats=" + this.collectMemoryStats + ", collectGarbageCollectionStats=" + this.collectGarbageCollectionStats + ", collectLearningRates=" + this.collectLearningRates + ", collectHistogramsParameters=" + this.collectHistogramsParameters + ", collectHistogramsUpdates=" + this.collectHistogramsUpdates + ", isCollectHistogramsActivations=" + this.isCollectHistogramsActivations + ", numHistogramBins=" + this.numHistogramBins + ", collectMeanParameters=" + this.collectMeanParameters + ", collectMeanUpdates=" + this.collectMeanUpdates + ", collectMeanActivations=" + this.collectMeanActivations + ", collectStdevParameters=" + this.collectStdevParameters + ", collectStdevUpdates=" + this.collectStdevUpdates + ", collectStdevActivations=" + this.collectStdevActivations + ", collectMeanMagnitudesParameters=" + this.collectMeanMagnitudesParameters + ", collectMeanMagnitudesUpdates=" + this.collectMeanMagnitudesUpdates + ", collectMeanMagnitudesActivations=" + this.collectMeanMagnitudesActivations + ")";
+            return new DefaultStatsUpdateConfiguration(this);
         }
     }
 }

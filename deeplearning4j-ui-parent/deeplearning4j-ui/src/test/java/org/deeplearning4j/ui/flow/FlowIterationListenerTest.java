@@ -150,7 +150,7 @@ public class FlowIterationListenerTest {
 
     @Test
     public void testMLNModelInfo1() throws Exception {
-        FlowIterationListener listener = new FlowIterationListener();
+        FlowIterationListener listener = new FlowIterationListener(1);
 
         ModelInfo info = listener.buildModelInfo(network);
 
@@ -180,7 +180,7 @@ public class FlowIterationListenerTest {
 
     @Test
     public void testCGModelInfo1() throws Exception {
-        FlowIterationListener listener = new FlowIterationListener();
+        FlowIterationListener listener = new FlowIterationListener(1);
 
         ModelInfo info = listener.buildModelInfo(graph);
         for (LayerInfo layerInfo: info.getLayers()) {
