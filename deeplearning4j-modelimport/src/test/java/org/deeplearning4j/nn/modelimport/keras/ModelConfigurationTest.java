@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importSequentialModelConfigFromFile;
 
@@ -11,29 +12,33 @@ public class ModelConfigurationTest {
 
     @Test
     public void importKerasMlpConfigTest() throws Exception {
-        ClassLoader classLoader = getClass().getClassLoader();
-        String configFilename = classLoader.getResource("keras/config/mlp_config.json").getPath();
+        ClassPathResource resource = new ClassPathResource("keras/config/mlp_config.json",
+                ModelConfigurationTest.class.getClassLoader());
+        String configFilename = resource.getFile().getAbsolutePath();
         importKerasConfigTest(configFilename);
     }
 
     @Test
     public void importKerasConvnetTensorflowConfigTest() throws Exception {
-        ClassLoader classLoader = getClass().getClassLoader();
-        String configFilename = classLoader.getResource("keras/config/cnn_tf_config.json").getPath();
+        ClassPathResource resource = new ClassPathResource("keras/config/cnn_tf_config.json",
+                ModelConfigurationTest.class.getClassLoader());
+        String configFilename = resource.getFile().getAbsolutePath();
         importKerasConfigTest(configFilename);
     }
 
     @Test
     public void importKerasConvnetTheanoConfigTest() throws Exception {
-        ClassLoader classLoader = getClass().getClassLoader();
-        String configFilename = classLoader.getResource("keras/config/cnn_th_config.json").getPath();
+        ClassPathResource resource = new ClassPathResource("keras/config/cnn_th_config.json",
+                ModelConfigurationTest.class.getClassLoader());
+        String configFilename = resource.getFile().getAbsolutePath();
         importKerasConfigTest(configFilename);
     }
 
     @Test
     public void importKerasLstmFixedLenConfigTest() throws Exception {
-        ClassLoader classLoader = getClass().getClassLoader();
-        String configFilename = classLoader.getResource("keras/config/lstm_fixed_config.json").getPath();
+        ClassPathResource resource = new ClassPathResource("keras/config/lstm_fixed_config.json",
+                ModelConfigurationTest.class.getClassLoader());
+        String configFilename = resource.getFile().getAbsolutePath();
         importKerasConfigTest(configFilename);
     }
 
