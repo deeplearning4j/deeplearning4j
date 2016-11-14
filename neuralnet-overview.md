@@ -53,7 +53,7 @@ Any labels that humans can generate, any outcomes you care about and which corre
 Clustering or grouping is the detection of similarities. Deep learning does not require labels to detect similarities. Learning without labels is called *unsupervised learning*. Unlabeled data is the majority of data in the world. One law of machine learning is: the more data an algorithm can train on, the more accurate it will be. Therefore, unsupervised learning has the potential to produce highly accurate models. 
 
 * Search: Comparing documents, images or sounds to surface similar items.
-* Anomaly detection: The flipside of detecting similarities is detectin anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
+* Anomaly detection: The flipside of detecting similarities is detecting anomalies, or unusual behavior. In many cases, unusual behavior correlates highly with things you want to detect and prevent, such as fraud. 
 
 ### Predictive Analytics
 
