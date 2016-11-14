@@ -1,20 +1,31 @@
 package org.deeplearning4j.datasets.datavec;
 
 
+import com.google.common.io.Files;
+import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.io.filters.BalancedPathFilter;
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
+import org.datavec.image.recordreader.ImageRecordReader;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+
+import java.io.*;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -519,4 +530,118 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(3, count);
     }
 
+    @Test
+    public void testImagesRRDMSI() throws Exception {
+        File parentDir = Files.createTempDir();
+        parentDir.deleteOnExit();
+        String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
+        String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
+
+        File f1 = new File(str1);
+        File f2 = new File(str2);
+        f1.mkdirs();
+        f2.mkdirs();
+
+        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(),"Zico_0001.jpg")), new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(),"Ziwang_Xu_0001.jpg")), new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+
+
+        int outputNum = 2;
+        Random r = new Random(12345);
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+        ImageRecordReader rr1 = new ImageRecordReader(10, 10, 1, labelMaker);
+        ImageRecordReader rr1s = new ImageRecordReader(5, 5, 1, labelMaker);
+
+        rr1.initialize(new FileSplit(parentDir));
+        rr1s.initialize(new FileSplit(parentDir));
+
+
+        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(1)
+                .addReader("rr1", rr1)
+                .addReader("rr1s", rr1s)
+                .addInput("rr1", 0, 0)
+                .addInput("rr1s", 0, 0)
+                .addOutputOneHot("rr1s", 1, outputNum)
+                .build();
+
+        //Now, do the same thing with ImageRecordReader, and check we get the same results:
+        ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
+        ImageRecordReader rr1s_b = new ImageRecordReader(5, 5, 1, labelMaker);
+        rr1_b.initialize(new FileSplit(parentDir));
+        rr1s_b.initialize(new FileSplit(parentDir));
+
+        DataSetIterator dsi1 = new RecordReaderDataSetIterator(rr1_b, 1, 1, 2);
+        DataSetIterator dsi2 = new RecordReaderDataSetIterator(rr1s_b, 1, 1, 2);
+
+        for(int i=0; i<2; i++ ) {
+            MultiDataSet mds = trainDataIterator.next();
+
+            DataSet d1 = dsi1.next();
+            DataSet d2 = dsi2.next();
+
+            assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
+            assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+            assertEquals(d1.getLabels(), mds.getLabels(0));
+        }
+    }
+
+    @Test
+    public void testImagesRRDMSI_Batched() throws Exception {
+        File parentDir = Files.createTempDir();
+        parentDir.deleteOnExit();
+        String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
+        String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
+
+        File f1 = new File(str1);
+        File f2 = new File(str2);
+        f1.mkdirs();
+        f2.mkdirs();
+
+        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(),"Zico_0001.jpg")), new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(),"Ziwang_Xu_0001.jpg")), new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+
+        int outputNum = 2;
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+        ImageRecordReader rr1 = new ImageRecordReader(10, 10, 1, labelMaker);
+        ImageRecordReader rr1s = new ImageRecordReader(5, 5, 1, labelMaker);
+
+        rr1.initialize(new FileSplit(parentDir));
+        rr1s.initialize(new FileSplit(parentDir));
+
+        MultiDataSetIterator trainDataIterator = new RecordReaderMultiDataSetIterator.Builder(2)
+                .addReader("rr1", rr1)
+                .addReader("rr1s", rr1s)
+                .addInput("rr1", 0, 0)
+                .addInput("rr1s", 0, 0)
+                .addOutputOneHot("rr1s", 1, outputNum)
+                .build();
+
+        //Now, do the same thing with ImageRecordReader, and check we get the same results:
+        ImageRecordReader rr1_b = new ImageRecordReader(10, 10, 1, labelMaker);
+        ImageRecordReader rr1s_b = new ImageRecordReader(5, 5, 1, labelMaker);
+        rr1_b.initialize(new FileSplit(parentDir));
+        rr1s_b.initialize(new FileSplit(parentDir));
+
+        DataSetIterator dsi1 = new RecordReaderDataSetIterator(rr1_b, 2, 1, 2);
+        DataSetIterator dsi2 = new RecordReaderDataSetIterator(rr1s_b, 2, 1, 2);
+
+        MultiDataSet mds = trainDataIterator.next();
+
+        DataSet d1 = dsi1.next();
+        DataSet d2 = dsi2.next();
+
+        assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
+        assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
+        assertEquals(d1.getLabels(), mds.getLabels(0));
+    }
+
+
+    private static void writeStreamToFile(File out, InputStream is) throws IOException {
+        byte[] b = IOUtils.toByteArray(is);
+        try(OutputStream os = new BufferedOutputStream(new FileOutputStream(out))){
+            os.write(b);
+        }
+    }
 }
