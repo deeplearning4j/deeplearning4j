@@ -1753,7 +1753,7 @@ namespace simdOps {
                             T maxValue = rX[0];
                             int maxIdx = 0;
                             if (tadEWS == 1 && zEWS == 1) {
-#pragma omp simd reduction(max:maxValue,maxIdx)
+//#pragma omp simd reduction(max:maxValue,maxIdx)
                                 for (int i = 0; i < tadLength; i++) {
                                     if (rX[i] > maxValue) {
                                         maxIdx = i;
@@ -1768,7 +1768,7 @@ namespace simdOps {
 
                             } else {
 
-#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
+//#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                                 for (int i = 0; i < tadLength; i++) {
                                     if (rX[i * tadEWS] > maxValue) {
                                         maxIdx = i;

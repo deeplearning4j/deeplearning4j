@@ -2,8 +2,8 @@
 // Created by agibsonccc on 2/21/16.
 //
 
-int tad_threshold = 32;
-int element_threshold = 16384;
+int tad_threshold = 4;
+int element_threshold = 1;
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
