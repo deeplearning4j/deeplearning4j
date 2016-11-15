@@ -123,8 +123,7 @@
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
 
