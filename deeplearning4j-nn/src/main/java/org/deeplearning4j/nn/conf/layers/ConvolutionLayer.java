@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -22,7 +23,8 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
-    protected Convolution.Type convolutionType;
+//    protected Convolution.Type convolutionType;
+    protected ConvolutionMode convolutionMode = ConvolutionMode.Strict;
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
@@ -41,7 +43,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
     */
     private ConvolutionLayer(Builder builder) {
     	super(builder);
-        this.convolutionType = builder.convolutionType;
+//        this.convolutionType = builder.convolutionType;
+        this.convolutionMode = builder.convolutionMode;
         if(builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
@@ -89,7 +92,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, convolutionMode, nOut,
+                layerIndex, getLayerName(), ConvolutionLayer.class);
     }
 
     @Override
@@ -156,7 +160,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        private Convolution.Type convolutionType = Convolution.Type.VALID;
+//        private Convolution.Type convolutionType = Convolution.Type.VALID;
+        private ConvolutionMode convolutionMode = null;
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
@@ -180,8 +185,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder() {}
 
+        /**
+         * @deprecated Use {@link #convolutionMode}
+         */
+        @Deprecated
         public Builder convolutionType(Convolution.Type convolutionType) {
-            this.convolutionType = convolutionType;
+//            this.convolutionType = convolutionType;
+            return this;
+        }
+
+        public Builder convolutionMode(ConvolutionMode convolutionMode){
+            this.convolutionMode = convolutionMode;
             return this;
         }
 
