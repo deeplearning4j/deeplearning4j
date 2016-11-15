@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -47,11 +48,13 @@ import java.util.Arrays;
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
     protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
-    ConvolutionHelper helper = null;
+    protected ConvolutionHelper helper = null;
+    protected ConvolutionMode convolutionMode;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
+        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer)conf().getLayer()).getConvolutionMode();
     }
 
     public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -107,7 +110,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
         int outH = outSize[0];
         int outW = outSize[1];
 
@@ -225,7 +228,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
         int outH = outSize[0];
         int outW = outSize[1];
 
