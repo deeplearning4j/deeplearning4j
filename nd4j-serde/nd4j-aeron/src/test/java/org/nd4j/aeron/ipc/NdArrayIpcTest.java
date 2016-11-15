@@ -56,7 +56,9 @@ public class NdArrayIpcTest {
 
         final AtomicBoolean running = new AtomicBoolean(true);
         Aeron aeron = Aeron.connect(getContext());
-        for(int i = 0; i < 10; i++) {
+        int numSubscribers = 10;
+        AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
+        for(int i = 0; i < numSubscribers; i++) {
             AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
                     .streamId(streamId)
                     .ctx(getContext()).channel(channel).aeron(aeron)
@@ -84,11 +86,14 @@ public class NdArrayIpcTest {
             });
 
             t.start();
+
+            subscribers[i] = subscriber;
         }
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
+                .builder()
                 .streamId(streamId)
-                .ctx(getContext()).channel(channel).aeron(aeron)
+                .channel(channel).aeron(aeron)
                 .build();
 
         Thread.sleep(10000);
@@ -108,8 +113,10 @@ public class NdArrayIpcTest {
 
         Thread.sleep(100000);
 
-
-
+        for(int i = 0; i < numSubscribers; i++)
+            CloseHelper.close(subscribers[i]);
+        CloseHelper.close(aeron);
+        CloseHelper.close(publisher);
         assertFalse(running.get());
     }
 

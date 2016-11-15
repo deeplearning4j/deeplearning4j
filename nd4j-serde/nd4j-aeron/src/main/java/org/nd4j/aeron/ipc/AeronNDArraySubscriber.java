@@ -103,6 +103,12 @@ public class AeronNDArraySubscriber implements AutoCloseable {
         //The first one is a  normal 1 subscription listener.
         //The second one is when we want to send responses
 
+        if(channel == null)
+            throw new IllegalStateException("No channel for subscriber defined");
+        if(streamId <= 0)
+            throw new IllegalStateException("No stream for subscriber defined");
+        if(aeron == null)
+            throw new IllegalStateException("No aeron instance defined");
         boolean started = false;
         while(!started) {
             try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
@@ -268,7 +274,6 @@ public class AeronNDArraySubscriber implements AutoCloseable {
     @Override
     public void close() throws Exception {
         CloseHelper.close(subscription);
-        CloseHelper.close(aeron);
     }
 }
 

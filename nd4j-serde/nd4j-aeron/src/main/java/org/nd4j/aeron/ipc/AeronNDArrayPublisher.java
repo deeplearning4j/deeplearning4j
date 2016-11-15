@@ -33,7 +33,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private Aeron aeron;
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
-    public final static int NUM_RETRIES = 5;
+    public final static int NUM_RETRIES = 100;
 
 
     private void init() {
@@ -85,7 +85,8 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         while(publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
-            }catch (DriverTimeoutException e) {
+            }
+            catch (DriverTimeoutException e) {
                 Thread.sleep(1000 * (connectionTries + 1));
                 log.warn("Failed to connect due to driver time out on channel " + channel + " and stream " + streamId + "...retrying in " + connectionTries + " seconds");
                 connectionTries++;
@@ -190,11 +191,6 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(aeron != null) {
-            try {
-                aeron.close();
-            }catch (Exception e) {}
-        }
         if(publication != null) {
             try {
                 publication.close();
