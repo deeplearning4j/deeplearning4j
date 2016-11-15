@@ -333,7 +333,6 @@ public  class ConvolutionTests extends BaseNd4jTest {
             DataBuffer.AllocationMode mode = modes[i];
 
             DataTypeUtil.setDTypeForContext(type);
-            Nd4j.dtype = type;
             Nd4j.alloc = mode;
 
             AllocUtil.setAllocationModeForContext(mode);
@@ -411,7 +410,6 @@ public  class ConvolutionTests extends BaseNd4jTest {
             DataBuffer.AllocationMode mode = modes[i];
 
             DataTypeUtil.setDTypeForContext(type);
-            Nd4j.dtype = type;
             Nd4j.alloc = mode;
 
             for (int m : miniBatches) {

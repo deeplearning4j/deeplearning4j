@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -223,7 +224,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     @Test
     public void testCreateFromNDArray() {
 
-        Nd4j.dtype = Type.DOUBLE;
+        DataBuffer.Type initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         INDArray fortran = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
 
         IComplexNDArray fortranComplex = Nd4j.createComplex(fortran);
@@ -235,6 +237,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
             }
         }
 
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 

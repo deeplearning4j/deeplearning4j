@@ -1257,7 +1257,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2Double() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataBuffer.Type initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
         double norm3 = n.norm2Number().doubleValue();
@@ -1268,7 +1269,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         double norm2 = row1.norm2Number().doubleValue();
         double assertion2 = 5.0f;
         assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
-
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 

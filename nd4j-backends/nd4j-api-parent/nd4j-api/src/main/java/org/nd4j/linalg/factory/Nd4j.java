@@ -117,7 +117,7 @@ public class Nd4j {
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
     //the datatype used for allocating buffers
-    public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
+    protected static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
     //the allocation mode for the heap
     public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
