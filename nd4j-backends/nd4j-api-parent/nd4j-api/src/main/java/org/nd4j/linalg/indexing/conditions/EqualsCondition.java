@@ -47,7 +47,7 @@ public class EqualsCondition extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        if (Nd4j.dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return input.doubleValue() == value.doubleValue();
         else
             return input.floatValue() == value.floatValue();

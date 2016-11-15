@@ -48,6 +48,8 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -110,11 +112,12 @@ public class Nd4j {
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
     public final static String MEMORY_MANAGER = "memorymanager";
+    public final static String RANDOM_PROVIDER = "random";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
     //the datatype used for allocating buffers
-    public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
+    protected static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
     //the allocation mode for the heap
     public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
@@ -132,6 +135,7 @@ public class Nd4j {
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
     public static Nd4jBackend backend;
+    public static RandomFactory randomFactory;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -501,10 +505,18 @@ public class Nd4j {
      *
      * @return the current random generator
      */
-    public static synchronized  org.nd4j.linalg.api.rng.Random getRandom() {
-        if(random == null)
-            throw new IllegalStateException("Illegal random not found");
-        return random;
+    public static org.nd4j.linalg.api.rng.Random getRandom() {
+
+        return randomFactory.getRandom();
+    }
+
+    /**
+     * This method returns RandomFactory instance
+     *
+     * @return
+     */
+    public static RandomFactory getRandomFactory() {
+        return randomFactory;
     }
 
     /**
@@ -2602,9 +2614,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2615,9 +2627,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int[] shape) {
-        INDArray ret = INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(shape, order); //INSTANCE.rand(order, shape);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2645,9 +2657,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns) {
-        INDArray ret = INSTANCE.rand(rows, columns, Nd4j.getRandom());
+        INDArray ret = createUninitialized(new int[]{rows, columns}, Nd4j.order());//INSTANCE.rand(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2658,9 +2670,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.rand(order, rows, columns);
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
 
@@ -2672,9 +2684,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2685,9 +2698,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed,int...shape) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2699,9 +2713,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.rand(rows, columns, seed);
+        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2712,9 +2727,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, rng);
+        INDArray ret = createUninitialized(shape, Nd4j.order()); //INSTANCE.rand(shape, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2725,9 +2740,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, Distribution dist) {
-        INDArray ret = INSTANCE.rand(shape, dist);
-        logCreationIfNecessary(ret);
-        return ret;
+        //INDArray ret = INSTANCE.rand(shape, dist);
+        //logCreationIfNecessary(ret);
+        return dist.sample(shape);
     }
 
     /**
@@ -2738,11 +2753,10 @@ public class Nd4j {
      * @param rng       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    @Deprecated
     public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(rows, columns, rng);
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order());//INSTANCE.rand(rows, columns, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2755,9 +2769,9 @@ public class Nd4j {
      * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
     }
 
     /**
@@ -2772,9 +2786,22 @@ public class Nd4j {
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
-        INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
+        INDArray ret = createUninitialized(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
+    }
+
+    /**
+     * This method returns uninitialized 2D array of rows x columns
+     *
+     * PLEASE NOTE: memory of underlying array will be NOT initialized, and won't be set to 0.0
+     *
+     * @param rows
+     * @param columns
+     * @return
+     */
+    public static INDArray createUninitialized(int rows, int columns) {
+        return createUninitialized(new int[]{rows, columns});
     }
 
     /**
@@ -2785,7 +2812,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape) {
-        INDArray ret = INSTANCE.randn(shape, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2797,7 +2824,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      */
     public static INDArray randn(char order, int[] shape) {
-        INDArray ret = INSTANCE.randn(order,shape);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2810,6 +2837,7 @@ public class Nd4j {
      */
     public static INDArray randn(int[] shape, long seed) {
         Nd4j.getRandom().setSeed(seed);
+        Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         return randn(shape, Nd4j.getRandom());
     }
 
@@ -2822,7 +2850,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns) {
-        INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2835,7 +2863,7 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      */
     public static INDArray randn(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.randn(order, rows, columns);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2848,7 +2876,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.randn(rows, columns, seed);
+        Nd4j.getRandom().setSeed(seed);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2862,7 +2891,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(rows, columns, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2875,7 +2904,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(shape, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4405,6 +4434,37 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
+     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray createUninitialized(int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        return createUninitialized(shape, Nd4j.order());
+    }
+
+    /**
+     * This method creates an *uninitialized* ndarray of specified length and default ordering.
+     *
+     * PLEASE NOTE: Do not use this method unless you're 100% sure why you use it.
+     *
+     * @param length
+     * @return
+     */
+    public static INDArray createUninitialized(int length) {
+        if (length < 1)
+            throw new IllegalStateException("Length should be positive value");
+
+        int[] shape = new int[]{1, length};
+
+        INDArray ret = INSTANCE.createUninitialized(shape, order());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
 
     /**
@@ -5289,8 +5349,9 @@ public class Nd4j {
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class.forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
-            String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
+            String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
+            randomFactory = new RandomFactory(randomClazz);
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));

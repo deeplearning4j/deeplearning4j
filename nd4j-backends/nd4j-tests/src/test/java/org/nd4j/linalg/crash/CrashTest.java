@@ -107,7 +107,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {96, 64, 1024}, 'f');
 
-        for(int i = 0; i < ITERATIONS; i++) {
+        for(int i = 0; i < 1; i++) {
             int slice = 0; //RandomUtils.nextInt(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }

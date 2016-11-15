@@ -19,7 +19,11 @@
 
 package org.nd4j.linalg.api.rng;
 
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import javax.annotation.Nullable;
 
 /**
  * Random generation based on commons math.
@@ -27,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface Random {
+public interface Random extends AutoCloseable {
 
     /**
      * Sets the seed of the underlying random number generator using an
@@ -200,13 +204,22 @@ public interface Random {
     INDArray nextDouble(char order, int[] shape);
 
     /**
-     * Generate a gaussian number ndarray
+     * Generate a uniform number ndarray
      * of the specified shape
      *
      * @param shape the shape to generate
-     * @return the generated gaussian numbers
+     * @return the generated uniform numbers
      */
     INDArray nextFloat(int[] shape);
+
+    /**
+     * Generate a uniform number ndarray
+     * of the specified shape
+     *
+     * @param shape the shape to generate
+     * @return the generated uniform numbers
+     */
+    INDArray nextFloat(char order, int[] shape);
 
     /**
      * Generate a random set of integers
@@ -246,6 +259,37 @@ public interface Random {
      */
     INDArray nextInt(int n, int[] shape);
 
+    /**
+     * This method returns pointer to RNG state structure.
+     * Please note: DefaultRandom implementation returns NULL here, making it impossible to use with RandomOps
+     *
+     * @return
+     */
+    Pointer getStatePointer();
+
+    /**
+     * This method returns pointer to RNG buffer
+     *
+     * @return
+     */
+    DataBuffer getStateBuffer();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state. System.currentTimeMillis() will be used as modifier.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     */
+    void reSeed();
+
+    /**
+     * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state.
+     *
+     * PLEASE NOTE: Never use this method unless you're 100% sure what it does and why you would need it.
+     *
+     * @param seed
+     */
+    void reSeed(long seed);
 }
 
 

@@ -23,11 +23,13 @@ import org.bytedeco.javacpp.DoublePointer;
 
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -49,15 +51,24 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(Parameterized.class)
 public  class DoubleDataBufferTest extends BaseNd4jTest {
+    DataBuffer.Type initialType;
+
     public DoubleDataBufferTest(Nd4jBackend backend) {
         super(backend);
+        initialType = Nd4j.dataType();
     }
 
 
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
     @Test

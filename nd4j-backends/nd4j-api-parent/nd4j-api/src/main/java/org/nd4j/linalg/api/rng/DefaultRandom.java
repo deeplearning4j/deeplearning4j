@@ -22,16 +22,22 @@ package org.nd4j.linalg.api.rng;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import javax.annotation.Nullable;
+
 /**
  * Apache commons based random number generation
  *
+ * Please note: this implementation can't be used for NativeOps execution
+ *
  * @author Adam Gibson
  */
+// TODO: make this op compatible with NativeOpExecutioner
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
     protected long seed;
@@ -148,8 +154,13 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextFloat(int[] shape) {
+        return nextFloat(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextFloat(char order, int[] shape) {
         int length = ArrayUtil.prod(shape);
-        INDArray ret = Nd4j.create(shape);
+        INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
         for( int i=0; i<length; i++ ){
@@ -194,4 +205,48 @@ public class DefaultRandom implements Random, RandomGenerator {
         return this.seed;
     }
 
+
+    /**
+     * This method returns pointer to RNG state structure.
+     * Please note: DefaultRandom implementation returns NULL here, making it impossible to use with RandomOps
+     *
+     * @return
+     */
+    @Override
+    public Pointer getStatePointer() {
+        return null;
+    }
+
+    /**
+     * This method returns pointer to RNG buffer
+     *
+     * @return
+     */
+    @Override
+    public DataBuffer getStateBuffer() {
+        return null;
+    }
+
+    @Override
+    public void close() throws Exception {
+        //
+    }
+
+    /**
+     * Identical to setSeed(System.currentTimeMillis());
+     */
+    @Override
+    public void reSeed() {
+        reSeed(System.currentTimeMillis());
+    }
+
+    /**
+     * Identical to setSeed(seed);
+     *
+     * @param seed
+     */
+    @Override
+    public void reSeed(long seed) {
+        setSeed(seed);
+    }
 }

@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
+import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -222,7 +224,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Variance acc = (Variance) op;
             if (flush) flushQueue();
 
-            logger.info("Sending Variance to CudaExecutioner: {}", Arrays.toString(dimensions));
             super.naiveExec(acc, dimensions);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
@@ -998,6 +999,13 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         // we enqueue op for specific device here
         aggregates.get(deviceId).add(new AggregateDescriptor(op, key, opCounter.get().getAndIncrement()));
+    }
+
+    @Override
+    public INDArray exec(RandomOp op, Random rng) {
+        flushQueue();
+
+        return super.exec(op, rng);
     }
 
     protected void buildAggregation() {
