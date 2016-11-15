@@ -1368,6 +1368,14 @@ public class Nd4j {
         return DataTypeUtil.getDtypeFromContext();
     }
 
+    /**
+     * This method sets dataType for the current JVM runtime
+     * @param dType
+     */
+    public static void setDataType(@NonNull DataBuffer.Type dType) {
+        DataTypeUtil.setDTypeForContext(dType);
+    }
+
     public static Nd4jBackend getBackend() {
         return backend;
     }
