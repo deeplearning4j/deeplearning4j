@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -38,7 +39,7 @@ public class ConvolutionLayerTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
     }
