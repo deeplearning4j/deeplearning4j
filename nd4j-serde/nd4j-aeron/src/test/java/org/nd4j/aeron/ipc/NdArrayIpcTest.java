@@ -26,6 +26,8 @@ public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
+    private String channel = "aeron:udp?endpoint=localhost:40123";
+    private int streamId = 10;
 
     @Before
     public void before() {
@@ -49,17 +51,15 @@ public class NdArrayIpcTest {
 
     @Test
     public void testMultiThreadedIpc() throws Exception {
-        //LowLatencyMediaDriver.main(new String[]{});
-
         ExecutorService executorService = Executors.newFixedThreadPool(4);
         INDArray arr = Nd4j.scalar(1.0);
-
 
         final AtomicBoolean running = new AtomicBoolean(true);
         Aeron aeron = Aeron.connect(getContext());
         for(int i = 0; i < 10; i++) {
-            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(10)
-                    .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
+                    .streamId(streamId)
+                    .ctx(getContext()).channel(channel).aeron(aeron)
                     .running(running)
                     .ndArrayCallback(new NDArrayCallback() {
                         @Override
@@ -86,8 +86,9 @@ public class NdArrayIpcTest {
             t.start();
         }
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
-                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123").aeron(aeron)
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+                .streamId(streamId)
+                .ctx(getContext()).channel(channel).aeron(aeron)
                 .build();
 
         Thread.sleep(10000);
@@ -114,15 +115,17 @@ public class NdArrayIpcTest {
 
     @Test
     public void testIpc() throws Exception {
-        //LowLatencyMediaDriver.main(new String[]{});
         INDArray arr = Nd4j.scalar(1.0);
 
 
         final AtomicBoolean running = new AtomicBoolean(true);
+        Aeron aeron = Aeron.connect(getContext());
 
 
-        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder().streamId(10)
-                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
+        AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
+                .streamId(streamId)
+                .aeron(aeron)
+                .channel(channel)
                 .running(running)
                 .ndArrayCallback(new NDArrayCallback() {
                     @Override
@@ -149,15 +152,22 @@ public class NdArrayIpcTest {
 
         t.start();
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder().streamId(10)
-                .ctx(getContext()).channel("aeron:udp?endpoint=localhost:40123")
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+                .streamId(streamId)
+                .aeron(aeron)
+                .channel(channel)
                 .build();
-        for(int i = 0; i< 10 && running.get(); i++) {
+        for(int i = 0; i < 10 && running.get(); i++) {
             publisher.publish(arr);
             Thread.sleep(10);
         }
-        publisher.close();
+
         Thread.sleep(10000);
+
+
+        CloseHelper.close(aeron);
+        CloseHelper.close(publisher);
+
         assertFalse(running.get());
 
     }
