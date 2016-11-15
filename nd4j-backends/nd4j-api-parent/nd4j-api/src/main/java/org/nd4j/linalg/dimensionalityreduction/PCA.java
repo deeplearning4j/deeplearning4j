@@ -95,45 +95,57 @@ public class PCA {
      * Calculates pca vectors of a matrix, for a given variance. A larger variance (99%)
      * will result in a higher order feature set.
      *
+     * To use the returned factor: multiply feature(s) by the factor to get a reduced dimension
      *
+     * INDArray Areduced = A.mmul( factor ) ;
+     * 
+     * The array Areduced is a projection of A onto principal components
      *
      * @param A the array of features, rows are results, columns are features
      * @param variance the amount of variance to preserve as a float 0 - 1
+     * @param whether to normalize (set features to have zero mean)
      * @return the matrix to mulitiply a feature by to get a reduced feature set
      */
-    public static INDArray pca(INDArray A, double variance) {
+    public static INDArray pca(INDArray A, double variance, boolean normalize) {
 
-        // Calculate the covariance matrix for the features
-        INDArray cov = A.mmul( A.transpose() ) ;
-        cov.divi( cov.meanNumber() );
+	if( normalize ) {
+		// Normalize to mean 0 for each feature ( each column has 0 mean )
+		INDArray mean = A.mean(0) ;		
+		A.subiRowVector( mean ) ;
+	}
 
-        // Prepare SVD results, we'll decomp the covariance
-        INDArray s = Nd4j.create( cov.rows() ) ;
-        INDArray U = Nd4j.create( cov.rows(), cov.columns(), 'f' ) ;
+	// The prepare SVD results, we'll decomp A to UxSxV'
+        INDArray s  = Nd4j.create( m<n?m:n ) ;
+        INDArray U  = Nd4j.create( m, m, 'f' ) ;
 
-        // Note - we don't care about VT (esp. since it will be the same as U for any AxA' )
-        Nd4j.getBlasWrapper().lapack().sgesvd( cov, s, U, null );
-
+        // Note - we don't care about VT 
+        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, U, null );
+        
+        // Now convert the eigs of X into the eigs of the covariance matrix
+        for( int i=0 ; i<s.length() ; i++ ) {
+        	s.putScalar(i, Math.sqrt( s.getDouble(i) ) / (m-1) ) ;
+        }
+        
         // Now find how many features we need to preserve the required variance
         // Which is the same percentage as a cumulative sum of the eigenvalues' percentages
         double totalEigSum = s.sumNumber().doubleValue() * variance ;
-        int numEigsToKeep = -1 ;
+        int k = -1 ;		// we will reduce to k dimensions
         double runningTotal = 0 ;
         for( int i=0 ; i<s.length() ; i++ ) {
                 runningTotal += s.getDouble(i) ;
                 if( runningTotal >= totalEigSum ) {  // OK I know it's a float, but what else can we do ?
-                        numEigsToKeep = i+1 ;	     // we will keep this many features to preserve the reqd. variance
+                        k = i+1 ;        // we will keep this many features to preserve the reqd. variance
                         break ;
                 }
         }
-	if( numEigsToKeep == -1 ) {   // if we need everything
-		throw new RuntimeException( "No reduction possible for reqd. variance - use a smaller variance or don't use PCA" ) ;
-	}
+        if( k == -1 ) {   // if we need everything
+                throw new RuntimeException( "No reduction possible for reqd. variance - use smaller variance" ) ;
+        }
         // So now let's rip out the appropriate number of left singular vectors from
         // the U output
-        INDArray factor = Nd4j.create( A.rows(), numEigsToKeep, 'f' ) ;
-        for( int i=0 ; i<numEigsToKeep ; i++ ) {
-                factor.putColumn( i, U.getColumn(i) ) ;
+        INDArray factor = Nd4j.create(  n, k, 'f' ) ;
+        for( int i=0 ; i<k ; i++ ) {
+        	factor.putColumn( i, U.getColumn(i) ) ;
         }
 
         return factor  ;
