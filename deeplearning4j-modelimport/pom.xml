@@ -27,7 +27,8 @@
     </parent>
     <packaging>pom</packaging>
     <properties>
-        <javacpp.version>1.2.5-SNAPSHOT</javacpp.version>
+        <javacpp.version>1.2.5</javacpp.version>
+        <javacpp-presets.version>1.2</javacpp-presets.version>
         <hdf5.version>1.10.0-patch1</hdf5.version>
     </properties>
     <build>
@@ -49,12 +50,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
         </dependency>
 
         <dependency>
@@ -82,15 +77,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>hdf5</artifactId>
-            <version>${hdf5.version}-${javacpp.version}</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
         </dependency>
 
         <!-- For unit tests -->
@@ -102,8 +97,48 @@
         </dependency>
 
         <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
+            <classifier>linux-x86_64</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
+            <classifier>macosx-x86_64</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
+            <classifier>windows-x86_64</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>hdf5</artifactId>
+            <version>${hdf5.version}-${javacpp-presets.version}</version>
+            <classifier>linux-ppc64le</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
