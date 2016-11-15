@@ -21,7 +21,6 @@ import org.apache.commons.io.LineIterator;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -41,7 +40,7 @@ import java.util.List;
  * Each line in the file represents one time step
  * @author Alex Black
  */
-public class CSVSequenceRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
+public class CSVSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
     private int skipNumLines = 0;
     private String delimiter = ",";
 

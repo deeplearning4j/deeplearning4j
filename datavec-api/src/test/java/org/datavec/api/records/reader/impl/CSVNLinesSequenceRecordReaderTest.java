@@ -18,9 +18,7 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -70,7 +68,7 @@ public class CSVNLinesSequenceRecordReaderTest {
     public void testCSVNlinesSequenceRecordReaderMetaData() throws Exception {
         int nLinesPerSequence = 10;
 
-        SequenceRecordReaderMeta seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
+        SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
         seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();

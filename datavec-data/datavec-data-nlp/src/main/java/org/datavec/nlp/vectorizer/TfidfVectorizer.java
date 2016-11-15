@@ -20,7 +20,7 @@ package org.datavec.nlp.vectorizer;
 import org.datavec.api.berkeley.Counter;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,12 +48,12 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     }
 
     @Override
-    public INDArray fitTransform(RecordReaderMeta reader) {
+    public INDArray fitTransform(RecordReader reader) {
         return fitTransform(reader,null);
     }
 
     @Override
-    public INDArray fitTransform(final RecordReaderMeta reader, RecordCallBack callBack) {
+    public INDArray fitTransform(final RecordReader reader, RecordCallBack callBack) {
         final List<Record> records = new ArrayList<>();
         fit(reader,new RecordCallBack() {
             @Override

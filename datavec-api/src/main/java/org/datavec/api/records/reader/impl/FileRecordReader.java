@@ -21,7 +21,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
@@ -38,7 +37,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class FileRecordReader extends BaseRecordReader implements RecordReaderMeta {
+public class FileRecordReader extends BaseRecordReader {
 
     protected Iterator<File> iter;
     protected Configuration conf;

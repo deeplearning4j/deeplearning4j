@@ -23,7 +23,6 @@ import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLineInterval;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -42,7 +41,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
+public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";
 

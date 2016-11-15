@@ -21,7 +21,6 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.BaseRecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Writable;
@@ -37,7 +36,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class CollectionRecordReader extends BaseRecordReader implements RecordReaderMeta {
+public class CollectionRecordReader extends BaseRecordReader {
     private Iterator<? extends Collection<Writable>> records;
     private final Collection<? extends Collection<Writable>> original;
     private int count = 0;

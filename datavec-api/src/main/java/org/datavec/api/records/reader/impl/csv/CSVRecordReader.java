@@ -22,7 +22,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
@@ -38,7 +37,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class CSVRecordReader extends LineRecordReader implements RecordReaderMeta {
+public class CSVRecordReader extends LineRecordReader {
     /** A regex delimiter that can parse quotes (string literals) that may have commas in them: http://stackoverflow.com/a/1757107/523744
      * Note: This adds considerable overhead compared to the default "," delimiter, and should only be used when necessary.
      * */

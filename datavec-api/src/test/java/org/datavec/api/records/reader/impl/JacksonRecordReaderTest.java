@@ -18,7 +18,6 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
@@ -177,7 +176,7 @@ public class JacksonRecordReaderTest {
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
         //Insert at the end:
-        RecordReaderMeta rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1, new LabelGen());
+        RecordReader rr = new JacksonRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()), false, -1, new LabelGen());
         rr.initialize(is);
 
         List<List<Writable>> out = new ArrayList<>();

@@ -23,7 +23,6 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.IntWritable;
@@ -44,7 +43,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public abstract class BaseImageRecordReader extends BaseRecordReader implements RecordReaderMeta {
+public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected Iterator<File> iter;
     protected Configuration conf;
     protected File currentFile;

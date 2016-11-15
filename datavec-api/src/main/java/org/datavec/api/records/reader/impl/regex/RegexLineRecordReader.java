@@ -19,7 +19,6 @@ package org.datavec.api.records.reader.impl.regex;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
@@ -46,7 +45,7 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
-public class RegexLineRecordReader extends LineRecordReader implements RecordReaderMeta {
+public class RegexLineRecordReader extends LineRecordReader {
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
 
     private String regex;

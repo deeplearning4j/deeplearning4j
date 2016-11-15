@@ -19,7 +19,6 @@ package org.datavec.api.records.reader.impl.jackson;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
@@ -58,7 +57,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class JacksonRecordReader extends BaseRecordReader implements RecordReaderMeta {
+public class JacksonRecordReader extends BaseRecordReader {
 
     private static final TypeReference<Map<String,Object>> typeRef = new TypeReference<Map<String, Object>>(){};
 

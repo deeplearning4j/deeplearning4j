@@ -22,7 +22,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.ArrayWritable;
@@ -68,7 +67,7 @@ public class CodecReaderTest {
     @Test
     public void testCodecReaderMeta() throws Exception {
         File file = new ClassPathResource("fire_lowres.mp4").getFile();
-        SequenceRecordReaderMeta reader = new CodecRecordReader();
+        SequenceRecordReader reader = new CodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
         conf.set(CodecRecordReader.START_FRAME, "160");
