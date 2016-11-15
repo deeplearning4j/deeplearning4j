@@ -6,7 +6,6 @@ import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposable;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
@@ -174,8 +173,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         int maxLength = 0;
         for (int i = 0; i < num && hasNext(); i++) {
             List<List<Writable>> sequence;
-            if (collectMetaData && recordReader instanceof SequenceRecordReaderMeta) {
-                SequenceRecord sequenceRecord = ((SequenceRecordReaderMeta) recordReader).nextSequence();
+            if (collectMetaData ) {
+                SequenceRecord sequenceRecord = recordReader.nextSequence();
                 sequence = sequenceRecord.getSequenceRecord();
                 meta.add(sequenceRecord.getMetaData());
             } else {
@@ -250,9 +249,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         for (int i = 0; i < num && hasNext(); i++) {
             List<List<Writable>> featureSequence;
             List<List<Writable>> labelSequence;
-            if (collectMetaData && recordReader instanceof SequenceRecordReaderMeta && labelsReader instanceof SequenceRecordReaderMeta) {
-                SequenceRecord f = ((SequenceRecordReaderMeta) recordReader).nextSequence();
-                SequenceRecord l = ((SequenceRecordReaderMeta) labelsReader).nextSequence();
+            if (collectMetaData) {
+                SequenceRecord f = recordReader.nextSequence();
+                SequenceRecord l = labelsReader.nextSequence();
                 featureSequence = f.getSequenceRecord();
                 labelSequence = l.getSequenceRecord();
                 meta.add(new RecordMetaDataComposable(f.getMetaData(), l.getMetaData()));
@@ -713,7 +712,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
         //Two cases: single vs. multiple reader...
         if(singleSequenceReaderMode){
-            List<SequenceRecord> records = ((SequenceRecordReaderMeta)recordReader).loadSequenceFromMetaData(list);
+            List<SequenceRecord> records = recordReader.loadSequenceFromMetaData(list);
 
             List<INDArray> listFeatures = new ArrayList<>(list.size());
             List<INDArray> listLabels = new ArrayList<>(list.size());
@@ -739,8 +738,8 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
                 lMeta.add(m2.getMeta()[1]);
             }
 
-            List<SequenceRecord> f = ((SequenceRecordReaderMeta)recordReader).loadSequenceFromMetaData(fMeta);
-            List<SequenceRecord> l = ((SequenceRecordReaderMeta)labelsReader).loadSequenceFromMetaData(lMeta);
+            List<SequenceRecord> f = recordReader.loadSequenceFromMetaData(fMeta);
+            List<SequenceRecord> l = labelsReader.loadSequenceFromMetaData(lMeta);
 
             List<INDArray> featureList = new ArrayList<>(fMeta.size());
             List<INDArray> labelList = new ArrayList<>(fMeta.size());
