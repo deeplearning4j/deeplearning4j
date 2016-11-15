@@ -114,6 +114,9 @@ public class PCA {
 		A.subiRowVector( mean ) ;
 	}
 
+	int m = A.rows() ;
+	int n = A.columns() ;
+
 	// The prepare SVD results, we'll decomp A to UxSxV'
         INDArray s  = Nd4j.create( m<n?m:n ) ;
         INDArray U  = Nd4j.create( m, m, 'f' ) ;
