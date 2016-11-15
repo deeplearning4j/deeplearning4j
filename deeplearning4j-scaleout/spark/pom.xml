@@ -91,7 +91,6 @@
             <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <exclusions>
-
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
