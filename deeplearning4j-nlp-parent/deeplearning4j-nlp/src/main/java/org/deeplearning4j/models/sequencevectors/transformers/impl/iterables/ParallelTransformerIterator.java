@@ -74,15 +74,16 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     @Override
     public void reset() {
-        log.info("Reset called");
         this.iterator.shutdown();
 
         for (int x = 0; x < threads.length; x++) {
-            threads[x].shutdown();
-            try {
-                threads[x].interrupt();
-            } catch (Exception e) {
-                //
+            if (threads[x] != null) {
+                threads[x].shutdown();
+                try {
+                    threads[x].interrupt();
+                } catch (Exception e) {
+                    //
+                }
             }
         }
     }
