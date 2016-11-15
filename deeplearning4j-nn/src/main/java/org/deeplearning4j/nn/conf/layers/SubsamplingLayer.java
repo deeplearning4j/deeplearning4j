@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -27,6 +28,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SubsamplingLayer extends Layer {
 
+    protected ConvolutionMode convolutionMode;
     protected PoolingType poolingType;
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
@@ -82,8 +84,8 @@ public class SubsamplingLayer extends Layer {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, ((InputType.InputTypeConvolutional) inputType).getDepth(),
-                layerIndex, getLayerName(), SubsamplingLayer.class);
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, convolutionMode,
+                ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(), SubsamplingLayer.class);
     }
 
     @Override
