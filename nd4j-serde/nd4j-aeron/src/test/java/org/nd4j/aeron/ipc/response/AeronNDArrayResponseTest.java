@@ -3,6 +3,7 @@ package org.nd4j.aeron.ipc.response;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,54 +48,55 @@ public class AeronNDArrayResponseTest {
         int streamId = 10;
         int responderStreamId = 11;
         String host = "127.0.0.1";
+        Aeron aeron = Aeron.connect(getContext2());
         AeronNDArrayResponder responder = AeronNDArrayResponder.startSubscriber(
-                getContext2(),
+                aeron,
                 host,
                 40124,
-               new NDArrayHolder() {
-                   /**
-                    * The number of updates
-                    * that have been sent to this older.
-                    *
-                    * @return
-                    */
-                   @Override
-                   public int totalUpdates() {
-                       return 1;
-                   }
+                new NDArrayHolder() {
+                    /**
+                     * The number of updates
+                     * that have been sent to this older.
+                     *
+                     * @return
+                     */
+                    @Override
+                    public int totalUpdates() {
+                        return 1;
+                    }
 
-                   /**
-                    * Retrieve an ndarray
-                    *
-                    * @return
-                    */
-                   @Override
-                   public INDArray get() {
-                       return Nd4j.scalar(1.0);
-                   }
+                    /**
+                     * Retrieve an ndarray
+                     *
+                     * @return
+                     */
+                    @Override
+                    public INDArray get() {
+                        return Nd4j.scalar(1.0);
+                    }
 
-                   /**
-                    * Retrieve a partial view of the ndarray.
-                    * This method uses tensor along dimension internally
-                    * Note this will call dup()
-                    *
-                    * @param idx        the index of the tad to get
-                    * @param dimensions the dimensions to use
-                    * @return the tensor along dimension based on the index and dimensions
-                    * from the master array.
-                    */
-                   @Override
-                   public INDArray getTad(int idx, int... dimensions) {
-                       return Nd4j.scalar(1.0);
-                   }
-               }
+                    /**
+                     * Retrieve a partial view of the ndarray.
+                     * This method uses tensor along dimension internally
+                     * Note this will call dup()
+                     *
+                     * @param idx        the index of the tad to get
+                     * @param dimensions the dimensions to use
+                     * @return the tensor along dimension based on the index and dimensions
+                     * from the master array.
+                     */
+                    @Override
+                    public INDArray getTad(int idx, int... dimensions) {
+                        return Nd4j.scalar(1.0);
+                    }
+                }
 
                 ,responderStreamId);
 
         AtomicInteger count = new AtomicInteger(0);
         AtomicBoolean running = new AtomicBoolean(true);
         AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.startSubscriber(
-                getContext(),
+                aeron,
                 host,
                 40123,
                 new NDArrayCallback() {
@@ -112,7 +114,7 @@ public class AeronNDArrayResponseTest {
 
         int expectedResponses = 10;
         HostPortPublisher publisher = HostPortPublisher
-                .builder().ctx(getContext2())
+                .builder().aeron(aeron)
                 .uriToSend(host + ":40123:" + streamId)
                 .channel(AeronUtil
                         .aeronChannel(host,40124))
@@ -126,13 +128,16 @@ public class AeronNDArrayResponseTest {
         }
 
 
-        Thread.sleep(60000);
+        Thread.sleep(120000);
 
-        publisher.close();
 
         assertEquals(expectedResponses,count.get());
 
         System.out.println("After");
+
+        CloseHelper.close(responder);
+        CloseHelper.close(subscriber);
+        CloseHelper.close(publisher);
     }
 
 
