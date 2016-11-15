@@ -383,6 +383,7 @@ template<typename OpType>
 					return execScalar<OpType>(x, xElementWiseStride, length, extraParams);
 				}
 				else {
+					printf("Strange loop\n");
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
@@ -598,7 +599,7 @@ template<typename OpType>
 					else {
 						T finalVal = startingVal;
 						BlockInformation info(length, ELEMENT_THRESHOLD);
-						T *blocks = new T[info.chunks];
+						T *blocks = new T[info.threads];
 
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
 						{
@@ -607,7 +608,7 @@ template<typename OpType>
 								Nd4jIndex newOffset = (i * info.items);
 								const T *chunk = x + newOffset;
 								Nd4jIndex itemsToLoop = info.items;
-								if (newOffset >= length) {
+								if (i * info.items >= length) {
 									break;
 								}
 
@@ -617,7 +618,7 @@ template<typename OpType>
 								}
 
 // FIXME: proper reduction should be used here
-								for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
+								for (Nd4jIndex j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
 									T curr = OpType::op(chunk[j], extraParams);
 									local = OpType::update(local, curr, extraParams);
 								}
@@ -659,7 +660,7 @@ template<typename OpType>
 
 					T finalVal = startingVal;
 					BlockInformation info(length, ELEMENT_THRESHOLD);
-					T *blocks = new T[info.chunks];
+					T *blocks = new T[info.threads];
 
 
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
@@ -669,11 +670,11 @@ template<typename OpType>
 							Nd4jIndex newOffset = (i * info.items) * xElementWiseStride;
 							const T *chunk = x + newOffset;
 							Nd4jIndex itemsToLoop = info.items;
-							if (i * info.items > length)
+							if (i * info.items >= length)
 								break;
 
 // FIXME: proper reduction should be used here
-							for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
+							for (Nd4jIndex j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
 								T curr = OpType::op(chunk[j * xElementWiseStride], extraParams);
 								local = OpType::update(local, curr, extraParams);
 							}

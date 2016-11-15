@@ -459,7 +459,7 @@ template<typename OpType>
 										itemsToLoop = length - newOffset;
 									}
 
-									for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
+									for (Nd4jIndex j = 0; j < itemsToLoop  && i * info.items + j < length; j++) {
 										IndexValue<T> curr;
 										curr.value = chunk[j];
 										curr.index = j;
