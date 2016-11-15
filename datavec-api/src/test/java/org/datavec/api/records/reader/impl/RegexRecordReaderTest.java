@@ -20,7 +20,6 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.RecordReader;
@@ -73,7 +72,7 @@ public class RegexRecordReaderTest {
     public void testRegexLineRecordReaderMeta() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
-        RecordReaderMeta rr = new RegexLineRecordReader(regex, 1);
+        RecordReader rr = new RegexLineRecordReader(regex, 1);
         rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
 
         List<List<Writable>> list = new ArrayList<>();

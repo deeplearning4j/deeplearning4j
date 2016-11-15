@@ -17,6 +17,7 @@
 package org.datavec.api.records.reader.impl.collection;
 
 
+import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
@@ -102,6 +103,21 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Generating records from DataInputStream not supported for SequenceCollectionRecordReader");
+    }
+
+    @Override
+    public Record nextRecord() {
+        return new org.datavec.api.records.impl.Record(next(), null);
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
     }
 
 

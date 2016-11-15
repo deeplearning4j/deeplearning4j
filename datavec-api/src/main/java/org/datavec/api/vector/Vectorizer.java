@@ -18,7 +18,7 @@ package org.datavec.api.vector;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.RecordReader;
 
 /**
  * Vectorizer of a particular type.
@@ -47,28 +47,28 @@ public interface Vectorizer<VECTOR_TYPE> {
      * Fit based on a record reader
      * @param reader
      */
-    void fit(RecordReaderMeta reader);
+    void fit(RecordReader reader);
 
     /**
      * Fit based on a record reader
      * @param reader
      */
-    VECTOR_TYPE fitTransform(RecordReaderMeta reader);
+    VECTOR_TYPE fitTransform(RecordReader reader);
 
-
-    /**
-     * Fit based on a record reader
-     * @param reader
-     * @param callBack
-     */
-    void fit(RecordReaderMeta reader, RecordCallBack callBack);
 
     /**
      * Fit based on a record reader
      * @param reader
      * @param callBack
      */
-    VECTOR_TYPE fitTransform(RecordReaderMeta reader,RecordCallBack callBack);
+    void fit(RecordReader reader, RecordCallBack callBack);
+
+    /**
+     * Fit based on a record reader
+     * @param reader
+     * @param callBack
+     */
+    VECTOR_TYPE fitTransform(RecordReader reader,RecordCallBack callBack);
 
     /**
      * Transform a record in to a vector

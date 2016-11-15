@@ -18,7 +18,7 @@ package org.datavec.nlp.vectorizer;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
@@ -62,7 +62,7 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
     public abstract VECTOR_TYPE createVector(Object[] args);
 
     @Override
-    public abstract VECTOR_TYPE fitTransform(RecordReaderMeta reader);
+    public abstract VECTOR_TYPE fitTransform(RecordReader reader);
 
     @Override
     public abstract VECTOR_TYPE transform(Record record);

@@ -18,6 +18,8 @@ package org.datavec.image.recordreader;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
@@ -314,6 +316,21 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
+    }
+
+    @Override
+    public Record nextRecord() {
+        return new org.datavec.api.records.impl.Record(next(), null);
+    }
+
+    @Override
+    public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
+    }
+
+    @Override
+    public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
     }
 
     @Override

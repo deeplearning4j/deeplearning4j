@@ -19,7 +19,7 @@ package org.datavec.nlp.vectorizer;
 import org.datavec.api.berkeley.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.vector.Vectorizer;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -70,12 +70,12 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     }
 
     @Override
-    public void fit(RecordReaderMeta reader) {
+    public void fit(RecordReader reader) {
         fit(reader,null);
     }
 
     @Override
-    public void fit(RecordReaderMeta reader, RecordCallBack callBack) {
+    public void fit(RecordReader reader, RecordCallBack callBack) {
         while(reader.hasNext()) {
             Record record = reader.nextRecord();
             String s = toString(record.getRecord());

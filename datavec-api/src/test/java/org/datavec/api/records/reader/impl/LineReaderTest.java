@@ -24,7 +24,6 @@ import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
@@ -103,7 +102,7 @@ public class LineReaderTest {
 
         InputSplit split = new FileSplit(tmpdir);
 
-        RecordReaderMeta reader = new LineRecordReader();
+        RecordReader reader = new LineRecordReader();
         reader.initialize(split);
 
         List<List<Writable>> list = new ArrayList<>();

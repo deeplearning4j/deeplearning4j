@@ -17,7 +17,9 @@
 package org.datavec.api.records.reader;
 
 import org.datavec.api.conf.Configurable;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.conf.Configuration;
@@ -98,6 +100,35 @@ public interface RecordReader extends Closeable, Serializable, Configurable {
      * @throws IOException if error occurs during reading from the input stream
      */
     List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException;
+
+
+    /**
+     * Similar to {@link #next()}, but returns a {@link Record} object, that may include metadata such as the source
+     * of the data
+     *
+     * @return next record
+     */
+    Record nextRecord();
+
+    /**
+     * Load a single record from the given {@link RecordMetaData} instance<br>
+     * Note: that for data that isn't splittable (i.e., text data that needs to be scanned/split), it is more efficient to
+     * load multiple records at once using {@link #loadFromMetaData(List)}
+     *
+     * @param recordMetaData Metadata for the record that we want to load from
+     * @return Single record for the given RecordMetaData instance
+     * @throws IOException If I/O error occurs during loading
+     */
+    Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException;
+
+    /**
+     * Load multiple records from the given a list of {@link RecordMetaData} instances<br>
+     *
+     * @param recordMetaDatas Metadata for the records that we want to load from
+     * @return Multiple records for the given RecordMetaData instances
+     * @throws IOException If I/O error occurs during loading
+     */
+    List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException;
 
     /**
      * Get the record listeners for this record reader.
