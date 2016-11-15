@@ -194,6 +194,12 @@ public class ConvolutionLayer extends FeedForwardLayer {
             return this;
         }
 
+        /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode    Convolution mode for layer
+         */
         public Builder convolutionMode(ConvolutionMode convolutionMode){
             this.convolutionMode = convolutionMode;
             return this;
