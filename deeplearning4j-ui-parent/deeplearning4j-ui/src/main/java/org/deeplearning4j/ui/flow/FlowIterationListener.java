@@ -21,6 +21,7 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.beans.*;
 import org.deeplearning4j.ui.flow.data.FlowStaticPersistable;
 import org.deeplearning4j.ui.flow.data.FlowUpdatePersistable;
+import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.ui.weights.HistogramBin;
 import org.deeplearning4j.util.UIDProvider;
@@ -36,9 +37,12 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * This IterationListener is suited for general model performance/architecture overview
  *
+ * @deprecated Use {@link StatsListener} and {@link UIServer#attach(StatsStorage)}. See examples repo for how.
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class FlowIterationListener implements IterationListener {
 
     private static final String FORMAT = "%02d:%02d:%02d";
