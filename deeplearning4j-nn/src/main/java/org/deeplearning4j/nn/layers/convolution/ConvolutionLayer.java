@@ -197,21 +197,24 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Input validation: expect rank 4 matrix
         if(input.rank() != 4){
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to ConvolutionLayer with shape "
-                    + Arrays.toString(input.shape()) + ". "
+            String layerName = conf.getLayer().getLayerName();
+            if(layerName == null) layerName  = "(not named)";
+            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to ConvolutionLayer (layer name = "
+                    + layerName + ", layer index = " + index + ") with shape " + Arrays.toString(input.shape()) + ". "
                     + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                     + (input.rank() == 2 ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)" : "")
             );
         }
 
         int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
 
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if(input.size(1) != inDepth){
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer: input array depth does not match CNN layer configuration"
+            String layerName = conf.getLayer().getLayerName();
+            if(layerName == null) layerName  = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName + ", layer index = " + index
+                    + "): input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]=" + Arrays.toString(input.shape()) + "; expected"
                     + " input depth = " + inDepth + ")");
         }
