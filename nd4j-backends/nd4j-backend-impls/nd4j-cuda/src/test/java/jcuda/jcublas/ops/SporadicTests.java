@@ -403,6 +403,7 @@ public class SporadicTests {
 
     }
 
+    @Ignore
     @Test
     public void testHalf19() {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
