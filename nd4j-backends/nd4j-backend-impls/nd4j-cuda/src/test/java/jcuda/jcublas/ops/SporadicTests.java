@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -400,5 +401,15 @@ public class SporadicTests {
 
         System.out.println(String.format("Corrected: %f, non corrected: %f", corrected, notCorrected));
 
+    }
+
+    @Test
+    public void testHalf19() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+        INDArray first = Nd4j.rand(20, 10);
+        INDArray second = Nd4j.rand(3, 20);
+        DataSet data = new DataSet(first, second);
+
+        data.normalize();
     }
 }
