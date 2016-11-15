@@ -24,16 +24,16 @@ namespace nd4j {
         public:
             void *operator new(size_t len) {
                 void *ptr;
-//                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-                cudaMallocManaged(&ptr, len);
-                cudaDeviceSynchronize();
+                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+//                cudaMallocManaged(&ptr, len);
+//                cudaDeviceSynchronize();
                 return ptr;
              }
 
             void operator delete(void *ptr) {
-                cudaDeviceSynchronize();
-                cudaFree(ptr);
-//                cudaFreeHost(ptr);
+//                cudaDeviceSynchronize();
+//                cudaFree(ptr);
+                cudaFreeHost(ptr);
             }
         };
 
