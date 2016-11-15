@@ -96,17 +96,17 @@ public class ManualTests {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .list()
                 .layer(0, new RBM.Builder().nIn(numRows*numColumns).nOut(500)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
                 .layer(1, new RBM.Builder().nIn(500).nOut(250)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
                 .layer(2, new RBM.Builder().nIn(250).nOut(200)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
@@ -121,7 +121,7 @@ public class ManualTests {
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-//        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new HistogramIterationListener(connectionInfo, listenerFreq), new FlowIterationListener(connectionInfo, listenerFreq)));
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq),new HistogramIterationListener(listenerFreq), new FlowIterationListener(listenerFreq)));
 
         log.info("Train model....");
         model.fit(iter); // achieves end to end pre-training

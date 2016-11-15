@@ -25,9 +25,7 @@ import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -39,7 +37,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import javax.annotation.Generated;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -171,8 +168,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 List<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
             } else {
-                if(collectMetaData && (recordReader instanceof RecordReaderMeta)){
-                    Record record = ((RecordReaderMeta) recordReader).nextRecord();
+                if(collectMetaData){
+                    Record record = recordReader.nextRecord();
                     dataSets.add(getDataSet(record.getRecord()));
                     meta.add(record.getMetaData());
                 } else {
@@ -398,7 +395,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @throws IOException If an error occurs during loading of the data
      */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
-        List<Record> records = ((RecordReaderMeta)recordReader).loadFromMetaData(list);
+        List<Record> records = recordReader.loadFromMetaData(list);
         List<DataSet> dataSets = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         for(Record r : records){

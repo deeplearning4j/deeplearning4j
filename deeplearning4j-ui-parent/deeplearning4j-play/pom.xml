@@ -160,15 +160,13 @@
         <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <artifactId>junit</artifactId>              <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
 
@@ -216,8 +214,7 @@
             <!-- Maven compiler plugin last: should ensure Scala code is compiled before Java code -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <artifactId>maven-compiler-plugin</artifactId>  <!-- Version set by deeplearning4j-parent dependency management -->
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
