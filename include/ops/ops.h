@@ -1450,21 +1450,11 @@ namespace simdOps {
 	template<typename T>
 	class IndexAbsoluteMax  {
 	public:
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+		static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return nd4j::math::nd4j_abs<T>(val);
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> update(
+		static inline functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 		functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<T>(opOutput.value);
@@ -1481,12 +1471,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> merge(
+		static inline functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 		functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (nd4j::math::nd4j_abs<T>(f1.value) > nd4j::math::nd4j_abs<T>(f2.value))
@@ -1495,31 +1480,17 @@ namespace simdOps {
 		}
 
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> postProcess(
+		static inline functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static T startingValue(T *input) {
+		static inline T startingValue(T *input) {
 			return MIN_FLOAT;
 		}
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+
+		static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 		functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1528,20 +1499,10 @@ namespace simdOps {
 	template<typename T>
 	class IndexMax  {
 	public:
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
         static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
@@ -1557,12 +1518,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> merge(
+        static inline functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (f1.value > f2.value)
@@ -1571,31 +1527,17 @@ namespace simdOps {
 		}
 
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> postProcess(
+        static inline functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static T startingValue(T *input) {
+        static inline T startingValue(T *input) {
 			return -MAX_FLOAT;
 		}
-#ifdef __INTEL_COMPILER
-        inline
-#else
-		op_def
-#endif
-        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1605,31 +1547,16 @@ namespace simdOps {
 	template<typename T>
 	class IndexAbsoluteMin {
 	public:
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> op(
+		static inline functions::indexreduce::IndexValue<T> op(
 				functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static T startingValue(T *input) {
+		static inline T startingValue(T *input) {
 			return MAX_FLOAT;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> update(
+		static inline functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 		functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<T>(opOutput.value);
@@ -1647,12 +1574,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> merge(
+		static inline functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 		functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (nd4j::math::nd4j_abs<T>(f1.value) < nd4j::math::nd4j_abs<T>(f2.value))
@@ -1660,23 +1582,13 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> postProcess(
+		static inline functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-#ifdef __INTEL_COMPILER
-		inline
-#else
-		op_def
-#endif
-		static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+		static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 		functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1686,31 +1598,18 @@ namespace simdOps {
 	template<typename T>
 	class IndexMin {
 	public:
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> op(
+
+        static inline functions::indexreduce::IndexValue<T> op(
 				functions::indexreduce::IndexValue<T> val, T *extraParams) {
 			return val;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static T startingValue(T *input) {
+
+        static inline T startingValue(T *input) {
 			return MAX_FLOAT;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> update(
+        static inline functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 			if (opOutput.value < old.value)
@@ -1726,12 +1625,8 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> merge(
+
+        static inline functions::indexreduce::IndexValue<T> merge(
 				functions::indexreduce::IndexValue<T> f1,
 				functions::indexreduce::IndexValue<T> f2, T *extraParams) {
 			if (f1.value < f2.value)
@@ -1739,23 +1634,13 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> postProcess(
+        static inline functions::indexreduce::IndexValue<T> postProcess(
 				functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
 				T *dx, int incx, T *extraParams, T *result) {
 			return reduction;
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
@@ -1764,12 +1649,7 @@ namespace simdOps {
 	template<typename T>
 	class SummaryStatsVariance {
 	public:
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+        static inline T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
 				if (ret < (T) 0.0)
@@ -1779,12 +1659,7 @@ namespace simdOps {
 			return val.variance();
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+        static inline functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
 			return d1;
 		}
 	};
@@ -1792,12 +1667,7 @@ namespace simdOps {
 	template<typename T>
 	class SummaryStatsStandardDeviation {
 	public:
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
+        static inline T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
 				if (ret < (T) 0.0)
@@ -1808,12 +1678,7 @@ namespace simdOps {
 			return  nd4j::math::nd4j_sqrt(val.variance());
 		}
 
-#ifdef __INTEL_COMPILER
-        inline
-#else
-        op_def
-#endif
-        static functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
+        static inline functions::summarystats::SummaryStatsData<T> op(functions::summarystats::SummaryStatsData<T> d1,T *extraParams) {
 			return d1;
 		}
 	};
