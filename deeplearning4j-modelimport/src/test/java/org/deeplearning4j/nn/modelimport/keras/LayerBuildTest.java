@@ -13,7 +13,9 @@ import static org.deeplearning4j.nn.modelimport.keras.LayerConfiguration.*;
 import static org.junit.Assert.*;
 
 /**
- * Created by davekale on 10/28/16.
+ * Unit tests for end-to-end Keras layer configuration import.
+ *
+ * @author davekale
  */
 public class LayerBuildTest {
     String activation = "identity";

@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -35,6 +34,7 @@ import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importS
 
 /**
  * Routines for importing saved Keras models.
+ *
  * @author davekale
  */
 public class Model {
@@ -369,7 +369,8 @@ public class Model {
                         paramName = m.replaceFirst("");
                     else
                         paramName = kerasParamName;
-                }
+                } else
+                    paramName = kerasParamName;
                 INDArray W = weights.get(layerName).get(kerasParamName);
                 if (layer instanceof ConvolutionLayer && paramName.equals("W")) {
                     /* Theano and TensorFlow backends store convolutional weights
