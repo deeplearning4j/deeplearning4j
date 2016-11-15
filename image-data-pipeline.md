@@ -9,53 +9,66 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 
 *DataVec* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [Datavec Javadoc is here](http://deeplearning4j.org/datavecdoc/).)
 
-This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people.
+This tutorial covers some key topics you may face when processing images. It covers Label Generation, Vectorization, and Configuring your Neural Net for ingesting images. 
 
-***Note*** this code example is old and uses Canova instead of the replacement DataVec. If you wish to use this code as a template to write an example using our current implementation you are welcome to, we will not however assist in using out of date libraries. 
 
 ## Introductory Video
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
 
+## Full Pipeline Video Series
+
+A series of videos is available. The series involves a screencast of writing code to process a directory of images. Generate labels based on the path. Build a Neural Network to train on the images. Additional Videos in teh series include saving the Trained Network, loading the Trained Network, and testing against unseen images gathered from the internet. 
+
+The series starts here
+
+<iframe width="420" height="315" src="https://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
+
 ## Loading Labels
 
-Download the LFW dataset and place it in the right file path (i.e. location in your computer's directories). Use the following code to feed the path into a variable called labelPath. Now you're ready to read and load the data, and create an array to hold the images' labels.
+Our examples repo has an example of using ParentPathLabelGenerator. The class is ImagePipelineExample.java 
 
-        // Set path to the labeled images
-        String labeledPath = System.getProperty("user.home")+"/lfw";
-        
-        //create array of strings called labels
-         List<String> labels = new ArrayList<>(); 
-        
-        //traverse dataset to get each label
-        for(File f : new File(labeledPath).list Files()) { 
-            labels.add(f.getName());
-        }
+        File parentDir = new File(System.getProperty("user.dir"), "dl4j-examples/src/main/resources/DataExamples/ImagePipeline/");
+        //Files in directories under the parent dir that have "allowed extensions" plit needs a random number generator for reproducibility when splitting the files into train and test
+        FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
+
+        //You do not have to manually specify labels. This class (instantiated as below) will
+        //parse the parent dir and use the name of the subdirectories as label/class names
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 
 ## <a name="record">Reading Records, Iterating Over Data</a>
 
 The following code helps transform raw images into a format that will work well with DL4J and ND4J:
 
         // Instantiating RecordReader. Specify height and width of images.
-        RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
+        ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
+        
+        // channels refer to the color depth of the image, 1 for greyscale, 3 for RGB
 
         // Point to data path. 
-        recordReader.initialize(new FileSplit(new File(labeledPath)));
+        recordReader.initialize(new FileSplit(new File(parentDir)));
 
-The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
+The RecordReader is a class in Datavec that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
 
-The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/master/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
+Read the DataVec [JavaDoc](http://deeplearning4j.org/datavecdoc/org/datavec/image/recordreader/ImageRecordReader.html) for more information. 
 
-Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
+The [ImageRecordReader](https://github.com/deeplearning4j/DataVec/blob/master/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. A MultiLayerNetwork Configuration to ingest 28*28 images would have the `.nIn(28 * 28)`
 
-![Alt text](./img/recordreader_extensions.png)
+If a LabelGenerator is used the the call to ImageRecordReader includes the labelGenerator as a parameter.
+`ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator)`
+
+<!-- ![Alt text](./img/recordreader_extensions.png) 
+Rebuild this image from a screenshot of dl4j 
+-->
 
 The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
 
-        // Canova to DL4J
-        DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
+        // DataVec to DL4J
+        DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader,batchSize,1,outputNum);
+        // Parameters are, the DataVec recordReader, the batchsize, the offset of the label index, and the total number
+        // of label classes
 
-The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
+The DataSetIterator iterates through input datasets, fetching one or more (batchSize) new examples with each iteration, and loading those examples into a DataSet(INDArray) object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the configuration of the labels.
 
 `RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
 
