@@ -26,7 +26,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -513,6 +515,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
 
+        protected ConvolutionMode convolutionMode = ConvolutionMode.Strict;
+
         /** Process input as minibatch vs full dataset.
          * Default set to true. */
         public Builder miniBatch(boolean miniBatch) {
@@ -869,6 +873,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder convolutionMode(ConvolutionMode convolutionMode){
+            this.convolutionMode = convolutionMode;
+            return this;
+        }
+
         // VALIDATION SECTION //
         private void updaterValidation(String layerName){
             if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
@@ -1057,7 +1066,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))
                     layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-
+//                if(layer instanceof Convolution)
+                if(layer instanceof ConvolutionLayer){
+                    ConvolutionLayer cl = (ConvolutionLayer)layer;
+                    if(cl.getConvolutionMode() == null){
+                        cl.setConvolutionMode(convolutionMode);
+                    }
+                }
+                if(layer instanceof SubsamplingLayer){
+                    SubsamplingLayer sl = (SubsamplingLayer)layer;
+                    if(sl.getConvolutionMode() == null){
+                        sl.setConvolutionMode(convolutionMode);
+                    }
+                }
             }
             generalValidation(layerName);
             return conf;
