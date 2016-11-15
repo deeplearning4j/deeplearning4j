@@ -48,8 +48,7 @@
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <artifactId>slf4j-api</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
         </dependency>
 
         <dependency>
@@ -126,15 +125,13 @@
 
         <dependency>
             <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <artifactId>junit</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <artifactId>logback-classic</artifactId> <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
     </dependencies>
