@@ -20,7 +20,6 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
@@ -57,7 +56,7 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
-public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
+public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
     public static final String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
     public static final LineErrorHandling DEFAULT_ERROR_HANDLING = LineErrorHandling.FailOnInvalid;

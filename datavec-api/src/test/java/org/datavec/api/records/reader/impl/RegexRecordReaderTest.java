@@ -20,7 +20,6 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -144,7 +143,7 @@ public class RegexRecordReaderTest {
 
         InputSplit is = new NumberedFileInputSplit(path,0,1);
 
-        SequenceRecordReaderMeta rr = new RegexSequenceRecordReader(regex,1);
+        SequenceRecordReader rr = new RegexSequenceRecordReader(regex,1);
         rr.initialize(is);
 
         List<List<List<Writable>>> out = new ArrayList<>();

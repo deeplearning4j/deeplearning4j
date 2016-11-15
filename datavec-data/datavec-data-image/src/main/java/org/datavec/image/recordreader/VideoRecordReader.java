@@ -19,6 +19,7 @@ package org.datavec.image.recordreader;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
@@ -320,12 +321,12 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
 
     @Override
     public Record nextRecord() {
-        return new org.datavec.api.records.impl.Record(next(), null);
+        throw new UnsupportedOperationException("Use nextSequence() for sequence readers");
     }
 
     @Override
     public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
+        throw new UnsupportedOperationException("Use loadSequenceFromMeta() for sequence readers");
     }
 
     @Override
@@ -336,6 +337,21 @@ public class VideoRecordReader extends BaseRecordReader implements SequenceRecor
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
         throw new UnsupportedOperationException("Loading video data via VideoRecordReader + DataInputStream not supported.");
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), null);
+    }
+
+    @Override
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
+    }
+
+    @Override
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        throw new UnsupportedOperationException("Loading from metadata not yet implemented");
     }
 
 }

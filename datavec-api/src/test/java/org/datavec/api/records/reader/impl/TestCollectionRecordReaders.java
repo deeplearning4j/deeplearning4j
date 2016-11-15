@@ -18,7 +18,6 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.records.reader.SequenceRecordReader;
@@ -53,7 +52,7 @@ public class TestCollectionRecordReaders {
         sequence2.add(Arrays.asList((Writable)new IntWritable(6), new IntWritable(7)));
         listOfSequences.add(sequence2);
 
-        SequenceRecordReaderMeta seqRR = new CollectionSequenceRecordReader(listOfSequences);
+        SequenceRecordReader seqRR = new CollectionSequenceRecordReader(listOfSequences);
         assertTrue(seqRR.hasNext());
 
         assertEquals(sequence1, seqRR.sequenceRecord());

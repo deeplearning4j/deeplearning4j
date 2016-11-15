@@ -22,7 +22,6 @@ import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
@@ -63,7 +62,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CodecRecordReader extends FileRecordReader implements SequenceRecordReader, SequenceRecordReaderMeta {
+public class CodecRecordReader extends FileRecordReader implements SequenceRecordReader {
     private int startFrame = 0;
     private int numFrames = -1;
     private int totalFrames = -1;
