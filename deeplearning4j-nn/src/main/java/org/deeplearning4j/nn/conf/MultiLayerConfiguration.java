@@ -374,9 +374,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             if(pretrain && !backprop)
                 log.warn("Warning: pretrain is set to true and if finetune is needed set backprop to true.");
             else if (!pretrain)
-                log.warn("Warning: new network default sets pretrain to false and requires moving configuration above layer defintion.");
+                log.warn("Warning: new network default sets pretrain to false.");
             if(backprop)
-                log.warn("Warning: new network default sets backprop to true and requires moving configuration above layer defintion.");
+                log.warn("Warning: new network default sets backprop to true.");
 
         }
 
