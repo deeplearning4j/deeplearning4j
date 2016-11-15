@@ -66,7 +66,9 @@ namespace randomOps {
 
                         if (prob <= cumProb || f == yLength - 1) {
                             z[e * zEWS] = x[f * xEWS];
+                            f += yLength;
                         }
+                        __syncthreads();
                     }
                     __syncthreads();
                 }
@@ -129,7 +131,9 @@ namespace randomOps {
                             Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
 
                             z[zOffset2] = x[xOffset2];
+                            f += yLength;
                         }
+                        __syncthreads();
                     }
                     __syncthreads();
                 }
@@ -172,8 +176,10 @@ namespace randomOps {
                         T relProb = y[f * yEWS];
                         cumProb += relProb;
 
+                      //  printf("e: %i; prob: %f; relProb: %f; cumProb: %f\n", e, prob, relProb, cumProb);
                         if (prob <= cumProb || f == yLength - 1) {
                             z[e * zEWS] = x[f * xEWS];
+                            f += yLength;
                         }
                     }
                 }
@@ -218,6 +224,7 @@ namespace randomOps {
                             Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
 
                             z[zOffset2] = x[xOffset2];
+                            f += yLength;
                         }
                     }
                 }
