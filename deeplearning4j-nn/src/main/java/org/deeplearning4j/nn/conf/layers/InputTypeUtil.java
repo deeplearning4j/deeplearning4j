@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.nd4j.linalg.convolution.Convolution;
 
 import java.util.Arrays;
 
@@ -20,7 +22,14 @@ public class InputTypeUtil {
 
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                   int outputDepth, int layerIdx, String layerName, Class<?> layerClass) {
+                                                   ConvolutionMode convolutionMode, int outputDepth, int layerIdx,
+                                                   String layerName, Class<?> layerClass) {
+
+        if(convolutionMode == null){
+            String name = layerName == null ? "(not named)" : layerName;
+            throw new DL4JInvalidConfigException("Invalid configuration: convolution mode is null for layer (idx=" + layerIdx
+                    + ", name=" + name + ", type=" + layerClass.getName() +")");
+        }
 
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
@@ -36,7 +45,7 @@ public class InputTypeUtil {
             throw new DL4JInvalidConfigException(
                     getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0 ) +
                     " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
-                    + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
+                    + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
         if( kH <= 0 || kH > inHeight + 2*padH){
@@ -44,7 +53,7 @@ public class InputTypeUtil {
                     getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true )
                     + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                     + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n"
-                    + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
+                    + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
         if( kW <= 0 || kW > inWidth + 2*padW){
@@ -52,32 +61,41 @@ public class InputTypeUtil {
                     getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false )
                             + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                             + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n"
-                            + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
+                            + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
-        if ((inHeight - kH + 2 * padH) % sH != 0) {
-            double d = (inHeight - kH + 2 * padH) / ((double)sH) + 1.0;
-            String str = String.format("%.2f",d);
-            throw new DL4JInvalidConfigException(
-                    getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true )
-                    + "\nCombination of kernel size, stride and padding are not valid for given input height.\n"
-                    + "Require: (input - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
-                            + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
-                    + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/\n"
-                    + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
-        }
+        //Strict mode: require exactly the right size...
+        if(convolutionMode == ConvolutionMode.Strict) {
+            if ((inHeight - kH + 2 * padH) % sH != 0) {
+                double d = (inHeight - kH + 2 * padH) / ((double) sH) + 1.0;
+                String str = String.format("%.2f", d);
+                int truncated = (int)d;
+                throw new DL4JInvalidConfigException(
+                        getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+                                + "\nCombination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
+                                + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
+                                + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
+                                + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
+                                + "To truncate/crop the input, such that output height = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
+                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
+            }
 
 
-        if ((inWidth - kW + 2 * padW) % sW != 0) {
-            double d = (inWidth - kW + 2 * padW) / ((double)sW) + 1.0;
-            String str = String.format("%.2f",d);
-            throw new DL4JInvalidConfigException(
-                    getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false )
-                            + "\nCombination of kernel size, stride and padding are not valid for given input width.\n"
-                            + "Require: (input - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
-                            + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
-                            + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/\n"
-                            + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth));
+            if ((inWidth - kW + 2 * padW) % sW != 0) {
+                double d = (inWidth - kW + 2 * padW) / ((double) sW) + 1.0;
+                String str = String.format("%.2f", d);
+                int truncated = (int)d;
+                throw new DL4JInvalidConfigException(
+                        getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+                                + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
+                                + "ConvolutionMode.Strict requires: output width = (input width - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
+                                + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
+                                + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
+                                + "To truncate/crop the input, such that output width = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
+                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
+            }
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
@@ -93,9 +111,11 @@ public class InputTypeUtil {
                 + ") for " + (isHeight ? "height" : "width") + " dimension: ";
     }
 
-    private static String getConfigErrorCommonLastLine(InputType inputType, int[] kernelSize, int[] stride, int[] padding, int outputDepth){
+    private static String getConfigErrorCommonLastLine(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                       int outputDepth, ConvolutionMode convolutionMode){
         return "Input type = " + inputType + ", kernel = " + Arrays.toString(kernelSize) + ", strides = " + Arrays.toString(stride)
-                + ", padding = " + Arrays.toString(padding) + ", layer size (output depth) = " + outputDepth;
+                + ", padding = " + Arrays.toString(padding) + ", layer size (output depth) = " + outputDepth
+                + ", convolution mode = " + convolutionMode;
     }
 
     /**
