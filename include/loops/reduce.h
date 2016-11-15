@@ -383,7 +383,6 @@ template<typename OpType>
 					return execScalar<OpType>(x, xElementWiseStride, length, extraParams);
 				}
 				else {
-					printf("Strange loop\n");
 					int shapeIter[MAX_RANK];
 					int coord[MAX_RANK];
 					int dim;
