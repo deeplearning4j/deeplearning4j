@@ -207,7 +207,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             if (!normalized) {
                 synchronized (this) {
                     if (!normalized) {
-                        syn0.diviColumnVector(syn0.norm1(1));
+                        syn0.diviColumnVector(syn0.norm2(1));
                         normalized = true;
                     }
                 }

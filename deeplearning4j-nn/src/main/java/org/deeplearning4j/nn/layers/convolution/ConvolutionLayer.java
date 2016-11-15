@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -47,11 +48,13 @@ import java.util.Arrays;
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
     protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
-    ConvolutionHelper helper = null;
+    protected ConvolutionHelper helper = null;
+    protected ConvolutionMode convolutionMode;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
+        convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer)conf().getLayer()).getConvolutionMode();
     }
 
     public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -107,7 +110,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
         int outH = outSize[0];
         int outW = outSize[1];
 
@@ -197,21 +200,24 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Input validation: expect rank 4 matrix
         if(input.rank() != 4){
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to ConvolutionLayer with shape "
-                    + Arrays.toString(input.shape()) + ". "
+            String layerName = conf.getLayer().getLayerName();
+            if(layerName == null) layerName  = "(not named)";
+            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to ConvolutionLayer (layer name = "
+                    + layerName + ", layer index = " + index + ") with shape " + Arrays.toString(input.shape()) + ". "
                     + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                     + (input.rank() == 2 ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)" : "")
             );
         }
 
         int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
 
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         if(input.size(1) != inDepth){
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer: input array depth does not match CNN layer configuration"
+            String layerName = conf.getLayer().getLayerName();
+            if(layerName == null) layerName  = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName + ", layer index = " + index
+                    + "): input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]=" + Arrays.toString(input.shape()) + "; expected"
                     + " input depth = " + inDepth + ")");
         }
@@ -222,7 +228,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] strides = layerConf().getStride();
         int[] pad = layerConf().getPadding();
 
-        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad);    //Also performs validation
+        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
         int outH = outSize[0];
         int outW = outSize[1];
 

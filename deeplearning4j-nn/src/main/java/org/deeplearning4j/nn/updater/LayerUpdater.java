@@ -113,8 +113,11 @@ public class LayerUpdater implements Updater {
         NeuralNetConfiguration conf = layer.conf();
         if (conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
             conf.getLayer().setMomentum(conf.getLayer().getMomentumSchedule().get(iteration));
-            if(updaterForVariable.get(variable) != null)
+            if(updaterForVariable.get(variable) != null) {
                 updaterForVariable.get(variable).update(conf.getLearningRateByParam(variable), conf.getLayer().getMomentumSchedule().get(iteration));
+            }
+        } else if(updaterForVariable.get(variable) != null) {
+            updaterForVariable.get(variable).update(conf.getLearningRateByParam(variable), conf.getLayer().getMomentum());
         }
     }
 
@@ -150,10 +153,11 @@ public class LayerUpdater implements Updater {
                     conf.setLearningRateByParam(variable, conf.getLayer().getLearningRateSchedule().get(iteration));
                 break;
         }
-        if(layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
+        if(layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
             applyMomentumDecayPolicy(layer, iteration, variable);
-        else if(updaterForVariable.get(variable) != null)
+        } else if(updaterForVariable.get(variable) != null) {
             updaterForVariable.get(variable).update(conf.getLearningRateByParam(variable));
+        }
     }
 
     /**
