@@ -57,9 +57,7 @@ public class NormalizerSimpleTest  extends BaseNd4jTest {
     @Test
     public void testPreProcessors() {
         System.out.println("Running iterator vs non-iterator std scaler..");
-        double val = testItervsDataset(stdScaler);
-        System.out.println("Val: " + val);
-        assertTrue(val < thresholdPerc);
+        assertTrue(testItervsDataset(stdScaler) < thresholdPerc);
         System.out.println("Running iterator vs non-iterator min max scaler..");
         assertTrue(testItervsDataset(minMaxScaler) < thresholdPerc);
     }
