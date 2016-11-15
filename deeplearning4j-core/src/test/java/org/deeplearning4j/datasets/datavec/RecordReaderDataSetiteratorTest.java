@@ -22,9 +22,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.SequenceRecordReaderMeta;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
@@ -712,11 +710,11 @@ public class RecordReaderDataSetiteratorTest {
         ClassPathResource resource = new ClassPathResource("csvsequenceSingle_0.txt");
         String path = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
 
-        SequenceRecordReaderMeta reader = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader reader = new CSVSequenceRecordReader(1, ",");
         reader.initialize(new NumberedFileInputSplit(path, 0, 2));
         SequenceRecordReaderDataSetIterator iteratorClassification = new SequenceRecordReaderDataSetIterator(reader, 1, 3, 0, false);
 
-        SequenceRecordReaderMeta reader2 = new CSVSequenceRecordReader(1, ",");
+        SequenceRecordReader reader2 = new CSVSequenceRecordReader(1, ",");
         reader2.initialize(new NumberedFileInputSplit(path, 0, 2));
         SequenceRecordReaderDataSetIterator iteratorRegression = new SequenceRecordReaderDataSetIterator(reader2, 1, 3, 0, true);
 
@@ -876,7 +874,7 @@ public class RecordReaderDataSetiteratorTest {
             List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);
             int i = 0;
             for(RecordMetaData m : meta){
-                Record r = ((RecordReaderMeta)csv).loadFromMetaData(m);
+                Record r = csv.loadFromMetaData(m);
                 INDArray row = ds.getFeatureMatrix().getRow(i);
                 System.out.println(m.getLocation() + "\t" + r.getRecord() + "\t" + row);
 
