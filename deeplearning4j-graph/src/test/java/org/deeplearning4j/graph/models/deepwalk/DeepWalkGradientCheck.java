@@ -8,6 +8,7 @@ import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -24,8 +25,8 @@ public class DeepWalkGradientCheck {
 
     @Before
     public void before() {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
     }
 
     @Test

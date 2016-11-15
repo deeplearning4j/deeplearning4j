@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -168,7 +169,8 @@ public class OutputLayerTest {
 
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+		DataBuffer.Type initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         INDArray data = Nd4j.create(new double[][]
                 {{1,1,1,0,0,0},
                         {1,0,1,0,0,0},
@@ -208,7 +210,7 @@ public class OutputLayerTest {
         o.setListeners(new ScoreIterationListener(1));
         o.fit(dataset);
 
-
+		DataTypeUtil.setDTypeForContext(initialType);
     }
 
 

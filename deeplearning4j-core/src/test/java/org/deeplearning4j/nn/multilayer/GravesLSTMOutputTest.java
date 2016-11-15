@@ -18,6 +18,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -42,8 +43,8 @@ public class GravesLSTMOutputTest {
 
     @BeforeClass
     public static void setUp() {
-        type = Nd4j.dtype;
-        Nd4j.dtype = Type.FLOAT;
+        type = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(Type.FLOAT);
         log = LoggerFactory.getLogger(GravesLSTMOutputTest.class);
         data = getData();
     }
@@ -52,7 +53,7 @@ public class GravesLSTMOutputTest {
     public static void tearDown() {
         data = null;
         log = null;
-        Nd4j.dtype = type;
+        DataTypeUtil.setDTypeForContext(type);
     }
 
     @Test
