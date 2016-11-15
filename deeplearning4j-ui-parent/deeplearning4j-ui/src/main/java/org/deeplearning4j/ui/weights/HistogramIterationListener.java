@@ -17,12 +17,13 @@ import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 
 /**
  *
- * A histogram iteration listener that
- * updates the weights of the model
- * with a web based ui.
+ * A histogram iteration listener that updates the weights of the model with a web based ui.
+ *
+ * @deprecated Use {@link StatsListener} and {@link UIServer#attach(StatsStorage)}. See examples repo for how.
  *
  * @author Adam Gibson
  */
+@Deprecated
 @Slf4j
 public class HistogramIterationListener extends StatsListener {
     private boolean openBrowser;
@@ -31,7 +32,7 @@ public class HistogramIterationListener extends StatsListener {
     private static final String subPath = "weights";
 
     public HistogramIterationListener(@NonNull UiConnectionInfo connection, int iterations) {
-        this(new MapDBStatsStorage(), iterations, true);
+        this(new InMemoryStatsStorage(), iterations, true);
 
     }
 
@@ -77,32 +78,8 @@ public class HistogramIterationListener extends StatsListener {
 
 
     private static StatsUpdateConfiguration getUpdateConfiguration(int iterations){
-        return new DefaultStatsUpdateConfiguration.Builder()
-                .reportingFrequency(iterations)
-                .collectPerformanceStats(false)
-                .collectMemoryStats(false)
-                .collectGarbageCollectionStats(false)
-                .collectLearningRates(false)
-
-                .collectHistogramsParameters(true)
-                .collectHistogramsGradients(false)
-                .collectHistogramsUpdates(true)
-                .collectHistogramsActivations(false)
-
-                .collectMeanParameters(false)
-                .collectMeanGradients(false)
-                .collectMeanUpdates(false)
-                .collectMeanActivations(false)
-
-                .collectStdevParameters(true)
-                .collectStdevGradients(false)
-                .collectStdevUpdates(false)
-                .collectStdevActivations(false)
-
-                .collectMeanMagnitudesParameters(true)
-                .collectMeanMagnitudesGradients(false)
-                .collectMeanMagnitudesUpdates(true)
-                .collectMeanMagnitudesActivations(false)
-                .build();
+        //Note: we don't *need* all of these stats just for histogram listener - but other info
+        // is still available at /train
+        return new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(iterations).build();
     }
 }
