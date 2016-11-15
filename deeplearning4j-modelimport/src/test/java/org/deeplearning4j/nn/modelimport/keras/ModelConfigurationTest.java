@@ -6,7 +6,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importSequentialModelConfigFromFile;
 
 /**
- * Created by davekale on 11/11/16.
+ * Unit tests for end-to-end Keras model configuration import.
+ *
+ * @author davekale
  */
 public class ModelConfigurationTest {
 

@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -24,6 +23,7 @@ import java.util.Map;
 
 /**
  * Routines for importing saved Keras model configurations.
+ *
  * @author davekale
  */
 public class ModelConfiguration {
