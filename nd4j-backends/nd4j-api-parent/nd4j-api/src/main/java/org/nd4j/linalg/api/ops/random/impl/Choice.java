@@ -24,6 +24,7 @@ public class Choice extends BaseRandomOp {
             throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
 
         init(source, probabilities, z, z.length());
+        this.extraArgs = new Object[]{0.0};
     }
 
     @Override

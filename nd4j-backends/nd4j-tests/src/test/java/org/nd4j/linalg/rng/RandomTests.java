@@ -615,6 +615,29 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testChoice1() throws Exception {
+        INDArray source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        INDArray probs = Nd4j.create(new double[]{0.0, 0.0, 1.0, 0.0, 0.0});
+        INDArray exp = Nd4j.create(5).assign(3.0);
+
+        INDArray sampled = Nd4j.choice(source, probs, 5);
+        assertEquals(exp, sampled);
+    }
+
+    @Test
+    public void testChoice2() throws Exception {
+        INDArray source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        INDArray probs = Nd4j.create(new double[]{0.0, 0.0, 0.0, 0.0, 0.0});
+        INDArray exp = Nd4j.create(5).assign(5.0);
+
+        INDArray sampled = Nd4j.choice(source, probs, 5);
+        assertEquals(exp, sampled);
+    }
+
+
+
     @Ignore
     @Test
     public void testDeallocation1() throws Exception {

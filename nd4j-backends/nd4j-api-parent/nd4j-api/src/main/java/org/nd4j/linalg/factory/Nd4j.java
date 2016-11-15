@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -48,9 +49,10 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
-import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
@@ -61,6 +63,7 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
@@ -78,6 +81,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
+import java.util.Random;
 import java.util.logging.Logger;
 
 /**
@@ -2572,6 +2576,61 @@ public class Nd4j {
      */
     public static INDArray diag(INDArray x) {
         return diag(x, 0);
+    }
+
+
+    /**
+     * This method samples value from Source array to Target, with probabilites provided in Probs argument
+     *
+     * @param source
+     * @param probs
+     * @param target
+     * @return
+     */
+    public static INDArray choice(@NonNull INDArray source, @NonNull INDArray probs, @NonNull INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        if (source.length() != probs.length())
+            throw new ND4JIllegalStateException("Nd4j.choice() requires lengths of Source and Probs to be equal");
+
+        return Nd4j.getExecutioner().exec(new Choice(source, probs, target), rng);
+    }
+
+    /**
+     * This method samples value from Source array to Target, with probabilites provided in Probs argument
+     *
+     * @param source
+     * @param probs
+     * @param target
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, INDArray target) {
+        return choice(source, probs, target, Nd4j.getRandom());
+    }
+
+    /**
+     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     *
+     * @param source
+     * @param probs
+     * @param numSamples
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, int numSamples, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        if (numSamples < 1)
+            throw new ND4JIllegalStateException("Nd4j.choice() numSamples must be positive value");
+
+        return choice(source, probs, createUninitialized(numSamples), rng);
+    }
+
+    /**
+     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     *
+     * @param source
+     * @param probs
+     * @param numSamples
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, int numSamples) {
+        return choice(source, probs, numSamples, Nd4j.getRandom());
     }
 
     public static INDArray appendBias(INDArray... vectors) {
