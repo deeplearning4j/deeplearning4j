@@ -8,7 +8,7 @@
 #ifndef ARRAY_H_
 #define ARRAY_H_
 
-#include <shape.h>
+#include "helpers/shape.h"
 #include <helper_string.h>
 #include <helper_cuda.h>
 #include <templatemath.h>

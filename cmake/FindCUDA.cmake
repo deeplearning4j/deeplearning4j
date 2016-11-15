@@ -870,6 +870,7 @@ if (CUDA_BUILD_EMULATION)
 else()
   set(CUDA_CUFFT_LIBRARIES ${CUDA_cufft_LIBRARY})
   set(CUDA_CUBLAS_LIBRARIES ${CUDA_cublas_LIBRARY})
+  set(CUDA_CURAND_LIBRARIES ${CUDA_curand_LIBRARY})
 endif()
 
 ########################

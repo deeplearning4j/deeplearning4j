@@ -5,15 +5,16 @@
 #ifndef NATIVEOPERATIONS_NATIVEOPEXCUTIONER_H
 #define NATIVEOPERATIONS_NATIVEOPEXCUTIONER_H
 
-#include <broadcasting.h>
-#include <indexreduce.h>
-#include <pairwise_transform.h>
-#include <reduce.h>
-#include <reduce3.h>
-#include <summarystatsreduce.h>
-#include <transform.h>
-#include <scalar.h>
-#include <aggregates.h>
+#include <loops/broadcasting.h>
+#include <loops/indexreduce.h>
+#include <loops/pairwise_transform.h>
+#include <loops/reduce.h>
+#include <loops/reduce3.h>
+#include <loops/summarystatsreduce.h>
+#include <loops/transform.h>
+#include <loops/scalar.h>
+#include <loops/aggregates.h>
+#include <loops/random.h>
 #include <pointercast.h>
 /**
  * Native op executioner:
@@ -538,6 +539,19 @@ public:
 
 	static void execAggregate(int opNum, T **arguments, int numArguments,  int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
 		functions::aggregate::AggregatedFunction<T>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+	}
+
+
+    static void execRandom(int opNum, Nd4jPointer state, T *z, int *zShapeBuffer, T *extraArguments) {
+        functions::random::RandomFunction<T>::execTransform(opNum, state, z, zShapeBuffer, extraArguments);
+    }
+
+	static void execRandom(int opNum, Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+		functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+	}
+
+	static void execRandom(int opNum, Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+		functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
 	}
 };
 

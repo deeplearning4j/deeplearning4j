@@ -6,7 +6,7 @@
 #include <dll.h>
 #include <cblas.h>
 #include <pointercast.h>
-#include <gemm.h>
+#include <ops/gemm.h>
 
 #ifdef _WIN32
 #include <Windows.h>

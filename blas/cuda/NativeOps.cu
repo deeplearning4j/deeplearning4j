@@ -7,17 +7,18 @@ int element_threshold = 32;
 #include <cuda_launch_config.h>
 
 #include <buffer.h>
-#include <shape.h>
+#include <helpers/shape.h>
 
 #include <cublas_v2.h>
-#include <reduce3.h>
-#include <reduce.h>
-#include <indexreduce.h>
-#include <pairwise_transform.h>
-#include <transform.h>
-#include <scalar.h>
-#include <broadcasting.h>
-#include <summarystatsreduce.h>
+#include <loops/reduce3.h>
+#include <loops/reduce.h>
+#include <loops/indexreduce.h>
+#include <loops/pairwise_transform.h>
+#include <loops/transform.h>
+#include <loops/scalar.h>
+#include <loops/broadcasting.h>
+#include <loops/summarystatsreduce.h>
+#include <loops/random.h>
 #include <thread>
 #include <map>
 #include <cuda.h>
@@ -27,13 +28,13 @@ int element_threshold = 32;
 #include <pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <type_conversions.h>
+#include <loops/type_conversions.h>
 #include <op_boilerplate.h>
-#include <grid.h>
-#include <aggregates.h>
+#include <loops/grid.h>
+#include <loops/aggregates.h>
 //#include <sys/time.h>
 
-
+#include <curand.h>
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -6086,4 +6087,181 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 256, 2048);
+
+    DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
+
+    unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    // we don't synchronize at random initialization, it's safe to go unsync here
+//    cudaStreamSynchronize(*stream);
+
+    // that's device pointer
+    unsigned long long *ptrBuf = reinterpret_cast<unsigned long long *>(ptrToBuffer);
+    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrHost);
+
+    nd4j::random::Xoroshiro128 generator(buffer);
+    generator.refreshBuffer();
+
+    cudaMemcpyAsync(ptrBuf, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
+    buffer->setBuffer((uint64_t *) ptrBuf);
+
+    /*
+    curandStatus_t err = curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_QUASI_SOBOL64);
+
+    if (err != CURAND_STATUS_SUCCESS)
+        printf("CURAND_ERROR_CODE: %i\n", err);
+
+    err = curandGenerateLongLong(buffer->getGenerator(), ptrBuf, bufferSize);
+
+    if (err != CURAND_STATUS_SUCCESS)
+        printf("CURAND_ERROR_CODE: %i\n", err);
+*/
+
+    return buffer;
+}
+
+
+void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrBuffer);
+
+    // FIXME: it's bad thing, but we can't know in advance, which stream(s) where using this generator in practice
+    cudaDeviceSynchronize();
+    //curandDestroyGenerator(buffer->getGenerator());
+
+    delete buffer;
+}
+
+void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+
+    unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    cudaStreamSynchronize(*stream);
+
+    uint64_t *ptrDev = buffer->getBuffer();
+
+    buffer->setSeed(seed);
+    buffer->setOffset(0);
+    buffer->setBuffer((uint64_t *)ptrHost);
+
+    nd4j::random::Xoroshiro128 generator(buffer);
+    generator.refreshBuffer();
+
+    cudaMemcpyAsync(ptrDev, ptrHost, buffer->getSize() * 8, cudaMemcpyHostToDevice, *stream);
+    buffer->setBuffer(ptrDev);
+
+    //curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
+
+    //curandGenerateLongLong(buffer->getGenerator(), (unsigned long long *) buffer->getBuffer(), buffer->getSize());
+}
+
+void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
+    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    cudaStreamSynchronize(*stream);
+
+    buffer->reSeed(seed);
 }
