@@ -120,7 +120,7 @@ public class TestEarlyStoppingCompGraph {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
                 .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
-                        new MaxScoreIterationTerminationCondition(7.5))  //Initial score is ~2.5
+                        new MaxScoreIterationTerminationCondition(10))  //Initial score is ~2.5
                 .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true))
                 .modelSaver(saver)
                 .build();
@@ -130,7 +130,7 @@ public class TestEarlyStoppingCompGraph {
 
         assertTrue(result.getTotalEpochs() < 5);
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition, result.getTerminationReason());
-        String expDetails = new MaxScoreIterationTerminationCondition(7.5).toString();
+        String expDetails = new MaxScoreIterationTerminationCondition(10).toString();
         assertEquals(expDetails, result.getTerminationDetails());
 
         assertEquals(0, result.getBestModelEpoch());
