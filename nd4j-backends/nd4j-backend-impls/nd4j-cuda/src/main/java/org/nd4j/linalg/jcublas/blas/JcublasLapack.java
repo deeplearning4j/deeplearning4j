@@ -56,7 +56,7 @@ public class JcublasLapack extends BaseLapack {
             logger.warn("FLOAT getrf called in DOUBLE environment");
 
 	if( A.ordering() =='c' ) {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (A)");
+            logger.warn("GPU requires arrays to be ordering ='f' (A)");
 	}
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -135,7 +135,7 @@ public class JcublasLapack extends BaseLapack {
 	if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("FLOAT getrf called in FLOAT environment");
 	if( A.ordering() =='c' ) {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (A)");
+            logger.warn("GPU requires arrays to be ordering ='f' (A)");
 	}
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -231,13 +231,13 @@ public class JcublasLapack extends BaseLapack {
 
 	// cuda requires column ordering - we'll register a warning in case
 	if( A.ordering() =='c' ) {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (A)");
+            logger.warn("GPU requires arrays to be ordering ='f' (A)");
 	}
 	if( U != null && U.ordering() =='c' ) {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (U)");
+            logger.warn("GPU requires arrays to be ordering ='f' (U)");
 	}
 	if( VT != null && VT.ordering() =='c' ) {
-            logger.warn("GPU requires arrays to be in fortran - ordering ='f' (VT)");
+            logger.warn("GPU requires arrays to be ordering ='f' (VT)");
 	}
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -256,35 +256,40 @@ public class JcublasLapack extends BaseLapack {
            	if (result == 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
-		// transfer the INDArray into GPU memory
-        	CublasPointer xAPointer = new CublasPointer(A, ctx);
-
 		// this output - indicates how much memory we'll need for the real operation
-		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
+		DataBuffer workSizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnSgesvd_bufferSize( 
 			solverDn, 
 			M, N, 
-			(IntPointer)worksize.addressPointer() // we intentionally use host pointer here
+			(IntPointer)workSizeBuffer.addressPointer() // we intentionally use host pointer here
 			) ;
-
+		int workSize = workSizeBuffer.getInt(0) ;
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat ) ;
 		}
 
 		// Now allocate memory for the workspace, the non-converging row buffer and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;		
+		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(workSize) ;		
 		DataBuffer rwork = Nd4j.getDataBufferFactory().createFloat( (M<N?M:N)-1 ) ;
 
+/*
+		allocator.getAllocationPoint(A).tickDeviceWrite();
+		allocator.getAllocationPoint(A).setConstant(true);
+		if( U!=null) allocator.getAllocationPoint(U).tickDeviceWrite();
+		if( VT!=null) allocator.getAllocationPoint(VT).tickDeviceWrite();
+		allocator.getAllocationPoint(S).tickDeviceWrite();
+		allocator.getAllocationPoint(work).tickDeviceWrite();
 		allocator.getAllocationPoint(rwork).tickDeviceWrite();
-
+		allocator.getAllocationPoint(INFO).tickDeviceWrite();
+*/
 		// Do the actual decomp
 		stat = cusolverDnSgesvd(
 			solverDn,
 			jobu,
 			jobvt,
 			M, N, 
-			(FloatPointer)xAPointer.getDevicePointer(), 
+			new CudaPointer(allocator.getPointer(A, ctx)).asFloatPointer(), 
 			M, 
 			new CudaPointer(allocator.getPointer(S, ctx)).asFloatPointer() ,
 			U==null ? null : new CudaPointer(allocator.getPointer(U, ctx)).asFloatPointer() ,
@@ -292,7 +297,7 @@ public class JcublasLapack extends BaseLapack {
 			VT==null ? null : new CudaPointer(allocator.getPointer(VT, ctx)).asFloatPointer() ,
 			N,
 			new CudaPointer(allocator.getPointer(work, ctx)).asFloatPointer(),
-			worksize.getInt(0),
+			workSize,
 			new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),			
 			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
@@ -300,10 +305,11 @@ public class JcublasLapack extends BaseLapack {
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgesvd failed with code: " + stat ) ;
 		}
-		allocator.getAllocationPoint(rwork).tickDeviceWrite();
-		allocator.getAllocationPoint(INFO).tickDeviceWrite();
+		//allocator.getAllocationPoint(S).tickDeviceWrite();
+		//if( U!=null)  allocator.getAllocationPoint(U).tickDeviceWrite();
+		//if( VT!=null) allocator.getAllocationPoint(VT).tickDeviceWrite();
+		//allocator.getAllocationPoint(INFO).tickDeviceWrite();
 	}
-
 	allocator.registerAction(ctx, INFO );
 	allocator.registerAction(ctx, S );
 	if( U != null ) allocator.registerAction(ctx, U );
@@ -346,7 +352,7 @@ public class JcublasLapack extends BaseLapack {
 
 		// transfer the INDArray into GPU memory
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
-
+		xAPointer.setResultPointer(false);
 		// this output - indicates how much memory we'll need for the real operation
 		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
 
@@ -363,8 +369,6 @@ public class JcublasLapack extends BaseLapack {
 		// Now allocate memory for the workspace, the non-converging row buffer and a return code
 		DataBuffer work = Nd4j.getDataBufferFactory().createDouble(worksize.getInt(0)) ;		
 		DataBuffer rwork = Nd4j.getDataBufferFactory().createDouble( (M<N?M:N)-1 ) ;
-
-		allocator.getAllocationPoint(rwork).tickDeviceWrite();
 
 		// Do the actual decomp
 		stat = cusolverDnDgesvd(
@@ -388,11 +392,10 @@ public class JcublasLapack extends BaseLapack {
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnDgesvd failed with code: " + stat ) ;
 		}
-		allocator.getAllocationPoint(rwork).tickDeviceWrite();
-		allocator.getAllocationPoint(INFO).tickDeviceWrite();
 	}
 	allocator.registerAction(ctx, INFO );
 	allocator.registerAction(ctx, S );
+	allocator.registerAction(ctx, A );
 	if( U != null ) allocator.registerAction(ctx, U );
 	if( VT != null ) allocator.registerAction(ctx, VT );
     }

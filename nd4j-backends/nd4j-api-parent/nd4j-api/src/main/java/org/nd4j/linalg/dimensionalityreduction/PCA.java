@@ -52,7 +52,6 @@ public class PCA {
         if (normalize) {
             INDArray mean = X.mean(0);
             X = X.subiRowVector(mean);
-
         }
 
         INDArray C;
@@ -120,9 +119,10 @@ public class PCA {
 	// The prepare SVD results, we'll decomp A to UxSxV'
         INDArray s  = Nd4j.create( m<n?m:n ) ;
         INDArray U  = Nd4j.create( m, m, 'f' ) ;
+        INDArray VT  = Nd4j.create( n, n, 'f' ) ;
 
-        // Note - we don't care about VT 
-        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, U, null );
+        // Note - we don't care about U 
+        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, U, VT );
         
         // Now convert the eigs of X into the eigs of the covariance matrix
         for( int i=0 ; i<s.length() ; i++ ) {
@@ -145,10 +145,10 @@ public class PCA {
                 throw new RuntimeException( "No reduction possible for reqd. variance - use smaller variance" ) ;
         }
         // So now let's rip out the appropriate number of left singular vectors from
-        // the U output
+        // the V output (note we pulls rows since VT is a transpose of V)
         INDArray factor = Nd4j.create(  n, k, 'f' ) ;
         for( int i=0 ; i<k ; i++ ) {
-        	factor.putColumn( i, U.getColumn(i) ) ;
+        	factor.putColumn( i, VT.getRow(i) ) ;
         }
 
         return factor  ;
