@@ -10038,7 +10038,7 @@ pre.line-numbers,pre.line-numbers>code {
   text-align: right;
 }
 
-div.prism-show-language {
+/*div.prism-show-language {
   position: relative;
 }
 
@@ -10063,7 +10063,7 @@ div.prism-show-language>div.prism-show-language-label {
   -webkit-transform: none;
   -o-transform: none;
   transform: none;
-}
+}*/
 
 
 /*! Lity - v1.5.1 - 2015-12-02
@@ -12283,9 +12283,9 @@ pre[class*=language-] {
   color: #ccc;
 }
 
-div.prism-show-language>div.prism-show-language-label,pre[class*=language-][data-language]:before {
+/*div.prism-show-language>div.prism-show-language-label,pre[class*=language-][data-language]:before {
   display: none;
-}
+}*/
 
 .line-highlight {
   background: rgba(255,255,0,.1);
@@ -13099,7 +13099,7 @@ and (orientation : landscape)
     -webkit-background-size: 100% 100% !important;
     background-size: 100% 100% !important;
     background-position: unset !important;
-    background-attachment: unset !important;    
+    background-attachment: unset !important;
   }
 }
 
