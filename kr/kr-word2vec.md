@@ -132,7 +132,7 @@ Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트
 
 ```java
 <properties>
-  <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
+  <nd4j.version>0.4-rc3.9</nd4j.version> /* check Maven Central for latest versions! */
   <dl4j.version>0.4-rc3.9</dl4j.version>
 </properties>
 
