@@ -272,8 +272,9 @@ namespace randomOps {
                 tZ = (T *) shmem;
 
                 zLength = shape::length(zShapeBuffer);
-                zLength = shape::length(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+
 
                 epsilon = (T) 1e-15;
                 two_pi = (T) 2.0 * 3.14159265358979323846;

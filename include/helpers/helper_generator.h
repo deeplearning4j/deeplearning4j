@@ -292,9 +292,10 @@ namespace nd4j {
                         if (newPos > this->getSize()) {
                             generation += newPos / this->size;
                             newPos = newPos % this->size;
-                        } else if (newPos == this->getSize())
+                        } else if (newPos == this->getSize()) {
                             generation++;
                             newPos = 0;
+                        }
 
                         this->setOffset(newPos);
                     }
