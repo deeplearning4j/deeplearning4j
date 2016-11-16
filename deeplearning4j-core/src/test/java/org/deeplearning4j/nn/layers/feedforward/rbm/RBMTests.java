@@ -357,7 +357,7 @@ public class RBMTests {
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1, int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
                 .seed(0xDEADBEEF)
-                .iterations(1000)
+                .iterations(3000)
                 .biasInit(0)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
@@ -365,10 +365,10 @@ public class RBMTests {
                 .weightInit(weightInit)
                 .list(
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                                .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                                .lossFunction(LossFunctions.LossFunction.MSE)
                                 .activation("identity")
                                 .nOut(nOut1).build(),
-                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .activation("identity")
                                 .nOut(nOut2).build()
                 )
