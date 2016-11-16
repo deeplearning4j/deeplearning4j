@@ -94,6 +94,8 @@ public class ConvolutionalIterationListener implements IterationListener {
         if(openBrowser && ssr instanceof StatsStorage){
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
+
+        System.out.println("ConvolutionIterationListener path: " + path);
     }
 
     /**
