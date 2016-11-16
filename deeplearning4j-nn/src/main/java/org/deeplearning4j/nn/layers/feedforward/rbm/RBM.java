@@ -119,7 +119,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		/*
 		 * Start the gibbs sampling.
 		 */
-        INDArray chainStart = probHidden.getSecond();
+//        INDArray chainStart = probHidden.getSecond();
+        INDArray chainStart = probHidden.getFirst();
+
 		/*
 		 * Note that at a later date, we can explore alternative methods of
 		 * storing the chain transitions for different kinds of sampling
@@ -162,36 +164,35 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		/*
 		 * Update gradient parameters - note taking mean based on batchsize is handled in LayerUpdater
 		 */
-        INDArray wGradient = input().transposei().mmul(probHidden.getSecond()).subi(
-                negVSamples.transpose().mmul(negHProb) // TODO swap with nvMeans based on literature...
+        INDArray wGradient = input().transposei().mmul(probHidden.getFirst()).subi(
+                negVProb.transpose().mmul(negHProb)
         );
-//        INDArray wGradient = input().transposei().mmul(probHidden.getFirst()).subi(
-//                negVSamples.transpose().mmul(negHProb)
-//        );
 
         INDArray hBiasGradient;
 
         if(layerConf().getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsub(layerConf().getSparsity()).sum(0);
-//            hBiasGradient = probHidden.getFirst().rsub(layerConf().getSparsity()).sum(0);
+            hBiasGradient = probHidden.getFirst().rsub(layerConf().getSparsity()).sum(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-            hBiasGradient = probHidden.getSecond().sub(negHProb).sum(0);
-//            hBiasGradient = probHidden.getFirst().sub(negHProb).sum(0);
+            hBiasGradient = probHidden.getFirst().sub(negHProb).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  delta = input.sub(negVSamples);
-//        INDArray  delta = input.sub(negVSamples);
+        INDArray  delta = input.sub(negVProb);
         INDArray  vBiasGradient = delta.sum(0);
 
+        if (conf.isPretrain()){
+            wGradient.negi();
+            hBiasGradient.negi();
+            vBiasGradient.negi();
+        }
+
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient.negi());
-        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient.negi());
-        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient.negi());
+        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         gradient = ret;
-//        setScoreWithZ(delta);
-        setScoreWithZ(negVSamples);
+        setScoreWithZ(negVProb); // this is compared to input on 
     }
 
     /**
@@ -203,13 +204,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
         Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
         INDArray negVProb = v1MeanAndSample.getFirst();
-        INDArray negVSample = v1MeanAndSample.getSecond();
 
-        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(negVSample);
-//        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(negVProb);
+        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(negVProb);
         return new Pair<>(v1MeanAndSample,h1MeanAndSample);
     }
-
 
     /**
      * Binomial sampling of the hidden values given visible
