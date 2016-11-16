@@ -18,10 +18,13 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
@@ -654,20 +657,21 @@ public class MultiLayerTest {
                 .weightInit(WeightInit.XAVIER)
                 .seed(12345L)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
+                .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation("relu").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
-                .setInputType(InputType.convolutional(20,20,1))
+                .setInputType(InputType.convolutional(28,28,1))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DataSetIterator ds = new CifarDataSetIterator(10,10, new int[]{20,20,1});
+        DataSetIterator ds = new MnistDataSetIterator(10,10);
         net.fit(ds);
 
-        DataSetIterator testDs = new CifarDataSetIterator(1,1, new int[]{20,20,1});
+        DataSetIterator testDs = new MnistDataSetIterator(1,1);
         DataSet testData = testDs.next();
+        testData.setLabelNames(Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"));
         String actualLables = testData.getLabelName(0);
         List<String> prediction = net.predict(testData);
         assertTrue(actualLables != null);
@@ -698,16 +702,16 @@ public class MultiLayerTest {
                 .weightInit(WeightInit.XAVIER)
                 .seed(12345L)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation("relu").build())
+                .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation("relu").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(50).nOut(10).build())
                 .pretrain(false).backprop(true)
-                .setInputType(InputType.convolutional(20,20,1))
+                .setInputType(InputType.convolutional(28,28,1))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DataSetIterator fullData = new CifarDataSetIterator(1,2, new int[] {20,20,1});
+        DataSetIterator fullData = new MnistDataSetIterator(1,2);
         net.fit(fullData);
 
 

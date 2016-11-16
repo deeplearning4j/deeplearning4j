@@ -28,7 +28,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SubsamplingLayer extends Layer {
 
-    protected ConvolutionMode convolutionMode;
+    protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;          //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected PoolingType poolingType;
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2

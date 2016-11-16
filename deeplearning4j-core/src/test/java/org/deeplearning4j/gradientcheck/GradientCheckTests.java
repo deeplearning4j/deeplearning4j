@@ -616,7 +616,7 @@ public class GradientCheckTests {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.NONE)
                 .seed(12345)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2,2))
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nIn(3)
@@ -763,7 +763,7 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid", "relu"};
+        String[] activFns = {"sigmoid", "tanh"};
         boolean[] characteristic = {false, true};    //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -777,6 +777,10 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(ds);
+        norm.transform(ds);
+
         double[] l2vals = {0.2, 0.0, 0.2};
         double[] l1vals = {0.0, 0.3, 0.3};    //i.e., use l2vals[i] with l1vals[i]
 
@@ -789,6 +793,7 @@ public class GradientCheckTests {
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
+                        Nd4j.getRandom().setSeed(12345);
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .regularization(true)
                                 .learningRate(1.0)

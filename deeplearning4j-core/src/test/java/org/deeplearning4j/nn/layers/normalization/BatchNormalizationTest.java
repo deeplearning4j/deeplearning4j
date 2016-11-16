@@ -582,8 +582,8 @@ public class BatchNormalizationTest {
 //        System.out.println(Arrays.toString(fVarExp));
 //        System.out.println(Arrays.toString(fVarAct));
 
-        assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
-        assertArrayEquals(fVarExp, fVarAct, 0.01f);
+        assertArrayEquals(fMeanExp, fMeanAct, 0.02f);
+        assertArrayEquals(fVarExp, fVarAct, 0.02f);
     }
 
 
