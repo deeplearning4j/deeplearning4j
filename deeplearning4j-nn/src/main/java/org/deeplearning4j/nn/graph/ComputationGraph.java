@@ -43,6 +43,7 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -123,6 +124,7 @@ public class ComputationGraph implements Serializable, Model {
 
     private NeuralNetConfiguration defaultConfiguration;
     private Collection<IterationListener> listeners = new ArrayList<>();
+    private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
 
     public ComputationGraph(ComputationGraphConfiguration configuration) {
@@ -348,6 +350,8 @@ public class ComputationGraph implements Serializable, Model {
 
         int numLayers = 0;
         List<Layer> tempLayerList = new ArrayList<>();
+        defaultConfiguration.clearVariables();
+        List<String> variables = defaultConfiguration.variables(false);
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
@@ -355,7 +359,14 @@ public class ComputationGraph implements Serializable, Model {
 
             if (gv.hasLayer()) {
                 numLayers++;
-                tempLayerList.add(gv.getLayer());
+                Layer l = gv.getLayer();
+                tempLayerList.add(l);
+                List<String> layerVariables = l.conf().variables();
+                if(layerVariables != null){
+                    for(String s : layerVariables ){
+                        variables.add(gv.getVertexName() + "_" + s);
+                    }
+                }
             }
 
             allNamesReverse.put(name, vertexNumber);
@@ -607,10 +618,11 @@ public class ComputationGraph implements Serializable, Model {
         if (hasMaskArrays) {
             INDArray[] fMask = (dataSet.getFeaturesMaskArray() != null ? new INDArray[]{dataSet.getFeaturesMaskArray()} : null);
             INDArray[] lMask = (dataSet.getLabelsMaskArray() != null ? new INDArray[]{dataSet.getLabelsMaskArray()} : null);
-            setLayerMaskArrays(fMask, lMask);
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()}, fMask, lMask);
+        } else {
+            fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         }
 
-        fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         if (hasMaskArrays) clearLayerMaskArrays();
     }
 
@@ -628,6 +640,12 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator, 2);
         } else dataSetIterator = iterator;
+
+        if (trainingListeners.size() > 0) {
+            for(TrainingListener tl : trainingListeners){
+                tl.onEpochStart(this);
+            }
+        }
 
         if (configuration.isPretrain()) {
             pretrain(dataSetIterator);
@@ -669,16 +687,19 @@ public class ComputationGraph implements Serializable, Model {
                 }
             }
         }
+
+        if (trainingListeners.size() > 0) {
+            for(TrainingListener tl : trainingListeners){
+                tl.onEpochEnd(this);
+            }
+        }
     }
 
     /**
      * Fit the ComputationGraph using a MultiDataSet
      */
     public void fit(MultiDataSet multiDataSet) {
-        if (multiDataSet.hasMaskArrays()) {
-            setLayerMaskArrays(multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
-        }
-        fit(multiDataSet.getFeatures(), multiDataSet.getLabels());
+        fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(), multiDataSet.getLabelsMaskArrays());
         if (multiDataSet.hasMaskArrays()) clearLayerMaskArrays();
     }
 
@@ -758,7 +779,7 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, null, null);
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
             } else {
                 if (solver == null) {
                     solver = new Solver.Builder()
@@ -769,6 +790,10 @@ public class ComputationGraph implements Serializable, Model {
 
                 solver.optimize();
             }
+        }
+
+        if(featureMaskArrays != null || labelMaskArrays != null){
+            clearLayerMaskArrays();
         }
     }
 
@@ -885,10 +910,20 @@ public class ComputationGraph implements Serializable, Model {
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            rnnActivateUsingStoredState(inputs, true, true);
+            Map<String,INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+            if (trainingListeners.size() > 0) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
+                }
+            }
             calcBackpropGradients(true);
         } else {
-            feedForward(true, true);
+            Map<String,INDArray> activations = feedForward(true, true);
+            if (trainingListeners.size() > 0) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
+                }
+            }
             calcBackpropGradients(false);
         }
 
@@ -905,6 +940,13 @@ public class ComputationGraph implements Serializable, Model {
             //Only want to add l1/l2 once...
             l1 = 0.0;
             l2 = 0.0;
+        }
+
+        //Listeners
+        if (trainingListeners.size() > 0) {
+            for (TrainingListener tl : trainingListeners) {
+                tl.onBackwardPass(this);
+            }
         }
     }
 
@@ -1214,6 +1256,15 @@ public class ComputationGraph implements Serializable, Model {
 
         if (solver != null) {
             solver.setListeners(listeners);
+        }
+
+        this.trainingListeners.clear();
+        if(listeners != null) {
+            for (IterationListener il : listeners){
+                if(il instanceof TrainingListener){
+                    this.trainingListeners.add((TrainingListener) il);
+                }
+            }
         }
     }
 
@@ -1876,12 +1927,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         int fwdLen = configuration.getTbpttFwdLength();
-        if (fwdLen > timeSeriesLength) {
-            log.warn("Cannot do TBPTT: Truncated BPTT forward length (" + fwdLen + ") > input time series length (" + timeSeriesLength + ")");
-            return;
-        }
-
         int nSubsets = timeSeriesLength / fwdLen;
+        if(timeSeriesLength % fwdLen != 0) nSubsets++;
 
         rnnClearPreviousState();
 
@@ -1893,6 +1940,7 @@ public class ComputationGraph implements Serializable, Model {
         for (int i = 0; i < nSubsets; i++) {
             int startTimeIdx = i * fwdLen;
             int endTimeIdx = startTimeIdx + fwdLen;
+            if(endTimeIdx > timeSeriesLength) endTimeIdx = timeSeriesLength;
 
             for (int j = 0; j < inputs.length; j++) {
                 if (inputs[j].rank() != 3) newInputs[j] = inputs[j];
@@ -1936,6 +1984,10 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         rnnClearPreviousState();
+
+        if(featureMasks != null || labelMasks != null){
+            clearLayerMaskArrays();
+        }
     }
 
     /**

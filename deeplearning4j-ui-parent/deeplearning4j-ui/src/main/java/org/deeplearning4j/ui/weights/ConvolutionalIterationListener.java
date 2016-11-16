@@ -3,40 +3,38 @@ package org.deeplearning4j.ui.weights;
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.ImageLoader;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
-import org.deeplearning4j.ui.UiServer;
-import org.deeplearning4j.ui.UiUtils;
-import org.deeplearning4j.ui.WebReporter;
-import org.deeplearning4j.ui.activation.PathUpdate;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * @author raver119@gmail.com
  */
 public class ConvolutionalIterationListener implements IterationListener {
+
     private enum Orientation {
         LANDSCAPE,
         PORTRAIT
@@ -46,15 +44,18 @@ public class ConvolutionalIterationListener implements IterationListener {
     private int minibatchNum = 0;
     private boolean openBrowser = true;
     private String path;
-    private Client client = ClientBuilder.newClient();
-    private WebTarget target;
     private boolean firstIteration = true;
 
     private Color borderColor = new Color(140,140,140);
     private Color bgColor = new Color(255,255,255);
 
-    public ConvolutionalIterationListener(UiConnectionInfo connectionInfo, int visualizationFrequency) {
+    private final StatsStorageRouter ssr;
+    private final String sessionID;
+    private final String workerID;
 
+
+    public ConvolutionalIterationListener(UiConnectionInfo connectionInfo, int visualizationFrequency) {
+        this(new MapDBStatsStorage(), visualizationFrequency, true);
     }
 
     public ConvolutionalIterationListener(int visualizationFrequency) {
@@ -62,25 +63,39 @@ public class ConvolutionalIterationListener implements IterationListener {
     }
 
     public ConvolutionalIterationListener(int iterations, boolean openBrowser){
-        String subPath = "activations";
-        int port = -1;
-        try{
-            UiServer server = UiServer.getInstance();
-            port = server.getPort();
-        }catch(Exception e){
-            log.error("Error initializing UI server",e);
-            throw new RuntimeException(e);
+        this(new MapDBStatsStorage(), iterations, openBrowser);
+    }
+
+    public ConvolutionalIterationListener(StatsStorageRouter ssr, int iterations, boolean openBrowser) {
+        this(ssr, iterations, openBrowser, null, null);
+    }
+
+    public ConvolutionalIterationListener(StatsStorageRouter ssr, int iterations, boolean openBrowser,
+                                          String sessionID, String workerID){
+        this.ssr = ssr;
+        if(sessionID == null){
+            //TODO handle syncing session IDs across different listeners in the same model...
+            this.sessionID = UUID.randomUUID().toString();
+        } else {
+            this.sessionID = sessionID;
         }
+        if(workerID == null){
+            this.workerID = UIDProvider.getJVMUID() + "_" + Thread.currentThread().getId();
+        } else {
+            this.workerID = workerID;
+        }
+
+        String subPath = "activations";
 
         this.freq = iterations;
         this.openBrowser = openBrowser;
-        path = "http://localhost:" + port + "/" + subPath;
-        target = client.target("http://localhost:" + port).path(subPath).path("update");
-        try{
-            UiServer.getInstance();
-        }catch(Exception e){
-            log.error("Error initializing UI server",e);
+        path = "http://localhost:" + UIServer.getInstance().getPort() + "/" + subPath;
+
+        if(openBrowser && ssr instanceof StatsStorage){
+            UIServer.getInstance().attach((StatsStorage) ssr);
         }
+
+        System.out.println("ConvolutionIterationListener path: " + path);
     }
 
     /**
@@ -128,11 +143,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                         }
                     }
 
-
-//                    log.info("Layer output shape: " + Arrays.toString(output.shape()));
-
                     INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
-  //                  log.info("TAD(3,2,1) shape: " + Arrays.toString(tad.shape()));
 
                     tensors.add(tad);
 
@@ -140,25 +151,9 @@ public class ConvolutionalIterationListener implements IterationListener {
                 }
             }
             BufferedImage render = rasterizeConvoLayers(tensors, sourceImage);
-            try {
-                File tempFile = File.createTempFile("cnn_activations",".png");
-                tempFile.deleteOnExit();
+            Persistable p = new ConvolutionListenerPersistable(sessionID,workerID,System.currentTimeMillis(),render);
+            ssr.putStaticInfo(p);
 
-                ImageIO.write(render, "png", tempFile);
-
-                PathUpdate update = new PathUpdate();
-                //ensure path is set
-                update.setPath(tempFile.getPath());
-                //ensure the server is hooked up with the path
-                //target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
-                WebReporter.getInstance().queueReport(target, Entity.entity(update, MediaType.APPLICATION_JSON));
-                if(openBrowser && firstIteration){
-                    UiUtils.tryOpenBrowser(path, log);
-                    firstIteration = false;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
             minibatchNum++;
 
         }

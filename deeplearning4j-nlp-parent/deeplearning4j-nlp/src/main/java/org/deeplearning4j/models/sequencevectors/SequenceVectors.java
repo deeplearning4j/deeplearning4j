@@ -27,8 +27,10 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,6 +159,16 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
+        Properties props = Nd4j.getExecutioner().getEnvironmentInformation();
+        if (props.getProperty("backend").equals("CUDA")) {
+            if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
+                throw new IllegalStateException("Multi-GPU word2vec/doc2vec isn't available atm");
+                //if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())
+                    //throw new IllegalStateException("Running Word2Vec on multi-gpu system requires P2P support between GPUs, which looks to be unavailable on your system.");
+        }
+
+        Nd4j.getRandom().setSeed(configuration.getSeed());
+
         AtomicLong timeSpent = new AtomicLong(0);
         if (!trainElementsVectors && !trainSequenceVectors) throw new IllegalStateException("You should define at least one training goal 'trainElementsRepresentation' or 'trainSequenceRepresentation'");
         if (iterator == null) throw new IllegalStateException("You can't fit() data without SequenceIterator defined");
@@ -179,6 +191,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (configuration.isPreciseWeightInit()) {
                 log.info("Using precise weights init...");
                 iterator.reset();
+
                 while (iterator.hasMoreSequences()) {
                     Sequence<T> sequence = iterator.nextSequence();
 
@@ -187,7 +200,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         T realElement = vocab.tokenFor(element.getLabel());
 
                         if (realElement != null && !realElement.isInit()) {
-                            INDArray randArray = Nd4j.rand(configuration.getSeed() * realElement.hashCode(), new int[]{1, configuration.getLayersSize()}).subi(0.5).divi(configuration.getLayersSize());
+                            Random rng = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * realElement.hashCode(), configuration.getLayersSize() + 1);
+
+                            INDArray randArray = Nd4j.rand(new int[]{1, configuration.getLayersSize()}, rng).subi(0.5).divi(configuration.getLayersSize());
 
                             lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
                             realElement.setInit(true);
@@ -199,22 +214,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         T realElement = vocab.tokenFor(label.getLabel());
 
                         if (realElement != null && !realElement.isInit()) {
-                            DefaultRandom random = new DefaultRandom(configuration.getSeed() * sequence.hashCode());
-                            INDArray randArray = Nd4j.rand(new int[]{1, configuration.getLayersSize()}, random).subi(0.5).divi(configuration.getLayersSize());
-/*
-                            if (realElement.getLabel().equals("DOC_16392")) {
-                                log.info("seed: {}", configuration.getSeed());
-                                log.info("DOC_16392 hash: {}", sequence.hashCode());
-                                log.info("Sequence: {}", sequence.getElements());
-                                log.info("Data: {}", Arrays.toString(randArray.data().asFloat()));
-                            }
-*/
+                            Random rng = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * realElement.hashCode(), configuration.getLayersSize() + 1);
+                            INDArray randArray = Nd4j.rand(new int[]{1, configuration.getLayersSize()}, rng).subi(0.5).divi(configuration.getLayersSize());
 
                             lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
                             realElement.setInit(true);
                         }
                     }
                 }
+
                 this.iterator.reset();
             }
         }
@@ -783,6 +791,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         .useAdaGrad(this.useAdaGrad)
                         .cache(vocabCache)
                         .negative(negative)
+                        .useHierarchicSoftmax(useHierarchicSoftmax)
                         .vectorLength(layerSize)
                         .lr(learningRate)
                         .seed(seed)
@@ -1060,7 +1069,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 
-                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / (double) this.totalWordsCount)));
+                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / ((double) this.totalWordsCount) / numIterations)));
 
                             trainSequence(sequence, nextRandom, alpha);
 

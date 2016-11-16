@@ -24,7 +24,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>spark</artifactId>
+    <artifactId>spark_2.10</artifactId>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -91,7 +91,6 @@
             <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
             <exclusions>
-
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>

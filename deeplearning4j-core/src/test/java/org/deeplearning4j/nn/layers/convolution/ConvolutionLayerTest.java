@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -19,6 +20,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -38,7 +40,7 @@ public class ConvolutionLayerTest {
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
     }
@@ -136,7 +138,7 @@ public class ConvolutionLayerTest {
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DL4JException.class)
     public void testCNNTooLargeKernel(){
         int imageHeight= 20;
         int imageWidth= 23;
@@ -249,7 +251,7 @@ public class ConvolutionLayerTest {
     @Test
     public void testFeatureMapShapeMNIST() throws Exception  {
         int inputWidth = 28;
-        int[] stride = new int[] {2, 2};
+        int[] stride = new int[] {1, 1};
         int[] padding = new int[] {0,0};
         int[] kernelSize = new int[] {9, 9};
         int nChannelsIn = 1;
@@ -307,7 +309,7 @@ public class ConvolutionLayerTest {
 
     public Layer getMNISTConfig(){
         int[] kernelSize = new int[] {9, 9};
-        int[] stride = new int[] {2,2};
+        int[] stride = new int[] {1,1};
         int[] padding = new int[] {1,1};
         int nChannelsIn = 1;
         int depth = 20;
