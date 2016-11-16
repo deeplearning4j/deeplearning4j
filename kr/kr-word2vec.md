@@ -130,7 +130,7 @@ Word2vec은 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2ve
 
 Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](kr-quickstart)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
 
-```
+```java
 <properties>
   <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
   <dl4j.version>0.4-rc3.9</dl4j.version>
