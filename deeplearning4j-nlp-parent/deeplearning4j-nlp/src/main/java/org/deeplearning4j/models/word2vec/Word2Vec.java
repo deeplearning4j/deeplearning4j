@@ -63,7 +63,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     .tokenizerFactory(tokenizerFactory)
                     .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
-        }
+        } else log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
     }
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {

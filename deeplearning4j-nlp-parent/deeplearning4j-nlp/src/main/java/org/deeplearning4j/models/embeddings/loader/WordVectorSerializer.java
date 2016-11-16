@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -234,9 +236,11 @@ public class WordVectorSerializer {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
-            cache = new InMemoryLookupCache(false);
+            cache = new AbstractCache<>();
+
             lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                     .cache(cache)
+                    .useHierarchicSoftmax(false)
                     .vectorLength(size).build();
 
             String word;
@@ -254,8 +258,12 @@ public class WordVectorSerializer {
 
                 syn0.putRow(i, normalize ? Transforms.unitVec(Nd4j.create(vector)) : Nd4j.create(vector));
 
-                cache.addToken(new VocabWord(1, word));
-                cache.addWordToIndex(cache.numWords(), word);
+                VocabWord vw = new VocabWord(1.0, word);
+                vw.setIndex(cache.numWords());
+
+                cache.addToken(vw);
+                cache.addWordToIndex(vw.getIndex(), vw.getLabel());
+
                 cache.putVocabWord(word);
 
                 if (linebreaks) {
@@ -264,11 +272,25 @@ public class WordVectorSerializer {
             }
         }
 
-        Word2Vec ret = new Word2Vec();
+
 
         lookupTable.setSyn0(syn0);
+
+
+        Word2Vec ret = new Word2Vec.Builder()
+                .useHierarchicSoftmax(false)
+                .resetModel(false)
+                .layerSize(syn0.columns())
+                .allowParallelTokenization(true)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .learningRate(0.025)
+                .windowSize(5)
+                .workers(1)
+                .build();
+
         ret.setVocab(cache);
         ret.setLookupTable(lookupTable);
+
         return ret;
 
     }
@@ -2228,6 +2250,7 @@ public class WordVectorSerializer {
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
                 .layerSize(lookupTable.layerSize())
+                .resetModel(false)
                 .build();
 
         return vec;
