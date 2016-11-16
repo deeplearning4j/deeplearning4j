@@ -274,11 +274,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             }
         }
 
-<<<<<<< HEAD
         for( int i = 0; i < minValues; i++) {
-=======
-        for (int i = 0; i < minValues; i++) {
->>>>>>> 294e38ed93935eed55302c410919d548a0f8f755
             List<Writable> c = list.get(i);
             if (details.entireReader) {
                 //Convert entire reader contents, without modification

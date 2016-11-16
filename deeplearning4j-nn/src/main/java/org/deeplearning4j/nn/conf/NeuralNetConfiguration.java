@@ -356,16 +356,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private static synchronized void registerSubtypes(ObjectMapper mapper){
         //Register concrete subtypes for JSON serialization
-<<<<<<< HEAD
-        //avoid unwanted files
-        ReflectionsHelper.registerUrlTypes();
-=======
 
         List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class);
         List<String> classNames = new ArrayList<>(4);
         for(Class<?> c : classes) classNames.add(c.getName());
 
->>>>>>> 294e38ed93935eed55302c410919d548a0f8f755
         // First: scan the classpath and find all instances of the 'baseClasses' classes
         if(subtypesClassCache == null){
 
