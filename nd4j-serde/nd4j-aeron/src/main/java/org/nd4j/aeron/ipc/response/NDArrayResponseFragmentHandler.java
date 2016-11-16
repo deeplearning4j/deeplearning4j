@@ -61,7 +61,7 @@ public class NDArrayResponseFragmentHandler implements FragmentHandler {
             INDArray arrGet = holder.get();
             AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
                     .streamId(streamToPublish)
-                    .ctx(context).channel(channel)
+                    .aeron(aeron).channel(channel)
                     .build();
             try {
                 publisher.publish(arrGet);

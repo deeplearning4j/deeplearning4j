@@ -3,7 +3,9 @@ package org.nd4j.parameterserver.client;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -24,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class ParameterServerClientTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);
-    private Aeron.Context ctx;
+    private Aeron aeron;
     private ParameterServerSubscriber masterNode,slaveNode;
     private int parameterLength = 1000;
 
@@ -39,7 +41,9 @@ public class ParameterServerClientTest {
                 .senderIdleStrategy(new BusySpinIdleStrategy());
 
         mediaDriver = MediaDriver.launchEmbedded(ctx);
+        aeron = Aeron.connect(getContext());
         masterNode = new ParameterServerSubscriber(mediaDriver);
+        masterNode.setAeron(aeron);
         masterNode.run(new String[] {
                 "-m","true",
                 "-s","1," + String.valueOf(parameterLength),
@@ -58,6 +62,7 @@ public class ParameterServerClientTest {
         assertEquals(12,masterNode.getResponder().getStreamId());
 
         slaveNode = new ParameterServerSubscriber(mediaDriver);
+        slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
                 "-l",String.valueOf(parameterLength),
                 "-p","40126",
@@ -94,7 +99,7 @@ public class ParameterServerClientTest {
     public void testServer() throws Exception {
         ParameterServerClient client = ParameterServerClient
                 .builder()
-                .ctx(getContext())
+                .aeron(aeron)
                 .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
                 .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl())
                 .subscriberHost("localhost")
@@ -118,19 +123,24 @@ public class ParameterServerClientTest {
         assertEquals(Nd4j.ones(1000),arr);
     }
 
+    @After
+    public void after() {
+        if(mediaDriver != null)
+            CloseHelper.close(mediaDriver);
+        if(aeron != null)
+            CloseHelper.close(aeron);
+    }
 
 
 
 
 
     private Aeron.Context getContext() {
-        if(ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+        return new Aeron.Context().publicationConnectionTimeout(-1)
                     .availableImageHandler(AeronUtil::printAvailableImage)
                     .unavailableImageHandler(AeronUtil::printUnavailableImage)
                     .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
                     .errorHandler(e -> log.error(e.toString(), e));
-        return ctx;
     }
 
 
