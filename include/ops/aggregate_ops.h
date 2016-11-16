@@ -63,7 +63,7 @@ namespace aggregateOps {
 
             int idx = (int) ((dot + HS_MAX_EXP) * ((T) expLength / HS_MAX_EXP / 2.0));
 
-            if (idx >= expLength) {
+            if (idx >= expLength || idx < 0) {
                 return;
             }
 
@@ -197,11 +197,11 @@ namespace aggregateOps {
                 if (idx >= expLength)
                     return;
 
+                if (idx < 0)
+                    return;
+
                 g = (code - expTable[idx]) * alpha;
             }
-
-
-            //printf("dot: [%f]; g: [%f]; syn1Neg[0]: [%f]; syn0[0]: [%f]\n", dot, g, syn1Neg[0], syn0[0]);
 
             // axpy1
 #pragma omp simd
@@ -428,25 +428,27 @@ namespace aggregateOps {
 
             unsigned long long next_random = (unsigned long long) realArguments[1];
 
-            if (hsRounds > 0)
+            if (hsRounds > 0) {
                 for (int r = 0; r < hsRounds; r++) {
                     args[1] = arguments[1] + (idxSyn1[r] * vectorLength); // syn1 row
                     idxArgs[2] = codes[r];  // code for row
 
                     //printf("idx syn1: [%i]; code: [%i]\n", idxArgs[1], idxArgs[4]);
 
-                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
+                    HierarchicSoftmax<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments,
+                                                           1);
                 }
+            }
 
 
 
             int target = ngStarter;
-            if (ngRounds > 0)
+            if (ngRounds > 0) {
                 for (int r = 0; r < ngRounds + 1; r++) {
                     if (r == 0) {
                         idxArgs[2] = 1;
                     } else {
-                        next_random = next_random * (unsigned long long)25214903917 + 11;
+                        next_random = next_random * (unsigned long long) 25214903917 + 11;
                         target = negTable[(next_random >> 16) % negTableLength];
 
                         if (target <= 0 || target >= vocabSize) target = next_random % (vocabSize - 1) + 1;
@@ -460,6 +462,7 @@ namespace aggregateOps {
 
                     NegativeSampling<T>::executeAggregate(args, 4, nullptr, 0, idxArgs, 5, nullptr, 0, realArguments, 1);
                 }
+            }
 
             if (!isInference) {
 #pragma omp simd
@@ -467,7 +470,6 @@ namespace aggregateOps {
                     syn0[x] += neu1e[x];
                 }
             } else {
-
 #pragma omp simd
                 for (int x = 0; x < vectorLength; x++) {
                     inferenceVector[x] += neu1e[x];
