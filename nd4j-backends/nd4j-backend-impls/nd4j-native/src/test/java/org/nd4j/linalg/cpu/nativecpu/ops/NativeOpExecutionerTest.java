@@ -461,4 +461,79 @@ public class NativeOpExecutionerTest {
 
         assertEquals(expF, C);
     }
+
+    @Test
+    public void testDebugEdgeCase(){
+        INDArray l1 = Nd4j.create(new double[]{-0.2585039112684677,-0.005179485353710878,0.4348343401770497,0.020356532375728764,-0.1970793298488186});
+        INDArray l2 = Nd4j.create(3,l1.size(1));
+
+        INDArray p1 = Nd4j.create(new double[]{1.3979850406519119,0.6169451410155852,1.128993957530918,0.21000426084450596,0.3171215178932696});
+        INDArray p2 = Nd4j.create(3, p1.size(1));
+
+        for( int i=0; i<3; i++ ){
+            l2.putRow(i, l1);
+            p2.putRow(i, p1);
+        }
+
+        INDArray s1 = scoreArray(l1, p1);
+        INDArray s2 = scoreArray(l2, p2);
+
+        //Outputs here should be identical:
+        System.out.println(Arrays.toString(s1.data().asDouble()));
+        System.out.println(Arrays.toString(s2.getRow(0).dup().data().asDouble()));
+    }
+
+    public static INDArray scoreArray(INDArray labels, INDArray preOutput) {
+        INDArray yhatmag = preOutput.norm2(1);
+
+        INDArray scoreArr = preOutput.mul(labels);
+        scoreArr.diviColumnVector(yhatmag);
+
+        return scoreArr;
+    }
+
+    @Test
+    public void testDebugEdgeCase2(){
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        INDArray l1 = Nd4j.create(new double[]{-0.2585039112684677,-0.005179485353710878,0.4348343401770497,0.020356532375728764,-0.1970793298488186});
+        INDArray l2 = Nd4j.create(2,l1.size(1));
+
+        INDArray p1 = Nd4j.create(new double[]{1.3979850406519119,0.6169451410155852,1.128993957530918,0.21000426084450596,0.3171215178932696});
+        INDArray p2 = Nd4j.create(2, p1.size(1));
+
+        for( int i=0; i<2; i++ ){
+            l2.putRow(i, l1);
+            p2.putRow(i, p1);
+        }
+
+        INDArray norm2_1 = l1.norm2(1);
+        INDArray temp1 = p1.mul(l1);
+        INDArray out1 = temp1.diviColumnVector(norm2_1);
+
+        INDArray norm2_2 = l2.norm2(1);
+        INDArray temp2 = p2.mul(l2);
+        INDArray out2 = temp2.diviColumnVector(norm2_2);
+
+        System.out.println("norm2_1: " + Arrays.toString(norm2_1.data().asDouble()));
+        System.out.println("norm2_2: " + Arrays.toString(norm2_2.data().asDouble()));
+
+        System.out.println("temp1: " + Arrays.toString(temp1.data().asDouble()));
+        System.out.println("temp2: " + Arrays.toString(temp2.data().asDouble()));
+
+        //Outputs here should be identical:
+        System.out.println(Arrays.toString(out1.data().asDouble()));
+        System.out.println(Arrays.toString(out2.getRow(0).dup().data().asDouble()));
+    }
+
+    @Test
+    public void testMul_Scalar1() throws Exception {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        INDArray x = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        INDArray y = Nd4j.create(10).assign(0.000003);
+
+        x.muli(y);
+        x.divi(0.0000022);
+
+        System.out.println("Data: " + Arrays.toString(x.data().asDouble()));
+    }
 }

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.aggregates.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
@@ -59,7 +60,7 @@ public class AggregateCBOW extends BaseAggregate {
      * @param nextRandom
      * @param vocabSize
      */
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateCBOW(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);
         indexingArguments.add(negativeRounds);

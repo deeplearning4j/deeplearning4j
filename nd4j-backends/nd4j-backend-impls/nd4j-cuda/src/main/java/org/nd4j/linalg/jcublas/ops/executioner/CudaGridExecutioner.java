@@ -111,7 +111,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof BroadcastOp) {
             invoke((BroadcastOp) op);
         } else {
-            logger.info("Random op: {}", op.getClass().getSimpleName());
+            //logger.info("Random op: {}", op.getClass().getSimpleName());
             pushToGrid(new OpDescriptor(op));
         }
 
@@ -129,17 +129,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (watchdog.size() > 0)
             for (WatchdogPair pair: watchdog) {
                 if (compareArrays(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using JVM eq", op.getClass().getSimpleName(), pair.getTag());
+                //    logger.info("WATCHDOG: Invoked {} op on {} using JVM eq", op.getClass().getSimpleName(), pair.getTag());
                     continue;
                 }
 
                 if (compareDevicePointers(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using device PTR; Thread ID: {}; deviceId: {}", op.getClass().getSimpleName(), pair.getTag(), Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                  //  logger.info("WATCHDOG: Invoked {} op on {} using device PTR; Thread ID: {}; deviceId: {}", op.getClass().getSimpleName(), pair.getTag(), Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
                     throw new RuntimeException();
                 }
 
                 if (compareHostPointers(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using host PTR", op.getClass().getSimpleName(), pair.getTag());
+                //    logger.info("WATCHDOG: Invoked {} op on {} using host PTR", op.getClass().getSimpleName(), pair.getTag());
                     continue;
                 }
             }
@@ -259,7 +259,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             metaCounter.incrementAndGet();
             exec((MetaOp) op);
         } else if (op instanceof GridOp) {
-            logger.info("Executing GridOp");
+        //    logger.info("Executing GridOp");
             exec((GridOp) op);
         }
     }
@@ -315,6 +315,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 case INVERTED_PREDICATE: {
                     OpDescriptor currentOp = new OpDescriptor(op, dimension);
 
+          //          logger.info("Calling for Meta: {}+{}", last.getOp().getClass().getSimpleName(), currentOp.getOp().getClass().getSimpleName());
                     dequeueOp(last);
                     dequeueOp(currentOp);
 
@@ -360,6 +361,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (descriptor.getOp().y() != null)
             AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(true);
 
+     //   logger.info("Enqueued op: " + descriptor.getOp().getClass().getSimpleName());
+
         lastOp.set(descriptor);
     }
 
@@ -370,6 +373,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (descriptor.getOp().y() != null)
             AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(false);
+
+     //   logger.info("Dequeued op: " + descriptor.getOp().getClass().getSimpleName());
     }
 
     protected MetaType getMetaOpType(Op op, int... dimension) {
@@ -911,6 +916,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Basically we just want to form GridOp and pass it to native executioner
             But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
          */
+    //    logger.info("Non-Blocking flush");
         // TODO: proper implementation for GridOp creation required here
 /*
         Deque<OpDescriptor> currentQueue = deviceQueues.get();
@@ -951,6 +957,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     @Override
     public void flushQueueBlocking() {
         flushQueue();
+
+    //    logger.info("Blocking flush");
 
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
