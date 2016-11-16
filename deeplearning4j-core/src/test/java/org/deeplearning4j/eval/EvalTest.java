@@ -19,7 +19,7 @@
 package org.deeplearning4j.eval;
 
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.reader.RecordReaderMeta;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
@@ -601,7 +601,7 @@ public class EvalTest {
     @Test
     public void testEvaluationWithMetaData() throws Exception {
 
-        RecordReaderMeta csv = new CSVRecordReader();
+        RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         int batchSize = 10;

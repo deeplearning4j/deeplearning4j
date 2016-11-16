@@ -135,9 +135,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 //            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
 //            putVector(Word2Vec.UNK, randUnk);
         }
-        if(syn1 == null || reset)
-            if (useHS)
+        if((syn1 == null || reset) && useHS)
                 syn1 = Nd4j.create(syn0.shape());
+
         initNegative();
     }
 

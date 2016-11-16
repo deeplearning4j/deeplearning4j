@@ -336,10 +336,12 @@ public class ParallelWrapper implements AutoCloseable {
                             score += zoo[cnt].getModel().score();
                         }
                         Nd4j.averageAndPropagate(model.params(), params);
-                        parameterServerClient.pushNDArray(model.params());
+                        synchronized (parameterServerClient) {
+                            parameterServerClient.pushNDArray(model.params());
+                        }
                     }
                     else if(useParameterServer) {
-                        parameterServerClient.pushNDArray(model.params());
+                        parameterServerClient.pushNDArray(model.params().dup());
                     }
                     else {
                         INDArray params = Nd4j.zeros(model.params().shape());

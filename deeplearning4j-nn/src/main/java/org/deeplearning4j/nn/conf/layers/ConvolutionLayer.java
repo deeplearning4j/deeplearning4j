@@ -3,11 +3,13 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -21,7 +23,8 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
-    protected Convolution.Type convolutionType;
+//    protected Convolution.Type convolutionType;
+    protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;       //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
@@ -40,7 +43,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
     */
     private ConvolutionLayer(Builder builder) {
     	super(builder);
-        this.convolutionType = builder.convolutionType;
+//        this.convolutionType = builder.convolutionType;
+        this.convolutionMode = builder.convolutionMode;
         if(builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
@@ -64,6 +68,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
+
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret
                 = new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         ret.setListeners(iterationListeners);
@@ -81,12 +87,13 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public InputType getOutputType(InputType inputType) {
+    public InputType getOutputType(int layerIndex, InputType inputType) {
         if(inputType == null || inputType.getType() != InputType.Type.CNN){
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, nOut, getLayerName());
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, convolutionMode, nOut,
+                layerIndex, getLayerName(), ConvolutionLayer.class);
     }
 
     @Override
@@ -153,7 +160,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        private Convolution.Type convolutionType = Convolution.Type.VALID;
+//        private Convolution.Type convolutionType = Convolution.Type.VALID;
+        private ConvolutionMode convolutionMode = null;
         private int[] kernelSize = new int[] {5,5};
         private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
@@ -177,8 +185,23 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder() {}
 
+        /**
+         * @deprecated Use {@link #convolutionMode}
+         */
+        @Deprecated
         public Builder convolutionType(Convolution.Type convolutionType) {
-            this.convolutionType = convolutionType;
+//            this.convolutionType = convolutionType;
+            return this;
+        }
+
+        /**
+         * Set the convolution mode for the Convolution layer.
+         * See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode    Convolution mode for layer
+         */
+        public Builder convolutionMode(ConvolutionMode convolutionMode){
+            this.convolutionMode = convolutionMode;
             return this;
         }
 

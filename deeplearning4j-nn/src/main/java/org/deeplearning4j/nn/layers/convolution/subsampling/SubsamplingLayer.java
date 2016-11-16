@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -197,6 +198,12 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public INDArray activate(boolean training) {
         if(training && conf.getLayer().getDropOut() > 0) {
             Dropout.applyDropout(input,conf.getLayer().getDropOut());
+        }
+
+        //Input validation: expect rank 4 matrix
+        if(input.rank() != 4){
+            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to SubsamplingLayer with shape "
+                    + Arrays.toString(input.shape()) + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth].");
         }
 
         int miniBatch = input.size(0);

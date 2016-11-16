@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -80,7 +81,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     public INDArray preOutput(boolean training){
         if(input.columns() != 1){
             //Assume shape is [numExamples,1], and each entry is an integer index
-            throw new IllegalStateException("Cannot do forward pass for embedding layer with input more than one column. "
+            throw new DL4JInvalidInputException("Cannot do forward pass for embedding layer with input more than one column. "
                     + "Expected input shape: [numExamples,1] with each entry being an integer index");
         }
 

@@ -712,7 +712,7 @@ public class WordVectorSerializerTest {
 
         vocabCache.elementAtIndex(1).markAsLabel(true);
 
-        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>(vocabCache, 10, false, 0.01, new DefaultRandom(), 0.0);
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>(vocabCache, 10, false, 0.01, Nd4j.getRandom(), 0.0);
         lookupTable.resetWeights(true);
 
         assertNotEquals(null, lookupTable.getSyn0());
