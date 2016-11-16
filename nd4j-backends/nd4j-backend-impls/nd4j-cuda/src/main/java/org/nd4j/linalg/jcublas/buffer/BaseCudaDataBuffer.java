@@ -457,7 +457,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getHostPointer() {
-        throw new UnsupportedOperationException();
+        return AtomicAllocator.getInstance().getHostPointer(this);
     }
 
     @Override
