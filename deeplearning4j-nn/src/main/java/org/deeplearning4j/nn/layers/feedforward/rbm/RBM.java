@@ -192,7 +192,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         gradient = ret;
-        setScoreWithZ(negVProb); // this is compared to input on 
+        setScoreWithZ(negVProb); // this is compared to input on
     }
 
     /**
