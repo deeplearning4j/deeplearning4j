@@ -2619,17 +2619,7 @@ void   NativeOps::execReduceFloat(
 	if (dimensionLength == 1) {
 
         DISPATCH_SIMPLE(reduceSimpleGeneric1D, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-        // DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float, INPUT(float *x, int *xShape, float *extraParams, float *z, int *zShape, int *dimension, int dimensionLength, float *reductionPointer, int *tadShapeInfo, int *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-		/*reduceFloat1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-						opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);*/
+
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 
         DISPATCH_SIMPLE(reduceSimpleGeneric3D, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
@@ -2832,12 +2822,9 @@ float NativeOps::execReduceScalarHalf(
 	if (debug && verbose)
 		printf("H9 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 2, funcAttributes[8]);
 
 	if (verbose && launchDims.x == 1)
@@ -2845,21 +2832,6 @@ float NativeOps::execReduceScalarHalf(
 
 
     DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
-
-    /*
-	reduceScalarHalf<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-					opNum,
-					x,
-					xShapeInfo,
-					extraParams,
-					resultPointer,
-					nullptr,
-					nullptr,
-					1,
-					reductionPointer, deviceTADShapeInfo
-
-	);
-*/
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3494,8 +3466,6 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	if (debug && verbose)
 		printf("F16 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -3542,8 +3512,6 @@ float   NativeOps::execSummaryStatsScalarHalf(
 
 	if (debug && verbose)
 		printf("H16 opNum:[%i]\n", opNum);
-
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -3604,8 +3572,6 @@ void   NativeOps::execSummaryStatsFloat(
 
 	if (debug && verbose)
 		printf("F17 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -3713,8 +3679,6 @@ void   NativeOps::execSummaryStatsFloat(
 
 	if (debug && verbose)
 		printf("F18 opNum:[%i]\n", opNum);
-
-	//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -3909,8 +3873,6 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	if (debug && verbose)
 		printf("F20 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
@@ -3942,13 +3904,6 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
             DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
-            /*
-			transformFloat <<< 1, block, launchDims.z + (block * sizeof(float) * 4), *stream >> > (
-					opNum,
-					dx,
-					xShapeInfo,  shape::rank(hostXShapeInfo),
-					extraParams,
-					result, resultShapeInfo,  shape::rank(hostZShapeInfo),  allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
 			//float *xpf = reinterpret_cast<float *>(dx);
