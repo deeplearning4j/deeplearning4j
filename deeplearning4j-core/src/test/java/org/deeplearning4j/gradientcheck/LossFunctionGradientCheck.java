@@ -39,7 +39,7 @@ public class LossFunctionGradientCheck {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     @Test
     public void lossFunctionGradientCheck(){
@@ -323,7 +323,7 @@ public class LossFunctionGradientCheck {
                             .seed(12345)
                             .updater(Updater.NONE)
                             .regularization(false)
-                            .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2))
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-3, 3))
                             .list()
                             .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation("tanh").build())
                             .layer(1, new OutputLayer.Builder()
