@@ -130,64 +130,64 @@ Word2vec은 여러 알고리즘으로 이루어져 있습니다. DL4J의 Word2ve
 
 Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트를 만드는 자세한 방법은 저희의 [퀵스타트 페이지](kr-quickstart)를 참고하시기 바랍니다. 그리고 아래의 속성과 종속성(dependencies) 설정을 생성한 프로젝트의 루트 디렉토리에 있는 POM.xml 파일에 추가하십시오 ([Maven의 버전은 여기서 확인할 수 있습니다](https://search.maven.org/#search%7Cga%7C1%7Cnd4j). 최신 버전의 Maven 사용을 권장합니다.).
 
-``` java
-                <properties>
-                  <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
-                  <dl4j.version>0.4-rc3.9</dl4j.version>
-                </properties>
+```
+<properties>
+  <nd4j.version>0.4-rc3.9</nd4j.version> // check Maven Central for latest versions!
+  <dl4j.version>0.4-rc3.9</dl4j.version>
+</properties>
 
-                <dependencies>
-                  <dependency>
-                     <groupId>org.deeplearning4j</groupId>
-                     <artifactId>deeplearning4j-ui</artifactId>
-                     <version>${dl4j.version}</version>
-                   </dependency>
-                   <dependency>
-                     <groupId>org.deeplearning4j</groupId>
-                     <artifactId>deeplearning4j-nlp</artifactId>
-                     <version>${dl4j.version}</version>
-                   </dependency>
-                   <dependency>
-                     <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-native</artifactId>
-                     <version>${nd4j.version}</version>
-                   </dependency>
-                </dependencies>
+<dependencies>
+  <dependency>
+     <groupId>org.deeplearning4j</groupId>
+     <artifactId>deeplearning4j-ui</artifactId>
+     <version>${dl4j.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.deeplearning4j</groupId>
+     <artifactId>deeplearning4j-nlp</artifactId>
+     <version>${dl4j.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.nd4j</groupId>
+     <artifactId>nd4j-native</artifactId>
+     <version>${nd4j.version}</version>
+   </dependency>
+</dependencies>
 ```
 
 ### 데이터 불러오기
 
 이제 적당한 이름으로 새로운 클래스를 생성하십시오. 그리고 `raw_sentences.txt` 파일에서 전처리 되기 전의 문장을 불러온 뒤 이 문장을 iterator에 넣은 뒤 모든 글자를 소문자로 변환하는 간단한 전처리를 수행합니다.
 
-``` java
-        log.info("Load data....");
-        ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
-        SentenceIterator iter = new LineSentenceIterator(resource.getFile());
-        iter.setPreProcessor(new SentencePreProcessor() {
-            @Override
-            public String preProcess(String sentence) {
-                return sentence.toLowerCase();
-            }
-        });
+```
+log.info("Load data....");
+ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
+SentenceIterator iter = new LineSentenceIterator(resource.getFile());
+iter.setPreProcessor(new SentencePreProcessor() {
+    @Override
+    public String preProcess(String sentence) {
+	return sentence.toLowerCase();
+    }
+});
 ```
 
 예제 파일이 아닌 다른 텍스트를 불러올 수도 있습니다.
 
-``` java
-        log.info("Load data....");
-        SentenceIterator iter = new LineSentenceIterator(new File("/Users/cvn/Desktop/file.txt"));
-        iter.setPreProcessor(new SentencePreProcessor() {
-            @Override
-            public String preProcess(String sentence) {
-                return sentence.toLowerCase();
-            }
-        });
+```
+log.info("Load data....");
+SentenceIterator iter = new LineSentenceIterator(new File("/Users/cvn/Desktop/file.txt"));
+iter.setPreProcessor(new SentencePreProcessor() {
+    @Override
+    public String preProcess(String sentence) {
+	return sentence.toLowerCase();
+    }
+});
 ```
 
 위의 코드에서는 `ClassPathResource`를 삭제하고 대신에 불러올 `.txt` 파일의 절대 경로를 `LineSentenceIterator`에 입력했습니다.
 
-``` java
-        SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
+```
+SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
 ```
 
 파일의 절대 경로를 추가하는 부분입니다.
@@ -196,10 +196,10 @@ Maven을 사용해 IntelliJ에 새 프로젝트를 만드십시오. 프로젝트
 
 Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같이 불러온 텍스트는 단어 단위로, 그리고 단어도 다시 어근으로 변환해야 합니다. 토큰화를 잘 모르신다면 텍스트를 구성하는 최소 단위로 원자화했다고 이해하시면 됩니다.
 
-``` java
-	// Split on white spaces in the line to get words
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
+```
+// Split on white spaces in the line to get words
+TokenizerFactory t = new DefaultTokenizerFactory();
+t.setTokenPreProcessor(new CommonPreprocessor());
 ```
 
 이렇게 하면 한 줄에 토큰 하나씩 결과를 출력합니다.
@@ -208,25 +208,25 @@ Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같�
 
 이제 데이터가 준비되었으므로 여러분께서는 Word2vec 신경망을 구성하고 토큰에서 공급하실 수 있습니다.
 
-``` java
-        int batchSize = 1000;
-        int iterations = 3;
-        int layerSize = 150;
+```
+int batchSize = 1000;
+int iterations = 3;
+int layerSize = 150;
 
-        log.info("Build model....");
-        Word2Vec vec = new Word2Vec.Builder()
-                .batchSize(batchSize) //# words per minibatch.
-                .minWordFrequency(5) //
-                .useAdaGrad(false) //
-                .layerSize(layerSize) // word feature vector size
-                .iterations(iterations) // # iterations to train
-                .learningRate(0.025) //
-                .minLearningRate(1e-3) // learning rate decays wrt # words. floor learning
-                .negativeSample(10) // sample size 10 words
-                .iterate(iter) //
-                .tokenizerFactory(tokenizer)
-                .build();
-        vec.fit();
+log.info("Build model....");
+Word2Vec vec = new Word2Vec.Builder()
+	.batchSize(batchSize) //# words per minibatch.
+	.minWordFrequency(5) //
+	.useAdaGrad(false) //
+	.layerSize(layerSize) // word feature vector size
+	.iterations(iterations) // # iterations to train
+	.learningRate(0.025) //
+	.minLearningRate(1e-3) // learning rate decays wrt # words. floor learning
+	.negativeSample(10) // sample size 10 words
+	.iterate(iter) //
+	.tokenizerFactory(tokenizer)
+	.build();
+vec.fit();
 ```
 
 이 코드를 보면 굉장히 많은 하이퍼파라미터(파라미터를 정하는 파라미터)를 설정합니다. 이에 대해 간략히 설명드리겠습니다.
@@ -246,69 +246,69 @@ Word2vec는 텍스트를 단어별로 받아들입니다. 따라서 위와 같�
 
 아래 코드는 얼마나 모델이 학습이 잘 되었는지를 확인하는 코드입니다.
 
-``` java
-        // Write word vectors
-        WordVectorSerializer.writeWordVectors(vec, "pathToWriteto.txt");
+```
+// Write word vectors
+WordVectorSerializer.writeWordVectors(vec, "pathToWriteto.txt");
 
-        log.info("Closest Words:");
-        Collection<String> lst = vec.wordsNearest("day", 10);
-        System.out.println(lst);
-        UiServer server = UiServer.getInstance();
-        System.out.println("Started on port " + server.getPort());
+log.info("Closest Words:");
+Collection<String> lst = vec.wordsNearest("day", 10);
+System.out.println(lst);
+UiServer server = UiServer.getInstance();
+System.out.println("Started on port " + server.getPort());
 
-        //output: [night, week, year, game, season, during, office, until, -]
+//output: [night, week, year, game, season, during, office, until, -]
 ```
 
 `vec.similarity("word1","word2")`함수는 두 단어의 유사도를 코사인 유사성을 이용해 계산하고 그 결과를 반환합니다. 비슷한 단어일수록 1에 가까운 값이. 다른 단어일수록 0에 가까운 값이 나옵니다. 예를 들면 아래와 같습니다.
 
-``` java
-        double cosSim = vec.similarity("day", "night");
-        System.out.println(cosSim);
-        //output: 0.7704452276229858
+```
+double cosSim = vec.similarity("day", "night");
+System.out.println(cosSim);
+//output: 0.7704452276229858
 ```
 
 아래의 `vec.wordsNearest("word1", numWordsNearest)`는 유사성이 높은 몇 가지 단어를 출력합니다. 이를 이용해 학습이 잘 되었는지 확인할 수 있습니다. `wordsNearest`의 두 번째 입력변수는 출력할 단어의 개수입니다. 예를 들면 아래의 코드는 man과 제일 비슷한 단어 10개를 출력합니다.
 
-``` java
-        Collection<String> lst3 = vec.wordsNearest("man", 10);
-        System.out.println(lst3);
-        //output: [director, company, program, former, university, family, group, such, general]
+```
+Collection<String> lst3 = vec.wordsNearest("man", 10);
+System.out.println(lst3);
+//output: [director, company, program, former, university, family, group, such, general]
 ```
 
 ### 모델 시각화
 
 Word embeddings 벡터의 차원을 확 줄여서 시각화 하는 방법이 있습니다. [TSNE](https://lvdmaaten.github.io/tsne/)(T-SNE라고도 표기)라는 방법입니다.
 
-``` java
-        log.info("Plot TSNE....");
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .setMaxIter(1000)
-                .stopLyingIteration(250)
-                .learningRate(500)
-                .useAdaGrad(false)
-                .theta(0.5)
-                .setMomentum(0.5)
-                .normalize(true)
-                .usePca(false)
-                .build();
-        vec.lookupTable().plotVocab(tsne);
+```
+log.info("Plot TSNE....");
+BarnesHutTsne tsne = new BarnesHutTsne.Builder()
+	.setMaxIter(1000)
+	.stopLyingIteration(250)
+	.learningRate(500)
+	.useAdaGrad(false)
+	.theta(0.5)
+	.setMomentum(0.5)
+	.normalize(true)
+	.usePca(false)
+	.build();
+vec.lookupTable().plotVocab(tsne);
 ```
 
 ### 저장하기, 저장한 모델 불러서 사용하기
 
 설계 및 학습된 모델은 보통 저장하는 방법은 객체 직렬화(serialization) utils입니다 (Java의 직렬화는 객체를 *series의*(직렬화된) 바이트로 전환하는 Python pickling과 유사합니다).
 
-``` java
-        log.info("Save vectors....");
-        WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
+```
+log.info("Save vectors....");
+WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
 ```
 
 위의 코드는 모델이 저장된 폴더에 `words.txt`를 저장합니다. 이 텍스트 파일은 한 줄에 하나의 단어(의 벡터)를 적어 놓은 형태가 됩니다.
 
 이렇게 불러온 벡터는(`vec`) 아래와 같이 다시 사용하면 됩니다.
 
-``` java
-        Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+```
+Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
 ```
 
 Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man - woman" 및 그 확장인 "king - queen + woman = man" 입니다.
@@ -319,17 +319,17 @@ Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man -
 
 아래 코드는 벡터를 다시 메모리에 올립니다.
 
-``` java
-        Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
+```
+Word2Vec word2Vec = WordVectorSerializer.loadFullModel("pathToSaveModel.txt");
 ```
 
 그리고 나면 Word2vec을 룩업 테이블로 쓸 수 있습니다.
 
-``` java
-        WeightLookupTable weightLookupTable = wordVectors.lookupTable();
-        Iterator<INDArray> vectors = weightLookupTable.vectors();
-        INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
-        double[] wordVector = wordVectors.getWordVector("myword");
+```
+WeightLookupTable weightLookupTable = wordVectors.lookupTable();
+Iterator<INDArray> vectors = weightLookupTable.vectors();
+INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
+double[] wordVector = wordVectors.getWordVector("myword");
 ```
 
 만일 검색한 단어가 모델의 어휘 목록에 없으면 0을 반환합니다.
@@ -340,22 +340,22 @@ Word2vec의 벡터를 이용한 가장 유명한 예제는 "king - queen = man -
 
 만일 [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit)나 Gensimm으로 학습한 모델을 원한다면 아래의 코드를 참고하십시오.
 
-``` java
-    File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+```
+File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
+Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
 ```
 
 `import java.io.File;`을 import한 패키지에 추가하는 것을 잊지 마십시오.
 
 대형 모델들과 작업 시 힙 메모리를 조절해야 합니다. 구글 모델은 대략 10G의 메모리가 필요한데 JVM은 가본적으로 256 MB의 공간을 할당하기 때문입니다. `bash_profile`에서 설정을 하거나 (저희의 [Troubleshooting 섹션](kr-gettingstarted.html#trouble)을 참고하세요) IntelliJ 설정을 바꿔주면 됩니다.
 
-``` java
-    //아래 메뉴를 실행한 뒤,
-    IntelliJ Preferences > Compiler > Command Line Options
-    //아래 내용을 붙여넣으세요.
-    -Xms1024m
-    -Xmx10g
-    -XX:MaxPermSize=2g
+```
+//아래 메뉴를 실행한 뒤,
+IntelliJ Preferences > Compiler > Command Line Options
+//아래 내용을 붙여넣으세요.
+-Xms1024m
+-Xmx10g
+-XX:MaxPermSize=2g
 ```
 
 ### <a name="grams">N-grams & Skip-grams</a>
@@ -376,23 +376,23 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 *질문: 아래와 같은 trace 메시지가 뜹니다.*
 
-``` java
-       java.lang.StackOverflowError: null
-       at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
-       at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
-       at java.io.ObjectStreamClass$WeakClassKey.<init>(ObjectStreamClass.java:2306) [na:1.8.0_11]
-       at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
-       at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
-       at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
+```
+java.lang.StackOverflowError: null
+at java.lang.ref.Reference.<init>(Reference.java:254) ~[na:1.8.0_11]
+at java.lang.ref.WeakReference.<init>(WeakReference.java:69) ~[na:1.8.0_11]
+at java.io.ObjectStreamClass$WeakClassKey.<init>(ObjectStreamClass.java:2306) [na:1.8.0_11]
+at java.io.ObjectStreamClass.lookup(ObjectStreamClass.java:322) ~[na:1.8.0_11]
+at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1134) ~[na:1.8.0_11]
+at java.io.ObjectOutputStream.defaultWriteFields(ObjectOutputStream.java:1548) ~[na:1.8.0_11]
 ```
 
 *답:* Word2vec이 저장된 디렉토리, 즉 IntelliJ 프로젝트 홈 디렉터리나 커맨드 라인에 Java를 실행한 디렉토리에 가면 아래 같은 형식의 디렉토리가 여러 개 있을 것 입니다.
 
-``` java
-       ehcache_auto_created2810726831714447871diskstore  
-       ehcache_auto_created4727787669919058795diskstore
-       ehcache_auto_created3883187579728988119diskstore  
-       ehcache_auto_created9101229611634051478diskstore
+```
+ehcache_auto_created2810726831714447871diskstore  
+ehcache_auto_created4727787669919058795diskstore
+ehcache_auto_created3883187579728988119diskstore  
+ehcache_auto_created9101229611634051478diskstore
 ```
 
 우선 프로그램을 종료한 뒤 이 폴더를 삭제하고 다시 한 번 시도해 보십시오.
@@ -401,9 +401,9 @@ DL4J가 구현한 스킵그램은 Mikolov가 발표한 방법으로, CBOW보다 
 
 *답:* Word2Vec 모델의 **.layerSize()** 함수로 레이어의 크기를 키워보십시오.
 
-``` java
-        Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
-                .layerSize(300).iterate(iter).tokenizerFactory(t).build();
+```
+Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
+	.layerSize(300).iterate(iter).tokenizerFactory(t).build();
 ```
 
 *질문: 어떻게 하면 제 데이터를 로딩하나요? 왜 이렇게 학습이 오래 걸리나요?*
@@ -438,8 +438,8 @@ Word2vec는 Tomas Mikolov를 비롯한 구글의 연구자들이 출판한 논�
 
 GloVe는 아래의 코드를 참고하십시오.
 
-``` java
-        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
+```
+WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("glove.6B.50d.txt"));
 ```
 
 ### <a name="sequence">SequenceVectors</a>
