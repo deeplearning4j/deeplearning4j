@@ -103,6 +103,8 @@ public class FlowIterationListener implements IterationListener {
         if (ssr instanceof StatsStorage && openBrowser) {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
+
+        System.out.println("FlowIterationListener path: http://localhost:" + UIServer.getInstance().getPort() + "/flow");
     }
 
 
