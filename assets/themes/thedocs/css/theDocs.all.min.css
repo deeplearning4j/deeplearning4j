@@ -13099,7 +13099,7 @@ and (orientation : landscape)
     -webkit-background-size: 100% 100% !important;
     background-size: 100% 100% !important;
     background-position: unset !important;
-    background-attachment: unset !important;    
+    background-attachment: unset !important;
   }
 }
 
@@ -13939,7 +13939,6 @@ and (orientation : landscape)
 
 .comment {
   position: relative;
-  display: block;
   margin-bottom: 30px;
 }
 
