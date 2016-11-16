@@ -12271,9 +12271,9 @@ pre .language-name {
   word-wrap: normal;
 }
 
-pre[class*=language-] {
+/*pre[class*=language-] {
   padding-top: 30px;
-}
+}*/
 
 .line-numbers .line-numbers-rows {
   border-right-color: #ccc;
