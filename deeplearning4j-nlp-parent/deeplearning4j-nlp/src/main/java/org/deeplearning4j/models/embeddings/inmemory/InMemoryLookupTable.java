@@ -82,7 +82,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
                                double lr, Random gen, double negative, boolean useHS) {
         this(vocab, vectorLength, useAdaGrad, lr, gen, negative);
-        useHS = true;
+        this.useHS = useHS;
     }
 
     public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad,
@@ -135,8 +135,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 //            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
 //            putVector(Word2Vec.UNK, randUnk);
         }
-        if((syn1 == null || reset) && useHS)
-                syn1 = Nd4j.create(syn0.shape());
+        if((syn1 == null || reset) && useHS) {
+            log.info("Initializing syn1...");
+            syn1 = Nd4j.create(syn0.shape());
+        }
 
         initNegative();
     }
@@ -373,6 +375,10 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
     public double getNegative() {
         return negative;
+    }
+
+    public void setUseHS(boolean useHS) {
+        this.useHS = useHS;
     }
 
     public void setNegative(double negative) {
