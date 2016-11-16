@@ -5,7 +5,7 @@ layout: default
 
 # Deeplearning4j on Spark
 
-Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism. 
+Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism.
 
 Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark for this, training models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
@@ -56,7 +56,7 @@ The typical workflow for training a network on a Spark cluster (using spark-subm
 **Note**: For single machine training, Spark local *can* be used with DL4J, though this is not recommended (due to the synchronization and serialization overheads of Spark). Instead, consider the following:
 
 * For single CPU/GPU systems, use standard MultiLayerNetwork or ComputationGraph training
-* For multi-CPU/GPU systems, use [ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java). This is functionally equivalent to running Spark in local mode, though has lower overhead (and hence provides better training performance). 
+* For multi-CPU/GPU systems, use [ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java). This is functionally equivalent to running Spark in local mode, though has lower overhead (and hence provides better training performance).
 
 ## <a name="how">How Distributed Network Training Occurs with DL4J on Spark</a>
 
@@ -84,26 +84,26 @@ This section shows the minimal set of components that you need in order to train
 Details on the various approaches to loading data are forthcoming.
 
 ```java
-    JavaSparkContent sc = ...;
-    JavaRDD<DataSet> trainingData = ...;
-    MultiLayerConfiguration networkConfig = ...;
+JavaSparkContent sc = ...;
+JavaRDD<DataSet> trainingData = ...;
+MultiLayerConfiguration networkConfig = ...;
 
-    //Create the TrainingMaster instance
-    int examplesPerDataSetObject = 1;
-    TrainingMaster trainingMaster = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
-            .(other configuration options)
-            .build();
+//Create the TrainingMaster instance
+int examplesPerDataSetObject = 1;
+TrainingMaster trainingMaster = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
+        .(other configuration options)
+        .build();
 
-    //Create the SparkDl4jMultiLayer instance
-    SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, networkConfig, trainingMaster);
+//Create the SparkDl4jMultiLayer instance
+SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, networkConfig, trainingMaster);
 
-    //Fit the network using the training data:
-    sparkNetwork.fit(trainingData);
+//Fit the network using the training data:
+sparkNetwork.fit(trainingData);
 ```
 
 ## <a name="configuring">Configuring the TrainingMaster</a>
 
-A TrainingMaster in DL4J is an abstraction (interface) that allows for multiple different training implementations to be used with SparkDl4jMultiLayer and SparkComputationGraph. 
+A TrainingMaster in DL4J is an abstraction (interface) that allows for multiple different training implementations to be used with SparkDl4jMultiLayer and SparkComputationGraph.
 
 Currently DL4J has one implementation, the ParameterAveragingTrainingMaster. This implements the parameter averaging process shown in the image above.
 To create one, use the builder pattern:
@@ -130,7 +130,7 @@ The ParameterAveragingTrainingMaster defines a number of configuration options t
 * **saveUpdater**: In DL4J, training methods such as momentum, RMSProp and AdaGrad are known as 'updaters'. Most of these updaters have internal history or state.
     * If saveUpdater is set to true: the updater state (at each worker) will be averaged and returned to the master along with the parameters; the current updater state will also be distributed from the master to the workers. This adds extra time and network traffic, but may improve training results.
     * If saveUpdater is set to false: the updater state (at each worker) is discarded, and the updater is reset/reinitialized in each worker.
-* **rddTrainingApproach**: As of version 0.6.0 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct``` 
+* **rddTrainingApproach**: As of version 0.6.0 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct```
     * Export: (Default) This first saves the ```RDD<DataSet>``` to disk, in batched and serialized form. The executors then load the DataSet objects asynchronously, as required. This approach performs better than the Direct approach, especially for large data sets and multiple epochs. It avoids the split and repartitioning overhead of the Direct method, and also uses less memory. Temporary files can be deleted using ```TrainingMaster.deleteTempFiles()```
     * Direct: This is how DL4J operated in earlier releases. It may provide good performance for small data sets that fit entirely into memory.
 * **exportDirectory**: only used with the Export training approach (above). This controls where the temporary data files are stored. Default: use ```{hadoop.tmp.dir}/dl4j/``` directory, where ```{hadoop.tmp.dir}``` is the Hadoop temporary directory property value.
@@ -143,8 +143,8 @@ The ParameterAveragingTrainingMaster defines a number of configuration options t
 * **repartitionStrategy**: Strategy by which repartitioning should be done
     * Balanced: (Default) This is a custom repartitioning strategy defined by DL4J. It attempts to ensure that each partition is more balanced (in terms of number of objects) compared to the SparkDefault option. However, in practice this requires an additional count operation to execute; in some cases (most notably in small networks, or those with a small amount of computation per minibatch), the benefit may not outweigh additional overhead of executing the better repartitioning. Recommended, especially with RDDTrainingApproach.Export (default as of 0.5.1) or ```fitPaths(RDD<String>)```
     * SparkDefault: This is the stardard repartitioning strategy used by Spark. Essentially, each object in the initial RDD is mapped to one of N RDDs independently at random. Consequently, the partitions may not be optimally balanced; this can be especially problematic with smaller RDDs, such as those used for preprocessed DataSet objects and frequent averaging periods (simply due to random sampling variation).
-    
-    
+
+
 
 
 
@@ -160,7 +160,7 @@ To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency
         </dependency>
 ```
 
-Note that ```${scala.binary.version}``` is a Maven property with the value ```2.10``` or ```2.11``` and should match the version of Spark you are using. 
+Note that ```${scala.binary.version}``` is a Maven property with the value ```2.10``` or ```2.11``` and should match the version of Spark you are using.
 
 
 ## <a name="examples">Spark Examples Repository</a>
@@ -366,11 +366,11 @@ Under the Create Cluster -> Advanced Options -> Edit Software Settings, add the 
 ```
 [
     {
-        "Classification": "hadoop-env", 
+        "Classification": "hadoop-env",
         "Configurations": [
             {
-                "Classification": "export", 
-                "Configurations": [], 
+                "Classification": "export",
+                "Configurations": [],
                 "Properties": {
                     "MKL_THREADING_LAYER": "GNU",
                     "LD_PRELOAD": "/usr/lib64/libgomp.so.1"
