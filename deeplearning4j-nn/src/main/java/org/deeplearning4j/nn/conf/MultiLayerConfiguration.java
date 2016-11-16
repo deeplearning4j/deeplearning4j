@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,6 +34,9 @@ import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Configuration for a multi layer network
@@ -55,6 +56,8 @@ import java.util.Map;
 @NoArgsConstructor
 @Slf4j
 public class MultiLayerConfiguration implements Serializable, Cloneable {
+
+    private static final AtomicBoolean defaultChangeWarningPrinted = new AtomicBoolean(false);
 
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
@@ -371,13 +374,22 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         private void validate(){
             // TODO drop new network default messages after 2 iterations from 0.6.1
-            if(pretrain && !backprop)
+            boolean printed = false;
+            if(pretrain && !backprop && !defaultChangeWarningPrinted.get()) {
                 log.warn("Warning: pretrain is set to true and if finetune is needed set backprop to true.");
-            else if (!pretrain)
+                printed = true;
+            } else if (!pretrain && !defaultChangeWarningPrinted.get()) {
                 log.warn("Warning: new network default sets pretrain to false.");
-            if(backprop)
+                printed = true;
+            }
+            if(backprop && !defaultChangeWarningPrinted.get()) {
                 log.warn("Warning: new network default sets backprop to true.");
+                printed = true;
+            }
 
+            if(printed){
+                defaultChangeWarningPrinted.set(true);
+            }
         }
 
         public MultiLayerConfiguration build() {
