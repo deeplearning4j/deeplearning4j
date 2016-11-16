@@ -17,14 +17,20 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
+import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
 import org.deeplearning4j.ui.api.Component;
+import org.nd4j.shade.jackson.core.JsonParseException;
+import org.nd4j.shade.jackson.databind.JsonMappingException;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**Summary stats: number of completed tasks etc
  */
@@ -33,21 +39,45 @@ import java.util.Collections;
 public class SummaryStatusResource {
     public static Logger log = LoggerFactory.getLogger(SummaryStatusResource.class);
 
+    private static final int maxWarnCount = 5;
+    private AtomicInteger warnCount = new AtomicInteger(0);
+
     private Component component = null;
 
     @GET
     public Response getStatus(){
         log.trace("Get with elements: {}",component);
-        return Response.ok(component).build();
+        String str = "";
+        try{
+            str = JsonMapper.getMapper().writeValueAsString(component);
+        } catch (Exception e){
+            if(warnCount.getAndIncrement() < maxWarnCount){
+                log.warn("Error getting summary status update", e);
+            }
+        }
+        Response r = Response.ok(str).build();
+        return r;
     }
 
     @POST
     @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(Component component){
-        log.trace("Post with new elements: {}",component);
-        this.component = component;
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Response update(String component){
+        log.info("Post with new elements: {}",component);
+
+        if(component == null || component.isEmpty()){
+            return Response.ok(Collections.singletonMap("status", "ok")).build();
+        }
+
+        try{
+            this.component = JsonMapper.getMapper().readValue(component, Component.class);
+        } catch (Exception e) {
+            if(warnCount.getAndIncrement() < maxWarnCount){
+                log.warn("Error posting summary status update", e);
+            }
+        }
+
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 

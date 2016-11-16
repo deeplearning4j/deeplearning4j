@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.ui.resources;
 
+import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**Results for each candidate model individually
  */
@@ -39,6 +41,9 @@ public class CandidateResultsResource {
 
     private static final Logger log = LoggerFactory.getLogger(CandidateResultsResource.class);
 
+    private static final int maxWarnCount = 10;
+    private AtomicInteger warnCount = new AtomicInteger(0);
+
     private Map<Integer,Component> map = new ConcurrentHashMap<>();
     private static final Component NOT_FOUND = new ComponentText("(Candidate results: Not found)",null);
     private final Map<Integer,Long> lastUpdateTimeMap = new ConcurrentHashMap<>();
@@ -47,7 +52,16 @@ public class CandidateResultsResource {
     @Path("/{id}")
     public Response getModelStatus(@PathParam("id") int candidateId){
         if(!map.containsKey(candidateId)) return Response.ok(NOT_FOUND).build();
-        return Response.ok(map.get(candidateId)).build();
+        String str = "";
+        try{
+            Component c = map.get(candidateId);
+            str = JsonMapper.getMapper().writeValueAsString(c);
+        } catch (Exception e){
+            if(warnCount.getAndIncrement() < maxWarnCount){
+                log.warn("Error getting candidate info", e);
+            }
+        }
+        return Response.ok(str).build();
     }
 
     @GET
@@ -66,10 +80,23 @@ public class CandidateResultsResource {
 
     @POST
     @Path("/update/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@PathParam("id")int candidateID, Component component){
-        map.put(candidateID,component);
+    public Response update(@PathParam("id")int candidateID, String componentStr){
+
+        if(componentStr == null || componentStr.isEmpty()){
+            return Response.ok(Collections.singletonMap("status", "ok")).build();
+        }
+
+        try{
+            Component component = JsonMapper.getMapper().readValue(componentStr, Component.class);
+            map.put(candidateID,component);
+        } catch (Exception e) {
+            if(warnCount.getAndIncrement() < maxWarnCount){
+                log.warn("Error posting summary status update", e);
+            }
+        }
+
         return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 

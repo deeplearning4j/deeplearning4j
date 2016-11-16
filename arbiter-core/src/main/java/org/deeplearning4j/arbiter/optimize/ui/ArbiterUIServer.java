@@ -37,6 +37,7 @@ import org.deeplearning4j.ui.api.Component;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -228,9 +229,18 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     }
 
     public void updateStatus(Component component){
+        String str = "";
+        try{
+            str = new ObjectMapper().writeValueAsString(component);
+        }catch (Exception e){
+
+        }
+
         if(targetSummaryStatusUpdate == null) targetSummaryStatusUpdate = client.target("http://localhost:" + port + "/summary/update");
-        Response response = targetSummaryStatusUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .post(Entity.entity(component, MediaType.APPLICATION_JSON));
+
+        Response response = targetSummaryStatusUpdate.request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(str, MediaType.TEXT_PLAIN));
+
         log.trace("Status update response: {}", response);
         log.trace("Posted summary status update: {}", component);
         lastSummaryUpdateTime.set(System.currentTimeMillis());
@@ -249,8 +259,17 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
 
     public void updateOptimizationSettings(Component component){
         if(targetConfigUpdate == null) targetConfigUpdate = client.target("http://localhost:" + port + "/config/update");
-        targetConfigUpdate.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .post(Entity.entity(component, MediaType.APPLICATION_JSON));
+
+        String str = "";
+        try{
+            str = new ObjectMapper().writeValueAsString(component);
+        }catch (Exception e){
+
+        }
+
+        targetConfigUpdate.request(MediaType.TEXT_PLAIN).accept(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(str, MediaType.TEXT_PLAIN));
+
         log.trace("Posted optimization settings update: {}", component);
 
         lastConfigUpdateTime.set(System.currentTimeMillis());
