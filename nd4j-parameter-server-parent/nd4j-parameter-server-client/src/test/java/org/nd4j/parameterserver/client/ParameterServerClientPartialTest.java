@@ -3,7 +3,9 @@ package org.nd4j.parameterserver.client;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -28,6 +30,7 @@ public class ParameterServerClientPartialTest {
     private Aeron.Context ctx;
     private ParameterServerSubscriber masterNode,slaveNode;
     private int[] shape = {2,2};
+    private Aeron aeron;
 
     @Before
     public void before() throws Exception {
@@ -40,7 +43,9 @@ public class ParameterServerClientPartialTest {
                 .senderIdleStrategy(new BusySpinIdleStrategy());
 
         mediaDriver = MediaDriver.launchEmbedded(ctx);
+        aeron = Aeron.connect(getContext());
         masterNode = new ParameterServerSubscriber(mediaDriver);
+        masterNode.setAeron(aeron);
         masterNode.run(new String[] {
                 "-m","true",
                 "-p","40123",
@@ -60,6 +65,7 @@ public class ParameterServerClientPartialTest {
         assertEquals(masterNode.getMasterArray(),Nd4j.create(new int[]{2,2}));
 
         slaveNode = new ParameterServerSubscriber(mediaDriver);
+        slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
                 "-p","40126",
                 "-h","localhost",
@@ -90,12 +96,19 @@ public class ParameterServerClientPartialTest {
     }
 
 
+    @After
+    public void after() {
+        if(mediaDriver != null)
+            CloseHelper.close(mediaDriver);
+        if(aeron != null)
+            CloseHelper.close(aeron);
+    }
 
     @Test
     public void testServer() throws Exception {
         ParameterServerClient client = ParameterServerClient
                 .builder()
-                .ctx(getContext())
+                .aeron(aeron)
                 .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
                 .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl())
                 .subscriberHost("localhost")

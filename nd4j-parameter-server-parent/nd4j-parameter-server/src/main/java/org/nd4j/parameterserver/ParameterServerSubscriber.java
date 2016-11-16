@@ -11,6 +11,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -70,7 +71,7 @@ public class ParameterServerSubscriber {
     private AeronNDArrayResponder responder;
     private AeronNDArraySubscriber subscriber;
     private   NDArrayCallback callback;
-
+    private Aeron aeron;
 
     /**
      * Allow passing in a
@@ -155,7 +156,7 @@ public class ParameterServerSubscriber {
         }
 
 
-
+        this.aeron = Aeron.connect(getContext());
 
         if(master) {
             //instantiate with shape instead of just length
@@ -163,7 +164,7 @@ public class ParameterServerSubscriber {
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
             responder = AeronNDArrayResponder.startSubscriber(
-                    getContext(),
+                    aeron,
                     host,port + 1,
                     cast,
                     streamId + 1);
@@ -187,7 +188,7 @@ public class ParameterServerSubscriber {
 
         //start a node
         subscriber = AeronNDArraySubscriber.startSubscriber(
-                getContext(),
+                aeron,
                 host,port,
                 callback,
                 streamId,running);
@@ -196,9 +197,19 @@ public class ParameterServerSubscriber {
             LockSupport.parkNanos(100000);
         }
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if(aeron != null)
+                CloseHelper.quietClose(aeron);
+            if(subscriber != null)
+                CloseHelper.quietClose(subscriber);
+            if(responder != null)
+                CloseHelper.quietClose(responder);
+        }));
+
         //set the server for the status of the master and slave nodes
         server = StatusServer.startServer(this);
         log.info("Started status server  on " + statusServerPort);
+
 
     }
 
