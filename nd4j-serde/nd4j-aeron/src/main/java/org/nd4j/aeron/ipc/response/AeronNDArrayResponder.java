@@ -42,7 +42,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
     private  Aeron.Context ctx;
     private AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean init = new AtomicBoolean(false);
-    private static Logger log = LoggerFactory.getLogger(AeronNDArraySubscriber.class);
+    private static Logger log = LoggerFactory.getLogger(AeronNDArrayResponder.class);
     private NDArrayHolder ndArrayHolder;
     private Aeron aeron;
     private AtomicBoolean launched;
@@ -89,7 +89,8 @@ public class AeronNDArrayResponder implements AutoCloseable {
         //The first one is a  normal 1 subscription listener.
         //The second one is when we want to send responses
         boolean started = false;
-        while(!started) {
+        int numTries = 0;
+        while(!started && numTries < 3) {
             try {
                 try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                     log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
@@ -106,9 +107,14 @@ public class AeronNDArrayResponder implements AutoCloseable {
 
 
             } catch (Exception e) {
-                log.warn("Failed to connect..trying again");
+                numTries++;
+                log.warn("Failed to connect..trying again",e);
             }
         }
+
+        if(numTries >= 3)
+            throw new IllegalStateException("Was unable to start responder after " + numTries + "tries");
+
 
     }
 
