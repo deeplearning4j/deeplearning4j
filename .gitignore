@@ -5,7 +5,6 @@ dependency-reduced-pom.xml
 *.ser
 application.home_IS_UNDEFINEiD
 README.md~
-*.png
 *.bin
 *.releaseBackup
 *.out
@@ -24,4 +23,3 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 .classpath
 metastore_db
 *.ipynb*
-*.html

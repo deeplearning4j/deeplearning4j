@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
@@ -55,6 +56,8 @@ import java.util.*;
 @NoArgsConstructor
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
     private static Logger log = LoggerFactory.getLogger(ComputationGraphConfiguration.class);
+
+    private static final AtomicBoolean defaultChangeWarningPrinted = new AtomicBoolean(false);
 
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
@@ -243,10 +246,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
             }
         }
-        if (!pretrain)
+
+        boolean warned = false;
+        if (!pretrain && !defaultChangeWarningPrinted.get()) {
             log.warn("Warning: new network default sets pretrain to false.");
-        if(backprop)
+            warned = true;
+        }
+        if(backprop && !defaultChangeWarningPrinted.get()) {
             log.warn("Warning: new network default sets backprop to true.");
+            warned = true;
+        }
+        if(warned){
+            defaultChangeWarningPrinted.set(true);
+        }
 
         //Check for no graph cycles: done in ComputationGraph.init()
     }
@@ -329,6 +341,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         //Now, given the topological sort: do equivalent of forward pass
         Map<String, InputType> vertexOutputs = new HashMap<>();
+        int currLayerIdx = -1;
         for (String s : topologicalOrdering) {
             int inputIdx = networkInputs.indexOf(s);
             if (inputIdx != -1) {
@@ -364,6 +377,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
                 l.setNIn(afterPreproc, false);
 
+                currLayerIdx++;
             } else {
                 List<String> inputs = vertexInputs.get(s);
                 if (inputs != null) {
@@ -373,7 +387,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
             }
 
-            InputType outputFromVertex = gv.getOutputType(inputTypeList.toArray(new InputType[inputTypeList.size()]));
+            InputType outputFromVertex = gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
         }
     }

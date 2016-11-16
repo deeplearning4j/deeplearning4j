@@ -25,12 +25,11 @@ import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.RecordReaderMeta;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -38,7 +37,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
-import javax.annotation.Generated;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -79,6 +77,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 recordReader.getLabels() == null? -1 : recordReader.getLabels().size());
     }
 
+    /**
+     * Main constructor for classification. This will convert the input class index (at position labelIndex, with integer
+     * values 0 to numPossibleLabels-1 inclusive) to the appropriate one-hot output/labels representation.
+     *
+     * @param recordReader         RecordReader: provides the source of the data
+     * @param batchSize            Batch size (number of examples) for the output DataSet objects
+     * @param labelIndex           Index of the label Writable (usually an IntWritable), as obtained by recordReader.next()
+     * @param numPossibleLabels    Number of classes (possible labels) for classification
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
     }
@@ -161,8 +168,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 List<Writable> record = sequenceIter.next();
                 dataSets.add(getDataSet(record));
             } else {
-                if(collectMetaData && (recordReader instanceof RecordReaderMeta)){
-                    Record record = ((RecordReaderMeta) recordReader).nextRecord();
+                if(collectMetaData){
+                    Record record = recordReader.nextRecord();
                     dataSets.add(getDataSet(record.getRecord()));
                     meta.add(record.getMetaData());
                 } else {
@@ -244,8 +251,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     label = Nd4j.scalar(current.toDouble());
                 } else {
                     int curr = current.toInt();
-                    if (curr >= numPossibleLabels)
-                        curr--;
+                    if (curr < 0 || curr >= numPossibleLabels) {
+                        throw new DL4JInvalidInputException("Invalid classification data: expect label value (at label index column = " + labelIndex
+                            + ") to be in range 0 to " + (numPossibleLabels-1) + " inclusive (0 to numClasses-1, with numClasses=" + numPossibleLabels
+                            + "); got label value of " + current);
+                    }
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
             } else {
@@ -385,7 +395,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @throws IOException If an error occurs during loading of the data
      */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
-        List<Record> records = ((RecordReaderMeta)recordReader).loadFromMetaData(list);
+        List<Record> records = recordReader.loadFromMetaData(list);
         List<DataSet> dataSets = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
         for(Record r : records){

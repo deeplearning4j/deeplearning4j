@@ -414,6 +414,248 @@ public class StaticInfoEncoder
         }
     }
 
+    private final SwEnvironmentInfoEncoder swEnvironmentInfo = new SwEnvironmentInfoEncoder();
+
+    public static long swEnvironmentInfoId()
+    {
+        return 12;
+    }
+
+    public SwEnvironmentInfoEncoder swEnvironmentInfoCount(final int count)
+    {
+        swEnvironmentInfo.wrap(parentMessage, buffer, count);
+        return swEnvironmentInfo;
+    }
+
+    public static class SwEnvironmentInfoEncoder
+    {
+        private static final int HEADER_SIZE = 4;
+        private final GroupSizeEncodingEncoder dimensions = new GroupSizeEncodingEncoder();
+        private StaticInfoEncoder parentMessage;
+        private MutableDirectBuffer buffer;
+        private int blockLength;
+        private int actingVersion;
+        private int count;
+        private int index;
+        private int offset;
+
+        public void wrap(
+            final StaticInfoEncoder parentMessage, final MutableDirectBuffer buffer, final int count)
+        {
+            if (count < 0 || count > 65534)
+            {
+                throw new IllegalArgumentException("count outside allowed range: count=" + count);
+            }
+
+            this.parentMessage = parentMessage;
+            this.buffer = buffer;
+            actingVersion = SCHEMA_VERSION;
+            dimensions.wrap(buffer, parentMessage.limit());
+            dimensions.blockLength((int)0);
+            dimensions.numInGroup((int)count);
+            index = -1;
+            this.count = count;
+            blockLength = 0;
+            parentMessage.limit(parentMessage.limit() + HEADER_SIZE);
+        }
+
+        public static int sbeHeaderSize()
+        {
+            return HEADER_SIZE;
+        }
+
+        public static int sbeBlockLength()
+        {
+            return 0;
+        }
+
+        public SwEnvironmentInfoEncoder next()
+        {
+            if (index + 1 >= count)
+            {
+                throw new java.util.NoSuchElementException();
+            }
+
+            offset = parentMessage.limit();
+            parentMessage.limit(offset + blockLength);
+            ++index;
+
+            return this;
+        }
+
+        public static int envKeyId()
+        {
+            return 51;
+        }
+
+        public static String envKeyCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String envKeyMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int envKeyHeaderLength()
+        {
+            return 4;
+        }
+
+        public SwEnvironmentInfoEncoder putEnvKey(final DirectBuffer src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public SwEnvironmentInfoEncoder putEnvKey(final byte[] src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public SwEnvironmentInfoEncoder envKey(final String value)
+        {
+            final byte[] bytes;
+            try
+            {
+                bytes = value.getBytes("UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            final int length = bytes.length;
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+            return this;
+        }
+
+        public static int envValueId()
+        {
+            return 52;
+        }
+
+        public static String envValueCharacterEncoding()
+        {
+            return "UTF-8";
+        }
+
+        public static String envValueMetaAttribute(final MetaAttribute metaAttribute)
+        {
+            switch (metaAttribute)
+            {
+                case EPOCH: return "unix";
+                case TIME_UNIT: return "nanosecond";
+                case SEMANTIC_TYPE: return "";
+            }
+
+            return "";
+        }
+
+        public static int envValueHeaderLength()
+        {
+            return 4;
+        }
+
+        public SwEnvironmentInfoEncoder putEnvValue(final DirectBuffer src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public SwEnvironmentInfoEncoder putEnvValue(final byte[] src, final int srcOffset, final int length)
+        {
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, src, srcOffset, length);
+
+            return this;
+        }
+
+        public SwEnvironmentInfoEncoder envValue(final String value)
+        {
+            final byte[] bytes;
+            try
+            {
+                bytes = value.getBytes("UTF-8");
+            }
+            catch (final java.io.UnsupportedEncodingException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+
+            final int length = bytes.length;
+            if (length > 1073741824)
+            {
+                throw new IllegalArgumentException("length > max value for type: " + length);
+            }
+
+            final int headerLength = 4;
+            final int limit = parentMessage.limit();
+            parentMessage.limit(limit + headerLength + length);
+            buffer.putInt(limit, (int)length, java.nio.ByteOrder.LITTLE_ENDIAN);
+            buffer.putBytes(limit + headerLength, bytes, 0, length);
+
+            return this;
+        }
+    }
+
     private final ModelParamNamesEncoder modelParamNames = new ModelParamNamesEncoder();
 
     public static long modelParamNamesId()
@@ -485,7 +727,7 @@ public class StaticInfoEncoder
 
         public static int modelParamNamesId()
         {
-            return 51;
+            return 53;
         }
 
         public static String modelParamNamesCharacterEncoding()

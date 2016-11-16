@@ -5,8 +5,9 @@ package org.deeplearning4j.ui.stats.sbe;
 public enum StatsType
 {
     Parameters((short)0),
-    Updates((short)1),
-    Activations((short)2),
+    Gradients((short)1),
+    Updates((short)2),
+    Activations((short)3),
     NULL_VAL((short)255);
 
     private final short value;
@@ -26,8 +27,9 @@ public enum StatsType
         switch (value)
         {
             case 0: return Parameters;
-            case 1: return Updates;
-            case 2: return Activations;
+            case 1: return Gradients;
+            case 2: return Updates;
+            case 3: return Activations;
         }
 
         if ((short)255 == value)

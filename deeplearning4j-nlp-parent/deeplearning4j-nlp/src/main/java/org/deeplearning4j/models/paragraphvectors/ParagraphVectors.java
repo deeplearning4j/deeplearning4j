@@ -631,6 +631,19 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         /**
+         * This method enables/disables parallel tokenization.
+         *
+         * Default value: TRUE
+         * @param allow
+         * @return
+         */
+        @Override
+        public Builder allowParallelTokenization(boolean allow) {
+            super.allowParallelTokenization(allow);
+            return this;
+        }
+
+        /**
          * This method allows you to specify, if UNK word should be used internally
          *
          * @param reallyUse
@@ -685,6 +698,7 @@ public class ParagraphVectors extends Word2Vec {
                 SentenceTransformer transformer = new SentenceTransformer.Builder()
                         .iterator(labelAwareIterator)
                         .tokenizerFactory(tokenizerFactory)
+                        .allowMultithreading(allowParallelTokenization)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
