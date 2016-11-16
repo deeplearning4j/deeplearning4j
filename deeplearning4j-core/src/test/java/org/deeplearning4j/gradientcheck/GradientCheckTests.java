@@ -616,7 +616,7 @@ public class GradientCheckTests {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(Updater.NONE)
                 .seed(12345)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2,2))
                 .list()
                 .layer(0, new ConvolutionLayer.Builder(5, 5)
                         .nIn(3)
