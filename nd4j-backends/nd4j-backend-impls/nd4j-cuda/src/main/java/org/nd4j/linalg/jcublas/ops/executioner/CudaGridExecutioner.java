@@ -959,6 +959,18 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         watchdog.add(new WatchdogPair(array, tag));
     }
 
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
+
     @Override
     public void exec(List<Aggregate> batch) {
         flushQueue();

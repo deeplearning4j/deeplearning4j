@@ -2141,6 +2141,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
     }
 
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
 
     @Override
     public INDArray exec(RandomOp op, Random rng) {
