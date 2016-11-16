@@ -40,7 +40,6 @@ public class ParameterServerClient implements NDArrayCallback {
     private String ndarraySendUrl;
     //the url to retrieve ndarrays from
     private String ndarrayRetrieveUrl;
-    private Aeron.Context ctx;
     private AeronNDArraySubscriber subscriber;
     //host to listen on for the subscriber
     private String subscriberHost;
@@ -56,7 +55,7 @@ public class ParameterServerClient implements NDArrayCallback {
     private String masterStatusHost;
     private int masterStatusPort;
     private ObjectMapper objectMapper = new ObjectMapper();
-
+    private Aeron aeron;
 
     /**
      * Tracks number of
@@ -123,7 +122,7 @@ public class ParameterServerClient implements NDArrayCallback {
         if(subscriber == null) {
             running = new AtomicBoolean(true);
             subscriber = AeronNDArraySubscriber.startSubscriber(
-                    ctx,
+                    aeron,
                     subscriberHost,
                     subscriberPort,
                     this,
@@ -138,7 +137,7 @@ public class ParameterServerClient implements NDArrayCallback {
         log.debug("Parameter server client publishing to " + ndarraySendUrl);
         try(AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
                 .streamId(streamToPublish)
-                .ctx(ctx).channel(channel)
+                .aeron(aeron).channel(channel)
                 .build()) {
             publisher.publish(message);
         } catch (Exception e) {
@@ -188,7 +187,7 @@ public class ParameterServerClient implements NDArrayCallback {
         if(subscriber == null) {
             running = new AtomicBoolean(true);
             subscriber = AeronNDArraySubscriber.startSubscriber(
-                    ctx,
+                    aeron,
                     subscriberHost,
                     subscriberPort,
                     this,
@@ -216,7 +215,7 @@ public class ParameterServerClient implements NDArrayCallback {
         //note here that we send the ndarray send url, because the
         //master also hosts
         try (HostPortPublisher hostPortPublisher = HostPortPublisher
-                .builder().channel(channel).ctx(ctx)
+                .builder().channel(channel).aeron(aeron)
                 //note here that we send our subscriber's listening information
                 .streamId(streamToPublish)
                 .uriToSend(AeronConnectionInformation.of(subscriberHost, subscriberPort, subscriberStream).toString())
