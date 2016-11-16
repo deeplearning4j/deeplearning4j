@@ -21,7 +21,6 @@
     <version>0.6.1-SNAPSHOT</version>
     <modules>
         <module>arbiter-deeplearning4j</module>
-        <module>arbiter-spark</module>
         <module>arbiter-core</module>
     </modules>
     <packaging>pom</packaging>

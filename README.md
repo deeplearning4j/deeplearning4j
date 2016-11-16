@@ -8,7 +8,6 @@ Arbiter contains the following modules:
 
 - arbiter-core: Defines the API and core functionality, and also contains functionality for the Arbiter UI
 - arbiter-deeplearning4j: For hyperparameter optimization of DL4J models (MultiLayerNetwork and ComputationGraph networks)
-- arbiter-spark: For execution of hyperparameter optimization on Spark (WIP)
 
 
 ## Hyperparameter Optimization Functionality
