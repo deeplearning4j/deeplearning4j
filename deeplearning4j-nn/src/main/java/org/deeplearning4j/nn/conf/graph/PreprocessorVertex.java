@@ -82,7 +82,7 @@ public class PreprocessorVertex extends GraphVertex {
     }
 
     @Override
-    public InputType getOutputType(InputType... vertexInputs) throws InvalidInputTypeException {
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length != 1) throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects "
                 + "exactly one input");
         if (outputType != null) return outputType;   //Allows user to override for custom preprocessors

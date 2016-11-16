@@ -7,10 +7,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.sbe.*;
+import org.deeplearning4j.ui.storage.AgronaPersistable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * An implementation of {@link StatsInitializationReport} using Simple Binary Encoding (SBE)
@@ -18,7 +22,7 @@ import java.io.OutputStream;
  * @author Alex Black
  */
 @Data
-public class SbeStatsInitializationReport implements StatsInitializationReport {
+public class SbeStatsInitializationReport implements StatsInitializationReport, AgronaPersistable {
 
     private String sessionID;
     private String typeID;
@@ -36,8 +40,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     private String swJvmSpecVersion;
     private String swNd4jBackendClass;
     private String swNd4jDataTypeName;
-    private String swHostname;
+    private String swHostName;
     private String swJvmUID;
+    private Map<String,String> swEnvironmentInfo;
 
     private int hwJvmAvailableProcessors;
     private int hwNumDevices;
@@ -63,7 +68,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
 
     @Override
     public void reportSoftwareInfo(String arch, String osName, String jvmName, String jvmVersion, String jvmSpecVersion,
-                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid) {
+                                   String nd4jBackendClass, String nd4jDataTypeName, String hostname, String jvmUid,
+                                   Map<String,String> swEnvironmentInfo ) {
         this.swArch = arch;
         this.swOsName = osName;
         this.swJvmName = jvmName;
@@ -71,8 +77,9 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         this.swJvmSpecVersion = jvmSpecVersion;
         this.swNd4jBackendClass = nd4jBackendClass;
         this.swNd4jDataTypeName = nd4jDataTypeName;
-        this.swHostname = hostname;
+        this.swHostName = hostname;
         this.swJvmUID = jvmUid;
+        this.swEnvironmentInfo = swEnvironmentInfo;
         hasSoftwareInfo = true;
     }
 
@@ -115,6 +122,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         return hasModelInfo;
     }
 
+
+
     private void clearHwFields(){
         hwDeviceTotalMemory = null;
         hwDeviceDescription = null;
@@ -129,7 +138,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = null;
         swNd4jBackendClass = null;
         swNd4jDataTypeName = null;
-        swHostname = null;
+        swHostName = null;
         swJvmUID = null;
     }
 
@@ -168,7 +177,8 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         //(a) Header: 8 bytes (4x uint16 = 8 bytes)
         //(b) Fixed length entries length (sie.BlockLength())
         //(c) Group 1: Hardware devices (GPUs) max memory: 4 bytes header + nEntries * 8 (int64) + nEntries * variable length Strings (header + content)  = 4 + 8*n + content
-        //(d) Group 2: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
+        //(d) Group 2: Software device info: 4 bytes header + 2x variable length Strings for each
+        //(d) Group 3: Parameter names: 4 bytes header + nEntries * variable length strings (header + content) = 4 + content
         //(e) Variable length fields: 15 String length fields. Size: 4 bytes header, plus content. 60 bytes header
         //Fixed length + repeating groups + variable length...
         StaticInfoEncoder sie = new StaticInfoEncoder();
@@ -187,17 +197,21 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
-        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostName);
         byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
         byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
         byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
 
         byte[][] bhwDeviceDescription = SbeUtil.toBytes(hasHardwareInfo, hwDeviceDescription);
+        byte[][][] bswEnvInfo = SbeUtil.toBytes(swEnvironmentInfo);
         byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
+
+
 
         bufferSize += bSessionId.length + bTypeId.length + bWorkerId.length;
 
+        bufferSize += 4;    //swEnvironmentInfo group header (always present)
         if (hasSoftwareInfo) {
             bufferSize += SbeUtil.length(bswArch);
             bufferSize += SbeUtil.length(bswOsName);
@@ -208,6 +222,10 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             bufferSize += SbeUtil.length(bswNd4jDataTypeName);
             bufferSize += SbeUtil.length(bswHostname);
             bufferSize += SbeUtil.length(bswJvmUID);
+            //For each entry: 2 variable-length headers (2x4 bytes each) + content
+            int envCount = (bswEnvInfo != null ? bswEnvInfo.length : 0);
+            bufferSize += envCount * 8;
+            bufferSize += SbeUtil.length(bswEnvInfo);
         }
         int nHWDeviceStats = hwNumDevices;
         if (!hasHardwareInfo) nHWDeviceStats = 0;
@@ -237,6 +255,11 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     @Override
+    public void encode(ByteBuffer buffer) {
+        encode(new UnsafeBuffer(buffer));
+    }
+
+    @Override
     public void encode(MutableDirectBuffer buffer) {
 
         MessageHeaderEncoder enc = new MessageHeaderEncoder();
@@ -253,13 +276,14 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         byte[] bswJvmSpecVersion = SbeUtil.toBytes(hasSoftwareInfo, swJvmSpecVersion);
         byte[] bswNd4jBackendClass = SbeUtil.toBytes(hasSoftwareInfo, swNd4jBackendClass);
         byte[] bswNd4jDataTypeName = SbeUtil.toBytes(hasSoftwareInfo, swNd4jDataTypeName);
-        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostname);
+        byte[] bswHostname = SbeUtil.toBytes(hasSoftwareInfo, swHostName);
         byte[] bswJvmUID = SbeUtil.toBytes(hasSoftwareInfo, swJvmUID);
         byte[] bHwHardwareUID = SbeUtil.toBytes(hasHardwareInfo, hwHardwareUID);
         byte[] bmodelConfigClass = SbeUtil.toBytes(hasModelInfo, modelClassName);
         byte[] bmodelConfigJson = SbeUtil.toBytes(hasModelInfo, modelConfigJson);
 
         byte[][] bhwDeviceDescription = SbeUtil.toBytes(hasHardwareInfo, hwDeviceDescription);
+        byte[][][] bswEnvInfo = SbeUtil.toBytes(swEnvironmentInfo);
         byte[][] bModelParamNames = SbeUtil.toBytes(hasModelInfo, modelParamNames);
 
         enc.wrap(buffer, 0)
@@ -291,6 +315,17 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
             byte[] descr = bhwDeviceDescription == null || bhwDeviceDescription.length <= i ? SbeUtil.EMPTY_BYTES : bhwDeviceDescription[i];
             if (descr == null) descr = SbeUtil.EMPTY_BYTES;
             hwdEnc.next().deviceMemoryMax(maxMem).putDeviceDescription(descr, 0, descr.length);
+        }
+
+        //Environment info group
+        int numEnvValues = (hasSoftwareInfo && swEnvironmentInfo != null ? swEnvironmentInfo.size() : 0);
+        StaticInfoEncoder.SwEnvironmentInfoEncoder swEnv = sie.swEnvironmentInfoCount(numEnvValues);
+        if(numEnvValues > 0){
+            byte[][][] mapAsBytes = SbeUtil.toBytes(swEnvironmentInfo);
+            for(byte[][] entryBytes : mapAsBytes){
+                swEnv.next().putEnvKey(entryBytes[0],0,entryBytes[0].length)
+                        .putEnvValue(entryBytes[1],0,entryBytes[1].length);
+            }
         }
 
         int nParamNames = modelParamNames == null ? 0 : modelParamNames.length;
@@ -331,6 +366,11 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
     }
 
     @Override
+    public void decode(ByteBuffer buffer) {
+        decode(new UnsafeBuffer(buffer));
+    }
+
+    @Override
     public void decode(DirectBuffer buffer) {
         //TODO we could do this much more efficiently, with buffer re-use, etc.
         MessageHeaderDecoder dec = new MessageHeaderDecoder();
@@ -358,6 +398,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         modelNumLayers = sid.modelNumLayers();
         modelNumParams = sid.modelNumParams();
 
+        //Hardware device info group
         StaticInfoDecoder.HwDeviceInfoGroupDecoder hwDeviceInfoGroupDecoder = sid.hwDeviceInfoGroup();
         int count = hwDeviceInfoGroupDecoder.count();
         if (count > 0) {
@@ -368,6 +409,18 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         for (StaticInfoDecoder.HwDeviceInfoGroupDecoder hw : hwDeviceInfoGroupDecoder) {
             hwDeviceTotalMemory[i] = hw.deviceMemoryMax();
             hwDeviceDescription[i++] = hw.deviceDescription();
+        }
+
+        //Environment info group
+        i = 0;
+        StaticInfoDecoder.SwEnvironmentInfoDecoder swEnvDecoder = sid.swEnvironmentInfo();
+        if(swEnvDecoder.count() > 0){
+            swEnvironmentInfo = new HashMap<>();
+        }
+        for(StaticInfoDecoder.SwEnvironmentInfoDecoder env : swEnvDecoder ){
+            String key = env.envKey();
+            String value = env.envValue();
+            swEnvironmentInfo.put(key,value);
         }
 
         i = 0;
@@ -389,7 +442,7 @@ public class SbeStatsInitializationReport implements StatsInitializationReport {
         swJvmSpecVersion = sid.swJvmSpecVersion();
         swNd4jBackendClass = sid.swNd4jBackendClass();
         swNd4jDataTypeName = sid.swNd4jDataTypeName();
-        swHostname = sid.swHostName();
+        swHostName = sid.swHostName();
         swJvmUID = sid.swJvmUID();
         if (!hasSoftwareInfo) clearSwFields();
         hwHardwareUID = sid.hwHardwareUID();

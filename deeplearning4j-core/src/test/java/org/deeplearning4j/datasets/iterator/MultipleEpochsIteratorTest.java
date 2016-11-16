@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.TestDataSetConsumer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -86,6 +87,7 @@ public class MultipleEpochsIteratorTest {
         assertEquals(epochs, multiIter.epochs);
     }
 
+    @Ignore // use when checking cifar dataset iterator
     @Test
     public void testCifarDataSetIteratorReset() {
         int epochs = 2;

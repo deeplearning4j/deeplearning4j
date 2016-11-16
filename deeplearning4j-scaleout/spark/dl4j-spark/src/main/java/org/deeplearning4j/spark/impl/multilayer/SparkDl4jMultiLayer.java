@@ -29,6 +29,10 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -37,6 +41,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
@@ -80,6 +85,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private double lastScore;
 
     private List<IterationListener> listeners = new ArrayList<>();
+    private StatsStorage statsStorage;
 
     /**
      * Instantiate a multi layer spark instance
@@ -287,18 +293,49 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model.
-     * <p>
-     * PLEASE NOTE:
-     * 1. These iteration listeners should be configured to use remote UiServer
-     * 2. Remote UiServer should be accessible via network from Spark master node.
+     * This method allows you to specify IterationListeners for this model. The listeners will be
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
-     * @param listeners
+     * @param listeners    Listeners to set
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
+        setListeners(null, listeners);
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
+        //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
+        StatsStorageRouterProvider routerProvider = null;
+        if(listeners != null ){
+            for(IterationListener l : listeners){
+                if(l instanceof RoutingIterationListener){
+                    RoutingIterationListener rl = (RoutingIterationListener)l;
+                    if(rl.getStorageRouter() == null){
+                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)){
+                        //Spark would throw a (probably cryptic) serialization exception later anyway...
+                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
+                    }
+
+                    //Need to give workers a router provider...
+                    if(routerProvider == null){
+                        routerProvider = new VanillaStatsStorageRouterProvider();
+                    }
+                }
+            }
+        }
         this.listeners.clear();
-        this.listeners.addAll(listeners);
-        if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
+        if(listeners != null) {
+            this.listeners.addAll(listeners);
+            if (trainingMaster != null) trainingMaster.setListeners(statsStorage, this.listeners);
+        }
     }
 
     protected void invokeListeners(MultiLayerNetwork network, int iteration) {

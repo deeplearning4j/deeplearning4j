@@ -33,6 +33,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -65,7 +66,13 @@ public class Word2VecTests {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        pathToWriteto = "testing_word2vec_serialization.txt";
+
+        File ptwt = new File(System.getProperty("java.io.tmpdir"), "testing_word2vec_serialization.txt" );
+
+        pathToWriteto =  ptwt.getAbsolutePath();
+
+
+
         FileUtils.deleteDirectory(new File("word2vec-index"));
     }
 
@@ -188,6 +195,9 @@ public class Word2VecTests {
     }
 
 
+
+
+
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
@@ -211,6 +221,7 @@ public class Word2VecTests {
                 //.negativeSample(10)
                 .epochs(1)
                 .windowSize(5)
+                .allowParallelTokenization(true)
                 .modelUtils(new BasicModelUtils<VocabWord>())
                 .iterate(iter)
                 .tokenizerFactory(t)
@@ -218,7 +229,6 @@ public class Word2VecTests {
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
-      //  WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
         File tempFile = File.createTempFile("temp", "temp");
         tempFile.deleteOnExit();
 
@@ -262,6 +272,8 @@ public class Word2VecTests {
         assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("day"));
         assertEquals(matrix.getRow(1), vec.getWordVectorMatrix("night"));
         assertEquals(matrix.getRow(2), vec.getWordVectorMatrix("week"));
+
+        WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
     }
 
     /**

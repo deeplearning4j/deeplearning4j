@@ -24,7 +24,6 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.ui.activation.UpdateActivationIterationListener;
 import org.deeplearning4j.ui.flow.FlowIterationListener;
 import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
@@ -45,6 +44,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.Assert.fail;
+
 /**
  * Test environment for building/debugging UI.
  *
@@ -60,13 +61,14 @@ public class ManualTests {
     @Test
     public void testLaunch() throws Exception {
 
-        UiServer server = UiServer.getInstance();
-
-        System.out.println("http://localhost:" + server.getPort()+ "/");
+//        UiServer server = UiServer.getInstance();
+//
+//        System.out.println("http://localhost:" + server.getPort()+ "/");
 
         Thread.sleep(10000000000L);
 
         new ScoreIterationListener(100);
+        fail("not implemneted");
     }
 
     @Test
@@ -94,17 +96,17 @@ public class ManualTests {
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .list()
                 .layer(0, new RBM.Builder().nIn(numRows*numColumns).nOut(500)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
                 .layer(1, new RBM.Builder().nIn(500).nOut(250)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
                 .layer(2, new RBM.Builder().nIn(250).nOut(200)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
                         .visibleUnit(RBM.VisibleUnit.BINARY)
                         .hiddenUnit(RBM.HiddenUnit.BINARY)
                         .build())
@@ -113,13 +115,13 @@ public class ManualTests {
                 .pretrain(true).backprop(false)
                 .build();
 
-        UiServer server = UiServer.getInstance();
-        UiConnectionInfo connectionInfo = server.getConnectionInfo();
-        connectionInfo.setSessionId("my session here");
+//        UiServer server = UiServer.getInstance();
+//        UiConnectionInfo connectionInfo = server.getConnectionInfo();
+//        connectionInfo.setSessionId("my session here");
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new HistogramIterationListener(connectionInfo, listenerFreq), new FlowIterationListener(connectionInfo, listenerFreq)));
+        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq),new HistogramIterationListener(listenerFreq), new FlowIterationListener(listenerFreq)));
 
         log.info("Train model....");
         model.fit(iter); // achieves end to end pre-training
@@ -136,72 +138,8 @@ public class ManualTests {
 
         log.info(eval.stats());
         log.info("****************Example finished********************");
-    }
 
-
-    @Test
-    public void testRenderWeights() throws Exception {
-        final int numRows = 28;
-        final int numColumns = 28;
-        int outputNum = 10;
-        int numSamples = 60000;
-        int batchSize = 100;
-        int iterations = 10;
-        int seed = 123;
-        int listenerFreq = batchSize / 5;
-
-        log.info("Load data....");
-        DataSetIterator iter = new MnistDataSetIterator(batchSize,numSamples,true);
-
-        log.info("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                .gradientNormalizationThreshold(1.0)
-                .iterations(iterations)
-                .momentum(0.5)
-                .momentumAfter(Collections.singletonMap(3, 0.9))
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .list()
-                .layer(0, new RBM.Builder().nIn(numRows*numColumns).nOut(500)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                        .visibleUnit(RBM.VisibleUnit.BINARY)
-                        .hiddenUnit(RBM.HiddenUnit.BINARY)
-                        .build())
-                .layer(1, new RBM.Builder().nIn(500).nOut(250)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                        .visibleUnit(RBM.VisibleUnit.BINARY)
-                        .hiddenUnit(RBM.HiddenUnit.BINARY)
-                        .build())
-                .layer(2, new RBM.Builder().nIn(250).nOut(200)
-                        .weightInit(WeightInit.XAVIER).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                        .visibleUnit(RBM.VisibleUnit.BINARY)
-                        .hiddenUnit(RBM.HiddenUnit.BINARY)
-                        .build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation("softmax")
-                        .nIn(200).nOut(outputNum).build())
-                .pretrain(true).backprop(false)
-                .build();
-
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq),(IterationListener) new UpdateActivationIterationListener(listenerFreq)));
-
-        log.info("Train model....");
-        model.fit(iter); // achieves end to end pre-training
-
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(outputNum);
-
-        DataSetIterator testIter = new MnistDataSetIterator(100,10000);
-        while(testIter.hasNext()) {
-            DataSet testMnist = testIter.next();
-            INDArray predict2 = model.output(testMnist.getFeatureMatrix());
-            eval.eval(testMnist.getLabels(), predict2);
-        }
-
-        log.info(eval.stats());
-        log.info("****************Example finished********************");
+        fail("Not implemented");
     }
 
     /**
@@ -429,11 +367,12 @@ public class ManualTests {
 
         vec.fit();
 
-        UiConnectionInfo connectionInfo = UiServer.getInstance().getConnectionInfo();
+//        UiConnectionInfo connectionInfo = UiServer.getInstance().getConnectionInfo();
 
-        vec.getLookupTable().plotVocab(100, connectionInfo);
+//        vec.getLookupTable().plotVocab(100, connectionInfo);
 
         Thread.sleep(10000000000L);
+        fail("Not implemented");
     }
 
     @Test

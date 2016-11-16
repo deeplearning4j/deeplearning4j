@@ -1,7 +1,10 @@
 package org.deeplearning4j.ui.flow;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
@@ -13,23 +16,19 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
-import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.UiUtils;
+import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.beans.*;
-import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.flow.data.FlowStaticPersistable;
+import org.deeplearning4j.ui.flow.data.FlowUpdatePersistable;
+import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.ui.weights.HistogramBin;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,27 +37,21 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * This IterationListener is suited for general model performance/architecture overview
  *
- * PLEASE NOTE: WORK IN PROGRESS, DO NOT USE IT UNLESS YOU HAVE TO
+ * @deprecated Use {@link StatsListener} and {@link UIServer#attach(StatsStorage)}. See examples repo for how.
  *
  * @author raver119@gmail.com
  */
+@Slf4j
+@Deprecated
 public class FlowIterationListener implements IterationListener {
+
     private static final String FORMAT = "%02d:%02d:%02d";
-    public static final String LOCALHOST = "localhost";
     public static final String INPUT = "INPUT";
-    // TODO: basic auth should be considered here as well
-    private String remoteAddr;
-    private int remotePort;
-    private String login;
-    private String password;
     private int frequency = 1;
     private boolean firstIteration = true;
-    private String path;
-    private UiConnectionInfo connectionInfo;
     private ModelState modelState = new ModelState();
 
     private AtomicLong iterationCount = new AtomicLong(0);
-
 
 
     private long lastTime = System.currentTimeMillis();
@@ -67,93 +60,57 @@ public class FlowIterationListener implements IterationListener {
 
     private static final List<String> colors = Collections.unmodifiableList(Arrays.asList("#9966ff", "#ff9933", "#ffff99", "#3366ff", "#0099cc", "#669999", "#66ffff"));
 
-    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
-    private WebTarget target;
-    private WebTarget targetState;
+    private final StatsStorageRouter ssr;
+    private final String sessionID;
+    private final String workerID;
+    private boolean openBrowser;
 
-    private static Logger log = LoggerFactory.getLogger(FlowIterationListener.class);
-
-    /**
-     * Creates IterationListener and keeps it detached from any UiServer instances
-     */
     protected FlowIterationListener() {
+        this(1);
         // please keep this constructor protected
     }
 
     /**
-     * Creates IterationListener and attaches it local UiServer instance
+     * Creates IterationListener and attaches it local UIServer instance
      *
      * @param frequency update frequency
      */
     public FlowIterationListener(int frequency) {
-        this(LOCALHOST, 0, frequency);
+        this(new MapDBStatsStorage(), frequency, null, null, true);
     }
 
-    /**
-     *  Creates IterationListener and attaches it to specified remote UiServer instance
-     *
-     * @param address remote UiServer address
-     * @param port remote UiServer port
-     * @param frequency update frequency
-     */
+    @Deprecated
     public FlowIterationListener(@NonNull String address, int port, int frequency) {
-        this.remoteAddr = address;
-        this.remotePort = port;
-        this.frequency = frequency;
-        UiConnectionInfo info = null;
+        this(frequency);
+    }
 
-        if (address.equals(LOCALHOST) || address.equals("127.0.0.1") || address.isEmpty()) {
-            try {
-                this.remoteAddr = LOCALHOST;
-                this.remotePort = UiServer.getInstance().getPort();
-                info = UiServer.getInstance().getConnectionInfo();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    public FlowIterationListener(StatsStorageRouter ssr, int frequency, String sessionID, String workerID, boolean openBrowser) {
+        this.frequency = frequency;
+
+        this.ssr = ssr;
+        if (sessionID == null) {
+            this.sessionID = UUID.randomUUID().toString();
+        } else {
+            this.sessionID = sessionID;
+        }
+        if (workerID == null) {
+            this.workerID = UIDProvider.getJVMUID() + "_" + Thread.currentThread().getId();
+        } else {
+            this.workerID = workerID;
         }
 
-        setup(info);
+        this.openBrowser = openBrowser;
+        if (ssr instanceof StatsStorage && openBrowser) {
+            UIServer.getInstance().attach((StatsStorage) ssr);
+        }
+
+        System.out.println("FlowIterationListener path: http://localhost:" + UIServer.getInstance().getPort() + "/flow");
     }
 
 
-    /**
-     * Creates IterationListener and attaches it to specified remote UiServer instance
-     *
-     * @param login Login for HTTP Basic auth
-     * @param password Password for HTTP Basic auth
-     * @param address remote UiServer address
-     * @param port remote UiServer port
-     * @param frequency update frequency
-     */
-    public FlowIterationListener(@NonNull String login, @NonNull String password, @NonNull String address, int port, int frequency) {
-        this(address, port, frequency);
-        this.connectionInfo.setLogin(login);
-        this.connectionInfo.setPassword(password);
-        this.login = login;
-        this.password = password;
-    }
-
+    @Deprecated
     public FlowIterationListener(@NonNull UiConnectionInfo connectionInfo, int frequency) {
-        setup(connectionInfo);
-    }
-
-    private void setup(@NonNull UiConnectionInfo connectionInfo) {
-        // TODO: add auth option
-
-        this.connectionInfo = connectionInfo;
-
-        java.util.logging.Logger logger =  java.util.logging.Logger.getGlobal();
-        login = null;
-        password = null;
-       // client.register(new LoggingFilter(logger, true));
-        if (login == null || password == null)
-             target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("info").queryParam("sid", connectionInfo.getSessionId());
-
-        targetState = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("flow")).path("state").queryParam("sid", connectionInfo.getSessionId());
-        this.path = connectionInfo.getFullAddress("flow");
-
-
-        log.info("Flow UI address: " + this.path);
+        this(frequency);
     }
 
     /**
@@ -193,35 +150,28 @@ public class FlowIterationListener implements IterationListener {
                 Later, on client side, this JSON should be parsed and rendered. So, proper object structure to be considered.
          */
 
+            if (firstIteration) {
+                // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
+                ModelInfo info = buildModelInfo(model);
+
+                // send ModelInfo to stats storage
+                Persistable staticInfo = new FlowStaticPersistable(sessionID, workerID, System.currentTimeMillis(), info);
+                ssr.putStaticInfo(staticInfo);
+            }
+
+
             // update modelState
             buildModelState(model);
-
-            // On first pass we just build list of layers. However, for MultiLayerNetwork first pass is the last pass, since we know connections in advance
-            ModelInfo info = buildModelInfo(model);
-
+            Persistable updateInfo = new FlowUpdatePersistable(sessionID, workerID, System.currentTimeMillis(), modelState);
+            ssr.putUpdate(updateInfo);
 
 
-
-        /*
-            as soon as model info is built, we need to define color scheme based on number of unique nodes
-         */
-
-            // send ModelInfo to UiServer
-            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(info, MediaType.APPLICATION_JSON));
-            log.debug("Response: " + resp);
-
-            // send ModelState to UiServer
-            resp = targetState.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(modelState, MediaType.APPLICATION_JSON));
-            log.debug("Response: " + resp);
-        /*
-            TODO: it would be nice to send updates of nodes as well
-         */
-
-            if(firstIteration){
+            if (firstIteration && openBrowser ) {
+                UIServer uiServer = UIServer.getInstance();
+                String path = "http://localhost:" + uiServer.getPort() + "/flow?sid=" + sessionID;
                 try {
                     UiUtils.tryOpenBrowser(path, log);
-                } catch (Exception e) {
-                }
+                } catch (Exception e) { }
                 firstIteration = false;
             }
         }
@@ -237,7 +187,7 @@ public class FlowIterationListener implements IterationListener {
      * @param currentY
      * @return
      */
-    protected  List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput, int currentY) {
+    protected List<LayerInfo> flattenToY(ModelInfo model, GraphVertex[] vertices, List<String> currentInput, int currentY) {
         List<LayerInfo> results = new ArrayList<>();
         int x = 0;
         for (int v = 0; v < vertices.length; v++) {
@@ -248,10 +198,10 @@ public class FlowIterationListener implements IterationListener {
                 GraphVertex cv = vertices[indices[i].getVertexIndex()];
                 String inputName = cv.getVertexName();
 
-                for (String input: currentInput) {
+                for (String input : currentInput) {
                     if (inputName.equals(input)) {
                         // we have match for Vertex
-                    //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
+                        //    log.info("Vertex: " + vertex.getVertexName() + " has Input: " + input);
                         try {
                             LayerInfo info = model.getLayerInfoByName(vertex.getVertexName());
                             if (info == null) info = getLayerInfo(vertex.getLayer(), x, currentY, 121);
@@ -272,7 +222,7 @@ public class FlowIterationListener implements IterationListener {
                             LayerInfo connection = model.getLayerInfoByName(input);
                             if (connection != null) {
                                 connection.addConnection(info);
-                              //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
+                                //  log.info("Adding connection ["+ connection.getName()+"] -> ["+ info.getName()+"]");
                             } else {
                                 // the only reason to have null here, is direct input connection
                                 //connection.addConnection(0,0);
@@ -289,11 +239,11 @@ public class FlowIterationListener implements IterationListener {
 
     protected void buildModelState(Model model) {
         // first we update performance state
-        long timeSpent = currTime - lastTime ;
+        long timeSpent = currTime - lastTime;
         float timeSec = timeSpent / 1000f;
 
         INDArray input = model.input();
-        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+        long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
         long numSamples = input.lengthLong() / tadLength;
 
@@ -310,8 +260,8 @@ public class FlowIterationListener implements IterationListener {
         // and now update model params/gradients
         Map<String, Map> newGrad = new LinkedHashMap<>();
 
-        Map<String,Map> newParams = new LinkedHashMap<>();
-        Map<String,INDArray> params = model.paramTable();
+        Map<String, Map> newParams = new LinkedHashMap<>();
+        Map<String, INDArray> params = model.paramTable();
 
         Layer[] layers = null;
         if (model instanceof MultiLayerNetwork) {
@@ -322,20 +272,20 @@ public class FlowIterationListener implements IterationListener {
 
         List<Double> lrs = new ArrayList<>();
         if (layers != null) {
-            for (Layer layer: layers) {
+            for (Layer layer : layers) {
                 lrs.add(layer.conf().getLayer().getLearningRate());
             }
             modelState.setLearningRates(lrs);
         }
         Map<Integer, LayerParams> layerParamsMap = new LinkedHashMap<>();
 
-        for(Map.Entry<String,INDArray> entry : params.entrySet()) {
+        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             String param = entry.getKey();
             if (!Character.isDigit(param.charAt(0)))
                 continue;
 
-            int layer = Integer.parseInt(param.replaceAll("\\_.*$",""));
-            String key = param.replaceAll("^.*?_","").toLowerCase();
+            int layer = Integer.parseInt(param.replaceAll("\\_.*$", ""));
+            String key = param.replaceAll("^.*?_", "").toLowerCase();
 
             if (!layerParamsMap.containsKey(layer))
                 layerParamsMap.put(layer, new LayerParams());
@@ -371,10 +321,10 @@ public class FlowIterationListener implements IterationListener {
             List<String> inputs = graph.getConfiguration().getNetworkInputs();
             // now we need to add inputs as y0 nodes
             int x = 0;
-            for (String input: inputs) {
+            for (String input : inputs) {
                 GraphVertex vertex = graph.getVertex(input);
                 INDArray gInput = vertex.getInputs()[0];
-                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1,gInput.rank()));
+                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1, gInput.rank()));
 
                 long numSamples = gInput.lengthLong() / tadLength;
 
@@ -410,10 +360,10 @@ public class FlowIterationListener implements IterationListener {
                 /*
                     for each grid row we look for nodes, that are connected to previous layer
                 */
-                List<LayerInfo> layersForGridY =  flattenToY(modelInfo, vertices, needle, y);
+                List<LayerInfo> layersForGridY = flattenToY(modelInfo, vertices, needle, y);
 
                 needle.clear();
-                for (LayerInfo layerInfo: layersForGridY) {
+                for (LayerInfo layerInfo : layersForGridY) {
                     needle.add(layerInfo.getName());
                 }
                 if (needle.isEmpty()) break;
@@ -425,7 +375,7 @@ public class FlowIterationListener implements IterationListener {
             // manually adding input layer
 
             INDArray input = model.input();
-            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
             long numSamples = input.lengthLong() / tadLength;
 
@@ -452,10 +402,10 @@ public class FlowIterationListener implements IterationListener {
 
             // for MLN x value is always 0
             final int x = 0;
-            for (Layer layer: network.getLayers()) {
+            for (Layer layer : network.getLayers()) {
                 LayerInfo layerInfo = getLayerInfo(layer, x, y, y);
                 // since it's MLN, we know connections in advance as curLayer + 1
-                layerInfo.addConnection(x, y+1);
+                layerInfo.addConnection(x, y + 1);
                 modelInfo.addLayer(layerInfo);
                 y++;
             }
@@ -466,16 +416,16 @@ public class FlowIterationListener implements IterationListener {
         }// else throw new IllegalStateException("Model ["+model.getClass().getCanonicalName()+"] doesn't looks like supported one.");
 
         // find layers without connections, and mark them as output layers
-        for (LayerInfo layerInfo: modelInfo.getLayers()) {
+        for (LayerInfo layerInfo : modelInfo.getLayers()) {
             if (layerInfo.getConnections().size() == 0) layerInfo.setLayerType("OUTPUT");
         }
 
         // now we apply colors to distinct layer types
         AtomicInteger cnt = new AtomicInteger(0);
-        for (String layerType: modelInfo.getLayerTypes()) {
+        for (String layerType : modelInfo.getLayerTypes()) {
             String curColor = colors.get(cnt.getAndIncrement());
             if (cnt.get() >= colors.size()) cnt.set(0);
-            for (LayerInfo layerInfo: modelInfo.getLayersByType(layerType)) {
+            for (LayerInfo layerInfo : modelInfo.getLayersByType(layerType)) {
                 if (layerType.equals(INPUT)) {
                     layerInfo.setColor("#99ff66");
                 } else if (layerType.equals("OUTPUT")) {
@@ -512,7 +462,7 @@ public class FlowIterationListener implements IterationListener {
 
         // set layer type
         try {
-            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$",""));
+            info.setLayerType(layer.getClass().getSimpleName().replaceAll("Layer$", ""));
         } catch (Exception e) {
             info.setLayerType("n/a");
             return info;
@@ -523,7 +473,7 @@ public class FlowIterationListener implements IterationListener {
         StringBuilder subLine = new StringBuilder();
         StringBuilder fullLine = new StringBuilder();
 
-    //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
+        //    log.info("Layer: " + info.getName() + " class: " + layer.getClass().getSimpleName());
 
         if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
             org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer.conf().getLayer();
@@ -547,11 +497,11 @@ public class FlowIterationListener implements IterationListener {
             fullLine.append("Inputs number: ").append(layer1.getNIn()).append("<br/>");
             fullLine.append("Outputs number: ").append(layer1.getNOut()).append("<br/>");
         } else {
-                // TODO: Introduce Layer.Type.OUTPUT
-                if (layer instanceof BaseOutputLayer) {
-                    mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()+ "]");
-                    fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)layer.conf().getLayer()).getNOut()).append("<br/>");
-                }
+            // TODO: Introduce Layer.Type.OUTPUT
+            if (layer instanceof BaseOutputLayer) {
+                mainLine.append("Outputs: [" + ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer()).getNOut() + "]");
+                fullLine.append("Outputs number: ").append(((org.deeplearning4j.nn.conf.layers.BaseOutputLayer) layer.conf().getLayer()).getNOut()).append("<br/>");
+            }
         }
 
         subLine.append(" A: [").append(layer.conf().getLayer().getActivationFunction()).append("]");

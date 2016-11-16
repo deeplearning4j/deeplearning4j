@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -347,6 +348,17 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+
+        //Input validation:
+        if(input.rank() != 2 || input.columns() != W.rows() ){
+            if(input.rank() != 2){
+                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank " + input.rank()
+                        + " array with shape " + Arrays.toString(input.shape()));
+            }
+            throw new DL4JInvalidInputException("Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                    + ") is invalid: does not match layer input size (layer # inputs = " + W.size(0) + ")");
+        }
+
         if(conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
@@ -646,5 +658,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void setMaskArray(INDArray maskArray) {
         this.maskArray = maskArray;
+    }
+
+    @Override
+    public INDArray getMaskArray(){
+        return maskArray;
     }
 }
