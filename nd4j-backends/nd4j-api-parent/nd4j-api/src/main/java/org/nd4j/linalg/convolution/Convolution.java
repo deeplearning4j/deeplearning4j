@@ -114,17 +114,17 @@ public class Convolution {
      * @param sx the stride along x
      * @param ph the padding width
      * @param pw the padding height
-     * @param coverAll whether to cover the whole image or not
+     * @param isSameMode whether to cover the whole image or not
      * @return the column formatted image
      *
      */
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,coverAll);
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
+        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean coverAll, INDArray out) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,coverAll,out);
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, INDArray out) {
+        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode,out);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
@@ -142,8 +142,8 @@ public class Convolution {
      * @return the column formatted image
      *
      */
-    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
-        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,coverAll);
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean isSameMode) {
+        Im2col im2col = new Im2col(img,kh,kw,sy,sx,ph,pw,isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
