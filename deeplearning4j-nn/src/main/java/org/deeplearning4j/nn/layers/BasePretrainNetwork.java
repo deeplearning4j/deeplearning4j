@@ -123,7 +123,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public int numParams() {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-//            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             ret += entry.getValue().length();
         }
         return ret;
@@ -150,19 +149,12 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         // Set for backprop and only W & hb
         paramsFlattened.assign(params);
 
-        // Set for pretrain with W, hb & vb
-//        int idx = 0;
-//        Set<String> paramKeySet = this.params.keySet();
-//        for(String s : paramKeySet) {
-//            INDArray param = getParam(s);
-//            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
-//            if(param.length() != get.length())
-//                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-//            param.assign(get.reshape('f',param.shape()));  //Use assign due to backprop params being a view of a larger array
-//            idx += param.length();
-//
-//        }
+    }
 
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+        Pair<Gradient,INDArray> result = super.backpropGradient(epsilon);
+        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+        return result;
     }
 
 }
