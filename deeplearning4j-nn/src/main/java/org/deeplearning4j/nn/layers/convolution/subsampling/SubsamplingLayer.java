@@ -182,7 +182,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         switch(layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
@@ -257,7 +257,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
         INDArray col = Nd4j.create(new int[]{miniBatch,inDepth,outH,outW,kernel[0],kernel[1]},'c');
         INDArray col2 = col.permute(0,1,4,5,2,3);
-        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col2);
+        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col2);
 
         //Reshape to 2d; should be zero-copy reshape due to permute above
         INDArray col2d = col.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
