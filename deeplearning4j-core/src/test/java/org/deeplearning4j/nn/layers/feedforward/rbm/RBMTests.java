@@ -303,7 +303,7 @@ public class RBMTests {
         rbm2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("0_W")))));
         rbm2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("1_W")))));
 
-        rbm2.fit(features);
+        rbm2.fit(features, features);
     }
 
     @Ignore
@@ -360,7 +360,7 @@ public class RBMTests {
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1, int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
                 .seed(0xDEADBEEF)
-                .iterations(1000)
+                .iterations(1)
                 .biasInit(0)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
