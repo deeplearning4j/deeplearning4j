@@ -30,6 +30,7 @@ package org.deeplearning4j.nn.conf;
 public enum ConvolutionMode {
 
     Strict,
-    Truncate
+    Truncate,
+    Same
 
 }
