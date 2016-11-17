@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
@@ -46,6 +47,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -752,6 +755,61 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         log.info("bins: {}", z);
 
         assertEquals(zExp, z);
+    }
+
+    @Test
+    public void testEuclideanManhattanDistanceAlongDimension_Rank4(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray firstOneExample = Nd4j.rand('c', new int[]{1,2,2,2});
+        INDArray secondOneExample = Nd4j.rand('c', new int[]{1,2,2,2});
+
+        double[] d1 = firstOneExample.data().asDouble();
+        double[] d2 = secondOneExample.data().asDouble();
+        double sumSquaredDiff = 0.0;
+        double expManhattanDistance = 0.0;
+        for( int i=0; i<d1.length; i++ ){
+            double diff = d1[i] - d2[i];
+            sumSquaredDiff += diff * diff;
+            expManhattanDistance += Math.abs(diff);
+        }
+        double expected = Math.sqrt(sumSquaredDiff);
+        System.out.println("Expected, Euclidean: " + expected);
+        System.out.println("Expected, Manhattan: " + expManhattanDistance);
+
+        int mb = 2;
+        INDArray firstOrig = Nd4j.create(mb, 2, 2, 2);
+        INDArray secondOrig = Nd4j.create(mb, 2, 2, 2);
+        for( int i=0; i<mb; i++ ){
+            firstOrig.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, firstOneExample);
+            secondOrig.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, secondOneExample);
+        }
+
+        for(char order : new char[]{'c','f'}) {
+            INDArray first = firstOrig.dup(order);
+            INDArray second = secondOrig.dup(order);
+
+            assertEquals(firstOrig, first);
+            assertEquals(secondOrig, second);
+
+
+            INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
+            INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second), 1, 2, 3);
+
+            System.out.println("\n\nOrder: " + order);
+            System.out.println("Euclidean:");
+            System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
+            System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
+
+            assertEquals(out.getRow(0), out.getRow(1));
+
+            System.out.println("Manhattan:");
+            System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
+            System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
+
+            assertEquals(expected, out.getRow(0).getDouble(0), 1e-5);
+            assertEquals(expManhattanDistance, outManhattan.getRow(0).getDouble(0), 1e-5);
+        }
     }
 
     @Override
