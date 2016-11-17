@@ -100,7 +100,7 @@ public class PCA {
      * 
      * The array Areduced is a projection of A onto principal components
      *
-     * @param A the array of features, rows are results, columns are features
+     * @param A the array of features, rows are results, columns are features - will be changed
      * @param variance the amount of variance to preserve as a float 0 - 1
      * @param whether to normalize (set features to have zero mean)
      * @return the matrix to mulitiply a feature by to get a reduced feature set
@@ -118,11 +118,10 @@ public class PCA {
 
 	// The prepare SVD results, we'll decomp A to UxSxV'
         INDArray s  = Nd4j.create( m<n?m:n ) ;
-        INDArray U  = Nd4j.create( m, m, 'f' ) ;
         INDArray VT  = Nd4j.create( n, n, 'f' ) ;
 
         // Note - we don't care about U 
-        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, U, VT );
+        Nd4j.getBlasWrapper().lapack().sgesvd( A, s, null, VT );
         
         // Now convert the eigs of X into the eigs of the covariance matrix
         for( int i=0 ; i<s.length() ; i++ ) {
@@ -146,9 +145,10 @@ public class PCA {
         }
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
+	INDArray V = VT.transpose() ;
         INDArray factor = Nd4j.create(  n, k, 'f' ) ;
         for( int i=0 ; i<k ; i++ ) {
-        	factor.putColumn( i, VT.getRow(i) ) ;
+        	factor.putColumn( i, V.getColumn(i) ) ;
         }
 
         return factor  ;

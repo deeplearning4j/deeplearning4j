@@ -79,24 +79,23 @@ public class JcublasLapack extends BaseLapack {
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
 
 		// this output - indicates how much memory we'll need for the real operation
-		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
+		DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnSgetrf_bufferSize( 
 			solverDn, 
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			M, 
-			(IntPointer) worksize.addressPointer() // we intentionally use host pointer here
+			(IntPointer)worksizeBuffer.addressPointer() // we intentionally use host pointer here
 			) ;
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf_bufferSize failed with code: " + stat ) ;
 		}
 
+		int worksize = worksizeBuffer.getInt(0) ;
 		// Now allocate memory for the workspace, the permutation matrix and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(worksize.getInt(0)) ;
-
-		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
+		Pointer workspace = new Workspace( worksize*Nd4j.sizeOfDataType() ) ;
 
 		// Do the actual LU decomp
 		stat = cusolverDnSgetrf(
@@ -104,7 +103,7 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(FloatPointer)xAPointer.getDevicePointer(), 
 			M, 
-			new CudaPointer(allocator.getPointer(work, ctx)).asFloatPointer(),
+			new CudaPointer(workspace).asFloatPointer(),
 			new CudaPointer(allocator.getPointer(IPIV, ctx)).asIntPointer() ,
 			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
@@ -115,11 +114,6 @@ public class JcublasLapack extends BaseLapack {
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
 		}
-		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
-
-		// A is modified on device side as well
-		allocator.getAllocationPoint(INFO).tickDeviceWrite();
-		allocator.getAllocationPoint(A).tickDeviceWrite();
 	}
 	allocator.registerAction(ctx, A );
 	allocator.registerAction(ctx, INFO );
@@ -158,24 +152,23 @@ public class JcublasLapack extends BaseLapack {
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
 
 		// this output - indicates how much memory we'll need for the real operation
-		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
+		DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnDgetrf_bufferSize( 
 			solverDn, 
 			M, N, 
 			(DoublePointer)xAPointer.getDevicePointer(), 
 			M, 
-			(IntPointer) worksize.addressPointer() // we intentionally use host pointer here
+			(IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
 			) ;
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnDgetrf_bufferSize failed with code: " + stat ) ;
 		}
+		int worksize = worksizeBuffer.getInt(0) ;
 
 		// Now allocate memory for the workspace, the permutation matrix and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createDouble(worksize.getInt(0)) ;
-
-		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
+		Pointer workspace = new Workspace( worksize*Nd4j.sizeOfDataType() ) ;
 
 		// Do the actual LU decomp
 		stat = cusolverDnDgetrf(
@@ -183,22 +176,14 @@ public class JcublasLapack extends BaseLapack {
 			M, N, 
 			(DoublePointer)xAPointer.getDevicePointer(), 
 			M, 
-			new CudaPointer(allocator.getPointer(work, ctx)).asDoublePointer(),
+			new CudaPointer(workspace).asDoublePointer(),
 			new CudaPointer(allocator.getPointer(IPIV, ctx)).asIntPointer() ,
 			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
 
-			// we do sync to make sure getrf is finished
-			//ctx.syncOldStream();
-
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgetrf failed with code: " + stat ) ;
 		}
-		allocator.getAllocationPoint(IPIV).tickDeviceWrite();
-
-		// A is modified on device side as well
-		allocator.getAllocationPoint(INFO).tickDeviceWrite();
-		allocator.getAllocationPoint(A).tickDeviceWrite();
 	}
 	allocator.registerAction(ctx, A );
 	allocator.registerAction(ctx, INFO );
@@ -256,59 +241,46 @@ public class JcublasLapack extends BaseLapack {
            	if (result == 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
+		// transfer the INDArray into GPU memory
+        	CublasPointer xAPointer = new CublasPointer(A, ctx);
+
 		// this output - indicates how much memory we'll need for the real operation
-		DataBuffer workSizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
+		DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnSgesvd_bufferSize( 
 			solverDn, 
 			M, N, 
-			(IntPointer)workSizeBuffer.addressPointer() // we intentionally use host pointer here
+			(IntPointer)worksizeBuffer.addressPointer() // we intentionally use host pointer here
 			) ;
-		int workSize = workSizeBuffer.getInt(0) ;
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat ) ;
 		}
+		int worksize = worksizeBuffer.getInt(0) ;
 
-		// Now allocate memory for the workspace, the non-converging row buffer and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createFloat(workSize) ;		
+		Pointer workspace = new Workspace( worksize*Nd4j.sizeOfDataType() ) ;
 		DataBuffer rwork = Nd4j.getDataBufferFactory().createFloat( (M<N?M:N)-1 ) ;
 
-/*
-		allocator.getAllocationPoint(A).tickDeviceWrite();
-		allocator.getAllocationPoint(A).setConstant(true);
-		if( U!=null) allocator.getAllocationPoint(U).tickDeviceWrite();
-		if( VT!=null) allocator.getAllocationPoint(VT).tickDeviceWrite();
-		allocator.getAllocationPoint(S).tickDeviceWrite();
-		allocator.getAllocationPoint(work).tickDeviceWrite();
-		allocator.getAllocationPoint(rwork).tickDeviceWrite();
-		allocator.getAllocationPoint(INFO).tickDeviceWrite();
-*/
 		// Do the actual decomp
 		stat = cusolverDnSgesvd(
 			solverDn,
 			jobu,
 			jobvt,
 			M, N, 
-			new CudaPointer(allocator.getPointer(A, ctx)).asFloatPointer(), 
+			(FloatPointer)xAPointer.getDevicePointer(), 
 			M, 
 			new CudaPointer(allocator.getPointer(S, ctx)).asFloatPointer() ,
 			U==null ? null : new CudaPointer(allocator.getPointer(U, ctx)).asFloatPointer() ,
 			M,
 			VT==null ? null : new CudaPointer(allocator.getPointer(VT, ctx)).asFloatPointer() ,
 			N,
-			new CudaPointer(allocator.getPointer(work, ctx)).asFloatPointer(),
-			workSize,
+			new CudaPointer(workspace).asFloatPointer(),
+			worksize,
 			new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),			
 			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
-
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgesvd failed with code: " + stat ) ;
 		}
-		//allocator.getAllocationPoint(S).tickDeviceWrite();
-		//if( U!=null)  allocator.getAllocationPoint(U).tickDeviceWrite();
-		//if( VT!=null) allocator.getAllocationPoint(VT).tickDeviceWrite();
-		//allocator.getAllocationPoint(INFO).tickDeviceWrite();
 	}
 	allocator.registerAction(ctx, INFO );
 	allocator.registerAction(ctx, S );
@@ -352,22 +324,23 @@ public class JcublasLapack extends BaseLapack {
 
 		// transfer the INDArray into GPU memory
         	CublasPointer xAPointer = new CublasPointer(A, ctx);
-		xAPointer.setResultPointer(false);
+
 		// this output - indicates how much memory we'll need for the real operation
-		DataBuffer worksize = Nd4j.getDataBufferFactory().createInt(1) ;
+		DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1) ;
 
 		int stat = cusolverDnSgesvd_bufferSize( 
 			solverDn, 
 			M, N, 
-			(IntPointer)worksize.addressPointer() // we intentionally use host pointer here
+			(IntPointer)worksizeBuffer.addressPointer() // we intentionally use host pointer here
 			) ;
 
 		if( stat != CUSOLVER_STATUS_SUCCESS ) {
  		    throw new IllegalStateException("cusolverDnSgesvd_bufferSize failed with code: " + stat ) ;
 		}
+		int worksize = worksizeBuffer.getInt(0) ;
 
 		// Now allocate memory for the workspace, the non-converging row buffer and a return code
-		DataBuffer work = Nd4j.getDataBufferFactory().createDouble(worksize.getInt(0)) ;		
+		Pointer workspace = new Workspace( worksize*Nd4j.sizeOfDataType() ) ;
 		DataBuffer rwork = Nd4j.getDataBufferFactory().createDouble( (M<N?M:N)-1 ) ;
 
 		// Do the actual decomp
@@ -383,8 +356,8 @@ public class JcublasLapack extends BaseLapack {
 			M,
 			VT==null ? null : new CudaPointer(allocator.getPointer(VT, ctx)).asDoublePointer() ,
 			N,
-			new CudaPointer(allocator.getPointer(work, ctx)).asDoublePointer(),
-			worksize.getInt(0),
+			new CudaPointer( workspace).asDoublePointer(),
+			worksize,
 			new CudaPointer(allocator.getPointer(rwork, ctx)).asDoublePointer(),			
 			new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
 			) ;
@@ -401,4 +374,16 @@ public class JcublasLapack extends BaseLapack {
     }
 
 
+
+	static class Workspace extends Pointer {		
+		public Workspace( long size ) {
+			super(  NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(size, null, 0) ) ;
+			deallocator( new Deallocator() {				
+				@Override
+				public void deallocate() {
+					NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(Workspace.this, null) ;
+				}
+			} ) ;
+		}
+	}
 }
