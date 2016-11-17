@@ -231,11 +231,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-//        int[] pad = layerConf().getPadding();
-//
-//        int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
-//        int outH = outSize[0];
-//        int outW = outSize[1];
 
         int[] pad;
         int[] outSize;
