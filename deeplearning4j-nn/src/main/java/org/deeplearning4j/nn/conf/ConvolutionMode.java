@@ -24,7 +24,7 @@ package org.deeplearning4j.nn.conf;
  * The major consequence of this rounding down: a border/edge effect will be seen if/when rounding down is required.
  * In effect, some number of inputs along the given dimension (height or width) will not be used as input and hence
  * some input activations can be lost/ignored. This can be problematic higher in the network (where the cropped activations
- * may represent a significant proportion of the original input), or with large kernel size.<br>
+ * may represent a significant proportion of the original input), or with large kernel sizes and strides.<br>
  * In the given dimension (height or width) the number of truncated/cropped input values is equal to
  * (inputSize - kernelSize + 2*padding) % stride. (where % is the modulus/remainder operation).<br>
  * <br>
