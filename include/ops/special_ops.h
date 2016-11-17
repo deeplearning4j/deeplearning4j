@@ -160,6 +160,7 @@ namespace simdOps {
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
 
+            bool padding = isSameMode || padHeight > 0 || padWidth > 0; //true;	//isSameMode || padHeight > 0 || padWidth > 0;
 
 			int exampleFrom = 0;
 			int exampleTo = inShape[0];
@@ -190,7 +191,6 @@ namespace simdOps {
 					int inShape2 = inShape[2];
 					int inShape3 = inShape[3];
 
-					bool padding = true;	//isSameMode || padHeight > 0 || padWidth > 0;
 					inIndices[0] = ex;
 					inIndices[1] = d;
 					outIndices[0] = ex;
