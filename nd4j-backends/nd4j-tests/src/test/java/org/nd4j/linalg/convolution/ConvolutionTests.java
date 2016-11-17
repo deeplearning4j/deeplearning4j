@@ -455,6 +455,14 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray out3p = out3.permute(0,3,4,5,1,2);
         Convolution.im2col(input,kH,kW,strideH,strideW,padTop,padLeft,false,out3p);
         assertEquals(expected,out3p);
+
+
+
+        ///////////
+        //Finally: Check col2im with the same shapes. This doesn't check the results, more 'does it crash or not'
+
+        INDArray col2imResult = Nd4j.create(input.shape());
+        Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
     }
 
 
@@ -580,6 +588,13 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray out3p = out3.permute(0,3,4,5,1,2);
         Convolution.im2col(input,kH,kW,strideH,strideW,padTop,padLeft,false,out3p);
         assertEquals(expected,out3p);
+
+
+        ///////////
+        //Finally: Check col2im with the same shapes. This doesn't check the results, more 'does it crash or not'
+
+        INDArray col2imResult = Nd4j.create(input.shape());
+        Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
     }
 
 
