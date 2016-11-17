@@ -73,17 +73,21 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
 
                 for( int i=0; i<nFeatures; i++ ){
                     INDArray fi = next.getFeatures(i);
-                    INDArray li = next.getFeatures(i);
                     fToKeep[i] = getRange(fi,0,batchSize-countSoFar);
                     fToCache[i] = getRange(fi,batchSize-countSoFar, nExamples);
-                    lToKeep[i] = getRange(li,0,batchSize-countSoFar);
-                    lToCache[i] = getRange(li,batchSize-countSoFar, nExamples);
 
                     if(fMaskToKeep != null){
                         INDArray fmi = next.getFeaturesMaskArray(i);
                         fMaskToKeep[i] = getRange(fmi,0,batchSize-countSoFar);
                         fMaskToCache[i] = getRange(fmi,batchSize-countSoFar, nExamples);
                     }
+                }
+
+                for( int i=0; i<nLabels; i++ ){
+                    INDArray li = next.getLabels(i);
+                    lToKeep[i] = getRange(li,0,batchSize-countSoFar);
+                    lToCache[i] = getRange(li,batchSize-countSoFar, nExamples);
+
                     if(lMaskToKeep != null){
                         INDArray lmi = next.getLabelsMaskArray(i);
                         lMaskToKeep[i] = getRange(lmi,0,batchSize-countSoFar);
