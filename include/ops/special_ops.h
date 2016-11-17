@@ -150,7 +150,7 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
-			bool coverAll = extraParams[6] > 0.0;
+			bool isSameMode = extraParams[6] > 0.0;
 
 			int outArrayOffset = 0;
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -166,9 +166,9 @@ namespace simdOps {
 			int depthFrom = 0;
 			int depthTo = inShape[1];
 			int yOutFrom = 0;
-			int yOutTo = outShape[4];	//outSize(inShape[2], kernelHeight, strideY, padHeight, coverAll);
+			int yOutTo = outShape[4];
 			int xOutFrom = 0;
-			int xOutTo = outShape[5];	//outSize(inShape[3], kernelWidth, strideX, padWidth, coverAll);
+			int xOutTo = outShape[5];
 
 			T *dIn = dx;
 			T *dOut = result;
@@ -190,7 +190,7 @@ namespace simdOps {
 					int inShape2 = inShape[2];
 					int inShape3 = inShape[3];
 
-					bool padding = true;	//TODO - fix this - padHeight > 0 || padWidth > 0;
+					bool padding = true;	//isSameMode || padHeight > 0 || padWidth > 0;
 					inIndices[0] = ex;
 					inIndices[1] = d;
 					outIndices[0] = ex;
@@ -663,7 +663,7 @@ namespace simdOps {
 					int xOutTo = inShape[5];
 
 
-					bool padding = true;	//TODO - padHeight > 0 || padWidth > 0;
+					bool padding = true;	//isSameMode || padHeight > 0 || padWidth > 0;
 					inIndices[0] = ex;
 					inIndices[1] = d;
 					outIndices[0] = ex;
