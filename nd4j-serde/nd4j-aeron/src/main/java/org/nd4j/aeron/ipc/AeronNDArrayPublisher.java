@@ -34,7 +34,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
     public final static int NUM_RETRIES = 100;
-
+    private boolean compress = true;
 
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
@@ -55,8 +55,9 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         log.debug("Publishing to " + channel + " on stream Id " + streamId);
         //ensure default values are set
         INDArray arr = message.getArr();
-        while(!message.getArr().isCompressed())
-            Nd4j.getCompressor().compressi(arr,"GZIP");
+        if(isCompress())
+            while(!message.getArr().isCompressed())
+                Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
         DirectBuffer buffer = NDArrayMessage.toBuffer(message);

@@ -48,6 +48,77 @@ public class NdArrayIpcTest {
         CloseHelper.quietClose(mediaDriver);
     }
 
+    @Test
+    public void testMultiThreadedIpcBig() throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        INDArray arr = Nd4j.ones((int) 1e7);
+
+        final AtomicBoolean running = new AtomicBoolean(true);
+        Aeron aeron = Aeron.connect(getContext());
+        int numSubscribers = 10;
+        AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
+        for(int i = 0; i < numSubscribers; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
+                    .streamId(streamId)
+                    .ctx(getContext()).channel(channel).aeron(aeron)
+                    .running(running)
+                    .ndArrayCallback(new NDArrayCallback() {
+                        @Override
+                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+
+                        }
+
+                        @Override
+                        public void onNDArray(INDArray arr) {
+                            running.set(false);
+                        }
+                    }).build();
+
+
+            Thread t = new Thread(() -> {
+                try {
+                    subscriber.launch();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            });
+
+            t.start();
+
+            subscribers[i] = subscriber;
+        }
+
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
+                .builder()
+                .streamId(streamId)
+                .channel(channel).aeron(aeron)
+                .build();
+
+        Thread.sleep(10000);
+
+        for(int i = 0; i< 10 && running.get(); i++) {
+            executorService.execute(() -> {
+                try {
+                    log.info("About to send array.");
+                    publisher.publish(arr);
+                    log.info("Sent array");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+        }
+
+        Thread.sleep(100000);
+
+        for(int i = 0; i < numSubscribers; i++)
+            CloseHelper.close(subscribers[i]);
+        CloseHelper.close(aeron);
+        CloseHelper.close(publisher);
+        assertFalse(running.get());
+    }
+
 
     @Test
     public void testMultiThreadedIpc() throws Exception {

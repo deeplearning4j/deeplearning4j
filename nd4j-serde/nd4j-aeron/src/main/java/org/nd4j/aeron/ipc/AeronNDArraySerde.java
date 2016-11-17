@@ -159,7 +159,7 @@ public class AeronNDArraySerde {
      * @return the ndarray derived from this buffer
      */
     public static Pair<INDArray,ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
-        ByteBuffer byteBuffer = buffer.byteBuffer().order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuffer = buffer.byteBuffer() == null ? ByteBuffer.wrap(buffer.byteArray()).order(ByteOrder.nativeOrder()) : buffer.byteBuffer().order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);
         int rank = byteBuffer.getInt();
@@ -191,7 +191,7 @@ public class AeronNDArraySerde {
             CompressionDescriptor compressionDescriptor = CompressionDescriptor.fromByteBuffer(byteBuffer);
             ByteBuffer slice =  byteBuffer.slice();
             //ensure that we only deal with the slice of the buffer that is actually the data
-            BytePointer byteBufferPointer = new BytePointer(slice.duplicate());
+            BytePointer byteBufferPointer = new BytePointer(slice);
             //create a compressed array based on the rest of the data left in the buffer
             CompressedDataBuffer compressedDataBuffer = new CompressedDataBuffer(byteBufferPointer,compressionDescriptor);
             INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer,shapeBuff);
