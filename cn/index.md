@@ -11,9 +11,9 @@ Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源�
 
 Deeplearning4j技术先进，以即插即用为目标，通过更多预设的使用，避免太多配置，让非研究人员也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。
 
-您可以根据我们[在快速入门页上的说明](zh/zh-quickstart)，在几分钟内运行您的首个定型神经网络示例。
+您可以根据我们[在快速入门页上的说明](quickstart)，在几分钟内运行您的首个定型神经网络示例。
 
-### [神经网络使用情景](zh/zh-use_cases)
+### [神经网络使用情景](use_cases)
 
 * 人脸／图像识别
 * 语音搜索
@@ -35,9 +35,9 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### DL4J神经网络
 
-* [受限玻尔兹曼机](zh/zh-restrictedboltzmannmachine)
-* [卷积网络](zh/zh-convolutionalnets) （图像）
-* [递归网络](zh/zh-usingrnns)/[LSTMs](zh/zh-lstm)（时间序列和传感器数据）
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [卷积网络](convolutionalnets) （图像）
+* [递归网络](usingrnns)/[LSTMs](lstm)（时间序列和传感器数据）
 * [递归自动编码器](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [深度置信网络](deepbeliefnetwork)
 * [深度自动编码器](deepautoencoder)（问－答／数据压缩）
@@ -45,7 +45,7 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 * [堆叠式降噪自动编码器](stackeddenoisingautoencoder)
 * 更多用途请参见[《如何选择神经网络》](neuralnetworktable)
 
-深度神经网络能够实现[前所未有的准确度](accuracy)。对神经网络的简介请参见[概览](zh/zh-neuralnet-overview)页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为`layer`）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。
+深度神经网络能够实现[前所未有的准确度](accuracy)。对神经网络的简介请参见[概览](neuralnet-overview)页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为`layer`）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。
 
 此处为我们已经建立的各个库及其在系统整体中的所处位置：
 
@@ -57,15 +57,15 @@ Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通
 
 ### Deeplearning4j教程
 
-* [深度神经网络简介](zh/zh-neuralnet-overview)
-* [卷积网络教程](zh/zh-convolutionalnets)
-* [LSTM和递归网络教程](zh/zh-lstm)
-* [通过DL4J使用递归网络](zh/zh-usingrnns)
-* [深度置信网络和MNIST](zh/zh-mnist-tutorial)
+* [深度神经网络简介](neuralnet-overview)
+* [卷积网络教程](convolutionalnets)
+* [LSTM和递归网络教程](lstm)
+* [通过DL4J使用递归网络](usingrnns)
+* [深度置信网络和MNIST](mnist-tutorial)
 * 针对LFW人脸图像数据集进行人脸重构
 * [通过Canova库自定义数据准备工作](image-data-pipeline)
-* [受限玻尔兹曼机](zh/zh-restrictedboltzmannmachine)
-* [本征向量、主成分分析（PCA）和熵](zh/zh-eigenvector)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、主成分分析（PCA）和熵](eigenvector)
 * [深度学习词汇表](glossary)
 
 ### 用户反馈
