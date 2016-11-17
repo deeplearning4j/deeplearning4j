@@ -34,8 +34,8 @@ public class InputTypeUtil {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
-        int padH = padding[0];
-        int padW = padding[1];
+        int padH = (padding == null ? 0 : padding[0]);  //May be null for ConvolutionMode.Same
+        int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
         int kW = kernelSize[1];
         int sH = stride[0];

@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public class ConvolutionUtils {
         int inH = inputData.size(2);
         int inW = inputData.size(3);
 
-        if( kernel[0] <= 0 || kernel[0] > inH + 2*padding[0]){
+        if (convolutionMode != ConvolutionMode.Same && (kernel[0] <= 0 || kernel[0] > inH + 2 * padding[0])) {
             throw new DL4JInvalidInputException(
                     "Invalid input data or configuration: kernel height and input height must satisfy 0 < kernel height <= input height + 2 * padding height. "
                     + "\nGot kernel height = " + kernel[0] + ", input height = " + inH + " and padding height = " + padding[0] +
@@ -59,7 +60,7 @@ public class ConvolutionUtils {
                     + getCommonErrorMsg(inputData, kernel, strides, padding));
         }
 
-        if( kernel[1] <= 0 || kernel[1] > inW + 2*padding[1]){
+        if (convolutionMode != ConvolutionMode.Same && (kernel[1] <= 0 || kernel[1] > inW + 2 * padding[1])) {
             throw new DL4JInvalidInputException(
                     "Invalid input data or configuration: kernel width and input width must satisfy  0 < kernel width <= input width + 2 * padding width. "
                             + "\nGot kernel width = " + kernel[1] + ", input width = " + inW + " and padding width = " + padding[1]
@@ -96,6 +97,23 @@ public class ConvolutionUtils {
                                 + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
                                 + getCommonErrorMsg(inputData, kernel, strides, padding));
             }
+        } else if(convolutionMode == ConvolutionMode.Same){
+            //'Same' padding mode:
+            //outH = ceil(inHeight / strideH)           decimal division
+            //outW = ceil(inWidth / strideW)            decimal division
+
+            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
+            //padTop = padHeightSum / 2                 integer division
+            //padBottom = padHeghtSum - padTop
+
+            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
+            //padLeft = padWidthSum / 2                 integer division
+            //padRight = padWidthSum - padLeft
+
+            int outH = (int)Math.ceil(inH / ((double)strides[0]));
+            int outW = (int)Math.ceil(inW / ((double)strides[1]));
+
+            return new int[]{outH, outW};
         }
 
         int hOut = (inH - kernel[0] + 2 * padding[0]) / strides[0] + 1;

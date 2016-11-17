@@ -7,19 +7,22 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -235,6 +238,150 @@ public class TestConvolutionModes {
             assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("5")).getLayerConf().getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("6")).getLayerConf().getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Same, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("7")).getLayerConf().getLayer()).getConvolutionMode());
+        }
+    }
+
+
+    @Test
+    public void testConvolutionModeInputTypes(){
+        //Test 1: input 3x3, stride 1, kernel 2
+
+        int inH = 3;
+        int inW = 3;
+        int kH = 2;
+        int kW = 2;
+        int sH = 1;
+        int sW = 1;
+        int pH = 0;
+        int pW = 0;
+
+        int minibatch = 3;
+        int dIn = 5;
+        int dOut = 7;
+        int[] kernel = {kH, kW};
+        int[] stride = {sH, sW};
+        int[] padding = {pH, pW};
+
+        INDArray inData = Nd4j.create(minibatch, dIn, inH, inW);
+        InputType inputType = InputType.convolutional(inH,inW,dIn);
+
+        //Strict mode: expect 2x2 out -> (inH - kernel + 2*padding)/stride + 1 = (3-2+0)/1+1 = 2
+        InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional)InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, ConvolutionMode.Strict, dOut, -1, "layerName", ConvolutionLayer.class);
+        assertEquals(2, it.getHeight());
+        assertEquals(2, it.getWidth());
+        assertEquals(dOut, it.getDepth());
+        int[] outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Strict);
+        assertEquals(2, outSize[0]);
+        assertEquals(2, outSize[1]);
+
+
+        //Truncate: same as strict here
+        it = (InputType.InputTypeConvolutional)InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+        assertEquals(2, it.getHeight());
+        assertEquals(2, it.getWidth());
+        assertEquals(dOut, it.getDepth());
+        outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Truncate);
+        assertEquals(2, outSize[0]);
+        assertEquals(2, outSize[1]);
+
+        //Same mode: ceil(in / stride) = 3
+        it = (InputType.InputTypeConvolutional)InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+        assertEquals(3, it.getHeight());
+        assertEquals(3, it.getWidth());
+        assertEquals(dOut, it.getDepth());
+        outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, null, ConvolutionMode.Same);
+        assertEquals(3, outSize[0]);
+        assertEquals(3, outSize[1]);
+
+
+
+
+        //Test 2: input 3x4, stride 2, kernel 3
+        inH = 3;
+        inW = 4;
+        kH = 3;
+        kW = 3;
+        sH = 2;
+        sW = 2;
+
+        kernel = new int[]{kH, kW};
+        stride = new int[]{sH, sW};
+        padding = new int[]{pH, pW};
+
+        inData = Nd4j.create(minibatch, dIn, inH, inW);
+        inputType = InputType.convolutional(inH,inW,dIn);
+
+        //Strict mode: (4-3+0)/2+1 is not an integer -> exception
+        try{
+            InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, ConvolutionMode.Strict, dOut, -1, "layerName", ConvolutionLayer.class);
+            fail("Expected exception");
+        }catch (DL4JException e){
+            System.out.println(e.getMessage());
+        }
+        try{
+            outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Strict);
+            fail("Exception expected");
+        }catch (DL4JException e){
+            System.out.println(e.getMessage());
+        }
+
+        //Truncate: (3-3+0)/2+1 = 1 in height dim; (4-3+0)/2+1 = 1 in width dim
+        it = (InputType.InputTypeConvolutional)InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+        assertEquals(1, it.getHeight());
+        assertEquals(1, it.getWidth());
+        assertEquals(dOut, it.getDepth());
+        outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Truncate);
+        assertEquals(1, outSize[0]);
+        assertEquals(1, outSize[1]);
+
+        //Same mode: ceil(3/2) = 2 in height dim; ceil(4/2) = 2 in width dimension
+        it = (InputType.InputTypeConvolutional)InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+        assertEquals(2, it.getHeight());
+        assertEquals(2, it.getWidth());
+        assertEquals(dOut, it.getDepth());
+        outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, null, ConvolutionMode.Same);
+        assertEquals(2, outSize[0]);
+        assertEquals(2, outSize[1]);
+    }
+
+    @Test
+    public void testSameModeActivationSizes(){
+        int inH = 3;
+        int inW = 4;
+        int inDepth = 3;
+        int minibatch = 5;
+
+        int sH = 2;
+        int sW = 2;
+        int kH = 3;
+        int kW = 3;
+
+        Layer[] l = new Layer[2];
+        l[0] = new ConvolutionLayer.Builder().nOut(4).kernelSize(kH,kW).stride(sH,sW).build();
+        l[1] = new SubsamplingLayer.Builder().kernelSize(kH,kW).stride(sH,sW).build();
+
+        for( int i=0; i<l.length; i++ ) {
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .convolutionMode(ConvolutionMode.Same)
+                    .list()
+                    .layer(0, l[i])
+                    .layer(1, new OutputLayer.Builder().nOut(3).build())
+                    .setInputType(InputType.convolutional(inH, inW, inDepth))
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray inData = Nd4j.create(minibatch, inDepth, inH, inW);
+            List<INDArray> activations = net.feedForward(inData);
+            INDArray actL0 = activations.get(1);
+
+            int outH = (int) Math.ceil(inH / ((double) sH));
+            int outW = (int) Math.ceil(inW / ((double) sW));
+
+            System.out.println(Arrays.toString(actL0.shape()));
+            assertArrayEquals(new int[]{minibatch, (i == 0 ? 4 : inDepth), outH, outW}, actL0.shape());
         }
     }
 }
