@@ -1780,7 +1780,6 @@ namespace shape {
         void createOffsets() {
 
             this->tadOffsets = new int[this->numTads];
-#pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);
 
@@ -1925,8 +1924,10 @@ namespace shape {
             ret[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape::shapeOf(ret),shape::stride(ret),1);
             if(wholeThing)
                 ret[shape::shapeInfoLength(rank) - 2] = 1;
-            else
-                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo,dimension,dimensionLength);
+            else {
+                ret[shape::shapeInfoLength(rank) - 2] = reductionIndexElementWiseStride(this->shapeInfo, dimension,
+                                                                                        dimensionLength);
+            }
 
 
             // we set offset to 0 here, just to avoid weird numbers. howerver, we should not use it anywhere
@@ -3619,7 +3620,9 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
                         * along which to iterate.
                         */
                 if(shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
-                    int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    //int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
+                    //return tadElementWiseStride;
+                    int tadElementWiseStride = shape::stride(buffer)[dimension[0]];
                     return tadElementWiseStride;
                 }
 
