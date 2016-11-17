@@ -1,6 +1,6 @@
 ---
 title: "深度学习应用案例"
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-use_cases
 ---
 

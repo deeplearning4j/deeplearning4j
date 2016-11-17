@@ -1,6 +1,6 @@
 ---
 title: "关于我们"
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-about
 ---
 

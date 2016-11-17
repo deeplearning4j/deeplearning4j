@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j快速入门指南
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-quickstart
 ---
 

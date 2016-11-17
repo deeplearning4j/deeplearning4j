@@ -1,6 +1,6 @@
 ---
 title: 通过DL4J使用递归网络
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-usingrnns
 ---
 

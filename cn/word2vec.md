@@ -1,6 +1,6 @@
 ---
 title: "Word2vec：Java中的神经词向量"
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-word2vec
 ---
 
