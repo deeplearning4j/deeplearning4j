@@ -242,8 +242,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
 
-            DataBuffer yOffsets = tadBuffers.getSecond();
-            Pointer yDevTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
+            DataBuffer yOffsets = yTadBuffers.getSecond();
+            Pointer yDevTadOffsets = yOffsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
             xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
             xShapeInfoHostPointer.put(13, yDevTadOffsets);
@@ -1050,8 +1050,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
 
-            DataBuffer yOffsets = tadBuffers.getSecond();
-            Pointer yDevTadOffsets = offsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
+            DataBuffer yOffsets = yTadBuffers.getSecond();
+            Pointer yDevTadOffsets = yOffsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
             xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
             xShapeInfoHostPointer.put(13, yDevTadOffsets);

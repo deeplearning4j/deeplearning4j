@@ -33,7 +33,6 @@ import java.util.Arrays;
 public class CrashTest extends BaseNd4jTest {
     public CrashTest(Nd4jBackend backend) {
         super(backend);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     private static final int ITERATIONS = 100;
