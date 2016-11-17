@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 public class TestConvolutionModes {
 
     @Test
-    public void testConvolutionModeOutput(){
+    public void testStrictTruncateConvolutionModeOutput(){
 
         //Idea: with convolution mode == Truncate, input size shouldn't matter (within the bounds of truncated edge),
         // and edge data shouldn't affect the output
@@ -102,7 +102,7 @@ public class TestConvolutionModes {
     }
 
     @Test
-    public void testConvolutionModeCompGraph(){
+    public void testStrictTruncateConvolutionModeCompGraph(){
 
         //Idea: with convolution mode == Truncate, input size shouldn't matter (within the bounds of truncated edge),
         // and edge data shouldn't affect the output
@@ -178,7 +178,6 @@ public class TestConvolutionModes {
 
     @Test
     public void testGlobalLocalConfig(){
-
         for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Strict, ConvolutionMode.Truncate}) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .weightInit(WeightInit.XAVIER)
@@ -187,27 +186,29 @@ public class TestConvolutionModes {
                     .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build())
                     .layer(1, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build())
                     .layer(2, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build())
-                    .layer(3, new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
-                    .layer(4, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
-                    .layer(5, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
-                    .layer(6, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nOut(3).build())
+                    .layer(3, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Same).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build())
+                    .layer(4, new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
+                    .layer(5, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
+                    .layer(6, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
+                    .layer(7, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Same).kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
+                    .layer(8, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nOut(3).build())
                     .build();
 
             assertEquals(cm, ((ConvolutionLayer)conf.getConf(0).getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Strict, ((ConvolutionLayer)conf.getConf(1).getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate, ((ConvolutionLayer)conf.getConf(2).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((ConvolutionLayer)conf.getConf(3).getLayer()).getConvolutionMode());
 
-            assertEquals(cm, ((SubsamplingLayer)conf.getConf(3).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer)conf.getConf(4).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Truncate, ((SubsamplingLayer)conf.getConf(5).getLayer()).getConvolutionMode());
+            assertEquals(cm, ((SubsamplingLayer)conf.getConf(4).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer)conf.getConf(5).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Truncate, ((SubsamplingLayer)conf.getConf(6).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((SubsamplingLayer)conf.getConf(7).getLayer()).getConvolutionMode());
         }
-
     }
 
     @Test
     public void testGlobalLocalConfigCompGraph(){
-
-        for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Strict, ConvolutionMode.Truncate}) {
+        for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Strict, ConvolutionMode.Truncate, ConvolutionMode.Same}) {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .weightInit(WeightInit.XAVIER)
                     .convolutionMode(cm)
@@ -216,21 +217,24 @@ public class TestConvolutionModes {
                     .addLayer("0", new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build(), "in")
                     .addLayer("1", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build(), "0")
                     .addLayer("2", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build(), "1")
-                    .addLayer("3", new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "2")
-                    .addLayer("4", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "3")
-                    .addLayer("5", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "4")
-                    .addLayer("6", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nOut(3).build(), "5")
-                    .setOutputs("6")
+                    .addLayer("3", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Same).kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build(), "2")
+                    .addLayer("4", new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "3")
+                    .addLayer("5", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict).kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "4")
+                    .addLayer("6", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate).kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "5")
+                    .addLayer("7", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Same).kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "6")
+                    .addLayer("8", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nOut(3).build(), "7")
+                    .setOutputs("8")
                     .build();
 
             assertEquals(cm, ((ConvolutionLayer)((LayerVertex)conf.getVertices().get("0")).getLayerConf().getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Strict, ((ConvolutionLayer)((LayerVertex)conf.getVertices().get("1")).getLayerConf().getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate, ((ConvolutionLayer)((LayerVertex)conf.getVertices().get("2")).getLayerConf().getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((ConvolutionLayer)((LayerVertex)conf.getVertices().get("3")).getLayerConf().getLayer()).getConvolutionMode());
 
-            assertEquals(cm, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("3")).getLayerConf().getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("4")).getLayerConf().getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Truncate, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("5")).getLayerConf().getLayer()).getConvolutionMode());
+            assertEquals(cm, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("4")).getLayerConf().getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("5")).getLayerConf().getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Truncate, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("6")).getLayerConf().getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((SubsamplingLayer)((LayerVertex)conf.getVertices().get("7")).getLayerConf().getLayer()).getConvolutionMode());
         }
-
     }
 }

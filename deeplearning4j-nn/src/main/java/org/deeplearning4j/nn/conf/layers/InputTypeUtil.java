@@ -96,6 +96,24 @@ public class InputTypeUtil {
                                 + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
                                 + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
             }
+        } else if(convolutionMode == ConvolutionMode.Same){
+
+            //'Same' padding mode:
+            //outH = ceil(inHeight / strideH)           decimal division
+            //outW = ceil(inWidth / strideW)            decimal division
+
+            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
+            //padTop = padHeightSum / 2                 integer division
+            //padBottom = padHeghtSum - padTop
+
+            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
+            //padLeft = padWidthSum / 2                 integer division
+            //padRight = padWidthSum - padLeft
+
+            int outH = (int)Math.ceil(inHeight / ((double)stride[0]));
+            int outW = (int)Math.ceil(inWidth / ((double)stride[1]));
+
+            return InputType.convolutional(outH, outW, outputDepth);
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
