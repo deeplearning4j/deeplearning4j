@@ -28,29 +28,26 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
 import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
 
 import java.util.Arrays;
 import java.util.List;
@@ -198,11 +195,11 @@ public class RBMTests {
     public void testActivate(){
         INDArray input = Nd4j.linspace(1, 10, 10);
         List<HiddenUnit> hiddenUnits = getHiddenUnits();
-        INDArray expectedActivations = Nd4j.vstack( // Values pulled from running manually on different code base to compare
-                Nd4j.create(new double [] {0.8575946457626977,0.9767640857282572,2.3468148832508044E-4,0.12777206541559458,0.08908197315015978}),
-                Nd4j.create(new double [] {0.9296185362708878,4.120228176817934,-9.200094357639074,-2.3413283688824484,-1.9073211296725048}),
-                Nd4j.create(new double [] {1.7954539487645431,3.7385460441831007,0.0,0.0,0.0}),
-                Nd4j.create(new double [] {0.12467422539953836,0.8702636692829344,4.859613197293396E-6,0.00303268190332571,0.0020245638010041433})
+        INDArray expectedActivations = Nd4j.vstack(// Values pulled from running manually on different code base to compare
+                Nd4j.create(new double [] {0.9926830708198294,1.1818374480644151E-6,0.1483983894256057,0.841119006965182,0.9984862199072947}),
+                Nd4j.create(new double [] {4.954922217451361,-16.139613593144162,-1.6414330260460845,2.4691976168056016,4.9705341334151845}),
+                Nd4j.create(new double [] {4.910220720730024,0.0,0.0,1.6665777059638043,6.491630456704968}),
+                Nd4j.create(new double [] {0.1694309103994393,1.4759414882855348E-9,2.1762239920588365E-4,0.0066114448846620886,0.8237400208407513})
         );
         INDArray params = getStandardParams(10, 5);
 
@@ -219,29 +216,20 @@ public class RBMTests {
 
     @Test
     public void testComputeGradientAndScore(){
-        //TODO finish building this out - currently just a template
         INDArray input = Nd4j.linspace(1, 10, 10);
         INDArray params = getStandardParams(10, 5);
 
-        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1, LossFunctions.LossFunction.MSE);
         rbm.setInput(input);
         rbm.computeGradientAndScore();
         Pair<Gradient, Double> pair = rbm.gradientAndScore();
 
-        INDArray wGradient = Nd4j.ones(1, 50, 10);
-        INDArray hBiasGradient = Nd4j.zeros(1, 5, 10);
-        INDArray vBiasGradient = Nd4j.zeros(1, 10, 10);
+        INDArray hprob = sigmoid(input.mmul(rbm.getParam(PretrainParamInitializer.WEIGHT_KEY)).addiRowVector(rbm.getParam(PretrainParamInitializer.BIAS_KEY)));
+        INDArray vprob = sigmoid(hprob.mmul(rbm.getParam(PretrainParamInitializer.WEIGHT_KEY).transpose()).addiRowVector(rbm.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)));
 
-        Gradient expectedGradient = new DefaultGradient();
-        expectedGradient.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY, wGradient);
-        expectedGradient.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
-        expectedGradient.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
+        double expectedScore = LossFunctions.LossFunction.MSE.getILossFunction().computeScore(input, vprob, "sigmoid", null, false);
 
-        double expectedScore = 0.0;
-
-        assertEquals(expectedGradient, pair.getFirst());
         assertEquals(expectedScore, pair.getSecond(), 1e-8);
-
     }
 
     @Test
@@ -275,28 +263,9 @@ public class RBMTests {
 
     }
 
+    // Use to verify the model decreases in value
     @Test
-    public void testRBM() {
-//        Original test from @Treo
-        INDArray features = Nd4j.rand(new int[]{100, 10});
-
-        System.out.println("Training RBM network, initialized with Xavier");
-        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
-        rbm.fit(features);
-        double v = rbm.score();
-
-        System.out.println("Training RBM network, initialized with correct solution");
-        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);
-
-        rbm2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("0_W")))));
-        rbm2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("1_W")))));
-
-        rbm2.fit(features);
-        double x = rbm2.score();
-    }
-
-    @Test
-    public void testRBM2() {
+    public void testRBMLayer() {
         INDArray features = Nd4j.create(new double[]{
                 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1,
                 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0
@@ -304,17 +273,51 @@ public class RBMTests {
 
         INDArray params = getStandardParams(6, 2);
 
-        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 5000, LossFunctions.LossFunction.MSE);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.MSE);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.GAUSSIAN, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.COSINE_PROXIMITY);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.GAUSSIAN, params, true, true, 500, LossFunctions.LossFunction.KL_DIVERGENCE);
+        RBM rbm = getRBMLayer(6, 2, HiddenUnit.RECTIFIED, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.SOFTMAX, VisibleUnit.LINEAR, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.SOFTMAX, VisibleUnit.SOFTMAX, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setListeners(new ScoreIterationListener(10));
         rbm.fit(features);
-
-//        INDArray paramResults = rbm.params();
-//
-//        double x = rbm.score();
     }
 
+    // Use to verify the model decreases in value
 
-    //////////////////////////////////////////////////////////////////////////////////
+    @Ignore
+    @Test
+    public void testRBMMLN() {
+//        Original test from @Treo
+        INDArray features = Nd4j.rand(new int[]{100, 10});
+
+        System.out.println("Training RBM network, initialized with Xavier");
+        MultiLayerNetwork rbm = getRBMMLNNet(true, true, features, 10, 10, WeightInit.XAVIER);
+        rbm.setListeners(new ScoreIterationListener(100));
+        rbm.fit(features);
+
+        System.out.println("Training RBM network, initialized with correct solution");
+        MultiLayerNetwork rbm2 = getRBMMLNNet(true, true, features, 10, 10, WeightInit.UNIFORM);
+        rbm.setListeners(new ScoreIterationListener(100));
+
+        rbm2.setParam("0_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("0_W")))));
+        rbm2.setParam("1_W", Nd4j.diag(Nd4j.onesLike(Nd4j.diag(rbm2.getParam("1_W")))));
+
+        rbm2.fit(features);
+    }
+
+    @Ignore
+    @Test
+    public void testMultiRBM() {
+        INDArray features = Nd4j.rand(new int[]{100, 10});
+
+        MultiLayerNetwork rbm = getMultiLayerRBMNet(true, true, features, 10, 5, 10, WeightInit.XAVIER);
+
+        rbm.setListeners(new ScoreIterationListener(10));
+        rbm.fit(features, features);
+
+    }
+        //////////////////////////////////////////////////////////////////////////////////
 
 
     private static INDArray getStandardParams(int nIn, int nOut){
@@ -357,7 +360,7 @@ public class RBMTests {
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1, int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
                 .seed(0xDEADBEEF)
-                .iterations(3000)
+                .iterations(1000)
                 .biasInit(0)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.NONE)
@@ -378,9 +381,43 @@ public class RBMTests {
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(rbm);
         network.init();
-        network.setListeners(new ScoreIterationListener(100));
 
         return network;
 
     }
+
+    private static MultiLayerNetwork getMultiLayerRBMNet(boolean backprop, boolean pretrain, INDArray input, int nOut1, int nOut2, int nOut3, WeightInit weightInit) {
+        MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
+                .seed(0xDEADBEEF)
+                .iterations(1000)
+                .biasInit(0)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(Updater.NONE)
+                .epsilon(1)
+                .weightInit(weightInit)
+                .list(
+                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                                .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
+                                .activation("identity")
+                                .nOut(nOut1).build(),
+                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                                .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
+                                .activation("identity")
+                                .nOut(nOut2).build(),
+                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                .activation("identity")
+                                .nOut(nOut3).build()
+                )
+                .pretrain(pretrain)
+                .backprop(backprop)
+                .setInputType(InputType.feedForward(input.columns()))
+                .build();
+        MultiLayerNetwork network = new MultiLayerNetwork(rbm);
+        network.init();
+
+        return network;
+
+    }
+
+
 }

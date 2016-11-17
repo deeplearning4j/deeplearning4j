@@ -187,11 +187,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             vBiasGradient.negi();
         }
 
-        Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
-        gradient = ret;
+        gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
         setScoreWithZ(negVProb); // this is compared to input on
     }
 
@@ -384,20 +380,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         return propUp;
     }
 
-    /**
-     * Note: k is the first input hidden params.
-     */
-    @Override
-    public void fit(INDArray input) {
-        super.fit(input);
-    }
-
-
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient,INDArray> result = super.backpropGradient(epsilon);
-        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
-        return result;
-    }
 
     @Deprecated
     @Override
