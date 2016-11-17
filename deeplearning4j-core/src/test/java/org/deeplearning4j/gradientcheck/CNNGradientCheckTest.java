@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -397,6 +398,8 @@ public class CNNGradientCheckTest {
                                         .build())
                                 .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                                 .build();
+
+                        assertEquals(ConvolutionMode.Truncate, ((ConvolutionLayer)conf.getConf(0).getLayer()).getConvolutionMode());
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();
