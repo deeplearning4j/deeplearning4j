@@ -1022,8 +1022,10 @@ void   NativeOps::execReduce3Double(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("D10 opNum:[%i]\n", opNum);
@@ -1045,7 +1047,7 @@ void   NativeOps::execReduce3Double(
 			resultShapeInfo,
 			nullptr,
 			1,
-			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1084,6 +1086,9 @@ double   NativeOps::execReduce3ScalarDouble(
 
     double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
 	reduce3ScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -1097,7 +1102,7 @@ double   NativeOps::execReduce3ScalarDouble(
 					nullptr,
 					nullptr,
 					1,
-					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -1142,6 +1147,9 @@ void   NativeOps::execReduce3Double(
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, resultShapeInfo, dimensionLength, sizeof(double), 2);
 	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
@@ -1157,7 +1165,7 @@ void   NativeOps::execReduce3Double(
 			resultShapeInfo,
 			dimension,
 			dimensionLength,
-			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2867,6 +2875,9 @@ void   NativeOps::execReduce3Float(
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+
 	if (debug && verbose)
 		printf("F10 opNum:[%i]\n", opNum);
 
@@ -2893,7 +2904,7 @@ void   NativeOps::execReduce3Float(
 			resultShapeInfo,
 			nullptr,
 			1,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2915,6 +2926,9 @@ void   NativeOps::execReduce3Half(
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("H10 opNum:[%i]\n", opNum);
@@ -2942,7 +2956,7 @@ void   NativeOps::execReduce3Half(
 					resultShapeInfo,
 					nullptr,
 					1,
-					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2970,8 +2984,10 @@ float   NativeOps::execReduce3ScalarFloat(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("F11 opNum:[%i]\n", opNum);
@@ -3000,7 +3016,7 @@ float   NativeOps::execReduce3ScalarFloat(
 			nullptr,
 			nullptr,
 			1,
-			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3021,8 +3037,10 @@ float   NativeOps::execReduce3ScalarHalf(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("H11 opNum:[%i]\n", opNum);
@@ -3047,7 +3065,7 @@ float   NativeOps::execReduce3ScalarHalf(
 					nullptr,
 					nullptr,
 					1,
-					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3086,8 +3104,10 @@ void   NativeOps::execReduce3Float(
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
@@ -3115,7 +3135,7 @@ void   NativeOps::execReduce3Float(
 						resultShapeInfo,
 						dimension,
 						dimensionLength,
-						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 	} else {
 		reduce3Float << < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
@@ -3128,7 +3148,7 @@ void   NativeOps::execReduce3Float(
 						resultShapeInfo,
 						dimension,
 						dimensionLength,
-						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 	}
 
 	if (debug)
@@ -3153,8 +3173,10 @@ void   NativeOps::execReduce3Half(
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-
 	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+
+    int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
+    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
 	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
@@ -3181,7 +3203,7 @@ void   NativeOps::execReduce3Half(
 						resultShapeInfo,
 						dimension,
 						dimensionLength,
-						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 	} else {
 		reduce3Half<< < 1, launchDims.y, launchDims.z, *stream >> > (
 				opNum,
@@ -3194,7 +3216,7 @@ void   NativeOps::execReduce3Half(
 						resultShapeInfo,
 						dimension,
 						dimensionLength,
-						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets);
+						1, allocationPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 	}
 
 	if (debug)

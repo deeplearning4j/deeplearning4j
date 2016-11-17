@@ -244,14 +244,15 @@ template<typename OpType>
                             int xCoord[MAX_RANK];
                             int zCoord[MAX_RANK];
 
+// TODO: cover this codebranch with tests
 // all this stuff already happens within thread
 							for (int f = 0; f < tadLength; f++) {
 
-                                shape::ind2subC(tadRank,xShape, i, xCoord);
-                                shape::ind2subC(zRank,zShape, i, zCoord);
+                                shape::ind2subC(tadRank,xShape, f, xCoord);
+                                shape::ind2subC(zRank,zShape, f, zCoord);
                                 Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
                                 Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
-                                result[zOffset] = OpType::op(x[xOffset], y[i * yStride]);
+                                result[zOffset] = OpType::op(x[xOffset], y[f * yStride]);
 							}
 						}
 					}
