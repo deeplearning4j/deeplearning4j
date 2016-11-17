@@ -112,16 +112,15 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
         setInput(corruptedX);
-        INDArray y = encode(corruptedX, true);
 
+        INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);
+
         INDArray visibleLoss =  input.sub(z);
         INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
                 visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 
-
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
-
         INDArray hBiasGradient = hiddenLoss.sum(0);
         INDArray vBiasGradient = visibleLoss.sum(0);
 

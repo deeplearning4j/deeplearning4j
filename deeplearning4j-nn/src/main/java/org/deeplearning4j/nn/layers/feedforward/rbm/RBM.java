@@ -20,14 +20,11 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -188,7 +185,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
 
         gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
-        setScoreWithZ(negVProb); // this is compared to input on
+        setScoreWithZ(negVSamples); // this is compared to input on
     }
 
     /**
