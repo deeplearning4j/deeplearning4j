@@ -1,6 +1,6 @@
 ---
 title: "LSTM和递归网络基础教程"
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-lstm
 ---
 
