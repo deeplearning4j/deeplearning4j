@@ -74,13 +74,14 @@ public class ConvolutionUtils {
                 double d = (inH - kernel[0] + 2 * padding[0]) / ((double) strides[0]) + 1.0;
                 String str = String.format("%.2f", d);
                 int truncated = (int)d;
+                int sameSize = (int)Math.ceil(inH / ((double)strides[0]));
                 throw new DL4JInvalidConfigException(
                         "Invalid input data or configuration: Combination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
                                 + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 to be an integer. Got: ("
                                 + inH + " - " + kernel[0] + " + 2*" + padding[0] + ")/" + strides[0] + " + 1 = " + str + "\n"
                                 + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
                                 + "To truncate/crop the input, such that output height = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
-                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + "Alternatively use ConvolutionType.Same, which will use padding to give an output height of ceil(" + inH + "/" + strides[0] + ")=" + sameSize
                                 + getCommonErrorMsg(inputData, kernel, strides, padding));
             }
 
@@ -88,13 +89,14 @@ public class ConvolutionUtils {
                 double d = (inW - kernel[1] + 2 * padding[1]) / ((double) strides[1]) + 1.0;
                 String str = String.format("%.2f", d);
                 int truncated = (int)d;
+                int sameSize = (int)Math.ceil(inW / ((double)strides[1]));
                 throw new DL4JInvalidConfigException(
                         "Invalid input data or configuration: Combination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                                 + "ConvolutionMode.Strict requires: output width = (input - kernelSize + 2*padding)/stride + 1 to be an integer. Got: ("
                                 + inW + " - " + kernel[1] + " + 2*" + padding[1] + ")/" + strides[1] + " + 1 = " + str + "\n"
                                 + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
                                 + "To truncate/crop the input, such that output width = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
-                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + "Alternatively use ConvolutionType.Same, which will use padding to give an output width of ceil(" + inW + "/" + strides[1] + ")=" + sameSize
                                 + getCommonErrorMsg(inputData, kernel, strides, padding));
             }
         } else if(convolutionMode == ConvolutionMode.Same){
