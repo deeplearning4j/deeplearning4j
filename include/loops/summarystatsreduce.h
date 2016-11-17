@@ -516,6 +516,7 @@ template<typename OpType>
 							xShape = shape::shapeOf(xShapeInfo);
 							xStride = shape::stride(xShapeInfo);
 						}
+						__syncthreads();
 
 						int ind2sub[MAX_RANK];
 #pragma unroll
