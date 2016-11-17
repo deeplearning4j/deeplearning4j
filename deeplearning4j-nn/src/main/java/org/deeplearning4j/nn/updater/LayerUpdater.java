@@ -75,7 +75,8 @@ public class LayerUpdater implements Updater {
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
-            if(!layer.conf().isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName.split("_")[0])) continue;
+            if(!layer.conf().isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName.split("_")[0]))
+                continue;
             gradientOrig = gradientPair.getValue();
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
