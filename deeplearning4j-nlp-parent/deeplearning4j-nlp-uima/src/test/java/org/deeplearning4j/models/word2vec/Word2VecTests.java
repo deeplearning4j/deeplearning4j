@@ -307,6 +307,28 @@ public class Word2VecTests {
         System.out.println(Arrays.toString(lst.toArray()));
     }
 
+
+    @Ignore
+    @Test
+    public void testWord2VecGoogleModelUptraining() throws Exception {
+        long time1 = System.currentTimeMillis();
+        Word2Vec vec = WordVectorSerializer.readWord2VecModel(new File("C:\\Users\\raver\\Downloads\\GoogleNews-vectors-negative300.bin.gz"), false);
+        long time2 = System.currentTimeMillis();
+        log.info("Model loaded in {} msec", time2 - time1);
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        vec.setTokenizerFactory(t);
+        vec.setSentenceIter(iter);
+        vec.getConfiguration().setUseHierarchicSoftmax(false);
+        vec.getConfiguration().setNegative(5.0);
+        vec.setElementsLearningAlgorithm(new CBOW<VocabWord>());
+
+        vec.fit();
+    }
+
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to ["+target+"]:");
         for (String word: list) {
