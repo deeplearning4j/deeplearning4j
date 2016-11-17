@@ -123,7 +123,7 @@ template<typename OpType>
 
                 int idx[MAX_RANK];
 
-				for(Nd4jIndex i = blockIdx.x * gridDim.x + threadIdx.x;i < n; i += gridDim.x * blockDim.x) {
+				for(Nd4jIndex i = blockIdx.x * gridDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
 					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
@@ -346,6 +346,8 @@ template<typename OpType>
 				//length for the tad
 
 				__shared__ Nd4jIndex resultLength;
+				__shared__ int tadLength;
+				__shared__ int tadElementWiseStride;
 
 
 				T reduction = OpType::startingValue(dx);
@@ -369,73 +371,33 @@ template<typename OpType>
 					int *xStride = shape::stride(xShapeInfo);
 					char xOrder = shape::order(xShapeInfo);
 
-					xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-					yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
 				}
 				__syncthreads();
 
 
 				if (!resultScalar) {
-					__shared__ int tadLength;
-
-                	if (threadIdx.x == 0) {
-            		    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                	}
-                	__syncthreads();
-
 					if(dimensionLength > 1) {
-						int *xShape = shape::shapeOf(tadOnlyShapeInfo);
-						int *xStride = shape::stride(tadOnlyShapeInfo);
-						int *yStride = shape::stride(yShapeInfo);
+    					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+							int xOffsetForTad = tadOffsets[i];
+							int yOffsetForTad = xOffsetForTad;
 
-                        int xStridesIter[MAX_RANK];
-						int yStridesIter[MAX_RANK];
-						int shapeIter[MAX_RANK];
-						int coord[MAX_RANK];
-						Nd4jIndex n = shape::length(xShapeInfo);
-						int rank = shape::rank(xShapeInfo);
+                            if (threadIdx.x < tadLength)
+							    sPartials[threadIdx.x] =  OpType::op(dx[xOffsetForTad + tadElementWiseStride * threadIdx.x],dy[yOffsetForTad + tadElementWiseStride * threadIdx.x], extraZ);
 
-						for(Nd4jIndex i = tid; i < resultLength; i+= gridDim.x * blockDim.x) {
-							int offset = tadOffsets[i];
-							int dim;
-							T *xPointer = dx + offset;
-							T start = OpType::startingValue(xPointer);
-							T startingVal = OpType::startingValue(dx);
-							if(PrepareTwoRawArrayIter<T>(rank,
-														 xShape,
-														 dx,
-														 xStride,
-														 dy,
-														 yStride,
-														 &rank,
-														 shapeIter,
-														 &dx,
-														 xStridesIter,
-														 &dy,
-														 yStridesIter) >= 0) {
-								ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-										/* Process the innermost dimension */
-										T *xIter = dx;
-										T *yIter = dy;
-										startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0], extraZ), extraZ);
-									} ND4J_RAW_ITER_TWO_NEXT(dim,
-															 rank,
-															 coord,
-															 shapeIter,
-															 dx,
-															 xStridesIter,
-															 dy,
-															 yStridesIter);
-
-								result[i] = OpType::postProcess(startingVal, n, extraZ);
+							for(int j = threadIdx.x + blockDim.x; j < tadLength; j += blockDim.x) {
+								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + tadElementWiseStride * j],dy[yOffsetForTad + tadElementWiseStride * j], extraZ), extraZ);
 							}
-							else {
-								printf("Unable to prepare array\n");
-							}
+							__syncthreads();
 
+                            T **sPartialsRef = (T **) &sPartials;
+				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+
+                            __syncthreads();
+                            if (threadIdx.x == 0)
+							    result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
 						}
-
-						__syncthreads();
 					}
 					else {
 /*
@@ -471,18 +433,24 @@ template<typename OpType>
 
 */
 
-						for(int i = tid; i < resultLength; i+= blockDim.x * gridDim.x) {
+						for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 							int xOffsetForTad = tadOffsets[i];
-							int yOffsetForTad = xOffsetForTad;//tad->tadOffset(i);
-							//int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
-							//int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
+							int yOffsetForTad = xOffsetForTad;
 
-							sPartials[threadIdx.x] = OpType::op(dx[xOffsetForTad],dy[yOffsetForTad], extraZ);
-							for(int j = 1; j < tadLength; j++) {
-								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + xElementWiseStride * j],dy[yOffsetForTad + yElementWiseStride * j], extraZ), extraZ);
+                            if (threadIdx.x < tadLength)
+							    sPartials[threadIdx.x] =  OpType::op(dx[xOffsetForTad + tadElementWiseStride * threadIdx.x],dy[yOffsetForTad + tadElementWiseStride * threadIdx.x], extraZ);
+
+							for(int j = threadIdx.x + blockDim.x; j < tadLength; j += blockDim.x) {
+								sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffsetForTad + tadElementWiseStride * j],dy[yOffsetForTad + tadElementWiseStride * j], extraZ), extraZ);
 							}
+							__syncthreads();
 
-							result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
+                            T **sPartialsRef = (T **) &sPartials;
+				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+
+                            __syncthreads();
+                            if (threadIdx.x == 0)
+							    result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
 						}
 
 					}
@@ -783,7 +751,6 @@ template<typename OpType>
 						if(localExtraParams != nullptr)
 							delete[] localExtraParams;
 					}
-
 				}
 
 			}
