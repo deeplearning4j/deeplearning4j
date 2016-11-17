@@ -1,6 +1,6 @@
 ---
 title: "受限玻尔兹曼机基础教程"
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-restrictedboltzmannmachine
 ---
 

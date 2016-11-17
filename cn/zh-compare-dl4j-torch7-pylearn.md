@@ -1,6 +1,6 @@
 ---
 title: 深度学习框架比较：Deeplearning4j、Torch、Theano、Caffe和TensorFlow
-layout: zh-default
+layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
 
