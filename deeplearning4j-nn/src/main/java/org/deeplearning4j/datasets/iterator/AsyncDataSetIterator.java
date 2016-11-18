@@ -67,7 +67,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         if (this.baseIterator.resetSupported()) this.baseIterator.reset();
         blockingQueue = new LinkedBlockingDeque<>(queueSize);
         runnable = new IteratorRunnable(baseIterator.hasNext());
-        thread = new Thread(runnable);
+        thread = runnable;
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
@@ -131,7 +131,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         blockingQueue.clear();
         baseIterator.reset();
         runnable = new IteratorRunnable(baseIterator.hasNext());
-        thread = new Thread(runnable);
+        thread = runnable;
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
@@ -246,13 +246,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
      */
     public void shutdown() {
-        if (thread.isAlive()) {
+        if (thread != null && thread.isAlive()) {
             runnable.killRunnable = true;
             thread.interrupt();
+            thread = null;
         }
     }
 
-    private class IteratorRunnable implements Runnable {
+    private class IteratorRunnable extends Thread implements Runnable {
         private volatile boolean killRunnable = false;
         private volatile AtomicBoolean isAlive = new AtomicBoolean(true);
         private volatile RuntimeException exception;
@@ -262,6 +263,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         public IteratorRunnable(boolean hasNext) {
             this.isAlive.set(hasNext);
+            this.setName("AsyncIterator thread");
+            this.setDaemon(true);
         }
 
         public boolean hasLatch() {
