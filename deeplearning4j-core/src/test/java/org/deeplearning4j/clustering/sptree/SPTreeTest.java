@@ -19,6 +19,7 @@
 package org.deeplearning4j.clustering.sptree;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -53,6 +54,7 @@ public class SPTreeTest {
     }
 
     @Test
+    @Ignore
     public void testLargeTree() {
         int num = 100000;
         INDArray arr = Nd4j.linspace(1,num,num).reshape(num,1);
