@@ -135,7 +135,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             idxSyn1 = new int[currentWord.getCodeLength()];
             codes = new int[currentWord.getCodeLength()];
             for (int p = 0; p < currentWord.getCodeLength(); p++) {
-                double f = 0;
+                if (currentWord.getPoints().get(p) < 0)
+                    continue;
+
                 codes[p] = currentWord.getCodes().get(p);
                 idxSyn1[p] = currentWord.getPoints().get(p);
             }
