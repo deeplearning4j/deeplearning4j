@@ -75,7 +75,6 @@ template<typename OpType>
 					numTads = shape::length(xShapeInfo) / tadLength;
 				}
 				__syncthreads();
-				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
@@ -86,13 +85,13 @@ template<typename OpType>
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(rX[i * tadEWS], extraParams), extraParams);
 					}
-//					__syncthreads();
+					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
 					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
-//					__syncthreads();
+					__syncthreads();
 					if (threadIdx.x == 0) {
 						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 					}

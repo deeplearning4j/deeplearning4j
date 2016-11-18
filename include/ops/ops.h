@@ -1781,7 +1781,7 @@ template<typename T>
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
-			return rnd <= prob ? (T) 0.0 : d1;
+			return rnd >= prob ? (T) 0.0 : d1;
 		}
 	};
 
