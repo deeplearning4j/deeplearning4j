@@ -160,7 +160,7 @@ namespace simdOps {
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
 
-            bool padding = isSameMode || padHeight > 0 || padWidth > 0; //true;	//isSameMode || padHeight > 0 || padWidth > 0;
+            bool padding = isSameMode || padHeight > 0 || padWidth > 0;
 
 			int exampleFrom = 0;
 			int exampleTo = inShape[0];
@@ -576,7 +576,7 @@ namespace simdOps {
 				T val = 0;
 				int w_im = i % imgWidth + padWidth;
 				int h_im = (i / imgWidth) % imgHeight + padHeight;
-				int c_im = i / (imgWidth * imgWidth);
+				int c_im = i / (imgWidth * imgHeight);
 
 				int num_im = c_im / depth;
 				int depth_im = c_im % depth;
@@ -628,6 +628,7 @@ namespace simdOps {
 			int strideY = (int)extraParams[1];
 			int padWidth = (int)extraParams[2];
 			int padHeight = (int)extraParams[3];
+			bool isSameMode = extraParams[6] > 0;
 
 
 			int exampleFrom = 0;
