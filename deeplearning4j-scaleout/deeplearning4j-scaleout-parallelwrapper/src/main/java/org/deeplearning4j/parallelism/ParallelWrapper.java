@@ -1,9 +1,11 @@
 package org.deeplearning4j.parallelism;
 
+import com.google.common.primitives.Ints;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.NonNull;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
@@ -22,6 +24,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.client.ParameterServerClient;
 import org.slf4j.Logger;
@@ -58,10 +61,10 @@ public class ParallelWrapper implements AutoCloseable {
     private ParameterServerSubscriber parameterServer;
     private ParameterServerClient parameterServerClient;
     private MediaDriver mediaDriver;
+    private Aeron aeron;
     private int parameterServerPort = 40123;
     private int parameterServerStatusPort = 10000;
     private String parameterServerHost = "0.0.0.0";
-    private Aeron.Context ctx;
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this(model,workers,prefetchSize,false);
@@ -90,15 +93,10 @@ public class ParallelWrapper implements AutoCloseable {
 
     private void initParamServer() {
         if(useParameterServer) {
-            final MediaDriver.Context ctx = new MediaDriver.Context()
-                    .threadingMode(ThreadingMode.DEDICATED)
-                    .dirsDeleteOnStart(true)
-                    .termBufferSparseFile(false)
-                    .conductorIdleStrategy(new BusySpinIdleStrategy())
-                    .receiverIdleStrategy(new BusySpinIdleStrategy())
-                    .senderIdleStrategy(new BusySpinIdleStrategy());
-            mediaDriver = MediaDriver.launch(ctx);
+            mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(model.params().length()));
+            aeron = Aeron.connect(getContext());
             parameterServer = new ParameterServerSubscriber(mediaDriver);
+            parameterServer.setAeron(aeron);
             parameterServer.run(new String[] {
                     "-m","true",
                     "-s","1," + String.valueOf(model.params().length()),
@@ -111,7 +109,7 @@ public class ParallelWrapper implements AutoCloseable {
 
             parameterServerClient = ParameterServerClient
                     .builder()
-                    .ctx(getContext())
+                    .aeron(aeron)
                     .ndarrayRetrieveUrl(parameterServer.getResponder().connectionUrl())
                     .ndarraySendUrl(parameterServer.getSubscriber().connectionUrl())
                     .subscriberHost(parameterServerHost)
@@ -123,14 +121,12 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     private Aeron.Context getContext() {
-        if(ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+        return new Aeron.Context().publicationConnectionTimeout(-1)
                     .availableImageHandler(AeronUtil::printAvailableImage)
                     .unavailableImageHandler(AeronUtil::printUnavailableImage)
                     .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                     .keepAliveInterval(1000)
                     .errorHandler(e -> logger.error(e.toString(), e));
-        return ctx;
     }
 
 
@@ -337,7 +333,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                         Nd4j.averageAndPropagate(model.params(), params);
                         synchronized (parameterServerClient) {
-                            parameterServerClient.pushNDArray(model.params());
+                            parameterServerClient.pushNDArray(model.params().dup());
                         }
                     }
                     else if(useParameterServer) {
@@ -634,12 +630,12 @@ public class ParallelWrapper implements AutoCloseable {
                 MultiLayerNetwork cloned = (MultiLayerNetwork) model;
                 this.replicatedModel = cloned.clone();
                 if (threadId != 0)
-                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<>());
             } else if (model instanceof ComputationGraph) {
                 this.replicatedModel = ((ComputationGraph) model).clone();
 
                 if (threadId != 0)
-                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<>());
             }
         }
 
