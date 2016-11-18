@@ -51,6 +51,7 @@ public class AsyncDataSetIteratorTest {
                 }
 
                 assertEquals("Failed on iteration: " + iter + ", prefetchSize: " + prefetchSize, TEST_SIZE, cnt);
+                iterator.shutdown();
             }
         }
     }
@@ -72,6 +73,7 @@ public class AsyncDataSetIteratorTest {
                 }
 
                 assertEquals(TEST_SIZE + (TEST_SIZE / 2), cnt);
+                iterator.shutdown();
             }
         }
     }
@@ -87,6 +89,7 @@ public class AsyncDataSetIteratorTest {
             consumer.consumeWhileHasNext(true);
 
             assertEquals(TEST_SIZE, consumer.getCount());
+            iterator.shutdown();
         }
     }
 
@@ -97,6 +100,7 @@ public class AsyncDataSetIteratorTest {
 
         TestDataSetConsumer consumer = new TestDataSetConsumer(iterator, EXECUTION_SMALL);
         consumer.consumeWhileHasNext(true);
+        iterator.shutdown();
     }
 
     private class IterableWithException implements Iterable<DataSet> {
