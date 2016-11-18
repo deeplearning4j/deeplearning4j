@@ -116,7 +116,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @return
      */
     @Override
-    public int wordFrequency(String word) {
+    public int wordFrequency(@NonNull String word) {
         // TODO: proper wordFrequency impl should return long, instead of int
         if (vocabulary.containsKey(word))
             return (int) vocabulary.get(word).getElementFrequency();

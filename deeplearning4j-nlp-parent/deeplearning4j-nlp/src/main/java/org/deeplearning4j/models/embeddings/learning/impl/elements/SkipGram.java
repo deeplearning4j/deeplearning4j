@@ -78,11 +78,23 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.lookupTable = lookupTable;
         this.configuration = configuration;
 
+        if (configuration.getNegative() > 0) {
+            if (((InMemoryLookupTable<T>) lookupTable).getSyn1Neg() == null) {
+                log.info("Initializing syn1Neg...");
+                ((InMemoryLookupTable<T>) lookupTable).setUseHS(configuration.isUseHierarchicSoftmax());
+                ((InMemoryLookupTable<T>) lookupTable).setNegative(configuration.getNegative());
+                ((InMemoryLookupTable<T>) lookupTable).resetWeights(false);
+            }
+        }
+
         this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
         this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
+
+
+
 
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
@@ -240,6 +252,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (batches.get() == null) {
             batches.set(new ArrayList<Aggregate>());
         }
+
+        //log.info("VocabWords: {}; lastWordIndex: {}; syn1neg: {}", vocabCache.numWords(), lastWord.getIndex(), syn1Neg.get().rows());
 
         AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(), lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha, nextRandom.get(), vocabCache.numWords(), inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));

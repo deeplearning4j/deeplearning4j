@@ -50,7 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     @Getter protected transient SequenceIterator<T> iterator;
 
-    protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
+    @Setter protected transient ElementsLearningAlgorithm<T> elementsLearningAlgorithm;
     protected transient SequenceLearningAlgorithm<T> sequenceLearningAlgorithm;
 
     @Getter protected VectorsConfiguration configuration;
@@ -1069,6 +1069,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         for (int x = 0; x< sequences.size(); x++) {
                             Sequence<T> sequence = sequences.get(x);
 
+                            //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
                             alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get() / ((double) this.totalWordsCount) / numIterations)));
 
                             trainSequence(sequence, nextRandom, alpha);
