@@ -594,4 +594,10 @@ public class NativeOpExecutionerTest {
             assertEquals(expManhattanDistance, outManhattan.getRow(0).getDouble(0), 1e-5);
         }
     }
+
+    @Test
+    public void testWrongDimensions() {
+        INDArray arr = Nd4j.create(10,10,10);
+        arr.mean(0,2,3);
+    }
 }
