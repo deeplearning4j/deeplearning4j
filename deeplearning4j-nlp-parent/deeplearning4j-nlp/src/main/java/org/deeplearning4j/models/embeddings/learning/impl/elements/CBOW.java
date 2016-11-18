@@ -97,7 +97,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     @Override
     public void finish() {
-        if (batches.get().size() > 0){
+        if (batches != null && batches.get() != null && batches.get().size() > 0){
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
