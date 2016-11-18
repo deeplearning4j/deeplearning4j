@@ -17,8 +17,11 @@ package org.nd4j.aeron.ipc;
 
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -30,6 +33,43 @@ import java.util.function.Consumer;
  * Utility functions for samples
  */
 public class AeronUtil {
+
+    /**
+     * Get a media driver context
+     * for sending ndarrays
+     * based on a given length
+     * where length is the length (number of elements)
+     * in the ndarrays hat are being sent
+     * @param length the length to based the ipc length
+     * @return the media driver context based on the given length
+     */
+   public static MediaDriver.Context getMediaDriverContext(int length) {
+       //length of array * sizeof(float)
+       int ipcLength =  length * 16;
+       //padding for NDArrayMessage
+       ipcLength += 64;
+       //must be a power of 2
+       ipcLength *= 2;
+       //ipc length must be positive power of 2
+       while(!BitUtil.isPowerOfTwo(ipcLength))
+           ipcLength += 2;
+       //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
+       System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
+
+       final MediaDriver.Context ctx = new MediaDriver.Context()
+               .threadingMode(ThreadingMode.DEDICATED)
+               .dirsDeleteOnStart(true)
+               .ipcTermBufferLength(ipcLength)
+               .publicationTermBufferLength(ipcLength)
+               .maxTermBufferLength(ipcLength)
+               .termBufferSparseFile(false)
+               .conductorIdleStrategy(new BusySpinIdleStrategy())
+               .receiverIdleStrategy(new BusySpinIdleStrategy())
+               .senderIdleStrategy(new BusySpinIdleStrategy());
+       return ctx;
+   }
+
+
     /**
      * Aeron channel generation
      * @param host the host
