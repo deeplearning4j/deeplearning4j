@@ -95,6 +95,102 @@ public class MultiDataSetTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testMerging2dMultipleInOut2() {
+        //Test merging: Multiple input/output arrays; 5 MultiDataSets to merge
+
+        int nRows = 10;
+        int nColsIn0 = 3;
+        int nColsIn1 = 4;
+        int nColsIn2 = 5;
+        int nColsOut0 = 6;
+        int nColsOut1 = 7;
+        int nColsOut2 = 8;
+
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+
+        List<MultiDataSet> list = new ArrayList<>(nRows);
+        for (int i = 0; i < nRows; i++) {
+            if (i == 0) {
+                //For first MultiDataSet: have 2 rows, not just 1
+                INDArray in0 = expIn0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray in1 = expIn1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray in2 = expIn2.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out0 = expOut0.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out1 = expOut1.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                INDArray out2 = expOut2.get(NDArrayIndex.interval(0, 1, true), NDArrayIndex.all()).dup();
+                list.add(new MultiDataSet(new INDArray[]{in0, in1, in2}, new INDArray[]{out0, out1, out2}));
+                i++;
+            } else {
+                INDArray in0 = expIn0.getRow(i).dup();
+                INDArray in1 = expIn1.getRow(i).dup();
+                INDArray in2 = expIn2.getRow(i).dup();
+                INDArray out0 = expOut0.getRow(i).dup();
+                INDArray out1 = expOut1.getRow(i).dup();
+                INDArray out2 = expOut2.getRow(i).dup();
+                list.add(new MultiDataSet(new INDArray[]{in0, in1, in2}, new INDArray[]{out0, out1, out2}));
+            }
+        }
+
+        MultiDataSet merged = MultiDataSet.merge(list);
+        assertEquals(3, merged.getFeatures().length);
+        assertEquals(3, merged.getLabels().length);
+
+        assertEquals(expIn0, merged.getFeatures(0));
+        assertEquals(expIn1, merged.getFeatures(1));
+        assertEquals(expIn2, merged.getFeatures(2));
+        assertEquals(expOut0, merged.getLabels(0));
+        assertEquals(expOut1, merged.getLabels(1));
+        assertEquals(expOut2, merged.getLabels(2));
+    }
+
+    @Test
+    public void testMerging2dMultipleInOut3() {
+        //Test merging: fewer rows than output arrays...
+
+        int nRows = 2;
+        int nColsIn0 = 3;
+        int nColsIn1 = 4;
+        int nColsIn2 = 5;
+        int nColsOut0 = 6;
+        int nColsOut1 = 7;
+        int nColsOut2 = 8;
+
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+
+        List<MultiDataSet> list = new ArrayList<>(nRows);
+        for (int i = 0; i < nRows; i++) {
+            INDArray in0 = expIn0.getRow(i).dup();
+            INDArray in1 = expIn1.getRow(i).dup();
+            INDArray in2 = expIn2.getRow(i).dup();
+            INDArray out0 = expOut0.getRow(i).dup();
+            INDArray out1 = expOut1.getRow(i).dup();
+            INDArray out2 = expOut2.getRow(i).dup();
+            list.add(new MultiDataSet(new INDArray[]{in0, in1, in2}, new INDArray[]{out0, out1, out2}));
+        }
+
+        MultiDataSet merged = MultiDataSet.merge(list);
+        assertEquals(3, merged.getFeatures().length);
+        assertEquals(3, merged.getLabels().length);
+
+        assertEquals(expIn0, merged.getFeatures(0));
+        assertEquals(expIn1, merged.getFeatures(1));
+        assertEquals(expIn2, merged.getFeatures(2));
+        assertEquals(expOut0, merged.getLabels(0));
+        assertEquals(expOut1, merged.getLabels(1));
+        assertEquals(expOut2, merged.getLabels(2));
+    }
+
+    @Test
     public void testMerging4dMultipleInOut() {
         int nRows = 5;
         int depthIn0 = 3;
