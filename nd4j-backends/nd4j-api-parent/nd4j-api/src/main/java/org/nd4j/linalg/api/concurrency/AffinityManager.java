@@ -8,6 +8,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface AffinityManager {
 
+    enum Location {
+        HOST,
+        DEVICE
+    }
+
     /**
      * This method returns deviceId for current thread
      * @return
@@ -82,4 +87,18 @@ public interface AffinityManager {
      * @return
      */
     DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer);
+
+    /**
+     * This method tags specific INDArray as "recent" on specified location
+     *
+     * @param location
+     */
+    void tagLocation(INDArray array, Location location);
+
+    /**
+     * This method tags specific DataBuffer as "recent" on specified location
+     *
+     * @param location
+     */
+    void tagLocation(DataBuffer buffer, Location location);
 }
