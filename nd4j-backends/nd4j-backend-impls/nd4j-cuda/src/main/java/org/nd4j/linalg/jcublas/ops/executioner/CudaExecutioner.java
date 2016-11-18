@@ -237,6 +237,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devTadOffsets
         );
 
+        if (op.y() != null) {
+            Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+            Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+
+            DataBuffer yOffsets = yTadBuffers.getSecond();
+            Pointer yDevTadOffsets = yOffsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
+
+            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
+            xShapeInfoHostPointer.put(13, yDevTadOffsets);
+        }
+
 
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
         //Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : 0;
@@ -1032,6 +1044,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devTadShapeInfo,
                 devTadOffsets
         );
+
+        if (op.y() != null) {
+            Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+            Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+
+            DataBuffer yOffsets = yTadBuffers.getSecond();
+            Pointer yDevTadOffsets = yOffsets == null ? null :AtomicAllocator.getInstance().getPointer(yOffsets, context);
+
+            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
+            xShapeInfoHostPointer.put(13, yDevTadOffsets);
+        }
+
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
