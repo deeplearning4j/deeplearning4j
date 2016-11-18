@@ -115,7 +115,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-8.0</artifactId>
+            <artifactId>nd4j-native</artifactId>
         </dependency>
 
         <dependency>
