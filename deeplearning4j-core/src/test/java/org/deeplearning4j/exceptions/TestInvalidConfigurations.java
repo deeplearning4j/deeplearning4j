@@ -1,6 +1,7 @@
 package org.deeplearning4j.exceptions;
 
 import org.deeplearning4j.exception.DL4JException;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -197,6 +198,7 @@ public class TestInvalidConfigurations {
 
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .convolutionMode(ConvolutionMode.Strict)
                     .list()
                     .layer(0, new ConvolutionLayer.Builder().kernelSize(3,2).stride(2,2).padding(0,0).nOut(5).build())
                     .layer(1, new OutputLayer.Builder().nOut(10).build())
@@ -256,6 +258,7 @@ public class TestInvalidConfigurations {
         //Invalid: (10-3+0)/2+1 = 4.5
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Strict)
                 .list()
                 .layer(0, new ConvolutionLayer.Builder().kernelSize(3,3).stride(2,2).padding(0,0).nIn(depthIn).nOut(5).build())
                 .layer(1, new OutputLayer.Builder().nIn(5*4*4).nOut(10).build())
@@ -288,8 +291,20 @@ public class TestInvalidConfigurations {
         //Using kernel size of 3, stride of 2:
         //(10-3+2*0)/2+1 = 7/2 + 1
 
+        try{
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).nOut(5).build())
+                    .layer(1, new OutputLayer.Builder().nOut(10).build())
+                    .setInputType(InputType.convolutional(hIn, wIn, depthIn))
+                    .build();
+        }catch (Exception e){
+            fail("Did not expect exception with default (truncate)");
+        }
+
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .convolutionMode(ConvolutionMode.Strict)
                     .list()
                     .layer(0, new ConvolutionLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).nOut(5).build())
                     .layer(1, new OutputLayer.Builder().nOut(10).build())
@@ -319,6 +334,7 @@ public class TestInvalidConfigurations {
 
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .convolutionMode(ConvolutionMode.Strict)
                     .list()
                     .layer(0, new SubsamplingLayer.Builder().kernelSize(2,3).stride(2,2).padding(0,0).build())
                     .layer(1, new OutputLayer.Builder().nOut(10).build())
