@@ -437,7 +437,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     }
 
     private static Pair<INDArray,INDArray> merge(INDArray[][] arrays, INDArray[][] masks, int column){
-        int rank = arrays[column][0].rank();
+        int rank = arrays[0][column].rank();
         if(rank == 2){
             return new Pair<>(merge2d(arrays,column),null);
         } else if(rank == 3) {

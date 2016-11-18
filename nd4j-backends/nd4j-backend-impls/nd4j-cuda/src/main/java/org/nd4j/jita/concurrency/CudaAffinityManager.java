@@ -6,6 +6,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -219,5 +220,21 @@ public class CudaAffinityManager extends BasicAffinityManager {
         }
 
         return dstBuffer;
+    }
+
+    @Override
+    public void tagLocation(INDArray array, Location location) {
+        if (location == Location.HOST)
+            AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
+        else if (location == Location.DEVICE)
+            AtomicAllocator.getInstance().getAllocationPoint(array).tickDeviceWrite();
+    }
+
+    @Override
+    public void tagLocation(DataBuffer buffer, Location location) {
+        if (location == Location.HOST)
+            AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+        else if (location == Location.DEVICE)
+            AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
     }
 }

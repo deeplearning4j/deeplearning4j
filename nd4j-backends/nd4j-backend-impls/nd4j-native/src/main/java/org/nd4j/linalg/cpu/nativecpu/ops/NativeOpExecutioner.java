@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -192,6 +193,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Accumulation op, int... dimension) {
 
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -636,6 +641,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 

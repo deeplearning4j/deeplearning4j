@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
@@ -96,6 +97,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             extraz.set(new PointerPointer(32));
 
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
+
 //        log.info("B2 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
 
    //     if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
@@ -202,6 +208,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     protected INDArray naiveExec(Accumulation op, int... dimension) {
         INDArray ret = op.z();
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -524,6 +534,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Arrays.sort(dimension);
 
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
+
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
@@ -579,6 +593,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -880,6 +898,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
 
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
+
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
 //        log.info("OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "]");
@@ -1016,6 +1038,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 //            OpDashboard.getInstance().processOpCall(op);
 
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
