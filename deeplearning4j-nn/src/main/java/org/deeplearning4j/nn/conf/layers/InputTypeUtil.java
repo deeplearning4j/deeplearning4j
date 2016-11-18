@@ -34,8 +34,8 @@ public class InputTypeUtil {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
-        int padH = padding[0];
-        int padW = padding[1];
+        int padH = (padding == null ? 0 : padding[0]);  //May be null for ConvolutionMode.Same
+        int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
         int kW = kernelSize[1];
         int sH = stride[0];
@@ -70,14 +70,15 @@ public class InputTypeUtil {
                 double d = (inHeight - kH + 2 * padH) / ((double) sH) + 1.0;
                 String str = String.format("%.2f", d);
                 int truncated = (int)d;
+                int sameSize = (int)Math.ceil(inHeight / ((double)stride[0]));
                 throw new DL4JInvalidConfigException(
                         getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
                                 + "\nCombination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
                                 + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
                                 + inHeight + " - " + kH + " + 2*" + padH + ")/" + sH + " + 1 = " + str + "\n"
-                                + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
+                                + "See ConvolutionType enumeration Javadoc and \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/\n"
                                 + "To truncate/crop the input, such that output height = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
-                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + "Alternatively use ConvolutionType.Same, which will use padding to give an output height of ceil(" + inHeight + "/" + stride[0] + ")=" + sameSize + "\n"
                                 + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
             }
 
@@ -86,6 +87,7 @@ public class InputTypeUtil {
                 double d = (inWidth - kW + 2 * padW) / ((double) sW) + 1.0;
                 String str = String.format("%.2f", d);
                 int truncated = (int)d;
+                int sameSize = (int)Math.ceil(inWidth / ((double)stride[1]));
                 throw new DL4JInvalidConfigException(
                         getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
                                 + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
@@ -93,9 +95,27 @@ public class InputTypeUtil {
                                 + inWidth + " - " + kW + " + 2*" + padW + ")/" + sW + " + 1 = " + str + "\n"
                                 + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
                                 + "To truncate/crop the input, such that output width = floor(" + str + ") = " + truncated + ", use ConvolutionType.Truncate.\n"
-                                + "Note however that some input data from the edge will be lost when using ConvolutionType.Truncate and this CNN configuration.\n"
+                                + "Alternatively use ConvolutionType.Same, which will use padding to give an output width of ceil(" + inWidth + "/" + stride[1] + ")=" + sameSize + "\n"
                                 + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
             }
+        } else if(convolutionMode == ConvolutionMode.Same){
+
+            //'Same' padding mode:
+            //outH = ceil(inHeight / strideH)           decimal division
+            //outW = ceil(inWidth / strideW)            decimal division
+
+            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
+            //padTop = padHeightSum / 2                 integer division
+            //padBottom = padHeghtSum - padTop
+
+            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
+            //padLeft = padWidthSum / 2                 integer division
+            //padRight = padWidthSum - padLeft
+
+            int outH = (int)Math.ceil(inHeight / ((double)stride[0]));
+            int outW = (int)Math.ceil(inWidth / ((double)stride[1]));
+
+            return InputType.convolutional(outH, outW, outputDepth);
         }
 
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;

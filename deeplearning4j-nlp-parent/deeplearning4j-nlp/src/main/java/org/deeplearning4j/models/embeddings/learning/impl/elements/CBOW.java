@@ -67,6 +67,16 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         this.negative = configuration.getNegative();
         this.sampling = configuration.getSampling();
 
+        if (configuration.getNegative() > 0) {
+            if (((InMemoryLookupTable<T>) lookupTable).getSyn1Neg() == null) {
+                logger.info("Initializing syn1Neg...");
+                ((InMemoryLookupTable<T>) lookupTable).setUseHS(configuration.isUseHierarchicSoftmax());
+                ((InMemoryLookupTable<T>) lookupTable).setNegative(configuration.getNegative());
+                ((InMemoryLookupTable<T>) lookupTable).resetWeights(false);
+            }
+        }
+
+
         this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
