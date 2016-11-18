@@ -462,7 +462,8 @@ public  class ConvolutionTests extends BaseNd4jTest {
         //Finally: Check col2im with the same shapes. This doesn't check the results, more 'does it crash or not'
 
         INDArray col2imResult = Nd4j.create(input.shape());
-        Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
+        INDArray col2im = Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
+        System.out.println(Arrays.toString(col2im.data().asDouble()));
     }
 
 
@@ -594,7 +595,118 @@ public  class ConvolutionTests extends BaseNd4jTest {
         //Finally: Check col2im with the same shapes. This doesn't check the results, more 'does it crash or not'
 
         INDArray col2imResult = Nd4j.create(input.shape());
-        Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
+        INDArray col2im = Convolution.col2im(out, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
+        System.out.println(Arrays.toString(col2im.data().asDouble()));
+    }
+
+
+
+    @Test
+    public void testCol2ImSamePaddingStride2(){
+        //Input: h=3, w=4, depth=2, minibatch = 1, kH/kW = 3, stride=2
+
+        //Idea with same padding:
+        //outH = ceil(inH / strideH)
+        //outW = ceil(inW / strideW)
+
+        int miniBatch = 1;
+        int depth = 2;
+        int inH = 3;
+        int inW = 4;
+        int strideH = 2;
+        int strideW = 2;
+
+        int kH = 3;
+        int kW = 3;
+
+        int outH = (int)Math.ceil(inH / ((double)strideH));
+        int outW = (int)Math.ceil(inW / ((double)strideW));
+
+        assertEquals(2, outH);      //ceil(3/2) = 2
+        assertEquals(2, outW);      //ceil(4/2) = 2
+
+        int sumPadHeight = ((outH-1)*strideH + kH - inH);
+        int padTop = sumPadHeight / 2;
+        int padBottom = sumPadHeight - padTop;
+
+        assertEquals(1, padTop);
+        assertEquals(1, padBottom);
+
+        int sumPadWidth = ((outW-1)*strideW + kW - inW);
+        int padLeft = sumPadWidth / 2;
+        int padRight = sumPadWidth - padLeft;
+
+        assertEquals(0, padLeft);
+        assertEquals(1, padRight);
+
+        System.out.println("Output size: " + outH + ", " + outW);
+        System.out.println("Pad top/bottom: " + padTop + "\t" + padBottom);
+        System.out.println("Pad left/right: " + padLeft + "\t" + padRight);
+
+
+        /*
+        ----- Input images -----
+        example 0:
+        depth 0       depth 1
+        [ 0  1  2  3      [12 13 14 15
+          4  5  6  7       16 17 18 19
+          8  9 10 11]      20 21 22 23]
+
+         ----- Expected Output -----
+         Shape: [miniBatch,depth,kH,kW,outH,outW]
+         - example 0 -
+         depth 0                        depth 1
+          h0,w0        h0,w1            h0,w0       h0,w1
+           0  0  0     0  0  0           0  0  0    0  0  0
+           0  1  2     2  3  0          12 13 14   14 15  0
+           4  5  6     6  7  0          16 17 18   18 19  0
+
+          h1,w0
+           4  5  6     6  7  0          16 17 18   18 19  0
+           8  9 10    10 11  0          20 21 22   22 23  0
+           0  0  0     0  0  0           0  0  0    0  0  0
+         */
+
+        /*
+        Col2im result:
+
+        example 0:
+        depth 0           depth 1
+        [ 0  1  4  3      [12 13 28 15
+          8 10 24 14       32 34 72 38
+          8  9 20 11]      20 21 44 23]
+         */
+
+        //Input data: shape [miniBatch,depth,height,width]
+//        INDArray input = Nd4j.create(new int[]{miniBatch,depth,inH,inW},'c');
+//        input.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.all()}, Nd4j.create(new double[][]{{0,1,2,3},{4,5,6,7},{8,9,10,11}}));
+//        input.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.all()}, Nd4j.create(new double[][]{{12,13,14,15},{16,17,18,19},{20,21,22,23}}));
+
+        INDArray col6d = Nd4j.create(new int[]{miniBatch,depth,kH,kW,outH,outW},'c');
+
+        //Example 0
+        //depth 0
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(0)}, Nd4j.create(new double[][]{{0,0,0},{0,1,2},{4,5,6}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(1)}, Nd4j.create(new double[][]{{0,0,0},{2,3,0},{6,7,0}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(0)}, Nd4j.create(new double[][]{{4,5,6},{8,9,10},{0,0,0}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(1)}, Nd4j.create(new double[][]{{6,7,0},{10,11,0},{0,0,0}}));
+        //depth 1
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(0)}, Nd4j.create(new double[][]{{0,0,0},{12,13,14},{16,17,18}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(1)}, Nd4j.create(new double[][]{{0,0,0},{14,15,0},{18,19,0}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(0)}, Nd4j.create(new double[][]{{16,17,18},{20,21,22},{0,0,0}}));
+        col6d.put(new INDArrayIndex[]{NDArrayIndex.point(0),NDArrayIndex.point(1),NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(1)}, Nd4j.create(new double[][]{{18,19,0},{22,23,0},{0,0,0}}));
+
+
+        //Expected result:
+        INDArray expected = Nd4j.create(miniBatch, depth, inH, inW);
+        expected.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(0),NDArrayIndex.all(), NDArrayIndex.all()}, Nd4j.create(new double[][]{{0,1,4,3},{8,10,24,14},{8,9,20,11}}));
+        expected.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(1),NDArrayIndex.all(), NDArrayIndex.all()}, Nd4j.create(new double[][]{{12,13,28,15},{32,34,72,38},{20,21,44,23}}));
+
+
+        INDArray col2imResult = Nd4j.create(miniBatch, depth, inH, inW);
+        INDArray col2im = Convolution.col2im(col6d, col2imResult, strideH, strideW, padTop, padLeft, inH, inW);
+
+        assertEquals(expected, col2im);
     }
 
 
