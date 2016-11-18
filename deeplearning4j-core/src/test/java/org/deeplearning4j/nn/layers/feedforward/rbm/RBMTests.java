@@ -41,6 +41,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -66,9 +68,10 @@ public class RBMTests {
     public void testIrisGaussianHidden() {
         IrisDataFetcher fetcher = new IrisDataFetcher();
         fetcher.fetch(150);
+        DataNormalization norm = new NormalizerStandardize();
         DataSet d = fetcher.next();
-        d.normalizeZeroMeanZeroUnitVariance();
-
+        norm.fit(d);
+        norm.transform(d);
 
         INDArray params = Nd4j.create(1, 4*3+4+3);
         RBM rbm = getRBMLayer(4, 3, HiddenUnit.GAUSSIAN, VisibleUnit.GAUSSIAN, params, true, false, 1, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
@@ -80,8 +83,10 @@ public class RBMTests {
     public void testIrisRectifiedHidden() {
         IrisDataFetcher fetcher = new IrisDataFetcher();
         fetcher.fetch(150);
+        DataNormalization norm = new NormalizerStandardize();
         DataSet d = fetcher.next();
-        d.normalizeZeroMeanZeroUnitVariance();
+        norm.fit(d);
+        norm.transform(d);
 
         INDArray params = Nd4j.create(1, 4*3+4+3);
         RBM rbm = getRBMLayer(4, 3, HiddenUnit.RECTIFIED, VisibleUnit.LINEAR, params, true, false, 1, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
