@@ -1,6 +1,7 @@
 package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import lombok.Builder;
 import lombok.Data;
@@ -115,7 +116,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
                 this.subscription = subscription;
                 log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
                 AeronUtil.subscriberLoop(
-                        new NDArrayFragmentHandler(ndArrayCallback),
+                        new FragmentAssembler(new NDArrayFragmentHandler(ndArrayCallback)),
                         fragmentLimitCount,
                         running,launched)
                         .accept(subscription);

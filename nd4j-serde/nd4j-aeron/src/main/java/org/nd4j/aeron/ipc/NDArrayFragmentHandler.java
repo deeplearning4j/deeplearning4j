@@ -1,5 +1,6 @@
 package org.nd4j.aeron.ipc;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -20,7 +21,6 @@ import java.nio.ByteBuffer;
  */
 public class NDArrayFragmentHandler implements FragmentHandler {
     private NDArrayCallback ndArrayCallback;
-
 
     public NDArrayFragmentHandler(NDArrayCallback ndArrayCallback) {
         this.ndArrayCallback = ndArrayCallback;

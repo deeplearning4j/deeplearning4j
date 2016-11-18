@@ -56,6 +56,7 @@ public class ParameterServerClient implements NDArrayCallback {
     private int masterStatusPort;
     private ObjectMapper objectMapper = new ObjectMapper();
     private Aeron aeron;
+    private boolean compressArray = true;
 
     /**
      * Tracks number of
@@ -136,7 +137,7 @@ public class ParameterServerClient implements NDArrayCallback {
         String channel = AeronUtil.aeronChannel(split[0],port);
         log.debug("Parameter server client publishing to " + ndarraySendUrl);
         try(AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
-                .streamId(streamToPublish)
+                .streamId(streamToPublish).compress(isCompressArray())
                 .aeron(aeron).channel(channel)
                 .build()) {
             publisher.publish(message);

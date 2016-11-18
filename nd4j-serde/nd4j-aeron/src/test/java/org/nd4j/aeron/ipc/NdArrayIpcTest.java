@@ -3,6 +3,7 @@ package org.nd4j.aeron.ipc;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
@@ -28,12 +29,28 @@ public class NdArrayIpcTest {
     private Aeron.Context ctx;
     private String channel = "aeron:udp?endpoint=localhost:40123";
     private int streamId = 10;
+    private  int length = (int) 1e7;
 
     @Before
     public void before() {
+        //length of array * sizeof(float)
+        int ipcLength =  length * 16;
+        //padding for NDArrayMessage
+        ipcLength += 64;
+        //must be a power of 2
+        ipcLength *= 2;
+        //ipc length must be positive power of 2
+        while(!BitUtil.isPowerOfTwo(ipcLength))
+            ipcLength += 2;
+        //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
+        System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
                 .threadingMode(ThreadingMode.DEDICATED)
                 .dirsDeleteOnStart(true)
+                   .ipcTermBufferLength(ipcLength)
+                    .publicationTermBufferLength(ipcLength)
+                    .maxTermBufferLength(ipcLength)
                 .termBufferSparseFile(false)
                 .conductorIdleStrategy(new BusySpinIdleStrategy())
                 .receiverIdleStrategy(new BusySpinIdleStrategy())
@@ -46,6 +63,89 @@ public class NdArrayIpcTest {
     @After
     public void after() {
         CloseHelper.quietClose(mediaDriver);
+    }
+
+    @Test
+    public void testMultiThreadedIpcBig() throws Exception {
+        int length = (int) 1e7;
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        INDArray arr = Nd4j.ones((int) length);
+
+        //length of array * sizeof(float)
+        int ipcLength =  length * 4;
+        //padding for NDArrayMessage
+        ipcLength += 64;
+        //must be a power of 2
+        ipcLength *= 2;
+        //ipc length must be positive power of 2
+        while(!BitUtil.isPowerOfTwo(ipcLength))
+            ipcLength += 2;
+        //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
+        System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
+        final AtomicBoolean running = new AtomicBoolean(true);
+        Aeron aeron = Aeron.connect(getContext());
+        int numSubscribers = 10;
+        AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
+        for(int i = 0; i < numSubscribers; i++) {
+            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
+                    .streamId(streamId)
+                    .ctx(getContext()).channel(channel).aeron(aeron)
+                    .running(running)
+                    .ndArrayCallback(new NDArrayCallback() {
+                        @Override
+                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+
+                        }
+
+                        @Override
+                        public void onNDArray(INDArray arr) {
+                            running.set(false);
+                        }
+                    }).build();
+
+
+            Thread t = new Thread(() -> {
+                try {
+                    subscriber.launch();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            });
+
+            t.start();
+
+            subscribers[i] = subscriber;
+        }
+
+        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
+                .builder()
+                .streamId(streamId)
+                .channel(channel).aeron(aeron)
+                .build();
+
+        Thread.sleep(10000);
+
+        for(int i = 0; i< 10 && running.get(); i++) {
+            executorService.execute(() -> {
+                try {
+                    log.info("About to send array.");
+                    publisher.publish(arr);
+                    log.info("Sent array");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+        }
+
+        Thread.sleep(100000);
+
+        for(int i = 0; i < numSubscribers; i++)
+            CloseHelper.close(subscribers[i]);
+        CloseHelper.close(aeron);
+        CloseHelper.close(publisher);
+        assertFalse(running.get());
     }
 
 

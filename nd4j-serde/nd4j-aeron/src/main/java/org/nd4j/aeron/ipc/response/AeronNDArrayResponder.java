@@ -1,6 +1,7 @@
 package org.nd4j.aeron.ipc.response;
 
 import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import lombok.Builder;
 import lombok.Data;
@@ -51,7 +52,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
     private void init() {
         ctx = ctx == null ? new Aeron.Context() : ctx;
         channel = channel == null ?  "aeron:udp?endpoint=localhost:40123" : channel;
-        fragmentLimitCount = fragmentLimitCount == 0 ? 1000 : fragmentLimitCount;
+        fragmentLimitCount = fragmentLimitCount == 0 ? 5000 : fragmentLimitCount;
         streamId = streamId == 0 ? 10 : streamId;
         responseStreamId = responseStreamId == 0 ? -1 : responseStreamId;
         running = running == null ? new AtomicBoolean(true) : running;
@@ -94,12 +95,12 @@ public class AeronNDArrayResponder implements AutoCloseable {
             try {
                 try (final Subscription subscription = aeron.addSubscription(channel, streamId)) {
                     log.info("Beginning subscribe on channel " + channel + " and stream " + streamId);
-                    AeronUtil.subscriberLoop(NDArrayResponseFragmentHandler.builder()
+                      AeronUtil.subscriberLoop(new FragmentAssembler(NDArrayResponseFragmentHandler.builder()
                                     .aeron(aeron)
                                     .context(ctx)
                                     .streamId(responseStreamId)
                                     .holder(ndArrayHolder)
-                                    .build(), fragmentLimitCount, running
+                                    .build()), fragmentLimitCount, running
                             ,launched)
                             .accept(subscription);
                     started = true;
@@ -152,7 +153,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
 
         AeronNDArrayResponder subscriber = AeronNDArrayResponder.builder()
                 .streamId(streamId)
-                .aeron(aeron).channel(String.format("aeron:udp?endpoint=%s:%d",host,port))
+                .aeron(aeron).channel(AeronUtil.aeronChannel(host,port))
                 .running(running)
                 .ndArrayHolder(callback).build();
 
