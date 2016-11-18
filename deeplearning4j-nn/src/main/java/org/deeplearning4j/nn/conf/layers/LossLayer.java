@@ -53,7 +53,7 @@ public class LossLayer extends FeedForwardLayer {
         return EmptyParamInitializer.getInstance();
     }
 
-    public static class Builder extends BaseOutputLayer.Builder<Builder> {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected ILossFunction lossFn = new LossMCXENT();
 
         public Builder() {}
@@ -66,20 +66,23 @@ public class LossLayer extends FeedForwardLayer {
             this.lossFn = lossFunction;
         }
 
-        @Override
-        @SuppressWarnings("unchecked")
+        public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
+            return lossFunction(lossFunction.getILossFunction());
+        }
+
+        public Builder lossFunction(ILossFunction lossFunction) {
+            this.lossFn = lossFunction;
+            return this;
+        }
+
         public Builder nIn(int nIn) {
             throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
         }
 
-        @Override
-        @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
         }
 
-        @Override
-        @SuppressWarnings("unchecked")
         public LossLayer build() {
             return new LossLayer(this);
         }
