@@ -229,7 +229,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int code = w1.getCodes().get(i);
                 int point = w1.getPoints().get(i);
                 if (point >= vocabCache.numWords() || point < 0)
-                    throw new IllegalStateException("Illegal point " + point);
+                    continue;
 
                 codes[i] = code;
                 idxSyn1[i] = point;
