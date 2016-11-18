@@ -88,7 +88,7 @@ public class Convolution {
     public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w) {
         if(col.rank() != 6) throw new IllegalArgumentException("col2im input array must be rank 6");
         if(z.rank() != 4) throw new IllegalArgumentException("col2im output array must be rank 4");
-        Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w,z);
+        Col2Im col2Im = new Col2Im(col,sy,sx,ph,pw,h,w,false,z);
         Nd4j.getExecutioner().exec(col2Im);
         return z;
     }
@@ -138,7 +138,7 @@ public class Convolution {
      * @param ph the padding width
      * @param pw the padding height
      * @param pval the padding value (not used)
-     * @param coverAll whether to cover the whole image or not
+     * @param isSameMode whether padding mode is 'same'
      * @return the column formatted image
      *
      */
