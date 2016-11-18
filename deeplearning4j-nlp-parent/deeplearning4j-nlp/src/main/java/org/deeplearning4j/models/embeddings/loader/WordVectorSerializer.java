@@ -554,7 +554,7 @@ public class WordVectorSerializer {
         INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
 
         if (syn1Neg != null)
-            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1Neg))) {
                 for (int x = 0; x < syn1Neg.rows(); x++) {
                     INDArray row = syn1Neg.getRow(x);
                     StringBuilder builder = new StringBuilder();
@@ -673,16 +673,17 @@ public class WordVectorSerializer {
 
         INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
-            for (int x = 0; x < syn1.rows(); x++) {
-                INDArray row = syn1.getRow(x);
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < row.length(); i++) {
-                    builder.append(row.getDouble(i)).append(" ");
+        if (syn1 != null)
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+                for (int x = 0; x < syn1.rows(); x++) {
+                    INDArray row = syn1.getRow(x);
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < row.length(); i++) {
+                        builder.append(row.getDouble(i)).append(" ");
+                    }
+                    writer.println(builder.toString().trim());
                 }
-                writer.println(builder.toString().trim());
             }
-        }
 
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
@@ -905,6 +906,33 @@ public class WordVectorSerializer {
             }
         }
 
+
+        ZipEntry zsyn1Neg = zipFile.getEntry("syn1Neg.txt");
+        if (zsyn1Neg != null) {
+            stream = zipFile.getInputStream(zsyn1Neg);
+
+            try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
+                String line = null;
+                List<INDArray> rows = new ArrayList<>();
+                while ((line = reader.readLine()) != null) {
+                    String[] split = line.split(" ");
+                    double array[] = new double[split.length];
+                    for (int i = 0; i < split.length; i++) {
+                        array[i] = Double.parseDouble(split[i]);
+                    }
+                    rows.add(Nd4j.create(array));
+                }
+
+                // it's possible to have full model without syn1Neg
+                if (rows.size() > 0) {
+                    INDArray syn1Neg = Nd4j.vstack(rows);
+                    ((InMemoryLookupTable)w2v.getLookupTable()).setSyn1Neg(syn1Neg);
+                }
+            }
+        }
+
+
+
         return w2v;
     }
 
@@ -960,8 +988,11 @@ public class WordVectorSerializer {
         }
         reader.close();
 
-        INDArray syn1 = Nd4j.vstack(rows);
-        lookupTable.setSyn1(syn1);
+        // it's possible to have full model without syn1
+        if (rows.size() > 0) {
+            INDArray syn1 = Nd4j.vstack(rows);
+            lookupTable.setSyn1(syn1);
+        }
 
         // now we transform mappings into huffman tree points
         reader = new BufferedReader(new FileReader(h_points));
@@ -2247,6 +2278,9 @@ public class WordVectorSerializer {
             }
         } catch (Exception e) {
             // let's try to load this file as csv file
+            if (1>0)
+                throw new RuntimeException(e);
+
             try {
                 log.debug("Trying CSV model restoration...");
 
