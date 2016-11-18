@@ -30,6 +30,7 @@ import org.bytedeco.javacpp.indexer.UShortIndexer;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -345,6 +346,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
         }
         image.data(); // dummy call to make sure it does not get deallocated prematurely
+        Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
         return ret.reshape(ArrayUtil.combine(new int[]{1},ret.shape()));
     }
 
