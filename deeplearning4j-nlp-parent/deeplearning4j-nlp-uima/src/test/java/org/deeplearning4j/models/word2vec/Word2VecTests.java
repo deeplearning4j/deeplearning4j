@@ -329,6 +329,62 @@ public class Word2VecTests {
         vec.fit();
     }
 
+    @Test
+    public void testW2VnegativeOnRestore() throws Exception {
+        // Strip white space before and after for each line
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+
+        Word2Vec vec = new Word2Vec.Builder()
+                    .minWordFrequency(1)
+                    .iterations(3)
+                    .batchSize(64)
+                    .layerSize(100)
+                    .stopWords(new ArrayList<String>())
+                    .seed(42)
+                    .learningRate(0.025)
+                    .minLearningRate(0.001)
+                    .sampling(0)
+                    .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                    .negativeSample(10)
+                    .epochs(1)
+                    .windowSize(5)
+                    .useHierarchicSoftmax(false)
+                    .allowParallelTokenization(true)
+                    .modelUtils(new BasicModelUtils<VocabWord>())
+                    .iterate(iter)
+                    .tokenizerFactory(t)
+                    .build();
+
+        log.info("Fit 1");
+        vec.fit();
+
+        File tmpFile = File.createTempFile("temp", "file");
+        tmpFile.deleteOnExit();
+
+        WordVectorSerializer.writeWord2VecModel(vec, tmpFile);
+
+        Word2Vec restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, true);
+        restoredVec.setTokenizerFactory(t);
+        restoredVec.setSentenceIter(iter);
+
+
+        log.info("Fit 2");
+        vec.fit();
+
+
+        restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, false);
+        restoredVec.setTokenizerFactory(t);
+        restoredVec.setSentenceIter(iter);
+
+
+        log.info("Fit 3");
+        vec.fit();
+    }
+
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to ["+target+"]:");
         for (String word: list) {
