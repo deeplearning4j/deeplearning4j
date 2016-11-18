@@ -1,13 +1,11 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +16,7 @@ import java.io.IOException;
  * Pre processor for DataSet that normalizes feature values (and optionally label values) to have 0 mean and a standard
  * deviation of 1
  */
+@EqualsAndHashCode
 public class NormalizerStandardize extends AbstractNormalizerStandardize implements DataNormalization {
     private DistributionStats featureStats;
     private DistributionStats labelStats;
@@ -26,15 +25,24 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     public NormalizerStandardize() {
     }
 
-    public NormalizerStandardize(INDArray featureMean, INDArray featureStd) {
-        this.featureStats = new DistributionStats(featureMean,featureStd);
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd) {
+        this.featureStats = new DistributionStats(featureMean, featureStd);
         this.fitLabels = false;
     }
 
-    public NormalizerStandardize(INDArray featureMean, INDArray featureStd, INDArray labelMean, INDArray labelStd) {
-        this.featureStats = new DistributionStats(featureMean,featureStd);
-        this.labelStats = new DistributionStats(labelMean,labelStd);
+    public NormalizerStandardize(
+        @NonNull INDArray featureMean,
+        @NonNull INDArray featureStd,
+        @NonNull INDArray labelMean,
+        @NonNull INDArray labelStd
+    ) {
+        this.featureStats = new DistributionStats(featureMean, featureStd);
+        this.labelStats = new DistributionStats(labelMean, labelStd);
         this.fitLabels = true;
+    }
+
+    public void setLabelStats(@NonNull INDArray labelMean, @NonNull INDArray labelStd) {
+        this.labelStats = new DistributionStats(labelMean, labelStd);
     }
 
     /**
@@ -123,7 +131,7 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     }
 
     @Override
-    public void transformLabel(INDArray label){
+    public void transformLabel(INDArray label) {
         transform(label, false);
     }
 
@@ -147,7 +155,7 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
 
     @Override
     public void revertFeatures(INDArray features) {
-        revert(features,featureStats);
+        revert(features, featureStats);
     }
 
     @Override
@@ -196,6 +204,8 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
     }
 
     /**
+     * @deprecated use {@link NormalizerSerializer} instead
+     *
      * Save the current means and standard deviations to the file system
      *
      * @param files the files to save to. Needs 4 files if normalizing labels, otherwise 2.

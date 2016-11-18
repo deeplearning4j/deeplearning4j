@@ -1,6 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -18,9 +20,10 @@ import java.util.List;
  *
  * @author Ede Meijer
  */
+@EqualsAndHashCode
 public class MultiNormalizerStandardize extends AbstractNormalizerStandardize implements MultiDataSetPreProcessor {
-    private List<DistributionStats> featureStats;
-    private List<DistributionStats> labelStats;
+    @Setter private List<DistributionStats> featureStats;
+    @Setter private List<DistributionStats> labelStats;
     private boolean fitLabels = false;
 
     public void fitLabel(boolean fitLabels) {
@@ -135,6 +138,13 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
         }
     }
 
+    public int numInputs() {
+        return featureStats.size();
+    }
+
+    public int numOutputs() {
+        return labelStats.size();
+    }
 
     public INDArray getFeatureMean(int input) {
         assertIsFit();
@@ -183,6 +193,8 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
+     * @deprecated use {@link NormalizerSerializer} instead
+     *
      * Save the current means and standard deviations to the file system
      *
      * @param featureFiles target files for features, requires 2 files per input, alternating mean and stddev files
