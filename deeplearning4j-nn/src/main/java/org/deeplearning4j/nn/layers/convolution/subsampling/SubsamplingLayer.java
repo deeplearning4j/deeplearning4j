@@ -21,10 +21,12 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
@@ -48,11 +50,13 @@ import java.util.Arrays;
 public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
     protected static final Logger log = LoggerFactory.getLogger(SubsamplingLayer.class);
 
-    SubsamplingHelper helper = null;
+    protected SubsamplingHelper helper = null;
+    protected ConvolutionMode convolutionMode;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
+        this.convolutionMode = ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer)conf.getLayer()).getConvolutionMode();
     }
 
     public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -97,10 +101,23 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-        int[] pad = layerConf().getPadding();
+//        int[] pad = layerConf().getPadding();
+//
+//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] pad;
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{inH, inW}, kernel, strides);
+        } else {
+            pad = layerConf().getPadding();
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+        int outH = outSize[0];
+        int outW = outSize[1];
+
 
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType());
@@ -165,7 +182,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         switch(layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col6dPermuted);
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d,1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
@@ -213,10 +230,21 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-        int[] pad = layerConf().getPadding();
+//        int[] pad = layerConf().getPadding();
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] pad;
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{inH, inW}, kernel, strides);
+        } else {
+            pad = layerConf().getPadding();
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+        int outH = outSize[0];
+        int outW = outSize[1];
 
         if (helper != null) {
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType());
@@ -229,7 +257,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
         INDArray col = Nd4j.create(new int[]{miniBatch,inDepth,outH,outW,kernel[0],kernel[1]},'c');
         INDArray col2 = col.permute(0,1,4,5,2,3);
-        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], false, col2);
+        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col2);
 
         //Reshape to 2d; should be zero-copy reshape due to permute above
         INDArray col2d = col.reshape('c',miniBatch*inDepth*outH*outW,kernel[0]*kernel[1]);
