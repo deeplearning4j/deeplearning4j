@@ -5,6 +5,8 @@
 int tad_threshold = 32;
 int element_threshold = 16384;
 
+#define __STDC_CONSTANT_MACROS
+
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
 #include <pointercast.h>
