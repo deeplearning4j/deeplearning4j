@@ -20,9 +20,11 @@
 
 #endif
 
+
 namespace nd4j {
 
     namespace random {
+
         template<typename T>
         class RandomHelper {
         private:
@@ -31,6 +33,8 @@ namespace nd4j {
 
 
         public:
+
+
 #ifdef __CUDACC__
             __host__ __device__
 #endif
@@ -213,11 +217,15 @@ namespace nd4j {
              * @param index
              * @return
              */
+
 #ifdef __CUDACC__
             __host__ __device__
 #endif
             T relativeT(int index) {
-                return (T) relativeUInt(index) / (T) MAX_UINT;
+                if (sizeof(T) < 4) {
+                    // FIXME: this is fast hack for short types, like fp16. This should be improved.
+                    return (T)((float) relativeUInt(index) / (float) MAX_UINT);
+                } else return (T) relativeUInt(index) / (T) MAX_UINT;
             }
 
             /**
