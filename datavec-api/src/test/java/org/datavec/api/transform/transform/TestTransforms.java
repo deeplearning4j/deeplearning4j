@@ -16,9 +16,10 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.column.*;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.LongWritable;
+import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
+import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -49,9 +50,6 @@ import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransfo
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import junit.framework.TestCase;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -66,6 +64,7 @@ import java.util.concurrent.TimeUnit;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 21/03/2016.
@@ -885,6 +884,48 @@ public class TestTransforms {
         list = Arrays.asList((Writable)new Text("first"), new Text("second"), new Text(""));
         List<Writable> exp = Arrays.asList((Writable)new Text("first"), new Text("second"), new Text("second"));
         assertEquals(exp, transform.map(list));
+    }
+
+    @Test
+    public void testSequenceDifferenceTransform(){
+        Schema schema = new SequenceSchema.Builder()
+                .addColumnString("firstCol")
+                .addColumnInteger("secondCol")
+                .addColumnDouble("thirdCol").build();
+
+        List<List<Writable>> sequence = new ArrayList<>();
+        sequence.add(Arrays.asList(new Text("val0"), new IntWritable(10), new DoubleWritable(10)));
+        sequence.add(Arrays.asList(new Text("val1"), new IntWritable(15), new DoubleWritable(15)));
+        sequence.add(Arrays.asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25)));
+        sequence.add(Arrays.asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40)));
+
+        Transform t = new SequenceDifferenceTransform("secondCol");
+        t.setInputSchema(schema);
+
+        List<List<Writable>> out = t.mapSequence(sequence);
+
+        List<List<Writable>> expected = new ArrayList<>();
+        expected.add(Arrays.asList(new Text("val0"), new IntWritable(0), new DoubleWritable(10)));
+        expected.add(Arrays.asList(new Text("val1"), new IntWritable(15-10), new DoubleWritable(15)));
+        expected.add(Arrays.asList(new Text("val2"), new IntWritable(25-15), new DoubleWritable(25)));
+        expected.add(Arrays.asList(new Text("val3"), new IntWritable(40-25), new DoubleWritable(40)));
+
+        assertEquals(expected, out);
+
+
+
+        t = new SequenceDifferenceTransform("thirdCol", "newThirdColName", 2,
+                SequenceDifferenceTransform.FirstStepMode.SpecifiedValue, NullWritable.INSTANCE);
+        Schema outputSchema = t.transform(schema);
+        assertTrue(outputSchema instanceof SequenceSchema);
+        assertEquals(outputSchema.getColumnNames(), Arrays.asList("firstCol", "secondCol", "newThirdColName"));
+
+        expected = new ArrayList<>();
+        expected.add(Arrays.asList(new Text("val0"), new IntWritable(10), NullWritable.INSTANCE));
+        expected.add(Arrays.asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
+        expected.add(Arrays.asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
+        expected.add(Arrays.asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
+
     }
 
 }
