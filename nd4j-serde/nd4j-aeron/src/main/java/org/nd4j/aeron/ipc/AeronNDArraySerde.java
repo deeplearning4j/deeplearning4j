@@ -159,7 +159,7 @@ public class AeronNDArraySerde {
      * @return the ndarray derived from this buffer
      */
     public static Pair<INDArray,ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
-        ByteBuffer byteBuffer = buffer.byteBuffer() == null ? ByteBuffer.wrap(buffer.byteArray()).order(ByteOrder.nativeOrder()) : buffer.byteBuffer().order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuffer = buffer.byteBuffer() == null ? ByteBuffer.allocateDirect(buffer.byteArray().length).put(buffer.byteArray()).order(ByteOrder.nativeOrder()) : buffer.byteBuffer().order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);
         int rank = byteBuffer.getInt();
@@ -182,7 +182,8 @@ public class AeronNDArraySerde {
             //wrap the data buffer for the last bit
             DataBuffer buff = Nd4j.createBuffer(slice,type,Shape.length(shapeBuff));
             //advance past the data
-            byteBuffer.position(byteBuffer.position() + (buff.getElementSize() * (int) buff.length()));
+            int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
+            byteBuffer.position(position);
             //create the final array
             INDArray arr = Nd4j.createArrayFromShapeBuffer(buff,shapeBuff);
             return Pair.of(arr,byteBuffer);
