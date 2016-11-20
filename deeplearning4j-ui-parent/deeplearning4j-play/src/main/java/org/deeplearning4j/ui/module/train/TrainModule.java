@@ -318,6 +318,9 @@ public class TrainModule implements UIModule {
 
         //Get scores info
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        if(updates == null || updates.size() == 0){
+            noData = true;
+        }
 
         //Collect update ratios for weights
         //Collect standard deviations: activations, gradients, updates

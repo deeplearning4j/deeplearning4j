@@ -514,7 +514,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
 
-        protected ConvolutionMode convolutionMode = ConvolutionMode.Strict;
+        protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
         /** Process input as minibatch vs full dataset.
          * Default set to true. */

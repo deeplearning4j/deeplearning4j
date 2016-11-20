@@ -54,7 +54,6 @@ public class LossLayer extends FeedForwardLayer {
     }
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
-        protected ILossFunction lossFn = new LossMCXENT();
 
         public Builder() {}
 

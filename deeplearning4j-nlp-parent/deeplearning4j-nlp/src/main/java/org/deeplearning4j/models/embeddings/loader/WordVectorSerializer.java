@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -234,9 +236,11 @@ public class WordVectorSerializer {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
-            cache = new InMemoryLookupCache(false);
+            cache = new AbstractCache<>();
+
             lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                     .cache(cache)
+                    .useHierarchicSoftmax(false)
                     .vectorLength(size).build();
 
             String word;
@@ -254,8 +258,12 @@ public class WordVectorSerializer {
 
                 syn0.putRow(i, normalize ? Transforms.unitVec(Nd4j.create(vector)) : Nd4j.create(vector));
 
-                cache.addToken(new VocabWord(1, word));
-                cache.addWordToIndex(cache.numWords(), word);
+                VocabWord vw = new VocabWord(1.0, word);
+                vw.setIndex(cache.numWords());
+
+                cache.addToken(vw);
+                cache.addWordToIndex(vw.getIndex(), vw.getLabel());
+
                 cache.putVocabWord(word);
 
                 if (linebreaks) {
@@ -264,11 +272,25 @@ public class WordVectorSerializer {
             }
         }
 
-        Word2Vec ret = new Word2Vec();
+
 
         lookupTable.setSyn0(syn0);
+
+
+        Word2Vec ret = new Word2Vec.Builder()
+                .useHierarchicSoftmax(false)
+                .resetModel(false)
+                .layerSize(syn0.columns())
+                .allowParallelTokenization(true)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .learningRate(0.025)
+                .windowSize(5)
+                .workers(1)
+                .build();
+
         ret.setVocab(cache);
         ret.setLookupTable(lookupTable);
+
         return ret;
 
     }
@@ -506,16 +528,17 @@ public class WordVectorSerializer {
 
         INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
-            for (int x = 0; x < syn1.rows(); x++) {
-                INDArray row = syn1.getRow(x);
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < row.length(); i++) {
-                    builder.append(row.getDouble(i)).append(" ");
+        if (syn1!= null)
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+                for (int x = 0; x < syn1.rows(); x++) {
+                    INDArray row = syn1.getRow(x);
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < row.length(); i++) {
+                        builder.append(row.getDouble(i)).append(" ");
+                    }
+                    writer.println(builder.toString().trim());
                 }
-                writer.println(builder.toString().trim());
             }
-        }
 
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
@@ -523,6 +546,32 @@ public class WordVectorSerializer {
         fis = new BufferedInputStream(new FileInputStream(tempFileSyn1));
         writeEntry(fis, zipfile);
         fis.close();
+
+        // writing out syn1
+        File tempFileSyn1Neg = File.createTempFile("word2vec","n");
+        tempFileSyn1Neg.deleteOnExit();
+
+        INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
+
+        if (syn1Neg != null)
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1Neg))) {
+                for (int x = 0; x < syn1Neg.rows(); x++) {
+                    INDArray row = syn1Neg.getRow(x);
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < row.length(); i++) {
+                        builder.append(row.getDouble(i)).append(" ");
+                    }
+                    writer.println(builder.toString().trim());
+                }
+            }
+
+        ZipEntry zSyn1Neg = new ZipEntry("syn1Neg.txt");
+        zipfile.putNextEntry(zSyn1Neg);
+
+        fis = new BufferedInputStream(new FileInputStream(tempFileSyn1Neg));
+        writeEntry(fis, zipfile);
+        fis.close();
+
 
         File tempFileCodes = File.createTempFile("word2vec","h");
         tempFileCodes.deleteOnExit();
@@ -624,16 +673,17 @@ public class WordVectorSerializer {
 
         INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
-            for (int x = 0; x < syn1.rows(); x++) {
-                INDArray row = syn1.getRow(x);
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < row.length(); i++) {
-                    builder.append(row.getDouble(i)).append(" ");
+        if (syn1 != null)
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+                for (int x = 0; x < syn1.rows(); x++) {
+                    INDArray row = syn1.getRow(x);
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < row.length(); i++) {
+                        builder.append(row.getDouble(i)).append(" ");
+                    }
+                    writer.println(builder.toString().trim());
                 }
-                writer.println(builder.toString().trim());
             }
-        }
 
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
@@ -856,6 +906,33 @@ public class WordVectorSerializer {
             }
         }
 
+
+        ZipEntry zsyn1Neg = zipFile.getEntry("syn1Neg.txt");
+        if (zsyn1Neg != null) {
+            stream = zipFile.getInputStream(zsyn1Neg);
+
+            try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
+                String line = null;
+                List<INDArray> rows = new ArrayList<>();
+                while ((line = reader.readLine()) != null) {
+                    String[] split = line.split(" ");
+                    double array[] = new double[split.length];
+                    for (int i = 0; i < split.length; i++) {
+                        array[i] = Double.parseDouble(split[i]);
+                    }
+                    rows.add(Nd4j.create(array));
+                }
+
+                // it's possible to have full model without syn1Neg
+                if (rows.size() > 0) {
+                    INDArray syn1Neg = Nd4j.vstack(rows);
+                    ((InMemoryLookupTable)w2v.getLookupTable()).setSyn1Neg(syn1Neg);
+                }
+            }
+        }
+
+
+
         return w2v;
     }
 
@@ -893,7 +970,8 @@ public class WordVectorSerializer {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectors);
         InMemoryLookupTable lookupTable = pair.getFirst();
         lookupTable.setNegative(configuration.getNegative());
-        lookupTable.initNegative();
+        if (configuration.getNegative() > 0)
+            lookupTable.initNegative();
         VocabCache<VocabWord> vocab = (VocabCache<VocabWord>) pair.getSecond();
 
         // now we load syn1
@@ -910,8 +988,11 @@ public class WordVectorSerializer {
         }
         reader.close();
 
-        INDArray syn1 = Nd4j.vstack(rows);
-        lookupTable.setSyn1(syn1);
+        // it's possible to have full model without syn1
+        if (rows.size() > 0) {
+            INDArray syn1 = Nd4j.vstack(rows);
+            lookupTable.setSyn1(syn1);
+        }
 
         // now we transform mappings into huffman tree points
         reader = new BufferedReader(new FileReader(h_points));
@@ -2228,6 +2309,7 @@ public class WordVectorSerializer {
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
                 .layerSize(lookupTable.layerSize())
+                .resetModel(false)
                 .build();
 
         return vec;

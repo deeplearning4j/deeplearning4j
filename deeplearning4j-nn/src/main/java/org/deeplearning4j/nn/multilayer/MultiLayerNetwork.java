@@ -1058,7 +1058,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
-            if(iter.resetSupported()){
+            if(!iter.hasNext() && iter.resetSupported()){
                 iter.reset();
             }
             while (iter.hasNext()) {
