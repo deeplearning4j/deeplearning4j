@@ -66,8 +66,11 @@ public class NDArrayMessage implements Serializable {
      * @return
      */
     public static int numChunksForMessage(NDArrayMessage message,int chunkSize) {
-        int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(message) - 4;
+        int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(message);
         int numMessages = sizeOfMessage / chunkSize;
+        //increase by 1 for padding
+        if(numMessages * chunkSize < sizeOfMessage)
+            numMessages++;
         return numMessages;
     }
 
@@ -208,21 +211,20 @@ public class NDArrayMessage implements Serializable {
      * @return
      */
     public static NDArrayMessage fromChunks(NDArrayMessageChunk[] chunks) {
-        int overAllCapacity = 0;
-        for(int i = 0; i < chunks.length; i++) {
-            overAllCapacity += chunks[i].getData().capacity();
-        }
+        int overAllCapacity = chunks[0].getChunkSize() * chunks.length;
 
-        ByteBuffer all = ByteBuffer.allocate(overAllCapacity);
+        ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity);
         for(int i = 0; i < chunks.length; i++) {
-          all.put(chunks[i].getData());
+            ByteBuffer curr = chunks[i].getData();
+            all.put(curr);
         }
 
         //create an ndarray message from the given buffer
         UnsafeBuffer unsafeBuffer = new UnsafeBuffer(all);
         //rewind the buffer
         all.rewind();
-        return NDArrayMessage.fromBuffer(unsafeBuffer,0);
+        //of note here: we specify 4 as an offset to skip past the message type
+        return NDArrayMessage.fromBuffer(unsafeBuffer,4);
     }
 
 
@@ -250,14 +252,13 @@ public class NDArrayMessage implements Serializable {
         String messageId = UUID.randomUUID().toString();
         for(int i = 0; i < ret.length; i++) {
             //data: only grab a chunk of the data
-            ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().position(i * chunkSize);
-            view = (ByteBuffer) view.slice().limit(chunkSize);
+            ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().asReadOnlyBuffer().position(i * chunkSize);
+            view.limit(Math.min(i * chunkSize + chunkSize,wholeBuffer.capacity()));
             NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
                     .id(messageId).chunkSize(chunkSize).numChunks(numChunks)
                     .messageType(MessageType.CHUNKED).chunkIndex(i)
                     .data(view).build();
 
-            view.rewind();
             //insert in to the array itself
             ret[i] = chunk;
         }
@@ -320,6 +321,11 @@ public class NDArrayMessage implements Serializable {
      * @return the ndarray message based on this direct buffer.
      */
     public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
+        ByteBuffer byteBuffer = buffer.byteBuffer().order(ByteOrder.nativeOrder());
+        int messageTypeOrdinal = byteBuffer.getInt();
+        MessageType type = MessageType.values()[messageTypeOrdinal];
+        if(type != MessageType.WHOLE)
+            throw new IllegalStateException("Wrong message type");
         Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);
