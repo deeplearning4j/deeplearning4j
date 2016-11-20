@@ -108,7 +108,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         //array is large, need to segment
         if(NDArrayMessage.byteBufferSizeForMessage(NDArrayMessage.wholeArrayUpdate(arr)) >= publication.maxMessageLength()) {
-            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength());
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength() / 32);
             for(int i = 0; i < chunks.length; i++) {
                 DirectBuffer buffer = new UnsafeBuffer(NDArrayMessageChunk.toBuffer(chunks[i]));
                 sendBuffer(buffer);

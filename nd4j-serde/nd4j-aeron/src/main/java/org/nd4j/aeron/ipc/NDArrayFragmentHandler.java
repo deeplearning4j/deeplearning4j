@@ -37,6 +37,11 @@ public class NDArrayFragmentHandler implements FragmentHandler {
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         ByteBuffer byteBuffer = buffer.byteBuffer();
+        if(byteBuffer == null) {
+            byteBuffer = ByteBuffer.allocateDirect(buffer.capacity());
+            byteBuffer.get(buffer.byteArray());
+        }
+
         byteBuffer.position(offset);
         NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
         if(messageType == NDArrayMessage.MessageType.CHUNKED) {
