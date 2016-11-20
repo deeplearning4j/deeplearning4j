@@ -9,6 +9,8 @@ import lombok.Data;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -17,7 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 
 /**
- * NDArray publisher for aeron
+ * NDArray publisher
+ * for aeron
  *
  * @author Adam Gibson
  */
@@ -38,6 +41,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private boolean compress = true;
     private static final BusySpinIdleStrategy busySpinIdleStrategy = new BusySpinIdleStrategy();
     private int publishRetryTimeOut = 3000;
+
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
@@ -48,7 +52,8 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     }
 
     /**
-     * Publish an ndarray to an aeron channel
+     * Publish an ndarray
+     * to an aeron channel
      * @param message
      * @throws Exception
      */
@@ -100,10 +105,32 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
                 Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
-        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+
+        //array is large, need to segment
+        if(NDArrayMessage.byteBufferSizeForMessage(NDArrayMessage.wholeArrayUpdate(arr)) >= publication.maxMessageLength()) {
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength());
+            for(int i = 0; i < chunks.length; i++) {
+                DirectBuffer buffer = new UnsafeBuffer(NDArrayMessageChunk.toBuffer(chunks[i]));
+                sendBuffer(buffer);
+            }
+        }
+        else {
+            //send whole array
+            DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+            sendBuffer(buffer);
+
+        }
+
+
+        log.debug("Done sending.");
+    }
 
 
 
+
+
+
+    private void sendBuffer(DirectBuffer buffer) throws Exception {
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
@@ -139,10 +166,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         if(tries >= 5 && result == 0)
             throw new IllegalStateException("Failed to send message");
 
-        log.debug("Done sending.");
-
     }
-
 
     /**
      * Publish an ndarray to an aeron channel

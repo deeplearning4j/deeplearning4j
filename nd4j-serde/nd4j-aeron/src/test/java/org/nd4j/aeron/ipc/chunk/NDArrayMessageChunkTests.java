@@ -1,9 +1,10 @@
-package org.nd4j.aeron.ipc;
+package org.nd4j.aeron.ipc.chunk;
 
 import org.agrona.DirectBuffer;
 import org.junit.Test;
-import org.nd4j.aeron.BufferUtil;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
+import org.nd4j.aeron.ipc.NDArrayMessage;
+import org.nd4j.aeron.util.BufferUtil;
+import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
 import org.nd4j.linalg.factory.Nd4j;
 
 
@@ -35,7 +36,9 @@ public class NDArrayMessageChunkTests {
         for(int i = 0; i < concat.length; i++)
             concat[i] = chunks[i].getData();
 
+
         DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+        //test equality of direct byte buffer contents vs chunked
         ByteBuffer byteBuffer = buffer.byteBuffer();
         ByteBuffer concatAll = BufferUtil.concat(concat,buffer.capacity());
         byte[] arrays = new byte[byteBuffer.capacity()];
