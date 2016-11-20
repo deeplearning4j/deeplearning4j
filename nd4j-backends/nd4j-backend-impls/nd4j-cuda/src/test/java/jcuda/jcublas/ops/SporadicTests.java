@@ -538,4 +538,16 @@ public class SporadicTests {
 
         }
     }
+
+    @Test
+    public void testEps() throws Exception {
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+
+        INDArray arr = Nd4j.create(new double[]{0,0,0,1,1,1,2,2,2});
+
+        System.out.println(arr.eps(0.0));
+        System.out.println(arr.eps(1.0));
+        System.out.println(arr.eps(2.0));
+    }
 }
