@@ -212,12 +212,14 @@ public class ParameterServerSubscriber {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if(aeron != null)
-                CloseHelper.quietClose(aeron);
             if(subscriber != null)
                 CloseHelper.quietClose(subscriber);
             if(responder != null)
                 CloseHelper.quietClose(responder);
+            if(aeron != null)
+                CloseHelper.quietClose(aeron);
+            if(server != null)
+                server.stop();
         }));
 
         //set the server for the status of the master and slave nodes

@@ -14,9 +14,8 @@
     <version>0.6.1-SNAPSHOT</version>
   </parent>
   <properties>
-    <sbe.version>1.5.0</sbe.version>
-    <aeron.version>1.0.1</aeron.version>
-    <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
+    <sbe.version>1.5.4</sbe.version>
+    <aeron.version>1.0.4</aeron.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -48,12 +47,12 @@
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-base64</artifactId>
-      <version>${nd4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
-      <version>${nd4j.version}</version>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -66,7 +65,7 @@
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
-      <version>${nd4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.aeron</groupId>
