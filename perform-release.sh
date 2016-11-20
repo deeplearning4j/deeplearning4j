@@ -35,7 +35,7 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
     # create new staging repository with everything in it
     source change-scala-versions.sh 2.10
     source change-cuda-versions.sh 7.5
-    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
     if [[ ! $(grep stagingRepository.id target/nexus-staging/staging/*.properties) =~ ^stagingRepository.id=(.*) ]]; then
         exit 1
@@ -44,16 +44,30 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
 
     source change-scala-versions.sh 2.11
     source change-cuda-versions.sh 8.0
-    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+
+    # build for Android with the NDK
+    export ANDROID_NDK=~/Android/android-ndk/
+
+    cd ../libnd4j
+    bash buildnativeoperations.sh -c cpu -platform android-arm
+    cd ../nd4j
+    mvn clean deploy -Djavacpp.platform=android-arm -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+
+    cd ../libnd4j
+    bash buildnativeoperations.sh -c cpu -platform android-x86
+    cd ../nd4j
+    mvn clean deploy -Djavacpp.platform=android-x86 -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+
 else
     # build only partially (on other platforms) and deploy to given repository
     source change-scala-versions.sh 2.10
     source change-cuda-versions.sh 7.5
-    mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
     source change-scala-versions.sh 2.11
     source change-cuda-versions.sh 8.0
-    mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Psonatype-oss-release -DskipTests -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 fi
 
 source change-scala-versions.sh 2.10
