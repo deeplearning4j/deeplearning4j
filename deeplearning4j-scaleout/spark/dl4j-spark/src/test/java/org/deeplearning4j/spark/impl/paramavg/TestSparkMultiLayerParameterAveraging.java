@@ -67,6 +67,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -474,6 +475,94 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
         System.out.println(stats.statsAsString());
+
+        sparkNet.getTrainingMaster().deleteTempFiles(sc);
+    }
+
+    @Test
+    public void testFitViaStringPathsSize1() throws Exception {
+
+        Path tempDir = Files.createTempDirectory("DL4J-testFitViaStringPathsSize1");
+        File tempDirF = tempDir.toFile();
+        tempDirF.deleteOnExit();
+
+        int dataSetObjSize = 1;
+        int batchSizePerExecutor = 25;
+        int numSplits = 10;
+        int averagingFrequency = 3;
+        int totalExamples = numExecutors() * batchSizePerExecutor * numSplits * averagingFrequency;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,totalExamples,false);
+        int i=0;
+        while(iter.hasNext()){
+            File nextFile = new File(tempDirF, i + ".bin");
+            DataSet ds = iter.next();
+            ds.save(nextFile);
+            i++;
+        }
+
+        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+
+
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc,conf,
+                new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                        .workerPrefetchNumBatches(5)
+                        .batchSizePerWorker(batchSizePerExecutor)
+                        .averagingFrequency(averagingFrequency)
+                        .repartionData(Repartition.Always)
+                        .build());
+        sparkNet.setCollectTrainingStats(true);
+
+
+        //List files:
+        Configuration config = new Configuration();
+        FileSystem hdfs = FileSystem.get(tempDir.toUri(), config);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(tempDir.toString()), false);
+
+        List<String> paths = new ArrayList<>();
+        while(fileIter.hasNext()){
+            String path = fileIter.next().getPath().toString();
+            paths.add(path);
+        }
+
+        INDArray paramsBefore = sparkNet.getNetwork().params().dup();
+        JavaRDD<String> pathRdd = sc.parallelize(paths);
+        sparkNet.fitPaths(pathRdd);
+
+        INDArray paramsAfter = sparkNet.getNetwork().params().dup();
+        assertNotEquals(paramsBefore, paramsAfter);
+
+        Thread.sleep(2000);
+        SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
+
+        //Expect
+        System.out.println(stats.statsAsString());
+        assertEquals(numSplits, stats.getValue("ParameterAveragingMasterRepartitionTimesMs").size());
+
+        List<EventStats> list = stats.getValue("ParameterAveragingWorkerFitTimesMs");
+        assertEquals(numSplits * numExecutors() * averagingFrequency, list.size());
+        for(EventStats es : list){
+            ExampleCountEventStats e = (ExampleCountEventStats)es;
+            assertTrue(batchSizePerExecutor * averagingFrequency - 10 >= e.getTotalExampleCount());
+        }
+
+
+        sparkNet.getTrainingMaster().deleteTempFiles(sc);
     }
 
 
