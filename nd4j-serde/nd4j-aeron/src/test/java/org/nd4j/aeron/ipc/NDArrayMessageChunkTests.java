@@ -1,11 +1,15 @@
 package org.nd4j.aeron.ipc;
 
+import org.agrona.DirectBuffer;
 import org.junit.Test;
+import org.nd4j.aeron.BufferUtil;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
+import java.nio.ByteBuffer;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -27,6 +31,20 @@ public class NDArrayMessageChunkTests {
             assertEquals(chunks[0].getNumChunks(),chunks[i].getNumChunks());
         }
 
+        ByteBuffer[] concat = new ByteBuffer[chunks.length];
+        for(int i = 0; i < concat.length; i++)
+            concat[i] = chunks[i].getData();
+
+        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+        ByteBuffer byteBuffer = buffer.byteBuffer();
+        ByteBuffer concatAll = BufferUtil.concat(concat,buffer.capacity());
+        byte[] arrays = new byte[byteBuffer.capacity()];
+        byteBuffer.rewind();
+        byteBuffer.get(arrays);
+        byte[] arrays2 = new byte[concatAll.capacity()];
+        concatAll.rewind();
+        concatAll.get(arrays2);
+        assertArrayEquals(arrays,arrays2);
         NDArrayMessage message1 = NDArrayMessage.fromChunks(chunks);
         assertEquals(message,message1);
 
