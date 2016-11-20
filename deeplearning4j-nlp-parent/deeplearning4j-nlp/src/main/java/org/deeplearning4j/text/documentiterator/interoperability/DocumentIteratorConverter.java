@@ -89,7 +89,7 @@ public class DocumentIteratorConverter implements LabelAwareIterator {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String line = "";
         while ((line = reader.readLine()) != null) {
-            builder.append(line);
+            builder.append(line).append(" ");
         }
         return builder.toString();
     }
