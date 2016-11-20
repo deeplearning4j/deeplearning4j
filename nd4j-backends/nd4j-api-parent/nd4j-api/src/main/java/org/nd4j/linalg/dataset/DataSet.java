@@ -22,6 +22,7 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,13 +64,28 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private INDArray featuresMask;
     private INDArray labelsMask;
 
+    private List<Serializable> exampleMetaData;
+
     private transient boolean preProcessed = false;
 
     public DataSet() {
         this(null,null);
     }
 
+    @Override
+    public List<Serializable> getExampleMetaData(){
+        return exampleMetaData;
+    }
 
+    @Override
+    public <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType){
+        return (List<T>)exampleMetaData;
+    }
+
+    @Override
+    public void setExampleMetaData(List<? extends Serializable> exampleMetaData){
+        this.exampleMetaData = (List<Serializable>)exampleMetaData;
+    }
 
 
     /**
@@ -95,6 +111,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labels = labels;
         this.featuresMask = featuresMask;
         this.labelsMask = labelsMask;
+
+        // we want this dataset to be fully committed to device
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
     }
 
     public boolean isPreProcessed() {
@@ -116,15 +136,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     /**
+     * @deprecated Use {@link #merge(List)}
+     */
+    @Deprecated
+    public static DataSet merge(List<DataSet> data, boolean clone) {
+        return merge(data);
+    }
+
+    /**
      * Merge the list of datasets in to one list.
      * All the rows are merged in to one dataset
      *
      * @param data the data to merge
-     * @param clone whether to clone the data
-     *              or use a reference
      * @return a single dataset
      */
-    public static DataSet merge(List<DataSet> data,boolean clone) {
+    public static DataSet merge(List<DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
         DataSet first = data.get(0);
@@ -205,7 +231,22 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 throw new IllegalStateException("Cannot merge examples: labels rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(data.get(0).getLabels().shape()));
         }
 
-        return new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
+        DataSet dataset = new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
+
+        List<Serializable> meta = null;
+        for(DataSet ds : data){
+            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()){
+                meta = null;
+                break;
+            }
+            if(meta == null) meta = new ArrayList<>();
+            meta.addAll(ds.getExampleMetaData());
+        }
+        if(meta != null){
+            dataset.setExampleMetaData(meta);
+        }
+
+        return dataset;
     }
 
     private static INDArray merge2d(INDArray[] data){
@@ -330,26 +371,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return new INDArray[]{out,outMask};
     }
 
-    /**
-     * Merge the list of datasets in to one list.
-     * All the rows are merged in to one dataset
-     *
-     * @param data the data to merge
-     * @return a single dataset
-     */
-    public static DataSet merge(List<DataSet> data) {
-        if (data.isEmpty())
-            throw new IllegalArgumentException("Unable to merge empty dataset");
-        return merge(data,false);
-    }
-
-    private static int totalExamples(Collection<DataSet> coll) {
-        int count = 0;
-        for (DataSet d : coll)
-            count += d.numExamples();
-        return count;
-    }
-
     @Override
     public org.nd4j.linalg.dataset.api.DataSet getRange(int from, int to) {
         if (hasMaskArrays()) {
@@ -394,8 +415,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void load(File from) {
-        try{
-            load(new FileInputStream(from));
+        try(FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis)){
+            load(bis);
         }catch(IOException e){
             throw new RuntimeException(e);
         }
@@ -438,8 +459,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void save(File to) {
-        try{
-            save(new FileOutputStream(to,false));
+        try(FileOutputStream fos = new FileOutputStream(to,false); BufferedOutputStream bos = new BufferedOutputStream(fos)){
+            save(bos);
         }catch(IOException e){
             throw new RuntimeException(e);
         }
@@ -497,6 +518,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public DataSet copy() {
         DataSet ret = new DataSet(getFeatures().dup(), getLabels().dup());
+        if (getLabelsMaskArray() != null) ret.setLabelsMaskArray(getLabelsMaskArray().dup());
+        if(getFeaturesMaskArray() != null) ret.setFeaturesMaskArray(getFeaturesMaskArray().dup());
         ret.setColumnNames(getColumnNames());
         ret.setLabelNames(getLabelNames());
         return ret;
@@ -540,13 +563,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     public void shuffle(long seed) {
         //note here we use the same seed with different random objects guaranteeing same order
-/*
-        if (getFeatures().rank() == 2 && getLabels().rank() == 2) {
-            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), 1);
-        } else {
-            Nd4j.shuffle(Arrays.asList(getFeatures(), getLabels()), ArrayUtil.range(1,getFeatures().rank()));
-        }
-*/
 
         List<INDArray> arrays = new ArrayList<>();
         List<int[]> dimensions = new ArrayList<>();
@@ -569,18 +585,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         Nd4j.shuffle(arrays, new Random(seed), dimensions);
 
-        /*
-        int[] nonzeroDimsFeat = ArrayUtil.range(1,getFeatures().rank());
-        int[] nonzeroDimsLab = ArrayUtil.range(1,getLabels().rank());
-        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),nonzeroDimsFeat);
-        Nd4j.shuffle(getLabels(),new Random(seed),nonzeroDimsLab);
-        if(getFeaturesMaskArray() != null) {
-            Nd4j.shuffle(getFeaturesMaskArray(),new Random(seed),nonzeroDimsFeat);
+        //As per CpuNDArrayFactory.shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) and libnd4j transforms.h shuffleKernelGeneric
+        if(exampleMetaData != null){
+            int[] map = ArrayUtil.buildInterleavedVector(new Random(seed), numExamples());
+            ArrayUtil.shuffleWithMap(exampleMetaData, map);
         }
-        if(getLabelsMaskArray() != null) {
-            Nd4j.shuffle(getLabelsMaskArray(),new Random(seed),nonzeroDimsLab);
-        }
-        */
     }
 
 
@@ -694,7 +703,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public int numInputs() {
-        return getFeatures().columns();
+        return getFeatures().size(1);
     }
 
     @Override
@@ -934,7 +943,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
             }
 
-            list.add(new DataSet(featuresHere,labelsHere,featureMaskHere,labelMaskHere));
+            DataSet ds = new DataSet(featuresHere,labelsHere,featureMaskHere,labelMaskHere);
+            if(exampleMetaData != null && exampleMetaData.size() > i){
+                ds.setExampleMetaData(Collections.singletonList(exampleMetaData.get(i)));
+            }
+            list.add(ds);
         }
         return list;
     }
@@ -966,8 +979,62 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(numExamples <= 1) throw new IllegalStateException("Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
             throw new IllegalArgumentException("Unable to split on size equal or larger than the number of rows (# numExamples=" + numExamples + ", numHoldout=" + numHoldout + ")");
-        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(0,numHoldout),NDArrayIndex.all()));
-        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples()), NDArrayIndex.all()),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+        DataSet first = new DataSet();
+        DataSet second = new DataSet();
+        switch(features.rank()){
+            case 2:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                break;
+            case 3:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            case 4:
+                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            default:
+                throw new UnsupportedOperationException("Features rank: " + features.rank());
+        }
+        switch(labels.rank()){
+            case 2:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                break;
+            case 3:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            case 4:
+                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                break;
+            default:
+                throw new UnsupportedOperationException("Labels rank: " + features.rank());
+        }
+
+        if(featuresMask != null){
+            first.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
+            second.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+        }
+        if(labelsMask != null){
+            first.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(0, numHoldout), NDArrayIndex.all()));
+            second.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+        }
+
+        if(exampleMetaData != null){
+            List<Serializable> meta1 = new ArrayList<>();
+            List<Serializable> meta2 = new ArrayList<>();
+            for( int i=0; i<numHoldout && i < exampleMetaData.size(); i++ ){
+                meta1.add(exampleMetaData.get(i));
+            }
+            for( int i=numHoldout; i<numExamples && i < exampleMetaData.size(); i++ ){
+                meta2.add(exampleMetaData.get(i));
+            }
+            first.setExampleMetaData(meta1);
+            second.setExampleMetaData(meta2);
+        }
         return new SplitTestAndTrain(first, second);
     }
 
@@ -988,7 +1055,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public String getLabelName(int idx) {
-        return labelNames.get(idx);
+        if (!labelNames.isEmpty()) {
+            if(idx < labelNames.size())
+                return labelNames.get(idx);
+            else
+                throw new IllegalStateException("Index requested is longer than the number of labels used for classification.");
+        } else
+            throw new IllegalStateException("Label names are not defined on this dataset. Add label names in order to use getLabelName with an id.");
+
     }
 
     /**
@@ -1190,7 +1264,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numOutcomes() {
-        return getLabels().columns();
+        return getLabels().size(1);
     }
 
     @Override

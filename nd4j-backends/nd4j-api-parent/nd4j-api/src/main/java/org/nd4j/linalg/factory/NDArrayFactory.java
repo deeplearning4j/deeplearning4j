@@ -20,6 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -391,6 +392,18 @@ public interface NDArrayFactory {
      * @return
      */
     INDArray pullRows(INDArray source, int sourceDimension, int[] indexes);
+
+    /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @param order order for result array
+     * @return
+     */
+    INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order);
+
 
     /**
      * In place shuffle of an ndarray
@@ -1741,4 +1754,8 @@ public interface NDArrayFactory {
     INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
 
     DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
 }

@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -250,13 +248,44 @@ public class ShufflesTests extends BaseNd4jTest {
      */
     @Test
     public void testHalfVectors1() throws Exception {
-        int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 10, 20);
-        int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 10, 20);
+        int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 20);
+        int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 20);
 
         assertFalse(Arrays.equals(array1, array2));
 
-        assertEquals(10, array1.length);
-        assertEquals(10, array2.length);
+        assertEquals(20, array1.length);
+        assertEquals(20, array2.length);
+
+        for (int i = 0; i < array1.length; i++) {
+            if (i >= array1.length / 2) {
+                assertEquals("Failed on element ["+ i +"]", -1, array1[i]);
+                assertEquals("Failed on element ["+ i +"]", -1, array2[i]);
+            } else {
+                assertNotEquals("Failed on element ["+ i +"]", -1, array1[i]);
+                assertNotEquals("Failed on element ["+ i +"]", -1, array2[i]);
+            }
+        }
+    }
+
+    @Test
+    public void testInterleavedVector1() throws Exception {
+        int[] array1 = ArrayUtil.buildInterleavedVector(new Random(12), 20);
+        int[] array2 = ArrayUtil.buildInterleavedVector(new Random(75), 20);
+
+        assertFalse(Arrays.equals(array1, array2));
+
+        assertEquals(20, array1.length);
+        assertEquals(20, array2.length);
+
+        for (int i = 0; i < array1.length; i++) {
+            if (i % 2 != 0) {
+                assertEquals("Failed on element ["+ i +"]", -1, array1[i]);
+                assertEquals("Failed on element ["+ i +"]", -1, array2[i]);
+            } else {
+                assertNotEquals("Failed on element ["+ i +"]", -1, array1[i]);
+                assertNotEquals("Failed on element ["+ i +"]", -1, array2[i]);
+            }
+        }
     }
 
 

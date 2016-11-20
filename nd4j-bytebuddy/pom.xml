@@ -2,12 +2,12 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version> 0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-bytebuddy</artifactId>
-  <version>0.5.1-SNAPSHOT</version>
+  <version>0.6.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-bytebuddy</name>
@@ -17,7 +17,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>

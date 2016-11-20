@@ -2,6 +2,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
@@ -38,6 +39,14 @@ public class CpuTADManager implements TADManager {
         this.constantHandler = constantHandler;
     }
 
+    /**
+     * This method removes all cached shape buffers
+     */
+    @Override
+    public void purgeBuffers() {
+        cache = new ConcurrentHashMap<>();
+    }
+
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
@@ -67,7 +76,7 @@ public class CpuTADManager implements TADManager {
                 Pointer targetPointer = outputBuffer.addressPointer();
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
-                nativeOps.tadOnlyShapeInfo(xShapeInfo, dimensionPointer, dimension.length, targetPointer, offsetsPointer);
+                nativeOps.tadOnlyShapeInfo((IntPointer)xShapeInfo, (IntPointer)dimensionPointer, dimension.length, (IntPointer)targetPointer, (IntPointer)offsetsPointer);
 
                 Pair<DataBuffer, DataBuffer> pair = new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
                 if (counter.get() < MAX_ENTRIES) {

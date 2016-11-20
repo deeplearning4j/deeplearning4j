@@ -39,6 +39,16 @@ Several of these modules are different backend options for ND4J (including GPUs)
 - scala-notebook = Integration with Scala Notebook
 
 ---
+
+## Building Specific Modules
+
+It is possible to build the project without the native bindings. This can be done
+by specic targeting of the project to build.
+
+```
+mvn clean package test -pl :nd4j-api
+```
+
 ## Documentation
 
 Documentation is available at [nd4j.org](http://nd4j.org/). Access the [JavaDocs](http://nd4j.org/doc/) for more detail.
@@ -77,7 +87,7 @@ Add the local compiled file dependency (choose the module for your backend) to y
 #### Yum Install / Load RPM (Fedora or CentOS)
 Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
-    $ sudo vi /etc/yum.repos.d/dl4j.repo 
+    $ sudo vi /etc/yum.repos.d/dl4j.repo
 
 Add the following to the dl4j.repo file:
 
@@ -123,4 +133,4 @@ Or, run the following command to execute only specified tests in TestSuite with 
 2. If you feel uncomfortable or uncertain about an issue or your changes, feel free to contact us on Gitter using the link above.
 3. Fork [the repository](https://github.com/deeplearning4j/nd4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
 4. Write a test, which shows that the bug was fixed or that the feature works as expected.
-5. Send a pull request, and bug us on Gitter until it gets merged and published. 
+5. Send a pull request, and bug us on Gitter until it gets merged and published.

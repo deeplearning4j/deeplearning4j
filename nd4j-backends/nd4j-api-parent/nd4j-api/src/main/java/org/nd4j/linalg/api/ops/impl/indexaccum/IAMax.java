@@ -85,7 +85,7 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public int opNum() {
-        return 0;
+        return 2;
     }
 
     @Override

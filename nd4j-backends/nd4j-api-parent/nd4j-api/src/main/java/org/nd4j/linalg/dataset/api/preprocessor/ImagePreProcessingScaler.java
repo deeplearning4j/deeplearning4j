@@ -1,5 +1,7 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
@@ -17,9 +19,8 @@ import java.io.IOException;
  * For values that are already floating point, specify the number of bits as 1
  *
  */
+@Slf4j
 public class ImagePreProcessingScaler implements DataNormalization {
-
-    private static Logger logger = LoggerFactory.getLogger(NormalizerMinMaxScaler.class);
 
     private double minRange, maxRange;
     private double maxPixelVal;
@@ -72,19 +73,68 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void preProcess(DataSet toPreProcess) {
-        toPreProcess.getFeatureMatrix().divi(this.maxPixelVal); //Scaled to 0->1
-        if (this.maxRange - this.minRange != 1) 
-            toPreProcess.getFeatureMatrix().muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
-        if (this.minRange != 0) 
-            toPreProcess.getFeatureMatrix().addi(this.minRange); //Offset by minRange
+        INDArray features = toPreProcess.getFeatures();
+        this.preProcess(features);
+    }
+
+    public void preProcess(INDArray features) {
+        features.divi(this.maxPixelVal); //Scaled to 0->1
+        if (this.maxRange - this.minRange != 1)
+            features.muli(this.maxRange - this.minRange); //Scaled to minRange -> maxRange
+        if (this.minRange != 0)
+            features.addi(this.minRange); //Offset by minRange
     }
 
     /**
      * Transform the data
      * @param toPreProcess the dataset to transform
      */
+    @Override
     public void transform(DataSet toPreProcess) {
         this.preProcess(toPreProcess);
+    }
+
+    @Override
+    public void transform(INDArray features) {
+        this.preProcess(features);
+    }
+
+    @Override
+    public void transformLabel(INDArray label){
+        //No op
+    }
+
+    @Override
+    public void revert(DataSet toRevert) {
+        revertFeatures(toRevert.getFeatures());
+    }
+
+    @Override
+    public void revertFeatures(INDArray features) {
+        if(minRange != 0){
+            features.subi(minRange);
+        }
+        if(maxRange - minRange != 1.0){
+            features.divi(maxRange-minRange);
+        }
+        features.muli(this.maxPixelVal);
+    }
+
+    @Override
+    public void revertLabels(INDArray labels) {
+        //No op
+    }
+
+    @Override
+    public void fitLabel(boolean fitLabels) {
+        if(fitLabels){
+            log.warn("Labels fitting not currently supported for ImagePreProcessingScaler. Labels will not be modified");
+        }
+    }
+
+    @Override
+    public boolean isFitLabel() {
+        return false;
     }
 
     /**

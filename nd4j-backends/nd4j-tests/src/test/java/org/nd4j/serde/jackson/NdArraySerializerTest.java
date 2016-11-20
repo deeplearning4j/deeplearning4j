@@ -1,13 +1,13 @@
 package org.nd4j.serde.jackson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.serde.jackson.ndarray.NDArrayDeSerializer;
-import org.nd4j.serde.jackson.ndarray.NDArraySerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArraySerializer;
+import org.nd4j.shade.serde.jackson.ndarray.NDArrayDeSerializer;
 
 import static org.junit.Assert.assertEquals;
 

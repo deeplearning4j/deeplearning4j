@@ -53,6 +53,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaGrad grad = new AdaGrad(rows, cols, 1e-3);
+        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
         INDArray W = Nd4j.ones(rows, cols);
         assertEquals(1e-1, grad.getGradient(W, 0).getDouble(0), 1e-1);
     }
@@ -70,10 +71,13 @@ public class UpdaterTest extends BaseNd4jTest {
                 new RmsProp(0.1,0.95),
                 new Sgd(0.1),
         };
+        int[] m = new int[]{2,1,2,1,1,1};
 
         Nd4j.getRandom().setSeed(12345);
         for( int i=0; i<updaters.length; i++ ){
             GradientUpdater u = updaters[i];
+            System.out.println(u);
+            u.setStateViewArray(Nd4j.zeros(1, m[i] * 10*10),new int[]{10,10},'c',true);
 
             String msg = u.getClass().toString();
 
@@ -144,6 +148,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         Nesterovs grad = new Nesterovs(0.5);
+        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -218,6 +223,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaGrad grad = new AdaGrad(rows, cols, 0.1);
+        grad.setStateViewArray(Nd4j.zeros(1, rows*cols),new int[]{rows,cols},'c',true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -238,6 +244,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaDelta grad = new AdaDelta();
+        grad.setStateViewArray(Nd4j.zeros(1, 2*rows*cols),new int[]{rows,cols},'c',true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -312,6 +319,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         Adam grad = new Adam();
+        grad.setStateViewArray(Nd4j.zeros(1, 2*rows*cols),new int[]{rows,cols},'c',true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)

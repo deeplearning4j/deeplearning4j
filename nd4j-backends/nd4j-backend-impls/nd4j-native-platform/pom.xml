@@ -2,13 +2,11 @@
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-native-platform</artifactId>
-    <packaging>jar</packaging>
-
     <name>nd4j-native-platform</name>
 
     <properties>
@@ -25,61 +23,25 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform0}</classifier>
+            <classifier>${javacpp.platform.linux-x86_64}</classifier>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform1}</classifier>
+            <classifier>${javacpp.platform.macosx-x86_64}</classifier>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform2}</classifier>
+            <classifier>${javacpp.platform.windows-x86_64}</classifier>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform3}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform4}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform5}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform6}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform7}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform8}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform9}</classifier>
+            <classifier>${javacpp.platform.linux-ppc64le}</classifier>
         </dependency>
     </dependencies>
 

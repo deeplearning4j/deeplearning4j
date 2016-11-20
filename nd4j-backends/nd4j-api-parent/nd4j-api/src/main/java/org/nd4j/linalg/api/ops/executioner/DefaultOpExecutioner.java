@@ -19,15 +19,24 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -35,7 +44,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
-public  class DefaultOpExecutioner implements OpExecutioner {
+public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
@@ -314,5 +323,69 @@ public  class DefaultOpExecutioner implements OpExecutioner {
 
         throw new IllegalStateException("Java computation no longer supported");
 
+    }
+
+    @Override
+    public void exec(MetaOp op) {
+        throw new UnsupportedOperationException("MetaOp execution isn't supported for this OpExecutioner yet");
+    }
+
+    @Override
+    public void exec(GridOp op) {
+        throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
+    }
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties environment = new Properties();
+
+
+        environment.put("cores", Runtime.getRuntime().availableProcessors());
+        environment.put("memory.available", Runtime.getRuntime().maxMemory());
+        environment.put("os", System.getProperty("os.name"));
+
+
+        return environment;
+    }
+
+    @Override
+    public <T extends Aggregate> void exec(Batch<T> batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void exec(Aggregate op) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void exec(List<Aggregate> batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    @Override
+    public INDArray exec(RandomOp op, Random rng) {
+        throw new UnsupportedOperationException();
     }
 }

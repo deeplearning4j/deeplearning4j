@@ -48,6 +48,12 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
+    public boolean asyncSupported() {
+        //Already all in memory
+        return false;
+    }
+
+    @Override
     public void reset() {
         cursor = 0;
     }

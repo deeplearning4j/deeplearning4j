@@ -37,6 +37,14 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         return buffersCache.get(descriptor);
     }
 
+    /**
+     * This method removes all cached constants
+     */
+    @Override
+    public void purgeConstants() {
+        buffersCache = new ConcurrentHashMap<>();
+    }
+
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
         ArrayDescriptor descriptor = new ArrayDescriptor(array);

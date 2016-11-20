@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version> 0.5.1-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -236,6 +236,7 @@
     <name>nd4j</name>
     <url>http://nd4j.org/</url>
     <modules>
+        <module>nd4j-shade</module>
         <module>nd4j-jdbc</module>
         <module>nd4j-instrumentation</module>
         <module>nd4j-perf</module>
@@ -245,21 +246,26 @@
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
+        <module>nd4j-parameter-server-parent</module>
     </modules>
 
     <properties>
+        <playframework.version>2.5.8</playframework.version>
+        <lombok.version>1.16.10</lombok.version>
         <jackson.version>2.5.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
-        <javacpp.version>1.2.3</javacpp.version>
+        <javacpp.version>1.2.5</javacpp.version>
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
-        <spark.version>1.5.2</spark.version>
+        <spark.version>1.6.2</spark.version>
+        <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
     </properties>
 
     <developers>
@@ -327,6 +333,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
@@ -350,6 +357,31 @@
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                 </configuration>
+            </plugin>
+            <plugin>
+              <groupId>com.lewisd</groupId>
+              <artifactId>lint-maven-plugin</artifactId>
+              <version>0.0.8</version>
+              <configuration>
+                <failOnViolation>true</failOnViolation>
+                <onlyRunRules>
+                  <rule>DuplicateDep</rule>
+                  <rule>RedundantDepVersion</rule>
+                  <rule>RedundantPluginVersion</rule>
+                  <rule>VersionProp</rule>
+                  <rule>DotVersionProperty</rule>
+                </onlyRunRules>
+                <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
+              </configuration>
+              <executions>
+                <execution>
+                  <id>pom-lint</id>
+                  <phase>validate</phase>
+                  <goals>
+                    <goal>check</goal>
+                  </goals>
+                </execution>
+              </executions>
             </plugin>
         </plugins>
 

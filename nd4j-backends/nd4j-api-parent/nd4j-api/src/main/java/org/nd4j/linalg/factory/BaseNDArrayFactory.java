@@ -807,15 +807,28 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
         int vectorLength = source.shape()[sourceDimension];
-        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order());
+        INDArray ret = Nd4j.createUninitialized(new int[]{indexes.length, vectorLength}, order);
 
         for (int cnt = 0; cnt < indexes.length; cnt++) {
             ret.putRow(cnt, source.tensorAlongDimension((int)indexes[cnt], sourceDimension));
         }
 
         return ret;
+    }
+
+    /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     *
+     * @param source          source tensor
+     * @param sourceDimension dimension of source tensor
+     * @param indexes         indexes from source array
+     * @return
+     */
+    @Override
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+        return pullRows(source, sourceDimension, indexes, Nd4j.order());
     }
 
     /**
@@ -1762,11 +1775,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar(value.doubleValue(), 0);
-        if (dtype == DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
             return scalar(value.floatValue(), 0);
-        if (dtype == DataBuffer.Type.INT)
+        if (Nd4j.dataType() == DataBuffer.Type.INT)
             return scalar(value.intValue(), 0);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1779,9 +1792,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value) {
-        if (dtype == DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF )
             return create(new float[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
-        else if (dtype == DataBuffer.Type.DOUBLE)
+        else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar((double) value);
         else
             return scalar((int) value);
@@ -1795,7 +1808,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value) {
-        if (dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return create(new double[]{value}, new int[]{1,1}, new int[]{1,1}, 0);
         else
             return scalar((float) value);
@@ -1811,9 +1824,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexNumber value, int offset) {
-        if (dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar(value.asDouble(), offset);
-        if (dtype == DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
             return scalar(value.asFloat(), offset);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
@@ -1850,9 +1863,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray scalar(IComplexNumber value) {
-        if (dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return scalar(value.asDouble(), 0);
-        if (dtype == DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
             return scalar(value.asFloat(), 0);
         throw new IllegalStateException("Illegal data type " + dtype);
     }

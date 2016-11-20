@@ -89,6 +89,11 @@ public class AdaGrad implements Serializable, GradientUpdater {
         this.learningRate = learningRate;
     }
 
+    public AdaGrad(double learningRate, double epsilon) {
+        this.learningRate = learningRate;
+        this.epsilon = epsilon;
+    }
+
     @Override
     public void update(Object... args) {
         if (args.length > 0) {

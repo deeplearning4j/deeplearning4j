@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-serde</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -36,7 +36,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -44,6 +43,13 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>

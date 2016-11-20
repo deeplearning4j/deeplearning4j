@@ -21,13 +21,13 @@
     <parent>
         <artifactId>nd4j-api-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
 
     <artifactId>nd4j-api</artifactId>
-    <version> 0.5.1-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-api</name>
@@ -46,7 +46,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>
+                                true
+                            </addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -60,7 +68,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.16.4</lombok.version>
     </properties>
 
     <dependencyManagement>
@@ -85,6 +92,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -100,6 +108,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Shaded version of Jackson -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
 

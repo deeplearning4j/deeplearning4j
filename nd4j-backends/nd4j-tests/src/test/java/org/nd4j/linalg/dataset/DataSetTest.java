@@ -513,6 +513,40 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testShuffleMeta(){
+        int nExamples = 20;
+        int nColumns = 4;
+
+        INDArray f = Nd4j.zeros(nExamples, nColumns);
+        INDArray l = Nd4j.zeros(nExamples, nColumns);
+        List<Integer> meta = new ArrayList<>();
+
+        for( int i=0; i<nExamples; i++ ){
+            f.getRow(i).assign(i);
+            l.getRow(i).assign(i);
+            meta.add(i);
+        }
+
+        DataSet ds = new DataSet(f,l);
+        ds.setExampleMetaData(meta);
+
+        for( int i=0; i<10; i++ ){
+            ds.shuffle();
+            INDArray fCol = f.getColumn(0);
+            INDArray lCol = l.getColumn(0);
+            System.out.println(fCol + "\t" + ds.getExampleMetaData());
+            for( int j=0; j<nExamples; j++ ){
+                int fVal = (int)fCol.getDouble(j);
+                int lVal = (int)lCol.getDouble(j);
+                int metaVal = (Integer)ds.getExampleMetaData().get(j);
+
+                assertEquals(fVal, lVal);
+                assertEquals(fVal, metaVal);
+            }
+        }
+    }
+
+    @Test
     public void testLabelNames(){
         List<String> names = Arrays.asList(
                 "label1",

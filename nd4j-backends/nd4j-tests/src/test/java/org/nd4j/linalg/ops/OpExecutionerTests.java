@@ -22,7 +22,6 @@ package org.nd4j.linalg.ops;
 import static org.junit.Assert.*;
 
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,11 +40,11 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.random.impl.DropOut;
+import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.NativeOps;
 
 
 /**
@@ -571,6 +570,40 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         assertNotEquals(array, result);
     }
 
+    @Test
+    public void testVPull1() {
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'f');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
+
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'f');
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+    }
+
+    @Test
+    public void testVPull2() {
+        int indexes[] = new int[]{0, 2, 4};
+        INDArray array = Nd4j.linspace(1,25,25).reshape(5,5);
+        INDArray assertion = Nd4j.createUninitialized(new int[]{3, 5},'c');
+        for( int i=0; i<3; i++ ){
+            assertion.putRow(i,array.getRow(indexes[i]));
+        }
+
+        INDArray result = Nd4j.pullRows(array, 1, indexes, 'c');
+
+        assertEquals(3, result.rows());
+        assertEquals(5, result.columns());
+        assertEquals(assertion, result);
+
+        System.out.println(assertion.toString());
+        System.out.println(result.toString());
+    }
 
 
     @Override

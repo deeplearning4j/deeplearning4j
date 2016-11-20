@@ -21,7 +21,14 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.rng.Random;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * An operation executioner handles storage specific details of
@@ -155,4 +162,55 @@ public interface OpExecutioner {
      */
     void setExecutionMode(ExecutionMode executionMode);
 
+    /**
+     * Execute MetaOp
+     *
+     * @param op
+     */
+    void exec(MetaOp op);
+
+    /**
+     * Execute GridOp
+     * @param op
+     */
+    void exec(GridOp op);
+
+
+    void exec(Aggregate op);
+
+    /**
+     * This method executes previously built batch
+     *
+     * @param batch
+     */
+    <T extends Aggregate> void exec(Batch<T> batch);
+
+    /**
+     * This method takes abritrary sized list of aggregates, and packs them into batches
+     *
+     * @param batch
+     */
+    void exec(List<Aggregate> batch);
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    INDArray exec(RandomOp op);
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    INDArray exec(RandomOp op, Random rng);
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    Properties getEnvironmentInformation();
 }

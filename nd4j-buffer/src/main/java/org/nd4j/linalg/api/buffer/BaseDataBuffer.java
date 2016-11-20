@@ -138,18 +138,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
         }
 
-        if(underlyingBuffer.dataType() == Type.DOUBLE) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.FLOAT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
-        else if(underlyingBuffer.dataType() == Type.INT) {
-            pointer = underlyingBuffer.pointer();
-            indexer = underlyingBuffer.indexer();
-        }
+
+        pointer = underlyingBuffer.pointer();
+        indexer = underlyingBuffer.indexer();
     }
 
     /**
@@ -806,7 +797,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return fromFloat (((HalfIndexer) indexer).get(offset() + i));
     }
 
-    public short fromFloat( float v ) {
+    public static short fromFloat( float v ) {
         if(Float.isNaN(v)) throw new UnsupportedOperationException("NaN to half conversion not supported!");
         if(v == Float.POSITIVE_INFINITY) return(short)0x7c00;
         if(v == Float.NEGATIVE_INFINITY) return(short)0xfc00;
@@ -1273,7 +1264,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 8;
             else if(currentType == Type.FLOAT || currentType == Type.INT)
                 elementSize = 4;
-            if (currentType != globalType && currentType != Type.INT) {
+            if (currentType != globalType && currentType != Type.HALF && currentType != Type.INT && !(globalType == Type.DOUBLE)) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
 			    if (globalType == Type.INT) log.warn("Int to float/double widening UNSUPPORTED!!!");
 			}
@@ -1313,6 +1304,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 pointer = new BytePointer(temp);
                 type = Type.COMPRESSED;
 
+            } else if (currentType == Type.HALF) {
+                for (int i = 0; i < length(); i++) {
+                    putByGlobalType(i, toFloat(s.readShort()));
+                }
             } else {
                 for (int i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readInt());
@@ -1350,7 +1345,32 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-
+    public float toFloat(int hbits) {
+        int mant = hbits & 0x03ff;            // 10 bits mantissa
+        int exp =  hbits & 0x7c00;            // 5 bits exponent
+        if( exp == 0x7c00 )                   // NaN/Inf
+            exp = 0x3fc00;                    // -> NaN/Inf
+        else if( exp != 0 )                   // normalized value
+        {
+            exp += 0x1c000;                   // exp - 15 + 127
+// "smooth transition" is nonstandard behavior
+//            if( mant == 0 && exp > 0x1c400 )  // smooth transition
+//                return Float.intBitsToFloat( ( hbits & 0x8000 ) << 16
+//                                                | exp << 13 | 0x3ff );
+        }
+        else if( mant != 0 )                  // && exp==0 -> subnormal
+        {
+            exp = 0x1c400;                    // make it normal
+            do {
+                mant <<= 1;                   // mantissa * 2
+                exp -= 0x400;                 // decrease exp by 1
+            } while( ( mant & 0x400 ) == 0 ); // while not normal
+            mant &= 0x3ff;                    // discard subnormal bit
+        }                                     // else +/-0 -> +/-0
+        return Float.intBitsToFloat(          // combine all parts
+                ( hbits & 0x8000 ) << 16          // sign  << ( 31 - 15 )
+                        | ( exp | mant ) << 13 );         // value << ( 23 - 10 )
+    }
 
 
     @Override

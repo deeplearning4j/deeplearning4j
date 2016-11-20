@@ -989,7 +989,7 @@ public interface INDArray extends Serializable  {
     int index(int row, int column);
 
     /**
-     * Returns the squared (Euclidean) distance.
+     * Returns the square of the Euclidean distance.
      */
     double squaredDistance(INDArray other);
 
@@ -2275,6 +2275,14 @@ public interface INDArray extends Serializable  {
      */
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
+   /**
+    * This method checks 2 INDArrays equality with given eps
+    *
+    * @param o
+    * @param eps
+    * @return
+    */
+   boolean equalsWithEps(Object o, double eps);
 
-
+   INDArray unsafeDuplication();
 }

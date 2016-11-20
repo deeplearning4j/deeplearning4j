@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,8 +14,8 @@
     <modules>
         <module>nd4j-native</module>
         <module>nd4j-native-platform</module>
-        <module>nd4j-cuda-7.5</module>
-        <module>nd4j-cuda-7.5-platform</module>
+        <module>nd4j-cuda</module>
+        <module>nd4j-cuda-platform</module>
     </modules>
     <dependencies>
         <dependency>
@@ -31,16 +31,11 @@
         <dependency.version>${project.version}</dependency.version>
         <dependency.packaging>${project.packaging}</dependency.packaging>
         <dependency.classifier>${javacpp.platform}</dependency.classifier>
-        <javacpp.platform0 />
-        <javacpp.platform1>linux-x86_64</javacpp.platform1>
-        <javacpp.platform2>macosx-x86_64</javacpp.platform2>
-        <javacpp.platform3>windows-x86_64</javacpp.platform3>
-        <javacpp.platform4>linux-ppc64le</javacpp.platform4>
-        <javacpp.platform5 />
-        <javacpp.platform6 />
-        <javacpp.platform7 />
-        <javacpp.platform8 />
-        <javacpp.platform9 />
+        <javacpp.platform.default></javacpp.platform.default>
+        <javacpp.platform.linux-x86_64>linux-x86_64</javacpp.platform.linux-x86_64>
+        <javacpp.platform.macosx-x86_64>macosx-x86_64</javacpp.platform.macosx-x86_64>
+        <javacpp.platform.windows-x86_64>windows-x86_64</javacpp.platform.windows-x86_64>
+        <javacpp.platform.linux-ppc64le>linux-ppc64le</javacpp.platform.linux-ppc64le>
     </properties>
 
 
@@ -53,18 +48,18 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.19.1</version>
                     <configuration>
-                        <argLine>-Xmx8G</argLine>
+                        <argLine>-Xmx4096m</argLine>
                         <environmentVariables>
                             <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                         </environmentVariables>
                         <includes>
                             <include>**/Nd4jTestSuite.java</include>
                         </includes>
-                        <excludes>
+<!--                        <excludes>
                             <exclude>**/Test*.java</exclude>
                             <exclude>**/*Test.java</exclude>
                             <exclude>**/*TestCase.java</exclude>
-                        </excludes>
+                        </excludes> -->
                     </configuration>
                 </plugin>
                 <plugin>
@@ -86,6 +81,7 @@
                             <configuration>
                                 <excludes>
                                     <exclude>org/nd4j/nativeblas/${javacpp.platform}/*</exclude>
+                                    <exclude>lib/**</exclude>
                                 </excludes>
                             </configuration>
                         </execution>
@@ -100,6 +96,7 @@
                                 <skipIfEmpty>true</skipIfEmpty>
                                 <includes>
                                     <include>org/nd4j/nativeblas/${javacpp.platform}/*</include>
+                                    <include>lib/**</include>
                                 </includes>
                             </configuration>
                         </execution>
@@ -125,40 +122,35 @@
                 <dependency.artifactId>${project.artifactId}</dependency.artifactId>
                 <dependency.version>${project.parent.version}</dependency.version>
                 <dependency.packaging>pom</dependency.packaging>
-                <dependency.classifier />
+                <dependency.classifier></dependency.classifier>
             </properties>
         </profile>
 
         <profile>
-            <id>javacpp-platform-zero</id>
+            <id>javacpp-platform-default</id>
             <activation>
                 <file>
                     <exists>${user.dir}</exists>
                 </file>
             </activation>
             <properties>
-                <javacpp.platform0>${javacpp.platform}</javacpp.platform0>
+                <javacpp.platform.default>${javacpp.platform}</javacpp.platform.default>
             </properties>
         </profile>
 
         <profile>
-            <id>javacpp-platform-one</id>
+            <id>javacpp-platform-any</id>
             <activation>
                 <property>
                     <name>javacpp.platform</name>
                 </property>
             </activation>
             <properties>
-                <javacpp.platform0>${javacpp.platform}</javacpp.platform0>
-                <javacpp.platform1>${javacpp.platform}</javacpp.platform1>
-                <javacpp.platform2>${javacpp.platform}</javacpp.platform2>
-                <javacpp.platform3>${javacpp.platform}</javacpp.platform3>
-                <javacpp.platform4>${javacpp.platform}</javacpp.platform4>
-                <javacpp.platform5>${javacpp.platform}</javacpp.platform5>
-                <javacpp.platform6>${javacpp.platform}</javacpp.platform6>
-                <javacpp.platform7>${javacpp.platform}</javacpp.platform7>
-                <javacpp.platform8>${javacpp.platform}</javacpp.platform8>
-                <javacpp.platform9>${javacpp.platform}</javacpp.platform9>
+                <javacpp.platform.default>${javacpp.platform}</javacpp.platform.default>
+                <javacpp.platform.linux-x86_64>${javacpp.platform}</javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64>${javacpp.platform}</javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86_64>${javacpp.platform}</javacpp.platform.windows-x86_64>
+                <javacpp.platform.linux-ppc64le>${javacpp.platform}</javacpp.platform.linux-ppc64le>
             </properties>
         </profile>
 
@@ -171,16 +163,11 @@
                 </property>
             </activation>
             <properties>
-                <javacpp.platform0 />
-                <javacpp.platform1 />
-                <javacpp.platform2 />
-                <javacpp.platform3 />
-                <javacpp.platform4 />
-                <javacpp.platform5 />
-                <javacpp.platform6 />
-                <javacpp.platform7 />
-                <javacpp.platform8 />
-                <javacpp.platform9 />
+                <javacpp.platform.default></javacpp.platform.default>
+                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
+                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
             </properties>
         </profile>
 
@@ -192,18 +179,44 @@
                 </file>
             </activation>
             <properties>
-                <javacpp.platform0 />
-                <javacpp.platform1 />
-                <javacpp.platform2 />
-                <javacpp.platform3 />
-                <javacpp.platform4 />
-                <javacpp.platform5 />
-                <javacpp.platform6 />
-                <javacpp.platform7 />
-                <javacpp.platform8 />
-                <javacpp.platform9 />
+                <javacpp.platform.default></javacpp.platform.default>
+                <javacpp.platform.linux-x86_64></javacpp.platform.linux-x86_64>
+                <javacpp.platform.macosx-x86_64></javacpp.platform.macosx-x86_64>
+                <javacpp.platform.windows-x86_64></javacpp.platform.windows-x86_64>
+                <javacpp.platform.linux-ppc64le></javacpp.platform.linux-ppc64le>
             </properties>
         </profile>
+
+        <!-- Provide convenient profiles to set commonly used paths for Android -->
+        <profile>
+          <id>android-arm-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-arm</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-arm</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/arm-linux-androideabi-4.9/prebuilt/${os.name}-${os.arch}/bin/arm-linux-androideabi-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+        <profile>
+          <id>android-x86-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-x86</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-x86</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/x86-4.9/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+
     </profiles>
 
 </project>

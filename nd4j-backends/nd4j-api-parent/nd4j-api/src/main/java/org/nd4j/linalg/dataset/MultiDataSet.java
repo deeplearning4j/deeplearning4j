@@ -2,6 +2,7 @@ package org.nd4j.linalg.dataset;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -21,6 +22,8 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     private INDArray[] labels;
     private INDArray[] featuresMaskArrays;
     private INDArray[] labelsMaskArrays;
+
+    private List<Serializable> exampleMetaData;
 
     /** Create a new (empty) MultiDataSet object (all fields are null) */
     public MultiDataSet(){
@@ -59,6 +62,25 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         this.labels = labels;
         this.featuresMaskArrays = featuresMaskArrays;
         this.labelsMaskArrays = labelsMaskArrays;
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+    }
+
+    @Override
+    public List<Serializable> getExampleMetaData(){
+        return exampleMetaData;
+    }
+
+    @Override
+    public <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType){
+        return (List<T>)exampleMetaData;
+    }
+
+    @Override
+    public void setExampleMetaData(List<? extends Serializable> exampleMetaData){
+        this.exampleMetaData = (List<Serializable>)exampleMetaData;
     }
 
 
@@ -264,6 +286,82 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         load(new FileInputStream(from));
     }
 
+    @Override
+    public List<org.nd4j.linalg.dataset.api.MultiDataSet> asList() {
+        int nExamples = features[0].size(0);
+
+        List<org.nd4j.linalg.dataset.api.MultiDataSet> list = new ArrayList<>();
+
+        for( int i=0; i<nExamples; i++ ){
+            INDArray[] thisFeatures = new INDArray[features.length];
+            INDArray[] thisLabels = new INDArray[labels.length];
+            INDArray[] thisFeaturesMaskArray = (featuresMaskArrays != null ? new INDArray[featuresMaskArrays.length] : null);
+            INDArray[] thisLabelsMaskArray = (labelsMaskArrays != null ? new INDArray[labelsMaskArrays.length] : null);
+
+            for( int j=0; j<features.length; j++ ){
+                thisFeatures[j] = getSubsetForExample(features[j],i);
+            }
+            for( int j=0; j<labels.length; j++ ){
+                thisLabels[j] = getSubsetForExample(labels[j],i);
+            }
+            if(thisFeaturesMaskArray != null){
+                for( int j=0; j<thisFeaturesMaskArray.length; j++ ){
+                    if(featuresMaskArrays[j] == null) continue;
+                    thisFeaturesMaskArray[j] = getSubsetForExample(featuresMaskArrays[j],i);
+                }
+            }
+            if(thisLabelsMaskArray != null){
+                for( int j=0; j<thisLabelsMaskArray.length; j++ ){
+                    if(labelsMaskArrays[j] == null) continue;
+                    thisLabelsMaskArray[j] = getSubsetForExample(labelsMaskArrays[j],i);
+                }
+            }
+
+            list.add(new MultiDataSet(thisFeatures, thisLabels, thisFeaturesMaskArray, thisLabelsMaskArray));
+        }
+
+        return list;
+    }
+
+
+    private static INDArray getSubsetForExample(INDArray array, int idx){
+        switch (array.rank()){
+            case 2:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all());
+            case 3:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all(), NDArrayIndex.all());
+            case 4:
+                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+            default:
+                throw new IllegalStateException("Cannot get subset for rank " + array.rank() + " array");
+        }
+    }
+
+    /**
+     * Clone the dataset
+     *
+     * @return a clone of the dataset
+     */
+    @Override
+    public MultiDataSet copy() {
+        MultiDataSet ret = new MultiDataSet(copy(getFeatures()), copy(getLabels()));
+        if (labelsMaskArrays != null) {
+            ret.setLabelsMaskArray(copy(labelsMaskArrays));
+        }
+        if (featuresMaskArrays != null) {
+            ret.setFeaturesMaskArrays(copy(featuresMaskArrays));
+        }
+        return ret;
+    }
+
+    private INDArray[] copy(INDArray[] arrays) {
+        INDArray[] result = new INDArray[arrays.length];
+        for (int i = 0; i < arrays.length; i ++) {
+            result[i] = arrays[i].dup();
+        }
+        return result;
+    }
+
 
     /** Merge a collection of MultiDataSet objects into a single MultiDataSet.
      * Merging is done by concatenating along dimension 0 (example number in batch)
@@ -339,7 +437,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     }
 
     private static Pair<INDArray,INDArray> merge(INDArray[][] arrays, INDArray[][] masks, int column){
-        int rank = arrays[column][0].rank();
+        int rank = arrays[0][column].rank();
         if(rank == 2){
             return new Pair<>(merge2d(arrays,column),null);
         } else if(rank == 3) {

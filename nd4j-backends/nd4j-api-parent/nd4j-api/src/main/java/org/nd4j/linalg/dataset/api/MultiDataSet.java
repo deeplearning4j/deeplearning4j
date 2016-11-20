@@ -3,6 +3,7 @@ package org.nd4j.linalg.dataset.api;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.*;
+import java.util.List;
 
 /**
  * MultiDataSet is an interface for representing complex data sets, that have (potentially) multiple inputs and outputs
@@ -127,5 +128,45 @@ public interface MultiDataSet extends Serializable {
      * Load the contents of this MultiDataSet from the specified file
      */
     void load(File from) throws IOException;
+
+    /**
+     * Split the MultiDataSet into a list of individual examples.
+     *
+     * @return List of MultiDataSets, each with 1 example
+     */
+    List<MultiDataSet> asList();
+
+    /**
+     * Clone the dataset
+     *
+     * @return a clone of the dataset
+     */
+    MultiDataSet copy();
+
+    /**
+     * Set the metadata for this MultiDataSet<br>
+     * By convention: the metadata can be any serializable object, one per example in the MultiDataSet
+     *
+     * @param exampleMetaData Example metadata to set
+     */
+    void setExampleMetaData(List<? extends Serializable> exampleMetaData);
+
+    /**
+     * Get the example metadata, or null if no metadata has been set<br>
+     * Note: this method results in an unchecked cast - care should be taken when using this!
+     *
+     * @param metaDataType Class of the metadata (used for type information)
+     * @param <T>          Type of metadata
+     * @return List of metadata objects
+     */
+    <T extends Serializable> List<T> getExampleMetaData(Class<T> metaDataType);
+
+    /**
+     * Get the example metadata, or null if no metadata has been set
+     *
+     * @return List of metadata instances
+     * @see {@link #getExampleMetaData(Class)} for convenience method for types
+     */
+    List<Serializable> getExampleMetaData();
 
 }

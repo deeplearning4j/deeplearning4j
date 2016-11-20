@@ -30,7 +30,11 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.reflections.util.ConfigurationBuilder;
 import org.reflections.Reflections;
+import org.reflections.util.FilterBuilder;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
@@ -50,7 +54,18 @@ public class DefaultOpFactory implements OpFactory {
 
     public DefaultOpFactory() {
         opClazzes = new HashMap<>();
-        Set<Class<? extends Op>> clazzes = new Reflections("org.nd4j").getSubTypesOf(Op.class);
+
+        Reflections f = new Reflections(new ConfigurationBuilder()
+                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
+                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*")  //Exclude any not in the ops directory
+                )
+
+                .setUrls(ClasspathHelper.forPackage("org.nd4j"))
+                .setScanners(new SubTypesScanner()));
+
+        Set<Class<? extends Op>> clazzes = f.getSubTypesOf(Op.class);
+
         for(Class<? extends Op> clazz : clazzes) {
             if(Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
                 continue;
@@ -60,7 +75,6 @@ public class DefaultOpFactory implements OpFactory {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
         }
     }
 
@@ -264,6 +278,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftPlus(x);
             case "step":
             	return new Step(x,y);
+            case "cube":
+                return new Cube(x, y);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -333,6 +349,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftPlus(x);
             case "step":
             	return new Step(x);
+            case "cube":
+                return new Cube(x);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -419,7 +437,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new SoftMax(x, z);
             case "softplus":
                 return new SoftPlus(x,z);
-
+            case "cube":
+                return new Cube(x,z);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
