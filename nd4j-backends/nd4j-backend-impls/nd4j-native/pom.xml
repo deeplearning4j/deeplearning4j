@@ -106,7 +106,11 @@
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
-                    <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
+                    <preloadPaths>
+                        <!-- Needs to be all caps on Windows -->
+                        <preloadPath>${env.OPENBLAS_HOME}/bin</preloadPath>
+                        <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
+                    </preloadPaths>
                 </configuration>
                 <executions>
                     <execution>
