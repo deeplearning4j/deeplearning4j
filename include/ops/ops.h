@@ -282,10 +282,10 @@ namespace simdOps {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
 			T diff = d1 - d2;
-			T absDiff = nd4j::math::nd4j_abs(diff);
-			if (absDiff < (T) MIN)
-				return 1;
-			return 0;
+			T absDiff = nd4j::math::nd4j_abs<T>(diff);
+			if (absDiff <= (T) MIN)
+				return (T) 1.0f;
+			return (T) 0.0f;
 		}
 
 		op_def static T op(T d1, T *params) {
