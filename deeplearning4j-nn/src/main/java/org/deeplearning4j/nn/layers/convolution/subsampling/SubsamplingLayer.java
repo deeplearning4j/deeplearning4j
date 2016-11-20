@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
@@ -101,10 +102,6 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-//        int[] pad = layerConf().getPadding();
-//
-//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
 
         int[] pad;
         int[] outSize;
@@ -119,7 +116,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
 
-        if (helper != null) {
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
                 return ret;
@@ -246,7 +243,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = outSize[0];
         int outW = outSize[1];
 
-        if (helper != null) {
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
                 return ret;
