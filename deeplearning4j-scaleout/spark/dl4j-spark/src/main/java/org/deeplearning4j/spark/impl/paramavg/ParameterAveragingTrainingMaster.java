@@ -297,7 +297,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         Broadcast<NetBroadcastTuple> broadcast = network.getSparkContext().broadcast(tuple);
         if (collectTrainingStats) stats.logBroadcastEnd();
 
-        WorkerConfiguration configuration = new WorkerConfiguration(false, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
+        WorkerConfiguration configuration = new WorkerConfiguration(false, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration, trainingHookList, listeners, getRouterProvider());
     }
 
@@ -311,7 +311,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
         Broadcast<NetBroadcastTuple> broadcast = graph.getSparkContext().broadcast(tuple);
         if (collectTrainingStats) stats.logBroadcastEnd();
 
-        WorkerConfiguration configuration = new WorkerConfiguration(true, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
+        WorkerConfiguration configuration = new WorkerConfiguration(true, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches, collectTrainingStats);
         return new ParameterAveragingTrainingWorker(broadcast, saveUpdater, configuration, trainingHookList, listeners, getRouterProvider());
     }
 
