@@ -141,7 +141,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode());
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
+                    layerConf().getCudnnAlgoMode(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -247,7 +248,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         if (helper != null) {
-            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode());
+            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(), convolutionMode);
             if (ret != null) {
                 return ret;
             }

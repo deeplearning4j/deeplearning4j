@@ -120,7 +120,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType());
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -247,7 +247,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
         if (helper != null) {
-            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType());
+            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
