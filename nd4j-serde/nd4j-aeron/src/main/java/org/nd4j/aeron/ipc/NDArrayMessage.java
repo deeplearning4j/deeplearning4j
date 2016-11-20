@@ -255,6 +255,7 @@ public class NDArrayMessage implements Serializable {
             //data: only grab a chunk of the data
             ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().asReadOnlyBuffer().position(i * chunkSize);
             view.limit(Math.min(i * chunkSize + chunkSize,wholeBuffer.capacity()));
+            view = view.slice();
             NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
                     .id(messageId).chunkSize(chunkSize).numChunks(numChunks)
                     .messageType(MessageType.CHUNKED).chunkIndex(i)

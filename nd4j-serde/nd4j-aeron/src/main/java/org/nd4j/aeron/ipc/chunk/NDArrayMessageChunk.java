@@ -48,13 +48,13 @@ public class NDArrayMessageChunk {
         int indexSize = 4;
         int numChunksSize = 4;
         int chunkSizeSize = 4;
-        return messageTypeSize + indexSize + chunkSizeSize +  numChunksSize + chunk.getData().capacity();
+        return messageTypeSize + indexSize + chunkSizeSize +  numChunksSize + chunk.getData().limit() + chunk.getId().getBytes().length;
 
     }
 
     /**
-     * Convert an ndarray message chunk to a buffer
-     * @param chunk the chunk to conver
+     * Convert an ndarray message chunk to a buffer.
+     * @param chunk the chunk to convert
      * @return an {@link ByteBuffer} based on the
      * passed in message chunk.
      */

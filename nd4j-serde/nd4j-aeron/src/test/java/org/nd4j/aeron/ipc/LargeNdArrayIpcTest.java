@@ -134,7 +134,7 @@ public class LargeNdArrayIpcTest {
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .keepAliveInterval(10000)
-                .errorHandler(err -> System.err.println(err));
+                .errorHandler(err -> err.printStackTrace());
         return ctx;
     }
 }
