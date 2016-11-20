@@ -34,7 +34,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -124,9 +123,6 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         int inH = input.size(2);
         int inW = input.size(3);
 
-//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
-
         int[] outSize;
         if(convolutionMode == ConvolutionMode.Same){
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
@@ -208,8 +204,6 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         int inH = input.size(2);
         int inW = input.size(3);
 
-//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
         int[] outSize;
         if(convolutionMode == ConvolutionMode.Same){
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
