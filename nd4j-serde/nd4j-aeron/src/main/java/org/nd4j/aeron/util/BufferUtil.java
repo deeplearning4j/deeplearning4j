@@ -1,4 +1,4 @@
-package org.nd4j.aeron;
+package org.nd4j.aeron.util;
 
 
 import java.nio.ByteBuffer;

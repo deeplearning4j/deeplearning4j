@@ -1,7 +1,9 @@
-package org.nd4j.aeron.ipc;
+package org.nd4j.aeron.ipc.chunk;
 
 import lombok.Builder;
 import lombok.Data;
+import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 
 import java.nio.ByteBuffer;
 
