@@ -6,14 +6,15 @@ import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
 
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * NDArray publisher for aeron
@@ -35,10 +36,12 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
     public final static int NUM_RETRIES = 100;
     private boolean compress = true;
-
+    private static final BusySpinIdleStrategy busySpinIdleStrategy = new BusySpinIdleStrategy();
+    private int publishRetryTimeOut = 3000;
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
+        publishRetryTimeOut = publishRetryTimeOut == 0 ? 3000 : publishRetryTimeOut;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
         log.debug("Channel publisher" + channel + " and stream " + streamId);
@@ -50,18 +53,6 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
      * @throws Exception
      */
     public void publish(NDArrayMessage message) throws Exception {
-        // Allocate enough buffer size to hold maximum message length
-        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        log.debug("Publishing to " + channel + " on stream Id " + streamId);
-        //ensure default values are set
-        INDArray arr = message.getArr();
-        if(isCompress())
-            while(!message.getArr().isCompressed())
-                Nd4j.getCompressor().compressi(arr,"GZIP");
-
-
-        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
-
         if(!init)
             init();
         // Create a context, needed for client connection to media driver
@@ -99,16 +90,31 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         }
 
 
+        // Allocate enough buffer size to hold maximum message length
+        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
+        log.debug("Publishing to " + channel + " on stream Id " + streamId);
+        //ensure default values are set
+        INDArray arr = message.getArr();
+        if(isCompress())
+            while(!message.getArr().isCompressed())
+                Nd4j.getCompressor().compressi(arr,"GZIP");
+
+
+        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+
+
+
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
         log.debug("Begin publish " + channel + " and stream " + streamId);
-        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
+        int tries = 0;
+        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L && tries < 5) {
             if (result == Publication.BACK_PRESSURED) {
-                log.debug(" Offer failed due to back pressure");
+                log.debug("Offer failed due to back pressure");
             }
             else if (result == Publication.NOT_CONNECTED) {
-                log.debug(" Offer failed because publisher is not connected to subscriber");
+                log.debug("Offer failed because publisher is not connected to subscriber");
             }
             else if (result == Publication.ADMIN_ACTION) {
                 log.debug("Offer failed because of an administration action in the system");
@@ -125,10 +131,13 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
                 log.debug("No active subscribers detected");
             }
 
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            Thread.sleep(publishRetryTimeOut);
+            tries++;
 
         }
 
+        if(tries >= 5 && result == 0)
+            throw new IllegalStateException("Failed to send message");
 
         log.debug("Done sending.");
 
@@ -193,9 +202,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     @Override
     public void close() throws Exception {
         if(publication != null) {
-            try {
-                publication.close();
-            }catch(Exception e) {}
+            CloseHelper.quietClose(publication);
         }
 
     }

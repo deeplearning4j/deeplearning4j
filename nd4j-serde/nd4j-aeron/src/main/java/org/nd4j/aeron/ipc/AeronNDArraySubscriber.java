@@ -33,8 +33,6 @@ public class AeronNDArraySubscriber implements AutoCloseable {
     // A unique identifier for a stream within a channel. Stream ID 0 is reserved
     // for internal use and should not be used by applications.
     private int streamId = -1;
-    // A unique identifier for a stream within a channel. Stream ID 0 is reserved
-    // for internal use and should not be used by applications.
     // Maximum number of message fragments to receive during a single 'poll' operation
     private int fragmentLimitCount;
     // Create a context, needed for client connection to media driver
@@ -71,7 +69,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      * is launched or not
      * @return true if the subscriber is launched, false otherwise
      */
-    public synchronized  boolean launched() {
+    public   boolean launched() {
         if(launched == null)
             launched = new AtomicBoolean(false);
         return launched.get();
