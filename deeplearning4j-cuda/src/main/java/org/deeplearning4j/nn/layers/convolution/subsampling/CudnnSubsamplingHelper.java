@@ -23,9 +23,11 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -116,14 +118,25 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,
-            int[] kernel, int[] strides, int[] pad, PoolingType poolingType) {
+            int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+
+        int outH = outSize[0];
+        int outW = outSize[1];
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
@@ -189,14 +202,24 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
     @Override
     public INDArray activate(INDArray input, boolean training,
-            int[] kernel, int[] strides, int[] pad, PoolingType poolingType) {
+            int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
+//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+
+        int outH = outSize[0];
+        int outW = outSize[1];
 
         int poolingMode;
         switch(poolingType) {
