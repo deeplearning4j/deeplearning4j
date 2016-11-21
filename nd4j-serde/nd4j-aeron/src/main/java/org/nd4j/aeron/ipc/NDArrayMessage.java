@@ -323,7 +323,7 @@ public class NDArrayMessage implements Serializable {
      * @return the ndarray message based on this direct buffer.
      */
     public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
-        ByteBuffer byteBuffer = buffer.byteBuffer().order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuffer = buffer.byteBuffer();
         int messageTypeOrdinal = byteBuffer.getInt();
         MessageType type = MessageType.values()[messageTypeOrdinal];
         Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
