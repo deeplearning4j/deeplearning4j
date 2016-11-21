@@ -16,13 +16,14 @@ public class NDArrayMessageTest {
     public void testNDArrayMessageToAndFrom() {
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
         DirectBuffer bufferConvert = NDArrayMessage.toBuffer(message);
-        NDArrayMessage newMessage = NDArrayMessage.fromBuffer(bufferConvert,0);
+        bufferConvert.byteBuffer().rewind();
+        NDArrayMessage newMessage = NDArrayMessage.fromBuffer(bufferConvert,4);
         assertEquals(message,newMessage);
 
         INDArray compressed = Nd4j.getCompressor().compress(Nd4j.scalar(1.0),"GZIP");
         NDArrayMessage messageCompressed = NDArrayMessage.wholeArrayUpdate(compressed);
         DirectBuffer bufferConvertCompressed = NDArrayMessage.toBuffer(messageCompressed);
-        NDArrayMessage newMessageTest = NDArrayMessage.fromBuffer(bufferConvertCompressed,0);
+        NDArrayMessage newMessageTest = NDArrayMessage.fromBuffer(bufferConvertCompressed,4);
         assertEquals(messageCompressed,newMessageTest);
 
 
