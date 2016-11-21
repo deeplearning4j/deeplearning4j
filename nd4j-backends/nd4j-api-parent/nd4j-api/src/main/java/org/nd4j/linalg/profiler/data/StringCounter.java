@@ -17,6 +17,15 @@ public class StringCounter {
 
     }
 
+    public void reset() {
+        for (String key: counter.keySet()) {
+            counter.remove(key);
+            counter.put(key, new AtomicLong(0));
+        }
+
+        totals.set(0);
+    }
+
     public long incrementCount(String key) {
         if (!counter.containsKey(key)) {
             counter.put(key, new AtomicLong(0));

@@ -44,6 +44,23 @@ public class OpDashboard {
     private String prevOpMatchingInverted = "";
     private long lastZ = 0;
 
+    /**
+     * This method resets all counters
+     */
+    public synchronized void reset() {
+        invocationsCount.set(0);
+
+        classAggergator.reset();
+        longAggergator.reset();
+        classCounter.reset();
+        opCounter.reset();
+        classPairsCounter.reset();
+        opPairsCounter.reset();
+        matchingCounter.reset();
+        matchingCounterDetailed.reset();
+        matchingCounterInverted.reset();
+    }
+
 
     public static OpDashboard getInstance() {
         return ourInstance;

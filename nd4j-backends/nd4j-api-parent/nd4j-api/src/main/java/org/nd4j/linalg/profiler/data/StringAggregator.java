@@ -3,6 +3,7 @@ package org.nd4j.linalg.profiler.data;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -10,13 +11,25 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StringAggregator {
 
-    private Map<String, List<Long>> times = new HashMap<>();
-    private Map<String, AtomicLong> longCalls = new HashMap<>();
+    private Map<String, List<Long>> times = new ConcurrentHashMap<>();
+    private Map<String, AtomicLong> longCalls = new ConcurrentHashMap<>();
 
     private static final long THRESHOLD = 100000;
 
     public StringAggregator() {
 
+    }
+
+    public void reset() {
+        for (String key: times.keySet()) {
+            times.remove(key);
+            times.put(key, new ArrayList<Long>());
+        }
+
+        for (String key: longCalls.keySet()) {
+            longCalls.remove(key);
+            longCalls.put(key, new AtomicLong(0));
+        }
     }
 
     public void putTime(String key, Op op, long timeSpent) {

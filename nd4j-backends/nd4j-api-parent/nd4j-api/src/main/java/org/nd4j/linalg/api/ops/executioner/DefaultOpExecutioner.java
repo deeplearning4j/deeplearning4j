@@ -394,6 +394,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void setProfilingMode(ProfilingMode mode) {
         profilingMode = mode;
+        if (mode == ProfilingMode.DISABLED) {
+//            OpDashboard.getInstance().reset();
+        }
     }
 
     @Override
