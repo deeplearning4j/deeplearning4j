@@ -48,7 +48,8 @@ public class NDArrayMessageChunk {
         int indexSize = 4;
         int numChunksSize = 4;
         int chunkSizeSize = 4;
-        return messageTypeSize + indexSize + chunkSizeSize +  numChunksSize + chunk.getData().limit() + chunk.getId().getBytes().length;
+        int idLengthSize = 4;
+        return idLengthSize + messageTypeSize + indexSize + chunkSizeSize +  numChunksSize + chunk.getData().limit() + chunk.getId().getBytes().length;
 
     }
 
@@ -64,6 +65,7 @@ public class NDArrayMessageChunk {
         ret.putInt(chunk.getNumChunks());
         ret.putInt(chunk.getChunkSize());
         ret.putInt(chunk.getId().getBytes().length);
+        ret.put(chunk.getId().getBytes());
         ret.putInt(chunk.getChunkIndex());
         ret.put(chunk.getData());
         return ret;
@@ -87,7 +89,7 @@ public class NDArrayMessageChunk {
         byteBuffer.get(id);
         String idString = new String(id);
         int index = byteBuffer.getInt();
-        ByteBuffer firstData = byteBuffer.get(new byte[chunkSize],index,chunkSize);
+        ByteBuffer firstData = byteBuffer.get(new byte[byteBuffer.capacity()],index,chunkSize);
         NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
                 .chunkSize(chunkSize).numChunks(numChunks).data(firstData)
                 .messageType(type).id(idString).chunkIndex(index).build();

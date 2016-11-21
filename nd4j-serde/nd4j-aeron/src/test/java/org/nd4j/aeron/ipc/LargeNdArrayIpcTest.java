@@ -3,6 +3,7 @@ package org.nd4j.aeron.ipc;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
@@ -23,9 +24,9 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by agibsonccc on 9/22/16.
  */
+@Slf4j
 public class LargeNdArrayIpcTest {
     private MediaDriver mediaDriver;
-    private static Logger log = LoggerFactory.getLogger(LargeNdArrayIpcTest.class);
     private Aeron.Context ctx;
     private String channel = "aeron:udp?endpoint=localhost:40123";
     private int streamId = 10;
@@ -33,7 +34,7 @@ public class LargeNdArrayIpcTest {
 
     @Before
     public void before() {
-        MediaDriver.loadPropertiesFile("aeron.properties");
+        //MediaDriver.loadPropertiesFile("aeron.properties");
         MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
         mediaDriver = MediaDriver.launchEmbedded(ctx);
         System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
@@ -87,8 +88,10 @@ public class LargeNdArrayIpcTest {
             subscribers[i] = subscriber;
         }
 
+        Thread.sleep(10000);
+
         AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
-                .builder().publishRetryTimeOut(10000)
+                .builder().publishRetryTimeOut(100)
                 .streamId(streamId)
                 .channel(channel).aeron(aeron)
                 .build();
@@ -129,7 +132,7 @@ public class LargeNdArrayIpcTest {
 
 
     private Aeron.Context getContext() {
-        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(1000)
+        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1)
                 .availableImageHandler(AeronUtil::printAvailableImage)
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
