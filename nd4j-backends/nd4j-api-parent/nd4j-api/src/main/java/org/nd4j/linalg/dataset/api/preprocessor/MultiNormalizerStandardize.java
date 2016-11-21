@@ -139,10 +139,12 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     public int numInputs() {
+        assertIsFit();
         return featureStats.size();
     }
 
     public int numOutputs() {
+        assertIsFit();
         return labelStats.size();
     }
 

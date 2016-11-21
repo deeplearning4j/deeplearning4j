@@ -56,7 +56,7 @@ public class NormalizerSerializer {
      */
     public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
         DataWriter writer = new DataWriter()
-            .put("settings", new int[]{normalizer.isFitLabel() ? 1 : 0})
+            .put("settings", Nd4j.create(new float[]{normalizer.isFitLabel() ? 1 : 0}))
             .put("mean", normalizer.getMean())
             .put("std", normalizer.getStd());
 
@@ -127,12 +127,12 @@ public class NormalizerSerializer {
         DataWriter writer = new DataWriter()
             .put(
                 "settings",
-                new int[]{
+                Nd4j.create(new float[]{
                     normalizer.isFitLabel() ? 1 : 0,
                     normalizer.numInputs(),
                     // if not fitting labels, we can't determine the number of outputs
                     normalizer.isFitLabel() ? normalizer.numOutputs() : -1
-                }
+                })
             );
 
         for (int i = 0; i < normalizer.numInputs(); i++) {
@@ -217,10 +217,6 @@ public class NormalizerSerializer {
         DataWriter put(String key, INDArray value) {
             data.put(key, value);
             return this;
-        }
-
-        DataWriter put(String key, int[] value) {
-            return put(key, Nd4j.create(Nd4j.createBuffer(value)));
         }
 
         void write(OutputStream stream) throws IOException {
