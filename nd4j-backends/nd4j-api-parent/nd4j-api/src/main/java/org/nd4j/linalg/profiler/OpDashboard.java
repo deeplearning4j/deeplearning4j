@@ -19,6 +19,8 @@ public class OpDashboard {
     private static AtomicLong invocationsCount = new AtomicLong(0);
     private static OpDashboard ourInstance = new OpDashboard();
 
+    private static StringAggregator methodsAggregator = new StringAggregator();
+
     private static StringAggregator classAggergator = new StringAggregator();
     private static StringAggregator longAggergator = new StringAggregator();
 
@@ -59,6 +61,7 @@ public class OpDashboard {
         matchingCounter.reset();
         matchingCounterDetailed.reset();
         matchingCounterInverted.reset();
+        methodsAggregator.reset();
     }
 
 
@@ -224,6 +227,9 @@ public class OpDashboard {
         logger.info("--- Time spent for long Op calls statistics: ---");
         System.out.println(longAggergator.asPercentageString());
         System.out.println();
+        logger.info("--- Time spent within methods: ---");
+        System.out.println(methodsAggregator.asPercentageString());
+        System.out.println();
     }
 
 
@@ -238,7 +244,7 @@ public class OpDashboard {
      * This method builds
      * @param op
      */
-    public void processStackCall(Op op) {
+    public void processStackCall(Op op, long timeStart ) {
         StackTraceElement stack[] = Thread.currentThread().getStackTrace();
 
         /*
@@ -246,10 +252,33 @@ public class OpDashboard {
            and update invocations list for last few levels, to keep that stat on few levels
          */
 
-        for (int e = stack.length - 1; e >= 0; e--) {
+        int level = 0;
+        String level1 = null;
+        String level2 = null;
+        for (int e = 1; e < stack.length; e++) {
+            boolean isNd4j = false;
+
             String cClass = stack[e].getClassName();
+            if (cClass == null|| cClass.isEmpty())
+                continue;
+
             String split[] = cClass.split("\\.");
 
+
+            // TODO: add optional mode here probably, saving results for subset of stack trace only
+            if (split[1].equals("nd4j"))
+                isNd4j = true;
+            else
+                level++;
+
+            if (level == 1)
+                level1 = cClass + "#" + stack[e].getMethodName();
+            else if (level == 2)
+                level2 = cClass + "#" + stack[e].getMethodName();
+
+
+            long timeSpent = System.nanoTime() - timeStart;
+            methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
 
         }
     }

@@ -35,4 +35,18 @@ public class OperationProfilerTests {
 
         Assert.assertEquals(2, OpDashboard.getInstance().getInvocationsCount());
     }
+
+
+    @Test
+    public void testStack1() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.METHODS);
+
+        INDArray array = Nd4j.createUninitialized(100);
+
+        array.assign(10f);
+        array.assign(20f);
+        array.assign(30f);
+
+        OpDashboard.getInstance().printOutDashboard();
+    }
 }

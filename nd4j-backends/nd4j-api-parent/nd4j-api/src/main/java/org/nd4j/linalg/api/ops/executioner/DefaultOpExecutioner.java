@@ -404,11 +404,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public long profilingHookIn(Op op){
         switch (profilingMode) {
             case ALL:
-                OpDashboard.getInstance().processStackCall(op);
                 OpDashboard.getInstance().processOpCall(op);
                 break;
             case METHODS:
-                OpDashboard.getInstance().processStackCall(op);
                 break;
             case OPERATIONS:
                 OpDashboard.getInstance().processOpCall(op);
@@ -418,17 +416,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return 0L;
         }
 
-        return System.currentTimeMillis();
+        return System.nanoTime();
     }
 
     public void profilingHookOut(Op op, long timeStart){
         switch (profilingMode) {
             case ALL:
-
+                OpDashboard.getInstance().processStackCall(op, timeStart);
                 OpDashboard.getInstance().timeOpCall(op, timeStart);
                 break;
             case METHODS:
-
+                OpDashboard.getInstance().processStackCall(op, timeStart);
                 break;
             case OPERATIONS:
                 OpDashboard.getInstance().timeOpCall(op, timeStart);

@@ -32,6 +32,7 @@ public class StringAggregator {
         }
     }
 
+
     public void putTime(String key, Op op, long timeSpent) {
         if (!times.containsKey(key))
             times.put(key, new ArrayList<Long>());
