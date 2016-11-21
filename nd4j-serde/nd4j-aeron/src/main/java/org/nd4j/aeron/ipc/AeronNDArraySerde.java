@@ -154,7 +154,11 @@ public class AeronNDArraySerde {
 
     /**
      * Create an ndarray
-     * from the unsafe buffer
+     * from the unsafe buffer.
+     * Note that if you are interacting with a buffer that specifies
+     * an {@link org.nd4j.aeron.ipc.NDArrayMessage.MessageType}
+     * then you must pass in an offset + 4.
+     * Adding 4 to the offset will cause the inter
      * @param buffer the buffer to create the array from
      * @return the ndarray derived from this buffer
      */

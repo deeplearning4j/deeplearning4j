@@ -214,9 +214,13 @@ public class NDArrayMessage implements Serializable {
     public static NDArrayMessage fromChunks(NDArrayMessageChunk[] chunks) {
         int overAllCapacity = chunks[0].getChunkSize() * chunks.length;
 
-        ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity);
+        ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity).order(ByteOrder.nativeOrder());
         for(int i = 0; i < chunks.length; i++) {
             ByteBuffer curr = chunks[i].getData();
+            if(curr.capacity() > chunks[0].getChunkSize()) {
+                curr.position(0).limit(chunks[0].getChunkSize());
+                curr = curr.slice();
+            }
             all.put(curr);
         }
 
@@ -224,8 +228,7 @@ public class NDArrayMessage implements Serializable {
         UnsafeBuffer unsafeBuffer = new UnsafeBuffer(all);
         //rewind the buffer
         all.rewind();
-        //of note here: we specify 4 as an offset to skip past the message type
-        return NDArrayMessage.fromBuffer(unsafeBuffer,4);
+        return NDArrayMessage.fromBuffer(unsafeBuffer,0);
     }
 
 
@@ -255,12 +258,12 @@ public class NDArrayMessage implements Serializable {
             //data: only grab a chunk of the data
             ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().asReadOnlyBuffer().position(i * chunkSize);
             view.limit(Math.min(i * chunkSize + chunkSize,wholeBuffer.capacity()));
+            view.order(ByteOrder.nativeOrder());
             view = view.slice();
             NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
                     .id(messageId).chunkSize(chunkSize).numChunks(numChunks)
                     .messageType(MessageType.CHUNKED).chunkIndex(i)
                     .data(view).build();
-
             //insert in to the array itself
             ret[i] = chunk;
         }
@@ -317,16 +320,19 @@ public class NDArrayMessage implements Serializable {
      * We use {@link AeronNDArraySerde#toArrayAndByteBuffer(DirectBuffer, int)}
      * to read in the ndarray and just use normal {@link ByteBuffer#getInt()} and
      * {@link ByteBuffer#getLong()} to get the things like dimensions and index
-     * and time stamp
+     * and time stamp.
+     *
+     *
+     *
      * @param buffer the buffer to convert
-     * @param offset  the offset to start at with the buffer
+     * @param offset  the offset to start at with the buffer - note that this
+     *                method call assumes that the message type is specified at the beginning of the buffer.
+     *                This means whatever offset you pass in will be increased by 4 (the size of an int)
      * @return the ndarray message based on this direct buffer.
      */
     public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
-        ByteBuffer byteBuffer = buffer.byteBuffer();
-        int messageTypeOrdinal = byteBuffer.getInt();
-        MessageType type = MessageType.values()[messageTypeOrdinal];
-        Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
+        //skip the message type
+        Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset + 4);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);
         //use the rest of the buffer, of note here the offset is already set, we should only need to use
