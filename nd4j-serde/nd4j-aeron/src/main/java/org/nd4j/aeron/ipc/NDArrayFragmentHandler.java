@@ -41,14 +41,23 @@ public class NDArrayFragmentHandler implements FragmentHandler {
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         ByteBuffer byteBuffer = buffer.byteBuffer();
         if(byteBuffer == null) {
-            byteBuffer = ByteBuffer.wrap(buffer.byteArray());
+            byte[] destination = new byte[length];
+            ByteBuffer wrap = ByteBuffer.wrap(buffer.byteArray());
+            wrap.get(destination,offset,length);
+            byteBuffer = ByteBuffer.wrap(destination);
         }
 
-        byteBuffer.position(offset);
+        //only applicable for direct buffers where we don't wrap the array
+        if(buffer.byteArray() == null)
+            byteBuffer.position(offset);
         NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
         if(messageType == NDArrayMessage.MessageType.CHUNKED) {
             //reset
-            byteBuffer.position(offset);
+            if(buffer.byteArray() == null)
+                byteBuffer.position(offset);
+            //just reset to the beginning for byte arrays
+            else
+                byteBuffer.rewind();
             NDArrayMessageChunk chunk = NDArrayMessageChunk.fromBuffer(byteBuffer);
             chunkAccumulator.accumulateChunk(chunk);
             log.info("Number of chunks " + chunk.getNumChunks() + " and number of chunks for id " + chunk.getId() + " is " + chunkAccumulator.numChunksSoFar(chunk.getId()));

@@ -20,7 +20,13 @@ import java.nio.ByteBuffer;
  * to be used for assembling a large {@link NDArrayMessage}
  *
  * Of note is that this chunk will also contain the needed data
- * for assembling in addition to the desired metdata such as the chunk size.
+ * for assembling in addition to the desired metadata such as the chunk size.
+ *
+ * A chunk has an idea which is used to track the chunk
+ * across fragmentations, an index fr determining ordering
+ * for re assembling, and metadata about the chunk such as
+ * the chunk size and number of chunks
+ *
  *
  *
  * @author Adam Gibson
@@ -28,18 +34,25 @@ import java.nio.ByteBuffer;
 @Data
 @Builder
 public class NDArrayMessageChunk {
+    //id of the chunk (meant for tracking for reassembling)
     private String id;
+    //the chunk size (message size over the network)
     private int chunkSize;
+    //the message type, this should be chunked
     private NDArrayMessage.MessageType messageType;
+    //the number of chunks for reassembling the message
     private int numChunks;
+    //the index of this particular chunk
     private int chunkIndex;
+    //the actual chunk data
     private ByteBuffer data;
 
 
     /**
      * Returns the overall size for an {@link NDArrayMessageChunk}.
      * The size of a message chunk is:
-     * messageTypeSize(4) + indexSize(4) + chunkSizeSize(4) +  numChunksSize(4)  + chunk.getData().capacity()
+     * idLengthSize(4) + messageTypeSize(4) + indexSize(4) + chunkSizeSize(4) +  numChunksSize(4) + chunk.getData().limit() + chunk.getId().getBytes().length
+     * Many of these are flat out integers and are mainly variables for accounting purposes and ease of readbility
      * @param chunk the size of a message chunk
      * @return the size of an {@link ByteBuffer} for the given {@link NDArrayMessageChunk}
      */
@@ -61,12 +74,19 @@ public class NDArrayMessageChunk {
      */
     public static ByteBuffer toBuffer(NDArrayMessageChunk chunk) {
         ByteBuffer ret = ByteBuffer.allocateDirect(sizeForMessage(chunk));
+        //the messages type enum as an int
         ret.putInt(chunk.getMessageType().ordinal());
+        //the number of chunks this chunk is apart of
         ret.putInt(chunk.getNumChunks());
+        //the chunk size
         ret.putInt(chunk.getChunkSize());
+        //the length of the id (for self describing purposes)
         ret.putInt(chunk.getId().getBytes().length);
+        // the actual id as a string
         ret.put(chunk.getId().getBytes());
+        //the chunk index
         ret.putInt(chunk.getChunkIndex());
+        //the actual data
         ret.put(chunk.getData());
         return ret;
     }
@@ -89,7 +109,7 @@ public class NDArrayMessageChunk {
         byteBuffer.get(id);
         String idString = new String(id);
         int index = byteBuffer.getInt();
-        ByteBuffer firstData = byteBuffer.get(new byte[byteBuffer.capacity()],index,chunkSize);
+        ByteBuffer firstData = byteBuffer.slice();
         NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
                 .chunkSize(chunkSize).numChunks(numChunks).data(firstData)
                 .messageType(type).id(idString).chunkIndex(index).build();
