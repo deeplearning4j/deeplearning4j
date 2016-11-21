@@ -326,8 +326,6 @@ public class NDArrayMessage implements Serializable {
         ByteBuffer byteBuffer = buffer.byteBuffer().order(ByteOrder.nativeOrder());
         int messageTypeOrdinal = byteBuffer.getInt();
         MessageType type = MessageType.values()[messageTypeOrdinal];
-        if(type != MessageType.WHOLE)
-            throw new IllegalStateException("Wrong message type");
         Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);

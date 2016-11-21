@@ -48,7 +48,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         publishRetryTimeOut = publishRetryTimeOut == 0 ? 3000 : publishRetryTimeOut;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
-        log.debug("Channel publisher" + channel + " and stream " + streamId);
+        log.info("Channel publisher" + channel + " and stream " + streamId);
     }
 
     /**
@@ -82,6 +82,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         while(publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
+                log.info("Created publication on channel " + channel + " and stream " + streamId);
             }
             catch (DriverTimeoutException e) {
                 Thread.sleep(1000 * (connectionTries + 1));
@@ -97,7 +98,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         // Allocate enough buffer size to hold maximum message length
         // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        log.debug("Publishing to " + channel + " on stream Id " + streamId);
+        log.info("Publishing to " + channel + " on stream Id " + streamId);
         //ensure default values are set
         INDArray arr = message.getArr();
         if(isCompress())
@@ -108,7 +109,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         //array is large, need to segment
         if(NDArrayMessage.byteBufferSizeForMessage(NDArrayMessage.wholeArrayUpdate(arr)) >= publication.maxMessageLength()) {
-            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength() / 32);
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength() / 128);
             for(int i = 0; i < chunks.length; i++) {
                 DirectBuffer buffer = new UnsafeBuffer(NDArrayMessageChunk.toBuffer(chunks[i]));
                 sendBuffer(buffer);
@@ -121,8 +122,6 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
         }
 
-
-        log.debug("Done sending.");
     }
 
 
@@ -130,41 +129,32 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
 
 
-    private void sendBuffer(DirectBuffer buffer) throws Exception {
+    private void  sendBuffer(DirectBuffer buffer) throws Exception {
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
-        log.debug("Begin publish " + channel + " and stream " + streamId);
-        int tries = 0;
-        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L && tries < 5) {
+        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L) {
             if (result == Publication.BACK_PRESSURED) {
-                log.debug("Offer failed due to back pressure");
+                log.info("Offer failed due to back pressure");
             }
             else if (result == Publication.NOT_CONNECTED) {
-                log.debug("Offer failed because publisher is not connected to subscriber");
+                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream " + streamId);
             }
             else if (result == Publication.ADMIN_ACTION) {
-                log.debug("Offer failed because of an administration action in the system");
+                log.info("Offer failed because of an administration action in the system and channel"  + channel + " and stream " + streamId);
             }
             else if (result == Publication.CLOSED) {
-                log.debug("Offer failed publication is closed");
+                log.info("Offer failed publication is closed and channel"  + channel + " and stream " + streamId);
+                break;
             }
             else {
-                log.debug(" Offer failed due to unknown reason");
+                log.info(" Offer failed due to unknown reason and channel"  + channel + " and stream " + streamId);
             }
 
-
-            if (!publication.isConnected()) {
-                log.debug("No active subscribers detected");
-            }
-
-            Thread.sleep(publishRetryTimeOut);
-            tries++;
+            if(result != Publication.CLOSED)
+                Thread.sleep(publishRetryTimeOut);
 
         }
-
-        if(tries >= 5 && result == 0)
-            throw new IllegalStateException("Failed to send message");
 
     }
 

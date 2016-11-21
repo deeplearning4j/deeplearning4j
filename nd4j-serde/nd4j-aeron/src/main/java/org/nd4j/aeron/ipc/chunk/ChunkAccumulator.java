@@ -12,6 +12,23 @@ import java.util.List;
  * @author Aadm Gibson
  */
 public interface ChunkAccumulator {
+
+    /**
+     * Returns the number of chunks
+     * accumulated for a given id so far
+     * @param id the id to get the
+     *           number of chunks for
+     * @return the number of chunks accumulated
+     * for a given id so far
+     */
+    int numChunksSoFar(String id);
+
+    /**
+     * Returns true if all chunks are present
+     * @param id the id to check for
+     * @return true if all the chunks are present,false otherwise
+     */
+    boolean allPresent(String id);
     /**
      * Reassemble an ndarray message
      * from a set of chunks
