@@ -716,7 +716,7 @@ public class GradientCheckTests {
                                         .updater(Updater.SGD)
                                         .activation(outputActivation)
                                         .build())
-                                .pretrain(true).backprop(true)
+                                .pretrain(false).backprop(true)
                                 .build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
