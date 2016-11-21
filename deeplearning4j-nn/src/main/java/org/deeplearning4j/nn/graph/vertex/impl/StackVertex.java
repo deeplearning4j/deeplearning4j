@@ -135,6 +135,6 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public String toString(){
-        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "StackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 }
