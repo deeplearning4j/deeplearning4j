@@ -1,11 +1,13 @@
 package org.nd4j.linalg.dataset;
 
+import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
@@ -87,6 +89,18 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
         double diffAfterRevert = getMaxRelativeDifference(data, transformed);
         assertTrue(diffAfterRevert < TOLERANCE_PERC);
+    }
+
+    @Test
+    public void testFullyMaskedData() {
+        data = new MultiDataSet(
+            new INDArray[]{Nd4j.create(new float[]{1, 2}).reshape(1, 1, 2)},
+            new INDArray[]{Nd4j.create(new float[]{2, 3}).reshape(1, 1, 2)},
+            new INDArray[]{Nd4j.create(new float[]{1, 1}).reshape(1, 2)},
+            new INDArray[]{Nd4j.create(new float[]{0, 0}).reshape(1, 2)}
+        );
+
+        SUT.fit(data);
     }
 
     private double getMaxRelativeDifference(MultiDataSet a, MultiDataSet b) {

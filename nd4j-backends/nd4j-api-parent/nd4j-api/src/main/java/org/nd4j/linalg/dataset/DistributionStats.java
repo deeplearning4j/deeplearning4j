@@ -97,9 +97,14 @@ public class DistributionStats {
             data = DataSetUtil.tailor2d(data, mask);
 
             // Using https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+            int count = data.size(0);
+            if (count == 0) {
+                // Nothing to add. Either data is empty or completely masked. Just skip it, otherwise we will get
+                // division by 0 exceptions.
+                return this;
+            }
             INDArray mean = data.mean(0);
             INDArray variance = data.var(false, 0);
-            int count = data.size(0);
 
             if (runningMean == null) {
                 // First batch
