@@ -1,6 +1,5 @@
 package org.nd4j.linalg.dataset;
 
-import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -69,7 +69,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
     @Test
     public void testMultipleInputsAndOutputsWithIterator() {
-        MultiDataSetIterator iter = new TestMultiDataSetIterator(data, 5);
+        MultiDataSetIterator iter = new TestMultiDataSetIterator(1, data);
         SUT.fit(iter);
         assertExpectedMeanStd();
     }
@@ -93,14 +93,24 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
     @Test
     public void testFullyMaskedData() {
-        data = new MultiDataSet(
-            new INDArray[]{Nd4j.create(new float[]{1, 2}).reshape(1, 1, 2)},
-            new INDArray[]{Nd4j.create(new float[]{2, 3}).reshape(1, 1, 2)},
-            new INDArray[]{Nd4j.create(new float[]{1, 1}).reshape(1, 2)},
-            new INDArray[]{Nd4j.create(new float[]{0, 0}).reshape(1, 2)}
+        MultiDataSetIterator iter = new TestMultiDataSetIterator(
+            1,
+            new MultiDataSet(
+                new INDArray[]{Nd4j.create(new float[]{1}).reshape(1, 1, 1)},
+                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)}
+            ),
+            new MultiDataSet(
+                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)},
+                new INDArray[]{Nd4j.create(new float[]{4}).reshape(1, 1, 1)},
+                null,
+                new INDArray[]{Nd4j.create(new float[]{0}).reshape(1, 1)}
+            )
         );
 
-        SUT.fit(data);
+        SUT.fit(iter);
+
+        // The label mean should be 2, as the second row with 3 is masked.
+        assertEquals(2f, SUT.getLabelMean(0).getFloat(0), 1e-6);
     }
 
     private double getMaxRelativeDifference(MultiDataSet a, MultiDataSet b) {
