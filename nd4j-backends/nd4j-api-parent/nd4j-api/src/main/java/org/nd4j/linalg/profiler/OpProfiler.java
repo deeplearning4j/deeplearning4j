@@ -15,9 +15,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-public class OpDashboard {
+public class OpProfiler {
     private static AtomicLong invocationsCount = new AtomicLong(0);
-    private static OpDashboard ourInstance = new OpDashboard();
+    private static OpProfiler ourInstance = new OpProfiler();
 
     private static StringAggregator methodsAggregator = new StringAggregator();
 
@@ -34,7 +34,7 @@ public class OpDashboard {
     private static StringCounter matchingCounterDetailed = new StringCounter();
     private static StringCounter matchingCounterInverted = new StringCounter();
 
-    private static Logger logger = LoggerFactory.getLogger(OpDashboard.class);
+    private static Logger logger = LoggerFactory.getLogger(OpProfiler.class);
 
     private static final long THRESHOLD = 100000;
 
@@ -65,11 +65,11 @@ public class OpDashboard {
     }
 
 
-    public static OpDashboard getInstance() {
+    public static OpProfiler getInstance() {
         return ourInstance;
     }
 
-    private OpDashboard() {
+    private OpProfiler() {
 
     }
 

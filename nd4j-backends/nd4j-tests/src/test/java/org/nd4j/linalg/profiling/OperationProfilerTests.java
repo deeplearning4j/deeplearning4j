@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpDashboard;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 /**
  * @author raver119@gmail.com
@@ -18,7 +18,7 @@ public class OperationProfilerTests {
     @Before
     public void setUp() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.OPERATIONS);
-        OpDashboard.getInstance().reset();
+        OpProfiler.getInstance().reset();
     }
 
     @After
@@ -33,7 +33,7 @@ public class OperationProfilerTests {
         array.assign(10f);
         array.divi(2f);
 
-        Assert.assertEquals(2, OpDashboard.getInstance().getInvocationsCount());
+        Assert.assertEquals(2, OpProfiler.getInstance().getInvocationsCount());
     }
 
 
@@ -47,6 +47,6 @@ public class OperationProfilerTests {
         array.assign(20f);
         array.assign(30f);
 
-        OpDashboard.getInstance().printOutDashboard();
+        OpProfiler.getInstance().printOutDashboard();
     }
 }

@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,12 +29,10 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpDashboard;
+import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -404,12 +400,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public long profilingHookIn(Op op){
         switch (profilingMode) {
             case ALL:
-                OpDashboard.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op);
                 break;
             case METHODS:
                 break;
             case OPERATIONS:
-                OpDashboard.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op);
                 break;
             case DISABLED:
             default:
@@ -422,14 +418,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void profilingHookOut(Op op, long timeStart){
         switch (profilingMode) {
             case ALL:
-                OpDashboard.getInstance().processStackCall(op, timeStart);
-                OpDashboard.getInstance().timeOpCall(op, timeStart);
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case METHODS:
-                OpDashboard.getInstance().processStackCall(op, timeStart);
+                OpProfiler.getInstance().processStackCall(op, timeStart);
                 break;
             case OPERATIONS:
-                OpDashboard.getInstance().timeOpCall(op, timeStart);
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case DISABLED:
             default:
