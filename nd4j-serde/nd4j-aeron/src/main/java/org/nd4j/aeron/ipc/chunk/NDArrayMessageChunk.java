@@ -5,7 +5,9 @@ import lombok.Data;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * An NDArrayMessageChunk
@@ -33,7 +35,7 @@ import java.nio.ByteBuffer;
  */
 @Data
 @Builder
-public class NDArrayMessageChunk {
+public class NDArrayMessageChunk implements Serializable {
     //id of the chunk (meant for tracking for reassembling)
     private String id;
     //the chunk size (message size over the network)
@@ -73,7 +75,7 @@ public class NDArrayMessageChunk {
      * passed in message chunk.
      */
     public static ByteBuffer toBuffer(NDArrayMessageChunk chunk) {
-        ByteBuffer ret = ByteBuffer.allocateDirect(sizeForMessage(chunk));
+        ByteBuffer ret = ByteBuffer.allocateDirect(sizeForMessage(chunk)).order(ByteOrder.nativeOrder());
         //the messages type enum as an int
         ret.putInt(chunk.getMessageType().ordinal());
         //the number of chunks this chunk is apart of
@@ -98,10 +100,8 @@ public class NDArrayMessageChunk {
      * @param byteBuffer the byte buffer to extract the chunk from
      * @return the ndarray message chunk based on the passed in {@link ByteBuffer}
      */
-    public static NDArrayMessageChunk fromBuffer(ByteBuffer byteBuffer) {
-        NDArrayMessage.MessageType type = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
-        if(type != NDArrayMessage.MessageType.CHUNKED)
-            throw new IllegalStateException("Messages must all be of type chunked");
+    public static NDArrayMessageChunk fromBuffer(ByteBuffer byteBuffer,NDArrayMessage.MessageType type) {
+        int originalPosition = byteBuffer.position();
         int numChunks = byteBuffer.getInt();
         int chunkSize = byteBuffer.getInt();
         int idLength = byteBuffer.getInt();

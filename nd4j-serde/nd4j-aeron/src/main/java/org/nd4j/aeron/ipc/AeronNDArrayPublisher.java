@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.nio.ByteBuffer;
 
 /**
  * NDArray publisher
@@ -108,10 +109,12 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
 
 
         //array is large, need to segment
-        if(NDArrayMessage.byteBufferSizeForMessage(NDArrayMessage.wholeArrayUpdate(arr)) >= publication.maxMessageLength()) {
-            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(NDArrayMessage.wholeArrayUpdate(arr),publication.maxMessageLength() / 128);
+        if(NDArrayMessage.byteBufferSizeForMessage(message) >= publication.maxMessageLength()) {
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message,publication.maxMessageLength() / 128);
             for(int i = 0; i < chunks.length; i++) {
-                DirectBuffer buffer = new UnsafeBuffer(NDArrayMessageChunk.toBuffer(chunks[i]));
+                ByteBuffer sendBuff = NDArrayMessageChunk.toBuffer(chunks[i]);
+                sendBuff.rewind();
+                DirectBuffer buffer = new UnsafeBuffer(sendBuff);
                 sendBuffer(buffer);
             }
         }

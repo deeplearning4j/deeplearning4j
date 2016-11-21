@@ -31,7 +31,7 @@ public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
-    private String channel = "aeron:udp?endpoint=localhost:40123";
+    private String channel = "aeron:udp?endpoint=localhost:40132";
     private int streamId = 10;
     private  int length = (int) 1e7;
 
@@ -173,17 +173,6 @@ public class NdArrayIpcTest {
         }
 
 
-        Thread t2 = new Thread(() -> {
-            System.setProperty("aeron.dir",mediaDriver.aeronDirectoryName());
-            try {
-                AeronStat.main(new String[]{});
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        });
-
-        t2.start();
 
 
 

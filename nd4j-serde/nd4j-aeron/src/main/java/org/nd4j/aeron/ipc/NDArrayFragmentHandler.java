@@ -38,29 +38,33 @@ public class NDArrayFragmentHandler implements FragmentHandler {
      * @param header representing the meta data for the data.
      */
     @Override
-    public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    public   void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         ByteBuffer byteBuffer = buffer.byteBuffer();
+        boolean byteArrayInput = false;
         if(byteBuffer == null) {
+            byteArrayInput = true;
             byte[] destination = new byte[length];
             ByteBuffer wrap = ByteBuffer.wrap(buffer.byteArray());
             wrap.get(destination,offset,length);
-            byteBuffer = ByteBuffer.wrap(destination);
+            byteBuffer = ByteBuffer.wrap(destination).order(ByteOrder.nativeOrder());
         }
 
+
         //only applicable for direct buffers where we don't wrap the array
-        if(buffer.byteArray() == null)
+        if(!byteArrayInput) {
             byteBuffer.position(offset);
+            byteBuffer.order(ByteOrder.nativeOrder());
+        }
+
         NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
+
         if(messageType == NDArrayMessage.MessageType.CHUNKED) {
-            //reset
-            if(buffer.byteArray() == null)
-                byteBuffer.position(offset);
-            //just reset to the beginning for byte arrays
-            else
-                byteBuffer.rewind();
-            NDArrayMessageChunk chunk = NDArrayMessageChunk.fromBuffer(byteBuffer);
+            NDArrayMessageChunk chunk = NDArrayMessageChunk.fromBuffer(byteBuffer,messageType);
+            if(chunk.getNumChunks() < 1)
+                throw new IllegalStateException("Found invalid number of chunks " + chunk.getNumChunks() + " on chunk index " + chunk.getChunkIndex());
             chunkAccumulator.accumulateChunk(chunk);
-            log.info("Number of chunks " + chunk.getNumChunks() + " and number of chunks for id " + chunk.getId() + " is " + chunkAccumulator.numChunksSoFar(chunk.getId()));
+            log.info("Number of chunks " + chunk.getNumChunks() + " and number of chunks " + chunk.getNumChunks() + " for id " + chunk.getId() + " is " + chunkAccumulator.numChunksSoFar(chunk.getId()));
+
             if(chunkAccumulator.allPresent(chunk.getId())) {
                 NDArrayMessage message = chunkAccumulator.reassemble(chunk.getId());
                 INDArray arr = message.getArr();

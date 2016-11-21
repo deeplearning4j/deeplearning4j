@@ -31,7 +31,6 @@ public class ParameterServerClientTest {
 
     @BeforeClass
     public static void before() throws Exception {
-        MediaDriver.loadPropertiesFile("aeron.properties");
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
         System.setProperty("play.server.dir","/tmp");
         aeron = Aeron.connect(getContext());
@@ -40,16 +39,16 @@ public class ParameterServerClientTest {
         masterNode.run(new String[] {
                 "-m","true",
                 "-s","1," + String.valueOf(parameterLength),
-                "-p","40123",
+                "-p","40323",
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "10000"
+                "-sp", "30000"
         });
 
         assertTrue(masterNode.isMaster());
         assertEquals(1000,masterNode.getParameterLength());
-        assertEquals(40123,masterNode.getPort());
+        assertEquals(40323,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
         assertEquals(12,masterNode.getResponder().getStreamId());
@@ -58,17 +57,17 @@ public class ParameterServerClientTest {
         slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
                 "-l",String.valueOf(parameterLength),
-                "-p","40126",
+                "-p","40426",
                 "-h","localhost",
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "11000"
+                "-sp", "31000"
         });
 
         assertFalse(slaveNode.isMaster());
         assertEquals(1000,slaveNode.getParameterLength());
-        assertEquals(40126,slaveNode.getPort());
+        assertEquals(40426,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
 
@@ -96,9 +95,9 @@ public class ParameterServerClientTest {
                 .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
                 .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl())
                 .subscriberHost("localhost")
-                .subscriberPort(40125)
+                .subscriberPort(40625)
                 .subscriberStream(12).build();
-        assertEquals("localhost:40125:12",client.connectionUrl());
+        assertEquals("localhost:40625:12",client.connectionUrl());
         //flow 1:
         /**
          * Client (40125:12): sends array to listener on slave(40126:10)
