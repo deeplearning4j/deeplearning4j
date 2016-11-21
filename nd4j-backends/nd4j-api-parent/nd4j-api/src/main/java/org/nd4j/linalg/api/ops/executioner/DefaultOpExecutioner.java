@@ -394,9 +394,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void setProfilingMode(ProfilingMode mode) {
         profilingMode = mode;
-        if (mode == ProfilingMode.DISABLED) {
-//            OpDashboard.getInstance().reset();
-        }
     }
 
     @Override
@@ -406,27 +403,37 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     public long profilingHookIn(Op op){
         switch (profilingMode) {
+            case ALL:
+                OpDashboard.getInstance().processStackCall(op);
+                OpDashboard.getInstance().processOpCall(op);
+                break;
             case METHODS:
-
-                return System.currentTimeMillis();
+                OpDashboard.getInstance().processStackCall(op);
+                break;
             case OPERATIONS:
                 OpDashboard.getInstance().processOpCall(op);
-
-                return System.currentTimeMillis();
+                break;
+            case DISABLED:
             default:
                 return 0L;
         }
+
+        return System.currentTimeMillis();
     }
 
     public void profilingHookOut(Op op, long timeStart){
         switch (profilingMode) {
+            case ALL:
+
+                OpDashboard.getInstance().timeOpCall(op, timeStart);
+                break;
             case METHODS:
 
                 break;
             case OPERATIONS:
                 OpDashboard.getInstance().timeOpCall(op, timeStart);
-
                 break;
+            case DISABLED:
             default:
                 break;
         }

@@ -231,4 +231,26 @@ public class OpDashboard {
     public long getInvocationsCount() {
         return invocationsCount.get();
     }
+
+
+
+    /**
+     * This method builds
+     * @param op
+     */
+    public void processStackCall(Op op) {
+        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
+
+        /*
+           basically we want to unroll stack trace for few levels ABOVE nd4j classes
+           and update invocations list for last few levels, to keep that stat on few levels
+         */
+
+        for (int e = stack.length - 1; e >= 0; e--) {
+            String cClass = stack[e].getClassName();
+            String split[] = cClass.split("\\.");
+
+
+        }
+    }
 }
