@@ -17,24 +17,21 @@
  */
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.ShortPointer;
-import org.bytedeco.javacpp.SizeTPointer;
+import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.slf4j.Logger;
@@ -165,7 +162,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta,
-            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn, AlgoMode mode) {
+            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn,
+                                                     AlgoMode mode, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -175,8 +173,16 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int kH = weights.size(2);
         int kW = weights.size(3);
 
-        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+
+        int outH = outSize[0];
+        int outW = outSize[1];
 
         if (!Shape.strideDescendingCAscendingF(delta)) {
             // apparently not supported by cuDNN
@@ -248,7 +254,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
     }
 
     @Override
-    public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad, AlgoMode mode) {
+    public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
+                              AlgoMode mode, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -263,17 +270,28 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
 
+        int[] outSize;
+        if(convolutionMode == ConvolutionMode.Same){
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode);    //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{input.size(2), input.size(3)}, kernel, strides);
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode);    //Also performs validation
+        }
+        INDArray z = Nd4j.createUninitialized(new int[]{miniBatch, outDepth, outSize[0], outSize[1]});
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                 srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH, kW));
         checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1, 1, CUDNN_CROSS_CORRELATION));
 
         // find dimension of convolution output
-        int[] algo = new int[1], n = new int[1], c = new int[1], h = new int[1], w = new int[1];
-        checkCudnn(cudnnGetConvolution2dForwardOutputDim(cudnnContext.convDesc, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, n, c, h, w));
-        INDArray z = Nd4j.createUninitialized(new int[]{n[0],c[0],h[0],w[0]},'c');
+//        checkCudnn(cudnnGetConvolution2dForwardOutputDim(cudnnContext.convDesc, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, n, c, h, w));
+//        INDArray z = Nd4j.createUninitialized(new int[]{n[0],c[0],h[0],w[0]},'c');
+
+
+        int[] algo = new int[1];
         int[] dstStride = z.stride();
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, n[0], c[0], h[0], w[0],
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, outDepth, outSize[0], outSize[1],
                 dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         checkCudnn(cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, cudnnContext.convDesc,
                 cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE ?
@@ -297,7 +315,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
                 cudnnContext.filterDesc, filterData, cudnnContext.convDesc, algo[0], workSpace, workSpace.capacity(),
                 beta, cudnnContext.dstTensorDesc, dstData));
 
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, c[0], 1, 1));
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
         checkCudnn(cudnnAddTensor(cudnnContext, alpha, cudnnContext.biasTensorDesc, biasData, alpha, cudnnContext.dstTensorDesc, dstData));
 
         allocator.registerAction(context, z, input, weights, bias);
