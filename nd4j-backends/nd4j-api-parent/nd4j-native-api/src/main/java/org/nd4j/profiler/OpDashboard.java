@@ -1,7 +1,7 @@
-package org.nd4j.jita.perf;
+package org.nd4j.profiler;
 
-import org.nd4j.jita.perf.data.StringAggregator;
-import org.nd4j.jita.perf.data.StringCounter;
+import org.nd4j.profiler.data.StringAggregator;
+import org.nd4j.profiler.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +64,8 @@ public class OpDashboard {
             return "ScalarOp";
         } else if (op instanceof BroadcastOp) {
             return "BroadcastOp";
+        } else if (op instanceof RandomOp) {
+            return "RandomOp";
         } else if (op instanceof Accumulation) {
             return "AccumulationOp";
         } else if (op instanceof TransformOp) {

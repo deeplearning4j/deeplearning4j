@@ -1,4 +1,4 @@
-package org.nd4j.jita.perf.data;
+package org.nd4j.profiler.data;
 
 import org.nd4j.linalg.api.ops.Op;
 

@@ -1,4 +1,4 @@
-package org.nd4j.jita.perf.data;
+package org.nd4j.profiler.data;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
