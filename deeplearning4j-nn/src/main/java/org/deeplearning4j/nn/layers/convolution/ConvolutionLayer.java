@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -140,8 +141,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
         }
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode());
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
+                    layerConf().getCudnnAlgoMode(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -246,8 +248,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
 
-        if (helper != null) {
-            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode());
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -292,7 +294,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             return z;
         }
 
-        if (helper != null) {
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             INDArray ret = helper.activate(z, conf.getLayer().getActivationFunction());
             if (ret != null) {
                 return ret;

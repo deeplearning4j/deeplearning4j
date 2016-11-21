@@ -174,7 +174,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     @Override
     public void finish() {
-        if (batches.get().size() > 0){
+        if (batches != null && batches.get() != null && batches.get().size() > 0){
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
@@ -229,7 +229,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int code = w1.getCodes().get(i);
                 int point = w1.getPoints().get(i);
                 if (point >= vocabCache.numWords() || point < 0)
-                    throw new IllegalStateException("Illegal point " + point);
+                    continue;
 
                 codes[i] = code;
                 idxSyn1[i] = point;
