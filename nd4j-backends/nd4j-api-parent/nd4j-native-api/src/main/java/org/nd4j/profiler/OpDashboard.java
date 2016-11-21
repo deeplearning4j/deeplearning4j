@@ -62,6 +62,10 @@ public class OpDashboard {
     protected String getOpClass(Op op) {
         if (op instanceof ScalarOp) {
             return "ScalarOp";
+        } else if (op instanceof MetaOp) {
+            return "MetaOp";
+        } else if (op instanceof GridOp) {
+            return "GridOp";
         } else if (op instanceof BroadcastOp) {
             return "BroadcastOp";
         } else if (op instanceof RandomOp) {
