@@ -4,7 +4,7 @@
 
     <groupId>org.deeplearning4j</groupId>
     <artifactId>rl4j</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.7.0</version>
     <modules>
         <module>rl4j-api</module>
         <module>rl4j-core</module>
@@ -56,8 +56,8 @@
         <unirest.version>1.4.9</unirest.version>
         <jackson.version>2.8.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>0.6.1-SNAPSHOT</nd4j.version>
-        <dl4j.version>0.6.1-SNAPSHOT</dl4j.version>
+        <nd4j.version>0.7.0</nd4j.version>
+        <dl4j.version>0.7.0</dl4j.version>
         <javacv.version>1.2</javacv.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
