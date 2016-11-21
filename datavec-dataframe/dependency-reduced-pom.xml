@@ -3,10 +3,10 @@
   <parent>
     <artifactId>datavec-parent</artifactId>
     <groupId>org.datavec</groupId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.7.0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>datavec-tablesaw</artifactId>
+  <artifactId>datavec-dataframe</artifactId>
   <name>datavec-dataframe</name>
   <description>High-performance Java Dataframe with integrated columnar storage (fork of tablesaw)</description>
   <developers>
