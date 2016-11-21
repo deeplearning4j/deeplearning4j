@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpDashboard;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.HashMap;
@@ -46,7 +47,7 @@ import java.util.Properties;
  */
 public class DefaultOpExecutioner implements OpExecutioner {
 
-
+    protected ProfilingMode profilingMode = ProfilingMode.DISABLED;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
     public DefaultOpExecutioner() {
@@ -388,4 +389,45 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray exec(RandomOp op, Random rng) {
         throw new UnsupportedOperationException();
     }
+
+
+    @Override
+    public void setProfilingMode(ProfilingMode mode) {
+        profilingMode = mode;
+    }
+
+    @Override
+    public ProfilingMode getProfilingMode() {
+        return profilingMode;
+    }
+
+    public long profilingHookIn(Op op){
+        switch (profilingMode) {
+            case METHODS:
+
+                return System.currentTimeMillis();
+            case OPERATIONS:
+                OpDashboard.getInstance().processOpCall(op);
+
+                return System.currentTimeMillis();
+            default:
+                return 0L;
+        }
+    }
+
+    public void profilingHookOut(Op op, long timeStart){
+        switch (profilingMode) {
+            case METHODS:
+
+                break;
+            case OPERATIONS:
+                OpDashboard.getInstance().timeOpCall(op, timeStart);
+
+                break;
+            default:
+                break;
+        }
+    }
+
+
 }

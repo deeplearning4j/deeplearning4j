@@ -80,6 +80,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        long st = profilingHookIn(op);
         if (dimension == null || dimension.length == 0)
             dimension = new int[]{Integer.MAX_VALUE};
 
@@ -184,6 +185,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
         }
+        profilingHookOut(op, st);
         return op.z();
     }
 
@@ -191,6 +193,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        long st = profilingHookIn(op);
 
         Arrays.sort(dimension);
 
@@ -450,6 +453,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
+            long st = profilingHookIn(op);
+
             if (op.getDimension() != null) {
                 invoke(op, op.getDimension());
                 return;
@@ -504,6 +509,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer)getPointerForExtraArgs(op));
 
             }
+
+            profilingHookOut(op, st);
         }
     }
 
@@ -514,7 +521,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-            PointerPointer dummy = new PointerPointer(4);
+        long st = profilingHookIn(op);
+
+        PointerPointer dummy = new PointerPointer(4);
 
         if(op.opNum() == 41 && op.extraArgs() != null) {
             int[] dimension = new int[] {(int) op.extraArgs()[1] };
@@ -636,10 +645,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+            profilingHookOut(op, st);
     }
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        long st = profilingHookIn(op);
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++)
@@ -698,6 +709,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            long st = profilingHookIn(op);
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.setFinalResult((int) loop.execIndexReduceScalarDouble(
@@ -715,16 +727,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
                         (FloatPointer)getPointerForExtraArgs(op)));
             }
-
+            profilingHookOut(op, st);
         }
     }
 
     private void exec(Accumulation op) {
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-
         }
         else {
+            long st = profilingHookIn(op);
+
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op instanceof Variance) {
@@ -778,6 +791,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer)getPointerForExtraArgs(op)));
                 }
             }
+            profilingHookOut(op, st);
         }
     }
 
@@ -803,6 +817,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
+        //profilingHookIn(batch);
 
         IntPointer pointer = (IntPointer) getPointer(batch);
 
@@ -924,6 +939,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void exec(Aggregate op) {
+       // long st = profilingHookIn(op);
 
         int numArguments = op.getArguments().size();
         int numIndexArguments = op.getIndexingArguments().size();
@@ -1038,6 +1054,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");
 
+        long st = profilingHookIn(op);
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
@@ -1103,6 +1120,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 );
             }
         }
+
+        profilingHookOut(op, st);
 
         return op.z();
     }

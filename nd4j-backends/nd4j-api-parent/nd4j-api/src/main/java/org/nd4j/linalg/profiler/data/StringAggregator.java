@@ -1,9 +1,8 @@
-package org.nd4j.profiler.data;
+package org.nd4j.linalg.profiler.data;
 
 import org.nd4j.linalg.api.ops.Op;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

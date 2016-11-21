@@ -1,4 +1,4 @@
-package org.nd4j.profiler.data;
+package org.nd4j.linalg.profiler.data;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

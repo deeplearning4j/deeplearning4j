@@ -42,6 +42,13 @@ public interface OpExecutioner {
         JAVA, NATIVE
     }
 
+    enum ProfilingMode {
+        DISABLED,
+        OPERATIONS,
+        METHODS,
+        ALL
+    }
+
 
     /**
      * Execute the operation
@@ -213,4 +220,19 @@ public interface OpExecutioner {
      * @return
      */
     Properties getEnvironmentInformation();
+
+    /**
+     * This method specifies desired profiling mode
+     *
+     * @param mode
+     */
+    void setProfilingMode(ProfilingMode mode);
+
+    /**
+     * Ths method returns current profiling
+     *
+     * @return
+     */
+    ProfilingMode getProfilingMode();
+
 }

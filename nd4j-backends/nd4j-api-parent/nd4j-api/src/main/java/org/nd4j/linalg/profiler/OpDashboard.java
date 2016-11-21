@@ -1,7 +1,7 @@
-package org.nd4j.profiler;
+package org.nd4j.linalg.profiler;
 
-import org.nd4j.profiler.data.StringAggregator;
-import org.nd4j.profiler.data.StringCounter;
+import org.nd4j.linalg.profiler.data.StringAggregator;
+import org.nd4j.linalg.profiler.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

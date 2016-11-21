@@ -91,6 +91,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         if (extraz.get() == null)
@@ -197,6 +199,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return op.z();
     }
 
@@ -207,6 +211,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      * @return
      */
     protected INDArray naiveExec(Accumulation op, int... dimension) {
+        long st = profilingHookIn(op);
         INDArray ret = op.z();
 
         for (int i = 0; i < dimension.length; i++)
@@ -524,12 +529,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        profilingHookOut(op, st);
 
         return op.z();
     }
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        long st = profilingHookIn(op);
         checkForCompression(op);
 
         Arrays.sort(dimension);
@@ -577,11 +584,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         naiveExec(op, dimension);
 
+
+        profilingHookOut(op, st);
+
         return op.z();
     }
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         if (extraz.get() == null)
@@ -713,6 +725,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return op.z();
     }
 
@@ -782,6 +796,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     protected CudaContext invoke(BroadcastOp op) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 //        if (CudaEnvironment.getInstance().getConfiguration().isGatherStatistics())
 //            OpDashboard.getInstance().processOpCall(op);
@@ -884,12 +900,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return null;
     }
 
 
 
     protected CudaContext invoke(IndexAccumulation op,int[] dimension)  {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         if (extraz.get() == null)
@@ -1018,12 +1038,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return null;
 
     }
 
 
     protected CudaContext invoke(Accumulation op, int[] dimension) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         if (extraz.get() == null)
@@ -1354,11 +1378,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 //&& !op.z().isScalar()
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return context;
     }
 
 
     protected CudaContext intercept(ScalarOp op, int[] dimension) {
+        long st = profilingHookIn(op);
 
         Arrays.sort(dimension);
 //      log.info("S3 OpName: [" + op.getClass().getSimpleName() + "]; OpCode: [" + op.opNum() + "], dimension: {}", Arrays.toString(dimension));
@@ -1457,10 +1484,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return null;
     }
 
     protected CudaContext invoke(ScalarOp op) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         if (extraz.get() == null)
@@ -1573,10 +1604,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
+        profilingHookOut(op, st);
+
         return  null;
     }
 
     protected CudaContext invoke(TransformOp op) {
+        long st = profilingHookIn(op);
+
         checkForCompression(op);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
@@ -1910,6 +1945,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (ret != null)
             ret.elementWiseStride();
 
+        profilingHookOut(op, st);
+
         return null;
     }
 
@@ -2205,6 +2242,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(RandomOp op, Random rng) {
+        long st = profilingHookIn(op);
+
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");
 
@@ -2310,6 +2349,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
+
+        profilingHookOut(op, st);
 
         return op.z();
     }
