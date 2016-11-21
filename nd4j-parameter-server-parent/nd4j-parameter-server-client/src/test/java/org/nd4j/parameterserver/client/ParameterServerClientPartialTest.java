@@ -97,6 +97,8 @@ public class ParameterServerClientPartialTest {
 
     @AfterClass
     public static void after() {
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(mediaDriver);
     }
 
     @Test

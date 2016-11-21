@@ -43,7 +43,7 @@ public class ParameterServerClientTest {
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "30000"
+                "-sp", "33000"
         });
 
         assertTrue(masterNode.isMaster());

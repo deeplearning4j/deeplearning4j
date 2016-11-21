@@ -4,6 +4,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -189,7 +190,8 @@ public class AeronNDArraySerde {
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);
             //create the final array
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(buff,shapeBuff);
+            //TODO: see how to avoid dup here
+            INDArray arr = Nd4j.createArrayFromShapeBuffer(buff.dup(),shapeBuff.dup());
             return Pair.of(arr,byteBuffer);
         }
         else {
@@ -199,7 +201,8 @@ public class AeronNDArraySerde {
             BytePointer byteBufferPointer = new BytePointer(slice);
             //create a compressed array based on the rest of the data left in the buffer
             CompressedDataBuffer compressedDataBuffer = new CompressedDataBuffer(byteBufferPointer,compressionDescriptor);
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer,shapeBuff);
+            //TODO: see how to avoid dup()
+            INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer.dup(),shapeBuff.dup());
             //advance past the data
             int compressLength = (int) compressionDescriptor.getCompressedLength();
             byteBuffer.position(byteBuffer.position() + compressLength);

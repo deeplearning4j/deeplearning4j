@@ -101,7 +101,6 @@ public class NDArrayMessageChunk implements Serializable {
      * @return the ndarray message chunk based on the passed in {@link ByteBuffer}
      */
     public static NDArrayMessageChunk fromBuffer(ByteBuffer byteBuffer,NDArrayMessage.MessageType type) {
-        int originalPosition = byteBuffer.position();
         int numChunks = byteBuffer.getInt();
         int chunkSize = byteBuffer.getInt();
         int idLength = byteBuffer.getInt();
