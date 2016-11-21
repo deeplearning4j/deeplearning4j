@@ -133,7 +133,8 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         // Try to publish the buffer. 'offer' is a non-blocking call.
         // If it returns less than 0, the message was not sent, and the offer should be retried.
         long result;
-        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L) {
+        int tries = 0;
+        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L && tries < 5) {
             if (result == Publication.BACK_PRESSURED) {
                 log.info("Offer failed due to back pressure");
             }
@@ -145,16 +146,20 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
             }
             else if (result == Publication.CLOSED) {
                 log.info("Offer failed publication is closed and channel"  + channel + " and stream " + streamId);
-                break;
             }
             else {
                 log.info(" Offer failed due to unknown reason and channel"  + channel + " and stream " + streamId);
             }
 
-            if(result != Publication.CLOSED)
-                Thread.sleep(publishRetryTimeOut);
+
+
+            Thread.sleep(publishRetryTimeOut);
+            tries++;
 
         }
+
+        if(tries >= 5 && result == 0)
+            throw new IllegalStateException("Failed to send message");
 
     }
 

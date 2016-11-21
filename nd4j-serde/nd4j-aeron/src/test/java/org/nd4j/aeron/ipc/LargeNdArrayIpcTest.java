@@ -50,10 +50,16 @@ public class LargeNdArrayIpcTest {
     public void testMultiThreadedIpcBig() throws Exception {
         int length = (int) 1e7;
         INDArray arr = Nd4j.ones(length);
-
+        AeronNDArrayPublisher publisher;
+        ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+                .availableImageHandler(AeronUtil::printAvailableImage)
+                .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .keepAliveInterval(10000)
+                .errorHandler(err -> err.printStackTrace());
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        Aeron aeron = Aeron.connect(getContext());
+        Aeron aeron = Aeron.connect(ctx);
         int numSubscribers = 1;
         AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
         for(int i = 0; i < numSubscribers; i++) {
@@ -90,33 +96,21 @@ public class LargeNdArrayIpcTest {
 
         Thread.sleep(10000);
 
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
-                .builder().publishRetryTimeOut(100)
+        publisher =   AeronNDArrayPublisher
+                .builder().publishRetryTimeOut(3000)
                 .streamId(streamId)
                 .channel(channel).aeron(aeron)
                 .build();
 
 
-        for(int i = 0; i< 10 && running.get(); i++) {
+        for(int i = 0; i< 1 && running.get(); i++) {
             log.info("About to send array.");
             publisher.publish(arr);
             log.info("Sent array");
 
         }
 
-        Thread t = new Thread(() -> {
-            System.setProperty("aeron.dir",mediaDriver.aeronDirectoryName());
-            try {
-                AeronStat.main(new String[]{});
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        });
-
-        t.start();
-
-        Thread.sleep(10000);
+        Thread.sleep(30000);
 
 
 

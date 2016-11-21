@@ -59,16 +59,18 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
      * @param id the id to reassemble
      * @return the reassembled message
      */
-     public NDArrayMessage reassemble(String id) {
+    @Override
+    public NDArrayMessage reassemble(String id) {
         List<NDArrayMessageChunk> chunkList = chunks.get(id);
         if(chunkList.size() != chunkList.get(0).getNumChunks())
-            throw new IllegalStateException("Unable to reassmemble message chunk " + id + " missing " + (chunkList.get(0).getNumChunks() - chunkList.size()) + "chunks");
+            throw new IllegalStateException("Unable to reassemble message chunk " + id + " missing " + (chunkList.get(0).getNumChunks() - chunkList.size()) + "chunks");
+        //ensure the chunks are in contiguous ordering according to their chunk index
         NDArrayMessageChunk[] inOrder = new NDArrayMessageChunk[chunkList.size()];
         for(NDArrayMessageChunk chunk : chunkList) {
             inOrder[chunk.getChunkIndex()] = chunk;
         }
 
-
+        //reassemble the in order chunks
         NDArrayMessage message = NDArrayMessage.fromChunks(inOrder);
         chunkList.clear();
         chunks.remove(id);
@@ -77,9 +79,17 @@ public class InMemoryChunkAccumulator implements ChunkAccumulator {
     }
 
     /**
-     * Accumulate chunks
-     * @param chunk
+     * Accumulate chunks in a map
+     * until all chunks have been accumulated.
+     * You can check all chunks are present with
+     * {@link ChunkAccumulator#allPresent(String)}
+     * where the parameter is the id
+     * After all chunks have been accumulated
+     * you can call {@link ChunkAccumulator#reassemble(String)}
+     * where the id is the id of the chunk.
+     * @param chunk the chunk
      */
+    @Override
     public void accumulateChunk(NDArrayMessageChunk chunk) {
         String id = chunk.getId();
         if(!chunks.containsKey(id)) {
