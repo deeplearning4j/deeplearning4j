@@ -165,6 +165,11 @@ public class AsynchronousFlowController implements FlowController{
         fillTail(deviceId, event.getLaneId(), event);
     }
 
+    @Override
+    public void registerActionAllWrite(CudaContext context, INDArray... operands) {
+
+    }
+
     protected void setWriteLane(INDArray array, cudaEvent_t event) {
         AllocationPoint point = allocator.getAllocationPoint(array);
 
@@ -453,6 +458,11 @@ public class AsynchronousFlowController implements FlowController{
 
 
         return context;
+    }
+
+    @Override
+    public CudaContext prepareActionAllWrite(INDArray... operands) {
+        return null;
     }
 
     private float getAsyncHitRatio() {
