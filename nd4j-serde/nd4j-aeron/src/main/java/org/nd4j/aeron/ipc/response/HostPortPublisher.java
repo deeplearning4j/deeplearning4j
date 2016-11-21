@@ -34,8 +34,9 @@ public class HostPortPublisher implements AutoCloseable {
     private Aeron aeron;
     private Publication publication;
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
-
+    private int publicationTimeout;
     private void init() {
+        publicationTimeout = publicationTimeout == 0 ? 100 : publicationTimeout;
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
@@ -86,7 +87,11 @@ public class HostPortPublisher implements AutoCloseable {
 
             else if(timesFailed % 1000 == 0)
                 log.info("Offer failed due to unknown reason on channel " + channel + " and stream " + streamId);
-            Thread.yield();
+            try {
+                Thread.sleep(publicationTimeout);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             timesFailed++;
 
         }

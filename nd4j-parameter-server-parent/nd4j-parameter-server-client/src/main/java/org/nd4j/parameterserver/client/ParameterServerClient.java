@@ -5,6 +5,7 @@ import io.aeron.Aeron;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.aeron.ipc.*;
 import org.nd4j.aeron.ipc.response.HostPortPublisher;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Data
 @AllArgsConstructor
 @Builder
+@Slf4j
 public class ParameterServerClient implements NDArrayCallback {
     //the url to send ndarrays to
     private String ndarraySendUrl;
@@ -51,7 +53,6 @@ public class ParameterServerClient implements NDArrayCallback {
     private AtomicReference<INDArray> arr;
     private INDArray none = Nd4j.scalar(1.0);
     private AtomicBoolean running;
-    private static Logger log = LoggerFactory.getLogger(ParameterServerClient.class);
     private String masterStatusHost;
     private int masterStatusPort;
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -265,6 +266,7 @@ public class ParameterServerClient implements NDArrayCallback {
      */
     @Override
     public  void onNDArray(INDArray arr) {
+        log.info("Received array");
         this.arr.set(arr);
     }
 }
