@@ -207,4 +207,35 @@ public class OperationProfilerTests {
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_STRIDED_ACCESS));
     }
+
+
+    @Test
+    public void testCxFxF1() throws Exception {
+        INDArray a = Nd4j.create(10, 10).reshape('f',10,10);
+        INDArray b = Nd4j.create(10, 10).reshape('c',10,10);
+        INDArray c = Nd4j.create(10, 10).reshape('f',10,10);
+
+        String ret = OpProfiler.getInstance().processOrders(a, b, c);
+        assertEquals("F x C x F", ret);
+    }
+
+    @Test
+    public void testCxFxF2() throws Exception {
+        INDArray a = Nd4j.create(10, 10).reshape('c',10,10);
+        INDArray b = Nd4j.create(10, 10).reshape('c',10,10);
+        INDArray c = Nd4j.create(10, 10).reshape('f',10,10);
+
+        String ret = OpProfiler.getInstance().processOrders(a, b, c);
+        assertEquals("C x C x F", ret);
+    }
+
+    @Test
+    public void testCxFxF3() throws Exception {
+        INDArray a = Nd4j.create(10, 10).reshape('c',10,10);
+        INDArray b = Nd4j.create(10, 10).reshape('c',10,10);
+        INDArray c = Nd4j.create(10, 10).reshape('c',10,10);
+
+        String ret = OpProfiler.getInstance().processOrders(a, b, c);
+        assertEquals("C x C x C", ret);
+    }
 }

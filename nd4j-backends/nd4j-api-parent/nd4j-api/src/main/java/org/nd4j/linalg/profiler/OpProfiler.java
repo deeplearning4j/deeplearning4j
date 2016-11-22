@@ -51,6 +51,8 @@ public class OpProfiler {
     private static StringCounter matchingCounterDetailed = new StringCounter();
     private static StringCounter matchingCounterInverted = new StringCounter();
 
+    private static StringCounter orderCounter = new StringCounter();
+
     private static Logger logger = LoggerFactory.getLogger(OpProfiler.class);
 
     private static final long THRESHOLD = 100000;
@@ -79,6 +81,8 @@ public class OpProfiler {
         matchingCounterDetailed.reset();
         matchingCounterInverted.reset();
         methodsAggregator.reset();
+
+        orderCounter.reset();
     }
 
 
@@ -298,6 +302,26 @@ public class OpProfiler {
             methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
 
         }
+    }
+
+
+    public String processOrders(INDArray... operands) {
+        StringBuffer buffer = new StringBuffer();
+
+        for (int e = 0; e < operands.length; e++) {
+
+            if (operands[e] == null)
+                buffer.append("null");
+            else
+                buffer.append(new String("" + operands[e].ordering()).toUpperCase());
+
+            if (e < operands.length - 1)
+                buffer.append(" x ");
+        }
+
+        orderCounter.incrementCount(buffer.toString());
+
+        return buffer.toString();
     }
 
 
