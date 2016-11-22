@@ -52,8 +52,9 @@ public class RandomPerformanceTests extends BaseNd4jTest {
 
             long timeLegacy = time2 - time1;
 
-            time1 = System.nanoTime();
             DropOutInverted op2 = new DropOutInverted(x2, 0.8);
+
+            time1 = System.nanoTime();
             Nd4j.getExecutioner().exec(op2, Nd4j.getRandom());
 
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
