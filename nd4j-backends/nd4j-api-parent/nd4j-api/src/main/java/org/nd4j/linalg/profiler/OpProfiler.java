@@ -339,10 +339,9 @@ public class OpProfiler {
             int length = rank * 2 + 4;
             int ews = tadBuffer.getInt(length - 2);
 
-            if ((ews < 1 || rank > 2) && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+            if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1)) && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
                 causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
-
-            if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
+            else if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
                 causes.add(PenaltyCause.TAD_STRIDED_ACCESS);
         }
 

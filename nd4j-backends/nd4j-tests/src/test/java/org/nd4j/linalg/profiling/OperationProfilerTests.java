@@ -149,7 +149,7 @@ public class OperationProfilerTests {
 
         log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
-        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_STRIDED_ACCESS));
+        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
 
     @Test
@@ -162,8 +162,10 @@ public class OperationProfilerTests {
 
         log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
-        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.NONE));
+        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
+
+
 
     @Test
     public void testBadTad3() throws Exception {
@@ -173,9 +175,36 @@ public class OperationProfilerTests {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
+        log.info("Causes: {}", Arrays.toString(causes));
+        assertEquals(1, causes.length);
+        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
+    }
+
+    @Test
+    public void testBadTad4() throws Exception {
+        INDArray x = Nd4j.create(2, 4, 5, 6);
+
+        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x,new int[]{3});
+
+        OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
+
         log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
         log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.NONE));
+    }
+
+    @Test
+    public void testBadTad5() throws Exception {
+        INDArray x = Nd4j.create(new int[] {2, 4, 5, 6, 7}, 'f');
+
+        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x,new int[]{4});
+
+        OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
+
+        log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
+        log.info("Causes: {}", Arrays.toString(causes));
+        assertEquals(1, causes.length);
+        assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_STRIDED_ACCESS));
     }
 }
