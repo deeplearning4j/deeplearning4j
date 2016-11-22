@@ -175,19 +175,30 @@ namespace functions {
 #ifdef __CUDACC__
             template<typename OpClass>
             __device__ static inline void execTransformCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-                int length = shape::length(zShapeBuffer);
-                int xEWS = shape::elementWiseStride(xShapeBuffer);
-                int zEWS = shape::elementWiseStride(zShapeBuffer);
+                __shared__ int length;
+                __shared__ int xEWS;
+                __shared__ int zEWS;
 
-                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-                nd4j::random::Xoroshiro128 generator(buffer);
-                nd4j::random::RandomHelper<T> helper(&generator);
+                __shared__ nd4j::random::Xoroshiro128 *generator;
+                __shared__ nd4j::random::RandomHelper<T> *helper;
+                if (threadIdx.x == 0) {
+                    extern __shared__ unsigned char shmem[];
+
+                    length = shape::length(zShapeBuffer);
+                    xEWS = shape::elementWiseStride(xShapeBuffer);
+                    zEWS = shape::elementWiseStride(zShapeBuffer);
+
+                    nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    generator = new(shmem) nd4j::random::Xoroshiro128(buffer);
+                    helper = new(shmem + sizeof(nd4j::random::Xoroshiro128)) nd4j::random::RandomHelper<T>(generator);
+                }
+                __syncthreads();
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 if (xEWS >= 1 && zEWS >= 1) {
                     for (int e = tid; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, &helper, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, helper, extraArguments);
                     }
                 } else {
                     // ind2sub branch
@@ -213,12 +224,12 @@ namespace functions {
                         Nd4jIndex xOffset2 = shape::getOffset(xOffset, xShape, xStride, xCoord, xRank);
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, &helper, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, helper, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                helper.rewind(length);
+                helper->rewind(length);
             }
 #endif
 

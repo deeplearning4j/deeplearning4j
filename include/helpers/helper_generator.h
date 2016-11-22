@@ -24,16 +24,16 @@ namespace nd4j {
         public:
             void *operator new(size_t len) {
                 void *ptr;
-                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-//                cudaMallocManaged(&ptr, len);
-//                cudaDeviceSynchronize();
+//                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+                cudaMallocManaged(&ptr, len);
+                cudaDeviceSynchronize();
                 return ptr;
              }
 
             void operator delete(void *ptr) {
-//                cudaDeviceSynchronize();
-//                cudaFree(ptr);
-                cudaFreeHost(ptr);
+                cudaDeviceSynchronize();
+                cudaFree(ptr);
+//                cudaFreeHost(ptr);
             }
         };
 
@@ -152,17 +152,23 @@ namespace nd4j {
             }
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             uint64_t getElement(long position) {
+
                 long actualPosition = this->getOffset() + position;
                 long tempGen = generation;
                 if (actualPosition >= this->size) {
                     tempGen += actualPosition / this->size;
                     actualPosition = actualPosition % this->size;
                 }
+#ifdef __CUDACC__
+                __syncthreads();
+#endif
 
-                uint64_t ret = buffer[actualPosition];
+                int *intBuf = (int *) buffer;
+
+                uint64_t ret = (uint64_t) intBuf[actualPosition];
 
                 if (tempGen != generation)
                     ret = safeShift(ret, tempGen);
@@ -173,8 +179,8 @@ namespace nd4j {
                 if (amplifier != seed)
                     ret = safeShift(ret, amplifier);
 
-                if (amplifier != seed || generation > 1 || tempGen != generation)
-                    ret = next64(seedConv((long) ret));
+                //if (amplifier != seed || generation > 1 || tempGen != generation)
+                ret = next64(seedConv((long) ret));
 
                 return ret;
             }

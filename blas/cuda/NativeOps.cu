@@ -6175,14 +6175,14 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 //    cudaStreamSynchronize(*stream);
 
     // that's device pointer
-    unsigned long long *ptrBuf = reinterpret_cast<unsigned long long *>(ptrToBuffer);
+    unsigned long long *ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
     nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrHost);
 
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
 
-    cudaMemcpyAsync(ptrBuf, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
-    buffer->setBuffer((uint64_t *) ptrBuf);
+    cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
+    buffer->setBuffer((uint64_t *) ptrDev);
 
     /*
     curandStatus_t err = curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_QUASI_SOBOL64);

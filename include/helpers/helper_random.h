@@ -56,7 +56,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int nextInt() {
                 int r = (int) nextUInt();
@@ -64,7 +64,7 @@ namespace nd4j {
             };
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             uint64_t nextUInt() {
                 return buffer->getNextElement();
@@ -76,7 +76,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int nextInt(int to) {
                 int r = nextInt();
@@ -98,7 +98,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int nextInt(int from, int to) {
                 if (from == 0)
@@ -113,7 +113,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T nextMaxT() {
                 T rnd = (T) buffer->getNextElement();
@@ -126,7 +126,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T nextT() {
                 return (T) nextUInt() / (T) MAX_UINT;
@@ -138,7 +138,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T nextT(T to) {
                 if (to == (T) 1.0f)
@@ -154,14 +154,14 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T nextT(T from, T to) {
                 return from + (nextT() * (to - from));
             }
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             uint64_t relativeUInt(int index) {
                 return buffer->getElement(index);
@@ -172,7 +172,7 @@ namespace nd4j {
              */
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int relativeInt(int index) {
                 return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
@@ -186,7 +186,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int relativeInt(int index, int to) {
                 int rel = relativeInt(index);
@@ -202,7 +202,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             int relativeInt(int index, int to, int from) {
                 if (from == 0)
@@ -219,7 +219,7 @@ namespace nd4j {
              */
 
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T relativeT(int index) {
                 if (sizeof(T) < 4) {
@@ -236,7 +236,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T relativeT(int index, T to) {
                 if (to == (T) 1.0f)
@@ -254,7 +254,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __device__
 #endif
             T relativeT(int index, T from, T to) {
                 return from + (relativeT(index) * (to - from));
