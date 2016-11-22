@@ -3,6 +3,54 @@ title: Release Notes
 layout: default
 ---
 
+# <a name="zerosevenzero">Release Notes for Version 0.7.0</a>
+
+* UI overhaul: new training UI has considerably more information, supports persistence (saving info and loading later), Japanese/Korean/Russian support. Replaced Dropwizard with Play framework.
+    - https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface
+* Added ‘Same’ padding more for CNNs (ConvolutionMode network configuration option)
+    - https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/ConvolutionMode.java
+* Weighted loss functions: Loss functions now support a per-output weight array (row vector)
+* ROC and AUC added for binary classifiers
+    - https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/ROC.java
+* Improved error messages on invalid configuration or data; improved validation on both
+* Added metadata functionality: track source of data (file, line number, etc) from data import to evaluation. Loading a subset of examples/data from this metadata is now supported.
+    - https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java
+* Removed Jackson as core dependency (shaded); users can now use any version of Jackson without issue
+* Added LossLayer: version of OutputLayer that only applies loss function (unlike OutputLayer: it has no weights/biases)
+* Functionality required to build triplet embedding model (L2 vertex, LossLayer, Stack/Unstack vertices etc)
+* Reduced DL4J and ND4J ‘cold start’ initialization/start-up time
+* Pretrain default changed to false and backprop default changed to true. No longer needed to set these when setting up a network configuration unless defaults need to be changed.
+* Added TrainingListener interface (extends IterationListener). Provides access to more information/state as network training occurs
+    - https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/api/TrainingListener.java
+* Numerous bug fixes across DL4J and ND4J
+* Performance improvements for nd4j-native & nd4j-cuda backends
+* Standalone Word2Vec/ParagraphVectors overhaul:
+    - Performance improvements
+    - ParaVec inference available for both PV-DM & PV-DBOW
+    - Parallel tokenization support was added, to address computation-heavy tokenizers.
+* Native RNG introduced for better reproducibility within multi-threaded execution environment.
+* Additional RNG calls added: Nd4j.choice(), and BernoulliDistribution op.
+* Off-gpu storage introduced, to keep large things, like Word2Vec model in host memory. Available via WordVectorSerializer.loadStaticModel()
+* Two new options for performance tuning on nd4j-native backend: setTADThreshold(int) & setElementThreshold(int)
+
+### 0.6.0 -> 0.7.0 Transition Notes
+Notable changes for upgrading codebases based on 0.6.0 to 0.7.0:
+
+* UI: new UI package name is deeplearning4j-ui_2.10 or deeplearning4j-ui_2.11 (previously: deeplearning4j-ui). Scala version suffix is necessary due to Play framework (written in Scala) being used now.
+* Histogram and Flow iteration listeners deprecated. They are still functional, but using new UI is recommended
+    - https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface
+* DataVec ImageRecordReader: labels are now sorted alphabetically by default before assigning an integer class index to each - previously (0.6.0 and earlier) they were according to file iteration order. Use .setLabels(List<String>) to manually specify the order if required.
+* CNNs: configuration validation is now less strict. With new ConvolutionMode option, 0.6.0 was equivalent to ‘Strict’ mode, but new default is ‘Truncate’
+    - See ConvolutionMode javadoc for more details: https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/ConvolutionMode.java
+* Xavier weight initialization change for CNNs and LSTMs: Xavier now aligns better with original Glorot paper and other libraries. Xavier weight init. equivalent to 0.6.0 is available as XAVIER_LEGACY
+* DataVec: Custom RecordReader and SequenceRecordReader classes require additional methods, for the new metadata functionality. Refer to existing record reader implementations for how to implement these methods.
+* Word2Vec/ParagraphVectors: 
+    - Few new builder methods:
+        - allowParallelTokenization(boolean)
+        - useHierarchicSoftmax(boolean)
+    - Behaviour change: batchSize: now batch size is ALSO used as threshold to execute number of computational batches for sg/cbow
+
+
 # <a name="six">Release Notes for Version 0.6.0</a> 
 
 * Custom layer support
