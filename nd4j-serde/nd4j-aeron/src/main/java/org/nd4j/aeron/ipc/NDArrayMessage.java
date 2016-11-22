@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -16,6 +17,7 @@ import java.nio.ByteOrder;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 /**
  * A message sent over the wire for ndarrays
@@ -43,6 +45,8 @@ public class NDArrayMessage implements Serializable {
     private long sent;
     private long index;
     private int[] dimensions;
+    private byte[] chunk;
+    private int numChunks = 0;
     //default dimensions: a 1 length array of -1 means use the whole array for an update.
     private static int[] WHOLE_ARRAY_UPDATE = {-1};
     //represents the constant for indicating using the whole array for an update (-1)
@@ -52,6 +56,46 @@ public class NDArrayMessage implements Serializable {
         VALID,NULL_VALUE,INCONSISTENT_DIMENSIONS
     }
 
+    public enum MessageType {
+        CHUNKED,WHOLE
+    }
+
+    /**
+     * Determine the number of chunks
+     * @param message
+     * @param chunkSize
+     * @return
+     */
+    public static int numChunksForMessage(NDArrayMessage message,int chunkSize) {
+        int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(message);
+        int numMessages = sizeOfMessage / chunkSize;
+        //increase by 1 for padding
+        if(numMessages * chunkSize < sizeOfMessage)
+            numMessages++;
+        return numMessages;
+    }
+
+    /**
+     * Create an array of messages to send
+     * based on a specified chunk size
+     * @param arrayMessage
+     * @param chunkSize
+     * @return
+     */
+    public static NDArrayMessage[] chunkedMessages(NDArrayMessage arrayMessage,int chunkSize) {
+        int sizeOfMessage = NDArrayMessage.byteBufferSizeForMessage(arrayMessage) - 4;
+        int numMessages = sizeOfMessage / chunkSize;
+        ByteBuffer direct = NDArrayMessage.toBuffer(arrayMessage).byteBuffer();
+        NDArrayMessage[] ret = new NDArrayMessage[numMessages];
+        for(int i = 0; i < numMessages; i++) {
+            byte[] chunk = new byte[chunkSize];
+            direct.get(chunk,i * chunkSize,chunkSize);
+            ret[i] = NDArrayMessage.builder().chunk(chunk)
+                    .numChunks(numMessages)
+                    .build();
+        }
+        return ret;
+    }
 
     /**
      * Prepare a whole array update
@@ -143,11 +187,88 @@ public class NDArrayMessage implements Serializable {
      * @return the size of the byte buffer for a message
      */
     public static int byteBufferSizeForMessage(NDArrayMessage message) {
+        int enumSize = 4;
         int nInts = 4 * message.getDimensions().length;
         int sizeofDimensionLength = 4;
         int timeStampSize = 8;
         int indexSize = 8;
-        return nInts + sizeofDimensionLength + timeStampSize + indexSize + AeronNDArraySerde.byteBufferSizeFor(message.getArr());
+        return enumSize + nInts + sizeofDimensionLength + timeStampSize + indexSize + AeronNDArraySerde.byteBufferSizeFor(message.getArr());
+    }
+
+
+    /**
+     *
+     * Create an ndarray message from an array of buffers.
+     * This array of buffers would be assembled by an
+     * {@link io.aeron.logbuffer.FragmentHandler}
+     * capable of merging these messages together.
+     * Typically what happens is an {@link AeronNDArraySubscriber}
+     * will track chunks being sent.
+     *
+     * Anytime a subscriber received an {@link MessageType#CHUNKED}
+     * as a type it will store the buffer temporarily.
+     *
+     * @param chunks
+     * @return
+     */
+    public static NDArrayMessage fromChunks(NDArrayMessageChunk[] chunks) {
+        int overAllCapacity = chunks[0].getChunkSize() * chunks.length;
+
+        ByteBuffer all = ByteBuffer.allocateDirect(overAllCapacity).order(ByteOrder.nativeOrder());
+        for(int i = 0; i < chunks.length; i++) {
+            ByteBuffer curr = chunks[i].getData();
+            if(curr.capacity() > chunks[0].getChunkSize()) {
+                curr.position(0).limit(chunks[0].getChunkSize());
+                curr = curr.slice();
+            }
+            all.put(curr);
+        }
+
+        //create an ndarray message from the given buffer
+        UnsafeBuffer unsafeBuffer = new UnsafeBuffer(all);
+        //rewind the buffer
+        all.rewind();
+        return NDArrayMessage.fromBuffer(unsafeBuffer,0);
+    }
+
+
+
+    /**
+     * Returns an array of
+     * message chunks meant to be sent
+     * in parallel.
+     * Each message chunk has the layout:
+     * messageType
+     * number of chunks
+     * chunkSize
+     * length of uuid
+     * uuid
+     * buffer index
+     * actual raw data
+     * @param message the message to turn into chunks
+     * @param chunkSize the chunk size
+     * @return an array of buffers
+     */
+    public static NDArrayMessageChunk[] chunks(NDArrayMessage message,int chunkSize) {
+        int numChunks = numChunksForMessage(message,chunkSize);
+        NDArrayMessageChunk[] ret = new NDArrayMessageChunk[numChunks];
+        DirectBuffer wholeBuffer = NDArrayMessage.toBuffer(message);
+        String messageId = UUID.randomUUID().toString();
+        for(int i = 0; i < ret.length; i++) {
+            //data: only grab a chunk of the data
+            ByteBuffer view = (ByteBuffer) wholeBuffer.byteBuffer().asReadOnlyBuffer().position(i * chunkSize);
+            view.limit(Math.min(i * chunkSize + chunkSize,wholeBuffer.capacity()));
+            view.order(ByteOrder.nativeOrder());
+            view = view.slice();
+            NDArrayMessageChunk chunk = NDArrayMessageChunk.builder()
+                    .id(messageId).chunkSize(chunkSize).numChunks(numChunks)
+                    .messageType(MessageType.CHUNKED).chunkIndex(i)
+                    .data(view).build();
+            //insert in to the array itself
+            ret[i] = chunk;
+        }
+
+        return ret;
     }
 
     /**
@@ -159,6 +280,8 @@ public class NDArrayMessage implements Serializable {
      */
     public static DirectBuffer toBuffer(NDArrayMessage message) {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(byteBufferSizeForMessage(message)).order(ByteOrder.nativeOrder());
+        //declare message type
+        byteBuffer.putInt(MessageType.WHOLE.ordinal());
         //perform the ndarray put on the
         if(message.getArr().isCompressed()) {
             AeronNDArraySerde.doByteBufferPutCompressed(message.getArr(),byteBuffer,false);
@@ -169,6 +292,7 @@ public class NDArrayMessage implements Serializable {
 
         long sent = message.getSent();
         long index = message.getIndex();
+
         byteBuffer.putLong(sent);
         byteBuffer.putLong(index);
         byteBuffer.putInt(message.getDimensions().length);
@@ -196,13 +320,19 @@ public class NDArrayMessage implements Serializable {
      * We use {@link AeronNDArraySerde#toArrayAndByteBuffer(DirectBuffer, int)}
      * to read in the ndarray and just use normal {@link ByteBuffer#getInt()} and
      * {@link ByteBuffer#getLong()} to get the things like dimensions and index
-     * and time stamp
+     * and time stamp.
+     *
+     *
+     *
      * @param buffer the buffer to convert
-     * @param offset  the offset to start at with the buffer
+     * @param offset  the offset to start at with the buffer - note that this
+     *                method call assumes that the message type is specified at the beginning of the buffer.
+     *                This means whatever offset you pass in will be increased by 4 (the size of an int)
      * @return the ndarray message based on this direct buffer.
      */
     public static NDArrayMessage fromBuffer(DirectBuffer buffer,int offset) {
-        Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset);
+        //skip the message type
+        Pair<INDArray,ByteBuffer> pair = AeronNDArraySerde.toArrayAndByteBuffer(buffer, offset + 4);
         INDArray arr = pair.getKey();
         Nd4j.getCompressor().decompressi(arr);
         //use the rest of the buffer, of note here the offset is already set, we should only need to use

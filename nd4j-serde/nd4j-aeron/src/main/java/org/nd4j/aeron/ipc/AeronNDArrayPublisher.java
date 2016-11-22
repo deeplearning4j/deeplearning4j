@@ -6,17 +6,22 @@ import io.aeron.exceptions.DriverTimeoutException;
 import lombok.Builder;
 import lombok.Data;
 
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 
 /**
- * NDArray publisher for aeron
+ * NDArray publisher
+ * for aeron
  *
  * @author Adam Gibson
  */
@@ -35,33 +40,25 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     private static Logger log = LoggerFactory.getLogger(AeronNDArrayPublisher.class);
     public final static int NUM_RETRIES = 100;
     private boolean compress = true;
+    private static final BusySpinIdleStrategy busySpinIdleStrategy = new BusySpinIdleStrategy();
+    private int publishRetryTimeOut = 3000;
 
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
+        publishRetryTimeOut = publishRetryTimeOut == 0 ? 3000 : publishRetryTimeOut;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
-        log.debug("Channel publisher" + channel + " and stream " + streamId);
+        log.info("Channel publisher" + channel + " and stream " + streamId);
     }
 
     /**
-     * Publish an ndarray to an aeron channel
+     * Publish an ndarray
+     * to an aeron channel
      * @param message
      * @throws Exception
      */
     public void publish(NDArrayMessage message) throws Exception {
-        // Allocate enough buffer size to hold maximum message length
-        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        log.debug("Publishing to " + channel + " on stream Id " + streamId);
-        //ensure default values are set
-        INDArray arr = message.getArr();
-        if(isCompress())
-            while(!message.getArr().isCompressed())
-                Nd4j.getCompressor().compressi(arr,"GZIP");
-
-
-        DirectBuffer buffer = NDArrayMessage.toBuffer(message);
-
         if(!init)
             init();
         // Create a context, needed for client connection to media driver
@@ -86,6 +83,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         while(publication == null && connectionTries < NUM_RETRIES) {
             try {
                 publication = aeron.addPublication(channel, streamId);
+                log.info("Created publication on channel " + channel + " and stream " + streamId);
             }
             catch (DriverTimeoutException e) {
                 Thread.sleep(1000 * (connectionTries + 1));
@@ -99,41 +97,74 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
         }
 
 
-        // Try to publish the buffer. 'offer' is a non-blocking call.
-        // If it returns less than 0, the message was not sent, and the offer should be retried.
-        long result;
-        log.debug("Begin publish " + channel + " and stream " + streamId);
-        while ((result = publication.offer(buffer, 0, buffer.capacity())) < 0L) {
-            if (result == Publication.BACK_PRESSURED) {
-                log.debug(" Offer failed due to back pressure");
-            }
-            else if (result == Publication.NOT_CONNECTED) {
-                log.debug(" Offer failed because publisher is not connected to subscriber");
-            }
-            else if (result == Publication.ADMIN_ACTION) {
-                log.debug("Offer failed because of an administration action in the system");
-            }
-            else if (result == Publication.CLOSED) {
-                log.debug("Offer failed publication is closed");
-            }
-            else {
-                log.debug(" Offer failed due to unknown reason");
-            }
+        // Allocate enough buffer size to hold maximum message length
+        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
+        log.info("Publishing to " + channel + " on stream Id " + streamId);
+        //ensure default values are set
+        INDArray arr = message.getArr();
+        if(isCompress())
+            while(!message.getArr().isCompressed())
+                Nd4j.getCompressor().compressi(arr,"GZIP");
 
 
-            if (!publication.isConnected()) {
-                log.debug("No active subscribers detected");
-            }
 
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+        //array is large, need to segment
+        if(NDArrayMessage.byteBufferSizeForMessage(message) >= publication.maxMessageLength()) {
+            NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message,publication.maxMessageLength() / 128);
+            for(int i = 0; i < chunks.length; i++) {
+                ByteBuffer sendBuff = NDArrayMessageChunk.toBuffer(chunks[i]);
+                sendBuff.rewind();
+                DirectBuffer buffer = new UnsafeBuffer(sendBuff);
+                sendBuffer(buffer);
+            }
+        }
+        else {
+            //send whole array
+            DirectBuffer buffer = NDArrayMessage.toBuffer(message);
+            sendBuffer(buffer);
 
         }
 
-
-        log.debug("Done sending.");
-
     }
 
+
+
+
+
+
+    private void  sendBuffer(DirectBuffer buffer) throws Exception {
+        // Try to publish the buffer. 'offer' is a non-blocking call.
+        // If it returns less than 0, the message was not sent, and the offer should be retried.
+        long result;
+        int tries = 0;
+        while ((result = publication.offer(buffer,0,buffer.capacity())) < 0L && tries < 5) {
+            if (result == Publication.BACK_PRESSURED) {
+                log.info("Offer failed due to back pressure");
+            }
+            else if (result == Publication.NOT_CONNECTED) {
+                log.info("Offer failed because publisher is not connected to subscriber " + channel + " and stream " + streamId);
+            }
+            else if (result == Publication.ADMIN_ACTION) {
+                log.info("Offer failed because of an administration action in the system and channel"  + channel + " and stream " + streamId);
+            }
+            else if (result == Publication.CLOSED) {
+                log.info("Offer failed publication is closed and channel"  + channel + " and stream " + streamId);
+            }
+            else {
+                log.info(" Offer failed due to unknown reason and channel"  + channel + " and stream " + streamId);
+            }
+
+
+
+            Thread.sleep(publishRetryTimeOut);
+            tries++;
+
+        }
+
+        if(tries >= 5 && result == 0)
+            throw new IllegalStateException("Failed to send message");
+
+    }
 
     /**
      * Publish an ndarray to an aeron channel
@@ -193,9 +224,7 @@ public class AeronNDArrayPublisher implements  AutoCloseable {
     @Override
     public void close() throws Exception {
         if(publication != null) {
-            try {
-                publication.close();
-            }catch(Exception e) {}
+            CloseHelper.quietClose(publication);
         }
 
     }

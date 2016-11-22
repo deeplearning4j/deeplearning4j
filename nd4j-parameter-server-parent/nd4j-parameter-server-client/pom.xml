@@ -3,7 +3,7 @@
     <parent>
         <artifactId>nd4j-parameter-server-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -39,11 +39,7 @@
             <version>${jackson.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
