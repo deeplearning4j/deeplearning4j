@@ -21,6 +21,7 @@ Contents
 DL4J Provides a user interface to visualize in your browser (in real time) the current network status and progress of training. The UI is typically used to help with tuning neural networks - i.e., the selection of hyperparameters (such as learning rate) to obtain good performance for a network.
 
 **Step 1: Add the Deeplearning4j UI dependency to your project.**
+
 ```
     <dependency>
         <groupId>org.deeplearning4j</groupId>
@@ -28,11 +29,13 @@ DL4J Provides a user interface to visualize in your browser (in real time) the c
         <version>${dl4j.version}</version>
     </dependency>
 ```
+
 Note the ```_2.10``` suffix: this is the Scala version (due to using the Play framework, a Scala library, for the backend). If you are not using other Scala libraries, either ```_2.10``` or ```_2.11``` is OK.
 
 **Step 2: Enable the UI in your project**
 
 This is relatively straightforward:
+
 ```
     //Initialize the user interface backend
     UIServer uiServer = UIServer.getInstance();
@@ -79,6 +82,7 @@ See the later section of this page on how to use these values in practice.
 The model page contains a graph of the neural network layers, which operates as a selection mechanism. Click on a layer to display information for it.
 
 On the right, the following charts are available, after selecting a layer:
+
 - Table of layer information
 - Update to parameter ratio for this layer, as per the overview page. The components of this ratio (the parameter and update mean magnitudes) are also available via tabs.
 - Layer activations (mean and mean +/- 2 standard deviations) over time
@@ -110,6 +114,7 @@ Two alternatives are available:
 ```
 
 Then, later you can load and display the saved information using:
+
 ```
     StatsStorage statsStorage = new FileStatsStorage(statsFile);    //If file already exists: load the data from it
     UIServer uiServer = UIServer.getInstance();
@@ -119,18 +124,21 @@ Then, later you can load and display the saved information using:
 **Using the Remote UI Functionality**
 
 First, in the JVM running the UI:
+
 ```
     UIServer uiServer = UIServer.getInstance();
     uiServer.enableRemoteListener();        //Necessary: remote support is not enabled by default
 ```
 
 Second, in the Spark training instance:
+
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
 
     StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://UI_MACHINE_IP:9000");
     sparkNet.setListeners(remoteUIRouter, Collections.singletonList(new StatsListener(null)));
 ```
+
 Note: you should replace ```UI_MACHINE_IP`` with the IP address of the machine running the user interface instance.
 
 
