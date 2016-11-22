@@ -22,12 +22,12 @@ public class StringAggregator {
 
     public void reset() {
         for (String key: times.keySet()) {
-            times.remove(key);
+//            times.remove(key);
             times.put(key, new ArrayList<Long>());
         }
 
         for (String key: longCalls.keySet()) {
-            longCalls.remove(key);
+  //          longCalls.remove(key);
             longCalls.put(key, new AtomicLong(0));
         }
     }

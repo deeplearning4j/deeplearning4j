@@ -1,11 +1,16 @@
 package org.nd4j.linalg.profiler;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -16,6 +21,15 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 public class OpProfiler {
+
+    public enum PenaltyCause {
+        NONE,
+        NON_EWS_ACCESS,
+        STRIDED_ACCESS,
+        MIXED_ORDER,
+        TAD_DIMENSION,
+    }
+
     private static AtomicLong invocationsCount = new AtomicLong(0);
     private static OpProfiler ourInstance = new OpProfiler();
 
@@ -49,7 +63,7 @@ public class OpProfiler {
     /**
      * This method resets all counters
      */
-    public synchronized void reset() {
+    public void reset() {
         invocationsCount.set(0);
 
         classAggergator.reset();
@@ -281,5 +295,93 @@ public class OpProfiler {
             methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
 
         }
+    }
+
+
+    public PenaltyCause[] processOperands(INDArray x, INDArray y) {
+        List<PenaltyCause> penalties = new ArrayList<>();
+
+        if (x.ordering() != y.ordering()) {
+            penalties.add(PenaltyCause.MIXED_ORDER);
+        }
+
+
+        if (x.elementWiseStride() < 1) {
+            penalties.add(PenaltyCause.NON_EWS_ACCESS);
+        } else if (y.elementWiseStride() < 1) {
+            penalties.add(PenaltyCause.NON_EWS_ACCESS);
+        }
+
+        if (x.elementWiseStride() > 1) {
+            penalties.add(PenaltyCause.STRIDED_ACCESS);
+        } else if (y.elementWiseStride() > 1) {
+            penalties.add(PenaltyCause.STRIDED_ACCESS);
+        }
+
+
+        if (penalties.isEmpty())
+            penalties.add(PenaltyCause.NONE);
+
+        return penalties.toArray(new PenaltyCause[0]);
+    }
+
+    public PenaltyCause[] processOperands(INDArray x, INDArray y, INDArray z) {
+        if (x == z || y == z) {
+            return processOperands(x, y);
+        } else {
+            PenaltyCause causeXY[] = processOperands(x, y);
+            PenaltyCause causeXZ[] = processOperands(x, z);
+
+            if ((causeXY.length == 1 && causeXY[0] == PenaltyCause.NONE) && (causeXZ.length == 1 && causeXZ[0] == PenaltyCause.NONE)) {
+                return causeXY;
+            } else if (causeXY.length == 1 && causeXY[0] == PenaltyCause.NONE) {
+                return causeXZ;
+            } else if (causeXZ.length == 1 && causeXZ[0] == PenaltyCause.NONE) {
+                return causeXY;
+            } else return joinDistinct(causeXY, causeXZ);
+        }
+    }
+
+    protected PenaltyCause[] joinDistinct(PenaltyCause[] a, PenaltyCause[] b) {
+        List<PenaltyCause> causes = new ArrayList<>();
+
+        for (PenaltyCause cause: a) {
+            if (cause != null && !causes.contains(cause))
+                causes.add(cause);
+        }
+
+        for (PenaltyCause cause: b) {
+            if (cause != null && !causes.contains(cause))
+                causes.add(cause);
+        }
+
+        return causes.toArray(new PenaltyCause[0]);
+    }
+
+    /**
+     * This method checks for something somewhere
+     *
+     * @param operands
+     */
+    public PenaltyCause[] processOperands(INDArray... operands) {
+        if (operands == null)
+            return new PenaltyCause[]{PenaltyCause.NONE};
+
+        List<PenaltyCause> causes = new ArrayList<>();
+        for (int e = 0; e < operands.length - 1; e++) {
+            if (operands[e] == null && operands[e+1] == null)
+                continue;
+
+            PenaltyCause lc[] = processOperands(operands[e], operands[e+1]);
+
+            for (PenaltyCause cause: lc) {
+                if (cause != PenaltyCause.NONE && !causes.contains(cause))
+                    causes.add(cause);
+            }
+        }
+        if (causes.isEmpty())
+            causes.add(PenaltyCause.NONE);
+
+        return causes.toArray(new PenaltyCause[0]);
     }
 }
