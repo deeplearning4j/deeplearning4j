@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1124,5 +1125,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         profilingHookOut(op, st);
 
         return op.z();
+    }
+
+    @Override
+    public TADManager getTADManager() {
+        return tadManager;
     }
 }

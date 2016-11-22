@@ -1,7 +1,9 @@
 package org.nd4j.linalg.profiler;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
@@ -27,7 +29,8 @@ public class OpProfiler {
         NON_EWS_ACCESS,
         STRIDED_ACCESS,
         MIXED_ORDER,
-        TAD_DIMENSION,
+        TAD_NON_EWS_ACCESS,
+        TAD_STRIDED_ACCESS,
     }
 
     private static AtomicLong invocationsCount = new AtomicLong(0);
@@ -323,6 +326,30 @@ public class OpProfiler {
             penalties.add(PenaltyCause.NONE);
 
         return penalties.toArray(new PenaltyCause[0]);
+    }
+
+    public PenaltyCause[] processTADOperands(DataBuffer... tadBuffers) {
+
+        List<PenaltyCause> causes = new ArrayList<>();
+        for (DataBuffer tadBuffer: tadBuffers) {
+            if (tadBuffer == null)
+                continue;
+
+            int rank = tadBuffer.getInt(0);
+            int length = rank * 2 + 4;
+            int ews = tadBuffer.getInt(length - 2);
+
+            if ((ews < 1 || rank > 2) && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+                causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
+
+            if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
+                causes.add(PenaltyCause.TAD_STRIDED_ACCESS);
+        }
+
+        if (causes.isEmpty())
+            causes.add(PenaltyCause.NONE);
+
+        return causes.toArray(new PenaltyCause[0]);
     }
 
     public PenaltyCause[] processOperands(INDArray x, INDArray y, INDArray z) {

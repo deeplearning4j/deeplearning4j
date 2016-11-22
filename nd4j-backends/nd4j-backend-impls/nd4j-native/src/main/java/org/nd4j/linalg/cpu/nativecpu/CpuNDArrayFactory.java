@@ -670,7 +670,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
 
@@ -867,7 +867,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
 
-        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
         IntPointer ptrMap = new IntPointer(map);
 

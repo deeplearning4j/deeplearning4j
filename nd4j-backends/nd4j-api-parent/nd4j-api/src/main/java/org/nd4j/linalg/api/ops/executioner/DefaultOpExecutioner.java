@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -434,4 +435,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    @Override
+    public TADManager getTADManager() {
+        throw new UnsupportedOperationException();
+    }
 }

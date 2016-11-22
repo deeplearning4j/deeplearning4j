@@ -2323,7 +2323,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return properties;
     }
 
-
+    @Override
+    public TADManager getTADManager() {
+        return tadManager;
+    }
 }
 
 
