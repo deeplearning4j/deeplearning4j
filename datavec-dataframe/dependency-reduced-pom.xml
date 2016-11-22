@@ -6,7 +6,7 @@
     <version>0.6.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>datavec-tablesaw</artifactId>
+  <artifactId>datavec-dataframe</artifactId>
   <name>datavec-dataframe</name>
   <description>High-performance Java Dataframe with integrated columnar storage (fork of tablesaw)</description>
   <developers>

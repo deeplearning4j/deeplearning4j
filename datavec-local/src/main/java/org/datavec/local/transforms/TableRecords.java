@@ -1,5 +1,8 @@
 package org.datavec.local.transforms;
 
+import org.datavec.api.transform.DataAction;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -21,6 +24,20 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class TableRecords {
+
+
+    public static Table transform(Table table,TransformProcess transformProcess) {
+        List<DataAction> dataActions = transformProcess.getActionList();
+        Table ret = table;
+        for(DataAction dataAction : dataActions) {
+          if(dataAction.getTransform() != null) {
+              Transform transform = dataAction.getTransform();
+              
+          }
+        }
+
+        return ret;
+    }
 
     /**
      * Create a matrix from a table where

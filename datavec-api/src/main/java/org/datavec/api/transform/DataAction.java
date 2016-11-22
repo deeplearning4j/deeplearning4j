@@ -96,12 +96,12 @@ public class DataAction implements Serializable {
         return "DataAction(" + str + ")";
     }
 
-    public Schema getSchema(){
+    public Schema getSchema() {
         if(transform != null){
             return transform.getInputSchema();
-        } else if(filter != null){
+        } else if(filter != null) {
             return filter.getInputSchema();
-        } else if(convertToSequence != null){
+        } else if(convertToSequence != null) {
             return convertToSequence.getInputSchema();
         } else if(convertFromSequence != null){
             return convertFromSequence.getInputSchema();
