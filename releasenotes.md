@@ -64,10 +64,6 @@ Notable changes for upgrading codebases based on 0.6.0 to 0.7.0:
 * Performance improvements to Spark training implementation
 * Improved network configuration validation using InputType functionality
 
-<p align="center">
-<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
-</p>
-
 # <a name="five">Release Notes for Version 0.5.0</a> 
 
 * FP16 support for CUDA
