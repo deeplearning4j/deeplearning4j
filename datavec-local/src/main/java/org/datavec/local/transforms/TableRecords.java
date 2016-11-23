@@ -50,7 +50,7 @@ public class TableRecords {
     public static List<List<Writable>> fromTable(Table table) {
         List<List<Writable>> ret = new ArrayList<>();
         for(int i = 0; i < table.rowCount(); i++) {
-            ret.add(new ArrayList<>());
+            ret.add(new ArrayList<Writable>());
             for(int j = 0; j < table.columnCount(); j++) {
                 ret.get(i).add(new DoubleWritable(Double.valueOf(table.get(j,i))));
             }

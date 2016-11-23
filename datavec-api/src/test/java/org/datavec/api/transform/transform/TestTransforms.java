@@ -894,10 +894,10 @@ public class TestTransforms {
                 .addColumnDouble("thirdCol").build();
 
         List<List<Writable>> sequence = new ArrayList<>();
-        sequence.add(Arrays.asList(new Text("val0"), new IntWritable(10), new DoubleWritable(10)));
-        sequence.add(Arrays.asList(new Text("val1"), new IntWritable(15), new DoubleWritable(15)));
-        sequence.add(Arrays.asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25)));
-        sequence.add(Arrays.asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40)));
+        sequence.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(10), new DoubleWritable(10)));
+        sequence.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15), new DoubleWritable(15)));
+        sequence.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25)));
+        sequence.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40)));
 
         Transform t = new SequenceDifferenceTransform("secondCol");
         t.setInputSchema(schema);
@@ -905,10 +905,10 @@ public class TestTransforms {
         List<List<Writable>> out = t.mapSequence(sequence);
 
         List<List<Writable>> expected = new ArrayList<>();
-        expected.add(Arrays.asList(new Text("val0"), new IntWritable(0), new DoubleWritable(10)));
-        expected.add(Arrays.asList(new Text("val1"), new IntWritable(15-10), new DoubleWritable(15)));
-        expected.add(Arrays.asList(new Text("val2"), new IntWritable(25-15), new DoubleWritable(25)));
-        expected.add(Arrays.asList(new Text("val3"), new IntWritable(40-25), new DoubleWritable(40)));
+        expected.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(0), new DoubleWritable(10)));
+        expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15-10), new DoubleWritable(15)));
+        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25-15), new DoubleWritable(25)));
+        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40-25), new DoubleWritable(40)));
 
         assertEquals(expected, out);
 
@@ -921,10 +921,10 @@ public class TestTransforms {
         assertEquals(outputSchema.getColumnNames(), Arrays.asList("firstCol", "secondCol", "newThirdColName"));
 
         expected = new ArrayList<>();
-        expected.add(Arrays.asList(new Text("val0"), new IntWritable(10), NullWritable.INSTANCE));
-        expected.add(Arrays.asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
-        expected.add(Arrays.asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
-        expected.add(Arrays.asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
+        expected.add(Arrays.<Writable>asList(new Text("val0"), new IntWritable(10), NullWritable.INSTANCE));
+        expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
+        expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
+        expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
 
     }
 

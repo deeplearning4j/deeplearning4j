@@ -45,7 +45,7 @@ public class TableRecordsTest {
         List<List<Writable>> assertion = new ArrayList<>();
 
         for(int i = 0; i < rows; i++) {
-            assertion.add(new ArrayList<>());
+            assertion.add(new ArrayList<Writable>());
             for(int j = 0; j < columns; j++) {
                 assertion.get(i).add(new DoubleWritable(i));
             }

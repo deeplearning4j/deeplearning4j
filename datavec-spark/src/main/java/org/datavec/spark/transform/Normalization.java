@@ -37,7 +37,7 @@ public class Normalization {
      * rdd
      */
     public static DataFrame zeromeanUnitVariance(DataFrame frame) {
-        return zeromeanUnitVariance(frame, Collections.emptyList());
+        return zeromeanUnitVariance(frame, Collections.<String>emptyList());
     }
 
     /**
@@ -50,7 +50,7 @@ public class Normalization {
      * rdd
      */
     public static JavaRDD<List<Writable>> zeromeanUnitVariance(Schema schema, JavaRDD<List<Writable>> data) {
-        return zeromeanUnitVariance(schema, data, Collections.emptyList());
+        return zeromeanUnitVariance(schema, data, Collections.<String>emptyList());
     }
 
     /**
@@ -62,7 +62,7 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame, double min, double max) {
-        return normalize(dataFrame, min, max, Collections.emptyList());
+        return normalize(dataFrame, min, max, Collections.<String>emptyList());
     }
 
     /**
@@ -76,7 +76,7 @@ public class Normalization {
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data, double min, double max) {
         DataFrame frame = DataFrames.toDataFrame(schema, data);
-        return DataFrames.toRecords(normalize(frame, min, max, Collections.emptyList())).getSecond();
+        return DataFrames.toRecords(normalize(frame, min, max, Collections.<String>emptyList())).getSecond();
     }
 
 
@@ -87,7 +87,7 @@ public class Normalization {
      * @return the normalized dataframe per column
      */
     public static DataFrame normalize(DataFrame dataFrame) {
-        return normalize(dataFrame, 0, 1, Collections.emptyList());
+        return normalize(dataFrame, 0, 1, Collections.<String>emptyList());
     }
 
     /**
@@ -98,7 +98,7 @@ public class Normalization {
      * @return the normalized ata
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data) {
-        return normalize(schema, data, 0, 1, Collections.emptyList());
+        return normalize(schema, data, 0, 1, Collections.<String>emptyList());
     }
 
 

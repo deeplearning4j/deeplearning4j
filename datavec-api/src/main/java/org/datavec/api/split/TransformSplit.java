@@ -45,8 +45,8 @@ public class TransformSplit extends BaseInputSplit {
      */
     public static TransformSplit ofSearchReplace(
         @NonNull BaseInputSplit sourceSplit,
-        @NonNull String search,
-        @NonNull String replace
+        @NonNull final String search,
+        @NonNull final String replace
     ) throws URISyntaxException {
         return new TransformSplit(sourceSplit, new URITransform() {
             @Override
