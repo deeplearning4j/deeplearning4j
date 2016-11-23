@@ -1,5 +1,6 @@
 package org.datavec.dataframe.api;
 
+import org.antlr.stringtemplate.language.Cat;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.CategoryColumnUtils;
 import org.datavec.dataframe.columns.Column;
@@ -432,6 +433,11 @@ public class CategoryColumn extends AbstractColumn
     return "Category column: " + name();
   }
 
+  /**
+   * Return the raw indexes
+   * that this column contains.
+   * @return
+   */
   public int[] indexes() {
     int[] rowIndexes = new int[size()];
     for (int i = 0; i < size(); i++) {
@@ -440,6 +446,49 @@ public class CategoryColumn extends AbstractColumn
     return rowIndexes;
   }
 
+
+  /**
+   * Return a copy of this column
+   * with the given string appended
+   * @param append the string to append
+   * @return the new columns
+   */
+  public CategoryColumn appendString(CategoryColumn append) {
+    CategoryColumn newColumn = CategoryColumn.create(name() + "[appendSingle]", this.size());
+    for (int r = 0; r < size(); r++) {
+      String value = get(r);
+      newColumn.add(value + append.get(r));
+    }
+
+    return newColumn;
+  }
+
+  /**
+   * Return a copy of this column
+   * with the given string appended
+   * @param append the string to append
+   * @return the new columns
+   */
+  public CategoryColumn appendString(String append) {
+
+    CategoryColumn newColumn = CategoryColumn.create(name() + "[append]", this.size());
+
+    for (int r = 0; r < size(); r++) {
+      String value = get(r);
+      newColumn.add(value + append);
+    }
+
+    return newColumn;
+  }
+
+  /**
+   * Return a copy of this column
+   * with the given regular expressions array
+   * applied to a find and replace
+   * @param regexArray the regex array to replace
+   * @param replacement the replacement array
+   * @return the new column
+   */
   public CategoryColumn replaceAll(String[] regexArray, String replacement) {
 
     CategoryColumn newColumn = CategoryColumn.create(name() + "[repl]", this.size());

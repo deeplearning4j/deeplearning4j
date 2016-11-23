@@ -49,6 +49,10 @@ public interface ColumnMetaData extends Serializable, Cloneable {
      */
     String getName();
 
+    /**
+     * Setter for the name
+     * @param name
+     */
     void setName(String name);
 
     /**

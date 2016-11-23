@@ -32,7 +32,9 @@ public interface ColumnReduction extends Serializable {
 
     /**
      * Reduce a single column.
-     * <b>Note</b>: The {@code List<Writable>} here is a single <b>column</b> in a reduction window, and NOT the single row
+     * <b>Note</b>: The {@code List<Writable>}
+     * here is a single <b>column</b> in a reduction window,
+     * and NOT the single row
      * (as is usually the case for {@code List<Writable>} instances
      *
      * @param columnData The Writable objects for a column

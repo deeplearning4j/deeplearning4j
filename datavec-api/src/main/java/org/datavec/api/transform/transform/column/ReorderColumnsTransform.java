@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.schema.Schema;
@@ -35,12 +36,11 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "outputOrder"})
-public class ReorderColumnsTransform implements Transform {
+public class ReorderColumnsTransform implements Transform,ColumnOp {
 
     private final List<String> newOrder;
     private Schema inputSchema;
     private int[] outputOrder;  //Mapping from in to out. so output[i] = input.get(outputOrder[i])
-
     /**
      * @param newOrder A partial or complete order of the columns in the output
      */
@@ -159,5 +159,49 @@ public class ReorderColumnsTransform implements Transform {
     public String toString(){
         return "ReorderColumnsTransform(newOrder=" + newOrder + ")";
 
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return newOrder.toArray(new String[newOrder.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return getInputSchema().getColumnNames().toArray(new String[getInputSchema().getColumnNames().size()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -33,7 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema"})
-public class RenameColumnsTransform implements Transform {
+public class RenameColumnsTransform implements Transform,ColumnOp {
 
     private final List<String> oldNames;
     private final List<String> newNames;
@@ -114,5 +115,49 @@ public class RenameColumnsTransform implements Transform {
     @Override
     public String toString() {
         return "RenameColumnsTransform(oldNames=" + oldNames + ",newNames=" + newNames + ")";
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return newNames.toArray(new String[newNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return oldNames.toArray(new String[oldNames.size()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

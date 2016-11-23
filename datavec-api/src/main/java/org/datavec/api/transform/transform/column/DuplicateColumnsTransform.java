@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.Transform;
@@ -30,12 +31,13 @@ import java.util.Set;
 
 /**
  * Duplicate one or more columns.
- * The duplicated columns are placed immediately after the original columns
+ * The duplicated columns
+ * are placed immediately after the original columns
  *
  * @author Alex Black
  */
 @JsonIgnoreProperties({"columnsToDuplicateSet", "columnIndexesToDuplicateSet", "inputSchema"})
-public class DuplicateColumnsTransform implements Transform {
+public class DuplicateColumnsTransform implements Transform,ColumnOp {
 
     private final List<String> columnsToDuplicate;
     private final List<String> newColumnNames;
@@ -47,7 +49,8 @@ public class DuplicateColumnsTransform implements Transform {
      * @param columnsToDuplicate List of columns to duplicate
      * @param newColumnNames     List of names for the new (duplicate) columns
      */
-    public DuplicateColumnsTransform(@JsonProperty("columnsToDuplicate") List<String> columnsToDuplicate, @JsonProperty("newColumnNames") List<String> newColumnNames) {
+    public DuplicateColumnsTransform(@JsonProperty("columnsToDuplicate") List<String> columnsToDuplicate,
+                                     @JsonProperty("newColumnNames") List<String> newColumnNames) {
         if (columnsToDuplicate == null || newColumnNames == null)
             throw new IllegalArgumentException("Columns/names cannot be null");
         if (columnsToDuplicate.size() != newColumnNames.size())
@@ -150,5 +153,49 @@ public class DuplicateColumnsTransform implements Transform {
         int result = columnsToDuplicate.hashCode();
         result = 31 * result + newColumnNames.hashCode();
         return result;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return newColumnNames.toArray(new String[newColumnNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return columnsToDuplicate.toArray(new String[columnsToDuplicate.size()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
@@ -32,7 +33,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnIdx","schema","sequenceMode"})
 @EqualsAndHashCode(exclude = {"columnIdx","schema","sequenceMode"})
-public abstract class BaseColumnCondition implements Condition {
+public abstract class BaseColumnCondition implements Condition,ColumnOp {
 
     public static final SequenceConditionMode DEFAULT_SEQUENCE_CONDITION_MODE = SequenceConditionMode.Or;
 
@@ -83,6 +84,50 @@ public abstract class BaseColumnCondition implements Condition {
             default:
                 throw new RuntimeException("Unknown/not implemented sequence mode: " + sequenceMode);
         }
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return columnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[] {columnName};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 
     public abstract boolean columnCondition(Writable writable);

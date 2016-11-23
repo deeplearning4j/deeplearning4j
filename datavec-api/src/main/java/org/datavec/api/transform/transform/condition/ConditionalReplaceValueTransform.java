@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.condition;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
@@ -40,7 +41,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnToReplaceIdx"})
 @EqualsAndHashCode(exclude = {"columnToReplaceIdx"})
-public class ConditionalReplaceValueTransform implements Transform {
+public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
 
     private final String columnToReplace;
     private final Writable newValue;
@@ -103,5 +104,49 @@ public class ConditionalReplaceValueTransform implements Transform {
     @Override
     public String toString() {
         return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue=" + newValue + ",condition=" + condition + ")";
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return columnToReplace;
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[]{columnToReplace};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnToReplace;
     }
 }

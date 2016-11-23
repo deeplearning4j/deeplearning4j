@@ -33,7 +33,8 @@ import org.datavec.api.transform.reduce.Reducer;
  * TakeFirst: Take the first possible  value in the list<br>
  * TakeLast: Take the last possible value in the list<br>
  *
- * <b>Note</b>: For custom reduction operations with {@link Reducer}, use the {@link ColumnReduction}
+ * <b>Note</b>: For custom reduction operations with {@link Reducer}
+ * , use the {@link ColumnReduction}
  * functionality.
  *
  * @author Alex Black

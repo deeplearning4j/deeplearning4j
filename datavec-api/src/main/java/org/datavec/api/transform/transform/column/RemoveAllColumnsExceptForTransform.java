@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -26,13 +27,16 @@ import org.datavec.api.writable.Writable;
 import java.util.*;
 
 /**
- * Transform that removes all columns except for those that are explicitly specified as ones to keep
- * To specify only the columns to remove, use {@link RemoveColumnsTransform}
+ * Transform that removes all columns except
+ * for those that are explicitly
+ * specified as ones to keep
+ * To specify only the columns
+ * to remove, use {@link RemoveColumnsTransform}
  *
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnsToKeepIdx", "indicesToKeep"})
-public class RemoveAllColumnsExceptForTransform extends BaseTransform {
+public class RemoveAllColumnsExceptForTransform extends BaseTransform implements ColumnOp {
 
     private int[] columnsToKeepIdx;
     private String[] columnsToKeep;
@@ -45,7 +49,6 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform {
     @Override
     public void setInputSchema(Schema schema) {
         super.setInputSchema(schema);
-
         indicesToKeep = new HashSet<>();
 
         int i = 0;
@@ -118,5 +121,49 @@ public class RemoveAllColumnsExceptForTransform extends BaseTransform {
     @Override
     public int hashCode() {
         return Arrays.hashCode(columnsToKeep);
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnsToKeep;
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return inputSchema.getColumnNames().toArray(new String[inputSchema.numColumns()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

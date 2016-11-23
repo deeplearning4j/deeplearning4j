@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -26,12 +27,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**Map the values in a single column to new values.
- * For example: string -> string, or empty -> x type transforms for a single column
+/**
+ * Map the values in a single column to new values.
+ * For example: string -> string, or empty -> x type
+ * transforms for a single column
  */
 @Data
 @JsonIgnoreProperties({"inputSchema","columnNumber"})
-public abstract class BaseColumnTransform extends BaseTransform {
+public abstract class BaseColumnTransform extends BaseTransform implements ColumnOp {
 
     protected final String columnName;
     protected int columnNumber = -1;
@@ -56,7 +59,7 @@ public abstract class BaseColumnTransform extends BaseTransform {
         Iterator<ColumnMetaData> typesIter = oldMeta.iterator();
 
         int i=0;
-        while(typesIter.hasNext()){
+        while(typesIter.hasNext()) {
             ColumnMetaData t = typesIter.next();
             if(i++ == columnNumber){
                 newMeta.add(getNewColumnMetaData(t.getName(), t));
@@ -72,7 +75,7 @@ public abstract class BaseColumnTransform extends BaseTransform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        if(writables.size() != inputSchema.numColumns() ){
+        if(writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size() + ") does not " +
                     "match expected number of elements (schema: " + inputSchema.numColumns() + "). Transform = " + toString());
         }
@@ -93,6 +96,50 @@ public abstract class BaseColumnTransform extends BaseTransform {
     }
 
 
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return new String[] {columnName};
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[] {columnName};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
+    }
 
     public abstract Writable map(Writable columnWritable);
 
