@@ -139,7 +139,8 @@ function renderScoreVsIterChart(data) {
         });
 
         scoreChart.bind("plotunselected", function (event) {
-            plot.setData(plotData.slice(0,2));
+            plotData = plotData.slice(0,2);
+            plot.setData(plotData);
             plot.draw();
         });
 
