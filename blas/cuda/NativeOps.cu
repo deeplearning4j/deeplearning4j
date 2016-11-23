@@ -6176,13 +6176,12 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 
     // that's device pointer
     unsigned long long *ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
-    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrHost);
+    nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrHost, (uint64_t *) ptrDev);
 
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
 
     cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
-    buffer->setBuffer((uint64_t *) ptrDev);
 
     /*
     curandStatus_t err = curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_QUASI_SOBOL64);
@@ -6217,17 +6216,15 @@ void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     cudaStreamSynchronize(*stream);
 
-    uint64_t *ptrDev = buffer->getBuffer();
+    uint64_t *ptrDev = buffer->getDeviceBuffer();
 
     buffer->setSeed(seed);
     buffer->setOffset(0);
-    buffer->setBuffer((uint64_t *)ptrHost);
 
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
 
     cudaMemcpyAsync(ptrDev, ptrHost, buffer->getSize() * 8, cudaMemcpyHostToDevice, *stream);
-    buffer->setBuffer(ptrDev);
 
     //curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
 

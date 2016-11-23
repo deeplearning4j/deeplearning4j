@@ -44,6 +44,7 @@ namespace nd4j {
         private:
             long size;
             uint64_t *buffer;
+            uint64_t *devBuffer;
             long offset;
             long seed;
             long position;
@@ -67,6 +68,19 @@ namespace nd4j {
              */
 #ifdef __CUDACC__
             __host__ __device__
+            RandomBuffer(long seed, long size, uint64_t *hostBuffer, uint64_t *devBuffer) {
+                this->buffer = buffer;
+                this->seed = seed;
+                this->size = size;
+                this->generation = 1;
+                this->currentPosition = 0;
+                this->offset = 0;
+                this->amplifier = seed;
+                this->synchronizer = 0;
+                this->devBuffer = devBuffer;
+            }
+
+            __host__ __device__
 #endif
             RandomBuffer(long seed, long size, uint64_t *buffer) {
                 this->buffer = buffer;
@@ -77,6 +91,7 @@ namespace nd4j {
                 this->offset = 0;
                 this->amplifier = seed;
                 this->synchronizer = 0;
+                this->devBuffer = buffer;
             }
 
 #ifdef __CUDACC__
@@ -84,6 +99,13 @@ namespace nd4j {
 #endif
             uint64_t *getBuffer() {
                 return this->buffer;
+            }
+
+#ifdef __CUDACC__
+            __host__ __device__
+#endif
+            uint64_t *getDeviceBuffer() {
+                return this->devBuffer;
             }
 
 #ifdef __CUDACC__
@@ -164,11 +186,14 @@ namespace nd4j {
                 }
 #ifdef __CUDACC__
                 __syncthreads();
-#endif
 
-                int *intBuf = (int *) buffer;
+
+                int *intBuf = (int *) devBuffer;
 
                 uint64_t ret = (uint64_t) intBuf[actualPosition];
+#else
+                uint64_t ret = (uint64_t) buffer[actualPosition];
+#endif
 
                 if (tempGen != generation)
                     ret = safeShift(ret, tempGen);
