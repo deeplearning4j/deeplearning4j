@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform;
 
+import lombok.Data;
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.EqualsAndHashCode;
@@ -53,7 +55,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"columnIdxs","inputSchema"})
 @EqualsAndHashCode(exclude = {"columnIdxs","inputSchema"})
-public abstract class BaseColumnsMathOpTransform implements Transform {
+@Data
+public abstract class BaseColumnsMathOpTransform implements Transform,ColumnOp {
 
     protected final String newColumnName;
     protected final MathOp mathOp;
@@ -149,6 +152,50 @@ public abstract class BaseColumnsMathOpTransform implements Transform {
             out.add(map(step));
         }
         return out;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return newColumnName;
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return new String[]{newColumnName};
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return columns;
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 
     protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName);

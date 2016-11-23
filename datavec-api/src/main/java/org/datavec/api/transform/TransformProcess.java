@@ -69,7 +69,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A TransformProcess defines an ordered list of transformations to be executed on some data
+ * A TransformProcess defines
+ * an ordered list of transformations
+ * to be executed on some data
  *
  * @author Alex Black
  */
@@ -79,7 +81,7 @@ public class TransformProcess implements Serializable {
     private final Schema initialSchema;
     private List<DataAction> actionList;
 
-    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList){
+    public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList) {
         this.initialSchema = initialSchema;
         this.actionList = actionList;
 
@@ -220,6 +222,11 @@ public class TransformProcess implements Serializable {
         return currValues;
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     */
     public List<List<Writable>> executeSequenceToSequence(List<List<Writable>> input) {
         List<List<Writable>> currValues = input;
 

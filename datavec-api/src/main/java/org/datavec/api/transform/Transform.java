@@ -94,8 +94,18 @@ public interface Transform extends Serializable {
      */
     void setInputSchema(Schema inputSchema);
 
+    /**
+     * Getter for input schema
+     * @return
+     */
     Schema getInputSchema();
 
+    /**
+     * Transform a writable
+     * in to another writable
+     * @param writables the record to transform
+     * @return the transformed writable
+     */
     List<Writable> map(List<Writable> writables);
 
     /** Transform a sequence */

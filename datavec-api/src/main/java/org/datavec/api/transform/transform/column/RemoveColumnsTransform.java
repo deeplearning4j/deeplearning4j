@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.util.StringUtils;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -28,24 +29,27 @@ import java.util.*;
 
 /**
  * Remove the specified columns from the data.
- * To specify only the columns to keep, use {@link RemoveAllColumnsExceptForTransform}
+ * To specify only the columns to keep,
+ * use {@link RemoveAllColumnsExceptForTransform}
  *
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
-public class RemoveColumnsTransform extends BaseTransform {
+public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
 
     private int[] columnsToRemoveIdx;
     private String[] columnsToRemove;
     private Set<Integer> indicesToRemove;
-
+    private String[] leftOverColumns;
     public RemoveColumnsTransform(@JsonProperty("columnsToRemove") String... columnsToRemove) {
         this.columnsToRemove = columnsToRemove;
+
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         super.setInputSchema(schema);
+        leftOverColumns = new String[schema.numColumns() - columnsToRemove.length];
 
         indicesToRemove = new HashSet<>();
 
@@ -56,6 +60,14 @@ public class RemoveColumnsTransform extends BaseTransform {
             if (idx < 0) throw new RuntimeException("Column \"" + s + "\" not found");
             columnsToRemoveIdx[i++] = idx;
             indicesToRemove.add(idx);
+        }
+
+
+        int leftOverColumnsIdx = 0;
+        List<String> columnTest = Arrays.asList(columnsToRemove);
+        for(int remove = 0; i < schema.numColumns(); remove++) {
+            if(!columnTest.contains(schema.getColumnNames().get(remove)))
+                leftOverColumns[leftOverColumnsIdx++] = schema.getColumnNames().get(remove);
         }
     }
 
@@ -129,5 +141,49 @@ public class RemoveColumnsTransform extends BaseTransform {
     @Override
     public int hashCode() {
         return Arrays.hashCode(columnsToRemove);
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return leftOverColumns;
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return inputSchema.getColumnNames().toArray(new String[inputSchema.numColumns()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

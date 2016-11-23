@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.condition;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
@@ -32,15 +33,19 @@ import java.util.List;
  * Note that the condition can be any generic condition, including on other column(s), different to the column
  * that will be modified if the condition is satisfied/true.<br>
  * <p>
- * <b>Note</b>: For sequences, this transform use the convention that each step in the sequence is passed to the condition,
- * and replaced (or not) separately (i.e., Condition.condition(List<Writable>) is used on each time step individually)
+ * <b>Note</b>: For sequences, this
+ * transform use the convention that
+ * each step in the sequence is passed
+ * to the condition,
+ * and replaced (or not) separately (i.e., Condition.condition(List<Writable>)
+ * is used on each time step individually)
  *
  * @author Alex Black
  * @see ConditionalReplaceValueTransform to do a conditional replacement with a fixed value (instead of a value from another column)
  */
 @JsonIgnoreProperties({"columnToReplaceIdx", "sourceColumnIdx"})
 @EqualsAndHashCode(exclude = {"columnToReplaceIdx","sourceColumnIdx"})
-public class ConditionalCopyValueTransform implements Transform {
+public class ConditionalCopyValueTransform implements Transform,ColumnOp {
 
     private final String columnToReplace;
     private final String sourceColumn;
@@ -107,5 +112,49 @@ public class ConditionalCopyValueTransform implements Transform {
     @Override
     public String toString() {
         return "ConditionalCopyValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn + ",condition=" + condition + ")";
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return columnToReplace;
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return new String[] {columnToReplace};
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[] {columnName()};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return sourceColumn;
     }
 }
