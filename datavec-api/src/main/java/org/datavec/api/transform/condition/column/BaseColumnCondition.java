@@ -87,6 +87,28 @@ public abstract class BaseColumnCondition implements Condition,ColumnOp {
     }
 
     /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return columnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnNames();
+    }
+
+    /**
      * Returns column names
      * this op is meant to run on
      *

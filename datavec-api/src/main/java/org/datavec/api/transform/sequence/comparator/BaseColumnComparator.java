@@ -59,6 +59,28 @@ public abstract class BaseColumnComparator implements SequenceComparator,ColumnO
     protected abstract int compare(Writable w1, Writable w2);
 
     /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return columnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnNames();
+    }
+
+    /**
      * Returns column names
      * this op is meant to run on
      *
