@@ -26,7 +26,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * A reducer aggregates or combines a set of examples into a single List<Writable>
+ * A reducer aggregates or combines
+ * a set of examples into
+ * a single List<Writable>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -35,14 +37,36 @@ import java.util.List;
 })
 public interface IReducer extends Serializable {
 
+    /**
+     *
+     * @param schema
+     */
     void setInputSchema(Schema schema);
 
+    /**
+     *
+     * @return
+     */
     Schema getInputSchema();
 
+    /**
+     *
+     * @param schema
+     * @return
+     */
     Schema transform(Schema schema);
 
+    /**
+     *
+     * @param examplesList
+     * @return
+     */
     List<Writable> reduce(List<List<Writable>> examplesList);
 
+    /**
+     *
+     * @return
+     */
     List<String> getKeyColumns();
 
 }

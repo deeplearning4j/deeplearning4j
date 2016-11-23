@@ -92,4 +92,31 @@ public class IntegerToCategoricalTransform extends BaseColumnTransform {
         result = 31 * result + (map != null ? map.hashCode() : 0);
         return result;
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return new Text(map.get(input.toString()));
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> values = (List<?>) sequence;
+        List<List<Integer>> ret = new ArrayList<>();
+        for(Object obj : values) {
+            ret.add((List<Integer>) map(obj));
+        }
+        return ret;
+    }
 }

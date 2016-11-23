@@ -60,6 +60,16 @@ public interface Condition extends Serializable {
     boolean condition(List<Writable> list);
 
     /**
+     * Condition on arbitrary input
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    boolean condition(Object input);
+
+
+    /**
      * Is the condition satisfied for the current input/sequence?<br>
      * Returns true if condition is satisfied, or false otherwise.
      *
@@ -68,9 +78,25 @@ public interface Condition extends Serializable {
      */
     boolean conditionSequence(List<List<Writable>> sequence);
 
+    /**
+     * Condition on arbitrary input
+     * @param sequence the sequence to
+     *                 do a condition on
+     * @return true if the condition for the sequence is met false otherwise
+     */
+    boolean conditionSequence(Object sequence);
 
+
+    /**
+     * Setter for the input schema
+     * @param schema
+     */
     void setInputSchema(Schema schema);
 
+    /**
+     * Getter for the input schema
+     * @return
+     */
     Schema getInputSchema();
 
 

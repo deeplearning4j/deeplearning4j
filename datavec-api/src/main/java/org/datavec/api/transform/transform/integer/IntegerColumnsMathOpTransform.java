@@ -85,4 +85,49 @@ public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     public String toString(){
         return "IntegerColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        switch (mathOp) {
+            case Add:
+                int sum = 0;
+                for (Writable w : input) sum += w.toInt();
+                return new IntWritable(sum);
+            case Subtract:
+                return new IntWritable(input[0].toInt() - input[1].toInt());
+            case Multiply:
+                int product = 1;
+                for (Writable w : input) product *= w.toInt();
+                return new IntWritable(product);
+            case Divide:
+                return new IntWritable(input[0].toInt() / input[1].toInt());
+            case Modulus:
+                return new IntWritable(input[0].toInt() % input[1].toInt());
+            case ReverseSubtract:
+            case ReverseDivide:
+            case ScalarMin:
+            case ScalarMax:
+            default:
+                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+        }
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        return null;
+    }
+
+
 }

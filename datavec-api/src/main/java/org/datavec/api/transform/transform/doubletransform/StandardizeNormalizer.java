@@ -48,4 +48,18 @@ public class StandardizeNormalizer extends BaseDoubleTransform {
     public String toString() {
         return "StandardizeNormalizer(mean=" + mean + ",stdev=" + stdev + ")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        double val = n.doubleValue();
+        return new DoubleWritable((val - mean) / stdev);
+    }
 }

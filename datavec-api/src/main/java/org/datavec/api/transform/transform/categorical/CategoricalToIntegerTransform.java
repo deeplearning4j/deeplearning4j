@@ -63,7 +63,6 @@ public class CategoricalToIntegerTransform extends BaseTransform {
 
     @Override
     public Schema transform(Schema schema) {
-
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
 
@@ -102,7 +101,6 @@ public class CategoricalToIntegerTransform extends BaseTransform {
 
         int i = 0;
         for (Writable w : writables) {
-
             if (i++ == idx) {
                 //Do conversion
                 String str = w.toString();
@@ -115,6 +113,32 @@ public class CategoricalToIntegerTransform extends BaseTransform {
             }
         }
         return out;
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String value = input.toString();
+        //Do conversion
+        Integer classIdx = statesMap.get(value);
+        if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + value);
+        return classIdx;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        return null;
     }
 
     public boolean equals(Object o) {

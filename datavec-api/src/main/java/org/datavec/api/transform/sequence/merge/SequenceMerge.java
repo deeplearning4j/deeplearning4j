@@ -26,7 +26,8 @@ import java.util.List;
 
 /**
  * Merge multiple sequences into one single sequence.
- * Requires a SequenceComparator to determine the final ordering
+ * Requires a SequenceComparator to determine
+ * the final ordering
  *
  * @author Alex Black
  */

@@ -101,6 +101,36 @@ public class ConditionalReplaceValueTransform implements Transform,ColumnOp {
         return out;
     }
 
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        if(condition.condition(input))
+            return newValue;
+        return input;
+
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> seq = (List<?>) sequence;
+        List<Object> out = new ArrayList<>();
+        for (Object step : seq) {
+            out.add(map(step));
+        }
+        return out;
+    }
+
     @Override
     public String toString() {
         return "ConditionalReplaceValueTransform(replaceColumn=\"" + columnToReplace + "\",newValue=" + newValue + ",condition=" + condition + ")";

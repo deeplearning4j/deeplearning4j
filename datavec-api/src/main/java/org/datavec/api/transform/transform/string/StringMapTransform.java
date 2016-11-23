@@ -59,4 +59,22 @@ public class StringMapTransform extends BaseStringTransform {
         if(writable instanceof Text) return (Text)writable;
         else return new Text(writable.toString());
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String orig = input.toString();
+        if(map.containsKey(orig)){
+            return new Text(map.get(orig));
+        }
+
+        if(input instanceof String) return input;
+        else return orig;
+    }
 }

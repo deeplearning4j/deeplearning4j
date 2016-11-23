@@ -37,7 +37,7 @@ import java.util.List;
  * For example, we might have some numerical "score" column, and we want to know for the rank (sort order) for each
  * example, according to that column.<br>
  * The rank of each example (after sorting) will be added in a new Long column. Indexing is done from 0; examples will have
- * values 0 to dataSetSize-1.<br>
+ * values 0 to dataSetSize - 1.<br>
  *
  * Currently, CalculateSortedRank can only be applied on standard (i.e., non-sequence) data.
  * Furthermore, the current implementation can only sort on one column

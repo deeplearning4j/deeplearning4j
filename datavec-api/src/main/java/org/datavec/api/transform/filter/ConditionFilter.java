@@ -40,6 +40,24 @@ public class ConditionFilter implements Filter {
         this.condition = condition;
     }
 
+    /**
+     * @param writables Example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeExample(Object writables) {
+        return condition.condition(writables);
+    }
+
+    /**
+     * @param sequence sequence example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeSequence(Object sequence) {
+        return condition.condition(sequence);
+    }
+
     @Override
     public boolean removeExample(List<Writable> writables) {
         return condition.condition(writables);

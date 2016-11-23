@@ -85,7 +85,6 @@ public class CategoricalToOneHotTransform extends BaseTransform {
 
     @Override
     public Schema transform(Schema schema) {
-
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
 
@@ -142,5 +141,41 @@ public class CategoricalToOneHotTransform extends BaseTransform {
             }
         }
         return out;
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String str = input.toString();
+        List<Integer> oneHot = new ArrayList<>();
+        int n = stateNames.size();
+        Integer classIdx = statesMap.get(str);
+        if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+        for (int j = 0; j < n; j++) {
+            if (j == classIdx) oneHot.add(1);
+            else oneHot.add(0);
+        }
+        return oneHot;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> values = (List<?>) sequence;
+        List<List<Integer>> ret = new ArrayList<>();
+        for(Object obj : values) {
+            ret.add((List<Integer>) map(obj));
+        }
+        return ret;
     }
 }

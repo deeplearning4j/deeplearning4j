@@ -70,4 +70,18 @@ public class MinMaxNormalizer extends BaseDoubleTransform {
         return "MinMaxNormalizer(min=" + min + ",max=" + max + ",newMin=" + newMin + ",newMax=" + newMax + ")";
     }
 
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        double val = n.doubleValue();
+        if (Double.isNaN(val)) return new DoubleWritable(0);
+        return ratio * (val - min) + newMin;
+    }
 }

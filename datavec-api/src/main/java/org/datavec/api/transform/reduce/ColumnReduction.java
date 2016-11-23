@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
+import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
 
@@ -28,7 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public interface ColumnReduction extends Serializable {
+public interface ColumnReduction extends Serializable,ColumnOp {
 
     /**
      * Reduce a single column.

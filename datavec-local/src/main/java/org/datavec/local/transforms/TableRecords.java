@@ -1,5 +1,6 @@
 package org.datavec.local.transforms;
 
+import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
@@ -26,12 +27,62 @@ import java.util.List;
 public class TableRecords {
 
 
+    /**
+     * Apply a transform process
+     * to the given table
+     * @param table the table to apply this to
+     * @param transformProcess the transform
+     *                         process to apply
+     * @return the transformed table
+     */
     public static Table transform(Table table,TransformProcess transformProcess) {
         List<DataAction> dataActions = transformProcess.getActionList();
         Table ret = table;
         for(DataAction dataAction : dataActions) {
           if(dataAction.getTransform() != null) {
               Transform transform = dataAction.getTransform();
+              if(!(transform instanceof ColumnOp)) {
+                  throw new IllegalArgumentException("Transform operation must be of type ColumnOp");
+              }
+
+              ColumnOp columnOp = (ColumnOp) transform;
+              String[] columnNames = columnOp.columnNames();
+              String[] newColumnNames = columnOp.outputColumnNames();
+              for(String columnName : columnNames) {
+                  Column column = table.column(columnName);
+                  if(column instanceof FloatColumn) {
+
+                  }
+                  else if(column instanceof LongColumn) {
+
+                  }
+                  else if(column instanceof BooleanColumn) {
+
+                  }
+                  else if(column instanceof CategoryColumn) {
+
+                  }
+                  else if(column instanceof DateColumn) {
+
+                  }
+                  else if(column instanceof DateTimeColumn) {
+
+                  }
+                  else if(column instanceof IntColumn) {
+
+                  }
+                  else if(column instanceof ShortColumn) {
+
+                  }
+                  else if(column instanceof TimeColumn) {
+
+                  }
+                  //string column
+                  else {
+
+                  }
+
+              }
               
           }
         }

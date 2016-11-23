@@ -50,4 +50,16 @@ public class AppendStringColumnTransform extends BaseColumnTransform {
     public String toString() {
         return "AppendStringColumnTransform(append=\"" + toAppend + "\")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return input.toString() + toAppend;
+    }
 }

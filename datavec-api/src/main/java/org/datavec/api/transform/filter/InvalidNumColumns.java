@@ -15,6 +15,25 @@ import java.util.List;
 @AllArgsConstructor
 public class InvalidNumColumns implements Filter {
     private Schema inputSchema;
+
+    /**
+     * @param writables Example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeExample(Object writables) {
+        return false;
+    }
+
+    /**
+     * @param sequence sequence example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeSequence(Object sequence) {
+        return false;
+    }
+
     /**
      * @param writables Example
      * @return true if example should be removed, false to keep
@@ -44,5 +63,49 @@ public class InvalidNumColumns implements Filter {
     @Override
     public Schema getInputSchema() {
         return inputSchema;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return inputSchema.getColumnNames().get(0);
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return inputSchema.getColumnNames().toArray(new String[inputSchema.numColumns()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return inputSchema.getColumnNames().toArray(new String[inputSchema.numColumns()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }

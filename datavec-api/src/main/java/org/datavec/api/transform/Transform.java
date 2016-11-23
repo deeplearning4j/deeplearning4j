@@ -111,4 +111,16 @@ public interface Transform extends Serializable {
     /** Transform a sequence */
     List<List<Writable>> mapSequence(List<List<Writable>> sequence);
 
+    /**
+     * Transform an object
+     * in to another object
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    Object map(Object input);
+
+    /** Transform a sequence */
+    Object mapSequence(Object sequence);
+
+
 }

@@ -36,10 +36,16 @@ public abstract class BaseStringTransform extends BaseColumnTransform {
         super(column);
     }
 
+    /**
+     * Transform the writable in to a
+     * string
+     * @param writable the writable to transform
+     * @return the string form of this writable
+     */
     public abstract Text map(Writable writable);
 
     @Override
-    public ColumnMetaData getNewColumnMetaData(String newName,ColumnMetaData oldColumnType){
+    public ColumnMetaData getNewColumnMetaData(String newName,ColumnMetaData oldColumnType) {
         return new StringMetaData(newName);
     }
 }

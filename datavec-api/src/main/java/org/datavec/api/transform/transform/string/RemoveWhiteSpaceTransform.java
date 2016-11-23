@@ -39,4 +39,17 @@ public class RemoveWhiteSpaceTransform extends BaseStringTransform {
         String value = writable.toString().replaceAll("\\s","");
         return new Text(value);
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String value = input.toString().replaceAll("\\s","");
+        return value;
+    }
 }

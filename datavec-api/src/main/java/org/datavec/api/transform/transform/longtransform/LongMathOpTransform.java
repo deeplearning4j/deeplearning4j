@@ -96,4 +96,17 @@ public class LongMathOpTransform extends BaseColumnTransform {
     public String toString() {
         return "LongMathOpTransform(mathOp=" + mathOp + ",scalar=" + scalar + ")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        return doOp(n.longValue());
+    }
 }

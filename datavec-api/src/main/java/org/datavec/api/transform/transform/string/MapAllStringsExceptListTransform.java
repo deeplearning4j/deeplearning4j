@@ -50,4 +50,21 @@ public class MapAllStringsExceptListTransform extends BaseStringTransform {
             return new Text(newValue);
         }
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String str = input.toString();
+        if(exceptions.contains(str)){
+            return  str;
+        } else {
+            return newValue;
+        }
+    }
 }

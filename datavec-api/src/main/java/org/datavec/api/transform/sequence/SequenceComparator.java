@@ -39,6 +39,10 @@ import java.util.List;
 })
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {
 
+    /**
+     *
+     * @param sequenceSchema
+     */
     void setSchema(Schema sequenceSchema);
 
 }

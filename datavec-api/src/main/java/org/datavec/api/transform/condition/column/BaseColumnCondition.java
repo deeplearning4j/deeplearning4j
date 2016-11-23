@@ -86,6 +86,27 @@ public abstract class BaseColumnCondition implements Condition,ColumnOp {
         }
     }
 
+    @Override
+    public boolean conditionSequence(Object list) {
+        List<?> objects = (List<?>) list;
+        switch (sequenceMode) {
+            case And:
+                for (Object l : objects) {
+                    if (!condition(l)) return false;
+                }
+                return true;
+            case Or:
+                for (Object l : objects) {
+                    if (condition(l)) return true;
+                }
+                return false;
+            case NoSequenceMode:
+                throw new IllegalStateException("Column condition " + toString() + " does not support sequence execution");
+            default:
+                throw new RuntimeException("Unknown/not implemented sequence mode: " + sequenceMode);
+        }
+    }
+
     /**
      * The output column name
      * after the operation has been applied
@@ -130,6 +151,13 @@ public abstract class BaseColumnCondition implements Condition,ColumnOp {
         return columnNames()[0];
     }
 
+    /**
+     * Returns whether the given element
+     * meets the condition set by this operation
+     * @param writable the element to test
+     * @return true if the condition is met
+     * false otherwise
+     */
     public abstract boolean columnCondition(Writable writable);
 
     @Override

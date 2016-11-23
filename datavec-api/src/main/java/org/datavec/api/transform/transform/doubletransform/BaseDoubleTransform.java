@@ -23,6 +23,9 @@ import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  */
@@ -45,4 +48,7 @@ public abstract class BaseDoubleTransform extends BaseColumnTransform {
         }
         else return new DoubleMetaData(newColumnName);
     }
+
+
+
 }

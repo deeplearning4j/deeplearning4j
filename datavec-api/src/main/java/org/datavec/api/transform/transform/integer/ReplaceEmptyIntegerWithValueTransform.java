@@ -42,4 +42,16 @@ public class ReplaceEmptyIntegerWithValueTransform extends BaseIntegerTransform 
         if (s == null || s.isEmpty()) return new IntWritable(value);
         return writable;
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return value;
+    }
 }

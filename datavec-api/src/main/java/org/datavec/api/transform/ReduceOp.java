@@ -40,7 +40,6 @@ import org.datavec.api.transform.reduce.Reducer;
  * @author Alex Black
  */
 public enum ReduceOp {
-
     Min,
     Max,
     Range,  //Max - Min
