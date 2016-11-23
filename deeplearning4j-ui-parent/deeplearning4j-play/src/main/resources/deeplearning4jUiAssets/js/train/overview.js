@@ -73,6 +73,7 @@ function renderScoreVsIterChart(data) {
     var maxScore = Math.max.apply(Math, scoresArr);
 
     var scoreChart = $("#scoreiterchart");
+    scoreChart.unbind(); // prevent over-subscribing
 
     if (scoreChart.length) {
         var scoreData = [];
@@ -83,33 +84,64 @@ function renderScoreVsIterChart(data) {
 
         var plotData = [{data: scoreData, label: "score"}];
 
-        // calculate a best fit line to summarize training progress
-        if(scoresIter.length > 4) {
-            var bestFitLine = findLineByLeastSquares(scoresIter, scoresArr);
+        // calculate a EMA line to summarize training progress
+        if(scoresIter.length > 10) {
+            var bestFitLine = EMACalc(scoresArr, 10);
             var bestFitData = [];
-            for (var i = 0; i < bestFitLine[0].length; i++) {
-                bestFitData.push([bestFitLine[0][i], bestFitLine[1][i]]);
+            for (var i = 0; i < bestFitLine.length; i++) {
+                bestFitData.push([i+1, bestFitLine[i]]);
             }
             plotData.push({data: bestFitData, label: "summary"});
         }
 
-        var plot = $.plot($("#scoreiterchart"),
-            plotData, {
-                series: {
-                    lines: {
-                        show: true,
-                        lineWidth: 2
-                    }
-                },
-                grid: {
-                    hoverable: true,
-                    clickable: true,
-                    tickColor: "#dddddd",
-                    borderWidth: 0
-                },
-                yaxis: {min: 0, max: maxScore},
-                colors: ["#FA5833", "#2FABE9"]
-            });
+        // plot the chart
+        var plotOptions = {
+            series: {
+                lines: {
+                    show: true,
+                    lineWidth: 2
+                }
+            },
+            grid: {
+                hoverable: true,
+                clickable: true,
+                tickColor: "#dddddd",
+                borderWidth: 0
+            },
+            yaxis: {min: 0, max: maxScore},
+            colors: ["#FA5833","rgba(65,182,240,0.3)","#000000"],
+            selection: {
+                mode: "x"
+            }
+        };
+        var plot = $.plot(scoreChart, plotData, plotOptions);
+
+        // when selected, calculate best fit line
+        scoreChart.bind("plotselected", function (event, ranges) {
+            var indices = [];
+            var fromIdx = parseInt(ranges.xaxis.from);
+            var toIdx = parseInt(ranges.xaxis.to);
+            var scoresCopy = scoresArr.slice();
+
+            for (var i = fromIdx; i <= toIdx; i++) {
+               indices.push(i);
+            }
+
+            var bestFitLine = findLineByLeastSquares(indices, scoresCopy.slice(fromIdx,toIdx+1));
+            var bestFitData = [];
+            for (var i = 0; i < bestFitLine[0].length; i++) {
+                bestFitData.push([bestFitLine[0][i], bestFitLine[1][i]]);
+            }
+            plotData.push({data: bestFitData, label: "selection"});
+
+            plot.setData(plotData);
+            plot.draw();
+        });
+
+        scoreChart.bind("plotunselected", function (event) {
+            plot.setData(plotData.slice(0,2));
+            plot.draw();
+        });
 
         function showTooltip(x, y, contents) {
             $('<div id="tooltip">' + contents + '</div>').css({
@@ -386,7 +418,6 @@ function renderStdevChart(data) {
     }
 }
 
-
 /* --------------- linear least squares (best fit line) ---------- */
 function findLineByLeastSquares(values_x, values_y) {
     var sum_x = 0;
@@ -447,4 +478,17 @@ function findLineByLeastSquares(values_x, values_y) {
     }
 
     return [result_values_x, result_values_y];
+}
+
+
+/* --------------- exponential moving average (best fit line) ---------- */
+function EMACalc(mArray,mRange) {
+  var k = 2/(mRange + 1);
+  // first item is just the same as the first item in the input
+  emaArray = [mArray[0]];
+  // for the rest of the items, they are computed with the previous one
+  for (var i = 1; i < mArray.length; i++) {
+    emaArray.push(mArray[i] * k + emaArray[i - 1] * (1 - k));
+  }
+  return emaArray;
 }
