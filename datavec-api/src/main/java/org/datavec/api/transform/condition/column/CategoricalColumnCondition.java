@@ -136,4 +136,33 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
         return "CategoricalColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        switch (op) {
+            case Equal:
+                return value.equals(input.toString());
+            case NotEqual:
+                return !value.equals(input.toString());
+            case InSet:
+                return set.contains(input.toString());
+            case NotInSet:
+                return !set.contains(input.toString());
+            case LessThan:
+            case LessOrEqual:
+            case GreaterThan:
+            case GreaterOrEqual:
+                throw new UnsupportedOperationException("Cannot use ConditionOp \"" + op + "\" on Categorical column");
+            default:
+                throw new RuntimeException("Unknown or not implemented op: " + op);
+        }
+    }
 }

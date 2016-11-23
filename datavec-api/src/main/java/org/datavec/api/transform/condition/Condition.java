@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -48,7 +49,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
         @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition")
 })
-public interface Condition extends Serializable {
+public interface Condition extends Serializable,ColumnOp {
 
     /**
      * Is the condition satisfied for the current input/example?<br>

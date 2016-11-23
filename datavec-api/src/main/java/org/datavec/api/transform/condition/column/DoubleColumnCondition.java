@@ -137,4 +137,38 @@ public class DoubleColumnCondition extends BaseColumnCondition {
         return "DoubleColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
     }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        Number d = (Number) input;
+        switch (op) {
+            case LessThan:
+                return d.doubleValue() < value;
+            case LessOrEqual:
+                return d.doubleValue() <= value;
+            case GreaterThan:
+                return d.doubleValue() > value;
+            case GreaterOrEqual:
+                return d.doubleValue() >= value;
+            case Equal:
+                return d.doubleValue() == value;
+            case NotEqual:
+                return d.doubleValue() != value;
+            case InSet:
+                return set.contains(d.doubleValue());
+            case NotInSet:
+                return !set.contains(d.doubleValue());
+            default:
+                throw new RuntimeException("Unknown or not implemented op: " + op);
+        }
+    }
+
 }

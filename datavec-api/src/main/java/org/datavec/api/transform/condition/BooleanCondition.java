@@ -35,6 +35,50 @@ import java.util.List;
 @EqualsAndHashCode
 public class BooleanCondition implements Condition {
 
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return conditions[0].outputColumnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return  conditions[0].outputColumnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return conditions[0].columnNames();
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return conditions[0].columnName();
+    }
+
     public enum Type {AND, OR, NOT, XOR}
 
     private final Type type;

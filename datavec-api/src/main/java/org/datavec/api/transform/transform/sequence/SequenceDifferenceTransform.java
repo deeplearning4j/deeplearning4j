@@ -217,4 +217,28 @@ public class SequenceDifferenceTransform implements Transform {
 
         return out;
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        throw new UnsupportedOperationException("Only sequence operations are supported for SequenceDifferenceTransform." +
+                " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        throw new UnsupportedOperationException("Only sequence operations are supported for SequenceDifferenceTransform." +
+                " Attempting to apply SequenceDifferenceTransform on non-sequence data?");
+    }
 }
