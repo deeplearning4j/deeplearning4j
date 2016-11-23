@@ -6,7 +6,9 @@ import org.datavec.dataframe.filtering.LongPredicate;
 import it.unimi.dsi.fastutil.longs.LongIterable;
 
 /**
- * Pre-made predicates for common integer use cases, and other helpful things
+ * Pre-made predicates for common
+ * integer use cases, and
+ * other helpful things
  */
 public interface LongColumnUtils extends Column, LongIterable {
 

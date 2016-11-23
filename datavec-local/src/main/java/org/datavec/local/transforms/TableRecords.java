@@ -39,52 +39,69 @@ public class TableRecords {
         List<DataAction> dataActions = transformProcess.getActionList();
         Table ret = table;
         for(DataAction dataAction : dataActions) {
-          if(dataAction.getTransform() != null) {
-              Transform transform = dataAction.getTransform();
-              if(!(transform instanceof ColumnOp)) {
-                  throw new IllegalArgumentException("Transform operation must be of type ColumnOp");
-              }
+            if(dataAction.getTransform() != null) {
+                Transform transform = dataAction.getTransform();
+                if(!(transform instanceof ColumnOp)) {
+                    throw new IllegalArgumentException("Transform operation must be of type ColumnOp");
+                }
 
-              ColumnOp columnOp = (ColumnOp) transform;
-              String[] columnNames = columnOp.columnNames();
-              String[] newColumnNames = columnOp.outputColumnNames();
-              for(String columnName : columnNames) {
-                  Column column = table.column(columnName);
-                  if(column instanceof FloatColumn) {
+                ColumnOp columnOp = (ColumnOp) transform;
+                String[] columnNames = columnOp.columnNames();
+                String[] newColumnNames = columnOp.outputColumnNames();
+                for(String columnName : columnNames) {
+                    Column column = table.column(columnName);
+                    if(column instanceof FloatColumn) {
+                        FloatColumn floatColumn = (FloatColumn) column;
+                        for(int i = 0; i < floatColumn.size(); i++) {
+                            floatColumn.set(i, (Float) transform.map(floatColumn.get(i)));
+                        }
+                    }
+                    else if(column instanceof LongColumn) {
+                        LongColumn longColumn = (LongColumn) column;
+                        for(int i = 0; i < longColumn.size(); i++) {
+                            longColumn.set(i, (Long) transform.map(longColumn.get(i)));
+                        }
+                    }
+                    else if(column instanceof BooleanColumn) {
+                        BooleanColumn booleanColumn = (BooleanColumn) column;
+                        for(int i = 0; i < booleanColumn.size(); i++) {
+                            booleanColumn.set(i, (Boolean) transform.map(booleanColumn.get(i)));
+                        }
+                    }
+                    else if(column instanceof CategoryColumn) {
+                        CategoryColumn categoryColumn = (CategoryColumn) column;
+                        for(int i = 0; i < categoryColumn.size(); i++) {
+                            categoryColumn.set(i, (String) transform.map(categoryColumn.get(i)));
+                        }
+                    }
+                    else if(column instanceof DateColumn) {
+                        DateColumn dateColumn = (DateColumn) column;
+                        for(int i = 0; i < dateColumn.size(); i++) {
+                            dateColumn.set(i, (Integer) transform.map(dateColumn.get(i)));
+                        }
+                    }
 
-                  }
-                  else if(column instanceof LongColumn) {
+                    else if(column instanceof IntColumn) {
+                        IntColumn intColumn = (IntColumn) column;
+                        for(int i = 0; i < intColumn.size(); i++) {
+                            intColumn.set(i, (Integer) transform.map(intColumn.get(i)));
+                        }
+                    }
+                    else if(column instanceof ShortColumn) {
+                        ShortColumn shortColumn = (ShortColumn) column;
+                        for(int i = 0; i < shortColumn.size(); i++) {
+                            shortColumn.set(i, (Short) transform.map(shortColumn.get(i)));
+                        }
+                    }
 
-                  }
-                  else if(column instanceof BooleanColumn) {
 
-                  }
-                  else if(column instanceof CategoryColumn) {
+                    else {
+                       throw new IllegalStateException("Illegal column type " + column.getClass());
+                    }
 
-                  }
-                  else if(column instanceof DateColumn) {
+                }
 
-                  }
-                  else if(column instanceof DateTimeColumn) {
-
-                  }
-                  else if(column instanceof IntColumn) {
-
-                  }
-                  else if(column instanceof ShortColumn) {
-
-                  }
-                  else if(column instanceof TimeColumn) {
-
-                  }
-                  //string column
-                  else {
-
-                  }
-
-              }
-              
-          }
+            }
         }
 
         return ret;

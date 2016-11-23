@@ -70,8 +70,8 @@ public class StringMapTransform extends BaseStringTransform {
     @Override
     public Object map(Object input) {
         String orig = input.toString();
-        if(map.containsKey(orig)){
-            return new Text(map.get(orig));
+        if(map.containsKey(orig)) {
+            return map.get(orig);
         }
 
         if(input instanceof String) return input;
