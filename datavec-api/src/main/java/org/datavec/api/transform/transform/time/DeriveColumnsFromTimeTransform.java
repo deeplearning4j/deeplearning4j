@@ -186,7 +186,23 @@ public class DeriveColumnsFromTimeTransform implements Transform {
      */
     @Override
     public Object map(Object input) {
-        return null;
+        List<Object> ret = new ArrayList<>();
+        Long l = (Long) input;
+        for (DerivedColumn d : derivedColumns) {
+            switch (d.columnType) {
+                case String:
+                    ret.add(d.dateTimeFormatter.print(l));
+                    break;
+                case Integer:
+                    DateTime dt = new DateTime(l, inputTimeZone);
+                    ret.add(dt.get(d.fieldType));
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected column type: " + d.columnType);
+            }
+        }
+
+        return ret;
     }
 
     /**
@@ -196,7 +212,11 @@ public class DeriveColumnsFromTimeTransform implements Transform {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        return null;
+        List<Long> longs = (List<Long>) sequence;
+        List<List<Object>> ret = new ArrayList<>();
+        for(Long l : longs)
+            ret.add((List<Object>) map(l));
+        return ret;
     }
 
     @Override
@@ -215,6 +235,53 @@ public class DeriveColumnsFromTimeTransform implements Transform {
         sb.append("))");
 
         return sb.toString();
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        String[] ret = new String[derivedColumns.size()];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = derivedColumns.get(i).columnName;
+        return ret;
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[]{columnName()};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnName;
     }
 
     public static class Builder {

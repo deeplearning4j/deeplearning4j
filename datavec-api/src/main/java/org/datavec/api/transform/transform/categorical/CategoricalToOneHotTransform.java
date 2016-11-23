@@ -62,6 +62,7 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         }
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -177,5 +178,49 @@ public class CategoricalToOneHotTransform extends BaseTransform {
             ret.add((List<Integer>) map(obj));
         }
         return ret;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        throw new UnsupportedOperationException("Output column name will be more than 1");
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return stateNames.toArray(new String[stateNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[] {columnName};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnName;
     }
 }

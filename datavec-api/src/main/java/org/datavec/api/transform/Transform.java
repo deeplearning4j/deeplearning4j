@@ -84,7 +84,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
         @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class, name = "ReduceSequenceByWindowTransform"),
 })
-public interface Transform extends Serializable {
+public interface Transform extends Serializable,ColumnOp {
 
     /** Get the output schema for this transformation, given an input schema */
     Schema transform(Schema inputSchema);

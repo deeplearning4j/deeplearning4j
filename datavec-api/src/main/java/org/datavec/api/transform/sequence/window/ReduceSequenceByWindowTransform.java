@@ -44,7 +44,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
     private WindowFunction windowFunction;
     private Schema inputSchema;
 
-    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer, @JsonProperty("windowFunction") WindowFunction windowFunction){
+    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer, @JsonProperty("windowFunction") WindowFunction windowFunction) {
         this.reducer = reducer;
         this.windowFunction = windowFunction;
     }
@@ -52,7 +52,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if(inputSchema != null && !(inputSchema instanceof SequenceSchema)){
+        if(inputSchema != null && !(inputSchema instanceof SequenceSchema)) {
             throw new IllegalArgumentException("Invalid input: input schema must be a SequenceSchema");
         }
 
@@ -85,7 +85,6 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
-
         //List of windows, which are all small sequences...
         List<List<List<Writable>>> sequenceAsWindows = windowFunction.applyToSequence(sequence);
 
@@ -118,11 +117,55 @@ public class ReduceSequenceByWindowTransform implements Transform {
      */
     @Override
     public Object mapSequence(Object sequence) {
-        return null;
+        throw new UnsupportedOperationException("Needs to be implemented");
     }
 
     @Override
     public String toString(){
         return "ReduceSequencbyWindowTransform(reducer=" + reducer + ",windowFunction=" + windowFunction + ")";
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return outputColumnNames()[0];
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return columnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return getInputSchema().getColumnNames().toArray(new String[getInputSchema().numColumns()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 }
