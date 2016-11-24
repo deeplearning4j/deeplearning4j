@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -22,7 +23,7 @@ public class GaussianDistribution extends BaseRandomOp {
      * @param mean
      * @param stddev
      */
-    public GaussianDistribution(INDArray z, double mean, double stddev) {
+    public GaussianDistribution(@NonNull INDArray z, double mean, double stddev) {
         init(z, z, z, z.length());
         this.mean = mean;
         this.stddev = stddev;
@@ -30,7 +31,7 @@ public class GaussianDistribution extends BaseRandomOp {
     }
 
 
-    public GaussianDistribution(INDArray z, INDArray means, double stddev) {
+    public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
         if (z.length() != means.length())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 

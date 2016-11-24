@@ -51,7 +51,7 @@ public class RandomTests extends BaseNd4jTest {
     @Before
     public void setUp() throws Exception {
         initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
     }
 
     @After
@@ -234,28 +234,37 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
 
-        INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
+        log.info("1: ----------------");
 
-        assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
-        assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
+        //INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
+
+        //assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
+        //assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
 
        // random1.setSeed(119);
 
-        INDArray z1 = Nd4j.zeros(30000000);
-        INDArray z2 = Nd4j.zeros(30000000);
+        log.info("2: ----------------");
+
+        INDArray z2 = Nd4j.zeros(55000000);
+        INDArray z1 = Nd4j.zeros(55000000);
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
+
+
+        log.info("2: ----------------");
 
         //log.info("End: [{}, {}, {}, {}]", z1.getFloat(29000000), z1.getFloat(29000001), z1.getFloat(29000002), z1.getFloat(29000003));
 
         log.info("Sum: {}", z1.sumNumber().doubleValue());
         log.info("Sum2: {}", z2.sumNumber().doubleValue());
 
+
         INDArray match = Nd4j.getExecutioner().exec(new MatchCondition(z1, Conditions.isNan()), Integer.MAX_VALUE);
         log.info("NaNs: {}", match);
         assertEquals(0.0f, match.getFloat(0), 0.01f);
 
+        /*
         for (int i = 0; i < z1.length(); i++) {
             if (Double.isNaN(z1.getDouble(i)))
                 throw new IllegalStateException("NaN value found at " + i);
@@ -263,6 +272,7 @@ public class RandomTests extends BaseNd4jTest {
             if (Double.isInfinite(z1.getDouble(i)))
                 throw new IllegalStateException("Infinite value found at " + i);
         }
+        */
 
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
