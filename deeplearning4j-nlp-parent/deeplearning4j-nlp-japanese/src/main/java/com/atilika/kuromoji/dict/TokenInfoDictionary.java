@@ -23,7 +23,7 @@ import com.atilika.kuromoji.buffer.WordIdMap;
 import com.atilika.kuromoji.util.DictionaryEntryLineParser;
 import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.StringUtils;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.KuromojiBinFilesFetcher;
+import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 
 import java.io.IOException;
 

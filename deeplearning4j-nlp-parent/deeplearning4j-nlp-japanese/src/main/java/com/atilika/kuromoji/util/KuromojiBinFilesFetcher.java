@@ -1,4 +1,4 @@
-package org.deeplearning4j.text.tokenization.tokenizerfactory;
+package com.atilika.kuromoji.util;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.util.ArchiveUtils;

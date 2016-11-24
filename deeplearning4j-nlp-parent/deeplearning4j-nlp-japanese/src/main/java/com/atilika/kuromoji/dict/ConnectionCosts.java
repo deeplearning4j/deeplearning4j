@@ -18,7 +18,7 @@ package com.atilika.kuromoji.dict;
 
 import com.atilika.kuromoji.io.ByteBufferIO;
 import com.atilika.kuromoji.util.ResourceResolver;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.KuromojiBinFilesFetcher;
+import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;

@@ -16,7 +16,6 @@
  */
 package com.atilika.kuromoji.util;
 
-import org.deeplearning4j.text.tokenization.tokenizerfactory.KuromojiBinFilesFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
