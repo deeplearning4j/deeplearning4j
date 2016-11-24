@@ -163,7 +163,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            uint64_t relativeUInt(int index) {
+            inline uint64_t relativeUInt(long index) {
                 return buffer->getElement(index);
             }
 
@@ -174,7 +174,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            int relativeInt(int index) {
+            int relativeInt(long index) {
                 return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
 
@@ -188,7 +188,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            int relativeInt(int index, int to) {
+            int relativeInt(long index, int to) {
                 int rel = relativeInt(index);
                 return rel % to;
             }
@@ -204,7 +204,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            int relativeInt(int index, int to, int from) {
+            int relativeInt(long index, int to, int from) {
                 if (from == 0)
                     return relativeInt(index, to);
 
@@ -221,7 +221,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            T relativeT(int index) {
+            inline T relativeT(long index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
                     return (T)((float) relativeUInt(index) / (float) MAX_UINT);
@@ -238,7 +238,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            T relativeT(int index, T to) {
+            T relativeT(long index, T to) {
                 if (to == (T) 1.0f)
                     return relativeT(index);
 
@@ -256,7 +256,7 @@ namespace nd4j {
 #ifdef __CUDACC__
             __device__
 #endif
-            T relativeT(int index, T from, T to) {
+            T relativeT(long index, T from, T to) {
                 return from + (relativeT(index) * (to - from));
             }
 

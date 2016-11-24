@@ -263,21 +263,25 @@ namespace randomOps {
 
             __shared__ T *tZ;
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 generator(buffer);
-            nd4j::random::RandomHelper<T> helper(&generator);
-
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ nd4j::random::Xoroshiro128 *generator;
+            __shared__ nd4j::random::RandomHelper<T> *helper;
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                tZ = (T *) shmem;
+
+                buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                generator = new(shmem) nd4j::random::Xoroshiro128(buffer);
+                helper = new(shmem + sizeof(nd4j::random::Xoroshiro128)) nd4j::random::RandomHelper<T>(generator);
+
+                tZ = (T *) (shmem + sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<T>));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-15;
-                two_pi = (T) 2.0 * 3.14159265358979323846;
+                epsilon = (T) 1e-5;
+                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
 
                 mean = extraArguments[0];
                 stddev = extraArguments[1];
@@ -287,31 +291,32 @@ namespace randomOps {
             __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
-            T u0, u1;
 
             for (int e = tid; e < zLength; e += step) {
                 // we need to get random values
-                if (e % 2 == 0) {
-                    int attempt = 1;
-                    do {
-                        u0 = helper.relativeT(e * attempt);
-                        u1 = helper.relativeT((e+1) * attempt);
-                        attempt++;
-                    } while(u1 <= epsilon);
 
-                    tZ[threadIdx.x] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                tZ[threadIdx.x] = helper->relativeT(e) + 1e-5;
 
-                    if (threadIdx.x + 1 < blockDim.x)
-                        tZ[threadIdx.x+1] = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
-                }
+                if (tZ[threadIdx.x] >= (T) 1.0)
+                    tZ[threadIdx.x] -= 2e-5;
+
                 __syncthreads();
+                // fix for "next rng value"
+                if (threadIdx.x + 1 >= blockDim.x && e % 2 == 0) {
+                    tZ[threadIdx.x+1] = tZ[threadIdx.x-1];
+                }
+
                 T realMean = y == z ? mean : y[e * yEWS];
 
-                z[e *zEWS] =  tZ[threadIdx.x] * stddev + realMean;
+                if (e % 2 == 0)
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
+                else
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
+                __syncthreads();
             }
 
             __syncthreads();
-            helper.rewind(zLength * 2);
+            helper->rewind(zLength);
         }
 #endif
 

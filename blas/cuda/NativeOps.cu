@@ -40,7 +40,7 @@ cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
 int maxThreads = 512;
-bool debug = false;
+bool debug = true;
 bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
@@ -5222,7 +5222,7 @@ int NativeOps::getAvailableDevices() {
 }
 
 void NativeOps::enableDebugMode(bool reallyEnable) {
-	debug = reallyEnable;
+	debug = true;
 }
 
 void NativeOps::setGridLimit(int gridSize) {
@@ -6069,7 +6069,7 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 256, 4096);
 
     DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6080,7 +6080,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 256, 4096);
 
     DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6091,7 +6091,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 256, 4096);
 
     DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 

@@ -41,20 +41,34 @@ namespace functions {
                     return;
                 }
 
-                int length = shape::length(zShapeBuffer);
-                int xEWS = shape::elementWiseStride(xShapeBuffer);
-                int yEWS = shape::elementWiseStride(yShapeBuffer);
-                int zEWS = shape::elementWiseStride(zShapeBuffer);
+                __shared__ int length;
+                __shared__ int xEWS;
+                __shared__ int yEWS;
+                __shared__ int zEWS;
 
-                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-                nd4j::random::Xoroshiro128 generator(buffer);
-                nd4j::random::RandomHelper<T> helper(&generator);
+                __shared__ nd4j::random::RandomBuffer *buffer;
+                __shared__ nd4j::random::Xoroshiro128 *generator;
+                __shared__ nd4j::random::RandomHelper<T> *helper;
+
+                if (threadIdx.x == 0) {
+                    length = shape::length(zShapeBuffer);
+                    xEWS = shape::elementWiseStride(xShapeBuffer);
+                    yEWS = shape::elementWiseStride(yShapeBuffer);
+                    zEWS = shape::elementWiseStride(zShapeBuffer);
+
+                    extern __shared__ unsigned char shmem[];
+
+                    buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    generator = new(shmem) nd4j::random::Xoroshiro128(buffer);
+                    helper = new(shmem + sizeof(nd4j::random::Xoroshiro128)) nd4j::random::RandomHelper<T>(generator);
+                }
+                __syncthreads();
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
                     for (int e = tid; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, &helper, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, helper, extraArguments);
                     }
                 } else {
                     // negative ews
@@ -88,12 +102,12 @@ namespace functions {
                         Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, &helper, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, helper, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                helper.rewind(length);
+                helper->rewind(length);
             }
 #endif
 
