@@ -41,10 +41,10 @@ import java.util.List;
 public interface Filter extends Serializable,ColumnOp {
 
     /**
-     * @param writables Example
+     * @param example Example
      * @return true if example should be removed, false to keep
      */
-    boolean removeExample(Object writables);
+    boolean removeExample(Object example);
 
     /**
      * @param sequence sequence example

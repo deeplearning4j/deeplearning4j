@@ -26,6 +26,12 @@ public class Rows {
   private Rows() {
   }
 
+  /**
+   * Copy the given rows to a table
+   * @param rows
+   * @param oldTable
+   * @param newTable
+   */
   public static void copyRowsToTable(IntArrayList rows, Table oldTable, Table newTable) {
 
     for (int columnIndex = 0; columnIndex < oldTable.columnCount(); columnIndex++) {

@@ -1,9 +1,11 @@
 package org.datavec.local.transforms;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
@@ -44,7 +46,7 @@ public class TableRecords {
                 ret = transformTable(table,dataAction.getTransform());
             }
             else if(dataAction.getFilter() != null) {
-
+                ret = filterTable(ret,dataAction.getFilter());
             }
             else if(dataAction.getCalculateSortedRank() != null) {
 
@@ -63,11 +65,36 @@ public class TableRecords {
         return ret;
     }
 
+
+    /**
+     * Implements a filter
+     * @param toFilter
+     * @param filter
+     * @return
+     */
+    public static Table filterTable(Table toFilter,Filter filter) {
+        Table ret =  toFilter;
+        IntArrayList indicesToRemove = new IntArrayList();
+        for(String columnName : filter.columnNames()) {
+            Column column = toFilter.column(columnName);
+            for(int i = 0; i < ret.rowCount(); i++) {
+                Object curr = getEntry(column,i);
+                if(filter.removeExample(curr)) {
+                    indicesToRemove.add(i);
+                }
+            }
+        }
+
+        ret = toFilter.drop(indicesToRemove);
+
+        return ret;
+
+    }
+
     /**
      * Run a transform operation on the table
      * @param table the table to run the transform operation on
      * @param transform the transform to run
-     * @param inPlace whether the return results should be in place or a clone of the table
      * @return
      */
     public static Table transformTable(Table table,Transform transform) {
