@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Utility to save and load network configuration and parameters.
  */
-
+@Deprecated
 public class NetSaverLoaderUtils {
     private static final Logger log = LoggerFactory.getLogger(NetSaverLoaderUtils.class);
 
