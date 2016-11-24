@@ -4,6 +4,7 @@ import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -40,7 +41,7 @@ public class TableRecords {
         Table ret = table;
         for(DataAction dataAction : dataActions) {
             if(dataAction.getTransform() != null) {
-                ret = transformTable(table,dataAction.getTransform(),true);
+                ret = transformTable(table,dataAction.getTransform());
             }
             else if(dataAction.getFilter() != null) {
 
@@ -69,131 +70,356 @@ public class TableRecords {
      * @param inPlace whether the return results should be in place or a clone of the table
      * @return
      */
-    public static Table transformTable(Table table,Transform transform,boolean inPlace) {
+    public static Table transformTable(Table table,Transform transform) {
         if(!(transform instanceof ColumnOp)) {
             throw new IllegalArgumentException("Transform operation must be of type ColumnOp");
         }
 
-        Table ret = inPlace ? table : table.emptyCopy();
+        Schema outputSchema = transform.transform(transform.getInputSchema());
+        Table ret =  tableFromSchema(outputSchema);
+        //copy over data
+        for(Column c : ret.columns()) {
+            if(table.columnNames().contains(c.name()))
+                c.append(table.column(c.name()));
+        }
+
+
 
         String[] columnNames = transform.columnNames();
         String[] newColumnNames = transform.outputColumnNames();
+        List<Column> inputColumns = table.columns(columnNames);
+        List<Column> outputColumns = ret.columns(newColumnNames);
+        //a + b -> c: many to 1
+        if(columnNames.length > newColumnNames.length) {
+            for(int r = 0; r < ret.rowCount(); r++) {
+                //set the value in the column for each row
+                Object output = transform.map(determineInput(r,inputColumns.toArray(new Column[inputColumns.size()])));
+                setEntry(outputColumns.get(0),r,output);
+            }
 
-        for(String columnName : columnNames) {
-            Column column = table.column(columnName);
-            Column retColumn = ret.column(columnName);
-            if(column instanceof FloatColumn) {
-                FloatColumn floatColumn = (FloatColumn) column;
-                FloatColumn retFloatColumn = (FloatColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < floatColumn.size(); i++) {
-                        retFloatColumn.set(i, (Float) transform.map(floatColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
+        }
+        //a -> a_1,a_2,a_3,...
+        else if(columnNames.length < newColumnNames.length) {
+            for(int r = 0; r < ret.rowCount(); r++) {
+                //set the value in the column for each row
+                Object output = transform.map(determineInput(r,inputColumns.toArray(new Column[inputColumns.size()])));
+                setEntryList(outputColumns.toArray(new Column[outputColumns.size()]),r,output);
+            }
 
-                    for(int i = 0; i < floatColumn.size(); i++) {
+        }
+
+        else {
+            //1 to 1 case
+            boolean sameTypesForOutput = transform.getInputSchema().sameTypes(transform.transform(transform.getInputSchema()));
+            for(String columnName : columnNames) {
+                Column column = table.column(columnName);
+                Column retColumn = ret.column(columnName);
+                if(column instanceof FloatColumn) {
+                    FloatColumn floatColumn = (FloatColumn) column;
+                    FloatColumn retFloatColumn = (FloatColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < floatColumn.size(); i++) {
+                            retFloatColumn.set(i, (Float) transform.map(floatColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                        for(int i = 0; i < floatColumn.size(); i++) {
+                            //infer types from the column metadata
+                            Object output = transform.map(floatColumn.get(i));
+
+                        }
 
                     }
 
                 }
+                else if(column instanceof LongColumn) {
+                    LongColumn longColumn = (LongColumn) column;
+                    LongColumn retLongColumn = (LongColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < longColumn.size(); i++) {
+                            retLongColumn.set(i, (Long) transform.map(longColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
+                else if(column instanceof BooleanColumn) {
+                    BooleanColumn booleanColumn = (BooleanColumn) column;
+                    BooleanColumn retBooleanColumn = (BooleanColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < booleanColumn.size(); i++) {
+                            retBooleanColumn.set(i, (Boolean) transform.map(booleanColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
+                else if(column instanceof CategoryColumn) {
+                    CategoryColumn categoryColumn = (CategoryColumn) column;
+                    CategoryColumn retCategoryColumn = (CategoryColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < categoryColumn.size(); i++) {
+                            retCategoryColumn.set(i, (String) transform.map(categoryColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
+                else if(column instanceof DateColumn) {
+                    DateColumn dateColumn = (DateColumn) column;
+                    DateColumn retDateColumn = (DateColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < dateColumn.size(); i++) {
+                            retDateColumn.set(i, (Integer) transform.map(dateColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
 
+                else if(column instanceof IntColumn) {
+                    IntColumn intColumn = (IntColumn) column;
+                    IntColumn retIntColumn = (IntColumn) retColumn;
+                    if(newColumnNames.length == 1)
+                        for(int i = 0; i < intColumn.size(); i++) {
+                            retIntColumn.set(i, (Integer) transform.map(intColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
+                else if(column instanceof ShortColumn) {
+                    ShortColumn shortColumn = (ShortColumn) column;
+                    ShortColumn retShortColumn = (ShortColumn) retColumn;
+                    if(sameTypesForOutput)
+                        for(int i = 0; i < shortColumn.size(); i++) {
+                            retShortColumn.set(i, (Short) transform.map(shortColumn.get(i)));
+                        }
+                    else {
+                        //remove the column and append new columns on to the end.
+                        //map is going to produce more than 1 output it will be easier to add it to the end
+                        ret.removeColumn(ret.columnIndex(retColumn));
+                    }
+                }
+                else {
+                    throw new IllegalStateException("Illegal column type " + column.getClass());
+                }
+
+
+            }
+        }
+
+
+        return ret;
+    }
+
+
+    /**
+     * Determine the input type based on the column metadata
+     * @param row the row of the column to get the input for
+     * @param inputColumns the input columns to get input for
+     * @return a list of the type for the given metadata
+     */
+    public static Object determineInput(int row,Column...inputColumns) {
+        if(inputColumns.length > 1) {
+            switch(inputColumns[0].columnMetadata().getType()) {
+                case BOOLEAN:
+                    List<Boolean> ret = new ArrayList<>();
+                    for(Column c : inputColumns) {
+                        BooleanColumn b = (BooleanColumn) c;
+                        ret.add(b.get(row));
+                    }
+                    return ret;
+                case FLOAT:
+                    List<Float> retFloat = new ArrayList<>();
+                    for(Column c : inputColumns) {
+                        FloatColumn floats = (FloatColumn) c;
+                        retFloat.add(floats.get(row));
+                    }
+                    return retFloat;
+                case INTEGER:
+                    List<Integer> integers = new ArrayList<>();
+                    for(Column c : inputColumns) {
+                        IntColumn intColumn = (IntColumn) c;
+                        integers.add(intColumn.get(row));
+                    }
+                    return integers;
+                case LONG_INT:
+                    List<Long> longs = new ArrayList<>();
+                    for(Column c : inputColumns) {
+                        LongColumn longColumn = (LongColumn) c;
+                        longs.add(longColumn.get(row));
+                    }
+                    return longs;
+                case CATEGORY:
+                    List<String> strings = new ArrayList<>();
+                    for(Column c : inputColumns) {
+                        CategoryColumn categoryColumn = (CategoryColumn) c;
+                        strings.add(categoryColumn.get(row));
+                    }
+                    return strings;
+                default: throw new IllegalStateException("Illegal column type " + inputColumns[0].columnMetadata().getType());
+            }
+        }
+        else {
+            return getEntry(inputColumns[0],row);
+        }
+    }
+
+
+
+    /**
+     * Set an entry from the given columns
+     * @param columns the columns to set the entry for
+     * @param row the row to get the entry from
+     * @param value an object of type {@link List}
+     */
+    public static void setEntryList(Column[] columns,int row,Object value) {
+        for(Column column : columns) {
+            if(column instanceof FloatColumn) {
+                List<Float> floatValues = (List<Float>) value;
+                for(Float f : floatValues)
+                    setEntry(column,row,f);
             }
             else if(column instanceof LongColumn) {
-                LongColumn longColumn = (LongColumn) column;
-                LongColumn retLongColumn = (LongColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < longColumn.size(); i++) {
-                        retLongColumn.set(i, (Long) transform.map(longColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-                }
+                List<Long> longValues = (List<Long>) value;
+                for(Long l : longValues)
+                    setEntry(column,row,l);
             }
             else if(column instanceof BooleanColumn) {
-                BooleanColumn booleanColumn = (BooleanColumn) column;
-                BooleanColumn retBooleanColumn = (BooleanColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < booleanColumn.size(); i++) {
-                        retBooleanColumn.set(i, (Boolean) transform.map(booleanColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-                }
+                List<Boolean> booleanList = (List<Boolean>) value;
+                for(Boolean b : booleanList)
+                    setEntry(column,row,b);
             }
             else if(column instanceof CategoryColumn) {
-                CategoryColumn categoryColumn = (CategoryColumn) column;
-                CategoryColumn retCategoryColumn = (CategoryColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < categoryColumn.size(); i++) {
-                        retCategoryColumn.set(i, (String) transform.map(categoryColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-                }
+                List<String> stringList = (List<String>) value;
+                for(String s : stringList)
+                    setEntry(column,row,s);
             }
             else if(column instanceof DateColumn) {
-                DateColumn dateColumn = (DateColumn) column;
-                DateColumn retDateColumn = (DateColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < dateColumn.size(); i++) {
-                        retDateColumn.set(i, (Integer) transform.map(dateColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-                }
+                List<Integer> integerListDate = (List<Integer>) value;
+                for(Integer i : integerListDate)
+                    setEntry(column,row,i);
             }
 
             else if(column instanceof IntColumn) {
-                IntColumn intColumn = (IntColumn) column;
-                IntColumn retIntColumn = (IntColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < intColumn.size(); i++) {
-                        retIntColumn.set(i, (Integer) transform.map(intColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-                }
+                List<Integer> ints = (List<Integer>) value;
+                for(Integer i : ints)
+                    setEntry(column,row,i);
             }
             else if(column instanceof ShortColumn) {
-                ShortColumn shortColumn = (ShortColumn) column;
-                ShortColumn retShortColumn = (ShortColumn) retColumn;
-                if(newColumnNames.length == 1)
-                    for(int i = 0; i < shortColumn.size(); i++) {
-                        retShortColumn.set(i, (Short) transform.map(shortColumn.get(i)));
-                    }
-                else {
-                    //remove the column and append new columns on to the end.
-                    //map is going to produce more than 1 output it will be easier to add it to the end
-                    ret.removeColumn(ret.columnIndex(retColumn));
-
-                }
+                List<Short> shortList = (List<Short>) value;
+                for(Short s : shortList)
+                    setEntry(column,row,s);
             }
 
 
             else {
                 throw new IllegalStateException("Illegal column type " + column.getClass());
             }
-
-            if(columnNames.length == 1) {
-                column.setName(newColumnNames[0]);
-            }
-
         }
 
-        return table;
+    }
+
+    /**
+     * Get an entry from the given column
+     * @param column the column to get the entry from
+     * @param row the row to get the entry from
+     * @param value the value to set
+     * @return the entry from the given column
+     * at the given row
+     */
+    public static void setEntry(Column column,int row,Object value) {
+        if(column instanceof FloatColumn) {
+            FloatColumn floatColumn = (FloatColumn) column;
+            floatColumn.set(row,(float) value);
+        }
+        else if(column instanceof LongColumn) {
+            LongColumn longColumn = (LongColumn) column;
+            longColumn.set(row,(long) value);
+        }
+        else if(column instanceof BooleanColumn) {
+            BooleanColumn booleanColumn = (BooleanColumn) column;
+            booleanColumn.set(row,(boolean) value);
+        }
+        else if(column instanceof CategoryColumn) {
+            CategoryColumn categoryColumn = (CategoryColumn) column;
+            categoryColumn.set(row,value.toString());
+        }
+        else if(column instanceof DateColumn) {
+            DateColumn dateColumn = (DateColumn) column;
+            dateColumn.set(row,(int) value);
+        }
+
+        else if(column instanceof IntColumn) {
+            IntColumn intColumn = (IntColumn) column;
+            intColumn.set(row,(int) value);
+        }
+        else if(column instanceof ShortColumn) {
+            ShortColumn shortColumn = (ShortColumn) column;
+            shortColumn.set(row,(short) value);
+        }
+
+
+        else {
+            throw new IllegalStateException("Illegal column type " + column.getClass());
+        }
+    }
+
+    /**
+     * Get an entry from the given column
+     * @param column the column to get the entry from
+     * @param row the row to get the entry from
+     * @return the entry from the given column
+     * at the given row
+     */
+    public static Object getEntry(Column column,int row) {
+        if(column instanceof FloatColumn) {
+            FloatColumn floatColumn = (FloatColumn) column;
+            return floatColumn.get(row);
+        }
+        else if(column instanceof LongColumn) {
+            LongColumn longColumn = (LongColumn) column;
+            return longColumn.get(row);
+        }
+        else if(column instanceof BooleanColumn) {
+            BooleanColumn booleanColumn = (BooleanColumn) column;
+            return booleanColumn.get(row);
+        }
+        else if(column instanceof CategoryColumn) {
+            CategoryColumn categoryColumn = (CategoryColumn) column;
+            return categoryColumn.get(row);
+        }
+        else if(column instanceof DateColumn) {
+            DateColumn dateColumn = (DateColumn) column;
+            return dateColumn.get(row);
+        }
+
+        else if(column instanceof IntColumn) {
+            IntColumn intColumn = (IntColumn) column;
+            return intColumn.get(row);
+        }
+        else if(column instanceof ShortColumn) {
+            ShortColumn shortColumn = (ShortColumn) column;
+            return shortColumn.get(row);
+        }
+
+
+        else {
+            throw new IllegalStateException("Illegal column type " + column.getClass());
+        }
     }
 
     /**
@@ -267,6 +493,16 @@ public class TableRecords {
                 throw new IllegalArgumentException("Illegal writable list of size " + row.size() + " at index " + i);
         }
         return table;
+    }
+
+
+    /**
+     * Create a table from the given schema
+     * @param schema the schema to create the table from
+     * @return the created table
+     */
+    public static Table tableFromSchema(Schema schema) {
+        return Table.create("newTable",columnsForSchema(schema));
     }
 
     /**

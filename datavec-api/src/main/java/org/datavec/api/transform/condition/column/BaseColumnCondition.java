@@ -56,6 +56,18 @@ public abstract class BaseColumnCondition implements Condition,ColumnOp {
         this.schema = schema;
     }
 
+
+    /**
+     * Get the output schema for this transformation, given an input schema
+     *
+     * @param inputSchema
+     */
+    @Override
+    public Schema transform(Schema inputSchema) {
+       return inputSchema;
+    }
+
+
     @Override
     public Schema getInputSchema(){
         return schema;

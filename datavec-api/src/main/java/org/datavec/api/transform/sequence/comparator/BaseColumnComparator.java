@@ -47,6 +47,36 @@ public abstract class BaseColumnComparator implements SequenceComparator,ColumnO
         this.columnIdx = sequenceSchema.getIndexOfColumn(columnName);
     }
 
+    /**
+     * Get the output schema for this transformation, given an input schema
+     *
+     * @param inputSchema
+     */
+    @Override
+    public Schema transform(Schema inputSchema) {
+        return inputSchema;
+    }
+
+    /**
+     * Set the input schema.
+     *
+     * @param inputSchema
+     */
+    @Override
+    public void setInputSchema(Schema inputSchema) {
+        this.schema = inputSchema;
+    }
+
+    /**
+     * Getter for input schema
+     *
+     * @return
+     */
+    @Override
+    public Schema getInputSchema() {
+        return schema;
+    }
+
     @Override
     public int compare(List<Writable> o1, List<Writable> o2) {
         return compare(get(o1, columnIdx), get(o2, columnIdx));

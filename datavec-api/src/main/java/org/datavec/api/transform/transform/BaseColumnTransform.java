@@ -61,7 +61,7 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
         int i = 0;
         while(typesIter.hasNext()) {
             ColumnMetaData t = typesIter.next();
-            if(i++ == columnNumber){
+            if(i++ == columnNumber) {
                 newMeta.add(getNewColumnMetaData(t.getName(), t));
             } else {
                 newMeta.add(t);

@@ -213,6 +213,16 @@ public class BooleanCondition implements Condition {
         }
     }
 
+    /**
+     * Get the output schema for this transformation, given an input schema
+     *
+     * @param inputSchema
+     */
+    @Override
+    public Schema transform(Schema inputSchema) {
+        return inputSchema;
+    }
+
     @Override
     public void setInputSchema(Schema schema) {
         for (Condition c : conditions) {

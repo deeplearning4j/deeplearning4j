@@ -258,6 +258,36 @@ public class TestReduce {
         }
 
         /**
+         * Get the output schema for this transformation, given an input schema
+         *
+         * @param inputSchema
+         */
+        @Override
+        public Schema transform(Schema inputSchema) {
+            return null;
+        }
+
+        /**
+         * Set the input schema.
+         *
+         * @param inputSchema
+         */
+        @Override
+        public void setInputSchema(Schema inputSchema) {
+
+        }
+
+        /**
+         * Getter for input schema
+         *
+         * @return
+         */
+        @Override
+        public Schema getInputSchema() {
+            return null;
+        }
+
+        /**
          * The output column name
          * after the operation has been applied
          *

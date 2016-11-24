@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import org.datavec.api.transform.schema.Schema;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
@@ -169,4 +170,6 @@ public class LongColumnCondition extends BaseColumnCondition {
                 throw new RuntimeException("Unknown or not implemented op: " + op);
         }
     }
+
+
 }

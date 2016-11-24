@@ -23,7 +23,8 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 /**
- * Append a String to the values in a single column
+ * Append a String to the
+ * values in a single column
  *
  * @author Alex Black
  */
