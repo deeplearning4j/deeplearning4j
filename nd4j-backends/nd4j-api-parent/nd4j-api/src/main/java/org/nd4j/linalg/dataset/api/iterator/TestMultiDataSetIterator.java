@@ -4,6 +4,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -16,17 +17,11 @@ public class TestMultiDataSetIterator implements MultiDataSetIterator {
     private MultiDataSetPreProcessor preProcessor;
 
     /**
-     * Makes an iterator from the given dataset
+     * Makes an iterator from the given datasets. DataSets are expected to are batches of exactly 1 example.
      * ONLY for use in tests in nd4j
-     * Initializes with a default batch of 5
      */
-    public TestMultiDataSetIterator(MultiDataSet dataset) {
-        this(dataset, 5);
-
-    }
-
-    public TestMultiDataSetIterator(MultiDataSet dataset, int batch) {
-        list = new ArrayList<>(dataset.asList());
+    public TestMultiDataSetIterator(int batch, MultiDataSet... dataset) {
+        list = Arrays.asList(dataset);
         this.batch = batch;
     }
 
