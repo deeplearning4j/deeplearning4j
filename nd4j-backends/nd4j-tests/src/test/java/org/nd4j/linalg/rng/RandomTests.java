@@ -51,7 +51,7 @@ public class RandomTests extends BaseNd4jTest {
     @Before
     public void setUp() throws Exception {
         initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
     @After
@@ -236,12 +236,12 @@ public class RandomTests extends BaseNd4jTest {
 
         log.info("1: ----------------");
 
-        //INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
+        INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
 
-        //assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
-        //assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
+        assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
 
-       // random1.setSeed(119);
+        random1.setSeed(119);
 
         log.info("2: ----------------");
 
