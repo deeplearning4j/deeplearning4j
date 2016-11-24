@@ -21,19 +21,26 @@ namespace nd4j {
         class CudaManaged {
         private:
 
+        protected:
+            void *devHolder;
+
         public:
             void *operator new(size_t len) {
                 void *ptr;
-//                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-                cudaMallocManaged(&ptr, len);
-                cudaDeviceSynchronize();
+                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+//                cudaMallocManaged(&ptr, len);
+//                cudaDeviceSynchronize();
+
+                // we allocate holder for device copy
+//                cudaMalloc(&devHolder, len);
                 return ptr;
              }
 
             void operator delete(void *ptr) {
-                cudaDeviceSynchronize();
-                cudaFree(ptr);
-//                cudaFreeHost(ptr);
+//                cudaDeviceSynchronize();
+//                cudaFree(ptr);
+                cudaFreeHost(ptr);
+//                cudaFree(devHolder);
             }
         };
 
@@ -42,6 +49,7 @@ namespace nd4j {
         class RandomBuffer {
 #endif
         private:
+            void *devHolder;
             long size;
             uint64_t *buffer;
             uint64_t *devBuffer;
@@ -56,8 +64,6 @@ namespace nd4j {
 #ifdef __CUDACC__
             curandGenerator_t gen;
 #endif
-
-            std::mutex mtx;
 
         public:
             /**
@@ -78,6 +84,18 @@ namespace nd4j {
                 this->amplifier = seed;
                 this->synchronizer = 0;
                 this->devBuffer = devBuffer;
+
+                cudaMalloc(&devHolder, sizeof(nd4j::random::RandomBuffer));
+            }
+
+            __host__
+            Nd4jPointer getDevicePointer() {
+                return (Nd4jPointer) devHolder;
+            }
+
+            __host__
+            void propagateToDevice(nd4j::random::RandomBuffer *buffer, cudaStream_t stream) {
+                cudaMemcpyAsync(devHolder, buffer, sizeof(nd4j::random::RandomBuffer), cudaMemcpyHostToDevice, stream);
             }
 
             __host__ __device__
@@ -262,14 +280,12 @@ namespace nd4j {
             __host__ __device__
 #endif
             long getNextIndex() {
-                mtx.lock();
                 currentPosition++;
                 if (currentPosition >= size) {
                     currentPosition = 0;
                     generation++;
                 }
                 long ret = currentPosition;
-                mtx.unlock();
 
                 return ret;
             }
