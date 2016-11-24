@@ -670,10 +670,10 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"identity", "sigmoid", "tanh"};
+        String[] activFns = {"sigmoid", "tanh"};
         boolean[] characteristic = {false, true};    //If true: run some backprop steps first
 
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.KL_DIVERGENCE, LossFunction.COSINE_PROXIMITY};
+        LossFunction[] lossFunctions = {LossFunction.MSE, LossFunction.MCXENT, LossFunction.COSINE_PROXIMITY};
         String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
@@ -706,7 +706,7 @@ public class GradientCheckTests {
                                 .list()
                                 .layer(0, new RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
                                         .nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER)
+                                        .weightInit(WeightInit.UNIFORM)
                                         .updater(Updater.SGD)
                                         .activation(afn)
                                         .build())

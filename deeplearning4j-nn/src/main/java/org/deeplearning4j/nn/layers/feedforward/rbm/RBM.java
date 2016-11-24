@@ -374,7 +374,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);
-        return propUp;
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), propUp));
+
+        return ret;
     }
 
 
