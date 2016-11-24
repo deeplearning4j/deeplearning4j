@@ -16,10 +16,10 @@ import java.util.List;
  */
 public class KuromojiBinFilesFetcher {
     protected static final Logger log = LoggerFactory.getLogger(KuromojiBinFilesFetcher.class);
-    protected static final String TEMP_ROOT = System.getProperty("java.io.tmpdir");
+    protected static final String TEMP_ROOT = System.getProperty("user.home");
     protected static final String KUROMOJI_BIN_ROOT;
     static {
-        KUROMOJI_BIN_ROOT = TEMP_ROOT + File.separator + "KUROMOJI" + File.separator;
+        KUROMOJI_BIN_ROOT = TEMP_ROOT + File.separator + "dl4j-kuromoji" + File.separator;
     }
 
     public static boolean kuromojiExist() {
