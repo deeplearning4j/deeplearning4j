@@ -73,6 +73,7 @@ function renderScoreVsIterChart(data) {
     var maxScore = Math.max.apply(Math, scoresArr);
 
     var scoreChart = $("#scoreiterchart");
+    scoreChart.unbind(); // prevent over-subscribing
 
     if (scoreChart.length) {
         var scoreData = [];
@@ -81,23 +82,67 @@ function renderScoreVsIterChart(data) {
             scoreData.push([scoresIter[i], scoresArr[i]]);
         }
 
-        var plot = $.plot($("#scoreiterchart"),
-            [{data: scoreData, label: "score"}], {
-                series: {
-                    lines: {
-                        show: true,
-                        lineWidth: 2
-                    }
-                },
-                grid: {
-                    hoverable: true,
-                    clickable: true,
-                    tickColor: "#dddddd",
-                    borderWidth: 0
-                },
-                yaxis: {min: 0, max: maxScore},
-                colors: ["#FA5833", "#2FABE9"]
-            });
+        var plotData = [{data: scoreData, label: "score"}];
+
+        // calculate a EMA line to summarize training progress
+        if(scoresIter.length > 10) {
+            var bestFitLine = EMACalc(scoresArr, 10);
+            var bestFitData = [];
+            for (var i = 0; i < bestFitLine.length; i++) {
+                bestFitData.push([i+1, bestFitLine[i]]);
+            }
+            plotData.push({data: bestFitData, label: "summary"});
+        }
+
+        // plot the chart
+        var plotOptions = {
+            series: {
+                lines: {
+                    show: true,
+                    lineWidth: 2
+                }
+            },
+            grid: {
+                hoverable: true,
+                clickable: true,
+                tickColor: "#dddddd",
+                borderWidth: 0
+            },
+            yaxis: {min: 0, max: maxScore},
+            colors: ["#FA5833","rgba(65,182,240,0.3)","#000000"],
+            selection: {
+                mode: "x"
+            }
+        };
+        var plot = $.plot(scoreChart, plotData, plotOptions);
+
+        // when selected, calculate best fit line
+        scoreChart.bind("plotselected", function (event, ranges) {
+            var indices = [];
+            var fromIdx = parseInt(ranges.xaxis.from);
+            var toIdx = parseInt(ranges.xaxis.to);
+            var scoresCopy = scoresArr.slice();
+
+            for (var i = fromIdx; i <= toIdx; i++) {
+               indices.push(i);
+            }
+
+            var bestFitLine = findLineByLeastSquares(indices, scoresCopy.slice(fromIdx,toIdx+1));
+            var bestFitData = [];
+            for (var i = 0; i < bestFitLine[0].length; i++) {
+                bestFitData.push([bestFitLine[0][i], bestFitLine[1][i]]);
+            }
+            plotData.push({data: bestFitData, label: "selection"});
+
+            plot.setData(plotData);
+            plot.draw();
+        });
+
+        scoreChart.bind("plotunselected", function (event) {
+            plotData = plotData.slice(0,2);
+            plot.setData(plotData);
+            plot.draw();
+        });
 
         function showTooltip(x, y, contents) {
             $('<div id="tooltip">' + contents + '</div>').css({
@@ -372,4 +417,79 @@ function renderStdevChart(data) {
             }
         });
     }
+}
+
+/* --------------- linear least squares (best fit line) ---------- */
+function findLineByLeastSquares(values_x, values_y) {
+    var sum_x = 0;
+    var sum_y = 0;
+    var sum_xy = 0;
+    var sum_xx = 0;
+    var count = 0;
+
+    /*
+     * We'll use those variables for faster read/write access.
+     */
+    var x = 0;
+    var y = 0;
+    var values_length = values_x.length;
+
+    if (values_length != values_y.length) {
+        throw new Error('The parameters values_x and values_y need to have same size!');
+    }
+
+    /*
+     * Nothing to do.
+     */
+    if (values_length === 0) {
+        return [ [], [] ];
+    }
+
+    /*
+     * Calculate the sum for each of the parts necessary.
+     */
+    for (var v = 0; v < values_length; v++) {
+        x = values_x[v];
+        y = values_y[v];
+        sum_x += x;
+        sum_y += y;
+        sum_xx += x*x;
+        sum_xy += x*y;
+        count++;
+    }
+
+    /*
+     * Calculate m and b for the formular:
+     * y = x * m + b
+     */
+    var m = (count*sum_xy - sum_x*sum_y) / (count*sum_xx - sum_x*sum_x);
+    var b = (sum_y/count) - (m*sum_x)/count;
+
+    /*
+     * We will make the x and y result line now
+     */
+    var result_values_x = [];
+    var result_values_y = [];
+
+    for (var v = 0; v < values_length; v++) {
+        x = values_x[v];
+        y = x * m + b;
+        result_values_x.push(x);
+        result_values_y.push(y);
+    }
+
+    return [result_values_x, result_values_y];
+}
+
+
+/* --------------- exponential moving average (best fit line) ---------- */
+function EMACalc(mArray,mRange) {
+  var k = 2/(mRange + 1);
+  // first item is just the same as the first item in the input
+  emaArray = [mArray[0]];
+  // for the rest of the items, they are computed with the previous one
+  for (var i = 1; i < mArray.length; i++) {
+    emaArray.push(mArray[i] * k + emaArray[i - 1] * (1 - k));
+  }
+  return emaArray;
 }
