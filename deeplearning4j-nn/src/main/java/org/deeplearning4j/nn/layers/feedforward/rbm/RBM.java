@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -81,7 +82,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      */
     //variance matrices for gaussian visible/hidden units
     @Deprecated
-    protected INDArray sigma,hiddenSigma;
+    protected INDArray sigma, hiddenSigma;
 
 
     /**
@@ -89,12 +90,11 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * of approximating the log likelihood around x1(input) with repeated sampling.
      * Given is an energy based model: the higher k is (the more we sample the model)
      * the more we lower the energy (increase the likelihood of the model)
-     *
+     * <p>
      * and lower the likelihood (increase the energy) of the hidden samples.
-     *
+     * <p>
      * Other insights:
-     *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
-
+     * CD - k involves keeping the first k samples of a gibbs sampling of the model.
      */
     @Deprecated
     public void contrastiveDivergence() {
@@ -111,7 +111,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         //POSITIVE PHASE
         // hprob0, hstate0
-        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());
+        Pair<INDArray, INDArray> probHidden = sampleHiddenGivenVisible(input());
 
 		/*
 		 * Start the gibbs sampling.
@@ -124,7 +124,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
-        Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> matrices;
+        Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>> matrices;
         //negative value samples
         INDArray negVProb = null;
         //negative value samples
@@ -143,10 +143,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 		 *
 		 */
 
-        for(int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++) {
 
             //NEGATIVE PHASE
-            if(i == 0)
+            if (i == 0)
                 matrices = gibbhVh(chainStart);
             else
                 matrices = gibbhVh(negHSamples);
@@ -167,7 +167,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         INDArray hBiasGradient;
 
-        if(layerConf().getSparsity() != 0)
+        if (layerConf().getSparsity() != 0)
             //all hidden units must stay around this number
             hBiasGradient = probHidden.getFirst().rsub(layerConf().getSparsity()).sum(0);
         else
@@ -175,10 +175,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
             hBiasGradient = probHidden.getFirst().sub(negHProb).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  delta = input.sub(negVProb);
-        INDArray  vBiasGradient = delta.sum(0);
+        INDArray delta = input.sub(negVProb);
+        INDArray vBiasGradient = delta.sum(0);
 
-        if (conf.isPretrain()){
+        if (conf.isPretrain()) {
             wGradient.negi();
             hBiasGradient.negi();
             vBiasGradient.negi();
@@ -190,30 +190,36 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
     /**
      * Gibbs sampling step: hidden ---> visible ---> hidden
+     *
      * @param h the hidden input
      * @return the expected values and samples of both the visible samples given the hidden
      * and the new hidden input and expected values
      */
-    public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
-        Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
+    public Pair<Pair<INDArray, INDArray>, Pair<INDArray, INDArray>> gibbhVh(INDArray h) {
+        Pair<INDArray, INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
         INDArray negVProb = v1MeanAndSample.getFirst();
 
-        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(negVProb);
-        return new Pair<>(v1MeanAndSample,h1MeanAndSample);
+        Pair<INDArray, INDArray> h1MeanAndSample = sampleHiddenGivenVisible(negVProb);
+        return new Pair<>(v1MeanAndSample, h1MeanAndSample);
     }
 
     /**
      * Binomial sampling of the hidden values given visible
+     *
      * @param v the visible values
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-    public  Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
+    public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
         INDArray hProb = propUp(v);
         INDArray hSample;
         Distribution dist;
 
         switch (layerConf().getHiddenUnit()) {
+            case IDENTITY: {
+                hSample = hProb;
+                break;
+            }
             case BINARY: {
                 dist = Nd4j.getDistributions().createBinomial(1, hProb);
                 dist.reseedRandomGenerator(seed);
@@ -243,7 +249,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 break;
             }
             default:
-                throw new IllegalStateException("Hidden unit type must either be rectified linear or binary");
+                throw new IllegalStateException("Hidden unit type must either be Binary, Gaussian, SoftMax or Rectified");
         }
 
         return new Pair<>(hProb, hSample);
@@ -251,16 +257,21 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
     /**
      * Guess the visible values given the hidden
+     *
      * @param h the hidden units
      * @return a visible mean and sample relative to the hidden states
      * passed in
      */
     @Override
-    public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
+    public Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h) {
         INDArray vProb = propDown(h);
         INDArray vSample;
 
         switch (layerConf().getVisibleUnit()) {
+            case IDENTITY: {
+                vSample = vProb;
+                break;
+            }
             case BINARY: {
                 Distribution dist = Nd4j.getDistributions().createBinomial(1, vProb);
                 dist.reseedRandomGenerator(seed);
@@ -288,6 +299,15 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
     }
 
+    public INDArray preOutput(INDArray v, boolean training) {
+        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
+            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
+        }
+        return v.mmul(W).addiRowVector(hBias);
+    }
+
     /**
      * Calculates the activation of the visible :
      * sigmoid(v * W + hbias)
@@ -305,14 +325,11 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * @return the approximated activations of the visible layer
      */
     public INDArray propUp(INDArray v, boolean training) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if(training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
-        }
-        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
-        INDArray preSig = v.mmul(W).addiRowVector(hBias);
+        INDArray preSig = preOutput(v, training);
 
         switch (layerConf().getHiddenUnit()) {
+            case IDENTITY:
+                return preSig;
             case BINARY:
                 return sigmoid(preSig);
             case GAUSSIAN:
@@ -325,6 +342,24 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 return preSig;
             case SOFTMAX:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig));
+            default:
+                throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
+        }
+
+    }
+
+    public INDArray propUpDerivative(INDArray z) {
+        switch (layerConf().getHiddenUnit()) {
+            case IDENTITY:
+                return z;
+            case BINARY:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
+            case GAUSSIAN:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", z).derivative());
+            case RECTIFIED:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
+            case SOFTMAX:
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
             default:
                 throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
         }
@@ -344,6 +379,8 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         INDArray vMean = h.mmul(W).addiRowVector(vBias);
 
         switch (layerConf().getVisibleUnit()) {
+            case IDENTITY:
+                return vMean;
             case BINARY:
                 return sigmoid(vMean);
             case GAUSSIAN:
@@ -374,9 +411,35 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), propUp));
+        return propUp;
+    }
 
-        return ret;
+    @Override
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+        //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
+        INDArray z = preOutput(input, true);
+        INDArray activationDerivative = propUpDerivative(z);
+        INDArray delta = epsilon.muli(activationDerivative);
+
+        if(maskArray != null){
+            delta.muliColumnVector(maskArray);
+        }
+
+        Gradient ret = new DefaultGradient();
+
+        INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);    //f order
+        Nd4j.gemm(input,delta,weightGrad,true,false,1.0,0.0);
+        INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+        biasGrad.assign(delta.sum(0));
+        INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+
+        return new Pair<>(ret,epsilonNext);
     }
 
 
