@@ -86,19 +86,8 @@ import java.util.List;
 })
 public interface Transform extends Serializable,ColumnOp {
 
-    /** Get the output schema for this transformation, given an input schema */
-    Schema transform(Schema inputSchema);
 
-    /** Set the input schema. Should be done automatically in TransformProcess, and is often necessary
-     * to do {@link #map(List)}
-     */
-    void setInputSchema(Schema inputSchema);
 
-    /**
-     * Getter for input schema
-     * @return
-     */
-    Schema getInputSchema();
 
     /**
      * Transform a writable

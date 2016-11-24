@@ -57,6 +57,20 @@ public class CategoricalMetaData extends BaseColumnMetaData {
         return stateNamesSet.contains(writable.toString());
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        return stateNamesSet.contains(input.toString());
+    }
+
     @Override
     public CategoricalMetaData clone() {
         return new CategoricalMetaData(name,stateNames);

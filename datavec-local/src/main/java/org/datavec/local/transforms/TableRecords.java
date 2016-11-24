@@ -40,7 +40,7 @@ public class TableRecords {
         Table ret = table;
         for(DataAction dataAction : dataActions) {
             if(dataAction.getTransform() != null) {
-                ret = transformTable(table,dataAction.getTransform());
+                ret = transformTable(table,dataAction.getTransform(),true);
             }
             else if(dataAction.getFilter() != null) {
 
@@ -66,83 +66,118 @@ public class TableRecords {
      * Run a transform operation on the table
      * @param table the table to run the transform operation on
      * @param transform the transform to run
+     * @param inPlace whether the return results should be in place or a clone of the table
      * @return
      */
-    public static Table transformTable(Table table,Transform transform) {
+    public static Table transformTable(Table table,Transform transform,boolean inPlace) {
         if(!(transform instanceof ColumnOp)) {
             throw new IllegalArgumentException("Transform operation must be of type ColumnOp");
         }
 
+        Table ret = inPlace ? table : table.emptyCopy();
+
         String[] columnNames = transform.columnNames();
         String[] newColumnNames = transform.outputColumnNames();
+
         for(String columnName : columnNames) {
             Column column = table.column(columnName);
+            Column retColumn = ret.column(columnName);
             if(column instanceof FloatColumn) {
                 FloatColumn floatColumn = (FloatColumn) column;
+                FloatColumn retFloatColumn = (FloatColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < floatColumn.size(); i++) {
-                        floatColumn.set(i, (Float) transform.map(floatColumn.get(i)));
+                        retFloatColumn.set(i, (Float) transform.map(floatColumn.get(i)));
                     }
+                else {
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
+
+                    for(int i = 0; i < floatColumn.size(); i++) {
+
+                    }
+
+                }
 
             }
             else if(column instanceof LongColumn) {
                 LongColumn longColumn = (LongColumn) column;
+                LongColumn retLongColumn = (LongColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < longColumn.size(); i++) {
-                        longColumn.set(i, (Long) transform.map(longColumn.get(i)));
+                        retLongColumn.set(i, (Long) transform.map(longColumn.get(i)));
                     }
                 else {
-
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
                 }
             }
             else if(column instanceof BooleanColumn) {
                 BooleanColumn booleanColumn = (BooleanColumn) column;
+                BooleanColumn retBooleanColumn = (BooleanColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < booleanColumn.size(); i++) {
-                        booleanColumn.set(i, (Boolean) transform.map(booleanColumn.get(i)));
+                        retBooleanColumn.set(i, (Boolean) transform.map(booleanColumn.get(i)));
                     }
                 else {
-
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
                 }
             }
             else if(column instanceof CategoryColumn) {
                 CategoryColumn categoryColumn = (CategoryColumn) column;
+                CategoryColumn retCategoryColumn = (CategoryColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < categoryColumn.size(); i++) {
-                        categoryColumn.set(i, (String) transform.map(categoryColumn.get(i)));
+                        retCategoryColumn.set(i, (String) transform.map(categoryColumn.get(i)));
                     }
                 else {
-
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
                 }
             }
             else if(column instanceof DateColumn) {
                 DateColumn dateColumn = (DateColumn) column;
+                DateColumn retDateColumn = (DateColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < dateColumn.size(); i++) {
-                        dateColumn.set(i, (Integer) transform.map(dateColumn.get(i)));
+                        retDateColumn.set(i, (Integer) transform.map(dateColumn.get(i)));
                     }
                 else {
-
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
                 }
             }
 
             else if(column instanceof IntColumn) {
                 IntColumn intColumn = (IntColumn) column;
+                IntColumn retIntColumn = (IntColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < intColumn.size(); i++) {
-                        intColumn.set(i, (Integer) transform.map(intColumn.get(i)));
+                        retIntColumn.set(i, (Integer) transform.map(intColumn.get(i)));
                     }
                 else {
-
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
                 }
             }
             else if(column instanceof ShortColumn) {
                 ShortColumn shortColumn = (ShortColumn) column;
+                ShortColumn retShortColumn = (ShortColumn) retColumn;
                 if(newColumnNames.length == 1)
                     for(int i = 0; i < shortColumn.size(); i++) {
-                        shortColumn.set(i, (Short) transform.map(shortColumn.get(i)));
+                        retShortColumn.set(i, (Short) transform.map(shortColumn.get(i)));
                     }
                 else {
+                    //remove the column and append new columns on to the end.
+                    //map is going to produce more than 1 output it will be easier to add it to the end
+                    ret.removeColumn(ret.columnIndex(retColumn));
 
                 }
             }
