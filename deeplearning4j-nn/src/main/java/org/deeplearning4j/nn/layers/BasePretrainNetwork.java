@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -111,7 +112,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public INDArray params() {
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!conf.isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             list.add(entry.getValue());
         }
         return Nd4j.toFlattened('f', list);
@@ -153,7 +153,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         Pair<Gradient,INDArray> result = super.backpropGradient(epsilon);
-        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY));
+        INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         return result;
     }
 
