@@ -6069,7 +6069,7 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 256, 4096);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
@@ -6083,7 +6083,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 256, 4096);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
@@ -6097,7 +6097,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 256, 4096);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();

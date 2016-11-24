@@ -227,7 +227,9 @@ namespace nd4j {
                     ret = safeShift(ret, amplifier);
 
                 //if (amplifier != seed || generation > 1 || tempGen != generation)
+#ifdef __CUDACC__
                 __syncthreads();
+#endif
                 ret = next64(seedConv((long) ret));
 
                 return ret;
