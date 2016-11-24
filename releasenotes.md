@@ -6,6 +6,10 @@ layout: default
 # <a name="zerosevenzero">Release Notes for Version 0.7.0</a>
 
 * UI overhaul: new training UI has considerably more information, supports persistence (saving info and loading later), Japanese/Korean/Russian support. Replaced Dropwizard with Play framework. [Link](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface)
+* Import of models configured and trained using [Keras](http://keras.io)
+    - Imports both _Keras_ model [configurations](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/ModelConfiguration.java) and [stored weights](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/Model.java#L59)
+    - Supported models: [Sequential](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/ModelConfiguration.java#L41) models
+    - Supported [layers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/LayerConfiguration.java#L85): _Dense, Dropout, Activation, Convolution2D, MaxPooling2D, LSTM_
 * Added ‘Same’ padding more for CNNs (ConvolutionMode network configuration option) [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/ConvolutionMode.java)
 * Weighted loss functions: Loss functions now support a per-output weight array (row vector)
 * ROC and AUC added for binary classifiers [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/ROC.java)
@@ -27,10 +31,6 @@ layout: default
 * Additional RNG calls added: Nd4j.choice(), and BernoulliDistribution op.
 * Off-gpu storage introduced, to keep large things, like Word2Vec model in host memory. Available via WordVectorSerializer.loadStaticModel()
 * Two new options for performance tuning on nd4j-native backend: setTADThreshold(int) & setElementThreshold(int)
-* Import of models configured and trained using [Keras](http://keras.io)
-    - Imports both _Keras_ model configurations and stored weights
-    - Supports _Sequential_ models
-    - Supports _Dense, Dropout, Activation, Convolution2D, MaxPooling2D, LSTM_ layers
 
 ### 0.6.0 -> 0.7.0 Transition Notes
 Notable changes for upgrading codebases based on 0.6.0 to 0.7.0:
