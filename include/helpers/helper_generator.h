@@ -202,7 +202,7 @@ namespace nd4j {
 #ifdef __CUDACC__
                 __syncthreads();
 
-                int *intBuffer = (int *) devBuffer;
+//                int *intBuffer = (int *) devBuffer;
 
                 uint64_t ret = (uint64_t) devBuffer[actualPosition];
 #else
@@ -221,9 +221,9 @@ namespace nd4j {
 #ifdef __CUDACC__
                 __syncthreads();
 #endif
-                if (amplifier != seed || generation > 1 || tempGen != generation) {
+                if (amplifier != seed || generation > 1 || tempGen != generation)
                     ret = next64(seedConv((long) ret));
-                }
+
 
                 return ret;
             }

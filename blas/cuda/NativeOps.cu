@@ -40,7 +40,7 @@ cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
 int maxThreads = 512;
-bool debug = true;
+bool debug = false;
 bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
@@ -5222,7 +5222,7 @@ int NativeOps::getAvailableDevices() {
 }
 
 void NativeOps::enableDebugMode(bool reallyEnable) {
-	debug = true;
+	debug = reallyEnable;
 }
 
 void NativeOps::setGridLimit(int gridSize) {
@@ -6069,7 +6069,7 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
@@ -6083,7 +6083,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
@@ -6097,7 +6097,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<float>) + (560 * sizeof(float)) );
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
 
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
@@ -6111,7 +6111,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
 void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
     DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6122,7 +6122,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
     DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6133,7 +6133,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
     DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6144,7 +6144,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
     DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6155,7 +6155,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
     DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6166,7 +6166,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 256, 2048);
+    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
     DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -6199,18 +6199,6 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 
     cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
 
-    /*
-    curandStatus_t err = curandCreateGenerator(buffer->getGeneratorPointer(), CURAND_RNG_QUASI_SOBOL64);
-
-    if (err != CURAND_STATUS_SUCCESS)
-        printf("CURAND_ERROR_CODE: %i\n", err);
-
-    err = curandGenerateLongLong(buffer->getGenerator(), ptrBuf, bufferSize);
-
-    if (err != CURAND_STATUS_SUCCESS)
-        printf("CURAND_ERROR_CODE: %i\n", err);
-*/
-
     return buffer;
 }
 
@@ -6220,7 +6208,6 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
 
     // FIXME: it's bad thing, but we can't know in advance, which stream(s) where using this generator in practice
     cudaDeviceSynchronize();
-    //curandDestroyGenerator(buffer->getGenerator());
 
     delete buffer;
 }
@@ -6242,10 +6229,6 @@ void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer
     generator.refreshBuffer();
 
     cudaMemcpyAsync(ptrDev, ptrHost, buffer->getSize() * 8, cudaMemcpyHostToDevice, *stream);
-
-    //curandSetPseudoRandomGeneratorSeed(buffer->getGenerator(), seed);
-
-    //curandGenerateLongLong(buffer->getGenerator(), (unsigned long long *) buffer->getBuffer(), buffer->getSize());
 }
 
 void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {

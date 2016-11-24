@@ -39,7 +39,7 @@ namespace functions {
                 if (OpClass::requiresSpecial) {
                     OpClass::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
                     return;
-                }
+                } else {
 
                 __shared__ int length;
                 __shared__ int xEWS;
@@ -104,6 +104,7 @@ namespace functions {
 
                 __syncthreads();
                 buffer->rewind(length);
+                }
             }
 #endif
 
@@ -188,22 +189,31 @@ namespace functions {
                 __shared__ int zEWS;
 
                 __shared__ nd4j::random::RandomBuffer *buffer;
-
+                __shared__ unsigned char *cB;
+                __shared__ unsigned char *dB;
+                __shared__ nd4j::random::RandomBuffer *devBuffer;
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
+                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    cB = shmem;
+                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    dB = reinterpret_cast<unsigned char *> (state);
 
                     length = shape::length(zShapeBuffer);
                     xEWS = shape::elementWiseStride(xShapeBuffer);
                     zEWS = shape::elementWiseStride(zShapeBuffer);
-
-                    buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 }
                 __syncthreads();
 
-                int tid = blockIdx.x * blockDim.x + threadIdx.x;
+                // using this loop instead of memcpy
+                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                    cB[e] = dB[e];
+                }
+                __syncthreads();
+
 
                 if (xEWS >= 1 && zEWS >= 1) {
-                    for (int e = tid; e < length; e += blockDim.x * gridDim.x) {
+                    for (int e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
                         z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
@@ -223,7 +233,7 @@ namespace functions {
                     int xOffset = shape::offset(xShapeBuffer);
                     int zOffset = shape::offset(zShapeBuffer);
 
-                    for (int i = tid; i < length; i += blockDim.x * gridDim.x) {
+                    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
                         shape::ind2sub(xRank, xShape, i, xCoord);
                         shape::ind2sub(zRank, zShape, i, zCoord);
 
@@ -235,7 +245,7 @@ namespace functions {
                 }
 
                 __syncthreads();
-                buffer->rewind(length);
+                devBuffer->rewind(length);
             }
 #endif
 
