@@ -270,7 +270,7 @@ namespace nd4j {
             __device__
 #endif
             void rewind(long numberOfElements) {
-                buffer->rewind(numberOfElements);
+                buffer->rewindH(numberOfElements);
             }
         };
     }

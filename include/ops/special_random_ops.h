@@ -29,8 +29,6 @@ namespace randomOps {
              */
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 generator(buffer);
-            nd4j::random::RandomHelper<T> helper(&generator);
 
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
@@ -58,7 +56,7 @@ namespace randomOps {
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
                 for (int e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
-                    T prob = helper.relativeT(e);
+                    T prob = buffer->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
                     for (int f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
@@ -117,7 +115,7 @@ namespace randomOps {
 
                     Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
-                    T prob = helper.relativeT(i);
+                    T prob = buffer->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
                     for (int f = 0; f < yLength; f++) {
                         shape::ind2sub(yRank, yShape, i, yCoord);
@@ -149,8 +147,6 @@ namespace randomOps {
              */
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 generator(buffer);
-            nd4j::random::RandomHelper<T> helper(&generator);
 
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
@@ -170,7 +166,7 @@ namespace randomOps {
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                 for (int e = 0; e < zLength; e++) {
-                    T prob = helper.relativeT(e);
+                    T prob = buffer->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
                     for (int f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
@@ -210,7 +206,7 @@ namespace randomOps {
 
                     Nd4jIndex zOffset2 = shape::getOffset(zOffset, zShape, zStride, zCoord, zRank);
 
-                    T prob = helper.relativeT(i);
+                    T prob = buffer->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
                     for (int f = 0; f < yLength; f++) {
                         shape::ind2sub(yRank, yShape, i, yCoord);
@@ -264,16 +260,13 @@ namespace randomOps {
             __shared__ T *tZ;
 
             __shared__ nd4j::random::RandomBuffer *buffer;
-            __shared__ nd4j::random::Xoroshiro128 *generator;
-            __shared__ nd4j::random::RandomHelper<T> *helper;
+
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
 
                 buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-                generator = new(shmem) nd4j::random::Xoroshiro128(buffer);
-                helper = new(shmem + sizeof(nd4j::random::Xoroshiro128)) nd4j::random::RandomHelper<T>(generator);
 
-                tZ = (T *) (shmem + sizeof(nd4j::random::Xoroshiro128) + sizeof(nd4j::random::RandomHelper<T>));
+                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -295,7 +288,7 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = helper->relativeT(e) + 1e-5;
+                tZ[threadIdx.x] = buffer->relativeT<T>(e) + 1e-5;
 
                 if (tZ[threadIdx.x] >= (T) 1.0)
                     tZ[threadIdx.x] -= 2e-5;
@@ -316,7 +309,7 @@ namespace randomOps {
             }
 
             __syncthreads();
-            helper->rewind(zLength);
+            buffer->rewind(zLength);
         }
 #endif
 
@@ -337,8 +330,6 @@ namespace randomOps {
             int span = (zLength / _threads) + 8;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
-            nd4j::random::RandomHelper<T> *helper = new nd4j::random::RandomHelper<T>(generator);
 
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
@@ -360,8 +351,8 @@ namespace randomOps {
 
                         int attempt = 1;
                         do {
-                            u0 = helper->relativeT(e * attempt);
-                            u1 = helper->relativeT((e + 1) * attempt);
+                            u0 = buffer->relativeT<T>(e * attempt);
+                            u1 = buffer->relativeT<T>((e + 1) * attempt);
                             attempt++;
                         } while (u0 <= epsilon );
 
@@ -384,10 +375,8 @@ namespace randomOps {
                 }
             }
 
-            helper->rewind(zLength * 2);
+            buffer->rewindH(zLength);
 
-            delete helper;
-            delete generator;
         }
     };
 
@@ -416,8 +405,6 @@ namespace randomOps {
             __shared__ int zEWS;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 generator(buffer);
-            nd4j::random::RandomHelper<T> helper(&generator);
 
             if (threadIdx.x == 0) {
                 zLength = shape::length(zShapeBuffer);
@@ -431,7 +418,7 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
                 for (int t = 1; t <= trials; t++) {
-                    T randVal = helper.relativeT(e * t);
+                    T randVal = buffer->relativeT<T>(e * t);
                     if (y != z) {
                         // we're using external probs
                         prob = y[(t-1) * yEWS];
@@ -450,7 +437,7 @@ namespace randomOps {
 
             __syncthreads();
             if (trials > 0)
-                helper.rewind(zLength * trials);
+                buffer->rewind(zLength * trials);
         }
 #endif
 
@@ -469,8 +456,6 @@ namespace randomOps {
             int span = (zLength / _threads) + 8;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::random::Xoroshiro128 *generator = new nd4j::random::Xoroshiro128(buffer);
-            nd4j::random::RandomHelper<T> *helper = new nd4j::random::RandomHelper<T>(generator);
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
@@ -485,7 +470,7 @@ namespace randomOps {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
-                        T randVal = helper->relativeT(e * t);
+                        T randVal = buffer->relativeT<T>(e * t);
                         if (y != z) {
                             // we're using external probs
                             prob = y[(t-1) * yEWS];
@@ -501,7 +486,7 @@ namespace randomOps {
             }
 
             if (trials > 0)
-                helper->rewind(zLength * trials);
+                buffer->rewindH(zLength * trials);
         }
     };
 }
