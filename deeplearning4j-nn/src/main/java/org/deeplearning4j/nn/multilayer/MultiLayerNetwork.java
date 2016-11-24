@@ -455,7 +455,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             backpropParamLength += nParamsPerLayer[i];
         }
 
-//        flattenedGradients = Nd4j.createUninitialized(new int[]{1,backpropParamLength},'f');    //No need to initialize, as each layer will do it each iteration anyway
         flattenedGradients = Nd4j.zeros(new int[]{1,backpropParamLength},'f');    //No need to initialize, as each layer will do it each iteration anyway
 
         int backpropParamsSoFar = 0;

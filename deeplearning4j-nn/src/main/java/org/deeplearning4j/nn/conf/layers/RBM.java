@@ -81,10 +81,10 @@ public class RBM extends BasePretrainNetwork {
     }
 
     public enum VisibleUnit {
-        BINARY, GAUSSIAN, SOFTMAX, LINEAR
+        BINARY, GAUSSIAN, SOFTMAX, LINEAR, IDENTITY
     }
     public enum HiddenUnit {
-        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX
+        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX, IDENTITY
     }
 
     private RBM(Builder builder) {
