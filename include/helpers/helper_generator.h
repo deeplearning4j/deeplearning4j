@@ -73,7 +73,7 @@ namespace nd4j {
              * @return
              */
 #ifdef __CUDACC__
-            __host__ __device__
+            __host__
             RandomBuffer(long seed, long size, uint64_t *hostBuffer, uint64_t *devBuffer) {
                 this->buffer = hostBuffer;
                 this->seed = seed;
@@ -91,6 +91,11 @@ namespace nd4j {
             __host__
             Nd4jPointer getDevicePointer() {
                 return (Nd4jPointer) devHolder;
+            }
+
+            __host__
+            ~RandomBuffer() {
+                cudaFree(devHolder);
             }
 
             __host__
@@ -211,7 +216,7 @@ namespace nd4j {
 #else
                 uint64_t ret = (uint64_t) buffer[actualPosition];
 #endif
-/*
+
                 if (tempGen != generation)
                     ret = safeShift(ret, tempGen);
 
@@ -220,9 +225,10 @@ namespace nd4j {
 
                 if (amplifier != seed)
                     ret = safeShift(ret, amplifier);
-*/
-//                if (amplifier != seed || generation > 1 || tempGen != generation)
-//                    ret = next64(seedConv((long) ret));
+
+                //if (amplifier != seed || generation > 1 || tempGen != generation)
+                __syncthreads();
+                ret = next64(seedConv((long) ret));
 
                 return ret;
             }
@@ -232,7 +238,7 @@ namespace nd4j {
 #endif
             uint64_t next64(uint64_t shiftedSeed) {
                 const uint64_t s0 = (uint64_t) shiftedSeed;
-                uint64_t s1 = (uint64_t) (shiftedSeed % MAX_INT >= 0 ? (shiftedSeed % MAX_INT) * 3 + 11 : shiftedSeed + 11);
+                uint64_t s1 = (uint64_t) shiftedSeed % MAX_INT + 11;
                 uint64_t r0, r1;
 
                 s1 ^= s0;

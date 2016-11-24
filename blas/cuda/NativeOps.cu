@@ -6236,6 +6236,7 @@ void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer
 
     buffer->setSeed(seed);
     buffer->setOffset(0);
+    buffer->propagateToDevice(buffer, *stream);
 
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
@@ -6254,4 +6255,6 @@ void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer 
     cudaStreamSynchronize(*stream);
 
     buffer->reSeed(seed);
+    buffer->setOffset(0);
+    buffer->propagateToDevice(buffer, *stream);
 }

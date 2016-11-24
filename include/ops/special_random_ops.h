@@ -299,8 +299,8 @@ namespace randomOps {
 
                 if (tZ[threadIdx.x] >= (T) 1.0)
                     tZ[threadIdx.x] -= 2e-5;
-
                 __syncthreads();
+
                 // fix for "next rng value"
                 if (threadIdx.x + 1 >= blockDim.x && e % 2 == 0) {
                     tZ[threadIdx.x+1] = tZ[threadIdx.x-1];
