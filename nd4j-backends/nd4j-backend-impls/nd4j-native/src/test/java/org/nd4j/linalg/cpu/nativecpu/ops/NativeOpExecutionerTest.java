@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 @Ignore
 public class NativeOpExecutionerTest {
     @Before
@@ -452,6 +454,8 @@ public class NativeOpExecutionerTest {
 
         INDArray CF = A.mmul(B);
         assertEquals(expC, CF);
+
+        Nd4j.enableFallbackMode(false);
     }
 
     @Test
@@ -473,6 +477,8 @@ public class NativeOpExecutionerTest {
 
         INDArray CF = A.mmul(B);
         assertEquals(expF, CF);
+
+        Nd4j.enableFallbackMode(false);
     }
 
     @Test
@@ -494,6 +500,31 @@ public class NativeOpExecutionerTest {
         //Outputs here should be identical:
         System.out.println(Arrays.toString(s1.data().asDouble()));
         System.out.println(Arrays.toString(s2.getRow(0).dup().data().asDouble()));
+    }
+
+    @Test
+    public void testGemmPerf() {
+        INDArray A = Nd4j.create(new int[]{10000, 1000}, 'c');
+        INDArray B = Nd4j.create(new int[]{1000, 10000}, 'f');
+
+        Nd4j.enableFallbackMode(false);
+        A.mmul(B);
+        long time1 = System.currentTimeMillis();
+        INDArray C1 = A.mmul(B);
+        long time2 = System.currentTimeMillis();
+
+        log.info("OpenBLAS time: {}", (time2 - time1));
+
+        Nd4j.enableFallbackMode(true);
+        A.mmul(B);
+
+        time1 = System.currentTimeMillis();
+        INDArray C2 = A.mmul(B);
+        time2 = System.currentTimeMillis();
+
+        log.info("Fallback time: {}", (time2 - time1));
+
+        Nd4j.enableFallbackMode(false);
     }
 
     public static INDArray scoreArray(INDArray labels, INDArray preOutput) {
