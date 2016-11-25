@@ -76,21 +76,22 @@ public class TableRecords {
      * @return
      */
     public static Table sortedRank(Table toRank, CalculateSortedRank rank) {
+        Table clone = toRank.fullCopy();
         LongColumn longColumn = new LongColumn(rank.outputColumnName(),toRank.rowCount());
         for(int i = 0; i < toRank.rowCount(); i++) {
             longColumn.add(i);
         }
 
-        toRank.addColumn(longColumn);
+        clone.addColumn(longColumn);
 
 
         if(rank.isAscending()) {
-            Table sorted = toRank.sortAscendingOn(rank.columnNames());
+            Table sorted = clone.sortAscendingOn(rank.columnNames());
             Table newTable = Table.create("sorted",sorted.column(rank.outputColumnName()));
             return newTable;
         }
         else {
-            Table sorted = toRank.sortDescendingOn(rank.columnNames());
+            Table sorted = clone.sortDescendingOn(rank.columnNames());
             Table newTable = Table.create("sorted",sorted.column(rank.outputColumnName()));
             return newTable;
         }
