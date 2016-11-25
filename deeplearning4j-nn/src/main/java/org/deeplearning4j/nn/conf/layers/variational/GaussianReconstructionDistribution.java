@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers.variational;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -49,7 +50,33 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
-    public INDArray gradient(INDArray x, INDArray preOut) {
-        return null;
+    public INDArray gradient(INDArray x, INDArray distributionParams) {
+        INDArray output = distributionParams.dup();
+        if(!"identity".equals(activationFn)){
+            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
+        }
+
+        int size = output.size(1)/2;
+        INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size));
+        INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size,2*size));
+
+        INDArray sigmaSquared = Transforms.exp(logStdevSquared,true);
+
+        INDArray xSubMean = x.sub(mean);
+        INDArray xSubMeanSq = xSubMean.muli(xSubMean);
+
+        INDArray dLdmu = xSubMean.divi(sigmaSquared);
+
+        INDArray sigma = Transforms.sqrt(sigmaSquared,true);
+        INDArray sigma3 = Transforms.pow(sigmaSquared, 3.0/2);
+
+        INDArray dLdsigma = sigma.rdiv(-1).addi(xSubMeanSq.divi(sigma3));
+        INDArray dLdlogSigma2 = sigma.divi(2).muli(dLdsigma);
+
+        INDArray grad = Nd4j.createUninitialized(output.shape());
+        grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,size)}, dLdmu);
+        grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(size, 2*size)}, dLdlogSigma2);
+
+        return grad;
     }
 }
