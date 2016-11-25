@@ -52,7 +52,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         private int[] encoderLayerSizes = new int[]{100};
         private int[] decoderLayerSizes = new int[]{100};
-        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution();
+        private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
 
         public Builder encoderLayerSizes(int... encoderLayerSizes){
             this.encoderLayerSizes = encoderLayerSizes;
