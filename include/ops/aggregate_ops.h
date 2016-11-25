@@ -12,6 +12,7 @@
 #ifdef __CUDACC__
 #define aggregate_def __device__ inline static
 #else
+#include <ops/gemm.h>
 #define aggregate_def inline static
 #endif
 /*
@@ -25,6 +26,72 @@
  *
  */
 namespace aggregateOps {
+
+    template<typename T>
+    class GEMM {
+
+#ifdef __CUDACC__
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+            // no-op
+        }
+#endif
+
+        static CBLAS_ORDER  convertOrder(int from) {
+            switch(from) {
+                //'c'
+                case 99:
+                    return CblasRowMajor;
+                    //'C'
+                case 67: return CblasRowMajor;
+                    //'f'
+                case 102: return CblasColMajor;
+                    //'F'
+                case 70: return CblasColMajor;
+                default: return CblasColMajor;
+
+            }
+        }
+
+
+        static CBLAS_TRANSPOSE convertTranspose(int from) {
+            switch(from) {
+                //'t'
+                case 116: return CblasTrans;
+                    //'T'
+                case 84: return CblasTrans;
+                    //'n'
+                case 110: return CblasNoTrans;
+                    //'N'
+                case 78: return CblasNoTrans;
+                    //'c'
+                case 99: return CblasConjTrans;
+                    //'C'
+                case 67: return CblasConjTrans;
+                default: return CblasNoTrans;
+            }
+        }
+
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+            int M = indexArguments[0];
+            int N = indexArguments[1];
+            int K = indexArguments[2];
+            int lda = indexArguments[3];
+            int ldb = indexArguments[4];
+            int ldc = indexArguments[5];
+            int TransA = indexArguments[6];
+            int TransB = indexArguments[7];
+            int Order = indexArguments[8];
+
+            T alpha = realArguments[0];
+            T beta = realArguments[1];
+
+            T *A = arguments[0];
+            T *B = arguments[1];
+            T *C = arguments[2];
+
+            nd4j::blas::GEMM<T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
+        }
+    };
 
     /**
      * We don't include this class into ops directly, since it won't be ever used directly,
