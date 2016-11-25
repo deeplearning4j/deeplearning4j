@@ -28,8 +28,6 @@ namespace randomOps {
              * Z will hold results
              */
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
@@ -41,7 +39,17 @@ namespace randomOps {
             __shared__ int yEWS;
             __shared__ int zEWS;
 
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
             if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
+
                 xLength = shape::length(xShapeBuffer);
                 yLength = shape::length(yShapeBuffer);
                 zLength = shape::length(zShapeBuffer);
@@ -49,6 +57,12 @@ namespace randomOps {
                 xEWS = shape::elementWiseStride(xShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
             }
             __syncthreads();
 
@@ -136,6 +150,9 @@ namespace randomOps {
                     __syncthreads();
                 }
             }
+
+            __syncthreads();
+            devBuffer->rewind(zLength);
         }
 #endif
 
@@ -260,11 +277,16 @@ namespace randomOps {
             __shared__ T *tZ;
 
             __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-
-                buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
 
                 tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
 
@@ -280,6 +302,12 @@ namespace randomOps {
                 stddev = extraArguments[1];
 
                 step = (blockDim.x * gridDim.x);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
             }
             __syncthreads();
 
@@ -309,7 +337,7 @@ namespace randomOps {
             }
 
             __syncthreads();
-            buffer->rewind(zLength);
+            devBuffer->rewind(zLength);
         }
 #endif
 
@@ -404,12 +432,26 @@ namespace randomOps {
             __shared__ int yEWS;
             __shared__ int zEWS;
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
             if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
+
                 zLength = shape::length(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
             }
             __syncthreads();
 
@@ -418,7 +460,7 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += blockDim.x * gridDim.x) {
                 int success = 0;
                 for (int t = 1; t <= trials; t++) {
-                    T randVal = buffer->relativeT<T>(e * t);
+                    T randVal = buffer->relativeT<T>((e+1) * t);
                     if (y != z) {
                         // we're using external probs
                         prob = y[(t-1) * yEWS];
@@ -437,7 +479,7 @@ namespace randomOps {
 
             __syncthreads();
             if (trials > 0)
-                buffer->rewind(zLength * trials);
+                devBuffer->rewind(zLength * trials);
         }
 #endif
 
@@ -470,7 +512,7 @@ namespace randomOps {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
-                        T randVal = buffer->relativeT<T>(e * t);
+                        T randVal = buffer->relativeT<T>((e+1) * t);
                         if (y != z) {
                             // we're using external probs
                             prob = y[(t-1) * yEWS];

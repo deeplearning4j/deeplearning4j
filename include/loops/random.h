@@ -47,7 +47,9 @@ namespace functions {
                 __shared__ int zEWS;
 
                 __shared__ nd4j::random::RandomBuffer *buffer;
-
+                __shared__ unsigned char *cB;
+                __shared__ unsigned char *dB;
+                __shared__ nd4j::random::RandomBuffer *devBuffer;
                 if (threadIdx.x == 0) {
                     length = shape::length(zShapeBuffer);
                     xEWS = shape::elementWiseStride(xShapeBuffer);
@@ -55,10 +57,19 @@ namespace functions {
                     zEWS = shape::elementWiseStride(zShapeBuffer);
 
                     extern __shared__ unsigned char shmem[];
-
-                    buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    cB = shmem;
+                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    dB = reinterpret_cast<unsigned char *> (state);
                 }
                 __syncthreads();
+
+                // using this loop instead of memcpy
+                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                    cB[e] = dB[e];
+                }
+                __syncthreads();
+
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -313,7 +324,24 @@ namespace functions {
                 int length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
-                nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                __shared__ nd4j::random::RandomBuffer *buffer;
+                __shared__ unsigned char *cB;
+                __shared__ unsigned char *dB;
+                __shared__ nd4j::random::RandomBuffer *devBuffer;
+                if (threadIdx.x == 0) {
+                    extern __shared__ unsigned char shmem[];
+                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    cB = shmem;
+                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    dB = reinterpret_cast<unsigned char *> (state);
+                }
+                __syncthreads();
+
+                // using this loop instead of memcpy
+                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                    cB[e] = dB[e];
+                }
+                __syncthreads();
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
