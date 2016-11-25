@@ -36,6 +36,7 @@ namespace aggregateOps {
         }
 #endif
 
+#ifndef __CUDACC__
         static CBLAS_ORDER  convertOrder(int from) {
             switch(from) {
                 //'c'
@@ -70,7 +71,9 @@ namespace aggregateOps {
                 default: return CblasNoTrans;
             }
         }
+#endif
 
+#ifndef __CUDACC__
         aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int M = indexArguments[0];
             int N = indexArguments[1];
@@ -91,6 +94,11 @@ namespace aggregateOps {
 
             nd4j::blas::GEMM<T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
         }
+#else
+        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+            // stub for nvcc
+        }
+#endif
     };
 
     /**
