@@ -260,7 +260,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return activate()
+        return activate(training == TrainingMode.TRAIN);
     }
 
     @Override
