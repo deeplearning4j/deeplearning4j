@@ -82,6 +82,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -171,6 +172,8 @@ public class Nd4j {
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
 
+    protected static AtomicBoolean fallbackMode;
+
 
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
@@ -181,6 +184,7 @@ public class Nd4j {
     static {
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
+        fallbackMode = new AtomicBoolean(false);
     }
 
 
@@ -5541,5 +5545,21 @@ public class Nd4j {
             case DOUBLE:
                 return 8;
         }
+    }
+
+    /**
+     *
+     * @param reallyEnable
+     */
+    public static void enableFallbackMode(boolean reallyEnable) {
+        fallbackMode.set(reallyEnable);
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static boolean isFallbackModeEnabled() {
+        return fallbackMode.get();
     }
 }

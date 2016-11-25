@@ -16,7 +16,7 @@ public class AggregateGEMM extends BaseAggregate {
         // no-op
     }
 
-    public AggregateGEMM(@NonNull int M,@NonNull int N, @NonNull int K, @NonNull double alpha, @NonNull INDArray A, @NonNull int lda, @NonNull INDArray B, @NonNull int ldb, @NonNull double beta, @NonNull INDArray C, @NonNull int ldc) {
+    public AggregateGEMM(@NonNull int Order, @NonNull int TransA, @NonNull int TransB, @NonNull int M,@NonNull int N, @NonNull int K, @NonNull double alpha, @NonNull INDArray A, @NonNull int lda, @NonNull INDArray B, @NonNull int ldb, @NonNull double beta, @NonNull INDArray C, @NonNull int ldc) {
         this.arguments.add(A);
         this.arguments.add(B);
         this.arguments.add(C);
@@ -27,6 +27,9 @@ public class AggregateGEMM extends BaseAggregate {
         this.indexingArguments.add(lda);
         this.indexingArguments.add(ldb);
         this.indexingArguments.add(ldc);
+        this.indexingArguments.add(TransA);
+        this.indexingArguments.add(TransB);
+        this.indexingArguments.add(Order);
 
         this.realArguments.add(alpha);
         this.realArguments.add(beta);
@@ -64,7 +67,7 @@ public class AggregateGEMM extends BaseAggregate {
 
     @Override
     public int maxIndexArguments() {
-        return 6;
+        return 9;
     }
 
     @Override

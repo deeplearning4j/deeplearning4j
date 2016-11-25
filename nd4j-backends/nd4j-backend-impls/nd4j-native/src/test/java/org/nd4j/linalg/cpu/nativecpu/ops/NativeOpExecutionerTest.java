@@ -447,6 +447,11 @@ public class NativeOpExecutionerTest {
         INDArray expC = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape(4, 4);
 
         assertEquals(expC, C);
+
+        Nd4j.enableFallbackMode(true);
+
+        INDArray CF = A.mmul(B);
+        assertEquals(expC, CF);
     }
 
     @Test
@@ -463,6 +468,11 @@ public class NativeOpExecutionerTest {
         INDArray expF = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape('f', 4, 4);
 
         assertEquals(expF, C);
+
+        Nd4j.enableFallbackMode(true);
+
+        INDArray CF = A.mmul(B);
+        assertEquals(expF, CF);
     }
 
     @Test
