@@ -29,7 +29,7 @@ namespace aggregateOps {
 
     template<typename T>
     class GEMM {
-
+    public:
 #ifdef __CUDACC__
         aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             // no-op
