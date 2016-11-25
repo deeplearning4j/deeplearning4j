@@ -14,6 +14,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
 
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -127,5 +128,39 @@ public class TestReconstructionDistributions {
                 assertEquals(expLogProb, logProb, 1e-6);
             }
         }
+    }
+
+    @Test
+    public void gradientCheckReconstructionDistributions(){
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int inputSize = 4;
+        int[] mbs = new int[]{1,2,5};
+
+        Random r = new Random(12345);
+
+        ReconstructionDistribution[] distributions = new ReconstructionDistribution[]{
+                new GaussianReconstructionDistribution("identity"),
+                new BernoulliReconstructionDistribution("sigmoid")
+        };
+
+        for(ReconstructionDistribution rd : distributions) {
+            for (int minibatch : mbs) {
+
+
+                INDArray x = Nd4j.zeros(minibatch, inputSize);
+                for (int i = 0; i < minibatch; i++) {
+                    for (int j = 0; j < inputSize; j++) {
+                        x.putScalar(i, j, r.nextInt(2));
+                    }
+                }
+
+            }
+        }
+
+
+
+        fail("Not yet implemented");
     }
 }

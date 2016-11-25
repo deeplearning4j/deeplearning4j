@@ -11,6 +11,6 @@ public interface ReconstructionDistribution {
 
     double logProbability(INDArray x, INDArray distributionParams, boolean average);
 
-    INDArray gradient(INDArray x, INDArray preOut);
+    INDArray gradient(INDArray x, INDArray distributionParams);
 
 }
