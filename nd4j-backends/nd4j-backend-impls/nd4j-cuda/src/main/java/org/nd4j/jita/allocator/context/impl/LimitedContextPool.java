@@ -195,7 +195,7 @@ public class LimitedContextPool extends BasicContextPool {
                     try {
                         Thread.sleep(100);
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        // no-op
                     }
                 }
             }
