@@ -160,12 +160,24 @@ public class SparkTransformExecutor {
         JavaRDD<List<List<Writable>>> currentSequence = inputSequence;
 
         List<DataAction> list = sequence.getActionList();
-        if(inputWritables.first().size() != sequence.getInitialSchema().numColumns())
-            throw new IllegalStateException("Input sequence does not match the number of columns for the transform process");
+        if(inputWritables != null){
+            List<Writable> first = inputWritables.first();
+            if(first.size() != sequence.getInitialSchema().numColumns()) {
+                throw new IllegalStateException("Input data number of columns (" + first.size() + ") does not match the number of columns for the transform process ("
+                        + sequence.getInitialSchema().numColumns() + ")");
+            }
+        } else {
+            List<List<Writable>> firstSeq = inputSequence.first();
+            if(firstSeq.size() > 0 && firstSeq.get(0).size() != sequence.getInitialSchema().numColumns()){
+                throw new IllegalStateException("Input sequence data number of columns (" + firstSeq.get(0).size() + ") does not match the number of columns for the transform process ("
+                        + sequence.getInitialSchema().numColumns() + ")");
+            }
+        }
+
 
         int count = 1;
         for (DataAction d : list) {
-            log.info("Starting execution of stage {} of {}", count, list.size());
+            //log.info("Starting execution of stage {} of {}", count, list.size());     //
 
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
@@ -255,9 +267,7 @@ public class SparkTransformExecutor {
             count++;
         }
 
-        log.info("Completed {} of {} execution steps", count - 1, list.size());
-        if(currentWritables.first().size() != sequence.getFinalSchema().numColumns())
-            throw new IllegalStateException("Output number of columns is wrong. Supposed to be " + sequence.getFinalSchema().numColumns() + " but was " + currentWritables.first().size());
+        //log.info("Completed {} of {} execution steps", count - 1, list.size());       //Lazy execution means this can be printed before anything has actually happened...
 
         return new Pair<>(currentWritables, currentSequence);
     }
