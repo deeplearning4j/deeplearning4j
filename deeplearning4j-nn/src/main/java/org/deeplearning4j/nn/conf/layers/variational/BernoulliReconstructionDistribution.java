@@ -46,7 +46,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public INDArray gradient(INDArray x, INDArray preOut) {
+    public INDArray gradient(INDArray x, INDArray distributionParams) {
         return null;
     }
 }
