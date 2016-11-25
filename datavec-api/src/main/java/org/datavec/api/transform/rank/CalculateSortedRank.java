@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.rank;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -49,13 +50,14 @@ import java.util.List;
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-public class CalculateSortedRank implements Serializable {
+public class CalculateSortedRank implements Serializable,ColumnOp {
 
     private final String newColumnName;
     private final String sortOnColumn;
     private final WritableComparator comparator;
     private final boolean ascending;
     private Schema inputSchema;
+
 
     /**
      *
@@ -82,10 +84,10 @@ public class CalculateSortedRank implements Serializable {
         this.ascending = ascending;
     }
 
-    public Schema transform(Schema inputSchema){
+    @Override
+    public Schema transform(Schema inputSchema) {
         if(inputSchema instanceof SequenceSchema) throw new IllegalStateException("Calculating sorted rank on sequences: not yet supported");
 
-        List<String> origNames = inputSchema.getColumnNames();
         List<ColumnMetaData> origMeta = inputSchema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(origMeta);
 
@@ -94,12 +96,60 @@ public class CalculateSortedRank implements Serializable {
         return inputSchema.newSchema(newMeta);
     }
 
+    @Override
     public void setInputSchema(Schema schema){
         this.inputSchema = schema;
     }
 
+    @Override
     public Schema getInputSchema(){
         return inputSchema;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return newColumnName;
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        List<String> columnNames = inputSchema.getColumnNames();
+        columnNames.add(newColumnName);
+        return columnNames.toArray(new String[columnNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return inputSchema.getColumnNames().toArray(new String[inputSchema.numColumns()]);
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnNames()[0];
     }
 
     @Override

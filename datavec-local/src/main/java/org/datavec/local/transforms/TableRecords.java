@@ -7,6 +7,7 @@ import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -40,7 +41,7 @@ public class TableRecords {
      */
     public static Table transform(Table table,TransformProcess transformProcess) {
         List<DataAction> dataActions = transformProcess.getActionList();
-        Table ret = table;
+        Table ret = table.fullCopy();
         for(DataAction dataAction : dataActions) {
             if(dataAction.getTransform() != null) {
                 ret = transformTable(table,dataAction.getTransform());
@@ -49,15 +50,17 @@ public class TableRecords {
                 ret = filterTable(ret,dataAction.getFilter());
             }
             else if(dataAction.getCalculateSortedRank() != null) {
-
+                table = sortedRank(ret,dataAction.getCalculateSortedRank());
             }
             else if(dataAction.getConvertFromSequence() != null) {
+                throw new UnsupportedOperationException("No support for sequence data yet");
 
             }
             else if(dataAction.getReducer() != null) {
-
+                throw new UnsupportedOperationException("No support for reduction yet");
             }
             else if(dataAction.getSequenceSplit() != null) {
+                throw new UnsupportedOperationException("No support for sequence data yet");
 
             }
         }
@@ -65,6 +68,33 @@ public class TableRecords {
         return ret;
     }
 
+
+    /**
+     *
+     * @param toRank
+     * @param rank
+     * @return
+     */
+    public static Table sortedRank(Table toRank, CalculateSortedRank rank) {
+        LongColumn longColumn = new LongColumn(rank.outputColumnName(),toRank.rowCount());
+        for(int i = 0; i < toRank.rowCount(); i++) {
+            longColumn.add(i);
+        }
+
+        toRank.addColumn(longColumn);
+
+
+        if(rank.isAscending()) {
+            Table sorted = toRank.sortAscendingOn(rank.columnNames());
+            Table newTable = Table.create("sorted",sorted.column(rank.outputColumnName()));
+            return newTable;
+        }
+        else {
+            Table sorted = toRank.sortDescendingOn(rank.columnNames());
+            Table newTable = Table.create("sorted",sorted.column(rank.outputColumnName()));
+            return newTable;
+        }
+    }
 
     /**
      * Implements a filter
