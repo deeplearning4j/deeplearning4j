@@ -1,5 +1,5 @@
 ---
-title: "关于我们"
+title: 关于我们
 layout: cn-default
 redirect_from: /zh-about
 ---
