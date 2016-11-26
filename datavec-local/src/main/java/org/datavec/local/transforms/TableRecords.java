@@ -19,15 +19,19 @@ import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.*;
+import org.datavec.dataframe.filtering.datetimes.DateTimeIsAfter;
 import org.datavec.dataframe.filtering.doubles.*;
 import org.datavec.dataframe.filtering.ints.IntNotEqualTo;
 import org.datavec.dataframe.filtering.longs.*;
+import org.datavec.dataframe.filtering.times.IsAfter;
+import org.datavec.dataframe.filtering.times.IsBefore;
 import org.datavec.dataframe.reducing.NumericReduceFunction;
 import org.datavec.dataframe.reducing.NumericReduceUtils;
 import org.datavec.dataframe.store.ColumnMetadata;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -195,8 +199,17 @@ public class TableRecords {
             switch (output.getType(output.getIndexOfColumn(columnCondition.outputColumnName()))) {
                 case String:
                     CategoricalColumnCondition categoricalColumnCondition = (CategoricalColumnCondition) columnCondition;
-                    org.datavec.dataframe.filtering.Filter filter1;
-                    break;
+                  switch (categoricalColumnCondition.getOp()) {
+                      case Equal:
+                          return new StringEqualTo(columnReference,categoricalColumnCondition.getValue());
+                      case NotEqual:
+                          return new StringNotEqualTo(columnReference, categoricalColumnCondition.getValue());
+                      case InSet:
+                          return new StringInSet(columnReference,categoricalColumnCondition.getSet());
+                      case NotInSet:
+                          return new StringNotInSet(columnReference,categoricalColumnCondition.getSet());
+
+                  }
                 case Long:
                     LongColumnCondition longColumnCondition = (LongColumnCondition) columnCondition;
                     switch (longColumnCondition.getOp()) {
@@ -216,7 +229,17 @@ public class TableRecords {
                     }
                 case Categorical:
                     CategoricalColumnCondition categoricalColumnCondition2 = (CategoricalColumnCondition) columnCondition;
-                    break;
+                    switch (categoricalColumnCondition2.getOp()) {
+                        case Equal:
+                            return new StringEqualTo(columnReference,categoricalColumnCondition2.getValue());
+                        case NotEqual:
+                            return new StringNotEqualTo(columnReference, categoricalColumnCondition2.getValue());
+                        case InSet:
+                            return new StringInSet(columnReference,categoricalColumnCondition2.getSet());
+                        case NotInSet:
+                            return new StringNotInSet(columnReference,categoricalColumnCondition2.getSet());
+
+                    }
                 case Float:
                     DoubleColumnCondition floatColumnCondition = (DoubleColumnCondition) columnCondition;
                     switch (floatColumnCondition.getOp()) {
@@ -236,7 +259,17 @@ public class TableRecords {
                     }
                 case Time:
                     TimeColumnCondition timeColumnCondition = (TimeColumnCondition) columnCondition;
-                    break;
+                    switch (timeColumnCondition.getOp()) {
+                        case Equal:
+                            return new TimeEqualTo(columnReference, LocalTime.ofNanoOfDay(timeColumnCondition.getValue().longValue()));
+                        case NotEqual:
+                            return new TimeNotEqualTo(columnReference, LocalTime.ofNanoOfDay(timeColumnCondition.getValue().longValue()));
+                        case GreaterThan:
+                            return new IsAfter(columnReference,LocalTime.ofNanoOfDay(timeColumnCondition.getValue().longValue()));
+                        case LessThan:
+                            return new IsBefore(columnReference,LocalTime.ofNanoOfDay(timeColumnCondition.getValue().longValue()));
+                        default: throw new IllegalStateException("Illegal operation ");
+                    }
                 case Boolean:
                     BooleanColumnCondition booleanColumnCondition = (BooleanColumnCondition) columnCondition;
                     return new BooleanIsTrue(columnReference);

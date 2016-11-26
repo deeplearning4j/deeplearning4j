@@ -26,13 +26,7 @@ import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.ints.IntListIterator;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A column in a base table that contains float values
@@ -339,6 +333,24 @@ public class CategoryColumn extends AbstractColumn
     return values.isEmpty();
   }
 
+  public Selection isInSet(Collection<String> values2) {
+    Selection results = new BitmapBackedSelection();
+    for(String string : values2) {
+      int key = lookupTable.get(string);
+      if (key >= 0) {
+        int i = 0;
+        for (int next : values) {
+          if (key == next) {
+            results.add(i);
+          }
+          i++;
+        }
+      }
+    }
+
+    return results;
+  }
+
   public Selection isEqualTo(String string) {
     Selection results = new BitmapBackedSelection();
     int key = lookupTable.get(string);
@@ -351,6 +363,25 @@ public class CategoryColumn extends AbstractColumn
         i++;
       }
     }
+    return results;
+  }
+
+
+  public Selection isNotInSet(Collection<String> values2) {
+    Selection results = new BitmapBackedSelection();
+   for(String string : values2) {
+     int key = lookupTable.get(string);
+     if (key >= 0) {
+       int i = 0;
+       for (int next : values) {
+         if (key != next) {
+           results.add(i);
+         }
+         i++;
+       }
+     }
+   }
+
     return results;
   }
 
