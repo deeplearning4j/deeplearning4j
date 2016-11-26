@@ -109,10 +109,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 * 如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与[Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)中的最新版本相符。使用源进行升级时，可以在[ND4J](http://nd4j.org/getstarted.html)、Canova和DL4J上运行`git clone`，并以此顺序在所有三个目录内运行`mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true`。
 * 在运行示例时，可能会得到较低的[f1分数](../glossary.html#f1)。这一分数评估的，是网络分类准确的可能性。在这一情况下，f1分数分数低并不表明表现不佳，因为示例是通过小数据组进行定型的。之所以数据组较小，是为了加快运行速度。因为小数据组相比大数据组较不具有代表性，所以其生成的结果也会有很大差异。比如说，在示例数据量微小的情况下，我们的深度置信网络f1分数目前为从0.32到1.0不等。
 * Deeplearning4j包括**自动完成功能**。如果您不确定哪些命令可用，可任意按下某一字母键，将出现如下所示的下拉式菜单：
-
- ![Alt text](../img/dl4j_autocomplete.png)
-
-* 此处为包含所有[Deeplearning4j课程及方法](http://deeplearning4j.org/doc/)的**Javadoc**。
+⋅⋅* 此处为包含所有[Deeplearning4j课程及方法](http://deeplearning4j.org/doc/)的**Javadoc**。
 * 随着代码数量的增加，使用源进行安装将需要更多内存。如果在DL4J构建过程中发生`Permgen error`，则需要添加更多**堆空间**，方法是找到并更改隐藏的`.bash_profile`文件。这一文件在bash中添加环境变量。要了解具体有哪些变量，请在命令行中输入`env`。要添加更多堆空间，请在控制台输入下列命令：
       echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
 * 如3.0.4等较早的Maven版本可能会产生NoSuchMethodError等异常情况。解决办法是将Maven升级到最新版本（当前为3.3.x）。您可以在命令行中输入`mvn -v`，检查Maven版本。
@@ -122,8 +119,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 * [Java CPP](https://github.com/bytedeco/javacpp)的包含路径可能在**Windows**环境下发生问题。解决办法之一，是将Visual Studio包含目录中的标头文件放入Java运行时环境（JRE）的包含路径中（亦即Java的安装路径）。如此将对standardio.h等文件产生影响。更多信息请访问[此页面](http://nd4j.org/getstarted.html#windows)。
 * 监测GPU的说明请见[此处](http://nd4j.org/getstarted.html#gpu)。
 * 使用Java的重要理由之一是 **[JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html)** 中预装的诊断工具。如果已安装Java，在命令行中输入`jvisualvm`，即可获得关于CPU、Heap、PermGen、Classes和Threads的图像信息。有用的视图：点击右上角`Sampler`标签，然后点击CPU或内存按钮以获得相关视图。
-
- ![Alt text](../img/jvisualvm.png)
+⋅⋅* ![Alt text](../img/jvisualvm.png)
 * 在使用DL4J过程中出现的部分问题可能与对机器学习概念和技术的不了解有关。我们强烈推荐所有Deeplearning4j用户使用本网站以外的资源，来了解机器学习的基本要点。我们在[这一页面](../deeplearningpapers)上列出了机器和深度学习的一些学习资源。虽然我们已对DL4J编写部分文档，但其中有些代码基本上仍属于原始且领域专用的深度学习语言。
 * 在通过 **Clojure** 使用`deeplearning4j-nlp`、通过Leiningen生成uberjar时，需要在`project.clj`中指定以下内容，以使akka `reference.conf`资源文件得到正确合并：`:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}`。请注意，.properties文件映射图中的首个条目通常为缺省项。如果未能完成上述步骤，在运行相关uberjar时将出现以下异常信息：`Exception in thread "main" com.typesafe.config.ConfigException$Missing:No configuration setting found for key 'akka.version'`.
 * OSX环境下，浮动支持有很多问题。如果在运行我们的示例时，在应出现数字的地方出现NaN，则请将数据类型改为`double`。
