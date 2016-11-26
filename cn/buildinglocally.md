@@ -246,7 +246,7 @@ copy mkl_rt.dll libblas3.dll
 
 Github社区中有一套用bash编写的[build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1)脚本，可以克隆DL4J stack堆栈，构建所有代码库并将其安装到本地的Maven中。这一脚本在Linux和OS X平台上都可以运行。
 
-请仔细阅读下列说明。 
+请仔细阅读下列说明。
 
 CPU架构请使用以下构建脚本：
 
@@ -276,7 +276,7 @@ Scala用户可以传入二进制版本号，确保与Spark相兼容：
 2.构建
 3.安装
 
-整个流程所需的命令如下文所示，唯一的例外是，libnd4j的`./buildnativeoperations.sh`所接受的参数取决于您选用的后端类型。以下步骤必须按给出的顺序依次运行，否则会出现错误。适用于GPU的命令附在注释内，为GPU后端进行构建时，应当将适用于CPU的命令替换为注释中的命令。 
+整个流程所需的命令如下文所示，唯一的例外是，libnd4j的`./buildnativeoperations.sh`所接受的参数取决于您选用的后端类型。以下步骤必须按给出的顺序依次运行，否则会出现错误。适用于GPU的命令附在注释内，为GPU后端进行构建时，应当将适用于CPU的命令替换为注释中的命令。
 
 ``` shell
 # 清除现有的代码库，确保干净的构建环境
@@ -321,15 +321,15 @@ cd deeplearning4j
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 # 或者为多个Scala版本进行交叉编译
 # ./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
-## 如果跳过了CUDA，可能需要将 
-## -pl '!:deeplearning4j-cuda-8.0' 
+## 如果跳过了CUDA，可能需要将
+## -pl '!:deeplearning4j-cuda-8.0'
 ## 添加至mvn clean install命令，避免构建脚本寻找cuda库
 cd ..
 ```
 
 ## 使用本地依赖项目
 
-DL4J堆栈安装到本地的Maven代码库之后，就可以将其加入构建工具的依赖项目了。请参阅Deeplearning4j的[完全安装指南](http://deeplearning4j.org/zh-gettingstarted)，以正确的方式将版本替换为目前[主POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml)上的SNAPSHOT版本。
+DL4J堆栈安装到本地的Maven代码库之后，就可以将其加入构建工具的依赖项目了。请参阅Deeplearning4j的[完全安装指南](http://deeplearning4j.org/cn/gettingstarted)，以正确的方式将版本替换为目前[主POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml)上的SNAPSHOT版本。
 
 需要注意的是，某些构建工具，比如Gradle和SBT，无法正确调用特定平台的二进制文件。可以按[此处](http://nd4j.org/dependencies.html)的指南来设置您选用的构建工具。
 
