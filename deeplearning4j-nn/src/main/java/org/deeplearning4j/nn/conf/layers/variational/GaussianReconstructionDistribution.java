@@ -25,8 +25,8 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
-    public double logProbability(INDArray x, INDArray distributionParams, boolean average) {
-        INDArray output = distributionParams.dup();
+    public double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+        INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
         }
@@ -50,8 +50,8 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
-    public INDArray gradient(INDArray x, INDArray distributionParams) {
-        INDArray output = distributionParams.dup();
+    public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
+        INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
         }
@@ -63,7 +63,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray sigmaSquared = Transforms.exp(logStdevSquared,true);
 
         INDArray xSubMean = x.sub(mean);
-        INDArray xSubMeanSq = xSubMean.muli(xSubMean);
+        INDArray xSubMeanSq = xSubMean.mul(xSubMean);
 
         INDArray dLdmu = xSubMean.divi(sigmaSquared);
 
@@ -77,6 +77,17 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,size)}, dLdmu);
         grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(size, 2*size)}, dLdlogSigma2);
 
+        if(!"identity".equals(activationFn)){
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
+                    Nd4j.getOpFactory().createTransform(activationFn, preOutDistributionParams.dup()).derivative());
+            grad.muli(sigmaPrimeZ);
+        }
+
         return grad;
+    }
+
+    @Override
+    public String toString(){
+        return "GaussianReconstructionDistribution(afn=" + activationFn + ")";
     }
 }

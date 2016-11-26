@@ -27,8 +27,8 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public double logProbability(INDArray x, INDArray distributionParams, boolean average) {
-        INDArray output = distributionParams.dup();
+    public double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+        INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
         }
@@ -46,7 +46,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public INDArray gradient(INDArray x, INDArray distributionParams) {
+    public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
         return null;
     }
 }
