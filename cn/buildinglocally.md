@@ -1,6 +1,6 @@
 ---
 title:本地构建DL4J堆栈
-layout: default
+layout: cn-default
 ---
 
 # 用源码进行本地构建
