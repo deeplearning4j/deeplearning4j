@@ -100,6 +100,12 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
+	linux-armhf)
+	export CMAKE_COMMAND="cmake -D CMAKE_TOOLCHAIN_FILE=$HOME/raspberrypi/pi.cmake"
+	if [ -z "$ARCH" ]; then
+        ARCH="armv7-r"
+    fi
+	;;
     android-arm)
     if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
