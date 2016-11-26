@@ -21,6 +21,7 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ?(window.attachEvent 
 本页将向您全面介绍如何运行DL4J示例，启动您自己的项目。
 
 建议您加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)。您可以在Gitter上请求帮助、提出反馈，不过也请您在遇到问题时先参考本指南中已列出的疑难解答。如果您是初次接触深度学习，我们准备了[一份初学者学习计划](./deeplearningforbeginners.html)，包括课程、阅读材料和其他资源的链接。
+<br />
 
 #### 代码一瞥
 
@@ -59,6 +60,7 @@ Deeplearning4j是一种用于配置深度多层神经网络的领域专用语言
 在使用以下快速入门指南前，请先安装上述各项。DL4J主要面向熟悉各类生产部署工具、IDE和自动化构建工具的专业Java开发者。若您已熟悉这些工具，使用DL4J将易如反掌。
 
 如果您是初学Java，或对上述工具了解有限，请阅读以下的详细介绍，了解关于安装和设置的帮助。如无需了解这些内容，您可**跳至<a href="#examples">DL4J示例</a>**。
+<br />
 
 #### <a name="Java">Java</a>
 
@@ -162,7 +164,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ### 疑难解答
 <br />
 
-**问：**我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
+**问：** 我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
 
 **答：**您的路径中可能有不兼容的DLL文件。您需要将以下代码作为VM参数添加（IntelliJ中选择运行 -> 编辑配置 -> VM选项），让DL4J忽略这些文件：
 
