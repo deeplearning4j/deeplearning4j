@@ -16,8 +16,6 @@ layout: cn-default
 
 Deeplearning4j能在大多数平台（Windows、OS X、Linux）上运行，同时也有多种不同的“风格”，可以适应包括CPU（OpenBLAS, MKL, ATLAS）和GPU（CUDA）在内的各种计算架构。DL4J堆栈也支持x86和PowerPC架构。
 
-<br /><br />
-
 ## 系统要求
 
 在构建和安装DL4J堆栈*之前*，请确保本地计算机已具备必要的软件，且环境变量已设置完毕。各平台和操作系统版本对应的步骤可能有所不同。所需软件包括：
@@ -47,7 +45,7 @@ GPU架构：
 
 #### Linux
 
-**Ubuntu**
+##### Ubuntu 
 
 若您使用Ubuntu风格的Linux，而且是以非root用户的身份运行系统，那么请按以下步骤安装必备软件：
 
