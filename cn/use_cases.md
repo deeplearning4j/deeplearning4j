@@ -74,10 +74,10 @@ redirect_from: /zh-use_cases
 实现这一功能后，就很容易发展出模拟语义，让机器借由各类现实物体的虚拟表示来学习这些物体的本质和限制，随后将这种理解运用到语言的生成和处理当中。我们认为这是神经网络未来众多的发展方向之一。
 
 ### <a name="beginner">其他Deeplearning4j教程</a>
-* [神经网络简介](zh-neuralnet-overview)
-* [受限玻尔兹曼机](zh-restrictedboltzmannmachine)
-* [本征向量、协方差、PCA和熵](zh-eigenvector)
-* [LSTM和递归网络](zh-lstm)
-* [神经网络与回归分析](../linear-regression)
-* [卷积网络](zh-convolutionalnets)
-* [Word2vec：Java中的神经词向量](zh-word2vec)
+* [神经网络简介](neuralnet-overview)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](eigenvector)
+* [LSTM和递归网络](lstm)
+* [神经网络与回归分析](linear-regression)
+* [卷积网络](convolutionalnets)
+* [Word2vec：Java中的神经词向量](word2vec)

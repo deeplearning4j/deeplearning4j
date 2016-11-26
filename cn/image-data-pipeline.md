@@ -14,7 +14,7 @@ Deeplearning4j示例所使用的基准数据集不会对数据加工管道造成
 
 ## 简介视频
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
+<iframe height=498 width=510 src='http://player.youku.com/embed/XMTcwNTkyNDY0OA==' frameborder=0 'allowfullscreen'></iframe>
 
 ## 加载标签
 

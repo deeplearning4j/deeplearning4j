@@ -8,11 +8,15 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 
 Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的**分布式深度学习框架**，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和Spark集成，可使用任意数量的GPU或CPU运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。
 
-<p align="center">
-<a href="zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', 'quickstart', 'click');">Deeplearning4j入门教程</a>
+<br />
+
+<p align="left">
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">Deeplearning4j入门教程</a>
 </p>
 
-目录
+<br />
+
+### 目录
 
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#theano">Theano、Pylearn2及其生态系统</a>
@@ -37,8 +41,9 @@ Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他
 * TensorFlow不提供商业支持，而谷歌也不太可能会从事支持开源企业软件的业务。谷歌的角色是为研究者提供一种新工具。
 * 和Theano一样，TensforFlow会生成计算图（如一系列矩阵运算，例如z = simoid(x)，其中x和z均为矩阵），自动求导。自动求导很重要，否则每尝试一种新的神经网络设计就要手动编写新的反向传播算法，没人愿意这样做。在谷歌的生态系统中，这些计算图会被谷歌大脑用于高强度计算，但谷歌还没有开放相关工具的源代码。TensorFlow可以算是谷歌内部深度学习解决方案的一半。
 * 从企业的角度看，许多公司需要思考的问题在于是否要依靠谷歌来提供这些工具。
+<br />
 
-利与弊
+#### 利与弊:
 
 * (+) Python + NumPy
 * (+) 与Theano类似的计算图抽象化
@@ -57,8 +62,9 @@ Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他
 现在已有大量基于Theano的开源深度学习库，包括[Keras](https://github.com/fchollet/keras)、 [Lasagne](https://lasagne.readthedocs.org/en/latest/)和[Blocks](https://github.com/mila-udem/blocks)。这些学习库试着在Theano有时不够直观的界面之上添加一层便于使用的API。（截至2016年3月，另一个与Theano相关的学习库[Pylearn2似乎已经停止开发](https://github.com/lisa-lab/pylearn2)。）
 
 相比之下，Deeplearning4j的目标是成为深度学习领域的Scikit-learn，力求以可扩展、多个GPU或CPU并行的方式让尽可能多的控制点实现自动化，在需要时与Hadoop和[Spark](../spark)集成。
+<br />
 
-利与弊
+#### 利与弊:
 
 * (+) Python + NumPy
 * (+) 计算图是良好的抽象化方式
@@ -75,8 +81,9 @@ Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他
 [**Torch**](http://torch.ch/)是用Lua编写的计算框架，支持机器学习算法。谷歌DeepMind、Facebook等大型科技公司使用Torch的某些版本，由内部团队专门负责定制自己的深度学习平台。Lua是上世纪九十年代早期在巴西开发的多范例脚本语言。
 
 Torch7虽然功能强大，[但其设计并不适合在两个群体中大范围普及](https://news.ycombinator.com/item?id=7929216)，即主要依赖Python的学术界，以及普遍使用Java的企业软件工程师。Deeplearning4j用Java编写，反映了我们对行业应用和使用便利的重视。我们认为可用性是阻碍深度学习实施工具广泛普及的限制因素。我们认为可扩展性应当通过Hadoop和Spark这样的开源分布式运行时系统来实现自动化。我们还认为，从确保工具正常运作和构建社区两方面来看，提供商业支持的开源框架是最恰当的解决方案。
+<br />
 
-利与弊：
+#### 利与弊
 
 * (-) Lua
 * 通常需要自己编写定型代码（即插即用相对较少）
@@ -91,8 +98,9 @@ Torch7虽然功能强大，[但其设计并不适合在两个群体中大范围�
 [**Caffe**](http://caffe.berkeleyvision.org/)是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（[参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡](https://sites.google.com/site/steveyegge2/google-at-delphi)）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。
 
 Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j*支持*任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预定型的模型。Deeplearning4j正在开发将Caffe模型导入Spark的[开发解析器](https://github.com/deeplearning4j/deeplearning4j/pull/480)。
+<br />
 
-利与弊：
+#### 利与弊：
 
 * (+) 适合前馈网络和图像处理
 * (+) 适合微调已有的网络

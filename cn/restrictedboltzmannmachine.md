@@ -19,7 +19,7 @@ redirect_from: /zh-restrictedboltzmannmachine
 
 ## <a name="define">定义与结构</a>
 
-受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](../linear-regression)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](zh-neuralnet-overview)的应用方法，请参阅[应用案例](zh-use_cases))。
+受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、[回归分析](../linear-regression)、协同过滤、特征学习和主题建模的算法。（如需通过实例了解RBM等[神经网络](neuralnet-overview)的应用方法，请参阅[应用案例](use_cases))。
 
 我们首先介绍受限玻尔兹曼机这类神经网络，因为它相对简单且具有重要的历史意义。下文将以示意图和通俗的语言解释其运作原理。
 
@@ -67,7 +67,7 @@ RBM是有两个层的浅层神经网络，它是组成*深度置信网络*的基
 
 由于RBM权重初始值是随机决定的，重构值与原始输入之间的差别通常很大。可以将`r`值与输入值之差视为重构误差，此误差值随后经由反向传播来修正RBM的权重，如此不断反复，直至误差达到最小。
 
-有关反向传播算法的详细介绍请参见[此页](zh-neuralnet-overview.html#forward)。
+有关反向传播算法的详细介绍请参见[此页](neuralnet-overview.html#forward)。
 
 由此可见，RBM在正向传递中使用输入值来预测节点的激活值，亦即[输入为加权的x时输出的概率](https://en.wikipedia.org/wiki/Bayes%27_theorem)：`p(a|x; w)`。
 
@@ -258,9 +258,9 @@ RBM隐藏层使用高斯变换的效果并不理想。而线性修正单元变�
 
 ### 其他基础教程
 
-* [递归网络/LSTM](zh-lstm)
-* [深度神经网络简介](zh-neuralnet-overview)
-* [本征向量、PCA和熵](zh-eigenvector)
-* [神经网络与回归分析](../linear-regression)
-* [卷积网络教程](zh-convolutionalnets)
-* [Word2vec：Java中的神经词向量](zh-word2vec)
+* [递归网络/LSTM](lstm)
+* [深度神经网络简介](neuralnet-overview)
+* [本征向量、PCA和熵](eigenvector)
+* [神经网络与回归分析](linear-regression)
+* [卷积网络教程](convolutionalnets)
+* [Word2vec：Java中的神经词向量](word2vec)
