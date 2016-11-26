@@ -24,7 +24,7 @@ redirect_from: /zh-gettingstarted
 6.<a href="#results">可复现结果</a>
 7.<a href="#next">后续步骤</a>
 
-##  原生BLAS库
+## 原生BLAS库
 
 对应各类操作系统的详细指南参见
 
@@ -32,7 +32,7 @@ redirect_from: /zh-gettingstarted
 
 但是，除非尚未安装CUDA，否则应当不需要进行任何安装。
 
-## <a name="walk">DL4J示例：详细过程说明</a>
+## DL4J示例：详细过程说明
 
 本节提供比[快速入门指南](zh-quickstart)更详尽的安装步骤介绍。
 
@@ -55,7 +55,7 @@ redirect_from: /zh-gettingstarted
 * 确保JDK/SDK已安装，如尚未安装，请点击SDK窗口底部的加号添加。
 * 随后继续点击确认，直至为项目命名的一步。使用默认的项目名称即可，所以请点击“完成”。
 
-## <a name="eclipse">在Eclipse中使用DL4J示例</a>
+## 在Eclipse中使用DL4J示例
 
 在IntelliJ中，导入示例只需按快速入门指南中的说明操作。若要在Eclipse中使用这些示例，则需要增加一个步骤。
 
@@ -71,7 +71,7 @@ redirect_from: /zh-gettingstarted
 
 Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/)的指南。
 
-## <a name="cli">命令行界面</a>
+## 命令行界面
 
 目前可以通过以下三种方式安装`deeplearning4j-cli`：
 
@@ -98,7 +98,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 		# run
 		cd deeplearning4j-cli-0.4-rc3.9-SNAPSHOT ; ./bin/dl4j
 
-## <a name="trouble">疑难解答</a>
+## 疑难解答
 
 * 您可以随时在我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)提出有关错误信息的问题。请您在提问时准备好以下信息（这样可以明显加快我们的处理速度！）：
 
@@ -130,7 +130,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 * Java 7的分叉联接存在问题。解决方法是升级至Java 8。如果出现如下OutofMemory错误，则分叉联接是问题所在：`java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError`
 ....`java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:536)`
 
-### <a name="results">可复现结果</a>
+### 可复现结果
 
 神经网络权重开始时随机生成，也就是说，模型开始时每次会在权重空间中习得一个不同位置。这可能会导致不同的局部最佳值。寻求可复现结果的用户需要使用相同的随机权重，必须在模型创建之前即进行初始化。可以通过以下命令行重新初始化相同的随机权重：
 
@@ -166,7 +166,7 @@ Michael Depies撰写了[在Eclipse上安装Deeplearning4j](https://depiesml.word
 
 您可以用命令行变更示例并运行变更后的文件，例如可以调整*src/main/java/org/deeplearning4j/multilayer*中的*MLPBackpropIrisExample*，随后对示例运行maven-build。
 
-### <a name="next">后续步骤：鸢尾花示例与神经网络构建</a>
+### 后续步骤：鸢尾花示例与神经网络构建
 
 欲开始创建神经网络，请参阅[神经网络简介](zh-neuralnet-overview)获得更多信息。
 
