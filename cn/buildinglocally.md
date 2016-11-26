@@ -1,5 +1,5 @@
 ---
-title:本地构建DL4J堆栈
+title: 本地构建DL4J堆栈
 layout: cn-default
 ---
 
