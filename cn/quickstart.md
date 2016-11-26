@@ -162,7 +162,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ### 疑难解答
 <br />
 
-#### **问：**我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
+**问：**我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
 
 **答：**您的路径中可能有不兼容的DLL文件。您需要将以下代码作为VM参数添加（IntelliJ中选择运行 -> 编辑配置 -> VM选项），让DL4J忽略这些文件：
 
@@ -171,6 +171,6 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
 <br />
 
-#### **问：**我遇到了这个错误：`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`，导致JVM故障（不会崩溃，只是停止运行……）。
+**问：**我遇到了这个错误：`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`，导致JVM故障（不会崩溃，只是停止运行……）。
 
 **答：**Maven Central当前的rc3.10版本中，`libnd4j`库在路径中发现英特尔的MKL时无法将其正确加载。解决方法是添加`System.loadLibrary("mkl_rt")`。
