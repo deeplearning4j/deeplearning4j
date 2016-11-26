@@ -154,6 +154,8 @@ brew install homebrew/science/openblas
 
 OpenBLAS有适用于`msys2`的安装包，可以用`pacman`命令进行安装。
 
+<br />
+
 #### ATLAS
 
 #### Linux
