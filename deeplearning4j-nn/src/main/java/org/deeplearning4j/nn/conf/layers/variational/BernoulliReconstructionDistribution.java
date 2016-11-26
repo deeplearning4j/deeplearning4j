@@ -47,6 +47,27 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
     @Override
     public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
-        return null;
+        INDArray output = preOutDistributionParams.dup();
+        if(!"identity".equals(activationFn)){
+            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
+        }
+
+        INDArray dif = x.sub(output);
+        INDArray outOneMinusOut = output.rsub(1.0).muli(output);
+
+        INDArray grad = dif.divi(outOneMinusOut);
+
+        if(!"identity".equals(activationFn)){
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
+                    Nd4j.getOpFactory().createTransform(activationFn, preOutDistributionParams.dup()).derivative());
+            grad.muli(sigmaPrimeZ);
+        }
+
+        return grad;
+    }
+
+    @Override
+    public String toString(){
+        return "BernoulliReconstructionDistribution(afn=" + activationFn + ")";
     }
 }
