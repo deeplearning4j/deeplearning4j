@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.filter;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
@@ -32,6 +33,7 @@ import java.util.List;
  * @author Alex Black
  */
 @EqualsAndHashCode
+@Data
 public class ConditionFilter implements Filter {
 
     private final Condition condition;

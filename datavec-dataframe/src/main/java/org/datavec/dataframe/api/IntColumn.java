@@ -109,6 +109,10 @@ public class IntColumn extends AbstractColumn implements IntMapUtils, NumericCol
     return select(IntColumnUtils.isLessThanOrEqualTo, i);
   }
 
+  public Selection isNotEqualTo(int i) {
+    return select(IntColumnUtils.isNotEqualTo, i);
+  }
+
   public Selection isEqualTo(int i) {
     return select(IntColumnUtils.isEqualTo, i);
   }

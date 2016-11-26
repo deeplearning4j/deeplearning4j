@@ -1,25 +1,36 @@
 package org.datavec.local.transforms;
 
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import org.datavec.api.transform.ColumnOp;
-import org.datavec.api.transform.DataAction;
-import org.datavec.api.transform.Transform;
-import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.*;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.column.*;
+import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.rank.CalculateSortedRank;
+import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.columns.ColumnReference;
+import org.datavec.dataframe.filtering.*;
+import org.datavec.dataframe.filtering.doubles.*;
+import org.datavec.dataframe.filtering.ints.IntNotEqualTo;
+import org.datavec.dataframe.filtering.longs.*;
+import org.datavec.dataframe.reducing.NumericReduceFunction;
+import org.datavec.dataframe.reducing.NumericReduceUtils;
 import org.datavec.dataframe.store.ColumnMetadata;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Util class for interop between
@@ -50,14 +61,14 @@ public class TableRecords {
                 ret = filterTable(ret,dataAction.getFilter());
             }
             else if(dataAction.getCalculateSortedRank() != null) {
-                table = sortedRank(ret,dataAction.getCalculateSortedRank());
+                ret = sortedRank(ret,dataAction.getCalculateSortedRank());
             }
             else if(dataAction.getConvertFromSequence() != null) {
                 throw new UnsupportedOperationException("No support for sequence data yet");
 
             }
             else if(dataAction.getReducer() != null) {
-                throw new UnsupportedOperationException("No support for reduction yet");
+                ret = reduce(ret,(Reducer) dataAction.getReducer());
             }
             else if(dataAction.getSequenceSplit() != null) {
                 throw new UnsupportedOperationException("No support for sequence data yet");
@@ -68,6 +79,81 @@ public class TableRecords {
         return ret;
     }
 
+
+    public static Table selectBasedOnCondition(Table table,Condition condition) {
+        return null;
+
+    }
+
+
+    private static NumericReduceFunction getFunction(ReduceOp reduceOp) {
+        switch (reduceOp) {
+            case Stdev:
+                return NumericReduceUtils.stdDev;
+            case Sum:
+                return NumericReduceUtils.sum;
+            case Max:
+                return NumericReduceUtils.max;
+            case Mean:
+                return NumericReduceUtils.mean;
+            case Min:
+                return NumericReduceUtils.min;
+            case Count:
+                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+            case CountUnique:
+                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+            case Range:
+                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+            case TakeFirst:
+                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+            case TakeLast:
+                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+            case Prod:
+                return NumericReduceUtils.product;
+            default: throw new IllegalStateException("Illegal operation for reduce");
+        }
+    }
+
+    /**
+     * Run a reduce operation on the given table
+     * @param reduce the reduce operation to run
+     * @param reducer the reducer to run
+     * @return
+     */
+    public static Table reduce(Table reduce,Reducer reducer) {
+        if(reducer.getConditionalReductions() != null) {
+            for (Map.Entry<String, Reducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
+
+            }
+        }
+        else {
+            for(Map.Entry<String,ReduceOp> pair : reducer.getOpMap().entrySet()) {
+                switch (pair.getValue()) {
+                    case Count:
+                        reduce = reduce.countBy(reduce.categoryColumn(pair.getKey()));
+                        break;
+                    case CountUnique:
+                        throw new IllegalArgumentException("Illegal operation ");
+                    case Range:
+                        throw new IllegalArgumentException("Illegal operation ");
+                    case TakeFirst:
+                        reduce = reduce.first(1);
+                        break;
+                    case TakeLast:
+                        reduce = reduce.last(1);
+                        break;
+                    default:
+                        NumericReduceFunction reduceOp = getFunction(pair.getValue());
+                        double val = reduce.reduce(pair.getKey(),reduceOp);
+                        FloatColumn floatColumn = FloatColumn.create(pair.getKey(),new FloatArrayList(new float[]{(float) val}));
+                        reduce = Table.create("reduced",floatColumn);
+                }
+            }
+        }
+
+
+        return reduce;
+    }
 
     /**
      *
@@ -95,6 +181,104 @@ public class TableRecords {
             Table newTable = Table.create("sorted",sorted.column(rank.outputColumnName()));
             return newTable;
         }
+    }
+
+
+    public static org.datavec.dataframe.filtering.Filter mapToFilter(Filter toMap) {
+        ConditionFilter conditionFilter = (ConditionFilter) toMap;
+        Condition condition = conditionFilter.getCondition();
+        Schema output = toMap.transform(toMap.getInputSchema());
+        //map to proper column condition for the filter to apply
+        if(condition instanceof ColumnCondition) {
+            ColumnCondition columnCondition = (ColumnCondition) condition;
+            ColumnReference columnReference = new ColumnReference(conditionFilter.columnName());
+            switch (output.getType(output.getIndexOfColumn(columnCondition.outputColumnName()))) {
+                case String:
+                    CategoricalColumnCondition categoricalColumnCondition = (CategoricalColumnCondition) columnCondition;
+                    org.datavec.dataframe.filtering.Filter filter1;
+                    break;
+                case Long:
+                    LongColumnCondition longColumnCondition = (LongColumnCondition) columnCondition;
+                    switch (longColumnCondition.getOp()) {
+                        case Equal:
+                            return new LongEqualTo(columnReference,longColumnCondition.getValue().longValue());
+                        case NotEqual:
+                            return new LongNotEqualTo(columnReference, longColumnCondition.getValue().longValue());
+                        case GreaterThan:
+                            return new LongGreaterThan(columnReference,longColumnCondition.getValue().longValue());
+                        case LessOrEqual:
+                            return new LongLessThanOrEqualTo(columnReference,longColumnCondition.getValue().longValue());
+                        case GreaterOrEqual:
+                            return new LongGreaterThanOrEqualTo(columnReference,longColumnCondition.getValue().longValue());
+                        case LessThan:
+                            return new LongLessThan(columnReference,longColumnCondition.getValue().longValue());
+                        default: throw new IllegalStateException("Illegal operation ");
+                    }
+                case Categorical:
+                    CategoricalColumnCondition categoricalColumnCondition2 = (CategoricalColumnCondition) columnCondition;
+                    break;
+                case Float:
+                    DoubleColumnCondition floatColumnCondition = (DoubleColumnCondition) columnCondition;
+                    switch (floatColumnCondition.getOp()) {
+                        case Equal:
+                            return new FloatEqualTo(columnReference, floatColumnCondition.getValue().floatValue());
+                        case NotEqual:
+                            return new FloatNotEqualTo(columnReference, floatColumnCondition.getValue().floatValue());
+                        case GreaterThan:
+                            return new FloatGreaterThan(columnReference,floatColumnCondition.getValue().floatValue());
+                        case LessOrEqual:
+                           return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
+                        case GreaterOrEqual:
+                           return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
+                        case LessThan:
+                           return new FloatLessThan(columnReference,floatColumnCondition.getValue().floatValue());
+                        default: throw new IllegalStateException("Illegal operation ");
+                    }
+                case Time:
+                    TimeColumnCondition timeColumnCondition = (TimeColumnCondition) columnCondition;
+                    break;
+                case Boolean:
+                    BooleanColumnCondition booleanColumnCondition = (BooleanColumnCondition) columnCondition;
+                    return new BooleanIsTrue(columnReference);
+                case Double:
+                    DoubleColumnCondition doubleColumnCondition = (DoubleColumnCondition) columnCondition;
+                    switch (doubleColumnCondition.getOp()) {
+                        case Equal:
+                            return new DoubleEqualTo(columnReference, doubleColumnCondition.getValue().doubleValue());
+                        case NotEqual:
+                            return new DoubleNotEqualTo(columnReference, doubleColumnCondition.getValue().doubleValue());
+                        case GreaterThan:
+                            return new DoubleGreaterThan(columnReference,doubleColumnCondition.getValue().doubleValue());
+                        case LessOrEqual:
+                            return new DoubleLessThanOrEqualTo(columnReference,doubleColumnCondition.getValue().doubleValue());
+                        case GreaterOrEqual:
+                            return new DoubleGreaterThanOrEqualTo(columnReference,doubleColumnCondition.getValue().doubleValue());
+                        case LessThan:
+                            return new DoubleLessThan(columnReference,doubleColumnCondition.getValue().doubleValue());
+                        default: throw new IllegalStateException("Illegal operation ");
+                    }
+                case Integer:
+                    IntegerColumnCondition integerColumnCondition = (IntegerColumnCondition) columnCondition;
+                    switch (integerColumnCondition.getOp()) {
+                        case Equal:
+                            return new IntEqualTo(columnReference,integerColumnCondition.getValue().intValue());
+                        case NotEqual:
+                            return new IntNotEqualTo(columnReference, integerColumnCondition.getValue().intValue());
+                        case GreaterThan:
+                            return new IntGreaterThan(columnReference,integerColumnCondition.getValue().intValue());
+                        case LessOrEqual:
+                            return new IntLessThanOrEqualTo(columnReference,integerColumnCondition.getValue().intValue());
+                        case GreaterOrEqual:
+                            return new IntGreaterThanOrEqualTo(columnReference,integerColumnCondition.getValue().intValue());
+                        case LessThan:
+                            return new IntLessThan(columnReference,integerColumnCondition.getValue().intValue());
+                        default: throw new IllegalStateException("Illegal operation ");
+                    }
+                default: throw new IllegalArgumentException("Illegal type");
+            }
+
+        }
+        return  null;
     }
 
     /**

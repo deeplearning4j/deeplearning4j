@@ -16,12 +16,10 @@
 
 package org.datavec.api.transform.condition.column;
 
-import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.writable.Writable;
 
 import java.util.List;
@@ -33,9 +31,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnIdx","schema","sequenceMode"})
 @EqualsAndHashCode(exclude = {"columnIdx","schema","sequenceMode"})
-public abstract class BaseColumnCondition implements Condition,ColumnOp {
-
-    public static final SequenceConditionMode DEFAULT_SEQUENCE_CONDITION_MODE = SequenceConditionMode.Or;
+public abstract class BaseColumnCondition implements ColumnCondition {
 
     protected final String columnName;
     protected int columnIdx = -1;
@@ -162,15 +158,6 @@ public abstract class BaseColumnCondition implements Condition,ColumnOp {
     public String columnName() {
         return columnNames()[0];
     }
-
-    /**
-     * Returns whether the given element
-     * meets the condition set by this operation
-     * @param writable the element to test
-     * @return true if the condition is met
-     * false otherwise
-     */
-    public abstract boolean columnCondition(Writable writable);
 
     @Override
     public abstract String toString();

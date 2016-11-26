@@ -335,7 +335,7 @@ public class TestReduce {
 
 
     @Test
-    public void testConditionalReduction(){
+    public void testConditionalReduction() {
 
         Schema schema = new Schema.Builder()
                 .addColumnString("key")
@@ -345,12 +345,12 @@ public class TestReduce {
                 .build();
 
         List<List<Writable>> inputs = new ArrayList<>();
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(1), new Text("a"), new Text("zero")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(2), new Text("b"), new Text("one")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(3), new Text("a"), new Text("two")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(4), new Text("b"), new Text("three")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(5), new Text("a"), new Text("three")));
-        inputs.add(Arrays.asList((Writable)new Text("someKey"), new IntWritable(6), new Text("b"), new Text("three")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1), new Text("a"), new Text("zero")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(2), new Text("b"), new Text("one")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(3), new Text("a"), new Text("two")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(4), new Text("b"), new Text("three")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(5), new Text("a"), new Text("three")));
+        inputs.add(Arrays.<Writable>asList(new Text("someKey"), new IntWritable(6), new Text("b"), new Text("three")));
 
         Condition condition = new StringColumnCondition("filterCol", ConditionOp.Equal, "a");
 
@@ -363,7 +363,7 @@ public class TestReduce {
         reducer.setInputSchema(schema);
 
         List<Writable> out = reducer.reduce(inputs);
-        List<Writable> expected = Arrays.asList((Writable)new Text("someKey"), new LongWritable(1+3+5), new IntWritable(2), new IntWritable(4));
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new LongWritable(1 + 3 + 5), new IntWritable(2), new IntWritable(4));
 
         assertEquals(4,out.size());
         assertEquals(expected, out);

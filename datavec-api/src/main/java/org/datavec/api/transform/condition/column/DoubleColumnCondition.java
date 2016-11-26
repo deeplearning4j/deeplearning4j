@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
@@ -30,6 +31,7 @@ import java.util.Set;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class DoubleColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;

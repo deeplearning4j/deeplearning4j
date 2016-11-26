@@ -11,6 +11,7 @@ public enum ColumnType {
   BOOLEAN(Byte.MIN_VALUE),
   CATEGORY(""),
   FLOAT(Float.NaN),
+  DOUBLE(Double.NaN),
   SHORT_INT(Short.MIN_VALUE),
   INTEGER(Integer.MIN_VALUE),
   LONG_INT(Long.MIN_VALUE),
