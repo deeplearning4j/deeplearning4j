@@ -4,12 +4,17 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
+
+import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX;
+import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer.WEIGHT_KEY_SUFFIX;
 
 /**
  * Created by Alex on 25/11/2016.
@@ -32,8 +37,14 @@ public class VariationalAutoencoder implements Layer {
     protected INDArray maskArray;
     protected Solver solver;
 
+    protected int[] encoderLayerSizes;
+    protected int[] decoderLayerSizes;
+
     public VariationalAutoencoder(NeuralNetConfiguration conf){
         this.conf = conf;
+
+        this.encoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getEncoderLayerSizes();
+        this.decoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getDecoderLayerSizes();
     }
 
 
@@ -253,9 +264,46 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
+        return preOutput(x, training == TrainingMode.TRAIN);
+    }
 
+    @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        setInput(x);
+        return preOutput(training);
+    }
 
-        throw new UnsupportedOperationException("Not yet implemented");
+    public INDArray preOutput(boolean training){
+        if(input == null){
+            throw new IllegalStateException("Cannot do forward pass with null input");
+        }
+
+        //TODO input validation
+
+        int nEncoderLayers = encoderLayerSizes.length;
+
+        INDArray current = input;
+        for( int i=0; i<nEncoderLayers; i++ ){
+            String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "e" + i + BIAS_KEY_SUFFIX;
+
+            INDArray weights = params.get(wKey);
+            INDArray bias = params.get(bKey);
+
+            current = current.mmul(weights).addiRowVector(bias);
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    conf.getLayer().getActivationFunction(), current, conf.getExtraArgs() ));
+        }
+
+        //Finally, calculate mean value:
+        String pzxMeanParamName = "eZXMean" + WEIGHT_KEY_SUFFIX;
+        String pzxBiasParamName = "eZXMean" + BIAS_KEY_SUFFIX;
+        INDArray mW = params.get(pzxMeanParamName);
+        INDArray mB = params.get(pzxBiasParamName);
+
+        current = current.mmul(mW).addiRowVector(mB);
+
+        return current;
     }
 
     @Override
@@ -265,11 +313,6 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return null;
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
         return null;
     }
 
@@ -340,7 +383,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void setInputMiniBatchSize(int size) {
-        throw new UnsupportedOperationException("Not yet implemented");
+
     }
 
     @Override
