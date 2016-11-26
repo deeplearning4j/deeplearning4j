@@ -185,7 +185,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        this.params = paramTable;
     }
 
     @Override
