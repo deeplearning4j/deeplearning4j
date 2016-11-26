@@ -15,7 +15,9 @@ layout: cn-default
 - [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 Deeplearning4j能在大多数平台（Windows、OS X、Linux）上运行，同时也有多种不同的“风格”，可以适应包括CPU（OpenBLAS, MKL, ATLAS）和GPU（CUDA）在内的各种计算架构。DL4J堆栈也支持x86和PowerPC架构。
+
 <br /><br />
+
 ## 系统要求
 
 在构建和安装DL4J堆栈*之前*，请确保本地计算机已具备必要的软件，且环境变量已设置完毕。各平台和操作系统版本对应的步骤可能有所不同。所需软件包括：
@@ -40,11 +42,13 @@ GPU架构：
 - JOCL（即将支持）
 
 <br />
+
 ### 安装必备工具
 
 #### Linux
 
 **Ubuntu**
+
 若您使用Ubuntu风格的Linux，而且是以非root用户的身份运行系统，那么请按以下步骤安装必备软件：
 
 ```
@@ -54,6 +58,7 @@ sudo apt-get update
 sudo apt-get install maven build-essentials cmake libgomp1
 ```
 <br />
+
 #### OS X
 
 可以用Homebrew来安装必备软件。如果本地计算机上已安装Homebrew，请按以下步骤安装必要的工具。
@@ -71,6 +76,7 @@ brew update
 brew install maven clang-omp
 ```
 <br />
+
 #### Windows
 
 libnd4j的编译依赖一些Unix实用工具，因此需要安装[Msys2](https://msys2.github.io/)才能对其进行编译。
@@ -82,11 +88,15 @@ libnd4j的编译依赖一些Unix实用工具，因此需要安装[Msys2](https:/
 这将安装需要在msys2 shell中使用的依赖项目。
 
 同时还需要设置PATH环境变量，加入`C:\msys64\mingw64\bin`（或自定义的msys2安装路径）。如果打开了IntelliJ或其他IDE，则必须将其重启，上述变化方会对经由IDE启动的应用程序生效。若不重启IDE，可能会出现“找不到依赖库”的错误。
+
 <br />
+
 ### 安装必备架构
 
 必备工具安装完毕后，即可为您的平台安装必备架构。
+
 <br />
+
 #### 英特尔MKL
 
 在目前所有可用于CPU的架构中，英特尔MKL的速度最快，但在安装之前需要先完成一些“预备”工作。
@@ -94,7 +104,9 @@ libnd4j的编译依赖一些Unix实用工具，因此需要安装[Msys2](https:/
 1.在[英特尔的网站](https://software.intel.com/en-us/intel-mkl)上申请许可证
 2.完成英特尔要求的几个步骤后，将会收到下载链接
 3.下载后，按照[安装指南](https://software.intel.com/sites/default/files/managed/94/bf/Install_Guide_0.pdf)安装英特尔MKL
+
 <br />
+
 #### OpenBLAS
 
 #### Linux
@@ -114,6 +126,7 @@ sudo cp libopenblas.so liblapack.so.3
 sudo cp libopenblas.so libblas.so.3
 ```
 <br />
+
 **CentOS**
 
 以root用户的身份在终端（或ssh会话）中输入下列命令：
@@ -125,7 +138,9 @@ sudo cp libopenblas.so libblas.so.3
     gcc --version
 
 更完整的说明请[参见此页](http://www.cyberciti.biz/faq/centos-linux-install-gcc-c-c-compiler/)。
+
 <br />
+
 ##### OS X
 
 您可以用Homebrew Science在OS X上安装OpenBLAS：
@@ -134,6 +149,7 @@ sudo cp libopenblas.so libblas.so.3
 brew install homebrew/science/openblas
 ```
 <br />
+
 ##### Windows
 
 OpenBLAS有适用于`msys2`的安装包，可以用`pacman`命令进行安装。
@@ -150,6 +166,7 @@ OpenBLAS有适用于`msys2`的安装包，可以用`pacman`命令进行安装。
 sudo apt-get install libatlas-base-dev libatlas-dev
 ```
 <br />
+
 **CentOS**
 
 在CentOS上安装ATLAS的方法：
@@ -158,6 +175,7 @@ sudo apt-get install libatlas-base-dev libatlas-dev
 sudo yum install atlas-devel
 ```
 <br />
+
 ##### OS X
 
 在OS X上安装ATLAS的过程较为复杂，需要的时间比较长，但大多数计算机应该都能用以下的命令完成安装。
@@ -180,12 +198,15 @@ make time
 make install
 ```
 <br />
+
 #### CUDA
 
 ##### Linux与OS X
 
 安装CUDA等GPU架构的详细指南请[参见此页](http://nd4j.org/gpu_native_backends.html)。
+
 <br />
+
 ##### Windows
 
 构建CUDA后端需要满足一些额外的条件：
@@ -202,7 +223,9 @@ make install
 4.`./buildnativeoperations.sh -c cuda`
 
 此命令将会构建CUDA nd4j.dll。
+
 <br /><br />
+
 ## 安装DL4J堆栈
 
 ## OS X与Linux
@@ -219,6 +242,7 @@ make install
 export LIBND4J_HOME=/home/user/directory/libnd4j
 ```
 <br />
+
 #### 使用MKL的CPU架构
 
 与MKL的链接可以在构建时进行，也可以在运行时同最初链接到OpenBLAS等其他BLAS实现的二进制文件进行链接。若要用MKL进行构建，只需对Linux的`LD_LIBRARY_PATH`环境变量（或者Windows的`PATH`）添加包含`libmkl_rt.so`的路径（或者Windows中包含`mkl_rt.dll`的路径），例如`/path/to/intel64/lib/`，随后按同样的方法构建。在Linux系统中，为确保使用的OpenMP版本正确，可能还需要设置下列环境变量：
@@ -247,6 +271,7 @@ copy mkl_rt.dll libblas3.dll
 3.最后，将`/path/to/intel64/lib/`添加至`LD_LIBRARY_PATH`环境变量（或Windows的`PATH`变量的靠前位置），然后照常运行Java应用程序。
 
 <br />
+
 ### 构建脚本
 
 Github社区中有一套用bash编写的[build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1)脚本，可以克隆DL4J stack堆栈，构建所有代码库并将其安装到本地的Maven中。这一脚本在Linux和OS X平台上都可以运行。
@@ -274,6 +299,7 @@ Scala用户可以传入二进制版本号，确保与Spark相兼容：
 上述构建脚本会将所有的选项和标志传递给libnd4j的`./buildnativeoperations.sh`脚本。用于这些脚本的所有标志都可以通过`build-dl4j-stack.sh`进行传递。
 
 <br />
+
 ### 手动构建
 
 您也可以选择手动构建DL4J堆栈的各个组件。每个软件的基本步骤包括：
@@ -333,12 +359,15 @@ mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 cd ..
 ```
 <br />
+
 ## 使用本地依赖项目
 
 DL4J堆栈安装到本地的Maven代码库之后，就可以将其加入构建工具的依赖项目了。请参阅Deeplearning4j的[完全安装指南](http://deeplearning4j.org/cn/gettingstarted)，以正确的方式将版本替换为目前[主POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml)上的SNAPSHOT版本。
 
 需要注意的是，某些构建工具，比如Gradle和SBT，无法正确调用特定平台的二进制文件。可以按[此处](http://nd4j.org/dependencies.html)的指南来设置您选用的构建工具。
+
 <br />
+
 ## 技术支持与协助
 
 如果您在本地构建过程中遇到任何问题，Deeplearning4j的[早期用户交流群](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)专门针对构建问题和其他根源问题提供协助。请在Gitter上寻求帮助。
