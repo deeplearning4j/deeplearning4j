@@ -120,7 +120,7 @@ Deeplearning4j依靠ND4J进行基础的线性代数运算，事实表明其处�
 
 虽然Torch7和DL4J都采用并行运行，DL4J的**并行运行是自动化的**。我们实现了从节点（worker nodes）和连接的自动化设置，让用户在[Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)、[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)或[Akka和AWS](http://deeplearning4j.org/scaleout.html)环境中建立大型并行网络时可以绕过学习库。Deeplearning4j最适合快速解决具体问题。
 
-Deeplearning4j的所有功能参见[功能介绍](../features)。
+Deeplearning4j的所有功能参见[功能介绍](features)。
 
 ### <a name="java">为什么用Java？</a>
 
@@ -146,9 +146,9 @@ Scala、Clojure、Python和Ruby等其他通行的语言也可以原生支持Java
 
 ### <a name="scala">Scala</a>
 
-我们在打造Deeplearning4j和ND4J的过程中特别关注[Scala](../scala)，因为我们认为Scala具有成为数据科学主导语言的潜力。用[Scala API](http://nd4j.org/scala.html)为JVM编写数值运算、向量化和深度学习库可以帮助整个群体向实现这一目标迈进。
+我们在打造Deeplearning4j和ND4J的过程中特别关注[Scala](scala)，因为我们认为Scala具有成为数据科学主导语言的潜力。用[Scala API](http://nd4j.org/scala.html)为JVM编写数值运算、向量化和深度学习库可以帮助整个群体向实现这一目标迈进。
 
-关于DL4J与其他框架的不同之处，也许只需要[尝试一下](zh-quickstart)就能有深入的体会。
+关于DL4J与其他框架的不同之处，也许只需要[尝试一下](quickstart)就能有深入的体会。
 
 ### <a name="ml">机器学习框架</a>
 
@@ -161,13 +161,13 @@ Scala、Clojure、Python和Ruby等其他通行的语言也可以原生支持Java
 
 ### <a name="tutorial">Deeplearning4j教程</a>
 
-* [深度神经网络简介](zh-neuralnet-overview)
-* [卷积网络教程](zh-convolutionalnets)
-* [LSTM和递归网络教程](zh-lstm)
-* [通过DL4J使用递归网络](zh-usingrnns)
+* [深度神经网络简介](neuralnet-overview)
+* [卷积网络教程](convolutionalnets)
+* [LSTM和递归网络教程](lstm)
+* [通过DL4J使用递归网络](usingrnns)
 * [MNIST中的深度置信网络](../deepbeliefnetwork)
-* [用Canova定制数据加工管道](zh-image-data-pipeline)
-* [受限玻尔兹曼机](zh-restrictedboltzmannmachine)
-* [本征向量、PCA和熵](zh-eigenvector)
-* [深度学习词汇表](../glossary.html)
-* [Word2vec、Doc2vec和GloVe](zh-word2vec)
+* [用Canova定制数据加工管道](image-data-pipeline)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、PCA和熵](eigenvector)
+* [深度学习词汇表](glossary.html)
+* [Word2vec、Doc2vec和GloVe](word2vec)

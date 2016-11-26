@@ -39,13 +39,11 @@ GPU架构：
 - CUDA
 - JOCL（即将支持）
 
-<br />
-
 ### 安装必备工具
 
 #### Linux
 
-##### Ubuntu 
+##### Ubuntu
 
 若您使用Ubuntu风格的Linux，而且是以非root用户的身份运行系统，那么请按以下步骤安装必备软件：
 
@@ -87,12 +85,9 @@ libnd4j的编译依赖一些Unix实用工具，因此需要安装[Msys2](https:/
 
 同时还需要设置PATH环境变量，加入`C:\msys64\mingw64\bin`（或自定义的msys2安装路径）。如果打开了IntelliJ或其他IDE，则必须将其重启，上述变化方会对经由IDE启动的应用程序生效。若不重启IDE，可能会出现“找不到依赖库”的错误。
 
-<br />
-
 ### 安装必备架构
 
 必备工具安装完毕后，即可为您的平台安装必备架构。
-
 <br />
 
 #### 英特尔MKL
@@ -102,14 +97,13 @@ libnd4j的编译依赖一些Unix实用工具，因此需要安装[Msys2](https:/
 1.在[英特尔的网站](https://software.intel.com/en-us/intel-mkl)上申请许可证
 2.完成英特尔要求的几个步骤后，将会收到下载链接
 3.下载后，按照[安装指南](https://software.intel.com/sites/default/files/managed/94/bf/Install_Guide_0.pdf)安装英特尔MKL
-
 <br />
 
-#### OpenBLAS
+#### **OpenBLAS**
 
 #### Linux
 
-**Ubuntu**
+##### Ubuntu
 
 Ubuntu用户可以用如下方式安装OpenBLAS：
 
@@ -125,7 +119,7 @@ sudo cp libopenblas.so libblas.so.3
 ```
 <br />
 
-**CentOS**
+##### CentOS
 
 以root用户的身份在终端（或ssh会话）中输入下列命令：
 
@@ -136,7 +130,6 @@ sudo cp libopenblas.so libblas.so.3
     gcc --version
 
 更完整的说明请[参见此页](http://www.cyberciti.biz/faq/centos-linux-install-gcc-c-c-compiler/)。
-
 <br />
 
 ##### OS X
@@ -151,14 +144,13 @@ brew install homebrew/science/openblas
 ##### Windows
 
 OpenBLAS有适用于`msys2`的安装包，可以用`pacman`命令进行安装。
-
 <br />
 
-#### ATLAS
+#### **ATLAS**
 
 #### Linux
 
-**Ubuntu**
+##### Ubuntu
 
 用apt安装包在Ubuntu上安装ATLAS：
 
@@ -167,7 +159,7 @@ sudo apt-get install libatlas-base-dev libatlas-dev
 ```
 <br />
 
-**CentOS**
+##### CentOS
 
 在CentOS上安装ATLAS的方法：
 
@@ -204,7 +196,6 @@ make install
 ##### Linux与OS X
 
 安装CUDA等GPU架构的详细指南请[参见此页](http://nd4j.org/gpu_native_backends.html)。
-
 <br />
 
 ##### Windows
@@ -224,16 +215,14 @@ make install
 
 此命令将会构建CUDA nd4j.dll。
 
-<br /><br />
 
 ## 安装DL4J堆栈
 
-## OS X与Linux
+### **OS X与Linux**
 
 ### 检查环境变量
 
 在运行构建DL4J堆栈的代码之前，必须确保一些特定的环境变量已设置妥当。不同架构下的具体操作方法如下。
-
 <br />
 
 #### LIBND4J_HOME
@@ -360,15 +349,12 @@ mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 ## 添加至mvn clean install命令，避免构建脚本寻找cuda库
 cd ..
 ```
-<br />
 
 ## 使用本地依赖项目
 
 DL4J堆栈安装到本地的Maven代码库之后，就可以将其加入构建工具的依赖项目了。请参阅Deeplearning4j的[完全安装指南](http://deeplearning4j.org/cn/gettingstarted)，以正确的方式将版本替换为目前[主POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/pom.xml)上的SNAPSHOT版本。
 
 需要注意的是，某些构建工具，比如Gradle和SBT，无法正确调用特定平台的二进制文件。可以按[此处](http://nd4j.org/dependencies.html)的指南来设置您选用的构建工具。
-
-<br />
 
 ## 技术支持与协助
 
