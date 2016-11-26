@@ -112,15 +112,10 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
         $ mvn clean install
 
 2. 打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。
-
  * ![select directory](../img/Install_IntJ_1.png)
-
 3. 选择“从外部模型导入项目”，确保已选中Maven。
-
  * ![import project](../img/Install_IntJ_2.png)
-
 4. 继续按向导选项操作。选中以`jdk`开头的SDK。（可能需要点击加号才能看到相关选项……）随后点“完成”。稍等片刻，让IntelliJ下载所有的依赖项。右下方会显示进度条。
-
 5. 在左边的树形目录中选择一个示例。
  * ![run IntelliJ example](../img/Install_IntJ_3.png)
  * 右击文件，运行。
