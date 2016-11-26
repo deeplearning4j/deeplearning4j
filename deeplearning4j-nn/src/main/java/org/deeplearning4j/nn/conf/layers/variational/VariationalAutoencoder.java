@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -15,6 +16,7 @@ import java.util.Map;
 /**
  * Created by Alex on 25/11/2016.
  */
+@Data
 public class VariationalAutoencoder extends BasePretrainNetwork {
 
     private int[] encoderLayerSizes;
