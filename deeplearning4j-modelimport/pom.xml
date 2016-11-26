@@ -25,7 +25,7 @@
         <groupId>org.deeplearning4j</groupId>
         <version>0.7.1-SNAPSHOT</version>
     </parent>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <properties>
         <javacpp.version>1.2.5</javacpp.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
