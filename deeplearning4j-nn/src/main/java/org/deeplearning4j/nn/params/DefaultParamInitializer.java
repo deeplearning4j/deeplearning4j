@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -104,8 +105,12 @@ public class DefaultParamInitializer implements ParamInitializer {
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasParamView, boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
+    }
+
+    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters){
         if(initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
+            INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
             biasParamView.assign(ret);
         }
         return biasParamView;
@@ -116,23 +121,28 @@ public class DefaultParamInitializer implements ParamInitializer {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
-        if(initializeParameters) {
-
-            int nIn = layerConf.getNIn();
-            int nOut = layerConf.getNOut();
-            int[] shape = new int[]{nIn,nOut};
-
+        if(initializeParameters){
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist, weightParamView, false);
+        } else {
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, null, weightParamView, false);
+        }
+    }
+
+    protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist, INDArray weightParamView, boolean initializeParameters){
+        int[] shape = new int[]{nIn,nOut};
+
+        if(initializeParameters) {
             INDArray ret = WeightInitUtil.initWeights(
                     nIn,    //Fan in
                     nOut,   //Fan out
                     shape,
-                    layerConf.getWeightInit(),
+                    weightInit,
                     dist,
                     weightParamView);
             return ret;
         } else {
-            return WeightInitUtil.reshapeWeights(new int[]{layerConf.getNIn(), layerConf.getNOut()}, weightParamView);
+            return WeightInitUtil.reshapeWeights(shape, weightParamView);
         }
     }
 
