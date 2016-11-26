@@ -9,8 +9,8 @@ public interface ReconstructionDistribution {
 
     int distributionParamCount(int dataSize);
 
-    double logProbability(INDArray x, INDArray distributionParams, boolean average);
+    double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average);
 
-    INDArray gradient(INDArray x, INDArray distributionParams);
+    INDArray gradient(INDArray x, INDArray preOutDistributionParams);
 
 }
