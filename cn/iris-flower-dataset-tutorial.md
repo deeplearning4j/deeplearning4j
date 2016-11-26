@@ -198,10 +198,10 @@ DL4J使用的评估对象(Evaluation Object)来收集有关模型的性能统计
 ![Alt text](../img/iris_dataset.png)
 
 ### <a name="beginner">其他Deeplearning4j教程</a>
-* [神经网络简介](zh-neuralnet-overview)
-* [受限玻尔兹曼机](zh-restrictedboltzmannmachine)
-* [本征向量、协方差、PCA和熵](zh-eigenvector)
-* [LSTM和递归网络](zh-lstm)
-* [神经网络与回归分析](../linear-regression)
-* [卷积网络](zh-convolutionalnets)
-* [Word2vec：Java中的神经词向量](zh-word2vec)
+* [神经网络简介](neuralnet-overview)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](eigenvector)
+* [LSTM和递归网络](lstm)
+* [神经网络与回归分析](linear-regression)
+* [卷积网络](convolutionalnets)
+* [Word2vec：Java中的神经词向量](word2vec)

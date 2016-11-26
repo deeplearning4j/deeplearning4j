@@ -23,9 +23,11 @@ redirect_from: /zh-neuralnet-overview
 
 神经网络帮助我们进行聚类和分类。可以将其理解为建立在你所存储和管理的数据之上的一个聚类与分类层。对于未标记的数据，神经网络可以按照输入样例的相似之处将数据分组；若能用已标记的数据集定型，神经网络就可以对数据进行系统分类。（更准确地说，神经网络提取特征，再输入其他算法进行聚类和分类；因此可以将深度神经网络视为更大的机器学习应用系统的一部分，这个系统中还包括[强化学习](../reinforcementlearning)、分类和[回归分析](../linear-regression)的算法。)
 
-<p align="center">
-<a href="zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', ‘quickstart', 'click');">快速入门指南</a>
+<br />
+<p align="left">
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">Deeplearning4j入门教程</a>
 </p>
+<br />
 
 思考深度学习能够解决怎样的问题时，不妨先自问：我关注的是哪些类别？哪些信息可以作为我的行动依据？这两个问题的回答就是可以赋予数据的标签：`垃圾邮件`或`非垃圾邮件`、`好人`或`坏人`、`愤怒的客户`或`高兴的客户`。然后再问：有没有能和这些标签匹配的数据？能否找到已标记的数据，或者创建一个带标签的数据集（利用Mechanical Turk或Crowdflower一类的服务），用来让算法学习标签与输入之间的关联？
 
@@ -190,13 +192,13 @@ redirect_from: /zh-neuralnet-overview
 
 以下教程和视频对前馈网络的基本概念进行了简明易懂的介绍，供刚开始了解深度学习的读者参考：
 
-* [受限玻尔兹曼机](zh-restrictedboltzmannmachine)
-* [本征向量、PCA、协方差和熵](zh-eigenvector)
-* [深度学习和神经网络词汇表](../glossary)
-* [卷积网络教程](zh-convolutionalnets)
-* [递归网络和LSTM](zh-lstm)
-* [Word2vec和自然语言处理](zh-word2vec)
-* [Deeplearning4j快速入门](zh-quickstart)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、PCA、协方差和熵](eigenvector)
+* [深度学习和神经网络词汇表](glossary)
+* [卷积网络教程](convolutionalnets)
+* [递归网络和LSTM](lstm)
+* [Word2vec和自然语言处理](word2vec)
+* [Deeplearning4j快速入门](quickstart)
 * [神经网络解密](https://www.youtube.com/watch?v=bxe2T-V8XRs)（全系列共七个视频）
 * [11行Python代码实现的神经网络](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [反向传播分步示例](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)

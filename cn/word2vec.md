@@ -23,17 +23,19 @@ redirect_from: /zh-word2vec
 
 ## <a name="intro">Word2Vec简介</a>
 
-Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。虽然Word2vec并不是[深度神经网络](zh-neuralnet-overview)，但它可以将文本转换为深度神经网络能够理解的数值形式。[Deeplearning4j](zh-quickstart)用Java和[Scala](../scala)语言实现分布式的Word2vec，通过Spark在GPU上运行。
+Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。虽然Word2vec并不是[深度神经网络](neuralnet-overview)，但它可以将文本转换为深度神经网络能够理解的数值形式。[Deeplearning4j](quickstart)用Java和[Scala](../scala)语言实现分布式的Word2vec，通过Spark在GPU上运行。
 
 Word2vec的应用不止于解析自然语句。它还可以用于<a href="#sequence"><a href="#sequence">基因组、代码、[点赞](https://docs.google.com/presentation/d/19QDuPmxB9RzQWKXp_t3yqxCvMBSMaOQk19KNZqUUgYQ/edit#slide=id.g11a4ba0c5c_0_6)、播放列表、社交媒体图像等其他语言或符号序列</a>，同样能够有效识别其中存在的模式。
 
 为什么呢？因为这些数据都是与词语相似的离散状态，而我们的目的只是求取这些状态之间的转移概率，即它们共同出现的可能性。所以gene2vec、like2vec和follower2vec都是可行的。而以下的教程就将介绍怎样为任何一组离散且同时出现的状态创建神经向量。
 
 Word2vec的目的和功用是在向量空间内将词的向量按相似性进行分组。它能够识别出数学上的相似性。Word2vec能生成向量，以分布式的数值形式来表示词的上下文等特征。而这一过程无需人工干预。
+<br />
 
-<p align="center">
-<a href="zh-quickstart" class="btn btn-custom" onClick="ga('send', 'event', a?quickstart', 'click');">Deeplearning4j入门教程</a>
+<p align="left">
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">Deeplearning4j入门教程</a>
 </p>
+<br />
 
 给出足够的数据、用法和上下文，Word2vec就能根据过去经验对词的意义进行高度准确的预测。这样的预测结果可以用于建立一个词与其他词之间的联系（例如，“男人”和“男孩”的关系与“女人”和“女孩”的关系相同），或者可以将文档聚类并按主题分类。而这些聚类结果是搜索、[情感分析](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)和推荐算法的基础，广泛应用于科研、调查取证、电子商务、客户关系管理等领域。
 
@@ -53,7 +55,7 @@ Word2vec衡量词的[余弦相似性](../glossary.html#cosine)，无相似性表
 
 所以神经词向量用数字来表示词。这是一种简单而又不可思议的“翻译”。
 
-Word2vec与自动编码器相似，它将每个词编码为向量，但Word2vec不会像[受限玻尔兹曼机](zh-restrictedboltzmannmachine)那样通过[重构](zh-restrictedboltzmannmachine.html#reconstruct)输入的词语来定型，而是根据输入语料中相邻的其他词来进行每个词的定型。
+Word2vec与自动编码器相似，它将每个词编码为向量，但Word2vec不会像[受限玻尔兹曼机](restrictedboltzmannmachine)那样通过[重构](restrictedboltzmannmachine.html#reconstruct)输入的词语来定型，而是根据输入语料中相邻的其他词来进行每个词的定型。
 
 具体的方式有两种，一种是用上下文预测目标词（连续词袋法，简称CBOW），另一种则是用一个词来预测一段目标上下文，称为skip-gram方法。我们使用后一种方法，因为它处理大规模数据集的结果更为准确。
 
@@ -139,7 +141,7 @@ Word2vec指一类彼此相关的算法，而以下是采用<a href="../glossary.
 
 ## <a name="setup">Word2Vec设置</a>
 
-用Maven在IntelliJ中创建新项目。如果你不知道这一步如何操作，请查看[快速入门页](zh-quickstart)。随后在项目根目录下的POM.xml文件中指定以下属性和依赖关系（可以[在Maven上查看](https://search.maven.org/#search%7Cga%7C1%7Cnd4j)最新版本－请使用那些版本…）。
+用Maven在IntelliJ中创建新项目。如果你不知道这一步如何操作，请查看[快速入门页](quickstart)。随后在项目根目录下的POM.xml文件中指定以下属性和依赖关系（可以[在Maven上查看](https://search.maven.org/#search%7Cga%7C1%7Cnd4j)最新版本－请使用那些版本…）。
 
 ``` xml
 <properties>
@@ -366,7 +368,7 @@ WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.tx
 
 记得为导入的包添加`import java.io.File;`。
 
-较大的模型可能会遇到堆空间的问题。谷歌模型可能会占据多达10G的RAM，而JVM只能以256MB的RAM启动，所以必须调整你的堆空间。方法可以是使用一个`bash_profile`文件（参见[疑难解答](zh-gettingstarted.html#trouble)），或通过IntelliJ本身来解决：
+较大的模型可能会遇到堆空间的问题。谷歌模型可能会占据多达10G的RAM，而JVM只能以256MB的RAM启动，所以必须调整你的堆空间。方法可以是使用一个`bash_profile`文件（参见[疑难解答](gettingstarted.html#trouble)），或通过IntelliJ本身来解决：
 
 ``` java
     //Click:
@@ -391,7 +393,7 @@ WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.tx
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
-你可以参照[快速入门](zh-quickstart)中的指示在IntelliJ中打开这一示例，点击运行，看它如何运作。如果你向Word2vec模型查询一个定型语料中没有的词，那么返回的结果会是零。
+你可以参照[快速入门](quickstart)中的指示在IntelliJ中打开这一示例，点击运行，看它如何运作。如果你向Word2vec模型查询一个定型语料中没有的词，那么返回的结果会是零。
 
 ### <a name="trouble">Word2Vec疑难解答与调试</a>
 
@@ -491,12 +493,12 @@ Deeplearning4j有一个叫做[SequenceVectors](https://github.com/deeplearning4j
 * [词袋与词频－逆文档频率（TF-IDF）](./bagofwords-tf-idf.html)
 
 ### <a name="beginner">其他Deeplearning4j教程</a>
-* [神经网络简介](zh-neuralnet-overview)
-* [受限玻尔兹曼机](zh-restrictedboltzmannmachine)
-* [本征向量、协方差、PCA和熵](zh-eigenvector)
-* [LSTM和递归网络](zh-lstm)
+* [神经网络简介](neuralnet-overview)
+* [受限玻尔兹曼机](restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](eigenvector)
+* [LSTM和递归网络](lstm)
 * [神经网络与回归分析](../linear-regression)
-* [卷积网络](zh-convolutionalnets)
+* [卷积网络](convolutionalnets)
 
 ### <a name="doctorow">文学中的Word2Vec</a>
 

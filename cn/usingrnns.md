@@ -6,7 +6,7 @@ redirect_from: /zh-usingrnns
 
 # DL4J中的递归网络
 
-本页将简要介绍递归网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非递归神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[递归网络和LSTM教程](zh-lstm)，再学习本页内容。
+本页将简要介绍递归网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非递归神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[递归网络和LSTM教程](lstm)，再学习本页内容。
 
 **目录**
 
@@ -21,6 +21,7 @@ redirect_from: /zh-usingrnns
 
 ## <a name="basics">基础内容：数据和网络配置</a>
 DL4J目前支持一种主要的递归网络－ LSTM（长短期记忆）模型（类名称：GravesLSTM），未来计划提供更多模型。
+<br />
 
 #### RNN的数据
 在标准的前馈网络中（多层感知器或DL4J的'DenseLayer'），输入和输出数据具有二维结构，或者说数据的“形状”可以描述为[numExamples,inputSize]，即输入前馈网络的数据的行／样例数为??numExamples?ˉ，而每一行中的列数为??inputSize?ˉ。单个样例的形状应为[1,inputSize]，但在实际应用中，为了保证运算和优化的效率，通常会使用多个样例。与此类似，标准前馈网络的输出数据同样具有二维结构，形状为[numExamples,outputSize]。
@@ -28,6 +29,7 @@ DL4J目前支持一种主要的递归网络－ LSTM（长短期记忆）模型�
 而RNN的数据则是时间序列。这些数据具备三个维度，增加了一个时间维度。因此，输入数据的形状为[numExamples,inputSize,timeSeriesLength]，而输出数据的形状为[numExamples,outputSize,timeSeriesLength]。就INDArray中的数据布局而言，位于(i,j,k)的值即是一批数据中第i例的第k个时间步的第j个值。数据布局如下图所示。
 
 ![Data:Feed Forward vs. RNN](../img/rnn_data.png)
+<br />
 
 #### RnnOutputLayer
 
@@ -98,6 +100,7 @@ DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩�
 对于“不需要掩模”的情况，我们可以使用全部值为1的掩模数组，所得结果与不使用掩模数组相同。此外，RNN定型中使用的掩模数组可以是零个、一个或者两个，比如多对一的情景就有可能仅设置一个用于输出的掩模数组。
 
 实际应用中，填零数组一般在数据导入阶段创建（例如由SequenceRecordReaderDatasetIterator创建－后文将具体介绍），包含在DataSet对象中。如果一个DataSet包含掩模数组，MultiLayerNetwork在定型中会自动使用。如果不存在掩模数组，则不会启用掩模功能。
+<br />
 
 #### 使用掩模的评估与计分
 
@@ -186,6 +189,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 注意在所有情况下，数据文件中的每一行都表示一个时间步。
 
 （除了下文的示例外，还可参考[这些单元测试](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetiteratorTest.java)。）
+<br />
 
 #### 示例1：等长时间序列，输入和标签在不同文件内
 
@@ -222,6 +226,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 * 回归分析问题中，不使用numPossibleLabels（可任意指定值），应指定regression = true。
   * 可以处理任意数量的输入与标签值（与分类不同，可以处理任意数量的输出）
   * 指定regression = true时不会对标签进行处理
+<br />
 
 #### 示例2：等长时间序列，输入和标签在同个文件内
 
@@ -242,6 +247,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
     DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
 
 如前文所述，回归分析中不使用numPossibleLabels参数。
+<br />
 
 #### 示例3：不等长时间序列（多对多）
 
@@ -261,6 +267,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 另外请注意，长度可变的时间序列始终从数据组中第0时间步开始，如需要填零，则会在时间序列结束后添加零。
 
 与示例1和2不同，上述variableLengthIter样例产生的DataSet对象还将包括输入和掩模数组，如前文所述。
+<br />
 
 #### 示例4：多对一和一对多数据
 示例3中的AlignmentMode功能还可以用于实现多对一的RNN序列分类器。让我们假设：
@@ -282,6 +289,7 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 注意，在定型数据包含非等长时间序列的情况下，各个样例的标签和输入会被分别对齐，随后会按需要对较短的时间序列进行填零。
 
 ![Sequence Alignment](../img/rnn_seq_alignment_2.png)
+<br />
 
 #### 替代方法：运用自定义DataSetIterator
 有些时候，我们可能需要进行不符合常规情景的数据导入。方法之一是运用自定义的[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)。DataSetIterator只是用于迭代DataSet对象的接口，这些对象封装了输入和目标INDArrays，以及输入和标签掩模数组（可选）。

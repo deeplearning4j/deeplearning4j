@@ -69,6 +69,7 @@ java -version
 ```
 
 请确保安装的是64位的Java，如果使用的是32位版本，会出现`no jnind4j in java.library.path`的错误信息。
+<br />
 
 #### <a name="Maven">Apache Maven</a>
 
@@ -85,12 +86,14 @@ brew install maven
 ```
 
 Maven被Java开发者广泛使用，可以说是DL4J的必备条件。如果您此前并未从事Java开发，对Maven了解有限，请参考[Apache的Maven概述](http://maven.apache.org/what-is-maven.html)以及本站[面向非Java程序员的Maven简介](http://deeplearning4j.org/maven.html)，其中包括额外的疑难解答内容。Ivy和Gradle等[其他构建工具](../buildtools)也能够运行，但我们对Maven的支持最好。
+<br />
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
 
 集成开发环境（[IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)）让您能使用我们的API，只需要几个步骤就能配置神经网络。我们强烈推荐使用[IntelliJ](https://www.jetbrains.com/idea/download/)，它能与Maven相结合，有效管理依赖项。[IntelliJ社区版](https://www.jetbrains.com/idea/download/)是免费的。
 
 其他较为流行的IDE包括[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html)和[Netbeans](http://wiki.netbeans.org/MavenBestPractices)。我们推荐使用IntelliJ，遇到问题时在[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)中也更容易得到帮助。
+<br />
 
 #### <a name="Git">Git</a>
 
@@ -102,24 +105,25 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 ## <a name="examples">运行DL4J示例的简易步骤</a>
 
-1.在命令行中输入：
+1. 在命令行中输入：
 
         $ git clone https://github.com/deeplearning4j/dl4j-examples.git
         $ cd dl4j-examples/
         $ mvn clean install
 
-2.打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。
+2. 打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。
 
-![select directory](../img/Install_IntJ_1.png)
+ * ![select directory](../img/Install_IntJ_1.png)
 
-3.选择“从外部模型导入项目”，确保已选中Maven。
-![import project](../img/Install_IntJ_2.png)
+3. 选择“从外部模型导入项目”，确保已选中Maven。
 
-4.继续按向导选项操作。选中以`jdk`开头的SDK。（可能需要点击加号才能看到相关选项……）随后点“完成”。稍等片刻，让IntelliJ下载所有的依赖项。右下方会显示进度条。
+ * ![import project](../img/Install_IntJ_2.png)
 
-5.在左边的树形目录中选择一个示例。
-![run IntelliJ example](../img/Install_IntJ_3.png)
-右击文件，运行。
+4. 继续按向导选项操作。选中以`jdk`开头的SDK。（可能需要点击加号才能看到相关选项……）随后点“完成”。稍等片刻，让IntelliJ下载所有的依赖项。右下方会显示进度条。
+
+5. 在左边的树形目录中选择一个示例。
+ * ![run IntelliJ example](../img/Install_IntJ_3.png)
+ * 右击文件，运行。
 
 ## 在您自己的项目中使用DL4J：配置POM.xml文件
 
@@ -161,6 +165,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 
 ### 疑难解答
+<br />
 
 #### **问：**我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
 
@@ -169,6 +174,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
 -Djava.library.path=""
 ```
+<br />
 
 #### **问：**我遇到了这个错误：`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`，导致JVM故障（不会崩溃，只是停止运行……）。
 
