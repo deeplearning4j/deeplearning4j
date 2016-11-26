@@ -2,24 +2,32 @@ package org.deeplearning4j.nn.params;
 
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by Alex on 25/11/2016.
  */
-public class VariationalAutoencoderParamInitializer implements ParamInitializer {
+public class VariationalAutoencoderParamInitializer extends DefaultParamInitializer {
 
     private static final VariationalAutoencoderParamInitializer INSTANCE = new VariationalAutoencoderParamInitializer();
     public static VariationalAutoencoderParamInitializer getInstance(){
         return INSTANCE;
     }
 
+    public static final String WEIGHT_KEY_SUFFIX = "W";
+    public static final String BIAS_KEY_SUFFIX = "b";
+
     @Override
     public int numParams(NeuralNetConfiguration conf, boolean backprop) {
-
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
         int nIn = layer.getNIn();
@@ -40,9 +48,100 @@ public class VariationalAutoencoderParamInitializer implements ParamInitializer 
 
         //Between the last encoder layer and the parameters for p(z|x):
         int lastEncLayerSize = encoderLayerSizes[encoderLayerSizes.length-1];
-        paramCount += (lastEncLayerSize + 1) * nOut;
+        if(backprop){
+            paramCount += (lastEncLayerSize + 1) * nOut;        //Just mean parameters used in backprop
+        } else {
+            paramCount += (lastEncLayerSize + 1) * 2 * nOut;    //Mean and variance parameters used in unsupervised training
+        }
 
-        //Decoder:
+        if(!backprop) {
+            //Decoder:
+            for (int i = 0; i < decoderLayerSizes.length; i++) {
+                int decoderLayerNIn;
+                if (i == 0) {
+                    decoderLayerNIn = nOut;
+                } else {
+                    decoderLayerNIn = decoderLayerSizes[i - 1];
+                }
+                paramCount += (decoderLayerNIn + 1) * decoderLayerSizes[i];
+            }
+
+            //Between last decoder layer and parameters for p(x|z):
+            int nDistributionParams = layer.getOutputDistribution().distributionParamCount(nIn);
+            int lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
+            paramCount += (lastDecLayerSize + 1) * nDistributionParams;
+        }
+
+        return paramCount;
+    }
+
+    @Override
+    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
+        if(paramsView.length() != numParams(conf,true)){
+            throw new IllegalArgumentException("Incorrect paramsView length: Expected length " + numParams(conf,true) + ", got length " + paramsView.length());
+        }
+
+        Map<String,INDArray> ret = new HashMap<>();
+        VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
+
+        int nIn = layer.getNIn();
+        int nOut = layer.getNOut();
+        int[] encoderLayerSizes = layer.getEncoderLayerSizes();
+        int[] decoderLayerSizes = layer.getDecoderLayerSizes();
+
+        WeightInit weightInit = layer.getWeightInit();
+        Distribution dist = Distributions.createDistribution(layer.getDist());
+
+        int soFar = 0;
+        for( int i=0; i<encoderLayerSizes.length; i++ ){
+            int encoderLayerNIn;
+            if(i == 0){
+                encoderLayerNIn = nIn;
+            } else {
+                encoderLayerNIn = encoderLayerSizes[i-1];
+            }
+            int weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
+            INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+weightParamCount));
+            soFar += weightParamCount;
+            INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+encoderLayerSizes[i]));
+            soFar += encoderLayerSizes[i];
+
+            INDArray layerWeights = createWeightMatrix(encoderLayerNIn, encoderLayerSizes[i], weightInit, dist, weightView, initializeParams);
+            INDArray layerBiases = createBias(encoderLayerSizes[i], 0.0, biasView, initializeParams);       //TODO don't hardcode 0
+
+            ret.put("e" + i + WEIGHT_KEY_SUFFIX, layerWeights);
+            ret.put("e" + i + BIAS_KEY_SUFFIX, layerBiases);
+        }
+
+        //Last encoder layer -> p(z|x)
+        int nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length-1] * nOut;
+        INDArray pzxWeightsMean = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+        soFar += nWeightsPzx;
+        INDArray pzxBiasMean = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+nOut));
+
+        INDArray pzxWeightsMeanReshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length-1], nOut, weightInit, dist, pzxWeightsMean, initializeParams);
+        INDArray pzxBiasMeanReshaped = createBias(nOut, 0.0, pzxBiasMean, initializeParams);       //TODO don't hardcode 0
+
+        ret.put("eZXMean" + WEIGHT_KEY_SUFFIX, pzxWeightsMeanReshaped);
+        ret.put("eZXMean" + BIAS_KEY_SUFFIX, pzxBiasMeanReshaped);
+
+
+        //Allocate array for additional pretrain params
+        //TODO this won't work with deserialization/model loading
+        int pretrainSpecificNumParams = numParams(conf, false) - numParams(conf, true);
+        INDArray pretrainParams = Nd4j.createUninitialized(pretrainSpecificNumParams);
+        soFar = 0;
+        INDArray pzxWeightsLogStdev2 = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+        soFar += nWeightsPzx;
+        INDArray pzxBiasLogStdev2 = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+nOut));
+        soFar += nOut;
+
+        INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length-1], nOut, weightInit, dist, pzxWeightsLogStdev2, initializeParams);
+        INDArray pzxBiasLogStdev2Reshaped = createBias(nOut, 0.0, pzxBiasLogStdev2, initializeParams);         //TODO don't hardcode 0
+
+        ret.put("eZXLogStdev2" + WEIGHT_KEY_SUFFIX, pzxWeightsLogStdev2Reshaped);
+        ret.put("eZXLogStdev2" + BIAS_KEY_SUFFIX, pzxBiasLogStdev2Reshaped);
+
         for( int i=0; i<decoderLayerSizes.length; i++ ){
             int decoderLayerNIn;
             if(i == 0){
@@ -50,16 +149,34 @@ public class VariationalAutoencoderParamInitializer implements ParamInitializer 
             } else {
                 decoderLayerNIn = decoderLayerSizes[i-1];
             }
-            paramCount += (decoderLayerNIn + 1) * decoderLayerSizes[i];
+            int weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
+            INDArray weightView = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+weightParamCount));
+            soFar += weightParamCount;
+            INDArray biasView = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+decoderLayerSizes[i]));
+            soFar += decoderLayerSizes[i];
+
+            INDArray layerWeights = createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], weightInit, dist, weightView, initializeParams);
+            INDArray layerBiases = createBias(decoderLayerSizes[i], 0.0, biasView, initializeParams);          //TODO don't hardcode 0
+
+            ret.put("d" + i + WEIGHT_KEY_SUFFIX, layerWeights);
+            ret.put("d" + i + BIAS_KEY_SUFFIX, layerBiases);
         }
 
+        //Finally, p(x|z):
+        int nDistributionParams = layer.getOutputDistribution().distributionParamCount(nIn);
+        int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length-1] * nDistributionParams;
+        int pxzBiasCount = nDistributionParams;
+        INDArray pxzWeightView = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+pxzWeightCount));
+        soFar += pxzWeightCount;
+        INDArray pxzBiasView = pretrainParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar,soFar+pxzBiasCount));
 
-        return paramCount;
-    }
+        INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length-1], nDistributionParams, weightInit, dist,  pxzWeightView, initializeParams);
+        INDArray pxzBiasReshaped = createBias(nDistributionParams, 0.0, pxzBiasView, initializeParams);       //TODO don't hardcode 0
 
-    @Override
-    public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        return null;
+        ret.put("dXZ" + WEIGHT_KEY_SUFFIX, pxzWeightsReshaped);
+        ret.put("dXZ" + BIAS_KEY_SUFFIX, pxzBiasReshaped);
+
+        return ret;
     }
 
     @Override

@@ -24,6 +24,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private ReconstructionDistribution outputDistribution;
 
     private VariationalAutoencoder(Builder builder){
+        super(builder);
         this.encoderLayerSizes = builder.encoderLayerSizes;
         this.decoderLayerSizes = builder.decoderLayerSizes;
         this.outputDistribution = builder.outputDistribution;
@@ -66,10 +67,15 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             return this;
         }
 
+        public Builder reconstructionDistribution(ReconstructionDistribution distribution){
+            this.outputDistribution = distribution;
+            return this;
+        }
+
         @Override
         @SuppressWarnings("unchecked")
         public VariationalAutoencoder build() {
-            return null;
+            return new VariationalAutoencoder(this);
         }
     }
 }
