@@ -31,6 +31,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     protected LossFunctions.LossFunction lossFunction;
+    @Deprecated
     protected String customLossFunction;
 
     public BasePretrainNetwork(Builder builder){
@@ -102,6 +103,7 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
             return (T) this;
         }
 
+        @Deprecated
         public T customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
             return (T) this;
