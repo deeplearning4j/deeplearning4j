@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * AffinityManager implementation for CUDA
+ *
  * @author raver119@gmail.com
  */
 public class CudaAffinityManager extends BasicAffinityManager {
@@ -42,16 +44,38 @@ public class CudaAffinityManager extends BasicAffinityManager {
         super();
     }
 
+    /**
+     * This method returns deviceId for current thread.
+     *
+     * If no device was assigned to this thread before this call, it'll be assinged here.
+     *
+     * @return
+     */
     @Override
     public Integer getDeviceForCurrentThread() {
         return getDeviceForThread(Thread.currentThread().getId());
     }
 
+    /**
+     * This method returns deviceId for given thread.
+     *
+     * If no device was assigned to this thread before this call, it'll be assinged here.
+     * @param thread
+     * @return
+     */
     @Override
     public Integer getDeviceForThread(Thread thread) {
         return getDeviceForThread(thread.getId());
     }
 
+    /**
+     * This method returns deviceId for given thread, identified by threadId
+     *
+     * If no device was assigned to this thread before this call, it'll be assinged here.
+     *
+     * @param threadId
+     * @return
+     */
     @Override
     public Integer getDeviceForThread(long threadId) {
         if (!affinityMap.containsKey(threadId)) {
@@ -84,11 +108,23 @@ public class CudaAffinityManager extends BasicAffinityManager {
         return affinityMap.get(threadId);
     }
 
+    /**
+     * This method pairs specified thread & device
+     *
+     * @param thread
+     * @param deviceId
+     */
     @Override
     public void attachThreadToDevice(Thread thread, Integer deviceId) {
         attachThreadToDevice(thread.getId(), deviceId);
     }
 
+    /**
+     * This method pairs specified thread & device
+     *
+     * @param threadId
+     * @param deviceId
+     */
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
         List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
@@ -96,6 +132,12 @@ public class CudaAffinityManager extends BasicAffinityManager {
         affinityMap.put(threadId, deviceId);
     }
 
+    /**
+     * This method returns device id available. Round-robin balancing used here.
+     *
+     * @param threadId this parameter can be anything, it's used for logging only.
+     * @return
+     */
     protected Integer getNextDevice(long threadId) {
         Integer device = null;
         if (!configuration.isForcedSingleGPU() && getNumberOfDevices() > 0) {
@@ -117,6 +159,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
         return device;
     }
 
+    /**
+     * This method returns number of available devices in system.
+     *
+     * Please note: returned value might be different from actual number of used devices.
+     *
+     * @return total number of devices
+     */
     @Override
     public int getNumberOfDevices() {
         if (numberOfDevices.get() < 0) {
@@ -233,19 +282,39 @@ public class CudaAffinityManager extends BasicAffinityManager {
         return dstBuffer;
     }
 
+    /**
+     * This method marks given INDArray as actual in specific location (either host, device, or both)
+     *
+     * @param array
+     * @param location
+     */
     @Override
     public void tagLocation(INDArray array, Location location) {
         if (location == Location.HOST)
             AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
         else if (location == Location.DEVICE)
             AtomicAllocator.getInstance().getAllocationPoint(array).tickDeviceWrite();
+        else if (location == Location.EVERYWHERE) {
+            AtomicAllocator.getInstance().getAllocationPoint(array).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(array).tickHostRead();
+        }
     }
 
+    /**
+     * This method marks given DataBuffer as actual in specific location (either host, device, or both)
+     *
+     * @param buffer
+     * @param location
+     */
     @Override
     public void tagLocation(DataBuffer buffer, Location location) {
         if (location == Location.HOST)
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
         else if (location == Location.DEVICE)
             AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+        else if (location == Location.EVERYWHERE) {
+            AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostRead();
+        }
     }
 }
