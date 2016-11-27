@@ -19,6 +19,10 @@ import org.nd4j.linalg.dataset.MultiDataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /** A utility for numerically checking gradients. <br>
  * Basic idea: compare calculated gradients with those calculated numerically,
  * to check implementation of backpropagation gradient calculation.<br>
@@ -94,10 +98,26 @@ public class GradientCheckUtil {
 
         int nParams = originalParams.length();
 
+        Map<String,INDArray> paramTable = mln.paramTable();
+        List<String> paramNames = new ArrayList<>(paramTable.keySet());
+        int[] paramEnds = new int[paramNames.size()];
+        paramEnds[0] = paramTable.get(paramNames.get(0)).length();
+        for( int i=1; i<paramEnds.length; i++ ){
+            paramEnds[i] = paramEnds[i-1] + paramTable.get(paramNames.get(i)).length();
+        }
+
+
         int totalNFailures = 0;
         double maxError = 0.0;
         DataSet ds = new DataSet(input, labels);
+        int currParamNameIdx = 0;
         for(int i = 0; i < nParams; i++) {
+            //Get param name
+            if(i > paramEnds[currParamNameIdx]){
+                currParamNameIdx++;
+            }
+            String paramName = paramNames.get(currParamNameIdx);
+
             //(w+epsilon): Do forward pass and score
             INDArray params = originalParams.dup();
             params.putScalar(i, params.getDouble(i) + epsilon);
@@ -126,11 +146,11 @@ public class GradientCheckUtil {
             if(relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if(absError < minAbsoluteError){
-                    log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                             + ", relError= " + relError + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError );
                 } else {
                     if (print)
-                        log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                                 + ", relError= " + relError + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                     if (exitOnFirstError)
                         return false;
@@ -138,7 +158,7 @@ public class GradientCheckUtil {
                 }
             }
             else if(print) {
-                log.info("Param " + i + " passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
+                log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= " + numericalGradient
                         + ", relError= " + relError );
             }
         }

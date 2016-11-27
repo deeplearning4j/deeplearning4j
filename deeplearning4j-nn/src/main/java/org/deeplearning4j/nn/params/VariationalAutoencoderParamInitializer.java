@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -81,7 +82,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
             throw new IllegalArgumentException("Incorrect paramsView length: Expected length " + numParams(conf,true) + ", got length " + paramsView.length());
         }
 
-        Map<String,INDArray> ret = new HashMap<>();
+        Map<String,INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
         int nIn = layer.getNIn();
@@ -202,7 +203,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        Map<String,INDArray> ret = new HashMap<>();
+        Map<String,INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
         int nIn = layer.getNIn();
