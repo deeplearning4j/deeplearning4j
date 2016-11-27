@@ -345,14 +345,14 @@ Seq[Any](format.raw/*1.40*/("""
                         </div><!-- End Table of Contents -->
                     </div><!-- End Row Fluid -->
                 </div>
-          """),
-format.raw("""          <!-- End Content -->
+                    <!-- End Content -->
             </div><!--End Row Fluid -->
         </div><!-- End Container Fluid Full-->
 
         <!-- Start JavaScript-->
         <script src="/assets/js/jquery-1.9.1.min.js"></script>
-        <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
+        <script src="/assets/js/jquery-migrate-1.0"""),
+format.raw(""".0.min.js"></script>
         <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
         <script src="/assets/js/jquery.ui.touch-punch.js"></script>
         <script src="/assets/js/modernizr.js"></script>
@@ -405,10 +405,10 @@ format.raw("""          <!-- End Content -->
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Fri Nov 11 15:48:06 AEDT 2016
-                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
-                  HASH: f6899558de3ff2ca1c02dc5fccdb266b29b2a6dc
-                  MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2718->1921|2731->1925|2782->1955|3346->2491|3360->2495|3415->2528|3565->2650|3579->2654|3631->2684|3786->2811|3800->2815|3853->2846|4031->2996|4045->3000|4101->3034|4326->3231|4340->3235|4395->3268
+                  DATE: Tue Nov 22 21:45:10 PST 2016
+                  SOURCE: /Users/justin/Projects/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  HASH: 5e17b5385779e6ae20e00e826a911c5719de8686
+                  MATRIX: 596->1|729->39|756->40|874->132|886->136|936->166|2678->1881|2691->1885|2742->1915|3293->2438|3307->2442|3362->2475|3511->2596|3525->2600|3577->2630|3731->2756|3745->2760|3798->2791|3975->2940|3989->2944|4045->2978|4268->3173|4282->3177|4337->3210
                   LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|83->59|83->59|83->59
                   -- GENERATED --
               */
