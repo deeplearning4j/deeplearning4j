@@ -165,7 +165,6 @@ public class Nd4j {
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
-    protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
     protected static ConstantHandler constantHandler;
@@ -5422,6 +5421,9 @@ public class Nd4j {
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
             randomFactory = new RandomFactory(randomClazz);
 
+            // pre-load RNG instance for this thread
+            randomFactory.getNewRandomInstance();
+
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
 
@@ -5450,7 +5452,6 @@ public class Nd4j {
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
 
 
-            random = randomClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
