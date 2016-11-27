@@ -273,9 +273,11 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     /**
-     * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors
+     * This method takes DataSetIterator, and
+     * starts training over it by scheduling
+     * DataSets to different executors
      *
-     * @param source
+     * @param source the source of data to use
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
         if (zoo == null) {
@@ -510,7 +512,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          * Model averaging frequency.
          *
-         * @param freq number of iterations between averagin
+         * @param freq number of iterations between averaging
          * @return
          */
         public Builder averagingFrequency(int freq) {
