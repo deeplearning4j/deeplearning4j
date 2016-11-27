@@ -5036,9 +5036,7 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(int...shape) {
-        INDArray ret = INSTANCE.zeros(shape);
-        logCreationIfNecessary(ret);
-        return ret;
+        return Nd4j.create(shape);
 
     }
 
