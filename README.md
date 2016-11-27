@@ -9,6 +9,17 @@ Native operations for nd4j. Build using cmake
 * CMake
 * A blas implementation or openblas is required
 
+### Additional build arguments
+
+There's few additional arguments for `buildnativeoperations.sh` script you could use:
+
+```bash
+ -a // shortcut for -march/-mtune, i.e. -a native
+ -b release OR -b debug // enables/desables debug builds. release is considered by default
+ -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+```
+
+
 ## OS Specific Requirements
 
 ### Android

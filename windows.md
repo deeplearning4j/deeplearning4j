@@ -19,6 +19,16 @@ Send us a pull request or [file an issue](https://github.com/deeplearning4j/libn
 
 libnd4j and nd4j go hand in hand, and libnd4j is required for two out of the three currently supported backends (nd4j-native and nd4j-cuda). For this reason they should always be rebuild together.
 
+### Additional build arguments
+
+There's few additional arguments for `buildnativeoperations.sh` script you could use:
+
+```bash
+ -a // shortcut for -march/-mtune, i.e. -a native
+ -b release OR -b debug // enables/desables debug builds. release is considered by default
+ -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+```
+
 ### Building the CPU Backend
 
 Now clone this repository, and in that directory run the following to build the dll for the cpu backend:
@@ -67,14 +77,14 @@ Please notice the single quotes around the last parameter, if you leave them out
 
 ## Using the Native Backend
 
-In order to use your new shiny backends you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend instead of x86.
+In order to use your new shiny backends you will have to switch your application to use the version of ND4J that you just compiled and to use the native backend.
 
-For this you change the version of all your ND4J dependencies to "0.4-rc3.10-SNAPSHOT".
+For this you change the version of all your ND4J dependencies to version you've built, i.e: "0.7.1-SNAPSHOT".
 
 
 ### CPU Backend
 
-Exchange nd4j-x86 for nd4j-native like that:
+Use nd4j-native backend like that:
 
     <dependency>
         <groupId>org.nd4j</groupId>
@@ -84,7 +94,7 @@ Exchange nd4j-x86 for nd4j-native like that:
 
 ### CUDA Backend
 
-Exchange nd4j-x86 for nd4j-cuda-7.5 (or nd4j-cuda-8.0) like that:
+Exchange nd4j-native for nd4j-cuda-7.5 (or nd4j-cuda-8.0) like that:
 
     <dependency>
         <groupId>org.nd4j</groupId>
