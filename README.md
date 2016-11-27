@@ -9,6 +9,17 @@ Native operations for nd4j. Build using cmake
 * CMake
 * A blas implementation or openblas is required
 
+### Additional build arguments
+
+There's few additional arguments for `buildnativeoperations.sh` script you could use:
+
+```bash
+ -a // shortcut for -march/-mtune, i.e. -a native
+ -b release OR -b debug // enables/desables debug builds. release is considered by default
+ -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+```
+
+
 ## OS Specific Requirements
 
 ### Android
@@ -61,7 +72,7 @@ sudo rm /usr/bin/g++
 sudo ln -s /usr/bin/gcc-4.9 /usr/bin/gcc
 sudo ln -s /usr/bin/g++-4.9 /usr/bin/g++
 ./buildnativeoperations.sh
-./buildnativeoperations.sh -c cuda
+./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
 ```
 #### Ubuntu Linux 16.04
 
@@ -71,7 +82,7 @@ sudo apt install cmake
 sudo apt install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-361
 export TRICK_NVCC=YES
 ./buildnativeoperations.sh
-./buildnativeoperations.sh -c cuda
+./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
 
 ```
 
@@ -84,7 +95,7 @@ yum install centos-release-scl-rh epel-release
 yum install devtoolset-3-toolchain maven30 cmake3 git openblas-devel
 scl enable devtoolset-3 maven30 bash
 ./buildnativeoperations.sh
-./buildnativeoperations.sh -c cuda
+./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
 ```
 
 ### Windows
@@ -101,21 +112,21 @@ See [Windows.md](windows.md)
     
         ```bash
         ./buildnativeoperations.sh
-        ./buildnativeoperations.sh -c cuda
+        ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
         ```
         
      * For Debug builds:
      
         ```bash
         ./buildnativeoperations.sh blas -b debug
-        ./buildnativeoperations.sh blas -c cuda -b debug
+        ./buildnativeoperations.sh blas -c cuda -сс YOUR_DEVICE_ARCH -b debug
         ```
         
      * For release builds (default):
      
         ```bash
         ./buildnativeoperations.sh
-        ./buildnativeoperations.sh -c cuda
+        ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
         ```
 
 ## Linking with MKL
