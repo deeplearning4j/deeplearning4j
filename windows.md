@@ -39,7 +39,7 @@ Additionally, you need to open the `mingw64.ini` in your msys64 installation fol
 1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
 2. Run `c:\msys64\mingw64.exe` inside that
 3. Change to your libnd4j folder
-4. `./buildnativeoperations.sh -c cuda`
+4. `./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH`
 
 This builds the CUDA nd4j.dll.
 
@@ -79,17 +79,17 @@ Exchange nd4j-x86 for nd4j-native like that:
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-native</artifactId>
-        <version>0.4-rc3.10-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </dependency>
 
 ### CUDA Backend
 
-Exchange nd4j-x86 for nd4j-cuda-7.5 like that:
+Exchange nd4j-x86 for nd4j-cuda-7.5 (or nd4j-cuda-8.0) like that:
 
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-cuda-7.5</artifactId>
-        <version>0.4-rc3.10-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </dependency>
 
     
