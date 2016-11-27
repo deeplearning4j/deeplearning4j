@@ -41,6 +41,19 @@ I.e. if you have dual-cpu 8-core system with HyperThreading enabled, total numbe
 If you have quad-cpu 10 core system with HyperThreading enabled, total number of cores reported in system will be 80, and best value for `OMP_NUM_THREADS` will be 10.
 If you have single cpu with 16 cores and HyperThreading enabled, total number of cores reported in system will be 32, and best value for `OMP_NUM_THREADS` will be somewhere between 8 and 16, depending on workload size.
 
+## Parallelism thresholds
+If you think that you might get better performance with your specific CPU, i.e. if your CPU supports AVX-512 instructions set, you could try to change parallelism thresholds for different operation types. We've exposed few special methods for that:
+
+```
+NativeOpsHolder.getInstance().getDeviceNativeOps().setElementThreshold(16384)
+NativeOpsHolder.getInstance().getDeviceNativeOps().setTADThreshold(64)
+```
+
+**.setElementThreshold()** call allows you to specify number of array elements processed by one OpenMP thread. I.e. if you have AVX-512-capable CPU, you might want to keep that value high enough, to avoid spawning threads and use SIMD instead.
+ 
+**.setTADThreshold()** has similar effect, it allows you to specify number of tensors (TADs) processed by single OpenMP thread. Depending on CPU model (and amount of CPU cache) you might want to either raise this value, or get it lower.
+
+
 ## Intel MKL
 
 By default, OpenBLAS is used with ND4J, but there’s an option to use the first-class high-performance Intel MKL library together with ND4J/DL4J. That happens automatically, if you have MKL libraries on `$PATH`, they will be used for BLAS operations. [Intel MKL](https://software.intel.com/sites/campaigns/nest/) is available for Linux, OSX and Windows. It’s also possible to compile ND4J with Intel MKL pre-linked, if you have Intel MKL installed. MKL is available free of charge under community licensing Intel. 
@@ -71,6 +84,12 @@ This is generic compilation optimization, which enables code compilation for you
 ### ND4J_SKIP_BLAS_THREADS
 
 If you have an unusual BLAS environment, or you have troubles around the `Nd4jBlas.setMaxThreads()` call - set the environment variable  `ND4J_SKIP_BLAS_THREADS` to any value. In this case, the method won’t be triggered. But in this case you’ll also have to set the  `OMP_NUM_THREADS` variable manually as well.
+
+
+### Fallback mode
+Recently we’ve found out, that on some platforms, popular BLAS-libraries can be unstable, causing crashes under different circumstances. To address that (and possible future issues, as well), we’ve provided optional «fallback mode», which will cause ND4j to use in-house solutions as workaround for possible issues, acting as «safe mode», well known for any modern-OS user.
+
+To activate fallback mode you only need to set special environment variable: **ND4J_FALLBACK**, set it to «**true**», or to **1** before launching your app. It’s possible to use this variable in Apache Spark environment, as well as in standalone app.
 
 *By Vyacheslav Kokorin*
 
