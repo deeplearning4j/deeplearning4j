@@ -1,5 +1,8 @@
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.schema.Schema;
+
+
 /**
  * ColumnOp
  * is a transform meant
@@ -8,7 +11,19 @@ package org.datavec.api.transform;
  * @author Adam Gibson
  */
 public interface ColumnOp {
+    /** Get the output schema for this transformation, given an input schema */
+    Schema transform(Schema inputSchema);
 
+
+    /** Set the input schema.
+     */
+    void setInputSchema(Schema inputSchema);
+
+    /**
+     * Getter for input schema
+     * @return
+     */
+    Schema getInputSchema();
 
     /**
      * The output column name

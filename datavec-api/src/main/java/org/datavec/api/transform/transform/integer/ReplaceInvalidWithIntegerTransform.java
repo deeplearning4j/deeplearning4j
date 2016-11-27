@@ -34,10 +34,27 @@ public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
 
     @Override
     public Writable map(Writable writable) {
-        if(inputSchema.getMetaData(columnNumber).isValid(writable)){
+        if(inputSchema.getMetaData(columnNumber).isValid(writable)) {
             return writable;
         } else {
             return new IntWritable(value);
+        }
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        if(inputSchema.getMetaData(columnNumber).isValid(new IntWritable(n.intValue()))) {
+            return input;
+        } else {
+            return value;
         }
     }
 }

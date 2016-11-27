@@ -150,4 +150,70 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
 
         return out;
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return null;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        return null;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+       throw new UnsupportedOperationException("New column names is always more than 1 in length");
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return newColumnNames.toArray(new String[newColumnNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[]{columnName()};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnName();
+    }
 }

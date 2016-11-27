@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
@@ -30,6 +31,7 @@ import java.util.Set;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class CategoricalColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
@@ -135,5 +137,34 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
     public String toString() {
         return "CategoricalColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+    }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        switch (op) {
+            case Equal:
+                return value.equals(input.toString());
+            case NotEqual:
+                return !value.equals(input.toString());
+            case InSet:
+                return set.contains(input.toString());
+            case NotInSet:
+                return !set.contains(input.toString());
+            case LessThan:
+            case LessOrEqual:
+            case GreaterThan:
+            case GreaterOrEqual:
+                throw new UnsupportedOperationException("Cannot use ConditionOp \"" + op + "\" on Categorical column");
+            default:
+                throw new RuntimeException("Unknown or not implemented op: " + op);
+        }
     }
 }

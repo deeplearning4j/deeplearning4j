@@ -726,7 +726,7 @@ public class Reducer implements IReducer {
 
     @AllArgsConstructor
     @Data
-    private static class ConditionalReduction implements Serializable {
+    public static class ConditionalReduction implements Serializable {
         private final String columnName;
         private final String outputName;
         private final ReduceOp reduction;

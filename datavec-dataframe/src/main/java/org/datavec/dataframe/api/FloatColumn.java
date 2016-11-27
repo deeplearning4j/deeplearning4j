@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.datavec.dataframe.columns.FloatColumnUtils.notIsEqualTo;
 import static org.datavec.dataframe.columns.FloatColumnUtils.isEqualTo;
 import static org.datavec.dataframe.columns.FloatColumnUtils.isGreaterThan;
 import static org.datavec.dataframe.columns.FloatColumnUtils.isGreaterThanOrEqualTo;
@@ -284,6 +285,11 @@ public class FloatColumn extends AbstractColumn implements FloatIterable, Numeri
   public Selection isLessThanOrEqualTo(float f) {
     return select(isLessThanOrEqualTo, f);
   }
+
+  public Selection isNotEqualTo(float f) {
+    return select(notIsEqualTo, f);
+  }
+
 
   public Selection isEqualTo(float f) {
     return select(isEqualTo, f);

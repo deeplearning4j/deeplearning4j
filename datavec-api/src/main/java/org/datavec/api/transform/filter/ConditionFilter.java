@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.filter;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
@@ -32,12 +33,31 @@ import java.util.List;
  * @author Alex Black
  */
 @EqualsAndHashCode
+@Data
 public class ConditionFilter implements Filter {
 
     private final Condition condition;
 
     public ConditionFilter(@JsonProperty("condition") Condition condition){
         this.condition = condition;
+    }
+
+    /**
+     * @param writables Example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeExample(Object writables) {
+        return condition.condition(writables);
+    }
+
+    /**
+     * @param sequence sequence example
+     * @return true if example should be removed, false to keep
+     */
+    @Override
+    public boolean removeSequence(Object sequence) {
+        return condition.condition(sequence);
     }
 
     @Override
@@ -48,6 +68,16 @@ public class ConditionFilter implements Filter {
     @Override
     public boolean removeSequence(List<List<Writable>> sequence) {
         return condition.conditionSequence(sequence);
+    }
+
+    /**
+     * Get the output schema for this transformation, given an input schema
+     *
+     * @param inputSchema
+     */
+    @Override
+    public Schema transform(Schema inputSchema) {
+        return inputSchema;
     }
 
     @Override
@@ -63,5 +93,49 @@ public class ConditionFilter implements Filter {
     @Override
     public String toString(){
         return "ConditionFilter(" + condition + ")";
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return condition.outputColumnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+       return condition.outputColumnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+       return condition.columnNames();
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+       return condition.columnName();
     }
 }

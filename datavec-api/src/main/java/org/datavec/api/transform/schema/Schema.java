@@ -33,9 +33,11 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A Schema defines the layout of tabular data. Specifically, it contains names for each column, as well as details of types
+ * A Schema defines the layout of tabular data. Specifically, it contains names f
+ * or each column, as well as details of types
  * (Integer, String, Long, Double, etc).<br>
- * Type information for each column may optionally include restrictions on the allowable values for each column.<br>
+ * Type information for each column may optionally include
+ * restrictions on the allowable values for each column.<br>
  * <p>
  * See also: {@link SequenceSchema}
  *
@@ -69,6 +71,12 @@ public class Schema implements Serializable {
         }
     }
 
+    /**
+     * Create a schema based on the
+     * given metadata
+     * @param columnMetaData the metadata to create the
+     *                       schema from
+     */
     public Schema(@JsonProperty("columns") List<ColumnMetaData> columnMetaData) {
         if (columnMetaData == null || columnMetaData.size() == 0)
             throw new IllegalArgumentException("Column meta data must be non-empty");
@@ -81,46 +89,146 @@ public class Schema implements Serializable {
         }
     }
 
+
+    /**
+     * Returns true if the given schema
+     * has the same types at each index
+     * @param schema the schema to compare the types to
+     * @return true if the schema has the same types
+     * at every index as this one,false otherwise
+     */
+    public boolean sameTypes(Schema schema) {
+        if(schema.numColumns() != numColumns())
+            return false;
+        for(int i = 0; i < schema.numColumns(); i++) {
+            if(getType(i) != schema.getType(i))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compute the difference in {@link ColumnMetaData}
+     * between this schema and the passed in schema.
+     * This is useful during the {@link org.datavec.api.transform.TransformProcess}
+     * to identify what a process will do to a given {@link Schema}.
+     *
+     * @param schema the schema to compute the difference for
+     * @return the metadata that is different (in order)
+     * between this schema and the other schema
+     */
+    public List<ColumnMetaData> differences(Schema schema) {
+        List<ColumnMetaData> ret = new ArrayList<>();
+        for(int i = 0; i < schema.numColumns(); i++) {
+            if(!columnMetaData.contains(schema.getMetaData(i)))
+                ret.add(schema.getMetaData(i));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Create a new schema based on the new metadata
+     * @param columnMetaData the new metadata to create the
+     *                       schema from
+     * @return the new schema
+     */
     public Schema newSchema(List<ColumnMetaData> columnMetaData) {
         return new Schema(columnMetaData);
     }
 
+    /**
+     * Returns the number of columns or fields
+     * for this schema
+     * @return the number of columns or fields for this schema
+     */
     public int numColumns() {
         return columnNames.size();
     }
 
+    /**
+     * Returns the name of a
+     * given column at the specified index
+     * @param column the index of the column
+     *               to get the name for
+     * @return the name of the column at the specified index
+     */
     public String getName(int column) {
         return columnNames.get(column);
     }
 
+    /**
+     * Returns the {@link ColumnType}
+     * for the column at the specified index
+     * @param column the index of the column to get the type for
+     * @return the type of the column to at the specified inde
+     */
     public ColumnType getType(int column) {
         if(column < 0 || column >= columnMetaData.size())
             throw new IllegalArgumentException("Invalid column number. " + column + "only " + columnMetaData.size() + "present.");
         return columnMetaData.get(column).getColumnType();
     }
 
+    /**
+     * Returns the {@link ColumnMetaData}
+     * at the specified column index
+     * @param column the index
+     *               to get the metadata for
+     * @return the metadata at ths specified index
+     */
     public ColumnMetaData getMetaData(int column) {
         return columnMetaData.get(column);
     }
 
+    /**
+     * Retrieve the metadata for the given
+     * column name
+     * @param column the name of the column to get metadata for
+     * @return the metadata for the given column name
+     */
     public ColumnMetaData getMetaData(String column) {
         return getMetaData(getIndexOfColumn(column));
     }
 
+    /**
+     * Return a copy of the list column names
+     * @return a copy of the list of column names
+     * for this schema
+     */
     public List<String> getColumnNames() {
         return new ArrayList<>(columnNames);
     }
 
+    /**
+     * A copy of the list of {@link ColumnType}
+     * for this schema
+     * @return the list of column  types in order based
+     * on column index for this schema
+     */
     public List<ColumnType> getColumnTypes() {
         List<ColumnType> list = new ArrayList<>(columnMetaData.size());
         for (ColumnMetaData md : columnMetaData) list.add(md.getColumnType());
         return list;
     }
 
+    /**
+     * Returns a copy of the underlying
+     * schema {@link ColumnMetaData}
+     * @return the list of schema metadata
+     */
     public List<ColumnMetaData> getColumnMetaData() {
         return new ArrayList<>(columnMetaData);
     }
 
+    /**
+     * Returns the index for the given
+     * column name
+     * @param columnName the column name to get the
+     *                   index for
+     * @return the index of the given column name
+     * for the schema
+     */
     public int getIndexOfColumn(String columnName) {
         Integer idx = columnNamesIndex.get(columnName);
         if (idx == null) throw new NoSuchElementException("Unknown column: \"" + columnName + "\"");
@@ -167,10 +275,18 @@ public class Schema implements Serializable {
         return sb.toString();
     }
 
+    /**
+     * Serialize this schema to json
+     * @return a json representation of this schema
+     */
     public String toJson() {
         return toJacksonString(new JsonFactory());
     }
 
+    /**
+     * Serialize this schema to yaml
+     * @return the yaml representation of this schema
+     */
     public String toYaml() {
         return toJacksonString(new YAMLFactory());
     }
@@ -193,10 +309,21 @@ public class Schema implements Serializable {
         return str;
     }
 
+    /**
+     * Create a schema from a given json string
+     * @param json the json to create the schema from
+     * @return the created schema based on the json
+     */
     public static Schema fromJson(String json) {
         return fromJacksonString(json, new JsonFactory());
     }
 
+    /**
+     * Create a schema from the given
+     * yaml string
+     * @param yaml the yaml to create the schema from
+     * @return the created schema based on the yaml
+     */
     public static Schema fromYaml(String yaml) {
         return fromJacksonString(yaml, new YAMLFactory());
     }

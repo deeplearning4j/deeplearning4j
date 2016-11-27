@@ -87,6 +87,33 @@ public class DoubleMetaData extends BaseColumnMetaData {
         return true;
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        double d;
+        try {
+            d = Double.valueOf(input.toString());
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (allowNaN && Double.isNaN(d)) return true;
+        if (allowInfinite && Double.isInfinite(d)) return true;
+
+        if (minAllowedValue != null && d < minAllowedValue) return false;
+        if (maxAllowedValue != null && d > maxAllowedValue) return false;
+
+        return true;
+    }
+
     @Override
     public DoubleMetaData clone() {
         return new DoubleMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);

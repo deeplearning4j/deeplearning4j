@@ -24,7 +24,11 @@ import org.datavec.api.transform.schema.Schema;
 import java.util.ArrayList;
 import java.util.List;
 
-/**BaseTransform: an abstact transform class, that handles transforming sequences by transforming each example individally
+/**
+ * BaseTransform: an
+ * abstract transform class, that handles transforming
+ * sequences by transforming
+ * each example individually
  *
  * @author Alex Black
  */

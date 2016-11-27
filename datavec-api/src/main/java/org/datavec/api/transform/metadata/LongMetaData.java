@@ -70,6 +70,30 @@ public class LongMetaData extends BaseColumnMetaData {
         return true;
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        long value;
+        try {
+            value = Long.parseLong(input.toString());
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        if (minAllowedValue != null && value < minAllowedValue) return false;
+        if (maxAllowedValue != null && value > maxAllowedValue) return false;
+
+        return true;
+    }
+
     @Override
     public LongMetaData clone() {
         return new LongMetaData(name, minAllowedValue, maxAllowedValue);

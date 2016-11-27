@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -25,11 +26,13 @@ import org.datavec.api.writable.Writable;
 import java.util.Set;
 
 /**
- * Condition that applies to the values in a Time column, using a {@link ConditionOp}
+ * Condition that applies to the values
+ * in a Time column, using a {@link ConditionOp}
  *
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class TimeColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
@@ -136,5 +139,38 @@ public class TimeColumnCondition extends BaseColumnCondition {
     public String toString() {
         return "TimeColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+    }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        Long l = (Long) input;
+        switch (op) {
+            case LessThan:
+                return l < value;
+            case LessOrEqual:
+                return l <= value;
+            case GreaterThan:
+                return l > value;
+            case GreaterOrEqual:
+                return l >= value;
+            case Equal:
+                return l == value;
+            case NotEqual:
+                return l != value;
+            case InSet:
+                return set.contains(l);
+            case NotInSet:
+                return !set.contains(l);
+            default:
+                throw new RuntimeException("Unknown or not implemented op: " + op);
+        }
     }
 }

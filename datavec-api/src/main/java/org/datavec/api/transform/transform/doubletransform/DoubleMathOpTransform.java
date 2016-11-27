@@ -23,6 +23,10 @@ import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.transform.BaseColumnTransform;
+import sun.swing.BakedArrayList;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Double mathematical operation.<br>
@@ -95,5 +99,35 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
     @Override
     public String toString() {
         return "DoubleMathOpTransform(mathOp=" + mathOp + ",scalar=" + scalar + ")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        if(input instanceof Number) {
+            Number number = (Number) input;
+            return doOp(number.doubleValue());
+        }
+        throw new IllegalArgumentException("Input must be a number");
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> list = (List<?>) sequence;
+        List<Object> ret = new ArrayList<>();
+        for(Object o : list)
+            ret.add(map(o));
+        return ret;
     }
 }

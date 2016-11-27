@@ -53,7 +53,7 @@ public class Join implements Serializable {
     private String[] joinColumnsRight;
 
 
-    private Join(Builder builder){
+    private Join(Builder builder) {
         this.joinType = builder.joinType;
         this.leftSchema = builder.leftSchema;
         this.rightSchema = builder.rightSchema;
@@ -172,7 +172,7 @@ public class Join implements Serializable {
      * @param rightExample
      * @return
      */
-    public List<Writable> joinExamples(List<Writable> leftExample, List<Writable> rightExample){
+    public List<Writable> joinExamples(List<Writable> leftExample, List<Writable> rightExample) {
 
         List<Writable> out = new ArrayList<>();
         if(leftExample == null){

@@ -87,6 +87,33 @@ public class FloatMetaData extends BaseColumnMetaData {
         return true;
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        Float d;
+        try {
+            d = (Float) input;
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (allowNaN && Float.isNaN(d)) return true;
+        if (allowInfinite && Float.isInfinite(d)) return true;
+
+        if (minAllowedValue != null && d < minAllowedValue) return false;
+        if (maxAllowedValue != null && d > maxAllowedValue) return false;
+
+        return true;
+    }
+
     @Override
     public FloatMetaData clone() {
         return new FloatMetaData(name, minAllowedValue, maxAllowedValue, allowNaN, allowInfinite);

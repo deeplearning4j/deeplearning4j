@@ -96,4 +96,19 @@ public class IntegerMathOpTransform extends BaseColumnTransform {
     public String toString() {
         return "IntegerMathOpTransform(mathOp=" + mathOp + ",scalar=" + scalar + ")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        return doOp(n.intValue());
+    }
+
+
 }

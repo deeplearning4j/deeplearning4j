@@ -43,4 +43,19 @@ public class ReplaceEmptyStringTransform extends BaseStringTransform {
         else if(writable instanceof Text) return (Text)writable;
         else return new Text(writable.toString());
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String s = input.toString();
+        if(s == null || s.isEmpty()) return value;
+        else if(s instanceof String) return s;
+        else return s;
+    }
 }

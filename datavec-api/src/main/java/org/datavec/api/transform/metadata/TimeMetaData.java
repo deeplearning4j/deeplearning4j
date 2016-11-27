@@ -112,6 +112,28 @@ public class TimeMetaData extends BaseColumnMetaData {
         return !(maxValidTime != null && epochMillisec > maxValidTime);
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        long epochMillisec;
+        try {
+            epochMillisec = Long.parseLong(input.toString());
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        if (minValidTime != null && epochMillisec < minValidTime) return false;
+        return !(maxValidTime != null && epochMillisec > maxValidTime);
+    }
+
     @Override
     public TimeMetaData clone() {
         return new TimeMetaData(name, timeZone, minValidTime, maxValidTime);

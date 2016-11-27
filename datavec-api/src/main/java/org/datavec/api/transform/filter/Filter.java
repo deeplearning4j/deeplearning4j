@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.filter;
 
+import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -26,7 +27,8 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Filter: a method of removing examples (or sequences) according to some condition
+ * Filter: a method of removing examples
+ * (or sequences) according to some condition
  *
  * @author Alex Black
  */
@@ -36,7 +38,19 @@ import java.util.List;
         @JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
         @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues")
 })
-public interface Filter extends Serializable {
+public interface Filter extends Serializable,ColumnOp {
+
+    /**
+     * @param example Example
+     * @return true if example should be removed, false to keep
+     */
+    boolean removeExample(Object example);
+
+    /**
+     * @param sequence sequence example
+     * @return true if example should be removed, false to keep
+     */
+    boolean removeSequence(Object sequence);
 
     /**
      * @param writables Example
@@ -50,8 +64,16 @@ public interface Filter extends Serializable {
      */
     boolean removeSequence(List<List<Writable>> sequence);
 
+    /**
+     *
+     * @param schema
+     */
     void setInputSchema(Schema schema);
 
+    /**
+     *
+     * @return
+     */
     Schema getInputSchema();
 
 }

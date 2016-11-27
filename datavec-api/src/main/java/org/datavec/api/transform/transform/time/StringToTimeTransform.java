@@ -130,4 +130,16 @@ public class StringToTimeTransform extends BaseColumnTransform {
         in.defaultReadObject();
         formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return null;
+    }
 }

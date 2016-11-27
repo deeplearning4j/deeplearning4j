@@ -26,7 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spark function for executing a reduction of a set of examples by key
+ * Spark function for executing
+ * a reduction of a set of examples by key
  *
  * @author Alex Black
  */
@@ -38,7 +39,7 @@ public class ReducerFunction implements Function<Tuple2<String,Iterable<List<Wri
     @Override
     public List<Writable> call(Tuple2<String, Iterable<List<Writable>>> t2) throws Exception {
         List<List<Writable>> list = new ArrayList<>();
-        for(List<Writable> c : t2._2()){
+        for(List<Writable> c : t2._2()) {
             list.add(c);
         }
         return reducer.reduce(list);

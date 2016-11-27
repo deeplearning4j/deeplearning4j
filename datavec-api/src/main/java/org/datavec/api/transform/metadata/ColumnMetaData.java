@@ -68,6 +68,20 @@ public interface ColumnMetaData extends Serializable, Cloneable {
      * @return true if value, false if invalid
      */
     boolean isValid(Writable writable);
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    boolean isValid(Object input);
 
+    /**
+     *
+     * @return
+     */
     ColumnMetaData clone();
 }

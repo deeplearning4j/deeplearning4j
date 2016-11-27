@@ -25,7 +25,9 @@ import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Add a new long column, calculated from one or more other columns. A new column (with the specified name) is added
@@ -79,5 +81,53 @@ public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     @Override
     public String toString(){
         return "LongColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        List<Long> list = (List<Long>) input;
+        switch (mathOp) {
+            case Add:
+                long sum = 0;
+                for (Long w : list) sum += w;
+                return new LongWritable(sum);
+            case Subtract:
+                return list.get(0) - list.get(1);
+            case Multiply:
+                long product = 1;
+                for (Long w : list) product *= w;
+                return product;
+            case Divide:
+                return list.get(0) / list.get(1);
+            case Modulus:
+                return list.get(0) % list.get(1);
+            case ReverseSubtract:
+            case ReverseDivide:
+            case ScalarMin:
+            case ScalarMax:
+            default:
+                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+        }
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<List<Long>> seq = (List<List<Long>>) sequence;
+        List<Long> ret = new ArrayList<>();
+        for(List<Long> l : seq)
+            ret.add((Long) map(l));
+        return ret;
     }
 }

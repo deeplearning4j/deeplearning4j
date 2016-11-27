@@ -84,21 +84,10 @@ import java.util.List;
         @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
         @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class, name = "ReduceSequenceByWindowTransform"),
 })
-public interface Transform extends Serializable {
+public interface Transform extends Serializable,ColumnOp {
 
-    /** Get the output schema for this transformation, given an input schema */
-    Schema transform(Schema inputSchema);
 
-    /** Set the input schema. Should be done automatically in TransformProcess, and is often necessary
-     * to do {@link #map(List)}
-     */
-    void setInputSchema(Schema inputSchema);
 
-    /**
-     * Getter for input schema
-     * @return
-     */
-    Schema getInputSchema();
 
     /**
      * Transform a writable
@@ -110,5 +99,17 @@ public interface Transform extends Serializable {
 
     /** Transform a sequence */
     List<List<Writable>> mapSequence(List<List<Writable>> sequence);
+
+    /**
+     * Transform an object
+     * in to another object
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    Object map(Object input);
+
+    /** Transform a sequence */
+    Object mapSequence(Object sequence);
+
 
 }

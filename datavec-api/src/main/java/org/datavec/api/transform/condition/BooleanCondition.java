@@ -24,13 +24,60 @@ import org.datavec.api.writable.Writable;
 import java.util.List;
 
 /**
- * BooleanCondition: used for creating compound conditions, such as AND(ConditionA, ConditionB, ...)<br>
- * As a BooleanCondition is a condition, these can be chained together, like NOT(OR(AND(...),AND(...)))
+ * BooleanCondition: used for creating compound conditions,
+ * such as AND(ConditionA, ConditionB, ...)<br>
+ * As a BooleanCondition is a condition,
+ * these can be chained together,
+ * like NOT(OR(AND(...),AND(...)))
  *
  * @author Alex Black
  */
 @EqualsAndHashCode
 public class BooleanCondition implements Condition {
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        return conditions[0].outputColumnName();
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return  conditions[0].outputColumnNames();
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return conditions[0].columnNames();
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return conditions[0].columnName();
+    }
 
     public enum Type {AND, OR, NOT, XOR}
 
@@ -78,6 +125,38 @@ public class BooleanCondition implements Condition {
         }
     }
 
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        switch (type) {
+            case AND:
+                for (Condition c : conditions) {
+                    boolean thisCond = c.condition(input);
+                    if (!thisCond) return false; //Any false -> AND is false
+                }
+                return true;
+            case OR:
+                for (Condition c : conditions) {
+                    boolean thisCond = c.condition(input);
+                    if (thisCond) return true;   //Any true -> OR is true
+                }
+                return false;
+            case NOT:
+                return !conditions[0].condition(input);
+            case XOR:
+                return conditions[0].condition(input) ^ conditions[1].condition(input);
+            default:
+                throw new RuntimeException("Unknown condition type: " + type);
+        }
+    }
+
     @Override
     public boolean conditionSequence(List<List<Writable>> sequence) {
         switch (type) {
@@ -100,6 +179,48 @@ public class BooleanCondition implements Condition {
             default:
                 throw new RuntimeException("Unknown condition type: " + type);
         }
+    }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param sequence the sequence to
+     *                 do a condition on
+     * @return true if the condition for the sequence is met false otherwise
+     */
+    @Override
+    public boolean conditionSequence(Object sequence) {
+        List<?> seq = (List<?>) sequence;
+        switch (type) {
+            case AND:
+                for (Condition c : conditions) {
+                    boolean thisCond = c.conditionSequence(seq);
+                    if (!thisCond) return false; //Any false -> AND is false
+                }
+                return true;
+            case OR:
+                for (Condition c : conditions) {
+                    boolean thisCond = c.conditionSequence(seq);
+                    if (thisCond) return true;   //Any true -> OR is true
+                }
+                return false;
+            case NOT:
+                return !conditions[0].conditionSequence(sequence);
+            case XOR:
+                return conditions[0].conditionSequence(sequence) ^ conditions[1].conditionSequence(seq);
+            default:
+                throw new RuntimeException("Unknown condition type: " + type);
+        }
+    }
+
+    /**
+     * Get the output schema for this transformation, given an input schema
+     *
+     * @param inputSchema
+     */
+    @Override
+    public Schema transform(Schema inputSchema) {
+        return inputSchema;
     }
 
     @Override
@@ -126,18 +247,36 @@ public class BooleanCondition implements Condition {
     }
 
 
+    /**
+     * And of all the given conditions
+     * @param conditions the conditions to and
+     * @return a joint and of all these conditions
+     */
     public static Condition AND(Condition... conditions) {
         return new BooleanCondition(Type.AND, conditions);
     }
-
+    /**
+     * Or of all the given conditions
+     * @param conditions the conditions to or
+     * @return a joint and of all these conditions
+     */
     public static Condition OR(Condition... conditions) {
         return new BooleanCondition(Type.OR, conditions);
     }
-
+    /**
+     * Not of  the given condition
+     * @param condition the conditions to and
+     * @return a joint and of all these condition
+     */
     public static Condition NOT(Condition condition) {
         return new BooleanCondition(Type.NOT, condition);
     }
-
+    /**
+     * And of all the given conditions
+     * @param first the first condition
+     * @param second  the second condition for xor
+     * @return the xor of these 2 conditions
+     */
     public static Condition XOR(Condition first, Condition second) {
         return new BooleanCondition(Type.XOR, first, second);
     }

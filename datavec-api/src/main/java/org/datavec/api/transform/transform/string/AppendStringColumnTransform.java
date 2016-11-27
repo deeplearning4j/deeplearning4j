@@ -23,7 +23,8 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 /**
- * Append a String to the values in a single column
+ * Append a String to the
+ * values in a single column
  *
  * @author Alex Black
  */
@@ -49,5 +50,17 @@ public class AppendStringColumnTransform extends BaseColumnTransform {
     @Override
     public String toString() {
         return "AppendStringColumnTransform(append=\"" + toAppend + "\")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return input.toString() + toAppend;
     }
 }

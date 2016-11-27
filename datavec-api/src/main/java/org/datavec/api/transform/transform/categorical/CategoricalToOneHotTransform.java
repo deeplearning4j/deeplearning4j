@@ -62,6 +62,7 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         }
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -85,7 +86,6 @@ public class CategoricalToOneHotTransform extends BaseTransform {
 
     @Override
     public Schema transform(Schema schema) {
-
         List<String> origNames = schema.getColumnNames();
         List<ColumnMetaData> origMeta = schema.getColumnMetaData();
 
@@ -142,5 +142,85 @@ public class CategoricalToOneHotTransform extends BaseTransform {
             }
         }
         return out;
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        String str = input.toString();
+        List<Integer> oneHot = new ArrayList<>();
+        int n = stateNames.size();
+        Integer classIdx = statesMap.get(str);
+        if (classIdx == null) throw new RuntimeException("Unknown state (index not found): " + str);
+        for (int j = 0; j < n; j++) {
+            if (j == classIdx) oneHot.add(1);
+            else oneHot.add(0);
+        }
+        return oneHot;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> values = (List<?>) sequence;
+        List<List<Integer>> ret = new ArrayList<>();
+        for(Object obj : values) {
+            ret.add((List<Integer>) map(obj));
+        }
+        return ret;
+    }
+
+    /**
+     * The output column name
+     * after the operation has been applied
+     *
+     * @return the output column name
+     */
+    @Override
+    public String outputColumnName() {
+        throw new UnsupportedOperationException("Output column name will be more than 1");
+    }
+
+    /**
+     * The output column names
+     * This will often be the same as the input
+     *
+     * @return the output column names
+     */
+    @Override
+    public String[] outputColumnNames() {
+        return stateNames.toArray(new String[stateNames.size()]);
+    }
+
+    /**
+     * Returns column names
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String[] columnNames() {
+        return new String[] {columnName};
+    }
+
+    /**
+     * Returns a singular column name
+     * this op is meant to run on
+     *
+     * @return
+     */
+    @Override
+    public String columnName() {
+        return columnName;
     }
 }

@@ -251,7 +251,7 @@ public class Table implements Relation, IntIterable {
     }
     if (columnIndex == -1) {
       throw new IllegalArgumentException(
-          String.format("Column %s is not present in table %s", column.name(), name));
+              String.format("Column %s is not present in table %s", column.name(), name));
     }
     return columnIndex;
   }
@@ -288,6 +288,23 @@ public class Table implements Relation, IntIterable {
     return column.getString(r);
   }
 
+
+  /**
+   * Returns a table with the same columns as this table, but no data
+   */
+  public Table fullCopy() {
+    Table copy = new Table(name);
+    for (Column column : columnList) {
+      copy.addColumn(column.emptyCopy());
+    }
+
+    IntArrayList integers = new IntArrayList();
+    for(int i = 0; i < rowCount(); i++)
+      integers.add(i);
+    Rows.copyRowsToTable(integers,this,copy);
+
+    return copy;
+  }
   /**
    * Returns a table with the same columns as this table, but no data
    */
@@ -613,6 +630,40 @@ public class Table implements Relation, IntIterable {
     return t;
   }
 
+
+  /**
+   * Returns a table
+   * with the given rows dropped
+   * @param rows the rows to drop
+   * @return the table with the dropped rows
+   */
+  public Table drop(IntArrayList rows) {
+    Table newTable = emptyCopy();
+    IntArrayList rows2 = new IntArrayList(rows);
+    IntArrayList allRows = new IntArrayList();
+    for(int i = 0; i < rowCount(); i++) {
+      allRows.add(i);
+    }
+    //rows to keep
+    allRows.removeAll(rows2);
+    Rows.copyRowsToTable(allRows,this,newTable);
+    return newTable;
+
+  }
+
+
+  /**
+   * Returns a table
+   * with the given rows dropped
+   * @param rows the rows to drop
+   * @return the table with the dropped rows
+   */
+  public Table drop(int...rows) {
+    IntArrayList rows2 = new IntArrayList(rows);
+    return drop(rows2);
+
+  }
+
   /**
    * Returns the unique records in this table
    * Note: Uses a lot of memory for a sort
@@ -845,7 +896,7 @@ public class Table implements Relation, IntIterable {
    * @throws IOException
    */
   public static Table createFromCsv(ColumnType[] types, String csvFileName, boolean header, char delimiter)
-      throws IOException {
+          throws IOException {
     return CsvReader.read(types, header, delimiter, csvFileName);
   }
 
@@ -874,7 +925,7 @@ public class Table implements Relation, IntIterable {
 
 /*
   */
-/**
+  /**
    * Joins together this table and another table on the given column names. All the records of this table are included
    * @return   A new table derived from combining this table with {@code other} table
    *//*

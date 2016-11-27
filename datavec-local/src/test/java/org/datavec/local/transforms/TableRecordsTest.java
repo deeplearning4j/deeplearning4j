@@ -45,7 +45,7 @@ public class TableRecordsTest {
         List<List<Writable>> assertion = new ArrayList<>();
 
         for(int i = 0; i < rows; i++) {
-            assertion.add(new ArrayList<Writable>());
+            assertion.add(new ArrayList<>());
             for(int j = 0; j < columns; j++) {
                 assertion.get(i).add(new DoubleWritable(i));
             }
@@ -57,6 +57,12 @@ public class TableRecordsTest {
         Table table = TableRecords.fromRecordsAndSchema(assertion,schemaBuilder.build());
         List<List<Writable>> test = TableRecords.fromTable(table);
         assertEquals(assertion,test);
+
+    }
+
+
+    @Test
+    public void testTransform() {
 
     }
 

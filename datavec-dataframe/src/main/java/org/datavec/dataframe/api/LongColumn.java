@@ -100,17 +100,22 @@ public class LongColumn extends AbstractColumn implements LongMapUtils, NumericC
     return select(LongColumnUtils.isLessThan, i);
   }
 
-  public Selection isGreaterThan(int i) {
+  public Selection isGreaterThan(long i) {
     return select(LongColumnUtils.isGreaterThan, i);
   }
 
-  public Selection isGreaterThanOrEqualTo(int i) {
+  public Selection isGreaterThanOrEqualTo(long i) {
     return select(LongColumnUtils.isGreaterThanOrEqualTo, i);
   }
 
-  public Selection isLessThanOrEqualTo(int f) {
+  public Selection isLessThanOrEqualTo(long f) {
     return select(LongColumnUtils.isLessThanOrEqualTo, f);
   }
+
+  public Selection isNotEqualTo(long i) {
+    return select(LongColumnUtils.isNotEqualTo, i);
+  }
+
 
   public Selection isEqualTo(long i) {
     return select(LongColumnUtils.isEqualTo, i);

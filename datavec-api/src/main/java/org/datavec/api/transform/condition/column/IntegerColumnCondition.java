@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
@@ -30,6 +31,7 @@ import java.util.Set;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class IntegerColumnCondition extends BaseColumnCondition {
 
     private final ConditionOp op;
@@ -136,5 +138,38 @@ public class IntegerColumnCondition extends BaseColumnCondition {
     public String toString() {
         return "IntegerColumnCondition(columnName=\"" + columnName + "\"," + op + "," +
                 (op == ConditionOp.NotInSet || op == ConditionOp.InSet ? set : value) + ")";
+    }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+        Number n = (Number) input;
+        switch (op) {
+            case LessThan:
+                return n.intValue() < value;
+            case LessOrEqual:
+                return n.intValue() <= value;
+            case GreaterThan:
+                return n.intValue() > value;
+            case GreaterOrEqual:
+                return n.intValue() >= value;
+            case Equal:
+                return n.intValue() == value;
+            case NotEqual:
+                return n.intValue() != value;
+            case InSet:
+                return set.contains(n.intValue());
+            case NotInSet:
+                return !set.contains(n.intValue());
+            default:
+                throw new RuntimeException("Unknown or not implemented op: " + op);
+        }
     }
 }

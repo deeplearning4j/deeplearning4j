@@ -27,7 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Convert a String column to a categorical column
+ * Convert a String column
+ * to a categorical column
  */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
 public class StringToCategoricalTransform extends BaseColumnTransform {
@@ -56,5 +57,27 @@ public class StringToCategoricalTransform extends BaseColumnTransform {
     @Override
     public String toString() {
         return "StringToCategoricalTransform(stateNames=" + stateNames + ")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return input;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        return sequence;
     }
 }

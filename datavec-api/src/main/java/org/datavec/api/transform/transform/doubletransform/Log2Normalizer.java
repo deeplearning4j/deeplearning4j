@@ -22,6 +22,9 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.writable.Writable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Normalize by taking scale * log2((in-columnMin)/(mean-columnMin) + 1)
  * Maps values in range (columnMin to infinity) to (0 to infinity)
@@ -68,6 +71,21 @@ public class Log2Normalizer extends BaseDoubleTransform {
     @Override
     public String toString() {
         return "Log2Normalizer(columnMean=" + columnMean + ",columnMin=" + columnMin + ",scalingFactor=" + scalingFactor + ")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        double val = n.doubleValue();
+        if (Double.isNaN(val)) return new DoubleWritable(0);
+        return normMean(val);
     }
 
 }

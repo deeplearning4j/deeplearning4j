@@ -1,11 +1,6 @@
 package org.datavec.dataframe.util;
 
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.api.*;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 /**
@@ -28,6 +23,14 @@ public class Stats {
   double populationVariance;
   double sumOfLogs;
   double sumOfSquares;
+
+  public static Stats create(final DoubleColumn values) {
+    SummaryStatistics summaryStatistics = new SummaryStatistics();
+    for (double f : values) {
+      summaryStatistics.addValue(f);
+    }
+    return getStats(values, summaryStatistics);
+  }
 
   public static Stats create(final FloatColumn values) {
     SummaryStatistics summaryStatistics = new SummaryStatistics();
@@ -170,6 +173,24 @@ public class Stats {
     value.add(secondMoment());
 
     return t;
+  }
+
+  private static Stats getStats(DoubleColumn values, SummaryStatistics summaryStatistics) {
+    Stats stats = new Stats("Column: " + values.name());
+    stats.min = (float) summaryStatistics.getMin();
+    stats.max = (float) summaryStatistics.getMax();
+    stats.n = summaryStatistics.getN();
+    stats.sum = summaryStatistics.getSum();
+    stats.variance = summaryStatistics.getVariance();
+    stats.populationVariance = summaryStatistics.getPopulationVariance();
+    stats.quadraticMean = summaryStatistics.getQuadraticMean();
+    stats.geometricMean = summaryStatistics.getGeometricMean();
+    stats.mean = summaryStatistics.getMean();
+    stats.standardDeviation = summaryStatistics.getStandardDeviation();
+    stats.sumOfLogs = summaryStatistics.getSumOfLogs();
+    stats.sumOfSquares = summaryStatistics.getSumsq();
+    stats.secondMoment = summaryStatistics.getSecondMoment();
+    return stats;
   }
 
   private static Stats getStats(FloatColumn values, SummaryStatistics summaryStatistics) {

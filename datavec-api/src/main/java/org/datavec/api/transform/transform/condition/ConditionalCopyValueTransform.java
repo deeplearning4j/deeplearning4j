@@ -109,6 +109,33 @@ public class ConditionalCopyValueTransform implements Transform,ColumnOp {
         return out;
     }
 
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        return null;
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> seq = (List<?>) sequence;
+        List<Object> ret = new ArrayList<>();
+        for (Object step : seq) {
+            ret.add(map(step));
+        }
+        return ret;
+    }
+
     @Override
     public String toString() {
         return "ConditionalCopyValueTransform(replaceColumn=\"" + columnToReplace + "\",sourceColumn=" + sourceColumn + ",condition=" + condition + ")";

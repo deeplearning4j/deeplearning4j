@@ -39,7 +39,7 @@ public class MapToPairForReducerFunction implements PairFunction<List<Writable>,
         if(keyColumns.size() == 1) key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();
         else {
             StringBuilder sb = new StringBuilder();
-            for( int i=0; i<keyColumns.size(); i++ ){
+            for( int i = 0; i<keyColumns.size(); i++) {
                 if(i > 0) sb.append("_");
                 sb.append(writables.get(schema.getIndexOfColumn(keyColumns.get(i))).toString());
             }

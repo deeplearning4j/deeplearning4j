@@ -302,6 +302,20 @@ public class TimeColumn extends AbstractColumn implements Iterable<LocalTime>, T
     }
   };
 
+  public Selection isNotEqualTo(LocalTime value) {
+    Selection results = new BitmapBackedSelection();
+    int packedLocalTime = PackedLocalTime.pack(value);
+    int i = 0;
+    for (int next : data) {
+      if (packedLocalTime != next) {
+        results.add(i);
+      }
+      i++;
+    }
+    return results;
+  }
+
+
   public Selection isEqualTo(LocalTime value) {
     Selection results = new BitmapBackedSelection();
     int packedLocalTime = PackedLocalTime.pack(value);

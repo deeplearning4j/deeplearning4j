@@ -26,8 +26,10 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * A WindowFunction splits a sequence into a set of (possibly overlapping) sub-sequences.
- * It is a general-purpose interface that can support many different types of
+ * A WindowFunction splits a sequence into a set of
+ * (possibly overlapping) sub-sequences.
+ * It is a general-purpose interface that can support
+ * many different types of
  *
  * Typically used for example with a transform such as {@link ReduceSequenceByWindowTransform}
  *
@@ -41,10 +43,23 @@ import java.util.List;
 })
 public interface WindowFunction extends Serializable {
 
+    /**
+     * Apply the windowing function to the given sequence
+     * @param sequence the input sequence
+     * @return the sequence with the window function applied
+     */
     List<List<List<Writable>>> applyToSequence(List<List<Writable>> sequence);
 
+    /**
+     *
+     * @param schema
+     */
     void setInputSchema(Schema schema);
 
+    /**
+     *
+     * @return
+     */
     Schema getInputSchema();
 
     /** Get the output schema, given the input schema. Typically the output schema is the same as the input schema,

@@ -41,4 +41,17 @@ public class SubtractMeanNormalizer extends BaseDoubleTransform {
     public String toString() {
         return "SubstractMeanNormalizer(mean=" + mean + ")";
     }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        Number n = (Number) input;
+        return n.doubleValue() - mean;
+    }
 }

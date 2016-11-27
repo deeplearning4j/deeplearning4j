@@ -78,6 +78,25 @@ public class StringMetaData extends BaseColumnMetaData {
         return regex == null || str.matches(regex);
     }
 
+    /**
+     * Is the given object valid for this column,
+     * given the column type and any
+     * restrictions given by the
+     * ColumnMetaData object?
+     *
+     * @param input object to check
+     * @return true if value, false if invalid
+     */
+    @Override
+    public boolean isValid(Object input) {
+        String str = input.toString();
+        int len = str.length();
+        if (minLength != null && len < minLength) return false;
+        if (maxLength != null && len > maxLength) return false;
+
+        return regex == null || str.matches(regex);
+    }
+
     @Override
     public StringMetaData clone() {
         return new StringMetaData(name, regex, minLength, maxLength);

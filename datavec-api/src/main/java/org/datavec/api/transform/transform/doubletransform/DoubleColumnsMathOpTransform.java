@@ -24,6 +24,7 @@ import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -80,5 +81,53 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     @Override
     public String toString(){
         return "DoubleColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns=" + Arrays.toString(columns) + ")";
+    }
+
+    /**
+     * Transform an object
+     * in to another object
+     *
+     * @param input the record to transform
+     * @return the transformed writable
+     */
+    @Override
+    public Object map(Object input) {
+        List<Double> row = (List<Double>) input;
+        switch (mathOp) {
+            case Add:
+                double sum = 0;
+                for (Double w : row) sum += w;
+                return sum;
+            case Subtract:
+                return row.get(0) - row.get(1);
+            case Multiply:
+                double product = 1.0;
+                for (Double w : row) product *= w;
+                return product;
+            case Divide:
+                return row.get(0) / row.get(1);
+            case Modulus:
+                return row.get(0) % row.get(1);
+            case ReverseSubtract:
+            case ReverseDivide:
+            case ScalarMin:
+            case ScalarMax:
+            default:
+                throw new RuntimeException("Invalid mathOp: " + mathOp);    //Should never happen
+        }
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<List<Double>> seq = (List<List<Double>>) sequence;
+        List<Double> ret = new ArrayList<>();
+        for(List<Double> step : seq)
+            ret.add((Double) map(step));
+        return ret;
     }
 }

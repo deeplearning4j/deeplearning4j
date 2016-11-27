@@ -43,4 +43,17 @@ public class NullWritableColumnCondition extends BaseColumnCondition {
     public String toString() {
         return "NullWritableColumnCondition()";
     }
+
+    /**
+     * Condition on arbitrary input
+     *
+     * @param input the input to return
+     *              the condition for
+     * @return true if the condition is met
+     * false otherwise
+     */
+    @Override
+    public boolean condition(Object input) {
+       return input == null;
+    }
 }

@@ -96,7 +96,9 @@ public class SparkTransformExecutor {
 
     /**
      * Execute the specified TransformProcess with the given input data<br>
-     * Note: this method can only be used if the TransformProcess starts with non-sequential data, but returns <it>sequence</it>
+     * Note: this method can only be used if the TransformProcess
+     * starts with non-sequential data,
+     * but returns <it>sequence</it>
      * data (after grouping or converting to a sequence as one of the steps)
      *
      * @param inputWritables   Input data to process

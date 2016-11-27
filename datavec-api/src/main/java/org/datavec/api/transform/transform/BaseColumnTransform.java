@@ -58,10 +58,10 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
 
         Iterator<ColumnMetaData> typesIter = oldMeta.iterator();
 
-        int i=0;
+        int i = 0;
         while(typesIter.hasNext()) {
             ColumnMetaData t = typesIter.next();
-            if(i++ == columnNumber){
+            if(i++ == columnNumber) {
                 newMeta.add(getNewColumnMetaData(t.getName(), t));
             } else {
                 newMeta.add(t);
@@ -155,6 +155,20 @@ public abstract class BaseColumnTransform extends BaseTransform implements Colum
 
         return columnName.equals(o2.columnName);
 
+    }
+
+    /**
+     * Transform a sequence
+     *
+     * @param sequence
+     */
+    @Override
+    public Object mapSequence(Object sequence) {
+        List<?> list = (List<?>) sequence;
+        List<Object> ret = new ArrayList<>();
+        for(Object o : list)
+            ret.add(map(o));
+        return ret;
     }
 
     @Override
