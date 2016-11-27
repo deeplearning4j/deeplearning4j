@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
 
@@ -31,7 +33,24 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        nd4jBlas.sgemm(DUMMY,'f',TransA,TransB,M,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
+        if (!Nd4j.isFallbackModeEnabled()) {
+            nd4jBlas.sgemm(DUMMY, 'f', TransA, TransB, M, N, K, alpha, (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(), ldb, beta, (FloatPointer) C.data().addressPointer(), ldc);
+        } else {
+            Nd4j.getExecutioner().exec(new AggregateGEMM('f',
+                    TransA,
+                    TransB,
+                    M,
+                    N,
+                    K,
+                    alpha,
+                    A,
+                    lda,
+                    B,
+                    ldb,
+                    beta,
+                    C,
+                    ldc));
+        }
     }
 
     @Override
@@ -64,7 +83,24 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        nd4jBlas.dgemm(DUMMY,'f',TransA,TransB,M,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
+        if (!Nd4j.isFallbackModeEnabled()) {
+            nd4jBlas.dgemm(DUMMY,'f',TransA,TransB,M,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
+        } else {
+            Nd4j.getExecutioner().exec(new AggregateGEMM('f',
+                    TransA,
+                    TransB,
+                    M,
+                    N,
+                    K,
+                    alpha,
+                    A,
+                    lda,
+                    B,
+                    ldb,
+                    beta,
+                    C,
+                    ldc));
+        }
     }
 
     @Override

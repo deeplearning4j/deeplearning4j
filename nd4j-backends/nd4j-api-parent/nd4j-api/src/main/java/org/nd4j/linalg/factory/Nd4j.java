@@ -82,6 +82,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -171,6 +172,8 @@ public class Nd4j {
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
 
+    protected static AtomicBoolean fallbackMode;
+
 
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
@@ -179,6 +182,7 @@ public class Nd4j {
     private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
     static {
+        fallbackMode = new AtomicBoolean(false);
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
     }
@@ -5455,6 +5459,13 @@ public class Nd4j {
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
+
+            String fallback = System.getenv("ND4J_FALLBACK");
+            if (fallback != null && !fallback.isEmpty()) {
+                if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
+                    fallbackMode.set(true);
+                } else fallbackMode.set(false);
+            } else fallbackMode.set(false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -5541,5 +5552,27 @@ public class Nd4j {
             case DOUBLE:
                 return 8;
         }
+    }
+
+    /**
+     * This method enables fallback to safe-mode for specific operations. Use of this method will reduce performance.
+     * Currently supported operations are:
+     *  1) CPU GEMM
+     *
+     * PLEASE NOTE: Do not use this method, unless you have too.
+     *
+     * @param reallyEnable
+     */
+    public static void enableFallbackMode(boolean reallyEnable) {
+        fallbackMode.set(reallyEnable);
+    }
+
+    /**
+     * This method checks, if fallback mode was enabled.
+     *
+     * @return
+     */
+    public static boolean isFallbackModeEnabled() {
+        return fallbackMode.get();
     }
 }
