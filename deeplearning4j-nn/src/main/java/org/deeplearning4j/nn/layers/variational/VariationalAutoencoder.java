@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.variational;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -216,12 +217,12 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public double calcL2() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return 0.0;     //TODO
     }
 
     @Override
     public double calcL1() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return 0.0;     //TODO
     }
 
     @Override
@@ -247,8 +248,69 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
+        String afn = conf().getLayer().getActivationFunction();
+        Gradient gradient = new DefaultGradient();
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        INDArray[][] fwd = doForward(true, true);
+        INDArray finalPreOut = fwd[0][fwd[0].length-1];
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
+                Nd4j.getOpFactory().createTransform(afn, finalPreOut).derivative());
+
+        INDArray currentDelta = epsilon.muli(activationDerivative);
+
+        //Finally, calculate mean value:
+        String pzxMeanParamName = "eZXMean" + WEIGHT_KEY_SUFFIX;
+        String pzxBiasParamName = "eZXMean" + BIAS_KEY_SUFFIX;
+        INDArray mW = params.get(pzxMeanParamName);
+        INDArray mB = params.get(pzxBiasParamName);
+
+        INDArray dmW = gradientViews.get(pzxMeanParamName); //f order
+        INDArray lastHiddenActivation = fwd[1][fwd[1].length-1];
+        Nd4j.gemm(lastHiddenActivation,currentDelta,dmW,true,false,1.0,0.0);
+        INDArray dmB = gradientViews.get(pzxBiasParamName);
+//        System.out.println("dmB = " + Arrays.toString(dmB.shape()) + "\tcurrdelta = " + Arrays.toString(currentDelta.shape()));
+        dmB.assign(currentDelta.sum(0));    //TODO: do this without the assign
+
+        gradient.gradientForVariable().put(pzxMeanParamName, dmW);
+        gradient.gradientForVariable().put(pzxBiasParamName, dmB);
+
+        epsilon = mW.mmul(currentDelta.transpose()).transpose();
+
+        int nEncoderLayers = encoderLayerSizes.length;
+
+        INDArray current = input;
+        for( int i=nEncoderLayers-1; i>=0; i-- ){
+            String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "e" + i + BIAS_KEY_SUFFIX;
+
+            INDArray weights = params.get(wKey);
+            INDArray bias = params.get(bKey);
+
+            INDArray dLdW = gradientViews.get(wKey);
+            INDArray dLdB = gradientViews.get(bKey);
+
+            INDArray preOut = fwd[0][i];
+            activationDerivative = Nd4j.getExecutioner().execAndReturn(
+                    Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
+
+            currentDelta = epsilon.muli(activationDerivative);
+
+            INDArray actInput;
+            if(i == 0){
+                actInput = input;
+            } else {
+                actInput = fwd[1][i];
+            }
+            Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
+            dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
+
+            gradient.gradientForVariable().put(wKey, dLdW);
+            gradient.gradientForVariable().put(bKey, dLdB);
+
+            epsilon = weights.mmul(currentDelta.transpose()).transpose();
+        }
+
+        return new Pair<>(gradient, epsilon);
     }
 
     @Override
@@ -277,7 +339,13 @@ public class VariationalAutoencoder implements Layer {
         return preOutput(training);
     }
 
-    public INDArray preOutput(boolean training){
+    public INDArray preOutput(boolean training) {
+        INDArray[][] arr = doForward(training, false);
+        return arr[0][arr[0].length-1];
+    }
+
+
+    private INDArray[][] doForward(boolean training, boolean forBackprop){
         if(input == null){
             throw new IllegalStateException("Cannot do forward pass with null input");
         }
@@ -286,6 +354,8 @@ public class VariationalAutoencoder implements Layer {
 
         int nEncoderLayers = encoderLayerSizes.length;
 
+        INDArray[] preOuts = new INDArray[encoderLayerSizes.length+1];
+        INDArray[] activations = new INDArray[encoderLayerSizes.length];
         INDArray current = input;
         for( int i=0; i<nEncoderLayers; i++ ){
             String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
@@ -295,8 +365,12 @@ public class VariationalAutoencoder implements Layer {
             INDArray bias = params.get(bKey);
 
             current = current.mmul(weights).addiRowVector(bias);
+            if(forBackprop){
+                preOuts[i] = current.dup();
+            }
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
                     conf.getLayer().getActivationFunction(), current, conf.getExtraArgs() ));
+            activations[i] = current;
         }
 
         //Finally, calculate mean value:
@@ -306,8 +380,9 @@ public class VariationalAutoencoder implements Layer {
         INDArray mB = params.get(pzxBiasParamName);
 
         current = current.mmul(mW).addiRowVector(mB);
+        preOuts[preOuts.length-1] = current;
 
-        return current;
+        return new INDArray[][]{preOuts, activations};
     }
 
     @Override

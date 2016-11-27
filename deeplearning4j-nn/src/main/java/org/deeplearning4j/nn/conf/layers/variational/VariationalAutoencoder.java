@@ -50,6 +50,31 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         return VariationalAutoencoderParamInitializer.getInstance();
     }
 
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        if(paramName.endsWith("b")){
+            if(!Double.isNaN(biasLearningRate)){
+                //Bias learning rate has been explicitly set
+                return biasLearningRate;
+            } else {
+                return learningRate;
+            }
+        } else {
+            return learningRate;
+        }
+    }
+
+    @Override
+    public double getL1ByParam(String paramName) {
+        if(paramName.endsWith("b")) return 0.0;
+        return l1;
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        if(paramName.endsWith("b")) return 0.0;
+        return l2;
+    }
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder>{
 
