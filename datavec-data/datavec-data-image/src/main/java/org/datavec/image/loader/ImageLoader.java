@@ -266,7 +266,7 @@ public class ImageLoader extends BaseImageLoader {
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    ret.putScalar(new int[]{i, j}, image.getRGB(i, j));
+                    ret.putScalar(new int[]{i, j}, image.getRGB(j, i));
                 }
             }
             return ret;
