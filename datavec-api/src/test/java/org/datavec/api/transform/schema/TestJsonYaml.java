@@ -50,7 +50,7 @@ public class TestJsonYaml {
         Schema schema2 = Schema.fromJson(asJson);
 
         int count = schema.numColumns();
-        for( int i=0; i<count; i++ ){
+        for( int i=0; i < count; i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c2 = schema2.getMetaData(i);
             assertEquals(c1,c2);
@@ -62,7 +62,7 @@ public class TestJsonYaml {
         System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
-        for( int i=0; i<count; i++ ){
+        for( int i = 0; i < schema.numColumns(); i++ ){
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c3 = schema3.getMetaData(i);
             assertEquals(c1,c3);
@@ -108,7 +108,7 @@ public class TestJsonYaml {
     }
 
     @Test
-    public void testToFromJsonYamlSequence(){
+    public void testToFromJsonYamlSequence() {
 
         Schema schema = new SequenceSchema.Builder()
                 .addColumnCategorical("Cat","State1","State2")
@@ -130,7 +130,7 @@ public class TestJsonYaml {
         Schema schema2 = Schema.fromJson(asJson);
 
         int count = schema.numColumns();
-        for( int i=0; i<count; i++ ){
+        for( int i= 0; i < count; i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c2 = schema2.getMetaData(i);
             assertEquals(c1,c2);
@@ -142,7 +142,7 @@ public class TestJsonYaml {
         System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
-        for( int i=0; i<count; i++ ){
+        for( int i = 0; i < schema.numColumns(); i++) {
             ColumnMetaData c1 = schema.getMetaData(i);
             ColumnMetaData c3 = schema3.getMetaData(i);
             assertEquals(c1,c3);
