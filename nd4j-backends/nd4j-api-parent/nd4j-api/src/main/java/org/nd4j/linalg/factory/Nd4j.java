@@ -5462,6 +5462,16 @@ public class Nd4j {
             if (fallback != null && !fallback.isEmpty()) {
                 if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
                     fallbackMode.set(true);
+
+                    System.out.println();
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    System.out.println();
+                    System.out.println("                 ND4J_FALLBACK environment variable is detected!");
+                    System.out.println("                 Performance will be slightly reduced");
+                    System.out.println();
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    System.out.println();
+
                 } else fallbackMode.set(false);
             } else fallbackMode.set(false);
         } catch (Exception e) {
