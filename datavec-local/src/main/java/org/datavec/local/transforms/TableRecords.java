@@ -1,15 +1,15 @@
 package org.datavec.local.transforms;
 
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.datavec.api.transform.*;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.column.*;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
@@ -19,7 +19,6 @@ import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.*;
-import org.datavec.dataframe.filtering.datetimes.DateTimeIsAfter;
 import org.datavec.dataframe.filtering.doubles.*;
 import org.datavec.dataframe.filtering.ints.IntNotEqualTo;
 import org.datavec.dataframe.filtering.longs.*;
@@ -47,14 +46,28 @@ public class TableRecords {
 
 
     /**
-     * Apply a transform process
+     * Execute the specified TransformProcess with the given input data<br>
+     * Note: this method can only be used if the TransformProcess returns non-sequence data. For TransformProcesses
+     * that return a sequence, use {@link #executeToSequence(JavaRDD, TransformProcess)}
+     *
+     * @param inputWritables   Input data to process
+     * @param transformProcess TransformProcess to executeNonTimeSeries
+     * @return Processed data
+     */
+    public static List<List<Writable>> executeNonTimeSeries(List<List<Writable>> inputWritables, TransformProcess transformProcess) {
+        Table table = fromRecordsAndSchema(inputWritables,transformProcess.getInitialSchema());
+        Table ret =  transformNonTimeSeries(table,transformProcess);
+        return fromTable(ret);
+    }
+    /**
+     * Apply a transformNonTimeSeries process
      * to the given table
      * @param table the table to apply this to
-     * @param transformProcess the transform
+     * @param transformProcess the transformNonTimeSeries
      *                         process to apply
      * @return the transformed table
      */
-    public static Table transform(Table table,TransformProcess transformProcess) {
+    public static Table transformNonTimeSeries(Table table, TransformProcess transformProcess) {
         List<DataAction> dataActions = transformProcess.getActionList();
         Table ret = table.fullCopy();
         for(DataAction dataAction : dataActions) {
@@ -68,14 +81,14 @@ public class TableRecords {
                 ret = sortedRank(ret,dataAction.getCalculateSortedRank());
             }
             else if(dataAction.getConvertFromSequence() != null) {
-                throw new UnsupportedOperationException("No support for sequence data yet");
+                throw new UnsupportedOperationException("Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
 
             }
             else if(dataAction.getReducer() != null) {
                 ret = reduce(ret,(Reducer) dataAction.getReducer());
             }
             else if(dataAction.getSequenceSplit() != null) {
-                throw new UnsupportedOperationException("No support for sequence data yet");
+                throw new UnsupportedOperationException("Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
 
             }
         }
@@ -83,11 +96,6 @@ public class TableRecords {
         return ret;
     }
 
-
-    public static Table selectBasedOnCondition(Table table,Condition condition) {
-        return null;
-
-    }
 
 
     private static NumericReduceFunction getFunction(ReduceOp reduceOp) {
@@ -103,7 +111,7 @@ public class TableRecords {
             case Min:
                 return NumericReduceUtils.min;
             case Count:
-                throw new IllegalArgumentException("Illegal operation " + reduceOp);
+                return NumericReduceUtils.count;
             case CountUnique:
                 throw new IllegalArgumentException("Illegal operation " + reduceOp);
             case Range:
@@ -125,38 +133,66 @@ public class TableRecords {
      * @return
      */
     public static Table reduce(Table reduce,Reducer reducer) {
+
         if(reducer.getConditionalReductions() != null) {
             for (Map.Entry<String, Reducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
-
+                Condition conditionToFilter =  pair.getValue().getCondition();
+                String inputColumnName = pair.getKey();
+                Schema output = reducer.transform(reducer.getInputSchema());
+                org.datavec.dataframe.filtering.Filter filter = mapFilterFromCondition(conditionToFilter,inputColumnName,output);
+                reduce = runReduce(reduce.selectWhere(filter),pair.getValue().getReduction(),inputColumnName);
             }
         }
         else {
             for(Map.Entry<String,ReduceOp> pair : reducer.getOpMap().entrySet()) {
-                switch (pair.getValue()) {
-                    case Count:
-                        reduce = reduce.countBy(reduce.categoryColumn(pair.getKey()));
-                        break;
-                    case CountUnique:
-                        throw new IllegalArgumentException("Illegal operation ");
-                    case Range:
-                        throw new IllegalArgumentException("Illegal operation ");
-                    case TakeFirst:
-                        reduce = reduce.first(1);
-                        break;
-                    case TakeLast:
-                        reduce = reduce.last(1);
-                        break;
-                    default:
-                        NumericReduceFunction reduceOp = getFunction(pair.getValue());
-                        double val = reduce.reduce(pair.getKey(),reduceOp);
-                        FloatColumn floatColumn = FloatColumn.create(pair.getKey(),new FloatArrayList(new float[]{(float) val}));
-                        reduce = Table.create("reduced",floatColumn);
-                }
+                reduce = runReduce(reduce,pair.getValue(),pair.getKey());
             }
         }
 
 
         return reduce;
+    }
+
+
+    private static Table runReduce(Table reduce,ReduceOp reduceOp,String columnNameToReduce) {
+        switch (reduceOp) {
+            case Count:
+                return reduce.countBy(reduce.categoryColumn(columnNameToReduce));
+            case CountUnique:
+                throw new IllegalArgumentException("Illegal operation ");
+            case Range:
+                throw new IllegalArgumentException("Illegal operation ");
+            case TakeFirst:
+                return reduce.first(1);
+            case TakeLast:
+                return  reduce.last(1);
+            default:
+                NumericReduceFunction reduceFunction = getFunction(reduceOp);
+                String outputName = columnNameToReduce = "reduced_" + columnNameToReduce;
+                switch(reduce.column(columnNameToReduce).type()) {
+                    case FLOAT:
+                        double val = reduce.reduce(columnNameToReduce,reduceFunction);
+                        FloatColumn floatColumn = FloatColumn.create(columnNameToReduce,new FloatArrayList(new float[]{(float) val}));
+                        return  Table.create(outputName,floatColumn);
+                    case LONG_INT:
+                        long longVal = (long) reduce.reduce(columnNameToReduce,reduceFunction);
+                        LongColumn longColumn = LongColumn.create(columnNameToReduce,new LongArrayList(new long[]{longVal}));
+                        return  Table.create(outputName,longColumn);
+                    case INTEGER:
+                        int intVal = (int) reduce.reduce(columnNameToReduce,reduceFunction);
+                        IntColumn intColumn = IntColumn.create(columnNameToReduce,new IntArrayList(new int[]{intVal}));
+                        return  Table.create(outputName,intColumn);
+                    case DOUBLE:
+                        double doubleVal = reduce.reduce(columnNameToReduce,reduceFunction);
+                        DoubleColumn doubleColumn = DoubleColumn.create(columnNameToReduce,new DoubleArrayList(new double[]{ doubleVal}));
+                        return  Table.create(outputName,doubleColumn);
+                    default:
+                        throw new IllegalStateException("Illegal column type  " + reduceOp);
+
+                }
+
+        }
+
     }
 
     /**
@@ -188,28 +224,35 @@ public class TableRecords {
     }
 
 
-    public static org.datavec.dataframe.filtering.Filter mapToFilter(Filter toMap) {
-        ConditionFilter conditionFilter = (ConditionFilter) toMap;
-        Condition condition = conditionFilter.getCondition();
-        Schema output = toMap.transform(toMap.getInputSchema());
+    /**
+     * Map a condition
+     * based on an input column
+     * and an output schema
+     * to a data frame filter
+     * @param condition the condition to map
+     * @param columnName the input column name to map
+     * @param output the output schema to infer the type
+     * @return the appropriate dataframe filter
+     */
+    public static org.datavec.dataframe.filtering.Filter mapFilterFromCondition(Condition condition,String columnName,Schema output) {
         //map to proper column condition for the filter to apply
         if(condition instanceof ColumnCondition) {
             ColumnCondition columnCondition = (ColumnCondition) condition;
-            ColumnReference columnReference = new ColumnReference(conditionFilter.columnName());
+            ColumnReference columnReference = new ColumnReference(columnName);
             switch (output.getType(output.getIndexOfColumn(columnCondition.outputColumnName()))) {
                 case String:
                     CategoricalColumnCondition categoricalColumnCondition = (CategoricalColumnCondition) columnCondition;
-                  switch (categoricalColumnCondition.getOp()) {
-                      case Equal:
-                          return new StringEqualTo(columnReference,categoricalColumnCondition.getValue());
-                      case NotEqual:
-                          return new StringNotEqualTo(columnReference, categoricalColumnCondition.getValue());
-                      case InSet:
-                          return new StringInSet(columnReference,categoricalColumnCondition.getSet());
-                      case NotInSet:
-                          return new StringNotInSet(columnReference,categoricalColumnCondition.getSet());
+                    switch (categoricalColumnCondition.getOp()) {
+                        case Equal:
+                            return new StringEqualTo(columnReference,categoricalColumnCondition.getValue());
+                        case NotEqual:
+                            return new StringNotEqualTo(columnReference, categoricalColumnCondition.getValue());
+                        case InSet:
+                            return new StringInSet(columnReference,categoricalColumnCondition.getSet());
+                        case NotInSet:
+                            return new StringNotInSet(columnReference,categoricalColumnCondition.getSet());
 
-                  }
+                    }
                 case Long:
                     LongColumnCondition longColumnCondition = (LongColumnCondition) columnCondition;
                     switch (longColumnCondition.getOp()) {
@@ -250,11 +293,11 @@ public class TableRecords {
                         case GreaterThan:
                             return new FloatGreaterThan(columnReference,floatColumnCondition.getValue().floatValue());
                         case LessOrEqual:
-                           return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
+                            return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
                         case GreaterOrEqual:
-                           return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
+                            return new FloatGreaterThanOrEqualTo(columnReference,floatColumnCondition.getValue().floatValue());
                         case LessThan:
-                           return new FloatLessThan(columnReference,floatColumnCondition.getValue().floatValue());
+                            return new FloatLessThan(columnReference,floatColumnCondition.getValue().floatValue());
                         default: throw new IllegalStateException("Illegal operation ");
                     }
                 case Time:
@@ -314,6 +357,21 @@ public class TableRecords {
         return  null;
     }
 
+
+    /**
+     * Map a given filter
+     * to a dataframe filter
+     * @param toMap the filter to map
+     * @return an apporiate {@link org.datavec.dataframe.filtering.Filter}
+     * mapping from the datavec api
+     */
+    public static org.datavec.dataframe.filtering.Filter mapToFilter(Filter toMap) {
+        ConditionFilter conditionFilter = (ConditionFilter) toMap;
+        Condition condition = conditionFilter.getCondition();
+        Schema output = toMap.transform(toMap.getInputSchema());
+        return mapFilterFromCondition(condition,toMap.columnName(),output);
+    }
+
     /**
      * Implements a filter
      * @param toFilter
@@ -340,9 +398,9 @@ public class TableRecords {
     }
 
     /**
-     * Run a transform operation on the table
-     * @param table the table to run the transform operation on
-     * @param transform the transform to run
+     * Run a transformNonTimeSeries operation on the table
+     * @param table the table to run the transformNonTimeSeries operation on
+     * @param transform the transformNonTimeSeries to run
      * @return
      */
     public static Table transformTable(Table table,Transform transform) {
@@ -403,7 +461,7 @@ public class TableRecords {
                         for(int i = 0; i < floatColumn.size(); i++) {
                             //infer types from the column metadata
                             Object output = transform.map(floatColumn.get(i));
-
+                            setEntry(retColumn,i,output);
                         }
 
                     }
@@ -725,7 +783,7 @@ public class TableRecords {
     public static List<List<Writable>> fromTable(Table table) {
         List<List<Writable>> ret = new ArrayList<>();
         for(int i = 0; i < table.rowCount(); i++) {
-            ret.add(new ArrayList<Writable>());
+            ret.add(new ArrayList<>());
             for(int j = 0; j < table.columnCount(); j++) {
                 ret.get(i).add(new DoubleWritable(Double.valueOf(table.get(j,i))));
             }

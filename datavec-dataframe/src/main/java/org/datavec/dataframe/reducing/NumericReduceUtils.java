@@ -16,6 +16,22 @@ public class NumericReduceUtils {
   /**
    * A function that calculates the mean of the values in the column param
    */
+  public static NumericReduceFunction count = new NumericReduceFunction() {
+
+    @Override
+    public String functionName() {
+      return "Count";
+    }
+
+    @Override
+    public double reduce(double[] data) {
+      return data.length;
+    }
+  };
+
+  /**
+   * A function that calculates the mean of the values in the column param
+   */
   public static NumericReduceFunction mean = new NumericReduceFunction() {
 
     @Override

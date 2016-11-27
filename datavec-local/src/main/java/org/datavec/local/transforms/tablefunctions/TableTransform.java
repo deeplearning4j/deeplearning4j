@@ -5,7 +5,7 @@ import org.datavec.dataframe.api.Table;
 
 /**
  * A function for transforming a given input table
- * via the given transform.
+ * via the given transformNonTimeSeries.
  * This maps the given {@link Transform}
  * to a {@link Table} operation
  *
@@ -14,9 +14,9 @@ import org.datavec.dataframe.api.Table;
 public interface TableTransform {
 
     /**
-     * Runs the given transform on
+     * Runs the given transformNonTimeSeries on
      * a table
-     * @param transform the transform to run
+     * @param transform the transformNonTimeSeries to run
      * @return the result table
      */
     Table transform(Table input,Transform transform);
