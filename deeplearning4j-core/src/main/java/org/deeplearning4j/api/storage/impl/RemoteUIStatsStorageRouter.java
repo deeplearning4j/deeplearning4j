@@ -20,6 +20,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Asynchronously post all updates to a remote UI that has remote listening enabled.<br>
@@ -47,6 +49,8 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
      */
     public static final double DEFAULT_RETRY_BACKOFF_FACTOR = 2.0;
 
+    private static final long MAX_SHUTDOWN_WARN_COUNT = 5;
+
     private final String USER_AGENT = "Mozilla/5.0";
 
     private URL url;
@@ -59,6 +63,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
     private Thread postThread;
 
     private AtomicBoolean shutdown = new AtomicBoolean(false);
+    private AtomicLong shutdownWarnCount = new AtomicLong(0);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -118,37 +123,67 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
 
     @Override
     public void putStorageMetaData(StorageMetaData storageMetaData) {
-        queue.add(new ToPost(storageMetaData, null, null));
+        putStorageMetaData(Collections.singleton(storageMetaData));
     }
 
     @Override
     public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
-        for (StorageMetaData m : storageMetaData) {
-            putStorageMetaData(m);
+        if(shutdown.get()){
+            long count = shutdownWarnCount.getAndIncrement();
+            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+            }
+            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+            }
+        } else {
+            for (StorageMetaData m : storageMetaData) {
+                queue.add(new ToPost(m, null, null));
+            }
         }
     }
 
     @Override
     public void putStaticInfo(Persistable staticInfo) {
-        queue.add(new ToPost(null, staticInfo, null));
+        putStaticInfo(Collections.singletonList(staticInfo));
     }
 
     @Override
     public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
-        for (Persistable p : staticInfo) {
-            putStaticInfo(p);
+        if(shutdown.get()){
+            long count = shutdownWarnCount.getAndIncrement();
+            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+            }
+            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+            }
+        } else {
+            for (Persistable p : staticInfo) {
+                queue.add(new ToPost(null, p, null));
+            }
         }
     }
 
     @Override
     public void putUpdate(Persistable update) {
-        queue.add(new ToPost(null, null, update));
+        putUpdate(Collections.singleton(update));
     }
 
     @Override
     public void putUpdate(Collection<? extends Persistable> updates) {
-        for (Persistable p : updates) {
-            putUpdate(p);
+        if(shutdown.get()){
+            long count = shutdownWarnCount.getAndIncrement();
+            if( count <= MAX_SHUTDOWN_WARN_COUNT ){
+                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+            }
+            if(count == MAX_SHUTDOWN_WARN_COUNT ) {
+                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+            }
+        } else {
+            for (Persistable p : updates) {
+                queue.add(new ToPost(null, null, p));
+            }
         }
     }
 
