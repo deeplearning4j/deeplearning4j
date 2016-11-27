@@ -85,6 +85,7 @@ public class VaeGradientCheckTests {
                         .layer(0, new VariationalAutoencoder.Builder()
                                 .nIn(4).nOut(3)
                                 .encoderLayerSizes(5)
+                                .decoderLayerSizes(6)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .activation(afn)
                                 .updater(Updater.SGD)
