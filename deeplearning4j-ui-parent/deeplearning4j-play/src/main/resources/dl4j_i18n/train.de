@@ -1,0 +1,8 @@
+train.pagetitle=DL4J Training
+train.nav.overview=Übersicht
+train.nav.model=Modell
+train.nav.system=System
+train.nav.userguide=Benutzeranleitung
+train.nav.language=Sprache
+train.session.label=Sitzung
+train.session.worker.label=Auftrag
