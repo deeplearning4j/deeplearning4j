@@ -641,4 +641,9 @@ public class NativeOpExecutionerTest {
         INDArray arr = Nd4j.create(10,10,10);
         arr.mean(0,2,3);
     }
+
+    @Test
+    public void testFallbackEcho() {
+        log.info("Fallback enabled? {}", Nd4j.isFallbackModeEnabled());
+    }
 }

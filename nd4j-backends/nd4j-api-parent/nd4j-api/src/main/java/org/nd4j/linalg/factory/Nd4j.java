@@ -182,9 +182,9 @@ public class Nd4j {
     private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
     static {
+        fallbackMode = new AtomicBoolean(false);
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
-        fallbackMode = new AtomicBoolean(false);
     }
 
 
@@ -5459,6 +5459,13 @@ public class Nd4j {
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
+
+            String fallback = System.getenv("ND4J_FALLBACK");
+            if (fallback != null && !fallback.isEmpty()) {
+                if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
+                    fallbackMode.set(true);
+                } else fallbackMode.set(false);
+            } else fallbackMode.set(false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -5548,6 +5555,11 @@ public class Nd4j {
     }
 
     /**
+     * This method enables fallback to safe-mode for specific operations. Use of this method will reduce performance.
+     * Currently supported operations are:
+     *  1) CPU GEMM
+     *
+     * PLEASE NOTE: Do not use this method, unless you have too.
      *
      * @param reallyEnable
      */
@@ -5556,6 +5568,7 @@ public class Nd4j {
     }
 
     /**
+     * This method checks, if fallback mode was enabled.
      *
      * @return
      */

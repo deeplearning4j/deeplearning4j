@@ -41,7 +41,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         GemmParams params = new GemmParams(A,B,C);
 
         int charOder = Order;
-        if (!Nd4j.isFallbackModeEnabled()) {
             if (A.data().dataType() == DataBuffer.Type.DOUBLE)
                 dgemm(Order
                         , params.getTransA()
@@ -87,22 +86,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , 0
                         , C
                         , params.getLdc());
-        } else {
-            Nd4j.getExecutioner().exec(new AggregateGEMM(Order,
-                    params.getTransA(),
-                    params.getTransB(),
-                    params.getM(),
-                    params.getN(),
-                    params.getK(),
-                    1.0,
-                    params.getA(),
-                    params.getLda(),
-                    params.getB(),
-                    params.getLdb(),
-                    0.0,
-                    C,
-                    params.getLdc()));
-        }
 
     }
 
@@ -111,7 +94,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-        if (!Nd4j.isFallbackModeEnabled()) {
             if (A.data().dataType() == DataBuffer.Type.DOUBLE)
                 dgemm(A.ordering()
                         , params.getTransA()
@@ -157,22 +139,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , (float) beta
                         , C
                         , params.getLdc());
-        } else {
-            Nd4j.getExecutioner().exec(new AggregateGEMM(A.ordering(),
-                    params.getTransA(),
-                    params.getTransB(),
-                    params.getM(),
-                    params.getN(),
-                    params.getK(),
-                    alpha,
-                    params.getA(),
-                    params.getLda(),
-                    params.getB(),
-                    params.getLdb(),
-                    beta,
-                    C,
-                    params.getLdc()));
-        }
     }
 
 
