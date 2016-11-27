@@ -23,15 +23,20 @@ import com.atilika.kuromoji.buffer.WordIdMap;
 import com.atilika.kuromoji.util.DictionaryEntryLineParser;
 import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.StringUtils;
+import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 
 import java.io.IOException;
 
 public class TokenInfoDictionary implements Dictionary {
 
-    public static final String TOKEN_INFO_DICTIONARY_FILENAME = "tokenInfoDictionary.bin";
-    public static final String FEATURE_MAP_FILENAME = "tokenInfoFeaturesMap.bin";
-    public static final String POS_MAP_FILENAME = "tokenInfoPartOfSpeechMap.bin";
-    public static final String TARGETMAP_FILENAME = "tokenInfoTargetMap.bin";
+//    public static final String TOKEN_INFO_DICTIONARY_FILENAME = "tokenInfoDictionary.bin";
+//    public static final String FEATURE_MAP_FILENAME = "tokenInfoFeaturesMap.bin";
+//    public static final String POS_MAP_FILENAME = "tokenInfoPartOfSpeechMap.bin";
+//    public static final String TARGETMAP_FILENAME = "tokenInfoTargetMap.bin";
+    public static final String TOKEN_INFO_DICTIONARY_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoDictionary.bin";
+    public static final String FEATURE_MAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoFeaturesMap.bin";
+    public static final String POS_MAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoPartOfSpeechMap.bin";
+    public static final String TARGETMAP_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "tokenInfoTargetMap.bin";
 
     private static final int LEFT_ID = 0;
     private static final int RIGHT_ID = 1;
