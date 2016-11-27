@@ -196,7 +196,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        return new HashMap<>(params);
+        return new LinkedHashMap<>(params);
     }
 
     @Override
