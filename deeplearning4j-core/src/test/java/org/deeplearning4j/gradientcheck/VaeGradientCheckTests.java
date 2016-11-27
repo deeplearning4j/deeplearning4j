@@ -53,10 +53,15 @@ public class VaeGradientCheckTests {
         //Post pre-training: a VAE can be used as a MLP, by taking the mean value from p(z|x) as the output
         //This gradient check tests this part
 
-        String[] activFns = {"identity","tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+//        String[] activFns = {"identity","tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        String[] activFns = {"tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
 
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+//        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+//        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+
+        LossFunction[] lossFunctions = {LossFunction.MSE};
+        String[] outputActivations = {"tanh"};
+
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         scaler.fit(iter);
@@ -79,6 +84,7 @@ public class VaeGradientCheckTests {
                         .list()
                         .layer(0, new VariationalAutoencoder.Builder()
                                 .nIn(4).nOut(3)
+                                .encoderLayerSizes(5)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .activation(afn)
                                 .updater(Updater.SGD)
