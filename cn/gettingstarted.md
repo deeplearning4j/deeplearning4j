@@ -13,16 +13,16 @@ redirect_from: /zh-gettingstarted
 
 在完成[快速入门指南](quickstart)中的步骤之后，请阅读以下内容：
 
-1.加速CPU定型：安装原生BLAS库
+1. 加速CPU定型：安装原生BLAS库
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-2.[GitHub](http://nd4j.org/getstarted.html#github)
-3.<a href="#eclipse">Eclipse</a>
-4.<a href="#cli">命令行界面</a>
-5.<a href="#trouble">疑难解答</a>
-6.<a href="#results">可复现结果</a>
-7.<a href="#next">后续步骤</a>
+2. [GitHub](http://nd4j.org/getstarted.html#github)
+3. <a href="#eclipse">Eclipse</a>
+4. <a href="#cli">命令行界面</a>
+5. <a href="#trouble">疑难解答</a>
+6. <a href="#results">可复现结果</a>
+7. <a href="#next">后续步骤</a>
 
 ## 原生BLAS库
 
