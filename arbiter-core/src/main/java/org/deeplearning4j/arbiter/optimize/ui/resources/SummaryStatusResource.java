@@ -64,7 +64,7 @@ public class SummaryStatusResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)
     public Response update(String component){
-        log.info("Post with new elements: {}",component);
+        log.trace("Post with new elements: {}",component);
 
         if(component == null || component.isEmpty()){
             return Response.ok(Collections.singletonMap("status", "ok")).build();
