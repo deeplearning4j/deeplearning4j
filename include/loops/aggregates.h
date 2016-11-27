@@ -13,7 +13,8 @@
         (1, aggregateOps::Dot) ,\
         (2, aggregateOps::Axpy) ,\
         (3, aggregateOps::SkipGram) ,\
-        (4, aggregateOps::CBOW)
+        (4, aggregateOps::CBOW) ,\
+        (5, aggregateOps::GEMM)
 
 
 namespace functions {

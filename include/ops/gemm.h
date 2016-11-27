@@ -5,8 +5,9 @@
 #ifndef LIBND4J_GEMM_H
 #define LIBND4J_GEMM_H
 
-#include "../cblas.h"
-#include "../templatemath.h"
+#include <cblas.h>
+#include <templatemath.h>
+
 
 namespace nd4j {
      namespace blas {
@@ -61,15 +62,26 @@ namespace nd4j {
                 // we want F always here
                 T *bT = TransB == CblasTrans ? transpose(CblasRowMajor, CblasColMajor, K, N, B) : B;
 
+
                 if (beta == (T) 0.0f) {
+                    int length = M*N;
+                    if (length <= 8192) {
 #pragma omp simd
-                    for (int r = 0; r < M * N; r++)
-                        C[r] = (T) 0.0f;
+                        for (int r = 0; r < length; r++)
+                            C[r] = (T) 0.0f;
+                    } else {
+#pragma omp parallel for simd
+                        for (int r = 0; r < length; r++)
+                            C[r] = (T) 0.0f;
+                    }
                 }
 
 
-#pragma omp parallel for collapse(2) proc_bind(close)
+#pragma omp parallel for proc_bind(spread)
                 for (int r = 0; r < M; r++) {
+
+                    int aIdx = linearIndexC(M, K, r, 0);
+                    T *aX = aT + aIdx;
 
                     for (int c = 0; c < N; c++) {
                         int zIdx = linearIndexF(M, N, r, c);
@@ -77,11 +89,8 @@ namespace nd4j {
                         T dot = (T) 0.0f;
 
                         if (alpha != (T) 0.0f) {
-
-                            int aIdx = linearIndexC(M, K, r, 0);
                             int bIdx = linearIndexF(K, N, 0, c);
 
-                            T *aX = aT + aIdx;
                             T *bX = bT + bIdx;
 
                             dot = nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
