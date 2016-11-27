@@ -36,6 +36,7 @@
         <javacpp.platform.macosx-x86_64>macosx-x86_64</javacpp.platform.macosx-x86_64>
         <javacpp.platform.windows-x86_64>windows-x86_64</javacpp.platform.windows-x86_64>
         <javacpp.platform.linux-ppc64le>linux-ppc64le</javacpp.platform.linux-ppc64le>
+        <javacpp.platform.linux-armhf>linux-armhf</javacpp.platform.linux-armhf>
     </properties>
 
 
@@ -216,7 +217,20 @@
             <javacpp.platform.compiler>toolchains/x86-4.9/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</javacpp.platform.compiler>
           </properties>
         </profile>
-
+        <profile>
+          <id>linux-armhf-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>linux-armhf</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>linux-armhf</javacpp.platform>
+            <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>   
+            <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
     </profiles>
 
 </project>

@@ -1,6 +1,5 @@
 package org.nd4j.linalg.dataset.api.iterator.cache;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
