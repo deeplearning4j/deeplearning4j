@@ -5422,7 +5422,7 @@ public class Nd4j {
             randomFactory = new RandomFactory(randomClazz);
 
             // pre-load RNG instance for this thread
-            randomFactory.getNewRandomInstance();
+            randomFactory.getRandom();
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
