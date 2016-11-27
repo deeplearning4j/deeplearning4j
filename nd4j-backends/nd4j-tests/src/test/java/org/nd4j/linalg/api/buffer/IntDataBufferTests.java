@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -48,6 +49,16 @@ public class IntDataBufferTests extends BaseNd4jTest {
         assertEquals(intArray.data().length(), loaded.data().length());
 
         assertArrayEquals(intArray.data().asInt(), loaded.data().asInt());
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testOpDiscarded() throws Exception {
+        DataBuffer dataBuffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4, 5});
+        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, 5});
+        INDArray intArray = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeBuffer);
+
+        intArray.add(10f);
     }
 
     @Override
