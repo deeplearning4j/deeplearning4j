@@ -36,6 +36,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
     private AtomicInteger devPtr = new AtomicInteger(0);
     private ThreadLocal<AtomicBoolean> affiliated = new ThreadLocal<>();
 
+    private AtomicInteger numberOfDevices = new AtomicInteger(-1);
+
     public CudaAffinityManager() {
         super();
     }
@@ -101,6 +103,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
             // simple round-robin here
             synchronized (this) {
                 device = devices.get(devPtr.getAndIncrement());
+
+                // We check only for number of entries here, not their actual values
                 if (devPtr.get() >= devices.size())
                     devPtr.set(0);
 
@@ -116,7 +120,15 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public int getNumberOfDevices() {
-        return new ArrayList<>(configuration.getAvailableDevices()).size();
+        if (numberOfDevices.get() < 0) {
+            synchronized (this) {
+                if (numberOfDevices.get() < 1) {
+                    numberOfDevices.set(NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices());
+                }
+            }
+        }
+
+        return numberOfDevices.get();
     }
 
     /**

@@ -5,6 +5,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -161,7 +163,7 @@ public class CudaAffinityManagerTest {
         }
 
 
-        int numDevices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int c = 0; c < numDevices; c++) {
             assertTrue("Failed to find device ["+ c +"] in used devices", ArrayUtils.contains(cards, c));
         }
