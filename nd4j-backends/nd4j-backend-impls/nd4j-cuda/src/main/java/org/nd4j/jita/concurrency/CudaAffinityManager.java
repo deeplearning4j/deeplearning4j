@@ -97,18 +97,17 @@ public class CudaAffinityManager extends BasicAffinityManager {
     }
 
     protected Integer getNextDevice(long threadId) {
-        List<Integer> devices = new ArrayList<>(configuration.getAvailableDevices());
         Integer device = null;
-        if (!configuration.isForcedSingleGPU()) {
+        if (!configuration.isForcedSingleGPU() && getNumberOfDevices() > 0) {
             // simple round-robin here
             synchronized (this) {
-                device = devices.get(devPtr.getAndIncrement());
+                device = configuration.getAvailableDevices().get(devPtr.getAndIncrement());
 
                 // We check only for number of entries here, not their actual values
-                if (devPtr.get() >= devices.size())
+                if (devPtr.get() >= configuration.getAvailableDevices().size())
                     devPtr.set(0);
 
-                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId , device, devices.size());
+                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId , device, configuration.getAvailableDevices().size());
             }
         } else {
             device = configuration.getAvailableDevices().get(0);
