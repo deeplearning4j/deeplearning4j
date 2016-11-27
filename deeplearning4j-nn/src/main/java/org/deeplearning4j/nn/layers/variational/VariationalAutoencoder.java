@@ -4,7 +4,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -94,7 +93,12 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public int numParams(boolean backwards) {
-        return 0;
+        int ret = 0;
+        for(Map.Entry<String,INDArray> entry : params.entrySet()){
+            if(backwards && entry.getKey().startsWith("d") || entry.getKey().startsWith("eZXLogStdev2")) continue;
+            ret += entry.getValue().length();
+        }
+        return ret;
     }
 
     @Override
@@ -318,12 +322,19 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(boolean training) {
-        return null;
+        INDArray output = preOutput(training);  //Mean values for p(z|x)
+
+        if(!"identity".equals(conf.getLayer().getActivationFunction())){
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    conf.getLayer().getActivationFunction(), output, conf.getExtraArgs() ));
+        }
+        return output;
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        return null;
+        setInput(input);
+        return activate(training);
     }
 
     @Override
