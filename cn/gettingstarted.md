@@ -24,7 +24,7 @@ redirect_from: /zh-gettingstarted
 6. <a href="#results">可复现结果</a>
 7. <a href="#next">后续步骤</a>
 
-## 原生BLAS库
+## [原生BLAS库](#linux)
 
 对应各类操作系统的详细指南参见
 
