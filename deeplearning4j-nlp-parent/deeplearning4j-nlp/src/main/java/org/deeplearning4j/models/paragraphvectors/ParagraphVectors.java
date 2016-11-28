@@ -756,6 +756,8 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setTrainElementsVectors(this.trainElementsVectors);
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
             this.configuration.setSequenceLearningAlgorithm(this.sequenceLearningAlgorithm.getClass().getCanonicalName());
+            this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
+            this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
 
             ret.configuration = this.configuration;
 
