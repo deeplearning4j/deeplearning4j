@@ -177,6 +177,10 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread.start();
     }
 
+    public static void main(String[] args) {
+        new PlayUIServer();
+    }
+
     private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses){
         //Scan classpath for UI module instances, but ignore the 'excludeClasses' classes
         List<String> classNames = Collections.singletonList(UIModule.class.getName());
