@@ -202,6 +202,7 @@ public class RBMTests {
         INDArray input = Nd4j.linspace(1, 10, 10);
         List<HiddenUnit> hiddenUnits = getHiddenUnits();
         INDArray expectedActivations = Nd4j.vstack(// Values pulled from running manually on different code base to compare
+                Nd4j.create(new double [] {4.910220720730024,-13.64843898938749,-1.747218346503771,1.6665777059638043,6.491630456704968}),
                 Nd4j.create(new double [] {0.9926830708198294,1.1818374480644151E-6,0.1483983894256057,0.841119006965182,0.9984862199072947}),
                 Nd4j.create(new double [] {4.954922217451361,-16.139613593144162,-1.6414330260460845,2.4691976168056016,4.9705341334151845}),
                 Nd4j.create(new double [] {4.910220720730024,0.0,0.0,1.6665777059638043,6.491630456704968}),
@@ -282,7 +283,8 @@ public class RBMTests {
 
         INDArray params = getStandardParams(6, 2);
 
-        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.MSE);
+        RBM rbm = getRBMLayer(6, 2, HiddenUnit.IDENTITY, VisibleUnit.IDENTITY, params, true, true, 500, LossFunctions.LossFunction.MSE);
+//        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.MSE);
 //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.GAUSSIAN, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.COSINE_PROXIMITY);
 //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.BINARY, VisibleUnit.GAUSSIAN, params, true, true, 500, LossFunctions.LossFunction.KL_DIVERGENCE);
 //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.RECTIFIED, VisibleUnit.BINARY, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);

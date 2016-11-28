@@ -351,11 +351,16 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
     public INDArray propUpDerivative(INDArray z) {
         switch (layerConf().getHiddenUnit()) {
             case IDENTITY:
-                return z;
+                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("identity", z).derivative());
             case BINARY:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", z).derivative());
-            case GAUSSIAN:
-                return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", z).derivative());
+            case GAUSSIAN: {
+                Distribution dist = Nd4j.getDistributions().createNormal(z, 1);
+                dist.reseedRandomGenerator(seed);
+                INDArray gaussian = dist.sample(z.shape());
+                INDArray derivative = z.mul(-2).mul(gaussian);
+                return derivative;
+            }
             case RECTIFIED:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
             case SOFTMAX:
