@@ -164,7 +164,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow ,nextRandom, learningRate, currentWindow);
         }
 
-        if (batches.get().size() >= configuration.getBatchSize()){
+        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()){
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }
