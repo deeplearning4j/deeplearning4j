@@ -1624,7 +1624,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input) {
-        return output(input, TrainingMode.TRAIN);
+        return output(input, TrainingMode.TEST);
     }
 
     /**
