@@ -110,7 +110,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
 
-       // this.order = order;
+        this.order = order;
     }
 
     //input arrays must have same number of dimensions

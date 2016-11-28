@@ -5405,7 +5405,10 @@ public class Nd4j {
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
             executionMode = props.getProperty(EXECUTION_MODE,"java").equals("java" ) ? OpExecutioner.ExecutionMode.JAVA : OpExecutioner.ExecutionMode.NATIVE;
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
-            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+
+            affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+            affinityManager = affinityManagerClazz.newInstance();
+
             fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
@@ -5413,16 +5416,13 @@ public class Nd4j {
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class.forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class.forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
-            affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class.forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
             String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
             randomFactory = new RandomFactory(randomClazz);
-
-            // pre-load RNG instance for this thread
-            randomFactory.getRandom();
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
@@ -5434,12 +5434,11 @@ public class Nd4j {
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
 
-
             memoryManager = memoryManagerClazz.newInstance();
-            affinityManager = affinityManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
 
+            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
