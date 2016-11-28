@@ -895,6 +895,7 @@ public class ParagraphVectorsTest {
         log.info("SimilarityB: {}", simB);
     }
 
+    @Ignore
     @Test
     public void testGoogleModelForInference() throws Exception {
         WordVectors googleVectors = WordVectorSerializer.loadGoogleModelNonNormalized(new File("/ext/GoogleNews-vectors-negative300.bin.gz"), true, false);
