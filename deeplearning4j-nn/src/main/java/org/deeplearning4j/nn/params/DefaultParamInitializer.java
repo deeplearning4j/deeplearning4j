@@ -46,7 +46,7 @@ public class DefaultParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = "b";
 
     @Override
-    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+    public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
@@ -61,7 +61,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        int length = numParams(conf,true);
+        int length = numParams(conf);
         if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView.length());
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =

@@ -45,6 +45,7 @@ public class VectorsConfiguration implements Serializable {
 
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
+    private String modelUtils;
 
     private String UNK = "UNK";
     private String STOP = "STOP";
@@ -56,7 +57,7 @@ public class VectorsConfiguration implements Serializable {
 
     // paravec-specific option
     private boolean trainElementsVectors = true;
-
+    private boolean allowParallelTokenization = false;
     private boolean preciseWeightInit = false;
 
     private static ObjectMapper mapper;

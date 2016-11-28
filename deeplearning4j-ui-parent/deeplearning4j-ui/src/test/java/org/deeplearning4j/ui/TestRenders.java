@@ -57,7 +57,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, null, 0, params, true);
         da.setListeners(new ScoreIterationListener(1),new HistogramIterationListener(5));

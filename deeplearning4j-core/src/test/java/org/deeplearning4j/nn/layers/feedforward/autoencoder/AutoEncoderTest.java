@@ -52,7 +52,7 @@ public class AutoEncoderTest {
                 .build();
 
 //        int numParams = LayerFactories.getFactory(conf).initializer().numParams(conf,true);
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
 
@@ -79,7 +79,7 @@ public class AutoEncoderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0, params, true);
         assertEquals(da.params(),da.params());
@@ -110,7 +110,7 @@ public class AutoEncoderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf,null,0,params, true);
         Gradient g = new DefaultGradient();

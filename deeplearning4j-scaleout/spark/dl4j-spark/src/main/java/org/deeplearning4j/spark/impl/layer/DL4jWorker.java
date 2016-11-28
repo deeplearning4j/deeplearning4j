@@ -43,7 +43,7 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
 
     public DL4jWorker(String json,INDArray params) {
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray thisParams = Nd4j.create(1, numParams);
         this.network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
         if(numParams != params.length())
