@@ -383,6 +383,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.variableWindows = configuration.getVariableWindows();
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
 
+            if (configuration.getModelUtils() != null && !configuration.getModelUtils().isEmpty()) {
+
+                try {
+                    this.modelUtils = (ModelUtils<T>) Class.forName(configuration.getModelUtils()).newInstance();
+                } catch (Exception e) {
+                    log.error("Got {} trying to instantiate ModelUtils, falling back to BasicModelUtils instead");
+                    this.modelUtils = new BasicModelUtils<>();
+                }
+
+            }
+
             if (configuration.getElementsLearningAlgorithm() != null && !configuration.getElementsLearningAlgorithm().isEmpty()) {
                 this.elementsLearningAlgorithm(configuration.getElementsLearningAlgorithm());
             }
@@ -905,6 +916,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.configuration.setVariableWindows(variableWindows);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
+            this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
 
             vectors.configuration = this.configuration;
 
