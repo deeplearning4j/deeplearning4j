@@ -11,8 +11,18 @@ import org.nd4j.linalg.factory.Nd4j;
 public class DevicesTests {
 
     @Test
-    public void testOtherDevice() {
-        CudaEnvironment.getInstance().getConfiguration().useDevices(1);
+    public void testOtherDevice1() {
+        CudaEnvironment.getInstance().getConfiguration().useDevices(1, 2);
+
+        INDArray array = Nd4j.create(1000000);
+        for (int i = 0; i < 1000000; i++) {
+            array.addi(10f);
+        }
+    }
+
+    @Test
+    public void testOtherDevice2() {
+        CudaEnvironment.getInstance().getConfiguration().useDevices(0);
 
         INDArray array = Nd4j.create(1000000);
         for (int i = 0; i < 1000000; i++) {
