@@ -15,6 +15,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,7 +133,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         // pass for underlying
         cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(), configuration.isTrainElementsVectors(), inferenceVector);
 
-        if (cbow.getBatch().size() >= configuration.getBatchSize()){
+        if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()){
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }
@@ -166,6 +167,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(), lookupTable.layerSize() + 1);
         INDArray ret = Nd4j.rand(new int[]{1 ,lookupTable.layerSize()}, random).subi(0.5).divi(lookupTable.layerSize());
 
+        INDArray orig = ret.dup();
+
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
@@ -173,7 +176,6 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
-
 
         return ret;
     }
