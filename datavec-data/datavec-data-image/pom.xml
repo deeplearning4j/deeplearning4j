@@ -30,7 +30,7 @@
         <ffmpeg.version>3.0.2</ffmpeg.version>
         <leptonica.version>1.73</leptonica.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
-        <javacpp.version>1.2.5</javacpp.version>
+        <javacpp.version>1.2.6</javacpp.version>
     </properties>
 
     <dependencies>
