@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -77,16 +78,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public int numParams(boolean backwards) {
-        if(!backwards)
-            return super.numParams(backwards);
-        int ret = 0;
-        for(String s : paramTable().keySet()) {
-            if(!s.equals(PretrainParamInitializer.VISIBLE_BIAS_KEY)) {
-                ret += getParam(s).length();
-            }
-        }
-
-        return ret;
+        return super.numParams(backwards);
     }
 
     /**
@@ -118,13 +110,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        return params(false);
-    }
-
-    public INDArray params(boolean backprop){
         List<INDArray> list = new ArrayList<>(2);
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(!backprop || !PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) list.add(entry.getValue());
+            list.add(entry.getValue());
         }
         return Nd4j.toFlattened('f', list);
     }
@@ -135,7 +123,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     public int numParams() {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
             ret += entry.getValue().length();
         }
         return ret;
@@ -149,37 +136,26 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
         List<String> parameterList = conf.variables();
-        int lengthPretrain = 0;
-        int lengthBackprop = 0;
+        int paramLength = 0;
         for(String s : parameterList) {
             int len = getParam(s).length();
-            lengthPretrain += len;
-            if(!PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(s)) lengthBackprop += len;
+            paramLength += len;
         }
 
-        boolean pretrain = params.length() == lengthPretrain;
-        if( !pretrain && params.length() != lengthBackprop ) {
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + lengthPretrain + " for pretrain, "
-                + " or " + lengthBackprop + " for backprop. Is: " + params.length());
+        if(params.length() != paramLength) {
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength);
         }
 
-        if(!pretrain){
-            paramsFlattened.assign(params);
-            return;
-        }
+        // Set for backprop and only W & hb
+        paramsFlattened.assign(params);
 
-        int idx = 0;
-        Set<String> paramKeySet = this.params.keySet();
-        for(String s : paramKeySet) {
-            INDArray param = getParam(s);
-            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
-            if(param.length() != get.length())
-                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            param.assign(get.reshape('f',param.shape()));  //Use assign due to backprop params being a view of a larger array
-            idx += param.length();
+    }
 
-        }
-
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+        Pair<Gradient,INDArray> result = super.backpropGradient(epsilon);
+        INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+        return result;
     }
 
 }
