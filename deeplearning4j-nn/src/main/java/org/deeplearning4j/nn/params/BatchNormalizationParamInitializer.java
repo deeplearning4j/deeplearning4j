@@ -27,7 +27,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String GLOBAL_VAR = "var";
 
     @Override
-    public int numParams(NeuralNetConfiguration conf, boolean backprop){
+    public int numParams(NeuralNetConfiguration conf){
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
 
         //Parameters in batch norm:
