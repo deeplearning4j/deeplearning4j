@@ -66,14 +66,23 @@ While still in the `libnd4j` folder, run:
 
 Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following to compile nd4j with support for both the native cpu backend as well as the cuda backend:
 
-    mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+```bash
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true
+```
 
 If you don't want the cuda backend, e.g. because you didn't or can't build it, you can skip it:
 
-    mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5,!org.nd4j:nd4j-cuda-7.5-platform,!org.nd4j:nd4j-tests'
+```bash
+mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-7.5,!org.nd4j:nd4j-cuda-7.5-platform,!org.nd4j:nd4j-tests'
+```
 
 Please notice the single quotes around the last parameter, if you leave them out or use double quotes you will get an error about `event not found` from your shell. If this doesn't work, make sure you have a current version of maven installed.
 
+Also, if you're going to build DeepLearning4j without CUDA available, you'll have to deeplearning4j-cuda-7.5 (or 8.0) artifact as well:
+
+```bash
+mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true -pl '!org.deeplearning4j:deeplearning4j-cuda-7.5'
+```
 
 ## Using the Native Backend
 
