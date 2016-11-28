@@ -48,7 +48,7 @@ public class GaussianDistribution extends BaseRandomOp {
      * This op fills Z with random values within -1.0..0..1.0
      * @param z
      */
-    public GaussianDistribution(INDArray z) {
+    public GaussianDistribution(@NonNull INDArray z) {
         this(z, 0.0, 1.0);
     }
 
@@ -56,7 +56,7 @@ public class GaussianDistribution extends BaseRandomOp {
      * This op fills Z with random values within stddev..0..stddev
      * @param z
      */
-    public GaussianDistribution(INDArray z, double stddev) {
+    public GaussianDistribution(@NonNull INDArray z, double stddev) {
         this(z, 0.0, stddev);
     }
 

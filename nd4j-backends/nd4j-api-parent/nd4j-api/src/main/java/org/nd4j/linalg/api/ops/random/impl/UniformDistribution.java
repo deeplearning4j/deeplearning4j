@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -20,7 +21,7 @@ public class UniformDistribution extends BaseRandomOp {
      * @param from
      * @param to
      */
-    public UniformDistribution(INDArray z, double from, double to) {
+    public UniformDistribution(@NonNull INDArray z, double from, double to) {
         init(null, null, z, z.length());
         this.from = from;
         this.to = to;
@@ -31,7 +32,7 @@ public class UniformDistribution extends BaseRandomOp {
      * This op fills Z with random values within 0...1
      * @param z
      */
-    public UniformDistribution(INDArray z) {
+    public UniformDistribution(@NonNull INDArray z) {
         this(z, 0.0, 1.0);
     }
 
@@ -39,7 +40,7 @@ public class UniformDistribution extends BaseRandomOp {
      * This op fills Z with random values within 0...to
      * @param z
      */
-    public UniformDistribution(INDArray z, double to) {
+    public UniformDistribution(@NonNull INDArray z, double to) {
         this(z, 0.0, to);
     }
 
