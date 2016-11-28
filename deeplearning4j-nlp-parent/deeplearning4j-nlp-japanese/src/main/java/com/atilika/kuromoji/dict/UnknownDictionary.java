@@ -20,13 +20,15 @@ import com.atilika.kuromoji.io.IntegerArrayIO;
 import com.atilika.kuromoji.io.StringArrayIO;
 import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.StringUtils;
+import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 public class UnknownDictionary implements Dictionary {
 
-    public static final String UNKNOWN_DICTIONARY_FILENAME = "unknownDictionary.bin";
+//    public static final String UNKNOWN_DICTIONARY_FILENAME = "unknownDictionary.bin";
+    public static final String UNKNOWN_DICTIONARY_FILENAME = KuromojiBinFilesFetcher.getRootPath() +  "unknownDictionary.bin";
 
     private static final String DEFAULT_FEATURE = "*";
 

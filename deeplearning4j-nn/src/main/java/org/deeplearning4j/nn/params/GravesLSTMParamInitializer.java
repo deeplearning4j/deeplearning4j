@@ -49,7 +49,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf, boolean backprop) {
+    public int numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
 
@@ -79,7 +79,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
-        int length = numParams(conf,true);
+        int length = numParams(conf);
         if(paramsView.length() != length) throw new IllegalStateException("Expected params view of length " + length + ", got length " + paramsView.length());
 
         int nParamsIn = nLast * (4*nL);
@@ -123,7 +123,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nL = layerConf.getNOut();	//i.e., n neurons in this layer
         int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
 
-        int length = numParams(conf,true);
+        int length = numParams(conf);
         if(gradientView.length() != length) throw new IllegalStateException("Expected gradient view of length " + length + ", got length " + gradientView.length());
 
         int nParamsIn = nLast * (4*nL);

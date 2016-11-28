@@ -61,6 +61,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             SentenceTransformer transformer = new SentenceTransformer.Builder()
                     .iterator(iterator)
                     .tokenizerFactory(tokenizerFactory)
+                    .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
                     .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         } else log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
@@ -89,6 +90,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         public Builder(@NonNull VectorsConfiguration configuration) {
             super(configuration);
+            this.allowParallelTokenization = configuration.isAllowParallelTokenization();
         }
 
         public Builder iterate(@NonNull DocumentIterator iterator) {
@@ -534,6 +536,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setVariableWindows(variableWindows);
             this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
+            this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
+            this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
 
             ret.configuration = this.configuration;
 

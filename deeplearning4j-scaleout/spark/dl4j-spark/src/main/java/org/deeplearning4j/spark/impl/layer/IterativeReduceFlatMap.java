@@ -72,7 +72,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         DataSet data = DataSet.merge(collect,false);
         log.debug("Training on " + data.labelCounts());
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray thisParams = Nd4j.create(1, numParams);
         Layer network = conf.getLayer().instantiate(conf, null, 0, thisParams, true);
         network.setBackpropGradientsViewArray(Nd4j.create(1,numParams));
