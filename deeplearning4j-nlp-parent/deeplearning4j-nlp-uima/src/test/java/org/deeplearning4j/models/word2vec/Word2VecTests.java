@@ -373,7 +373,7 @@ public class Word2VecTests {
 
 
         log.info("Fit 2");
-        vec.fit();
+        restoredVec.fit();
 
 
         restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, false);
@@ -382,7 +382,7 @@ public class Word2VecTests {
 
 
         log.info("Fit 3");
-        vec.fit();
+        restoredVec.fit();
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
