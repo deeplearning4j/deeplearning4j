@@ -20,6 +20,7 @@ import com.atilika.kuromoji.TokenizerBase;
 import com.atilika.kuromoji.dict.*;
 import com.atilika.kuromoji.ipadic.compile.DictionaryEntry;
 import com.atilika.kuromoji.trie.DoubleArrayTrie;
+import com.atilika.kuromoji.util.FileResourceResolver;
 import com.atilika.kuromoji.util.SimpleResourceResolver;
 import com.atilika.kuromoji.viterbi.TokenFactory;
 import com.atilika.kuromoji.viterbi.ViterbiNode;
@@ -206,7 +207,8 @@ public class Tokenizer extends TokenizerBase {
             penalties.add(otherPenaltyLengthThreshold);
             penalties.add(otherPenalty);
 
-            resolver = new SimpleResourceResolver(this.getClass());
+//            resolver = new SimpleResourceResolver(this.getClass());
+            resolver = new FileResourceResolver();
 
             try {
                 doubleArrayTrie = DoubleArrayTrie.newInstance(resolver);
