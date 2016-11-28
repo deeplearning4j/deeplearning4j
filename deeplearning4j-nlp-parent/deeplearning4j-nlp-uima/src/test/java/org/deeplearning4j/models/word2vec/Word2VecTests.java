@@ -25,6 +25,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -354,7 +355,7 @@ public class Word2VecTests {
                     .windowSize(5)
                     .useHierarchicSoftmax(false)
                     .allowParallelTokenization(true)
-                    .modelUtils(new BasicModelUtils<VocabWord>())
+                    .modelUtils(new FlatModelUtils<VocabWord>())
                     .iterate(iter)
                     .tokenizerFactory(t)
                     .build();
@@ -377,6 +378,8 @@ public class Word2VecTests {
         restoredVec.setSentenceIter(iter);
 
         assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
+        assertTrue(restoredVec.getModelUtils() instanceof FlatModelUtils);
+        assertTrue(restoredVec.getConfiguration().isAllowParallelTokenization());
 
         log.info("Fit 2");
         restoredVec.fit();
@@ -388,6 +391,7 @@ public class Word2VecTests {
         restoredVec.setSentenceIter(iter);
 
         assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
+        assertTrue(restoredVec.getModelUtils() instanceof BasicModelUtils);
 
         log.info("Fit 3");
         restoredVec.fit();
