@@ -359,6 +359,9 @@ public class Word2VecTests {
                     .tokenizerFactory(t)
                     .build();
 
+
+        assertEquals(false, vec.getConfiguration().isUseHierarchicSoftmax());
+
         log.info("Fit 1");
         vec.fit();
 
@@ -367,19 +370,24 @@ public class Word2VecTests {
 
         WordVectorSerializer.writeWord2VecModel(vec, tmpFile);
 
+        iter.reset();
+
         Word2Vec restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, true);
         restoredVec.setTokenizerFactory(t);
         restoredVec.setSentenceIter(iter);
 
+        assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
 
         log.info("Fit 2");
         restoredVec.fit();
 
 
+        iter.reset();
         restoredVec = WordVectorSerializer.readWord2VecModel(tmpFile, false);
         restoredVec.setTokenizerFactory(t);
         restoredVec.setSentenceIter(iter);
 
+        assertEquals(false, restoredVec.getConfiguration().isUseHierarchicSoftmax());
 
         log.info("Fit 3");
         restoredVec.fit();
