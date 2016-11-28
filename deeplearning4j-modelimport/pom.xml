@@ -27,7 +27,7 @@
     </parent>
     <packaging>jar</packaging>
     <properties>
-        <javacpp.version>1.2.5</javacpp.version>
+        <javacpp.version>1.2.6</javacpp.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
         <hdf5.version>1.10.0-patch1</hdf5.version>
     </properties>
