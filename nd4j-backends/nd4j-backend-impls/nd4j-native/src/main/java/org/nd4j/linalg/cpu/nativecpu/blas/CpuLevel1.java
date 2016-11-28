@@ -69,7 +69,7 @@ public class CpuLevel1 extends BaseLevel1 {
             // non-EWS dot variant
             Dot dot = new Dot(X, Y);
             Nd4j.getExecutioner().exec(dot);
-            return dot.getFinalResult().floatValue();
+            return dot.getFinalResult().doubleValue();
         }
     }
 

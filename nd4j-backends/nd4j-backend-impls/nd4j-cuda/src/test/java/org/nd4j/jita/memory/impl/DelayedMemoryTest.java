@@ -18,6 +18,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -136,7 +138,7 @@ public class DelayedMemoryTest extends TestCase {
             assertNotEquals(allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getPointers().getDevicePointer(), allocator.getAllocationPoint(arrays[c].shapeInfoDataBuffer()).getPointers().getHostPointer());
         }
 
-        int numDevices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int c = 0; c < numDevices; c++) {
             assertTrue("Failed to find device ["+ c +"] in used devices", ArrayUtils.contains(cards, c));
         }

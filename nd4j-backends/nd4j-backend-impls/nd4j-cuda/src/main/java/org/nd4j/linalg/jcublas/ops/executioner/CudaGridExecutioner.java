@@ -98,6 +98,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
          */
+        checkForCompression(op);
 
         invokeWatchdog(op);
 
