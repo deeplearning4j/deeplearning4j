@@ -146,7 +146,7 @@ public class TrainModuleUtils {
             FeedForwardLayer layer1 = (FeedForwardLayer) layer;
             map.put("Input size", String.valueOf(layer1.getNIn()));
             map.put("Output size", String.valueOf(layer1.getNOut()));
-            map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(c, true)));
+            map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(c)));
             map.put("Activation Function", layer1.getActivationFunction());
         }
 

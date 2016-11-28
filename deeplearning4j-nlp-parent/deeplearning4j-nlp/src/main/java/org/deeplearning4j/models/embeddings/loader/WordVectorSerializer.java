@@ -1022,7 +1022,6 @@ public class WordVectorSerializer {
         }
         reader.close();
 
-
         Word2Vec w2v = new Word2Vec.Builder(configuration)
                 .vocabCache(vocab)
                 .lookupTable(lookupTable)
@@ -1762,8 +1761,11 @@ public class WordVectorSerializer {
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
                 .vectorLength(arrays.get(0).columns())
                 .useAdaGrad(false).cache(cache)
+                .useHierarchicSoftmax(false)
                 .build();
-        Nd4j.clearNans(syn);
+        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(syn);
+
         lookupTable.setSyn0(syn);
 
         iter.close();
@@ -2271,6 +2273,7 @@ public class WordVectorSerializer {
                 lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
                         .cache(vocabCache)
                         .vectorLength(syn0.columns())
+                        .useHierarchicSoftmax(false)
                         .useAdaGrad(false)
                         .build();
 
@@ -2309,6 +2312,9 @@ public class WordVectorSerializer {
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
                 .layerSize(lookupTable.layerSize())
+
+                // we don't use hs here, because model is incomplete
+                .useHierarchicSoftmax(false)
                 .resetModel(false)
                 .build();
 
