@@ -19,6 +19,9 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -51,6 +55,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected void checkForCompression(Op op) {
+        // check for INT datatype arrays
+        interceptIntDataType(op);
+
         if (op.x().isCompressed())
             Nd4j.getCompressor().decompressi(op.x());
 
@@ -59,6 +66,24 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (op.z() != null && op.z().isCompressed())
             Nd4j.getCompressor().decompressi(op.z());
+    }
+
+    /**
+     * This method checks if any Op operand has data type of INT, and throws exception if any.
+     *
+     * @param op
+     */
+    protected void interceptIntDataType(Op op) {
+        // FIXME: Remove this method, after we'll add support for <int> dtype operations
+
+        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.X contains INT data. Operations on INT dataType are not supported yet");
+
+        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.Z contains INT data. Operations on INT dataType are not supported yet");
+
+        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.Y contains INT data. Operations on INT dataType are not supported yet.");
     }
 
     @Override

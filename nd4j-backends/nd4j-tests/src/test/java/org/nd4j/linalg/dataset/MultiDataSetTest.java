@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -383,18 +384,20 @@ public class MultiDataSetTest extends BaseNd4jTest {
     @Test
     public void testSplit(){
 
-        INDArray[] features = new INDArray[2];
+        INDArray[] features = new INDArray[3];
         features[0] = Nd4j.linspace(1,30,30).reshape('c',3,10);
         features[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10);
+        features[2] = Nd4j.linspace(1,3*5*10*10, 3*5*10*10).reshape('c',3,5,10,10);
 
-        INDArray[] labels = new INDArray[2];
+        INDArray[] labels = new INDArray[3];
         labels[0] = Nd4j.linspace(1,30,30).reshape('c',3,10).addi(0.5);
         labels[1] = Nd4j.linspace(1,300,300).reshape('c',3,10,10).addi(0.3);
+        labels[2] = Nd4j.linspace(1,3*5*10*10, 3*5*10*10).reshape('c',3,5,10,10).addi(0.1);
 
-        INDArray[] fMask = new INDArray[2];
+        INDArray[] fMask = new INDArray[3];
         fMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10);
 
-        INDArray[] lMask = new INDArray[2];
+        INDArray[] lMask = new INDArray[3];
         lMask[1] = Nd4j.linspace(1,30,30).reshape('f',3,10).addi(0.5);
 
         MultiDataSet mds = new MultiDataSet(features, labels, fMask, lMask);
@@ -404,11 +407,29 @@ public class MultiDataSetTest extends BaseNd4jTest {
         assertEquals(3, list.size());
         for( int i=0; i<3; i++ ){
             MultiDataSet m = (MultiDataSet) list.get(i);
+            assertEquals(2, m.getFeatures(0).rank());
+            assertEquals(3, m.getFeatures(1).rank());
+            assertEquals(4, m.getFeatures(2).rank());
+
+            assertArrayEquals(new int[]{1,10}, m.getFeatures(0).shape());
+            assertArrayEquals(new int[]{1,10,10}, m.getFeatures(1).shape());
+            assertArrayEquals(new int[]{1,5,10,10}, m.getFeatures(2).shape());
+
             assertEquals(features[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeatures(0));
-            assertEquals(features[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getFeatures(1));
+            assertEquals(features[1].get(NDArrayIndex.interval(i,i,true),NDArrayIndex.all(), NDArrayIndex.all()), m.getFeatures(1));
+            assertEquals(features[2].get(NDArrayIndex.interval(i,i,true),NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), m.getFeatures(2));
+
+            assertEquals(2, m.getLabels(0).rank());
+            assertEquals(3, m.getLabels(1).rank());
+            assertEquals(4, m.getLabels(2).rank());
+
+            assertArrayEquals(new int[]{1,10}, m.getLabels(0).shape());
+            assertArrayEquals(new int[]{1,10,10}, m.getLabels(1).shape());
+            assertArrayEquals(new int[]{1,5,10,10}, m.getLabels(2).shape());
 
             assertEquals(labels[0].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getLabels(0));
-            assertEquals(labels[1].get(NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all()), m.getLabels(1));
+            assertEquals(labels[1].get(NDArrayIndex.interval(i,i,true),NDArrayIndex.all(), NDArrayIndex.all()), m.getLabels(1));
+            assertEquals(labels[2].get(NDArrayIndex.interval(i,i,true),NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()), m.getLabels(2));
 
             assertNull(m.getFeaturesMaskArray(0));
             assertEquals(fMask[1].get(NDArrayIndex.point(i),NDArrayIndex.all()), m.getFeaturesMaskArray(1));

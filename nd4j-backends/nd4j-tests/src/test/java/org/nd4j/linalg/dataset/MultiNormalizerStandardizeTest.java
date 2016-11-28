@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
@@ -13,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -67,7 +69,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
     @Test
     public void testMultipleInputsAndOutputsWithIterator() {
-        MultiDataSetIterator iter = new TestMultiDataSetIterator(data, 5);
+        MultiDataSetIterator iter = new TestMultiDataSetIterator(1, data);
         SUT.fit(iter);
         assertExpectedMeanStd();
     }
@@ -87,6 +89,28 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
         double diffAfterRevert = getMaxRelativeDifference(data, transformed);
         assertTrue(diffAfterRevert < TOLERANCE_PERC);
+    }
+
+    @Test
+    public void testFullyMaskedData() {
+        MultiDataSetIterator iter = new TestMultiDataSetIterator(
+            1,
+            new MultiDataSet(
+                new INDArray[]{Nd4j.create(new float[]{1}).reshape(1, 1, 1)},
+                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)}
+            ),
+            new MultiDataSet(
+                new INDArray[]{Nd4j.create(new float[]{2}).reshape(1, 1, 1)},
+                new INDArray[]{Nd4j.create(new float[]{4}).reshape(1, 1, 1)},
+                null,
+                new INDArray[]{Nd4j.create(new float[]{0}).reshape(1, 1)}
+            )
+        );
+
+        SUT.fit(iter);
+
+        // The label mean should be 2, as the second row with 3 is masked.
+        assertEquals(2f, SUT.getLabelMean(0).getFloat(0), 1e-6);
     }
 
     private double getMaxRelativeDifference(MultiDataSet a, MultiDataSet b) {

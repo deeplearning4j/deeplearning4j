@@ -313,7 +313,7 @@ public class Shape {
         long offset = 0;
         for( int i=0; i<rank; i++ ){
             int size_dimi = size(shapeInformation,i);
-            if(indices[i] > size_dimi)
+            if(indices[i] >= size_dimi)
                 throw new IllegalArgumentException(String.format("Index [%d] must not be >= shape[%d]=%d.",i,i,size_dimi));
             if(size_dimi != 1){
                 offset += indices[i] * stride(shapeInformation,i);
