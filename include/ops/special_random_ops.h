@@ -317,10 +317,7 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e) + 1e-5;
-
-                if (tZ[threadIdx.x] >= (T) 1.0)
-                    tZ[threadIdx.x] -= 2e-5;
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                 __syncthreads();
 
                 // fix for "next rng value"
@@ -378,12 +375,9 @@ namespace randomOps {
                 for (int e = start; e < end; e++) {
                     if (!generated) {
 
-                        int attempt = 1;
-                        do {
-                            u0 = buffer->relativeT<T>(e * attempt);
-                            u1 = buffer->relativeT<T>((e + 1) * attempt);
-                            attempt++;
-                        } while (u0 <= epsilon );
+                        u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
+                        u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
+
 
 
                         z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
