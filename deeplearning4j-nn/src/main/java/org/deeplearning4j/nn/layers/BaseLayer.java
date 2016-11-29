@@ -313,7 +313,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        if(this.params != null && gradients.length() != numParams(true)) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
+        if(this.params != null && gradients.length() != numParams()) throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
                 + ", got params of length " + gradients.length());
 
         this.gradientsFlattened = gradients;
@@ -514,16 +514,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public int numParams(boolean backwards) {
-        if(backwards){
-            int ret = 0;
-            for(Map.Entry<String,INDArray> entry : params.entrySet()){
-                if(this instanceof BasePretrainNetwork && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(entry.getKey())) continue;
-                ret += entry.getValue().length();
-            }
-            return ret;
-        }
-        else
-            return numParams();
+        return numParams();
     }
 
     @Override

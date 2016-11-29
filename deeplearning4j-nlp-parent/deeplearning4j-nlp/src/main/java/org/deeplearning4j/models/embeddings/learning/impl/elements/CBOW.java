@@ -192,7 +192,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         // we don't allow inference from main loop here
         iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
 
-        if (batches.get().size() >= configuration.getBatchSize()){
+        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()){
             Nd4j.getExecutioner().exec(batches.get());
             batches.get().clear();
         }

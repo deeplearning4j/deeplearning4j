@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
@@ -50,14 +49,14 @@ public class Model {
      * @return                   DL4J MultiLayerNetwork
      * @throws IOException
      * @throws IncompatibleKerasConfigurationException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @see    MultiLayerNetwork
      * @see    MultiLayerConfiguration
      *
      * TODO: remove this once we have a shared model interface?
      */
     public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
         MultiLayerNetwork model = importModel(modelHdf5Filename, true);
         return model;
     }
@@ -70,14 +69,14 @@ public class Model {
      * @return                   DL4J ComputationGraph
      * @throws IOException
      * @throws IncompatibleKerasConfigurationException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @see    ComputationGraph
      * @see    ComputationGraphConfiguration
      *
      * TODO: remove this once we have a shared model interface?
      */
     public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
         ComputationGraph model = importModel(modelHdf5Filename, false);
         return model;
     }
@@ -140,14 +139,14 @@ public class Model {
      * @return                     DL4J MultiLayerNetwork
      * @throws IOException
      * @throws IncompatibleKerasConfigurationException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @see MultiLayerNetwork
      * @see MultiLayerConfiguration
      *
      * TODO: remove this once we have a shared model interface?
      */
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
         MultiLayerNetwork model = importModel(configJsonFilename, weightsHdf5Filename, true);
         return model;
     }
@@ -161,14 +160,14 @@ public class Model {
      * @return                     DL4J ComputationGraph
      * @throws IOException
      * @throws IncompatibleKerasConfigurationException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @see ComputationGraph
      * @see ComputationGraphConfiguration
      *
      * TODO: remove this once we have a shared model interface?
      */
     public static ComputationGraph importModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
         ComputationGraph model = importModel(configJsonFilename, weightsHdf5Filename, false);
         return model;
     }
@@ -184,12 +183,12 @@ public class Model {
      * @return                     DL4J MultiLayerNetwork or ComputationGraph
      * @throws IOException
      * @throws IncompatibleKerasConfigurationException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      *
      * TODO: make public and change return type to shared model interface once we have one.
      */
     private static <T> T importModel(String configJsonFilename, String weightsHdf5Filename, boolean isSequential)
-            throws IOException, IncompatibleKerasConfigurationException, NotImplementedException {
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
         String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
         hdf5.H5File file = new hdf5.H5File();
         file.openFile(weightsHdf5Filename, H5F_ACC_RDONLY);
@@ -207,12 +206,12 @@ public class Model {
      * @param <T>
      * @return              DL4J MultiLayerNetwork or ComputationGraph
      * @throws IOException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      *
      * TODO: change return type to shared model interface once we have one.
      */
     private static <T> T importModel(String configJson, hdf5.Group weightsGroup, boolean isSequential)
-            throws IOException, NotImplementedException {
+            throws IOException, UnsupportedOperationException {
         /* TODO: once we have a shared API/interface for MultilayerNetwork and ComputationGraph
          * we can just call importModelConfig and infer return type.
          */
@@ -227,7 +226,7 @@ public class Model {
             ComputationGraph cg = new ComputationGraph(config);
             cg.init();
             model = (T)cg;
-            throw new NotImplementedException("Keras Functional API models not supported.");
+            throw new UnsupportedOperationException("Keras Functional API models not supported.");
         }
 
         Map<String, Object> weightsMetadata = extractWeightsMetadataFromConfig(configJson);
@@ -362,14 +361,11 @@ public class Model {
                  * or more digits to parameter names, but this is not
                  * reflected in the model config. We must strip it off.
                  */
-                if (kerasBackend.equals("tf")) {
-                    Pattern p = Pattern.compile(":\\d+$");
-                    Matcher m = p.matcher(kerasParamName);
-                    if (m.find())
-                        paramName = m.replaceFirst("");
-                    else
-                        paramName = kerasParamName;
-                } else
+                Pattern p = Pattern.compile(":\\d+$");
+                Matcher m = p.matcher(kerasParamName);
+                if (m.find())
+                    paramName = m.replaceFirst("");
+                else
                     paramName = kerasParamName;
                 INDArray W = weights.get(layerName).get(kerasParamName);
                 if (layer instanceof ConvolutionLayer && paramName.equals("W")) {

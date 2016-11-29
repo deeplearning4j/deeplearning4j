@@ -670,11 +670,11 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid"};
+        RBM.HiddenUnit[] hiddenFunc = {RBM.HiddenUnit.BINARY, RBM.HiddenUnit.RECTIFIED};
         boolean[] characteristic = {false, true};    //If true: run some backprop steps first
 
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+        LossFunction[] lossFunctions = {LossFunction.MSE, LossFunction.KL_DIVERGENCE};
+        String[] outputActivations = {"softmax", "sigmoid"};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -688,7 +688,7 @@ public class GradientCheckTests {
         double[] l2vals = {0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
-        for (String afn : activFns) {
+        for (RBM.HiddenUnit hidunit : hiddenFunc) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
@@ -701,14 +701,13 @@ public class GradientCheckTests {
                                 .regularization(true)
                                 .l2(l2).l1(l1)
                                 .learningRate(1.0)
-                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .seed(12345L)
                                 .list()
-                                .layer(0, new RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
+                                .layer(0, new RBM.Builder(hidunit, RBM.VisibleUnit.BINARY)
                                         .nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER)
+                                        .weightInit(WeightInit.UNIFORM)
                                         .updater(Updater.SGD)
-                                        .activation(afn)
                                         .build())
                                 .layer(1, new OutputLayer.Builder(lf)
                                         .nIn(3).nOut(3)
@@ -716,7 +715,7 @@ public class GradientCheckTests {
                                         .updater(Updater.SGD)
                                         .activation(outputActivation)
                                         .build())
-                                .pretrain(true).backprop(true)
+                                .pretrain(false).backprop(true)
                                 .build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -734,13 +733,13 @@ public class GradientCheckTests {
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
-                                    + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst
+                                    + hidunit.toString() + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst
                                     + ", l2=" + l2 + ", l1=" + l1 + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
                             assertTrue(msg, scoreAfter < scoreBefore);
                         }
 
                         if (PRINT_RESULTS) {
-                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn=" + hidunit.toString() + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                     + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1);
                             for (int j = 0; j < mln.getnLayers(); j++)
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
@@ -749,7 +748,7 @@ public class GradientCheckTests {
                         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + hidunit.toString() + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                 + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         assertTrue(msg, gradOK);
                     }
