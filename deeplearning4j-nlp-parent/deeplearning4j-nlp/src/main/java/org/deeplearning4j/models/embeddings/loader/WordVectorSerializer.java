@@ -2584,7 +2584,7 @@ public class WordVectorSerializer {
 
     public static String encodeB64(String word) {
         try {
-            return "B64:" + Base64.encodeBase64String(word.getBytes("UTF-8"));
+            return "B64:" + Base64.encodeBase64String(word.getBytes("UTF-8")).replaceAll("\n","");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
