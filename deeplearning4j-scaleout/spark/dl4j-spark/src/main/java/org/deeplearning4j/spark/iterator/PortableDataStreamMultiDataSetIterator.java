@@ -5,8 +5,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
@@ -68,7 +68,7 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     public MultiDataSet next() {
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
         PortableDataStream pds = iter.next();
-        try(DataInputStream is = pds.open()) {
+        try(InputStream is = pds.open()) {
             ds.load(is);
         } catch(IOException e){
             throw new RuntimeException(e);
