@@ -84,7 +84,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray params() {
-        return null;
+        return paramsFlattened;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class VariationalAutoencoder implements Layer {
     public int numParams(boolean backwards) {
         int ret = 0;
         for(Map.Entry<String,INDArray> entry : params.entrySet()){
-            if(backwards && entry.getKey().startsWith("d") || entry.getKey().startsWith("eZXLogStdev2")) continue;
+            if(backwards && (entry.getKey().startsWith("d") || entry.getKey().startsWith("eZXLogStdev2"))) continue;
             ret += entry.getValue().length();
         }
         return ret;
@@ -119,9 +119,9 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        if(this.params != null && gradients.length() != numParams(true)){
-            throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
-                    + ", got params of length " + gradients.length());
+        if(this.params != null && gradients.length() != numParams()){
+            throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams()
+                    + ", got gradient array of length of length " + gradients.length());
         }
 
         this.gradientsFlattened = gradients;
