@@ -109,40 +109,51 @@ public class ActivationLayerTest {
 
     @Test
     public void testAutoEncoderActivationLayer() throws Exception {
-        INDArray next = Nd4j.rand(new int[]{1,200});
+
+        int minibatch = 3;
+        int nIn = 5;
+        int layerSize = 5;
+        int nOut = 3;
+
+        INDArray next = Nd4j.rand(new int[]{minibatch,nIn});
+        INDArray labels = Nd4j.zeros(minibatch,nOut);
+        for( int i=0; i<minibatch; i++ ){
+            labels.putScalar(i, i%nOut, 1.0);
+        }
 
         // Run without separate activation layer
+        Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.XAVIER)
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new AutoEncoder.Builder().nIn(200).nOut(20).activation("sigmoid").build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(20).nOut(10).build())
+                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation("sigmoid").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(layerSize).nOut(nOut).build())
                 .backprop(true).pretrain(false)
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.fit(next);
+        network.fit(next, labels);      //Labels are necessary for this test: layer activation function affect pretraining results, otherwise
 
 
         // Run with separate activation layer
+        Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .iterations(1)
                 .seed(123)
                 .list()
-                .layer(0, new AutoEncoder.Builder().nIn(200).nOut(20).activation("identity").build())
+                .layer(0, new AutoEncoder.Builder().nIn(nIn).nOut(layerSize).corruptionLevel(0.0).activation("identity").build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder().activation("sigmoid").build())
-                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(20).nOut(10).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).activation("softmax").nIn(layerSize).nOut(nOut).build())
                 .backprop(true).pretrain(false)
                 .build();
 
         MultiLayerNetwork network2 = new MultiLayerNetwork(conf2);
         network2.init();
-        network2.fit(next);
+        network2.fit(next, labels);
 
         // check parameters
         assertEquals(network.getLayer(0).getParam("W"), network2.getLayer(0).getParam("W"));
