@@ -40,7 +40,7 @@ public class TestPreProcessors {
                             .nIn(layerSize).nOut(layerSize).build())
                     .build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
+            int numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
             DenseLayer layer = (DenseLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
@@ -125,7 +125,7 @@ public class TestPreProcessors {
                             .nIn(layerSize).nOut(layerSize).build())
                     .build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
+            int numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
             DenseLayer layer = (DenseLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
@@ -207,7 +207,7 @@ public class TestPreProcessors {
                                     .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(inputWidth, inputHeight)
                                             .nIn(cnnNChannelsIn).nOut(nChannels).build()).build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
+                            int numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer = (ConvolutionLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
@@ -285,7 +285,7 @@ public class TestPreProcessors {
                                     .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(inputWidth, inputHeight)
                                             .nIn(cnnNChannelsIn).nOut(nChannels).build()).build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc,true);
+                            int numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer = (ConvolutionLayer)nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
