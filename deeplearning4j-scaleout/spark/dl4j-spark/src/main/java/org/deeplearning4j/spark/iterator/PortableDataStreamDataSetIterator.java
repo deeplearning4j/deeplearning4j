@@ -5,6 +5,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
@@ -144,10 +146,10 @@ public class PortableDataStreamDataSetIterator implements DataSetIterator {
 
     private DataSet load(PortableDataStream pds){
         DataSet ds = new DataSet();
-        try{
-            ds.load(pds.open());
-        } finally {
-            pds.close();
+        try(InputStream is = pds.open()){
+            ds.load(is);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         cursor++;
         return ds;
