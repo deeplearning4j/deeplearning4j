@@ -59,7 +59,7 @@ import java.util.Map;
 public class RBM extends BasePretrainNetwork {
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
-    protected int k;
+    protected int k; // gibbs sampling steps standard is 1 and includes propup and propdown
     protected double sparsity;
 
     @Override
@@ -81,10 +81,10 @@ public class RBM extends BasePretrainNetwork {
     }
 
     public enum VisibleUnit {
-        BINARY, GAUSSIAN, SOFTMAX, LINEAR
+        BINARY, GAUSSIAN, SOFTMAX, LINEAR, IDENTITY
     }
     public enum HiddenUnit {
-        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX
+        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX, IDENTITY
     }
 
     private RBM(Builder builder) {
@@ -120,12 +120,12 @@ public class RBM extends BasePretrainNetwork {
         	this.k = k;
         	return this;
         }
-        
+
         public Builder hiddenUnit(HiddenUnit hiddenUnit){
         	this.hiddenUnit =  hiddenUnit;
         	return this;
         }
-        
+
         public Builder visibleUnit(VisibleUnit visibleUnit){
         	this.visibleUnit = visibleUnit;
         	return this;
@@ -135,5 +135,7 @@ public class RBM extends BasePretrainNetwork {
             this.sparsity = sparsity;
             return this;
         }
+
+
     }
 }

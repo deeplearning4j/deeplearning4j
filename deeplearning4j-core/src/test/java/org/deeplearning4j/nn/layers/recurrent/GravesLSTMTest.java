@@ -43,7 +43,7 @@ public class GravesLSTMTest {
 						.build())
 				.build();
 
-		int numParams = conf.getLayer().initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf);
 		INDArray params = Nd4j.create(1, numParams);
 		GravesLSTM layer = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
 		
@@ -91,10 +91,10 @@ public class GravesLSTMTest {
 						.build())
 				.build();
 
-		int numParams = conf.getLayer().initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf);
 		INDArray params = Nd4j.create(1, numParams);
 		GravesLSTM lstm = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
-		lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf,true)));
+		lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());
@@ -144,7 +144,7 @@ public class GravesLSTMTest {
 				.build())
 		.build();
 
-		int numParams = conf.getLayer().initializer().numParams(conf,true);
+		int numParams = conf.getLayer().initializer().numParams(conf);
 		INDArray params = Nd4j.create(1, numParams);
 		GravesLSTM lstm = (GravesLSTM)conf.getLayer().instantiate(conf,null,0,params,true);
 		INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});

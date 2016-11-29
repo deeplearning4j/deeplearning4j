@@ -18,6 +18,7 @@ package com.atilika.kuromoji.dict;
 
 import com.atilika.kuromoji.io.ByteBufferIO;
 import com.atilika.kuromoji.util.ResourceResolver;
+import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -28,7 +29,8 @@ import java.nio.ShortBuffer;
 
 public class ConnectionCosts {
 
-    public static final String CONNECTION_COSTS_FILENAME = "connectionCosts.bin";
+//    public static final String CONNECTION_COSTS_FILENAME = "connectionCosts.bin";
+    public static final String CONNECTION_COSTS_FILENAME = KuromojiBinFilesFetcher.getRootPath() + "connectionCosts.bin";
 
     private int size;
 

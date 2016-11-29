@@ -29,6 +29,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -892,5 +893,30 @@ public class ParagraphVectorsTest {
         log.info("SimilarityX: {}", simX);
         log.info("SimilarityC: {}", simC);
         log.info("SimilarityB: {}", simB);
+    }
+
+    @Ignore
+    @Test
+    public void testGoogleModelForInference() throws Exception {
+        WordVectors googleVectors = WordVectorSerializer.loadGoogleModelNonNormalized(new File("/ext/GoogleNews-vectors-negative300.bin.gz"), true, false);
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        ParagraphVectors pv = new ParagraphVectors.Builder()
+                .tokenizerFactory(t)
+                .iterations(10)
+                .useHierarchicSoftmax(false)
+                .trainWordVectors(false)
+                .iterations(10)
+                .useExistingWordVectors(googleVectors)
+                .negativeSample(10)
+                .sequenceLearningAlgorithm(new DM<VocabWord>())
+                .build();
+
+        INDArray vec1 = pv.inferVector("This text is pretty awesome");
+        INDArray vec2 = pv.inferVector("Fantastic process of crazy things happening inside just for history purposes");
+
+        log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 }

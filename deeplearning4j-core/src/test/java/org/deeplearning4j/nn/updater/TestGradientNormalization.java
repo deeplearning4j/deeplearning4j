@@ -26,7 +26,7 @@ public class TestGradientNormalization {
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .build()).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -69,7 +69,7 @@ public class TestGradientNormalization {
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType)
                         .build()).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -102,7 +102,7 @@ public class TestGradientNormalization {
                         .gradientNormalizationThreshold(threshold)
                         .build()).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -152,7 +152,7 @@ public class TestGradientNormalization {
                             .gradientNormalizationThreshold(threshold)
                             .build()).build();
 
-            int numParams = conf.getLayer().initializer().numParams(conf,true);
+            int numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
             Updater updater = UpdaterCreator.getUpdater(layer);
@@ -202,7 +202,7 @@ public class TestGradientNormalization {
                         .gradientNormalizationThreshold(threshold)
                         .build()).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer =  conf.getLayer().instantiate(conf, null, 0, params, true);
         Updater updater = UpdaterCreator.getUpdater(layer);

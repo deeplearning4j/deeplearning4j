@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public interface ParamInitializer {
 
-    int numParams(NeuralNetConfiguration conf, boolean backprop);
+    int numParams(NeuralNetConfiguration conf);
 
     /**
      * Initialize the parameters

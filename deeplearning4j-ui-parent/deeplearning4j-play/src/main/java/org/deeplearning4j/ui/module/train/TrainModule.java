@@ -798,7 +798,7 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
                         activationFn = layer.getActivationFunction();
                     }
-                    int nParams = layer.initializer().numParams(nnc, true);
+                    int nParams = layer.initializer().numParams(nnc);
                     layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"), String.valueOf(nParams)});
                     if (nParams > 0) {
                         WeightInit wi = layer.getWeightInit();

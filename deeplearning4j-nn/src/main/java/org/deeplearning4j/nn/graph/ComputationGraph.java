@@ -518,6 +518,7 @@ public class ComputationGraph implements Serializable, Model {
      * Pretrain network with multiple inputs and/or outputs
      */
     public void pretrain(MultiDataSetIterator iter) {
+        if (!configuration.isPretrain()) return;
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -598,6 +599,7 @@ public class ComputationGraph implements Serializable, Model {
                 }
                 //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
                 toPretrain.fit(gv.getInputs()[0]);
+                toPretrain.conf().setPretrain(false);
             }
 
             iter.reset();
@@ -1666,8 +1668,14 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
-    public INDArray getParam(String param) {
-        throw new UnsupportedOperationException("Not implemented");
+    public INDArray getParam(String paramName) {
+//        throw new UnsupportedOperationException("Not implemented");
+        int idx = paramName.indexOf('_');
+        if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+paramName+"\"");
+        String layerName = paramName.substring(0, idx);
+        String paramType = paramName.substring(idx+1);
+        return getLayer(layerName).getParam(paramType);
+
     }
 
     @Override

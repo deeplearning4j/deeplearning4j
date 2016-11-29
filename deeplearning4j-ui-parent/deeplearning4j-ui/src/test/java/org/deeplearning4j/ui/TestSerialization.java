@@ -43,7 +43,7 @@ public class TestSerialization {
         DataSet d2 = new IrisDataSetIterator(150,150).next();
 
         INDArray input = d2.getFeatureMatrix();
-        int numParams = conf.getLayer().initializer().numParams(conf,true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder)conf.getLayer().instantiate(conf, Arrays.asList(new ScoreIterationListener(1), new HistogramIterationListener(1)),0, params, true);
         da.setInput(input);
