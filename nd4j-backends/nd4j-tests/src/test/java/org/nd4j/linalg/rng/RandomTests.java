@@ -106,7 +106,22 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(z1, z2);
     }
 
+    @Test
+    public void testDistribution3() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
+        INDArray z1 = Nd4j.create(128);
+        INDArray z2 = Nd4j.create(128);
+        UniformDistribution distribution = new UniformDistribution(z1, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution, random1);
+        UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
+        Nd4j.getExecutioner().exec(distribution2, random1);
+
+        System.out.println("Data: " + z1);
+        System.out.println("Data: " + z2);
+
+        assertNotEquals(z1, z2);
+    }
 
     @Test
     public void testLinspace1() throws Exception {

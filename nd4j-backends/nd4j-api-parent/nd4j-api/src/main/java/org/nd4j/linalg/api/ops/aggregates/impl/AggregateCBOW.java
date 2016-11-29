@@ -32,7 +32,7 @@ public class AggregateCBOW extends BaseAggregate {
      * @param numLabels
      * @param trainWords
      */
-    public AggregateCBOW(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels, boolean trainWords, INDArray inferenceVector) {
+    public AggregateCBOW(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable, INDArray negTable, int wordIdx, int[] idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize, int numLabels, boolean trainWords, INDArray inferenceVector) {
         this(syn0, syn1, syn1Neg, expTable, negTable, wordIdx, idxSyn0, idxSyn1, codes, negativeRounds, ngStarter, vectorLength, alpha, nextRandom, vocabSize);
 
         indexingArguments.set(9, numLabels);

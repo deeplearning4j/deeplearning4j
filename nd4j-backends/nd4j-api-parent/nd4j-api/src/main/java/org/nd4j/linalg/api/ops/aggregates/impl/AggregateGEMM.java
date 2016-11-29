@@ -16,7 +16,7 @@ public class AggregateGEMM extends BaseAggregate {
         // no-op
     }
 
-    public AggregateGEMM(@NonNull int Order, @NonNull int TransA, @NonNull int TransB, @NonNull int M,@NonNull int N, @NonNull int K, @NonNull double alpha, @NonNull INDArray A, @NonNull int lda, @NonNull INDArray B, @NonNull int ldb, @NonNull double beta, @NonNull INDArray C, @NonNull int ldc) {
+    public AggregateGEMM(int Order, int TransA, int TransB, int M, int N, int K, double alpha, @NonNull INDArray A, int lda, @NonNull INDArray B, int ldb, double beta, @NonNull INDArray C, int ldc) {
         this.arguments.add(A);
         this.arguments.add(B);
         this.arguments.add(C);
