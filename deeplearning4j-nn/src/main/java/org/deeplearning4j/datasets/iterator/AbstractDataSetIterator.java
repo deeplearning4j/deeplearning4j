@@ -25,7 +25,9 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
     private transient Iterator<Pair<T, T>> iterator;
 
     private final int batchSize;
-    private final Queue<DataSet> queue = new LinkedBlockingQueue<>(1);
+
+    // FIXME: capacity 4 is triage here, proper investigation requires
+    private final LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(4);
     private List<String> labels;
     private int numFeatures = -1;
     private int numLabels = -1;
@@ -205,7 +207,11 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
                 labels = Nd4j.vstack(cLabels);
 
                 DataSet dataSet = new DataSet(features, labels);
-                queue.add(dataSet);
+                try {
+                    queue.add(dataSet);
+                } catch (Exception e) {
+                    // live with it
+                }
             }
         }
     }
