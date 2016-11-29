@@ -114,7 +114,7 @@ namespace functions {
                 }
 
                 __syncthreads();
-                buffer->rewind(length);
+                devBuffer->rewind(length);
                 }
             }
 #endif
@@ -366,7 +366,7 @@ namespace functions {
                 }
 
                 __syncthreads();
-                buffer->rewind(length);
+                devBuffer->rewind(length);
             }
 #endif
 
