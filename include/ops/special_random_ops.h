@@ -243,6 +243,7 @@ namespace randomOps {
                 }
             }
 
+            buffer->rewindH(zLength);
         }
     };
 
