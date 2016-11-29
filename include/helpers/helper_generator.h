@@ -193,7 +193,7 @@ namespace nd4j {
 #endif
             inline uint64_t getElement(long position) {
 
-                long actualPosition = position;
+                long actualPosition = this->getOffset() + position;
                 long tempGen = generation;
                 if (actualPosition >= this->size) {
                     tempGen += actualPosition / this->size;
