@@ -65,9 +65,10 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
 
         int leftOverColumnsIdx = 0;
         List<String> columnTest = Arrays.asList(columnsToRemove);
-        for(int remove = 0; i < schema.numColumns(); remove++) {
-            if(!columnTest.contains(schema.getColumnNames().get(remove)))
-                leftOverColumns[leftOverColumnsIdx++] = schema.getColumnNames().get(remove);
+        List<String> origColumnNames = schema.getColumnNames();
+        for(int remove = 0; remove < schema.numColumns(); remove++) {
+            if(!columnTest.contains(origColumnNames.get(remove)))
+                leftOverColumns[leftOverColumnsIdx++] = origColumnNames.get(remove);
         }
     }
 
