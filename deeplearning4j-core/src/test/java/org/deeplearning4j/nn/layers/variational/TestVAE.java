@@ -10,8 +10,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 26/11/2016.
@@ -30,11 +32,25 @@ public class TestVAE {
         NeuralNetConfiguration c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae = (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
 
-        int backpropParams = vae.initializer().numParams(c, true);
-        int allParams = vae.initializer().numParams(c,false);
+        int allParams = vae.initializer().numParams(c);
+
+        //                  Encoder         Encoder -> p(z|x)       Decoder         //p(x|z)
+        int expNumParams = (10 * 12 + 12) + (12 * (2*5) + (2*5)) + (5 * 13 + 13) + (13 * (2*10) + (2*10));
+        assertEquals(expNumParams, allParams);
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
+
+        System.out.println("Exp num params: " + expNumParams);
+        assertEquals(expNumParams, net.getLayer(0).params().length());
+        Map<String,INDArray> paramTable = net.getLayer(0).paramTable();
+        int count = 0;
+        for(INDArray arr : paramTable.values()){
+            count += arr.length();
+        }
+        assertEquals(expNumParams, count);
+
+        assertEquals(expNumParams, net.getLayer(0).numParams());
     }
 
     @Test
