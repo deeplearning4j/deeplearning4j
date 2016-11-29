@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -76,6 +77,8 @@ public class LayerUpdater implements Updater {
         preApply(layer, gradient, iteration);
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             paramName = gradientPair.getKey();
+            if(!layer.conf().isPretrain() && PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName.split("_")[0]))
+                continue;
             gradientOrig = gradientPair.getValue();
             LearningRatePolicy decay = layer.conf().getLearningRatePolicy();
             if (decay != LearningRatePolicy.None || layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS)
@@ -171,7 +174,7 @@ public class LayerUpdater implements Updater {
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
         GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None) return;  //no op
+        if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain()) return;  //no op
 
         final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
 

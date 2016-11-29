@@ -32,11 +32,16 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     protected LossFunctions.LossFunction lossFunction;
     protected String customLossFunction;
+    protected double visibleBiasInit;
+    private int preTrainIterations;
 
     public BasePretrainNetwork(Builder builder){
     	super(builder);
         this.lossFunction = builder.lossFunction;
         this.customLossFunction = builder.customLossFunction;
+        this.visibleBiasInit = builder.visibleBiasInit;
+        this.preTrainIterations = builder.preTrainIterations;
+
     }
 
     @Override
@@ -94,6 +99,8 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         protected String customLossFunction = null;
+        protected double visibleBiasInit = 0.0;
+        protected int preTrainIterations = 1;
 
         public Builder() {}
 
@@ -106,5 +113,16 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
             this.customLossFunction = customLossFunction;
             return (T) this;
         }
+
+        public T visibleBiasInit(double visibleBiasInit){
+            this.visibleBiasInit = visibleBiasInit;
+            return (T) this;
+        }
+
+        public T preTrainIterations(int preTrainIterations){
+            this.preTrainIterations = preTrainIterations;
+            return (T) this;
+        }
+
     }
 }

@@ -206,7 +206,7 @@ public class ParallelWrapper implements AutoCloseable {
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
-                    if (!legacyAveraging) {
+                    if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                         List<INDArray> params = new ArrayList<>();
                         for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                             params.add(zoo[cnt].getModel().params());
@@ -237,7 +237,7 @@ public class ParallelWrapper implements AutoCloseable {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                if (!legacyAveraging) {
+                                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                                         updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
@@ -258,7 +258,7 @@ public class ParallelWrapper implements AutoCloseable {
                         ((ComputationGraph) model).setScore(score);
                     } else throw new RuntimeException("MultiDataSet might be used only with ComputationGraph model");
 
-                    if (legacyAveraging) {
+                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }
@@ -327,7 +327,7 @@ public class ParallelWrapper implements AutoCloseable {
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
                     double score = 0.0;
-                    if (!legacyAveraging) {
+                    if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                         List<INDArray> params = new ArrayList<>();
                         for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                             params.add(zoo[cnt].getModel().params());
@@ -364,7 +364,7 @@ public class ParallelWrapper implements AutoCloseable {
                             Updater updater = ((MultiLayerNetwork) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                if (!legacyAveraging) {
+                                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                                         updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
@@ -388,7 +388,7 @@ public class ParallelWrapper implements AutoCloseable {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                if (!legacyAveraging) {
+                                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                                         updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
@@ -409,7 +409,7 @@ public class ParallelWrapper implements AutoCloseable {
                         ((ComputationGraph) model).setScore(score);
                     }
 
-                    if (legacyAveraging) {
+                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }

@@ -29,7 +29,7 @@
     <properties>
         <cuda.version>8.0</cuda.version>
         <javacpp-presets.version>1.2</javacpp-presets.version>
-        <javacpp.version>1.2.5</javacpp.version>
+        <javacpp.version>1.2.6</javacpp.version>
     </properties>
 
     <dependencyManagement>
