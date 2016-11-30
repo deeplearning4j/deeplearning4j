@@ -9,7 +9,7 @@ A deep autoencoder is composed of two, symmetrical [deep-belief networks](./deep
 
 The layers are [restricted Boltzmann machines](./restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. Here's a simplified schema of a deep autoencoder's structure, which we'll explain below.
 
-![Alt text](./img/deep_autoencoder.png) 
+![Alt text](./../img/deep_autoencoder.png) 
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
