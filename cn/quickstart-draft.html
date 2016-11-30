@@ -1,0 +1,25 @@
+---
+title: 关于我们
+layout: cn-default
+redirect_from: /zh-about
+---
+<p><h1>快速入门指南</h1></p>
+<p>本页将向您全面介绍如何运行DL4J示例，启动您自己的项目。</p>
+<p>建议您加入我们的<a href="https://gitter.im/deeplearning4j/deeplearning4j" target="_blank">Gitter线上交流群</a>。您可以在Gitter上请求帮助、提出反馈，不过也请您在遇到问题时先参考本指南中已列出的疑难解答。如果您是初次接触深度学习，我们准备了<a href="https://deeplearning4j.org/cn/deeplearningforbeginners">一份初学者学习计划</a>，包括课程、阅读材料和其他资源的链接。</p>
+<br />
+<p><h2>代码一瞥</h2></p>
+
+Deeplearning4j是一种用于配置深度多层神经网络的领域专用语言。首先都需要用<code>MultiLayerConfiguration</code>来设定网络的层及其超参数。
+<pre><code class="language-java">
+MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        .iterations(1)
+        .weightInit(WeightInit.XAVIER)
+        .activation("relu")
+        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        .learningRate(0.05)
+        // ……其他超参数
+        .backprop(true)
+        .build();
+</code></pre>
+
+
