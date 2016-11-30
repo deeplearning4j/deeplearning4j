@@ -26,12 +26,6 @@
             <artifactId>guava</artifactId>
             <version>19.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>
