@@ -85,7 +85,9 @@ public class TestUI {
 
         String tempDir = System.getProperty("java.io.tmpdir");
         String outPath = FilenameUtils.concat(tempDir,"datavec_transform_UITest.html");
-        System.out.println(outPath);
-        HtmlAnalysis.createHtmlAnalysisFile(da, new File(outPath));
+//        System.out.println(outPath);
+        File f = new File(outPath);
+        f.deleteOnExit();
+        HtmlAnalysis.createHtmlAnalysisFile(da, f);
     }
 }

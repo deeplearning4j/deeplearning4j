@@ -69,7 +69,7 @@ public class TestImageRecordReader {
             out2.add(r.getRecord());
             out3.add(r);
             meta.add(r.getMetaData());
-            System.out.println(r.getMetaData() + "\t" + r.getRecord().get(1));
+//            System.out.println(r.getMetaData() + "\t" + r.getRecord().get(1));
         }
 
         assertEquals(out, out2);
@@ -100,8 +100,8 @@ public class TestImageRecordReader {
         List<String> labels0 = rr0.getLabels();
         List<String> labels1 = rr1.getLabels();
 
-        System.out.println(labels0);
-        System.out.println(labels1);
+//        System.out.println(labels0);
+//        System.out.println(labels1);
 
         assertEquals(labels0, labels1);
     }
