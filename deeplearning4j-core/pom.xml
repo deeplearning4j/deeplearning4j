@@ -64,7 +64,6 @@
         </dependencies>
     </dependencyManagement>
 
-
     <dependencies>
         <!-- Logging Dependencies -->
         <dependency>
