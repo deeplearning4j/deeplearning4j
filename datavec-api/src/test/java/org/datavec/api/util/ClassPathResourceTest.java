@@ -31,9 +31,14 @@ import static org.junit.Assert.*;
  */
 public class ClassPathResourceTest {
 
+    private boolean isWindows = false;      //File sizes are reported slightly different on Linux vs. Windows
+
     @Before
     public void setUp() throws Exception {
-
+        String osname = System.getProperty("os.name");
+        if(osname != null && osname.toLowerCase().contains("win")){
+            isWindows = true;
+        }
     }
 
     @Test
@@ -41,7 +46,11 @@ public class ClassPathResourceTest {
         File intFile = new ClassPathResource("iris.dat").getFile();
 
         assertTrue(intFile.exists());
-        assertEquals(2700, intFile.length());
+        if(isWindows){
+            assertEquals(2850, intFile.length());
+        } else {
+            assertEquals(2700, intFile.length());
+        }
     }
 
     @Test
@@ -49,7 +58,11 @@ public class ClassPathResourceTest {
         File intFile = new ClassPathResource("/iris.dat").getFile();
 
         assertTrue(intFile.exists());
-        assertEquals(2700, intFile.length());
+        if(isWindows){
+            assertEquals(2850, intFile.length());
+        } else {
+            assertEquals(2700, intFile.length());
+        }
     }
 
     @Test
@@ -57,7 +70,12 @@ public class ClassPathResourceTest {
         File intFile = new ClassPathResource("csvsequence test.txt").getFile();
 
         assertTrue(intFile.exists());
-        assertEquals(60, intFile.length());
+
+        if(isWindows){
+            assertEquals(64, intFile.length());
+        } else {
+            assertEquals(60, intFile.length());
+        }
     }
 
     @Test
@@ -65,7 +83,11 @@ public class ClassPathResourceTest {
         ClassPathResource resource = new ClassPathResource("csvsequence_1.txt");
         File intFile = resource.getFile();
 
-        assertEquals(60, intFile.length());
+        if(isWindows){
+            assertEquals(64, intFile.length());
+        } else {
+            assertEquals(60, intFile.length());
+        }
 
         InputStream stream = resource.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
@@ -83,7 +105,11 @@ public class ClassPathResourceTest {
         ClassPathResource resource = new ClassPathResource("/csvsequence_1.txt");
         File intFile = resource.getFile();
 
-        assertEquals(60, intFile.length());
+        if(isWindows){
+            assertEquals(64, intFile.length());
+        } else {
+            assertEquals(60, intFile.length());
+        }
 
         InputStream stream = resource.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));

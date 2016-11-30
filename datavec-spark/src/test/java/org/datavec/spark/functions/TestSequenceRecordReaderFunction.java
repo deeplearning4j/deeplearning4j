@@ -80,10 +80,10 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         }
         assertEquals(3, list.size());
 
-        System.out.println("Spark list:");
-        for(List<List<Writable>> c : listSpark ) System.out.println(c);
-        System.out.println("Local list:");
-        for(List<List<Writable>> c : list ) System.out.println(c);
+//        System.out.println("Spark list:");
+//        for(List<List<Writable>> c : listSpark ) System.out.println(c);
+//        System.out.println("Local list:");
+//        for(List<List<Writable>> c : list ) System.out.println(c);
 
         //Check that each of the values from Spark equals exactly one of the values doing it normally
         boolean[] found = new boolean[3];
@@ -117,7 +117,7 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         path = folder + "*";
 
         JavaPairRDD<String,PortableDataStream> origData = sc.binaryFiles(path);
-        System.out.println(origData.collectAsMap().keySet());
+//        System.out.println(origData.collectAsMap().keySet());
         assertEquals(4, origData.count());    //4 video files
 
         //Load 64x64, 25 frames - originally, 130x130, 150 frames

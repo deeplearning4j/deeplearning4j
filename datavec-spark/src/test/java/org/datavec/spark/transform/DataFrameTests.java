@@ -37,8 +37,8 @@ public class DataFrameTests extends BaseSparkTest {
         DataFrame dataFrame = DataFrames.toDataFrame(schema,sc.parallelize(records));
         dataFrame.show();
         dataFrame.describe(DataFrames.toArray(schema.getColumnNames())).show();
-        System.out.println(Normalization.minMaxColumns(dataFrame,schema.getColumnNames()));
-        System.out.println(Normalization.stdDevMeanColumns(dataFrame,schema.getColumnNames()));
+//        System.out.println(Normalization.minMaxColumns(dataFrame,schema.getColumnNames()));
+//        System.out.println(Normalization.stdDevMeanColumns(dataFrame,schema.getColumnNames()));
 
     }
 
@@ -130,10 +130,10 @@ public class DataFrameTests extends BaseSparkTest {
         Collections.sort(c, comparator);
         Collections.sort(c2, comparator);
 
-        System.out.println("Normalized:");
-        System.out.println(c);
-        System.out.println("Standardized:");
-        System.out.println(c2);
+//        System.out.println("Normalized:");
+//        System.out.println(c);
+//        System.out.println("Standardized:");
+//        System.out.println(c2);
 
         for( int i = 0; i < expMinMax.size(); i++) {
             List<Writable> exp = expMinMax.get(i);
@@ -198,7 +198,7 @@ public class DataFrameTests extends BaseSparkTest {
         Collections.sort(norm, new ComparatorSeqLength());
         assertEquals(2, norm.size());
 
-        System.out.println(norm);
+//        System.out.println(norm);
 
         for(int i = 0; i < 2; i++) {
             List<List<Writable>> seqExp = (i == 0 ? expSeq1MinMax : expSeq2MinMax);
@@ -237,7 +237,7 @@ public class DataFrameTests extends BaseSparkTest {
         Collections.sort(std, new ComparatorSeqLength());
         assertEquals(2, std.size());
 
-        System.out.println(std);
+//        System.out.println(std);
 
         for( int i = 0; i < 2; i++) {
             List<List<Writable>> seqExp = (i == 0 ? expSeq1Std : expSeq2Std);

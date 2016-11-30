@@ -57,8 +57,9 @@ public class TestAnalysis extends BaseSparkTest {
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
+        String daString = da.toString();
 
-        System.out.println(da);
+//        System.out.println(da);
 
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
         assertEquals(4, ca.size());
@@ -201,7 +202,7 @@ public class TestAnalysis extends BaseSparkTest {
 
         Map<Writable,Long> map = AnalyzeSpark.sampleMostFrequentFromColumn(3, "column", schema, rdd);
 
-        System.out.println(map);
+//        System.out.println(map);
 
         assertEquals(3,map.size());
         assertEquals(4L, (long)map.get(new Text("MostCommon")));

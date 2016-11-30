@@ -132,9 +132,9 @@ public class CSVRecordReaderTest {
         //Read file back in; compare
         String fileContents = FileUtils.readFileToString(p.toFile(),FileRecordWriter.DEFAULT_CHARSET.name());
 
-        System.out.println(expected);
-        System.out.println("----------");
-        System.out.println(fileContents);
+//        System.out.println(expected);
+//        System.out.println("----------");
+//        System.out.println(fileContents);
 
         assertEquals(expected,fileContents);
     }
@@ -176,7 +176,7 @@ public class CSVRecordReaderTest {
             assertEquals(5, r.getRecord().size());
             lineCount++;
             RecordMetaData meta = r.getMetaData();
-            System.out.println(r.getRecord() + "\t" + meta.getLocation() + "\t" + meta.getURI());
+//            System.out.println(r.getRecord() + "\t" + meta.getLocation() + "\t" + meta.getURI());
 
             metaList.add(meta);
             writables.add(r.getRecord());
@@ -189,9 +189,9 @@ public class CSVRecordReaderTest {
         System.out.println("\n\n\n--------------------------------");
         List<Record> contents = rr.loadFromMetaData(metaList);
         assertEquals(150, contents.size());
-        for(Record r : contents ){
-            System.out.println(r);
-        }
+//        for(Record r : contents ){
+//            System.out.println(r);
+//        }
 
         List<RecordMetaData> meta2 = new ArrayList<>();
         meta2.add(metaList.get(100));

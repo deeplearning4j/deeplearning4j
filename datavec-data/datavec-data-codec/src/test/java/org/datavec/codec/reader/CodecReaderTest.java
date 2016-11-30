@@ -53,11 +53,11 @@ public class CodecReaderTest {
         reader.setConf(conf);
         assertTrue(reader.hasNext());
         List<List<Writable>> record = reader.sequenceRecord();
-        System.out.println(record.size());
+//        System.out.println(record.size());
 
         Iterator<List<Writable>> it = record.iterator();
         List<Writable> first = it.next();
-        System.out.println(first);
+//        System.out.println(first);
 
         //Expected size: 80x46x3
         assertEquals(1, first.size());
@@ -84,7 +84,7 @@ public class CodecReaderTest {
         SequenceRecord seqR = reader.nextSequence();
         assertEquals(record, seqR.getSequenceRecord());
         RecordMetaData meta = seqR.getMetaData();
-        System.out.println(meta);
+//        System.out.println(meta);
         assertTrue(meta.getURI().toString().endsWith("fire_lowres.mp4"));
 
         SequenceRecord fromMeta = reader.loadSequenceFromMetaData(meta);

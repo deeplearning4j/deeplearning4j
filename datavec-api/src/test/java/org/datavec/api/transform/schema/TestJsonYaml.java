@@ -45,7 +45,7 @@ public class TestJsonYaml {
                 .build();
 
         String asJson = schema.toJson();
-        System.out.println(asJson);
+//        System.out.println(asJson);
 
         Schema schema2 = Schema.fromJson(asJson);
 
@@ -59,7 +59,7 @@ public class TestJsonYaml {
 
 
         String asYaml = schema.toYaml();
-        System.out.println(asYaml);
+//        System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
         for( int i = 0; i < schema.numColumns(); i++ ){
@@ -125,7 +125,7 @@ public class TestJsonYaml {
                 .build();
 
         String asJson = schema.toJson();
-        System.out.println(asJson);
+//        System.out.println(asJson);
 
         Schema schema2 = Schema.fromJson(asJson);
 
@@ -139,7 +139,7 @@ public class TestJsonYaml {
 
 
         String asYaml = schema.toYaml();
-        System.out.println(asYaml);
+//        System.out.println(asYaml);
 
         Schema schema3 = Schema.fromYaml(asYaml);
         for( int i = 0; i < schema.numColumns(); i++) {

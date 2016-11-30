@@ -119,9 +119,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(t);
             String json = j.serialize(t);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             Transform t2 = y.deserializeTransform(yaml);
             Transform t3 = j.deserializeTransform(json);
@@ -135,8 +135,8 @@ public class TestYamlJsonSerde {
         String tListAsYaml = y.serializeTransformList(Arrays.asList(transforms));
         String tListAsJson = j.serializeTransformList(Arrays.asList(transforms));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(tListAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(tListAsYaml);
 
         List<Transform> lFromYaml = y.deserializeTransformList(tListAsYaml);
         List<Transform> lFromJson = j.deserializeTransformList(tListAsJson);
@@ -159,9 +159,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(f);
             String json = j.serialize(f);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             Filter t2 = y.deserializeFilter(yaml);
             Filter t3 = j.deserializeFilter(json);
@@ -174,8 +174,8 @@ public class TestYamlJsonSerde {
         String listAsYaml = y.serializeFilterList(Arrays.asList(filters));
         String listAsJson = j.serializeFilterList(Arrays.asList(filters));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(listAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(listAsYaml);
 
         List<Filter> lFromYaml = y.deserializeFilterList(listAsYaml);
         List<Filter> lFromJson = j.deserializeFilterList(listAsJson);
@@ -237,9 +237,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(c);
             String json = j.serialize(c);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             Condition t2 = y.deserializeCondition(yaml);
             Condition t3 = j.deserializeCondition(json);
@@ -252,8 +252,8 @@ public class TestYamlJsonSerde {
         String listAsYaml = y.serializeConditionList(Arrays.asList(conditions));
         String listAsJson = j.serializeConditionList(Arrays.asList(conditions));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(listAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(listAsYaml);
 
         List<Condition> lFromYaml = y.deserializeConditionList(listAsYaml);
         List<Condition> lFromJson = j.deserializeConditionList(listAsJson);
@@ -275,9 +275,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(r);
             String json = j.serialize(r);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             IReducer t2 = y.deserializeReducer(yaml);
             IReducer t3 = j.deserializeReducer(json);
@@ -290,8 +290,8 @@ public class TestYamlJsonSerde {
         String listAsYaml = y.serializeReducerList(Arrays.asList(reducers));
         String listAsJson = j.serializeReducerList(Arrays.asList(reducers));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(listAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(listAsYaml);
 
         List<IReducer> lFromYaml = y.deserializeReducerList(listAsYaml);
         List<IReducer> lFromJson = j.deserializeReducerList(listAsJson);
@@ -312,9 +312,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(f);
             String json = j.serialize(f);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             SequenceComparator t2 = y.deserializeSequenceComparator(yaml);
             SequenceComparator t3 = j.deserializeSequenceComparator(json);
@@ -327,8 +327,8 @@ public class TestYamlJsonSerde {
         String listAsYaml = y.serializeSequenceComparatorList(Arrays.asList(comparators));
         String listAsJson = j.serializeSequenceComparatorList(Arrays.asList(comparators));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(listAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(listAsYaml);
 
         List<SequenceComparator> lFromYaml = y.deserializeSequenceComparatorList(listAsYaml);
         List<SequenceComparator> lFromJson = j.deserializeSequenceComparatorList(listAsJson);
@@ -364,9 +364,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(f);
             String json = j.serialize(f);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             SequenceSplit t2 = y.deserializeSequenceSplit(yaml);
             SequenceSplit t3 = j.deserializeSequenceSplit(json);
@@ -392,9 +392,9 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(f);
             String json = j.serialize(f);
 
-            System.out.println(yaml);
-            System.out.println(json);
-            System.out.println();
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
 
             DataAction t2 = y.deserializeDataAction(yaml);
             DataAction t3 = j.deserializeDataAction(json);
@@ -407,8 +407,8 @@ public class TestYamlJsonSerde {
         String listAsYaml = y.serializeDataActionList(Arrays.asList(dataActions));
         String listAsJson = j.serializeDataActionList(Arrays.asList(dataActions));
 
-        System.out.println("\n\n\n\n");
-        System.out.println(listAsYaml);
+//        System.out.println("\n\n\n\n");
+//        System.out.println(listAsYaml);
 
         List<DataAction> lFromYaml = y.deserializeDataActionList(listAsYaml);
         List<DataAction> lFromJson = j.deserializeDataActionList(listAsJson);
