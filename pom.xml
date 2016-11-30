@@ -130,7 +130,6 @@
                 <!-- Excluding deeplearning4j-cuda here -->
                 <module>deeplearning4j-graph</module>
                 <module>deeplearning4j-modelimport</module>
-                <module>deeplearning4j-modelimport</module>
                 <module>deeplearning4j-nlp-parent</module>
                 <module>deeplearning4j-nn</module>
                 <module>deeplearning4j-scaleout</module>
