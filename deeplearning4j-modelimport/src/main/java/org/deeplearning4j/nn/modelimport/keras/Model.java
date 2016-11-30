@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
@@ -18,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -36,10 +39,50 @@ import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importS
  *
  * @author davekale
  */
+@Slf4j
 public class Model {
-    private static Logger log = LoggerFactory.getLogger(Model.class);
 
     private Model() {}
+
+    /**
+     * Imports a Keras Sequential model saved using model.save_model(...). Model
+     * configuration and weights are loaded from single HDF5 archive.
+     *
+     * @param  modelHdf5Stream input stream storing Keras Sequential model
+     * @return                   DL4J MultiLayerNetwork
+     * @throws IOException
+     * @throws IncompatibleKerasConfigurationException
+     * @throws UnsupportedOperationException
+     * @see    MultiLayerNetwork
+     * @see    MultiLayerConfiguration
+     *
+     * TODO: remove this once we have a shared model interface?
+     */
+    public static MultiLayerNetwork importSequentialModelInputStream(InputStream modelHdf5Stream)
+            throws IOException, IncompatibleKerasConfigurationException {
+        MultiLayerNetwork model = importModelInputStream(modelHdf5Stream, true);
+        return model;
+    }
+
+    /**
+     * Imports a Keras Functional API model saved using model.save_model(...). Model
+     * configuration and weights are loaded from single HDF5 archive.
+     *
+     * @param modelHdf5Stream  input stream storing storing Keras Functional API model
+     * @return                   DL4J ComputationGraph
+     * @throws IOException
+     * @throws IncompatibleKerasConfigurationException
+     * @throws UnsupportedOperationException
+     * @see    ComputationGraph
+     * @see    ComputationGraphConfiguration
+     *
+     * TODO: remove this once we have a shared model interface?
+     */
+    public static ComputationGraph importFunctionalApiModelInputStream(InputStream modelHdf5Stream)
+            throws IOException, IncompatibleKerasConfigurationException {
+        ComputationGraph model = importModelInputStream(modelHdf5Stream, false);
+        return model;
+    }
 
     /**
      * Imports a Keras Sequential model saved using model.save_model(...). Model
@@ -81,10 +124,13 @@ public class Model {
         return model;
     }
 
+
+
+
     /**
      * Load Keras model saved using model.save_model(...).
      *
-     * @param modelHdf5Filename  path to HDF5 archive storing Keras model
+     * @param inputStream  path to HDF5 archive storing Keras model
      * @param isSequential       whether the model to be loaded is Sequential
      * @param <T>
      * @return                   DL4J MultiLayerNetwork or ComputationGraph
@@ -92,10 +138,16 @@ public class Model {
      *
      * TODO: make public and change return type to shared model interface once we have one.
      */
-    private static <T> T importModel(String modelHdf5Filename, boolean isSequential) throws IOException {
+    private static <T> T importModelInputStream(InputStream inputStream, boolean isSequential) throws IOException {
         /* Open model HDF5 file. */
-        hdf5.H5File file = new hdf5.H5File(modelHdf5Filename, H5F_ACC_RDONLY);
-        /* Read model config JSON string from "model_config" attribute. */
+        byte[] bytes = IOUtils.toByteArray(inputStream);
+        BytePointer bytePointer = new BytePointer(bytes);
+        hdf5.H5File file = new hdf5.H5File(bytePointer,H5F_ACC_RDONLY);
+        return doImportModel(file,isSequential);
+    }
+
+    private static <T> T doImportModel(hdf5.H5File file,boolean isSequential) throws IOException {
+          /* Read model config JSON string from "model_config" attribute. */
         hdf5.Attribute attr = file.openAttribute("model_config");
         hdf5.VarLenType vl = attr.getVarLenType();
         int bufferSizeMult = 1;
@@ -128,6 +180,23 @@ public class Model {
         T model = importModel(configJson, file.asCommonFG().openGroup("/model_weights"), isSequential);
         file.close();
         return model;
+    }
+
+    /**
+     * Load Keras model saved using model.save_model(...).
+     *
+     * @param modelHdf5Filename  path to HDF5 archive storing Keras model
+     * @param isSequential       whether the model to be loaded is Sequential
+     * @param <T>
+     * @return                   DL4J MultiLayerNetwork or ComputationGraph
+     * @throws IOException
+     *
+     * TODO: make public and change return type to shared model interface once we have one.
+     */
+    private static <T> T importModel(String modelHdf5Filename, boolean isSequential) throws IOException {
+        /* Open model HDF5 file. */
+        hdf5.H5File file = new hdf5.H5File(modelHdf5Filename, H5F_ACC_RDONLY);
+        return doImportModel(file,isSequential);
     }
 
     /**
