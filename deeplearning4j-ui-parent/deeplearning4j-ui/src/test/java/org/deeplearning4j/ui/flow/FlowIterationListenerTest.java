@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class FlowIterationListenerTest {
     @Before
     public void setUp() throws Exception {
         if (graph == null) {
-            int VOCAB_SIZE = 10000;
+            int VOCAB_SIZE = 1000;
             ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
                     .regularization(true).l2(0.0001)
                     .weightInit(WeightInit.XAVIER)
@@ -68,6 +69,9 @@ public class FlowIterationListenerTest {
 
             graph = new ComputationGraph(configuration);
             graph.init();
+
+            INDArray input = Nd4j.zeros(10, VOCAB_SIZE, 20);
+            graph.setInputs(input, input);
         }
 
         if (network == null) {
@@ -145,6 +149,9 @@ public class FlowIterationListenerTest {
 
             network = new MultiLayerNetwork(builder.build());
             network.init();
+
+            INDArray input = Nd4j.zeros(10, nChannels, numRows, numColumns);
+            network.setInput(input);
         }
     }
 
