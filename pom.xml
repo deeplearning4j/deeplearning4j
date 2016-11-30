@@ -85,6 +85,7 @@
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
+        <maven-surefire.version>2.18.1</maven-surefire.version>
     </properties>
 
     <profiles>
@@ -421,11 +422,19 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.18.1</version>
-                    <!--                    <configuration>
-                                            <argLine>-Ddtype=double -Xmx3024m -Xms3024m</argLine>
-                                        </configuration> -->
-
+                    <version>${maven-surefire.version}</version>
+                    <configuration>
+                        <!--
+                         By default: Surefire will set the classpath based on the manifest. Because tests are not included
+                         in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
+                         function correctly without this configuratino.
+                         For example, tests for custom layers (where the custom layer is defined in the test directory)
+                         will fail due to the custom layer not being found on the classpath.
+                         http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
+                         -->
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
