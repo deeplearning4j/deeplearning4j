@@ -1,6 +1,9 @@
 package org.nd4j.linalg.profiler.data;
 
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.profiler.data.primitives.ComparableAtomicLong;
+import org.nd4j.linalg.profiler.data.primitives.TimeSet;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,8 +14,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StringAggregator {
 
-    private Map<String, List<Long>> times = new ConcurrentHashMap<>();
-    private Map<String, AtomicLong> longCalls = new ConcurrentHashMap<>();
+    private Map<String, TimeSet> times = new ConcurrentHashMap<>();
+    private Map<String, ComparableAtomicLong> longCalls = new ConcurrentHashMap<>();
 
     private static final long THRESHOLD = 100000;
 
@@ -23,26 +26,26 @@ public class StringAggregator {
     public void reset() {
         for (String key: times.keySet()) {
 //            times.remove(key);
-            times.put(key, new ArrayList<Long>());
+            times.put(key, new TimeSet());
         }
 
         for (String key: longCalls.keySet()) {
   //          longCalls.remove(key);
-            longCalls.put(key, new AtomicLong(0));
+            longCalls.put(key, new ComparableAtomicLong(0));
         }
     }
 
 
     public void putTime(String key, Op op, long timeSpent) {
         if (!times.containsKey(key))
-            times.put(key, new ArrayList<Long>());
+            times.put(key, new TimeSet());
 
-        times.get(key).add(timeSpent);
+        times.get(key).addTime(timeSpent);
 
         if (timeSpent > THRESHOLD) {
             String keyExt = key + " " + op.name() + " (" + op.opNum() + ")";
             if (!longCalls.containsKey(keyExt))
-                longCalls.put(keyExt, new AtomicLong(0));
+                longCalls.put(keyExt, new ComparableAtomicLong(0));
 
             longCalls.get(keyExt).incrementAndGet();
         }
@@ -50,56 +53,29 @@ public class StringAggregator {
 
     public void putTime(String key, long timeSpent) {
         if (!times.containsKey(key))
-            times.put(key, new ArrayList<Long>());
+            times.put(key, new TimeSet());
 
-        times.get(key).add(timeSpent);
+        times.get(key).addTime(timeSpent);
     }
 
     protected long getMedian(String key) {
-        List<Long> values = times.get(key);
-        Collections.sort(values);
-
-        return values.get(values.size() / 2);
+        return times.get(key).getMedian();
     }
 
     protected long getAverage(String key) {
-        List<Long> values = times.get(key);
-        AtomicLong cnt = new AtomicLong(0);
-        for (Long value: values) {
-            cnt.addAndGet(value);
-        }
-
-        return cnt.get() / values.size();
+        return times.get(key).getAverage();
     }
 
     protected long getMaximum(String key) {
-        List<Long> values = times.get(key);
-        AtomicLong cnt = new AtomicLong(0);
-        for (Long value: values) {
-            if (value > cnt.get())
-                cnt.set(value);
-        }
-
-        return cnt.get();
+        return times.get(key).getMaximum();
     }
 
     protected long getMinimum(String key) {
-        List<Long> values = times.get(key);
-        AtomicLong cnt = new AtomicLong(Long.MAX_VALUE - 1);
-        for (Long value: values) {
-            if (value < cnt.get())
-                cnt.set(value);
-        }
-
-        return cnt.get();
+        return times.get(key).getMinimum();
     }
 
     protected long getSum(String key) {
-        AtomicLong sum = new AtomicLong(0);
-        for (Long time: times.get(key)) {
-            sum.addAndGet(time);
-        }
-        return sum.get();
+        return times.get(key).getSum();
     }
 
     public String asPercentageString() {
@@ -130,7 +106,9 @@ public class StringAggregator {
     public String asString() {
         StringBuilder builder = new StringBuilder();
 
-        for (String key: times.keySet()) {
+        Map<String, TimeSet> sortedTimes = ArrayUtil.sortMapByValue(times);
+
+        for (String key: sortedTimes.keySet()) {
             long currentMax = getMaximum(key);
             long currentMin = getMinimum(key);
             long currentAvg = getAverage(key);
@@ -139,7 +117,7 @@ public class StringAggregator {
             builder.append(key).append("  >>> ");
 
             if (longCalls.size() == 0)
-                builder.append(" ").append(times.get(key).size()).append(" calls; ");
+                builder.append(" ").append(sortedTimes.get(key).size()).append(" calls; ");
 
             builder.append("Min: ").append(currentMin).append(" ns; ")
                     .append("Max: ").append(currentMax).append(" ns; ")
@@ -151,8 +129,10 @@ public class StringAggregator {
 
         builder.append("\n");
 
-        for (String key: longCalls.keySet()) {
-            long numCalls = longCalls.get(key).get();
+        Map<String, ComparableAtomicLong> sortedCalls = ArrayUtil.sortMapByValue(longCalls);
+
+        for (String key: sortedCalls.keySet()) {
+            long numCalls = sortedCalls.get(key).get();
             builder.append(key).append("  >>> ")
                     .append(numCalls);
 
