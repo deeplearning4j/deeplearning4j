@@ -4,7 +4,7 @@ layout: cn-default
 redirect_from: /zh-about
 ---
 
-# 关于我们
+<h1>关于我们</h1>
 
 Deeplearning4j是Java和Scala环境下的开源、分布式深度学习项目，由总部位于旧金山的商业智能和企业软件公司[Skymind](http://www.skymind.io)牵头开发。团队成员包括数据专家、深度学习专家、Java系统工程师和具有一定感知力的机器人。
 
