@@ -103,6 +103,64 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
+             Note that this excludes DL4J-cuda -->
+        <profile>
+            <id>test-nd4j-native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <modules>
+                <module>deeplearning4j-core</module>
+                <!-- Excluding deeplearning4j-cuda here -->
+                <module>deeplearning4j-graph</module>
+                <module>deeplearning4j-modelimport</module>
+                <module>deeplearning4j-modelimport</module>
+                <module>deeplearning4j-nlp-parent</module>
+                <module>deeplearning4j-nn</module>
+                <module>deeplearning4j-scaleout</module>
+                <module>deeplearning4j-ui-parent</module>
+            </modules>
+        </profile>
+
+        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-8.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <!-- Default to ALL modules here, unlike nd4j-native -->
+        </profile>
+
         <profile>
             <id>qa</id>
             <build>
