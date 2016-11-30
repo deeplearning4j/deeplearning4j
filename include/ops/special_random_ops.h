@@ -321,7 +321,7 @@ namespace randomOps {
 
 
                 // fix for "next rng value"
-                if ((threadIdx.x + 1 >= blockDim.x || threadIdx.x +1 >= zLength) && e % 2 == 0) {
+                if (e + 1 >= zLength && e % 2 == 0) {
                     tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
                 }
 
