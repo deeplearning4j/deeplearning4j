@@ -8,6 +8,6 @@ ECHO ***** Constructing nd4j-native site at projectRootDirectory\tests\nd4j-nati
 call mvn site:stage -DstagingDirectory=%cd%\tests\nd4j-native_%currTime%
 ECHO ***** Starting tests using nd4j-cuda-8 backend *****
 set outputFile=tests\nd4j-cuda-8_%currTime%.log
-call mvn clean site -Ddependency.locations.enabled=false -P test-nd4j-cuda-8 -fn > %cd%\%outputFile% 2>&1
+call mvn clean site -Ddependency.locations.enabled=false -P test-nd4j-cuda-8.0 -fn > %cd%\%outputFile% 2>&1
 ECHO ***** Constructing nd4j-native site at projectRootDirectory\tests\nd4j-cuda-8_DATE-TIME *****
 call mvn site:stage -DstagingDirectory=%cd%\tests\nd4j-cuda-8_%currTime%
