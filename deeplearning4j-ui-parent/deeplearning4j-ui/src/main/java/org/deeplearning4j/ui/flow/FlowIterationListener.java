@@ -323,10 +323,19 @@ public class FlowIterationListener implements IterationListener {
             int x = 0;
             for (String input : inputs) {
                 GraphVertex vertex = graph.getVertex(input);
-                INDArray gInput = vertex.getInputs()[0];
-                long tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1, gInput.rank()));
 
-                long numSamples = gInput.lengthLong() / tadLength;
+                long numSamples;
+                long tadLength;
+                if(vertex.getInputs() == null || vertex.getInputs().length == 0 ){
+                    numSamples = 0;
+                    tadLength = 0;
+                } else {
+                    INDArray gInput = vertex.getInputs()[0];
+                    tadLength = Shape.getTADLength(gInput.shape(), ArrayUtil.range(1, gInput.rank()));
+                    numSamples = gInput.lengthLong() / tadLength;
+                }
+
+
 
                 StringBuilder builder = new StringBuilder();
                 builder.append("Vertex name: ").append(input).append("<br/>");
