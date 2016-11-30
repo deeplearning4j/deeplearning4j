@@ -10,7 +10,8 @@ public interface AffinityManager {
 
     enum Location {
         HOST,
-        DEVICE
+        DEVICE,
+        EVERYWHERE,
     }
 
     /**
