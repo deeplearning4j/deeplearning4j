@@ -317,15 +317,17 @@ namespace randomOps {
             for (int e = tid; e < zLength; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
-                __syncthreads();
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+
 
                 // fix for "next rng value"
-                if (threadIdx.x + 1 >= blockDim.x && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = tZ[threadIdx.x-1];
+                if (e + 1 >= zLength && e % 2 == 0) {
+                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
                 }
 
                 T realMean = y == z ? mean : y[e * yEWS];
+
+                __syncthreads();
 
                 if (e % 2 == 0)
                     z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
