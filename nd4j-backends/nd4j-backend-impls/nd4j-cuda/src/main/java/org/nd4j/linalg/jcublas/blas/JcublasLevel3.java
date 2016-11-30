@@ -247,7 +247,6 @@ public class JcublasLevel3 extends BaseLevel3 {
             nativeOps.setBlasStream(handle, ctx.getOldStream());
 
             nd4jBlas.dgemm(new PointerPointer(new Pointer[] {ctx.getHandle()}), Order, TransA, TransB, M, N, K, alpha, (DoublePointer)cAPointer.getDevicePointer(), lda, (DoublePointer)cBPointer.getDevicePointer(), ldb, beta, (DoublePointer)cCPointer.getDevicePointer(), ldc);
-            ctx.syncOldStream();
         }
 
         allocator.registerAction(ctx, C, A, B);
