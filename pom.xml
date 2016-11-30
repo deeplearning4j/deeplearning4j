@@ -133,16 +133,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-            <modules>
-                <module>deeplearning4j-core</module>
-                <!-- Excluding deeplearning4j-cuda here -->
-                <module>deeplearning4j-graph</module>
-                <module>deeplearning4j-modelimport</module>
-                <module>deeplearning4j-nlp-parent</module>
-                <module>deeplearning4j-nn</module>
-                <module>deeplearning4j-scaleout</module>
-                <module>deeplearning4j-ui-parent</module>
-            </modules>
         </profile>
 
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
