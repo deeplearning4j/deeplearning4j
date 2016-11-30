@@ -81,13 +81,15 @@ public class StringAggregator {
     public String asPercentageString() {
         StringBuilder builder = new StringBuilder();
 
+        Map<String, TimeSet> sortedTimes = ArrayUtil.sortMapByValue(times);
+
         AtomicLong sum = new AtomicLong(0);
-        for (String key: times.keySet()) {
+        for (String key: sortedTimes.keySet()) {
             sum.addAndGet(getSum(key));
         }
         builder.append("Total time spent: ").append(sum.get() / 1000000).append(" ms.").append("\n");
 
-        for (String key: times.keySet()) {
+        for (String key: sortedTimes.keySet()) {
             long currentSum = getSum(key);
             float perc = currentSum * 100 / sum.get();
 

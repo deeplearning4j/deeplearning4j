@@ -5,6 +5,8 @@ import java.util.List;
 
 
 /**
+ * Utility holder class, used to store timing sets retrieved with profiler.
+ *
  * @author raver119@gmail.com
  */
 public class TimeSet implements Comparable<TimeSet> {
@@ -13,6 +15,7 @@ public class TimeSet implements Comparable<TimeSet> {
 
     public void addTime(long time) {
         times.add(new ComparableAtomicLong(time));
+        sum = 0;
     }
 
     public long getSum() {
@@ -26,6 +29,9 @@ public class TimeSet implements Comparable<TimeSet> {
     }
 
     public long getAverage() {
+        if (times.size() == 0)
+            return 0L;
+
         long tSum = getSum();
         return tSum / times.size();
     }
@@ -64,6 +70,6 @@ public class TimeSet implements Comparable<TimeSet> {
 
     @Override
     public int compareTo(TimeSet o) {
-        return Long.compare(this.size(), o.size());
+        return Long.compare(o.size(), this.size());
     }
 }

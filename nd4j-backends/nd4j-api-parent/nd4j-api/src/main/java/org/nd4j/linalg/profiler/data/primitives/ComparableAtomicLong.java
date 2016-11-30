@@ -17,6 +17,6 @@ public class ComparableAtomicLong extends AtomicLong implements Comparable<Compa
 
     @Override
     public int compareTo(ComparableAtomicLong o) {
-        return Long.compare(this.get(), o.get());
+        return Long.compare(o.get(), this.get());
     }
 }
