@@ -14,26 +14,28 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis;
+package org.datavec.spark.transform.transform;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * SequenceFlatMapFunction: very simple function used to flatten a sequence
- * Typically used only internally for certain analysis operations
- *
- * @author Alex Black
+ * Spark function for executing a transform process
  */
-public class SequenceFlatMapFunction implements FlatMapFunction<List<List<Writable>>, List<Writable>> {
+public class SparkTransformProcessFunction implements FlatMapFunction<List<Writable>,List<Writable>> {
 
-    private final SequenceFlatMapFunctionAdapter adapter = new SequenceFlatMapFunctionAdapter();
+    private final SparkTransformProcessFunctionAdapter adapter;
 
-    @Override
-    public Iterable<List<Writable>> call(List<List<Writable>> collections) throws Exception {
-        return adapter.call(collections);
+    public SparkTransformProcessFunction(TransformProcess transformProcess) {
+        this.adapter = new SparkTransformProcessFunctionAdapter(transformProcess);
     }
 
+    @Override
+    public Iterator<List<Writable>> call(List<Writable> v1) throws Exception {
+        return adapter.call(v1).iterator();
+    }
 }

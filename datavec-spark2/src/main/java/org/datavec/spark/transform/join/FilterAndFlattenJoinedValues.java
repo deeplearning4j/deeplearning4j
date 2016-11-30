@@ -14,26 +14,31 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis;
+package org.datavec.spark.transform.join;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * SequenceFlatMapFunction: very simple function used to flatten a sequence
- * Typically used only internally for certain analysis operations
+ * Doing two things here:
+ * (a) filter out any unnecessary values, and
+ * (b) extract the List<Writable> values from the JoinedValue
  *
- * @author Alex Black
  */
-public class SequenceFlatMapFunction implements FlatMapFunction<List<List<Writable>>, List<Writable>> {
+public class FilterAndFlattenJoinedValues implements FlatMapFunction<JoinedValue,List<Writable>> {
 
-    private final SequenceFlatMapFunctionAdapter adapter = new SequenceFlatMapFunctionAdapter();
+    private final FilterAndFlattenJoinedValuesAdapter adapter;
 
-    @Override
-    public Iterable<List<Writable>> call(List<List<Writable>> collections) throws Exception {
-        return adapter.call(collections);
+    public FilterAndFlattenJoinedValues(Join.JoinType joinType) {
+        this.adapter = new FilterAndFlattenJoinedValuesAdapter(joinType);
     }
 
+    @Override
+    public Iterator<List<Writable>> call(JoinedValue joinedValue) throws Exception {
+        return adapter.call(joinedValue).iterator();
+    }
 }

@@ -25,10 +25,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.DataFrames;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Convert a record to a row
@@ -43,7 +40,7 @@ public class SequenceToRows implements FlatMapFunction<List<List<Writable>>,Row>
     }
 
     @Override
-    public Iterable<Row> call(List<List<Writable>> sequence) throws Exception {
-        return adapter.call(sequence);
+    public Iterator<Row> call(List<List<Writable>> sequence) throws Exception {
+        return adapter.call(sequence).iterator();
     }
 }
