@@ -34,7 +34,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 <br />
 <p><h2>系统要求</h2>
 <ul>
-  <li><a href="#Java">Java（开发者版</a> 7或更新版本（仅支持64位版本）</li>
+  <li><a href="#Java">Java</a> （开发者版7或更新版本（仅支持64位版本）</li>
   <li><a href="#Maven">Apache Maven</a></li>
   <li><a href="#IntelliJ">IntelliJ IDEA</a> (建议）或 Eclipse</li>
   <li><a href="#Git">Git</a></li>
@@ -92,93 +92,74 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
   </li>
 
   <li>
-    <p>打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。</p>
+    <p>打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。</p><br />
     <p><img class="img-shadow img-responsive center-block" src="../img/Install_IntJ_1.png" alt="shadowed image"></p>
   </li>
 
   <li>
-    <p>选择“从外部模型导入项目”，确保已选中Maven。</p>
+    <p>选择“从外部模型导入项目”，确保已选中Maven。</p><br />
     <p><img class="img-shadow img-responsive center-block" src="../img/Install_IntJ_2.png" alt="shadowed image"></p>
   </li>
 
   <li>
-    <p>Edit Your Gallery</p>
-    <p>...</p>
+	  <p>继续按向导选项操作。选中以<code>jdk</code>开头的SDK。（可能需要点击加号才能看到相关选项……）随后点“完成”。稍等片刻，让IntelliJ 下载所有的依赖项。右下方会显示进度条。</p>
   </li>
   
   <li>
-    <p>Edit Your Gallery</p>
-    <p>...</p>
+    <p>在左边的树形目录中选择一个示例。</p><br />
+    <p><img class="img-shadow img-responsive center-block" src="../img/Install_IntJ_3.png" alt="shadowed image"></p>
+    <p>右击文件，运行。</p>
   </li>
 </ul>
-
-
-1. 在命令行中输入：
-
-        $ git clone https://github.com/deeplearning4j/dl4j-examples.git
-        $ cd dl4j-examples/
-        $ mvn clean install
-
-2. 打开IntelliJ，选择“导入项目”。然后选择“dl4j-examples”主目录。
- * ![select directory](../img/Install_IntJ_1.png)
-3. 选择“从外部模型导入项目”，确保已选中Maven。
- * ![import project](../img/Install_IntJ_2.png)
-4. 继续按向导选项操作。选中以`jdk`开头的SDK。（可能需要点击加号才能看到相关选项……）随后点“完成”。稍等片刻，让IntelliJ下载所有的依赖项。右下方会显示进度条。
-5. 在左边的树形目录中选择一个示例。
- * ![run IntelliJ example](../img/Install_IntJ_3.png)
- * 右击文件，运行。
-
-## 在您自己的项目中使用DL4J：配置POM.xml文件
-
-若要在您自己的项目中运行DL4J，我们强烈推荐Java用户使用Maven，Scala用户使用SBT等工具。基本的依赖项及其版本如下所示。其中包括：
-
-- `deeplearning4j-core`，包含神经网络实现方法
-- `nd4j-native`，ND4J库的CPU版本，驱动DL4J
-- `canova-api` - Canova是我们的数据向量化和加载库
-
-每个Maven项目都有一个POM文件。运行示例时，[POM文件的内容应当如此处所示](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml)。
-
-在IntelliJ中，你需要选择将要运行的第一个Deeplearning4j示例。我们建议选择`MLPLinearClassifier`，在我们的用户界面中几乎能立即看到该网络将数据分类为两组。文件可以[在Github上找到](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java)。
-
-右击示例，在下拉菜单中选择绿色按钮即可运行。你会在IntelliJ底部的窗口中看到一系列分值。最右边的数字是网络分类的误差得分。如果网络在进行学习，该数字就会随着处理批次的增加而减少。最后，该窗口会告诉你神经网络模型最终的准确度。
-
-![run IntelliJ example](../img/mlp_classifier_results.png)
-
-另一个窗口中的图像会显示多层感知器（MLP）对示例数据的分类结果，如下图所示：
-
-![run IntelliJ example](../img/mlp_classifier_viz.png)
-
-祝贺您！您已经用Deeplearning4j成功定型了第一个神经网络……
-
-更多链接：
-
-- [Maven Central上的Deeplearning4j工件](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
-- [Maven Central上的ND4J工件](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
-- [Maven Central上的Canova工件](http://search.maven.org/#search%7Cga%7C1%7Ccanova)
-
-## 后续步骤
-
-1. 在Gitter上加入我们。我们有三大社区交流渠道。
-    * [DL4J线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)是有关DL4J的主要交流渠道。大多数人都在此出没。
-    * [调试帮助](https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp)面向刚开始接触神经网络的用户。初学者请访问这个交流群！
-    * [早期用户交流群](https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters)面向那些帮助我们检查并改进新版本的用户。注意：这个群供经验更丰富的用户交流。
-2. 阅读[深度神经网络简介](zh-neuralnet-overview)或其他详细教程。
-3. 查看更详细的[完全安装指南](zh-gettingstarted)。
-4. 浏览[DL4J文档](zh-documentation)。
-
-
-### 疑难解答
 <br />
 
-**问：** 我在Windows中使用64位的Java，但仍然发生`no jnind4j in java.library.path`错误
+<p><h2>在您自己的项目中使用DL4J：配置POM.xml文件</h2></p>
+<p>若要在您自己的项目中运行DL4J，我们强烈推荐Java用户使用Maven，Scala用户使用SBT等工具。基本的依赖项及其版本如下所示。其中包括：</p>
 
-**答：**您的路径中可能有不兼容的DLL文件。您需要将以下代码作为VM参数添加（IntelliJ中选择运行 -> 编辑配置 -> VM选项），让DL4J忽略这些文件：
+- <code>deeplearning4j-core</code>，包含神经网络实现方法
+- <code>nd4j-native-platform</code>，ND4J库的CPU版本，驱动DL4J
+- <code>datavec-api</code> - Datavec是我们的数据向量化和加载库
 
-```
+<p>每个Maven项目都有一个POM文件。运行示例时，<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml" title="POM file" target="_blank">POM文件的内容应当如此处所示</a>。</p>
+<p>在IntelliJ中，你需要选择将要运行的第一个Deeplearning4j示例。我们建议选择<code>MLPLinearClassifier</code>，在我们的用户界面中几乎能立即看到该网络将数据分类为两组。文件可以<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java" title="MPLinearClassifier" target="_blank">在Github上找到</a>。</p>
+<p>右击示例，在下拉菜单中选择绿色按钮即可运行。你会在IntelliJ底部的窗口中看到一系列分值。最右边的数字是网络分类的误差得分。如果网络在进行学习，该数字就会随着处理批次的增加而减少。最后，该窗口会告诉你神经网络模型最终的准确度。</p>
+<img class="img-shadow img-responsive center-block" src="../img/mlp_classifier_results.png" alt="shadowed image">
+<br />
+<p>另一个窗口中的图像会显示多层感知器（MLP）对示例数据的分类结果，如下图所示：</p>
+<img class="img-shadow img-responsive center-block" src="../img/mlp_classifier_viz.png" alt="shadowed image">
+<br />
+<p>祝贺您！您已经用Deeplearning4j成功定型了第一个神经网络。现在你不妨可以试试我们下一个教程：<a href="mnist-for-beginners" title="MNIST 初学者">MNIST 初学者</a>，在这里你可以学习到如何使用深度学习来分类图像</p>
+<p>相关链接：</p>
+<ul>
+<ol><a href="http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j" target="_blank">Maven Central上的Deeplearning4j工件</a></ol>
+<ol><a href="http://search.maven.org/#search%7Cga%7C1%7Cnd4j" title="ND4J" target="_blank">Maven Central上的ND4J工件</a></ol>
+<ol><a href="http://search.maven.org/#search%7Cga%7C1%7Cdatavec" target="_blank">Maven Central上的Canova工件</a></ol>
+</ul>
+<br />
+<p><h2>后续步骤</h2></p>
+<ul>
+<li>在Gitter上加入我们。我们有三大社区交流渠道。
+  <ul>
+    <li><a href="https://gitter.im/deeplearning4j/deeplearning4j">DL4J线上交流群</a>是有关DL4J的主要交流渠道。大多数人都在此出没。</li>
+    <li><a href="https://gitter.im/deeplearning4j/deeplearning4j/tuninghelp">调试帮助</a>面向刚开始接触神经网络的用户。初学者请访问这个交流群！</li>
+    <li><a href="https://gitter.im/deeplearning4j/deeplearning4j/earlyadopters">早期用户交流群</a>面向那些帮助我们检查并改进新版本的用户。注意：这个群供经验更丰富的用户交流。</li>
+  </ul>
+</li>
+<li>阅读<a href="neuralnet-overview">深度神经网络简介</a>或其他详细教程。</li>
+<li>浏览<a href="https://deeplearning4j.org/cn/zh-documentation">DL4J文档</a>。 </li>	
+</ul>
+
+<br />
+<p><h3>疑难解答</h3></p>
+
+
+<p><strong>问：</strong> 我在Windows中使用64位的Java，但仍然发生<code>no jnind4j in java.library.path</code>错误</p>
+<p><strong>答：</strong>您的路径中可能有不兼容的DLL文件。您需要将以下代码作为VM参数添加（IntelliJ中选择运行 -> 编辑配置 -> VM选项），让DL4J忽略这些文件：</p>
+<pre><code class="language-jave">
 -Djava.library.path=""
-```
+</code></pre>
 <br />
 
-**问：**我遇到了这个错误：`Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll`，导致JVM故障（不会崩溃，只是停止运行……）。
+<p><strong>问：</strong>我遇到了这个错误：<code>Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll</code>，导致JVM故障（不会崩溃，只是停止运行……）。</p>
 
-**答：**Maven Central当前的rc3.10版本中，`libnd4j`库在路径中发现英特尔的MKL时无法将其正确加载。解决方法是添加`System.loadLibrary("mkl_rt")`。
+<strong>答：</strong>Maven Central当前的rc3.10版本中，<code>libnd4j</code>库在路径中发现英特尔的MKL时无法将其正确加载。解决方法是添加 <code>System.loadLibrary("mkl_rt")</code>。
