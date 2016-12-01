@@ -13,8 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.model.MasterStatus;
 import org.nd4j.parameterserver.model.ServerTypeJson;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;

@@ -21,11 +21,11 @@ import org.nd4j.aeron.ipc.response.AeronNDArrayResponder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.model.MasterConnectionInfo;
+import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
-import org.nd4j.parameterserver.status.play.StatusServer;
+import org.nd4j.parameterserver.model.SubscriberState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import play.server.Server;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +67,9 @@ public class ParameterServerSubscriber {
     @Parameter(names={"-s","--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
 
-    private Server server;
+    public enum UpdateType {
+        ASYNC,SYNC,TIME_DELAYED
+    }
     private MediaDriver mediaDriver;
     private AeronNDArrayResponder responder;
     private AeronNDArraySubscriber subscriber;
@@ -84,6 +86,21 @@ public class ParameterServerSubscriber {
         this.mediaDriver = mediaDriver;
     }
 
+
+    /**
+     * Return the current {@link SubscriberState}
+     * of this subscriber
+     * @return the current state of this subscriber
+     */
+    public SubscriberState asState() {
+        return SubscriberState.builder()
+                .isMaster(isMaster())
+                .totalUpdates(getResponder().getNdArrayHolder().totalUpdates())
+                .serverState(subscriberLaunched() ?
+                        ServerState.STARTED.name().toLowerCase() :
+                        ServerState.STOPPED.name().toLowerCase())
+                .build();
+    }
 
     /**
      * When this is a slave node
@@ -218,13 +235,11 @@ public class ParameterServerSubscriber {
                 CloseHelper.quietClose(responder);
             if(aeron != null)
                 CloseHelper.quietClose(aeron);
-            if(server != null)
-                server.stop();
+
         }));
 
         //set the server for the status of the master and slave nodes
-        server = StatusServer.startServer(this);
-        log.info("Started status server  on " + statusServerPort);
+
 
 
     }
