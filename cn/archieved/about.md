@@ -1,7 +1,6 @@
 ---
 title: 关于我们
 layout: cn-default
-redirect_from: /zh-about
 ---
 
 <h1>关于我们</h1>
