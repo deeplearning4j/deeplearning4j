@@ -5,6 +5,8 @@ import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
+import org.nd4j.parameterserver.updater.ParameterServerUpdater;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Data
 public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
     private INDArray arr;
+    private ParameterServerUpdater updater = new SynchronousParameterUpdater();
     private AtomicInteger totalN = new AtomicInteger(0);
     private boolean master;
     private int[] shape;
@@ -51,9 +54,9 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
     @Override
     public synchronized void onNDArray(INDArray arr) {
         if(shape == null)
-            this.arr.addi(arr.reshape(1,arr.length()));
+           updater.update(arr.reshape(1,arr.length()),this.arr);
         else
-            this.arr.addi(arr);
+            updater.update(arr,this.arr);
         totalN.incrementAndGet();
     }
 

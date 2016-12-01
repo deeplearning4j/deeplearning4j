@@ -73,7 +73,10 @@ public class ParameterServerSubscriber {
     private int statusServerPort = 9000;
     @Parameter(names={"-sp","--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
     private String statusServerHost = "localhost";
+    @Parameter(names={"-up","--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
+    private String updateTypeString;
 
+    private UpdateType updateType = UpdateType.SYNC;
 
     @Parameter(names={"-s","--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
@@ -82,7 +85,7 @@ public class ParameterServerSubscriber {
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
     public enum UpdateType {
-        ASYNC,SYNC,TIME_DELAYED
+        HOGWILD,SYNC,TIME_DELAYED,SOFTSYNC
     }
 
 
@@ -290,6 +293,11 @@ public class ParameterServerSubscriber {
         return ctx;
     }
 
+    /**
+     * Get the master ndarray from the
+     * internal {@link NDArrayHolder}
+     * @return the master ndarray
+     */
     public INDArray getMasterArray() {
         NDArrayHolder holder = (NDArrayHolder) callback;
         return holder.get();
