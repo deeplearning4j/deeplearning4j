@@ -759,6 +759,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testEuclideanManhattanDistanceAlongDimension_Rank4(){
+        DataBuffer.Type initialType = Nd4j.dataType();
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
         INDArray firstOneExample = Nd4j.rand('c', new int[]{1,2,2,2});
@@ -810,6 +811,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
             assertEquals(expManhattanDistance, outManhattan.getRow(0).getDouble(0), 1e-5);
             assertEquals(expected, out.getRow(0).getDouble(0), 1e-5);
         }
+
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
     @Override

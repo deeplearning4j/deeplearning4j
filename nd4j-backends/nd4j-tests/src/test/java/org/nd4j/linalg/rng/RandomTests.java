@@ -124,6 +124,54 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testDistribution4() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Nd4j.getRandom().setSeed(119);
+
+            INDArray z1 = Nd4j.randn('f', new int[] {1, 1000});
+
+            Nd4j.getRandom().setSeed(119);
+
+            INDArray z2 = Nd4j.randn('c', new int[] {1, 1000});
+
+            assertEquals("Failed on iteration " + i,z1, z2);
+
+        }
+    }
+
+    @Test
+    public void testDistribution5() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Nd4j.getRandom().setSeed(120);
+
+            INDArray z1 = Nd4j.rand('f', new int[] {1, 1000});
+
+            Nd4j.getRandom().setSeed(120);
+
+            INDArray z2 = Nd4j.rand('c', new int[] {1, 1000});
+
+            assertEquals("Failed on iteration " + i,z1, z2);
+
+        }
+    }
+
+    @Test
+    public void testDistribution6() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            Nd4j.getRandom().setSeed(120);
+
+            INDArray z1 = Nd4j.getExecutioner().exec(new BinomialDistribution(Nd4j.createUninitialized(1000), 10, 0.2));
+
+            Nd4j.getRandom().setSeed(120);
+
+            INDArray z2 = Nd4j.getExecutioner().exec(new BinomialDistribution(Nd4j.createUninitialized(1000), 10, 0.2));
+
+            assertEquals("Failed on iteration " + i,z1, z2);
+
+        }
+    }
+
+    @Test
     public void testLinspace1() throws Exception {
         INDArray z1 = Nd4j.linspace(1, 100, 200);
 
