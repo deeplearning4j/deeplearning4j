@@ -125,7 +125,7 @@ public class ScalarEquals extends BaseScalarOp {
 
     @Override
     public int[] getDimension() {
-        return new int[0];
+        return null;
     }
 
     @Override
