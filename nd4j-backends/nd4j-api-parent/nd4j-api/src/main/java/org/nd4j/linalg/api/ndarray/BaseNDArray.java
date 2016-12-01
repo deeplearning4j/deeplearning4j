@@ -34,10 +34,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNotEquals;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
@@ -1274,9 +1271,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public INDArray lte(Number other) {
+        return dup().ltei(other);
+    }
+
+    @Override
     public INDArray lti(Number other) {
 
         Nd4j.getExecutioner().exec(new ScalarLessThan(this, other));
+        return this;
+    }
+
+    @Override
+    public INDArray ltei(Number other) {
+
+        Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, other));
         return this;
     }
 
@@ -1295,6 +1304,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray gt(Number other) {
         return dup().gti(other);
+    }
+
+    @Override
+    public INDArray gte(Number other) {
+        return dup().gtei(other);
+    }
+
+    @Override
+    public INDArray gtei(Number other) {
+        Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, other));
+        return this;
     }
 
     @Override

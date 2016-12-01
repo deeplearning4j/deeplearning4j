@@ -423,6 +423,38 @@ public interface INDArray extends Serializable  {
      */
     INDArray gt(Number other);
 
+   /**
+    * Greter or equals
+    *
+    * @param other
+    * @return
+    */
+    INDArray gte(Number other);
+
+   /**
+    * Less or equals
+    *
+    * @param other
+    * @return
+    */
+    INDArray lte(Number other);
+
+   /**
+    * Inplace greater or equals
+    *
+    * @param other
+    * @return
+    */
+    INDArray gtei(Number other);
+
+   /**
+    * Inplace less or equals
+    *
+    * @param other
+    * @return
+    */
+    INDArray ltei(Number other);
+
     /**
      * In place greater than comparison:
      * If the given number is less than the
