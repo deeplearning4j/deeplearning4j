@@ -15,16 +15,46 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class MapDbStatusStorage implements StatusStorage {
-    private Map<Integer,SubscriberState> statusStorageMap;
+public class MapDbStatusStorage extends BaseStatusStorage {
     private DB db;
-
+    private File storageFile;
     public MapDbStatusStorage() {
         this(null);
     }
 
-    public MapDbStatusStorage(File storageFile) {
+    /**
+     * Create the storage map
+     *
+     * @return
+     */
+    @Override
+    public Map<Integer, Long> createUpdatedMap() {
+        if (storageFile == null) {
+            //In-Memory Stats Storage
+            db = DBMaker
+                    .memoryDB()
+                    .make();
+        } else {
+            db = DBMaker
+                    .fileDB(storageFile)
+                    .closeOnJvmShutdown()
+                    .transactionEnable()    //Default to Write Ahead Log - lower performance, but has crash protection
+                    .make();
+        }
 
+        updated = db.hashMap("statusStorageMap")
+                .keySerializer(Serializer.INTEGER)
+                .valueSerializer(Serializer.LONG)
+                .createOrOpen();
+        return updated;
+    }
+
+    public MapDbStatusStorage(File storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    @Override
+    public Map<Integer, SubscriberState> createMap() {
         if (storageFile == null) {
             //In-Memory Stats Storage
             db = DBMaker
@@ -42,6 +72,7 @@ public class MapDbStatusStorage implements StatusStorage {
                 .keySerializer(Serializer.INTEGER)
                 .valueSerializer(new StatusStorageSerializer())
                 .createOrOpen();
+        return statusStorageMap;
     }
 
     /**

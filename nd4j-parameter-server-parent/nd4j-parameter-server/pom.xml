@@ -18,6 +18,11 @@
             <artifactId>nd4j-parameter-server-model</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>${unirest.version}</version>
+        </dependency>
 
 
         <dependency>

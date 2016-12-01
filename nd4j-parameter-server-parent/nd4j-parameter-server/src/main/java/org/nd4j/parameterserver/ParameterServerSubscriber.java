@@ -6,6 +6,7 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
+import com.mashape.unirest.http.Unirest;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -13,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.json.JSONObject;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayCallback;
@@ -24,11 +26,16 @@ import org.nd4j.parameterserver.model.MasterConnectionInfo;
 import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.model.SubscriberState;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
@@ -64,17 +71,27 @@ public class ParameterServerSubscriber {
     private String mediaDriverDirectoryName;
     @Parameter(names={"-sp","--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
     private int statusServerPort = 9000;
+    @Parameter(names={"-sp","--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
+    private String statusServerHost = "localhost";
+
+
     @Parameter(names={"-s","--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
-
+    @Parameter(names={"-hbi","--heartbeatinterval"}, description = "The shape of the ndarray", arity = 1)
+    private int heartbeatMs = 1000;
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private ScheduledExecutorService scheduledExecutorService;
     public enum UpdateType {
         ASYNC,SYNC,TIME_DELAYED
     }
+
+
     private MediaDriver mediaDriver;
     private AeronNDArrayResponder responder;
     private AeronNDArraySubscriber subscriber;
-    private   NDArrayCallback callback;
+    private NDArrayCallback callback;
     private Aeron aeron;
+    private ScheduledExecutorService heartbeat;
 
     /**
      * Allow passing in a
@@ -94,7 +111,7 @@ public class ParameterServerSubscriber {
      */
     public SubscriberState asState() {
         return SubscriberState.builder()
-                .isMaster(isMaster())
+                .isMaster(isMaster()).connectionInfo(isMaster() ? slaveConnectionInfo().toString() : masterConnectionInfo().toString())
                 .totalUpdates(getResponder().getNdArrayHolder().totalUpdates())
                 .serverState(subscriberLaunched() ?
                         ServerState.STARTED.name().toLowerCase() :
@@ -228,6 +245,22 @@ public class ParameterServerSubscriber {
             LockSupport.parkNanos(100000);
         }
 
+        scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
+                    Unirest.post(String.format("http://%s:%d/updatestatus/%d",statusServerHost,statusServerPort,streamId))
+                            .body(jsonObject).getEntity();
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+            }
+        },1000,heartbeatMs, TimeUnit.MILLISECONDS);
+
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if(subscriber != null)
                 CloseHelper.quietClose(subscriber);
@@ -235,6 +268,8 @@ public class ParameterServerSubscriber {
                 CloseHelper.quietClose(responder);
             if(aeron != null)
                 CloseHelper.quietClose(aeron);
+            if(scheduledExecutorService != null)
+                scheduledExecutorService.shutdown();
 
         }));
 

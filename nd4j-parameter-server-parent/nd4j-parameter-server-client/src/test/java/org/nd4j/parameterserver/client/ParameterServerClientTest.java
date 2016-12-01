@@ -1,11 +1,8 @@
 package org.nd4j.parameterserver.client;
 
-import akka.io.Tcp;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.*;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;

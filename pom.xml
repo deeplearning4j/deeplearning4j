@@ -259,6 +259,7 @@
     </modules>
 
     <properties>
+        <unirest.version>1.4.9</unirest.version>
         <mapdb.version>3.0.2</mapdb.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
