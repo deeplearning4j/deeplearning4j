@@ -94,6 +94,10 @@ public class ParallelWrapper implements AutoCloseable {
                 zoo[cnt] = new Trainer(cnt, model, true);
                 zoo[cnt].start();
             }
+        } else {
+            for (int cnt = 0; cnt < workers; cnt++) {
+                zoo[cnt].useMDS = true;
+            }
         }
         source.reset();
 
@@ -474,7 +478,7 @@ public class ParallelWrapper implements AutoCloseable {
         private AtomicBoolean shouldUpdate = new AtomicBoolean(false);
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
-        private boolean useMDS = false;
+        private volatile boolean useMDS = false;
 
 
         public Trainer(int threadId, Model model, boolean useMDS) {
@@ -600,16 +604,18 @@ public class ParallelWrapper implements AutoCloseable {
                     }
                 } else {
                     // loop for MultiDataSet
-                    MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
-                    if (dataSet != null) {
-                        if (replicatedModel instanceof ComputationGraph) {
-                            ((ComputationGraph) replicatedModel).fit(dataSet);
-                        } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
+                    while (!shouldStop.get()) {
+                        MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
+                        if (dataSet != null) {
+                            if (replicatedModel instanceof ComputationGraph) {
+                                ((ComputationGraph) replicatedModel).fit(dataSet);
+                            } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
-                        running.decrementAndGet();
+                            running.decrementAndGet();
+                        }
                     }
                 }
             } catch (Exception e) {
