@@ -646,6 +646,17 @@ public class WordVectorSerializer {
 
         zipfile.flush();
         zipfile.close();
+
+        try {
+            tempFileCodes.delete();
+            tempFileFreqs.delete();
+            tempFileHuffman.delete();
+            tempFileSyn0.delete();
+            tempFileSyn1.delete();
+            tempFileSyn1Neg.delete();
+        } catch (Exception e) {
+            //
+        }
     }
 
     /**
@@ -2218,6 +2229,38 @@ public class WordVectorSerializer {
         return readWord2VecModel(file, false);
     }
 
+
+    /**
+     * This method
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * Please note: Only weights will be loaded by this method.
+     *
+     * @param path
+     * @return
+     */
+    public static Word2Vec readWord2VecModel(String path) {
+        return readWord2VecModel(new File(path));
+    }
+
+    /**
+     * This method
+     * 1) Binary model, either compressed or not. Like well-known Google Model
+     * 2) Popular CSV word2vec text format
+     * 3) DL4j compressed format
+     *
+     * Please note: if extended data isn't available, only weights will be loaded instead.
+     *
+     * @param path
+     * @param extendedModel if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
+     * @return
+     */
+    public static Word2Vec readWord2VecModel(String path, boolean extendedModel) {
+        return readWord2VecModel(new File(path), extendedModel);
+    }
+
     /**
      * This method
      * 1) Binary model, either compressed or not. Like well-known Google Model
@@ -2278,6 +2321,12 @@ public class WordVectorSerializer {
                         .build();
 
                 lookupTable.setSyn0(syn0);
+
+                try {
+                    tmpFileSyn0.delete();
+                } catch (Exception e) {
+                    //
+                }
             }
         } catch (Exception e) {
             // let's try to load this file as csv file
@@ -2535,7 +2584,7 @@ public class WordVectorSerializer {
 
     public static String encodeB64(String word) {
         try {
-            return "B64:" + Base64.encodeBase64String(word.getBytes("UTF-8"));
+            return "B64:" + Base64.encodeBase64String(word.getBytes("UTF-8")).replaceAll("\n","");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
