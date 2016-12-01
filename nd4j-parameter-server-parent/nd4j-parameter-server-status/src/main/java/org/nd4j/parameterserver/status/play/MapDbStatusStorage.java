@@ -18,8 +18,18 @@ import java.util.Map;
 public class MapDbStatusStorage extends BaseStatusStorage {
     private DB db;
     private File storageFile;
+
+    /**
+     * @param heartBeatEjectionMilliSeconds the amount of time before
+     *                                      ejecting a given subscriber as failed
+     * @param checkInterval                 the interval to check for
+     */
+    public MapDbStatusStorage(long heartBeatEjectionMilliSeconds, long checkInterval) {
+        super(heartBeatEjectionMilliSeconds, checkInterval);
+    }
+
     public MapDbStatusStorage() {
-        this(null);
+        this(1000,1000);
     }
 
     /**
@@ -42,16 +52,14 @@ public class MapDbStatusStorage extends BaseStatusStorage {
                     .make();
         }
 
-        updated = db.hashMap("statusStorageMap")
+        updated = db.hashMap("updated")
                 .keySerializer(Serializer.INTEGER)
                 .valueSerializer(Serializer.LONG)
                 .createOrOpen();
         return updated;
     }
 
-    public MapDbStatusStorage(File storageFile) {
-        this.storageFile = storageFile;
-    }
+
 
     @Override
     public Map<Integer, SubscriberState> createMap() {
@@ -94,15 +102,7 @@ public class MapDbStatusStorage extends BaseStatusStorage {
         return statusStorageMap.get(id);
     }
 
-    /**
-     * Update the state for storage
-     *
-     * @param subscriberState the subscriber state to update
-     */
-    @Override
-    public void updateState(SubscriberState subscriberState) {
-        statusStorageMap.put(subscriberState.getStreamId(),subscriberState);
-    }
+
 
     private class StatusStorageSerializer implements Serializer<SubscriberState> {
 

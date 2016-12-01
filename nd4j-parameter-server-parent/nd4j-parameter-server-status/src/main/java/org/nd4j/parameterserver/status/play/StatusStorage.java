@@ -10,6 +10,12 @@ import org.nd4j.parameterserver.model.SubscriberState;
  */
 public interface StatusStorage {
     /**
+     * Returns the number of states
+     * held by this storage
+     * @return
+     */
+    int numStates();
+    /**
      * Get the state given an id.
      * The integer represents a stream id
      * for a given {@link org.nd4j.parameterserver.ParameterServerSubscriber}.

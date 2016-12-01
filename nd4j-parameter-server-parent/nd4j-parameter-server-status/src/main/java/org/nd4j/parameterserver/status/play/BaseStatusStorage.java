@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.status.play;
 
 import io.aeron.driver.MediaDriver;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.model.SubscriberState;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract  class BaseStatusStorage implements StatusStorage {
     protected Map<Integer,SubscriberState> statusStorageMap = createMap();
     private ScheduledExecutorService executorService;
@@ -27,7 +29,18 @@ public abstract  class BaseStatusStorage implements StatusStorage {
     private long checkInterval = 1000;
 
     public BaseStatusStorage() {
-       this(1000,1000);
+        this(1000,1000);
+    }
+
+    /**
+     * Returns the number of states
+     * held by this storage
+     *
+     * @return
+     */
+    @Override
+    public int numStates() {
+        return statusStorageMap.size();
     }
 
     /**
@@ -60,6 +73,8 @@ public abstract  class BaseStatusStorage implements StatusStorage {
                     }
                 }
 
+                if(!remove.isEmpty())
+                    log.info("Removing " + remove.size() + " entries");
                 //purge removed values
                 for(Integer i : remove) {
                     updated.remove(i);
