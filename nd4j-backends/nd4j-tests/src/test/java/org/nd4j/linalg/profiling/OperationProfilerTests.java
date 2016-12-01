@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
@@ -238,4 +239,5 @@ public class OperationProfilerTests {
         String ret = OpProfiler.getInstance().processOrders(a, b, c);
         assertEquals("C x C x C", ret);
     }
+
 }

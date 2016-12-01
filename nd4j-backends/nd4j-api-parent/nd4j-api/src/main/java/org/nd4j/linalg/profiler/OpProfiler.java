@@ -434,4 +434,8 @@ public class OpProfiler {
 
         return causes.toArray(new PenaltyCause[0]);
     }
+
+    public void processMemoryAccess() {
+
+    }
 }
