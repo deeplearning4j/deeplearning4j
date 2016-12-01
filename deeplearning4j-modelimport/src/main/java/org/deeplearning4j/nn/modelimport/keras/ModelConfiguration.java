@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -16,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Routines for importing saved Keras model configurations.
@@ -27,6 +23,9 @@ import java.util.Map;
  * @author davekale
  */
 public class ModelConfiguration {
+    public static final String KERAS_LAYER_TYPE_DROPOUT = "Dropout";
+    public static final String KERAS_LAYER_TYPE_ACTIVATION = "Activation";
+    public static final String KERAS_LAYER_TYPE_FLATTEN = "Flatten";
     private static Logger log = LoggerFactory.getLogger(Model.class);
 
     private ModelConfiguration() {}
@@ -91,7 +90,7 @@ public class ModelConfiguration {
      * @param kerasConfig   Nested Map storing Keras configuration read from valid JSON.
      * @return              DL4J MultiLayerConfiguration
      * @throws IOException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @throws IncompatibleKerasConfigurationException
      */
     private static MultiLayerConfiguration importSequentialModelConfig(Map<String,Object> kerasConfig)
@@ -110,15 +109,16 @@ public class ModelConfiguration {
         for (Object o : (List<Object>)kerasConfig.get("config")) {
             String kerasLayerName = (String)((Map<String,Object>)o).get("class_name");
             Map<String,Object> layerConfig = (Map<String,Object>)((Map<String,Object>)o).get("config");
+            layerConfig.put("keras_class", kerasLayerName);
 
             switch (kerasLayerName) {
-                case "Dropout":
+                case KERAS_LAYER_TYPE_DROPOUT:
                     /* Store dropout layer so we can merge into subsequent layer.
                      * TODO: remove once Dropout layer added to DL4J.
                      */
                     prevDropout = (double)layerConfig.get("p");
                     continue;
-                case "Activation":
+                case KERAS_LAYER_TYPE_ACTIVATION:
                     /* Merge activation function into previous layer.
                      * TODO: we have an Activation layer in DL4J so maybe remove this.
                      */
@@ -127,8 +127,14 @@ public class ModelConfiguration {
                     String activation = LayerConfiguration.mapActivation((String)layerConfig.get("activation"));
                     layerConfigs.get(layerConfigs.size()-1).put("activation", activation);
                     continue;
+                case KERAS_LAYER_TYPE_FLATTEN:
+                    /* NOTE: THIS IS A HACK! For any reshaping layers, we need to skip over the dropout logic below
+                     * so that the previous layer's dropout value is persisted for the next layer.
+                     * TODO: remove once Dropout layer added to DL4J.
+                     */
+                    layerConfigs.add(layerConfig);
+                    continue;
             }
-            layerConfig.put("keras_class", kerasLayerName);
 
             /* Merge dropout from previous layer.
              * TODO: remove once Dropout layer added to DL4J.
@@ -138,11 +144,9 @@ public class ModelConfiguration {
                 double newDropout = 1.0 - (1.0 - prevDropout) * (1.0 - oldDropout);
                 layerConfig.put("dropout", newDropout);
                 if (oldDropout != newDropout)
-                    log.warn("Changed layer-defined dropout " + oldDropout + " to " + newDropout +
-                            " because of previous Dropout=" + newDropout + " layer");
+                    log.warn("DL4J does not have a Dropout layer so we will incorporate dropout=" + prevDropout + " into next layer, changing that layer's dropout from " + oldDropout + " to " + newDropout);
                 prevDropout = 0.0;
             }
-
             layerConfigs.add(layerConfig);
         }
 
@@ -243,12 +247,12 @@ public class ModelConfiguration {
      * @param kerasConfig   Nested Map storing Keras configuration read from valid JSON.
      * @return              DL4J ComputationGraph
      * @throws IOException
-     * @throws NotImplementedException
+     * @throws UnsupportedOperationException
      * @throws IncompatibleKerasConfigurationException
      */
     private static ComputationGraphConfiguration importFunctionalApiConfig(Map<String,Object> kerasConfig)
-            throws IOException, NotImplementedException, IncompatibleKerasConfigurationException {
-        throw new NotImplementedException("Import of Keras Functional API model configs not supported.");
+            throws IOException, UnsupportedOperationException, IncompatibleKerasConfigurationException {
+        throw new UnsupportedOperationException("Import of Keras Functional API model configs not supported.");
     }
 
     /**
