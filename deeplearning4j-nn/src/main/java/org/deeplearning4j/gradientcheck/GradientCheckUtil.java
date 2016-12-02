@@ -109,6 +109,8 @@ public class GradientCheckUtil {
         double maxError = 0.0;
         DataSet ds = new DataSet(input, labels);
         int currParamNameIdx = 0;
+
+        INDArray params = mln.params();     //Assumption here: params is a view that we can modify in-place
         for(int i = 0; i < nParams; i++) {
             //Get param name
             if(i >= paramEnds[currParamNameIdx]){
@@ -117,15 +119,16 @@ public class GradientCheckUtil {
             String paramName = paramNames.get(currParamNameIdx);
 
             //(w+epsilon): Do forward pass and score
-            INDArray params = originalParams.dup();
-            params.putScalar(i, params.getDouble(i) + epsilon);
-            mln.setParameters(params);
+            double origValue = params.getDouble(i);
+            params.putScalar(i, origValue + epsilon);
             double scorePlus = mln.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
-            params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
-            mln.setParameters(params);
+            params.putScalar(i, origValue - epsilon);
             double scoreMinus = mln.score(ds, true);
+
+            //Reset original param value
+            params.putScalar(i, origValue);
 
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
@@ -233,17 +236,20 @@ public class GradientCheckUtil {
         int totalNFailures = 0;
         double maxError = 0.0;
         MultiDataSet mds = new MultiDataSet(inputs, labels);
+        INDArray params = graph.params();     //Assumption here: params is a view that we can modify in-place
         for(int i = 0; i < nParams; i++) {
             //(w+epsilon): Do forward pass and score
-            INDArray params = originalParams.dup();
-            params.putScalar(i, params.getDouble(i) + epsilon);
-            graph.setParams(params);
+            double origValue = params.getDouble(i);
+
+            params.putScalar(i, origValue + epsilon);
             double scorePlus = graph.score(mds);
 
             //(w-epsilon): Do forward pass and score
-            params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
-            graph.setParams(params);
+            params.putScalar(i, origValue - epsilon);
             double scoreMinus = graph.score(mds);
+
+            //Reset original param value
+            params.putScalar(i, origValue);
 
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;

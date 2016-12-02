@@ -216,36 +216,45 @@ public class VariationalAutoencoder implements Layer {
         this.maskArray = null;
     }
 
+    private boolean isPretrainParam(String param){
+        if(param.startsWith("d") || param.startsWith("eZXLogStdev2")) return true;      //TODO don't hardcode
+        return false;
+
+    }
+
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
         if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
 
-        double sum = 0.0;
+        double l2Sum = 0.0;
         for(Map.Entry<String,INDArray> e : paramTable().entrySet()){
             double l2 = conf().getL2ByParam(e.getKey());
-            if(l2 <= 0.0) continue;
+//            System.out.println(backpropParamsOnly + "\t" + e.getKey() + "\t" + l2 + "\t" + isPretrainParam(e.getKey()));
+            if(l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))){
+                continue;
+            }
+
             double l2Norm = e.getValue().norm2Number().doubleValue();
-            sum += 0.5 * l2 * l2Norm * l2Norm;
+            l2Sum += 0.5 * l2 * l2Norm * l2Norm;
         }
-        throw new RuntimeException();
-//        return sum;
+
+        return l2Sum;
     }
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
         if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
 
-        double sum = 0.0;
+        double l1Sum = 0.0;
         for(Map.Entry<String,INDArray> e : paramTable().entrySet()){
             double l1 = conf().getL1ByParam(e.getKey());
-            if(l1 <= 0.0) continue;
-            double l1Norm = e.getValue().norm1Number().doubleValue();
-            sum += l1 * l1Norm;
+            if(l1 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))){
+                continue;
+            }
+
+            l1Sum += l1 * e.getValue().norm1Number().doubleValue();
         }
-//        return sum;
-        throw new RuntimeException();
+        return l1Sum;
     }
 
     @Override
