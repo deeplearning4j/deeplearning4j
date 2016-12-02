@@ -28,15 +28,6 @@
 
     <name>deeplearning4j-ui</name>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -48,13 +39,6 @@
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>${javax.ws.rs.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>

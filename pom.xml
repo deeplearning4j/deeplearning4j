@@ -16,7 +16,8 @@
   ~  */
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
@@ -35,7 +36,6 @@
     </parent>
 
 
-
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -47,6 +47,13 @@
             <name>Nexus Release Repository</name>
             <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
+
+
+        <!-- Necessary for mvn site commands to work (see runWindowsTest.cmd); url isn't actually used -->
+        <site>
+            <id>ID</id>
+            <url>file:///</url>
+        </site>
     </distributionManagement>
 
 
@@ -76,7 +83,8 @@
         <spark.version>1.5.2</spark.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.2</mapdb.version>
-        <playframework.version>2.4.6</playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
+        <playframework.version>2.4.6
+        </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <reflections.version>0.9.10</reflections.version>
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
@@ -85,6 +93,7 @@
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
+        <maven-surefire.version>2.18.1</maven-surefire.version>
     </properties>
 
     <profiles>
@@ -102,6 +111,53 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
+             Note that this excludes DL4J-cuda -->
+        <profile>
+            <id>test-nd4j-native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-8.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <!-- Default to ALL modules here, unlike nd4j-native -->
+        </profile>
+
         <profile>
             <id>qa</id>
             <build>
@@ -359,29 +415,29 @@
                 </configuration>
             </plugin>
             <plugin>
-              <groupId>com.lewisd</groupId>
-              <artifactId>lint-maven-plugin</artifactId>
-              <version>0.0.8</version>
-              <configuration>
-                <failOnViolation>true</failOnViolation>
-                <onlyRunRules>
-                  <rule>DuplicateDep</rule>
-                  <rule>RedundantDepVersion</rule>
-                  <rule>RedundantPluginVersion</rule>
-                  <rule>VersionProp</rule>
-                  <rule>DotVersionProperty</rule>
-                </onlyRunRules>
-                <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
-              </configuration>
-              <executions>
-                <execution>
-                  <id>pom-lint</id>
-                  <phase>validate</phase>
-                  <goals>
-                    <goal>check</goal>
-                  </goals>
-                </execution>
-              </executions>
+                <groupId>com.lewisd</groupId>
+                <artifactId>lint-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <failOnViolation>true</failOnViolation>
+                    <onlyRunRules>
+                        <rule>DuplicateDep</rule>
+                        <rule>RedundantDepVersion</rule>
+                        <rule>RedundantPluginVersion</rule>
+                        <rule>VersionProp</rule>
+                        <rule>DotVersionProperty</rule>
+                    </onlyRunRules>
+                    <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pom-lint</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
 
@@ -405,7 +461,6 @@
                 </plugin>
 
 
-
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
@@ -421,11 +476,19 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.18.1</version>
-                    <!--                    <configuration>
-                                            <argLine>-Ddtype=double -Xmx3024m -Xms3024m</argLine>
-                                        </configuration> -->
-
+                    <version>${maven-surefire.version}</version>
+                    <configuration>
+                        <!--
+                         By default: Surefire will set the classpath based on the manifest. Because tests are not included
+                         in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
+                         function correctly without this configuratino.
+                         For example, tests for custom layers (where the custom layer is defined in the test directory)
+                         will fail due to the custom layer not being found on the classpath.
+                         http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
+                         -->
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -434,7 +497,7 @@
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
                         <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgdeeplearning4j-xxxx -->
-                        <arguments> -Psonatype-oss-release -DskipTests ${arguments}</arguments>
+                        <arguments>-Psonatype-oss-release -DskipTests ${arguments}</arguments>
                         <localCheckout>true</localCheckout>
                         <pushChanges>false</pushChanges>
                     </configuration>
@@ -467,7 +530,6 @@
             </plugins>
 
         </pluginManagement>
-
     </build>
 
     <dependencyManagement>
@@ -508,5 +570,15 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.19.1</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>
