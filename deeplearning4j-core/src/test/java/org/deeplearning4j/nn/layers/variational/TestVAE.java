@@ -83,12 +83,12 @@ public class TestVAE {
     @Test
     public void testPretrainSimple(){
 
-        int inputSize = 10;
+        int inputSize = 3;
 
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                        .nIn(inputSize).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
+                        .nIn(inputSize).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
                 .pretrain(true).backprop(false)
                 .build();
 
@@ -97,16 +97,24 @@ public class TestVAE {
 
         int allParams = vae.initializer().numParams(c);
 
-        //                  Encoder         Encoder -> p(z|x)       Decoder         //p(x|z)
-        int expNumParams = (10 * 12 + 12) + (12 * (2*5) + (2*5)) + (5 * 13 + 13) + (13 * (2*10) + (2*10));
-        assertEquals(expNumParams, allParams);
-
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
+        net.initGradientsView();        //TODO this should happen automatically
+
+        Map<String,INDArray> paramTable = net.getLayer(0).paramTable();
+        Map<String,INDArray> gradTable = ((org.deeplearning4j.nn.layers.variational.VariationalAutoencoder)net.getLayer(0)).getGradientViews();
+
+        assertEquals(paramTable.keySet(), gradTable.keySet());
+        for(String s : paramTable.keySet()){
+            assertEquals(paramTable.get(s).length(), gradTable.get(s).length());
+            assertArrayEquals(paramTable.get(s).shape(), gradTable.get(s).shape());
+        }
 
         INDArray data = Nd4j.rand(1, inputSize);
 
+
         net.fit(data);
+
 
 
     }

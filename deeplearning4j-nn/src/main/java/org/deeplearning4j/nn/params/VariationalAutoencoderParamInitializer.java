@@ -131,7 +131,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         conf.addVariable(sB);
 
 
-        //Allocate array for additional pretrain params
+        //Pretrain params
         INDArray pzxWeightsLogStdev2 = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
         INDArray pzxBiasLogStdev2 = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
@@ -202,9 +202,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
-        WeightInit weightInit = layer.getWeightInit();
-        Distribution dist = Distributions.createDistribution(layer.getDist());
-
         int soFar = 0;
         for (int i = 0; i < encoderLayerSizes.length; i++) {
             int encoderLayerNIn;
@@ -240,6 +237,66 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
 
         //TODO handle backprop params..
+
+        //eZXLogStdev2W
+        //eZXLogStdev2b
+        //d0W
+        //d0b
+        //dXZW
+        //dXZb
+
+        ////////////////////////////////////////////////////////
+
+        String sW = "eZXLogStdev2" + WEIGHT_KEY_SUFFIX;
+        String sB = "eZXLogStdev2" + BIAS_KEY_SUFFIX;
+
+        INDArray pzxWeightsLogStdev2 = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+        soFar += nWeightsPzx;
+        INDArray pzxBiasLogStdev2 = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        soFar += nOut;
+
+        INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut, null, null, pzxWeightsLogStdev2, false);   //TODO
+
+        ret.put(sW, pzxWeightsLogStdev2Reshaped);
+        ret.put(sB, pzxBiasLogStdev2);
+
+        for (int i = 0; i < decoderLayerSizes.length; i++) {
+            int decoderLayerNIn;
+            if (i == 0) {
+                decoderLayerNIn = nOut;
+            } else {
+                decoderLayerNIn = decoderLayerSizes[i - 1];
+            }
+            int weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
+            INDArray weightView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + weightParamCount));
+            soFar += weightParamCount;
+            INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + decoderLayerSizes[i]));
+            soFar += decoderLayerSizes[i];
+
+            INDArray layerWeights = createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], null, null, weightView, false);
+            INDArray layerBiases = createBias(decoderLayerSizes[i], 0.0, biasView, false);          //TODO don't hardcode 0
+
+            sW = "d" + i + WEIGHT_KEY_SUFFIX;
+            sB = "d" + i + BIAS_KEY_SUFFIX;
+            ret.put(sW, layerWeights);
+            ret.put(sB, layerBiases);
+        }
+
+        //Finally, p(x|z):
+        int nDistributionParams = layer.getOutputDistribution().distributionParamCount(nIn);
+        int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
+        int pxzBiasCount = nDistributionParams;
+        INDArray pxzWeightView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
+        soFar += pxzWeightCount;
+        INDArray pxzBiasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzBiasCount));
+
+        INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length - 1], nDistributionParams, null, null, pxzWeightView, false);
+        INDArray pxzBiasReshaped = createBias(nDistributionParams, 0.0, pxzBiasView, false);
+
+        sW = "dXZ" + WEIGHT_KEY_SUFFIX;
+        sB = "dXZ" + BIAS_KEY_SUFFIX;
+        ret.put(sW, pxzWeightsReshaped);
+        ret.put(sB, pxzBiasReshaped);
 
         return ret;
     }
