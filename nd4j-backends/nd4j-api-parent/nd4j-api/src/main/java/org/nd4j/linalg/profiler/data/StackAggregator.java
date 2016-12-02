@@ -36,4 +36,8 @@ public class StackAggregator {
     public int getUniqueBranchesNumber() {
         return tree.getUniqueBranchesNumber();
     }
+
+    public StackDescriptor getLastDescriptor() {
+        return tree.getLastDescriptor();
+    }
 }

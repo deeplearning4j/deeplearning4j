@@ -4,6 +4,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
 import org.nd4j.linalg.api.ops.*;
@@ -52,6 +53,12 @@ public class OpProfiler {
     private static StringCounter matchingCounterInverted = new StringCounter();
 
     private static StringCounter orderCounter = new StringCounter();
+
+    private static StackAggregator mixedOrderAggregator = new StackAggregator();
+    private static StackAggregator nonEwsAggregator = new StackAggregator();
+    private static StackAggregator stridedAggregator = new StackAggregator();
+    private static StackAggregator tadStridedAggregator = new StackAggregator();
+    private static StackAggregator tadNonEwsAggregator = new StackAggregator();
 
     private static Logger logger = LoggerFactory.getLogger(OpProfiler.class);
 
@@ -165,6 +172,34 @@ public class OpProfiler {
         prevOpMatchingInverted = opClass + " " + op.name();
 
         updatePairs(op.name(), opClass);
+
+        PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
+        for (PenaltyCause cause: causes) {
+            switch (cause) {
+                case NON_EWS_ACCESS:
+                    nonEwsAggregator.incrementCount();
+                    break;
+                case STRIDED_ACCESS:
+                    stridedAggregator.incrementCount();
+                    break;
+                case MIXED_ORDER:
+                    mixedOrderAggregator.incrementCount();
+                    break;
+                case NONE:
+                default:
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Dev-time method.
+     *
+     * @return
+     */
+    public StackAggregator getMixedOrderAggregator() {
+        // FIXME: remove this method, or make it protected
+        return mixedOrderAggregator;
     }
 
     protected void updatePairs(String opName, String opClass) {
@@ -376,6 +411,9 @@ public class OpProfiler {
     }
 
     public PenaltyCause[] processOperands(INDArray x, INDArray y, INDArray z) {
+        if (y == null)
+            return processOperands(x, z);
+
         if (x == z || y == z) {
             return processOperands(x, y);
         } else {

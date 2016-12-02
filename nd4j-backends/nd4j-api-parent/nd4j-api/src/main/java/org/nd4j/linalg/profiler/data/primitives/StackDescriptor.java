@@ -13,7 +13,20 @@ public class StackDescriptor {
     @Getter protected StackTraceElement stackTrace[];
 
     public StackDescriptor(@NonNull StackTraceElement stack[]) {
-        this.stackTrace = stack;
+        // we cut off X first elements from stack, because they belong to profiler
+        // basically, we just want to make sure, no profiler-related code is mentioned in stack trace
+        int start = 2;
+
+        for (; start < stack.length; start++) {
+            if (!stack[start].getClassName().contains("OpProfiler")) {
+                // we make one more step, to skip profilerHookIn method
+                if (stack[start+1].getClassName().contains("profilerHookIn"))
+                    start++;
+                break;
+            }
+        }
+
+        this.stackTrace = Arrays.copyOfRange(stack, start, stack.length);
         ArrayUtils.reverse(this.stackTrace);
     }
 

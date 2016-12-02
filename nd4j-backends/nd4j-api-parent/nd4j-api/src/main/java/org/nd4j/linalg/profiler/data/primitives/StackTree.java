@@ -1,5 +1,6 @@
 package org.nd4j.linalg.profiler.data.primitives;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +16,7 @@ public class StackTree {
     protected Map<String, StackNode> basement = new HashMap<>();
     protected AtomicLong eventsCount  = new AtomicLong(0);
     protected Map<StackDescriptor, ComparableAtomicLong> branches = new HashMap<>();
+    @Getter protected StackDescriptor lastDescriptor;
 
     public StackTree() {
         //
@@ -23,6 +25,8 @@ public class StackTree {
 
     public void consumeStackTrace(@NonNull StackDescriptor descriptor) {
         eventsCount.incrementAndGet();
+
+        lastDescriptor = descriptor;
 
         if (!branches.containsKey(descriptor))
             branches.put(descriptor, new ComparableAtomicLong(0));
