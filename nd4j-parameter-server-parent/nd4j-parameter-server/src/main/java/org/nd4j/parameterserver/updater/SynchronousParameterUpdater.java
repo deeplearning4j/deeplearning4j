@@ -1,9 +1,9 @@
 package org.nd4j.parameterserver.updater;
 
-import lombok.NoArgsConstructor;
+import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.aeron.ipc.NDArrayMessage;
-import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.updater.storage.UpdateStorage;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -17,22 +17,23 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-@NoArgsConstructor
 public class SynchronousParameterUpdater extends BaseParameterUpdater {
 
     private int workers = Runtime.getRuntime().availableProcessors();
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * Initialize with the number of workers
-     * for the updater
-     * @param workers the number of workers for the updater.
-     *                Defaults to the number of cores on the machine.
+     *
+     * @param updateStorage
+     * @param ndArrayHolder
+     * @param workers
      */
-    public SynchronousParameterUpdater(int workers) {
+    public SynchronousParameterUpdater(UpdateStorage updateStorage, NDArrayHolder ndArrayHolder, int workers) {
+        super(updateStorage, ndArrayHolder);
         this.workers = workers;
-        this.ndArrayHolder = new InMemoryNDArrayHolder();
     }
+
+
 
     /**
      * Returns the current status of this parameter server
@@ -83,6 +84,15 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
     @Override
     public void update(NDArrayMessage message) {
         updateStorage.addUpdate(message);
+        INDArray arr = message.getArr();
+        //of note for ndarrays
+        int[] dimensions = message.getDimensions();
+        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+
+        if(!whole)
+            partialUpdate(arr,ndArrayHolder.get(),message.getIndex(),dimensions);
+        else
+            update(arr,ndArrayHolder.get());
     }
 
     /**
@@ -97,7 +107,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
      */
     @Override
     public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
-        result.tensorAlongDimension((int) idx,dimensions).addi(result);
+        result.tensorAlongDimension((int) idx,dimensions).addi(arr);
     }
 
     /**

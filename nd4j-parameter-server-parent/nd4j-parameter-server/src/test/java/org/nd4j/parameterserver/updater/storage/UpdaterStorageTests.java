@@ -11,6 +11,17 @@ import static junit.framework.TestCase.assertEquals;
  */
 public class UpdaterStorageTests {
 
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testNone() {
+        UpdateStorage updateStorage = new NoUpdateStorage();
+        NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
+        updateStorage.addUpdate(message);
+        assertEquals(1,updateStorage.numUpdates());
+        assertEquals(message,updateStorage.getUpdate(0));
+        updateStorage.close();
+    }
+
     @Test
     public void testInMemory() {
         UpdateStorage updateStorage = new InMemoryUpdateStorage();

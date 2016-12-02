@@ -314,8 +314,7 @@ public class ParameterServerSubscriber {
      * @return the master ndarray
      */
     public INDArray getMasterArray() {
-        NDArrayHolder holder = (NDArrayHolder) callback;
-        return holder.get();
+        return parameterServerListener.getUpdater().ndArrayHolder().get();
     }
 
 

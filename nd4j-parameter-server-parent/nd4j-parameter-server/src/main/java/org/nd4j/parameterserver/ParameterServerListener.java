@@ -3,10 +3,12 @@ package org.nd4j.parameterserver;
 import lombok.Data;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayMessage;
+import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
 
 /**
@@ -20,7 +22,7 @@ import org.nd4j.parameterserver.updater.ParameterServerUpdater;
  */
 @Data
 public class ParameterServerListener implements NDArrayCallback {
-    private ParameterServerUpdater updater = new SynchronousParameterUpdater();
+    private ParameterServerUpdater updater;
     private boolean master;
     private int[] shape;
 
@@ -29,7 +31,7 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param shape the shape of the array
      */
     public ParameterServerListener(int[] shape) {
-        updater.ndArrayHolder().setArray(Nd4j.zeros(shape));
+        updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(shape),Runtime.getRuntime().availableProcessors());
     }
 
 

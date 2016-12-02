@@ -15,6 +15,11 @@ public abstract class BaseParameterUpdater implements ParameterServerUpdater {
     protected UpdateStorage updateStorage;
     protected NDArrayHolder ndArrayHolder;
 
+    public BaseParameterUpdater(UpdateStorage updateStorage, NDArrayHolder ndArrayHolder) {
+        this.updateStorage = updateStorage;
+        this.ndArrayHolder = ndArrayHolder;
+    }
+
     /**
      * Get the ndarray holder for this
      * updater

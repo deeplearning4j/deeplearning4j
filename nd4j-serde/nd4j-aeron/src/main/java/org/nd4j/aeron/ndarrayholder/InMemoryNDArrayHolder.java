@@ -1,7 +1,9 @@
 package org.nd4j.aeron.ndarrayholder;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -11,10 +13,23 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class InMemoryNDArrayHolder implements NDArrayHolder {
 
     private AtomicReference<INDArray> arr = new AtomicReference<>();
     private AtomicInteger totalUpdates = new AtomicInteger(0);
+
+
+    public InMemoryNDArrayHolder(int[] shape) {
+        setArray(Nd4j.zeros(shape));
+    }
+
+
+    public InMemoryNDArrayHolder(INDArray arr) {
+        setArray(arr);
+    }
+
+
     /**
      * Set the ndarray
      *
