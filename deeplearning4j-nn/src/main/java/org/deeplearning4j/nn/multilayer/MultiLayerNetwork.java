@@ -227,21 +227,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int miniBatchSize = input.size(0);
         INDArray layerInput = null;
         Layer layer;
-        for (int i = 0; i < getnLayers() - 1; i++) {
-            layer = getLayers()[i];
-            if (i == 0)
-                if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,miniBatchSize);
-                else
+        int nPretrainLayers = getnLayers();
+        if(getLayer(getnLayers()-1) instanceof IOutputLayer) nPretrainLayers--;
+        for (int i = 0; i < nPretrainLayers; i++) {
+            layer = getLayer(i);
+            if (i == 0) {
+                if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, miniBatchSize);
+                } else {
                     layerInput = input;
-            else
-                layerInput = activationFromPrevLayer(i - 1, layerInput,true);
+                }
+            } else {
+                layerInput = activationFromPrevLayer(i - 1, layerInput, true);
+            }
             log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
             layer.conf().setPretrain(true);
             layer.fit(layerInput);
             layer.conf().setPretrain(false);
         }
-
     }
 
 

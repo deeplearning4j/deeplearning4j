@@ -1,8 +1,12 @@
 package org.deeplearning4j.nn.layers.variational;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
@@ -11,6 +15,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
@@ -40,23 +45,16 @@ public class VariationalAutoencoder implements Layer {
 
     protected int[] encoderLayerSizes;
     protected int[] decoderLayerSizes;
+    protected ReconstructionDistribution reconstructionDistribution;
 
     public VariationalAutoencoder(NeuralNetConfiguration conf){
         this.conf = conf;
 
         this.encoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getEncoderLayerSizes();
         this.decoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getDecoderLayerSizes();
+        this.reconstructionDistribution = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getOutputDistribution();
     }
 
-
-
-    @Override
-    public void fit() {
-        if(input == null){
-            throw new IllegalStateException("Cannot fit layer: layer input is null (not set)");
-        }
-
-    }
 
     @Override
     public void update(Gradient gradient) {
@@ -75,7 +73,162 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void computeGradientAndScore() {
+        //First: do the full forward pass, through the network (including the random sampling, etc)
+        //TODO handle multiple samples as an option...
+        VAEFwdHelper fwd = doForward(true, false);
 
+        INDArray pzxMean = fwd.preOuts[fwd.preOuts.length-1];
+
+        INDArray pzxLogStdev2W = params.get("eZXLogStdev2" + WEIGHT_KEY_SUFFIX);
+        INDArray pzxLogStdev2b = params.get("eZXLogStdev2" + BIAS_KEY_SUFFIX);
+
+        INDArray pzxLogStdev2 = fwd.activations[fwd.activations.length-1].mmul(pzxLogStdev2W).addiRowVector(pzxLogStdev2b);
+
+        INDArray pzxSigma = Transforms.exp(pzxLogStdev2,true);
+        Transforms.sqrt(pzxSigma,false);
+
+        int minibatch = input.size(0);
+        int size = pzxMean.size(1);
+
+        //TODO test mode for backprop...
+        INDArray e = Nd4j.rand(minibatch, size);
+
+        INDArray z = pzxMean.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
+
+        //Next: need to do forward pass through decoder...
+
+        int nDecoderLayers = decoderLayerSizes.length;
+        INDArray current = z;
+        INDArray[] decoderPreOut = new INDArray[nDecoderLayers];
+        INDArray[] decoderActivations = new INDArray[nDecoderLayers];
+        for( int i=0; i<nDecoderLayers; i++ ){
+            String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "d" + i + BIAS_KEY_SUFFIX;
+
+            INDArray weights = params.get(wKey);
+            INDArray bias = params.get(bKey);
+
+            current = current.mmul(weights).addiRowVector(bias);
+            decoderPreOut[i] = current.dup();
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    conf.getLayer().getActivationFunction(), current, conf.getExtraArgs() ));
+            decoderActivations[i] = current;
+        }
+
+        INDArray xzw = params.get("dXZW");
+        INDArray xzb = params.get("dXZb");
+
+        INDArray pxzDistributionParams = current.mmul(xzw).addiRowVector(xzb);
+        double logProb = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
+        System.out.println("Log probability: " + logProb);
+
+        INDArray dpdpxz = reconstructionDistribution.gradient(input, pxzDistributionParams);
+
+        //Next: we chain derivatives backwards...
+
+        String afn = conf().getLayer().getActivationFunction();
+//        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
+//                Nd4j.getOpFactory().createTransform(afn, finalPreOut).derivative());
+
+        Gradient gradient = new DefaultGradient();
+        INDArray epsilon = dpdpxz;
+        for( int i=nDecoderLayers-1; i>=0; i-- ){
+            String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "d" + i + BIAS_KEY_SUFFIX;
+
+            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
+                Nd4j.getOpFactory().createTransform(afn, decoderPreOut[i]).derivative());
+
+            INDArray currentDelta = epsilon.muli(sigmaPrimeZ);
+
+            INDArray weights = params.get(wKey);
+            INDArray dLdW = gradientViews.get(wKey);
+            INDArray dLdB = gradientViews.get(bKey);
+
+            INDArray actInput;
+            if (i == 0) {
+                actInput = z;
+            } else {
+                actInput = decoderActivations[i-1];
+            }
+
+            Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
+            dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
+
+            gradient.gradientForVariable().put(wKey, dLdW);
+            gradient.gradientForVariable().put(bKey, dLdB);
+
+            epsilon = weights.mmul(currentDelta.transpose()).transpose();
+        }
+
+        //Backprop through p(z|x)
+        INDArray eZXMeanW = params.get("eZXMeanW");
+        INDArray eZXMeanb = params.get("eZXMeanb");
+        INDArray eZXLogStdev2W = params.get("eZXLogStdev2W");
+        INDArray eZXLogStdev2b = params.get("eZXLogStdev2b");
+
+        INDArray dLdz = epsilon;
+        INDArray dLdmu = dLdz.sub(pzxMean);
+
+        INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma).subi(pzxSigma.mul(pzxSigma)).subi(1).muli(0.5);
+
+        INDArray dLdZXMeanW = gradientViews.get("eZXMeanW");
+        INDArray dLdZXLogStdev2W = gradientViews.get("eZXLogStdev2W");
+        INDArray dLdZXMeanb = gradientViews.get("eZXMeanW");
+        INDArray dLdZXLogStdev2b = gradientViews.get("eZXLogStdev2W");
+
+        INDArray lastEncoderActivation = fwd.activations[fwd.activations.length-1];
+        Nd4j.gemm(lastEncoderActivation, dLdmu, dLdZXMeanW, true, false, 1.0, 0.0);
+        Nd4j.gemm(lastEncoderActivation, dLdLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
+        dLdZXMeanb.assign(dLdmu.sum(0));
+        dLdZXLogStdev2b.assign(dLdLogSigma2.sum(0));
+
+        //TODO check order
+        gradient.gradientForVariable().put("eZXMeanW", eZXMeanW);
+        gradient.gradientForVariable().put("eZXMeanb", eZXMeanb);
+        gradient.gradientForVariable().put("eZXLogStdev2W", eZXLogStdev2W);
+        gradient.gradientForVariable().put("eZXLogStdev2b", eZXLogStdev2b);
+
+        epsilon = eZXMeanW.mmul(dLdmu.transpose()).transpose();
+        epsilon.addi(eZXLogStdev2W.mmul(dLdLogSigma2.transpose()).transpose());
+        
+
+        //Backprop through encoder:
+        //TODO code reuse with non-pretrain backprop
+        int nEncoderLayers = encoderLayerSizes.length;
+        for( int i=nEncoderLayers-1; i>=0; i-- ){
+            String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "e" + i + BIAS_KEY_SUFFIX;
+
+            INDArray weights = params.get(wKey);
+            INDArray bias = params.get(bKey);
+
+            INDArray dLdW = gradientViews.get(wKey);
+            INDArray dLdB = gradientViews.get(bKey);
+
+            INDArray preOut = fwd.preOuts[i];
+            INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
+                    Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
+
+            INDArray currentDelta = epsilon.muli(activationDerivative);
+
+            INDArray actInput;
+            if(i == 0){
+                actInput = input;
+            } else {
+                actInput = fwd.activations[i];
+            }
+            Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
+            dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
+
+            gradient.gradientForVariable().put(wKey, dLdW);
+            gradient.gradientForVariable().put(bKey, dLdB);
+
+            epsilon = weights.mmul(currentDelta.transpose()).transpose();
+        }
+
+
+        throw new RuntimeException("Not implemented");
     }
 
     @Override
@@ -219,7 +372,6 @@ public class VariationalAutoencoder implements Layer {
     private boolean isPretrainParam(String param){
         if(param.startsWith("d") || param.startsWith("eZXLogStdev2")) return true;      //TODO don't hardcode
         return false;
-
     }
 
     @Override
@@ -283,8 +435,8 @@ public class VariationalAutoencoder implements Layer {
         String afn = conf().getLayer().getActivationFunction();
         Gradient gradient = new DefaultGradient();
 
-        INDArray[][] fwd = doForward(true, true);
-        INDArray finalPreOut = fwd[0][fwd[0].length-1];
+        VAEFwdHelper fwd = doForward(true, true);
+        INDArray finalPreOut = fwd.preOuts[fwd.preOuts.length-1];
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
                 Nd4j.getOpFactory().createTransform(afn, finalPreOut).derivative());
 
@@ -297,7 +449,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray mB = params.get(pzxBiasParamName);
 
         INDArray dmW = gradientViews.get(pzxMeanParamName); //f order
-        INDArray lastHiddenActivation = fwd[1][fwd[1].length-1];
+        INDArray lastHiddenActivation = fwd.activations[fwd.activations.length-1];
         Nd4j.gemm(lastHiddenActivation,currentDelta,dmW,true,false,1.0,0.0);
         INDArray dmB = gradientViews.get(pzxBiasParamName);
 //        System.out.println("dmB = " + Arrays.toString(dmB.shape()) + "\tcurrdelta = " + Arrays.toString(currentDelta.shape()));
@@ -321,7 +473,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray dLdW = gradientViews.get(wKey);
             INDArray dLdB = gradientViews.get(bKey);
 
-            INDArray preOut = fwd[0][i];
+            INDArray preOut = fwd.preOuts[i];
             activationDerivative = Nd4j.getExecutioner().execAndReturn(
                     Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
 
@@ -331,7 +483,7 @@ public class VariationalAutoencoder implements Layer {
             if(i == 0){
                 actInput = input;
             } else {
-                actInput = fwd[1][i];
+                actInput = fwd.activations[i];
             }
             Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
             dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
@@ -372,12 +524,18 @@ public class VariationalAutoencoder implements Layer {
     }
 
     public INDArray preOutput(boolean training) {
-        INDArray[][] arr = doForward(training, false);
-        return arr[0][arr[0].length-1];
+        VAEFwdHelper f = doForward(training, false);
+        return f.preOuts[f.preOuts.length-1];
+    }
+
+    @AllArgsConstructor @Data
+    private static class VAEFwdHelper {
+        private INDArray[] preOuts;
+        private INDArray[] activations;
     }
 
 
-    private INDArray[][] doForward(boolean training, boolean forBackprop){
+    private VAEFwdHelper doForward(boolean training, boolean forBackprop){
         if(input == null){
             throw new IllegalStateException("Cannot do forward pass with null input");
         }
@@ -414,7 +572,7 @@ public class VariationalAutoencoder implements Layer {
         current = current.mmul(mW).addiRowVector(mB);
         preOuts[preOuts.length-1] = current;
 
-        return new INDArray[][]{preOuts, activations};
+        return new VAEFwdHelper(preOuts, activations);
     }
 
     @Override
@@ -517,5 +675,25 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray getMaskArray() {
         return maskArray;
+    }
+
+
+    @Override
+    public void fit() {
+        if(input == null){
+            throw new IllegalStateException("Cannot fit layer: layer input is null (not set)");
+        }
+
+        if(solver == null){
+            solver = new Solver.Builder()
+                    .model(this).configure(conf()).listeners(getListeners())
+                    .build();
+            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
+            Updater updater = solver.getOptimizer().getUpdater();
+            int updaterStateSize = updater.stateSizeForLayer(this);
+            if(updaterStateSize > 0) updater.setStateViewArray(this, Nd4j.createUninitialized(new int[]{1,updaterStateSize},Nd4j.order()), true);
+        }
+        this.optimizer = solver.getOptimizer();
+        solver.optimize();
     }
 }
