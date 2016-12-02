@@ -2,6 +2,10 @@
 title: Release Notes
 layout: default
 ---
+# <a name="zerosevenzero">Release Notes for Version 0.7.1</a>
+* RBM and AutoEncoder key fixes: 
+    - Ensured visual bias updated and applied during pretraining. 
+    - RBM HiddenUnit is the activation function for this layer; thus, established derivative calculations for backprop according to respective HiddenUnit.
 
 # <a name="zerosevenzero">Release Notes for Version 0.7.0</a>
 
