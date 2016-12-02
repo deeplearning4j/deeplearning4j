@@ -1,5 +1,7 @@
 package org.nd4j.parameterserver.updater;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -18,7 +20,7 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
 
     private int workers = Runtime.getRuntime().availableProcessors();
     private int accumulatedUpdates;
-
+    private static ObjectMapper objectMapper = new ObjectMapper();
     public SynchronousParameterUpdater(int workers) {
         this.workers = workers;
     }
@@ -44,7 +46,11 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
      */
     @Override
     public String toJson() {
-        return null;
+        try {
+            return objectMapper.writeValueAsString(status());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
