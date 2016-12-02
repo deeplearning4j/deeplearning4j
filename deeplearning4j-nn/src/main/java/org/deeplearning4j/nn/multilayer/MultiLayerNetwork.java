@@ -1789,7 +1789,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
             ol.setInput(olInput);     //Feedforward doesn't include output layer for efficiency
             ol.setLabels(data.getLabels());
-            ol.computeScore(calcL1(),calcL2(), training);
+            ol.computeScore(calcL1(true),calcL2(true), training);
             this.score = ol.score();
         } else {
             log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1826,8 +1826,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if( getOutputLayer() instanceof IOutputLayer ){
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             ol.setLabels(data.getLabels());
-            double l1 = (addRegularizationTerms ? calcL1() : 0.0);
-            double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+            double l1 = (addRegularizationTerms ? calcL1(true) : 0.0);
+            double l2 = (addRegularizationTerms ? calcL2(true) : 0.0);
             out = ol.computeScoreForExamples(l1,l2);
         } else {
             throw new UnsupportedOperationException("Cannot calculate score with respect to labels without an OutputLayer");
@@ -1897,7 +1897,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (!(getOutputLayer() instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
         }
-        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(), calcL2(), true);
+        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
 
         //Listeners
         if (trainingListeners.size() > 0) {
@@ -2183,19 +2183,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         double l2 = 0.0;
         for( int i=0; i<layers.length; i++ ){
-            l2 += layers[i].calcL2();
+            l2 += layers[i].calcL2(backpropParamsOnly);
         }
         return l2;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         double l1 = 0.0;
         for( int i=0; i<layers.length; i++ ){
-            l1 += layers[i].calcL1();
+            l1 += layers[i].calcL1(backpropParamsOnly);
         }
         return l1;
     }

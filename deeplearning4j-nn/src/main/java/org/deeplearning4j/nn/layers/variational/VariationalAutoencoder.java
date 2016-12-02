@@ -217,7 +217,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
         if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
 
@@ -228,11 +228,12 @@ public class VariationalAutoencoder implements Layer {
             double l2Norm = e.getValue().norm2Number().doubleValue();
             sum += 0.5 * l2 * l2Norm * l2Norm;
         }
-        return sum;
+        throw new RuntimeException();
+//        return sum;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
         if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
 
@@ -243,7 +244,8 @@ public class VariationalAutoencoder implements Layer {
             double l1Norm = e.getValue().norm1Number().doubleValue();
             sum += l1 * l1Norm;
         }
-        return sum;
+//        return sum;
+        throw new RuntimeException();
     }
 
     @Override

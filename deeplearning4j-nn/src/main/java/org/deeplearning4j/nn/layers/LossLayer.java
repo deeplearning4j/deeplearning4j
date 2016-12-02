@@ -162,10 +162,10 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public double calcL2() {return 0; }
+    public double calcL2(boolean backpropParamsOnly) {return 0; }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         return 0;
     }
 
