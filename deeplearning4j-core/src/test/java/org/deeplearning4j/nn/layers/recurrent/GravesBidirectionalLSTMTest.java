@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -409,7 +410,7 @@ public class GravesBidirectionalLSTMTest {
 
     }
 
-	@Test
+	@Test @Ignore
 	public void testConvergence(){
 		Nd4j.getRandom().setSeed(12345);
         final int state1Len = 100;
