@@ -606,14 +606,17 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray newB;
             INDArray newVB = null;
 
+            int totalParams = w.length();
             if(vb != null){
                 newB = vb.dup();
                 newVB = b.dup();
+                totalParams += newB.length() + newVB.length();
             } else {
                 newB = Nd4j.create(1,nOut);
+                totalParams += newB.length();
             }
 
-            INDArray paramsView = Nd4j.create(1,w.length() + nOut);
+            INDArray paramsView = Nd4j.create(1,totalParams);
             layer = clone.getLayer().instantiate(clone, iterationListeners, this.index, paramsView, true);
 
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY,w.transpose().dup());

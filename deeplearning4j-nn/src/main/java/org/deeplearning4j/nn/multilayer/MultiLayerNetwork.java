@@ -193,6 +193,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             } else {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
+                    input = next.getFeatureMatrix();
                     layerInput = next.getFeatureMatrix();
                     for (int j = 1; j <= i; j++)
                         layerInput = activationFromPrevLayer(j - 1, layerInput,true);
