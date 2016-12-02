@@ -20,3 +20,29 @@ this missing functionality can be placed on the DL4J development roadmap or even
 necessary changes!
 
 Check back for frequent updates to both the model import module *and* to this page!
+
+# Available Methods
+
+Using the Keras Model Import feature you havethe following options. 
+
+##Just the configuration of the Model
+
+Be aware that not all models will be supported, it is our goal however to import the most useful and widely used Networks
+
+To use this you would save the model in Keras to a JSON file, and in DL4J you would create a new MultiLayerConfiguration by loading the saved model. 
+
+The next steps would then be to train the model in DeepLearning4J
+
+##The Model Configuration and the Saved Weights from a Model Trained in Keras
+
+In this case you would save both the JSON config and the weights from the trained model in Keras. 
+In DeepLEarning4J you wouldimport both the model config and the weights, using modelimport.keras.Model.importSequentialModel and passing it both the config file path, and the path to the h5file that contains the weights. 
+
+# Keras Model Import
+
+A video tutorial demonstrating working code to load a keras model into DeepLearning4J and validating the working network. 
+
+Video lecture by instructor Tom Hanlon on Keras Model Import. Tom provides an overview of a simple Classifier over Iris Data built in Keras with a Theano backend and exported and then Loaded into DeepLearning4J.
+
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=FCZlkGW8-2I" frameborder="0" allowfullscreen></iframe>
+
