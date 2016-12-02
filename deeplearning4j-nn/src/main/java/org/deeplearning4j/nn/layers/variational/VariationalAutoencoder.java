@@ -25,6 +25,7 @@ import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitialize
 /**
  * Created by Alex on 25/11/2016.
  */
+@Data
 public class VariationalAutoencoder implements Layer {
 
     protected INDArray input;
@@ -75,7 +76,7 @@ public class VariationalAutoencoder implements Layer {
     public void computeGradientAndScore() {
         //First: do the full forward pass, through the network (including the random sampling, etc)
         //TODO handle multiple samples as an option...
-        VAEFwdHelper fwd = doForward(true, false);
+        VAEFwdHelper fwd = doForward(true, true);
 
         INDArray pzxMean = fwd.preOuts[fwd.preOuts.length-1];
 
@@ -124,11 +125,9 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray dpdpxz = reconstructionDistribution.gradient(input, pxzDistributionParams);
 
-        //Next: we chain derivatives backwards...
 
+        //Next: we chain derivatives backwards...
         String afn = conf().getLayer().getActivationFunction();
-//        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
-//                Nd4j.getOpFactory().createTransform(afn, finalPreOut).derivative());
 
         Gradient gradient = new DefaultGradient();
         INDArray epsilon = dpdpxz;
@@ -139,6 +138,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
                 Nd4j.getOpFactory().createTransform(afn, decoderPreOut[i]).derivative());
 
+            System.out.println(i + "\t" + Arrays.toString(epsilon.shape()) + "\t" + Arrays.toString(sigmaPrimeZ.shape()));
             INDArray currentDelta = epsilon.muli(sigmaPrimeZ);
 
             INDArray weights = params.get(wKey);
@@ -174,12 +174,13 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray dLdZXMeanW = gradientViews.get("eZXMeanW");
         INDArray dLdZXLogStdev2W = gradientViews.get("eZXLogStdev2W");
-        INDArray dLdZXMeanb = gradientViews.get("eZXMeanW");
-        INDArray dLdZXLogStdev2b = gradientViews.get("eZXLogStdev2W");
+        INDArray dLdZXMeanb = gradientViews.get("eZXMeanb");
+        INDArray dLdZXLogStdev2b = gradientViews.get("eZXLogStdev2b");
 
         INDArray lastEncoderActivation = fwd.activations[fwd.activations.length-1];
         Nd4j.gemm(lastEncoderActivation, dLdmu, dLdZXMeanW, true, false, 1.0, 0.0);
         Nd4j.gemm(lastEncoderActivation, dLdLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
+        System.out.println(Arrays.toString(dLdZXMeanb.shape()) + "\t" + Arrays.toString(dLdmu.shape()));
         dLdZXMeanb.assign(dLdmu.sum(0));
         dLdZXLogStdev2b.assign(dLdLogSigma2.sum(0));
 
@@ -191,7 +192,7 @@ public class VariationalAutoencoder implements Layer {
 
         epsilon = eZXMeanW.mmul(dLdmu.transpose()).transpose();
         epsilon.addi(eZXLogStdev2W.mmul(dLdLogSigma2.transpose()).transpose());
-        
+
 
         //Backprop through encoder:
         //TODO code reuse with non-pretrain backprop
@@ -227,8 +228,7 @@ public class VariationalAutoencoder implements Layer {
             epsilon = weights.mmul(currentDelta.transpose()).transpose();
         }
 
-
-        throw new RuntimeException("Not implemented");
+        this.gradient = gradient;
     }
 
     @Override
@@ -300,7 +300,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Gradient gradient() {
-        return null;
+        return gradient;
     }
 
     @Override
