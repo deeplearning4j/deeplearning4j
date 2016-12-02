@@ -268,34 +268,37 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
-        double l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
-        double sumSquaredWeights = l2Norm*l2Norm;
 
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm*l2Norm;
+        double l2Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l2 = conf.getL2ByParam(entry.getKey());
+            if(l2 > 0) {
+                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
+                l2Sum += 0.5 * l2 * norm2 * norm2;
+            }
+        }
 
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm*l2Norm;
-
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm * l2Norm;
-
-        return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
+        return l2Sum;
     }
 
 
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         if (!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0) return 0.0;
-        double l1 = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue();
 
-        return conf.getLayer().getL1() * l1;
+        double l1Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l1 = conf.getL1ByParam(entry.getKey());
+            if(l1 > 0) {
+                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
+                l1Sum += l1 * norm1;
+            }
+        }
+
+        return l1Sum;
     }
 
     @Override
