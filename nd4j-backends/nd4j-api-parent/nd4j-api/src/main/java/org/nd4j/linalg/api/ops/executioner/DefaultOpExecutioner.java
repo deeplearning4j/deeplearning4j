@@ -423,6 +423,24 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return profilingMode;
     }
 
+    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case METHODS:
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case DISABLED:
+            default:
+                return 0L;
+        }
+
+        return System.nanoTime();
+    }
+
     public long profilingHookIn(Op op){
         switch (profilingMode) {
             case ALL:

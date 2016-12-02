@@ -192,6 +192,26 @@ public class OpProfiler {
         }
     }
 
+
+    public void processOpCall(Op op, DataBuffer... tadBuffers) {
+        processOpCall(op);
+
+        PenaltyCause[] causes = processTADOperands(tadBuffers);
+        for (PenaltyCause cause: causes) {
+            switch (cause) {
+                case TAD_NON_EWS_ACCESS:
+                    tadNonEwsAggregator.incrementCount();
+                    break;
+                case TAD_STRIDED_ACCESS:
+                    tadStridedAggregator.incrementCount();
+                    break;
+                case NONE:
+                default:
+                    break;
+            }
+        }
+    }
+
     /**
      * Dev-time method.
      *

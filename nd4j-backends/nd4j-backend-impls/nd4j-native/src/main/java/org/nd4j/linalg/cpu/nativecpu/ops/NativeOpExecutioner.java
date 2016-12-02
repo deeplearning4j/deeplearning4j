@@ -81,7 +81,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
-        long st = profilingHookIn(op);
         if (dimension == null || dimension.length == 0)
             dimension = new int[]{Integer.MAX_VALUE};
 
@@ -135,6 +134,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 hostTadShapeInfo,
                 hostTadOffsets
         );
+
+        long st = profilingHookIn(op, tadBuffers.getFirst());
 
         Pointer x = op.x().data().addressPointer();
         Pointer z = op.z().data().addressPointer();
@@ -194,8 +195,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-        long st = profilingHookIn(op);
-
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++)
@@ -240,6 +239,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 hostTadShapeInfo,
                 hostTadOffsets
         );
+
+        long st = profilingHookIn(op, tadBuffers.getFirst());
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
 
@@ -522,7 +523,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-        long st = profilingHookIn(op);
+        long st = 0;
 
         PointerPointer dummy = new PointerPointer(4);
 
@@ -538,7 +539,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Pointer off = offsets == null ? null : offsets.addressPointer();
             dummy.put(0, tad);
             dummy.put(1, off);
-        }
+
+            st = profilingHookIn(op, tadBuffers.getFirst());
+        } else st = profilingHookIn(op);
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
