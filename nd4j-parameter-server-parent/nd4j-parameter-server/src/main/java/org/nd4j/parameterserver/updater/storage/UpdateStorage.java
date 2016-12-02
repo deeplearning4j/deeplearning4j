@@ -1,6 +1,6 @@
 package org.nd4j.parameterserver.updater.storage;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 
 /**
  * An interface for storing parameter server updates.
@@ -15,7 +15,7 @@ public interface UpdateStorage {
      * Add an ndarray to the storage
      * @param array the array to add
      */
-    void addUpdate(INDArray array);
+    void addUpdate(NDArrayMessage array);
 
     /**
      * The number of updates added
@@ -34,7 +34,7 @@ public interface UpdateStorage {
      * @param index the update to get
      * @return the update at the specified index
      */
-    INDArray getUpdate(int index);
+    NDArrayMessage getUpdate(int index);
 
     /**
      * Close the database

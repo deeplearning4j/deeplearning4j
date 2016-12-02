@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.updater.storage;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.aeron.ipc.AeronNDArraySerde;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -42,8 +43,8 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
      * @param array the array to add
      */
     @Override
-    public void addUpdate(INDArray array) {
-        UnsafeBuffer directBuffer = AeronNDArraySerde.toBuffer(array);
+    public void addUpdate(NDArrayMessage array) {
+        UnsafeBuffer directBuffer = (UnsafeBuffer) NDArrayMessage.toBuffer(array);
         byte[] data = directBuffer.byteArray();
         if(data == null) {
             data = new byte[directBuffer.capacity()];
@@ -95,11 +96,11 @@ public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
      * @return the ndarray at the specified index
      */
     @Override
-    public INDArray doGetUpdate(int index) {
+    public NDArrayMessage doGetUpdate(int index) {
         byte[] key =  ByteBuffer.allocate(4).putInt(index).array();
         try {
             UnsafeBuffer unsafeBuffer = new UnsafeBuffer(db.get(key));
-            return AeronNDArraySerde.toArray(unsafeBuffer);
+            return NDArrayMessage.fromBuffer(unsafeBuffer,0);
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }

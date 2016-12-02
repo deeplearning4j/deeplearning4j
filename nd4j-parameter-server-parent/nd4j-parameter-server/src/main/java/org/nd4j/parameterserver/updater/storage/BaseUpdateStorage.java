@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.updater.storage;
 
 
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -16,7 +17,7 @@ public abstract  class BaseUpdateStorage implements UpdateStorage {
      * @return the update at the specified index
      */
     @Override
-    public INDArray getUpdate(int index) {
+    public NDArrayMessage getUpdate(int index) {
         if(index >= numUpdates())
             throw new IndexOutOfBoundsException("Index passed in " + index + " was >= current number of updates " + numUpdates());
         return doGetUpdate(index);
@@ -28,7 +29,7 @@ public abstract  class BaseUpdateStorage implements UpdateStorage {
      * @param index the index of the {@link INDArray} to get
      * @return the ndarray at the specified index
      */
-    public abstract INDArray doGetUpdate(int index);
+    public abstract NDArrayMessage doGetUpdate(int index);
 
     /**
      * Close the database

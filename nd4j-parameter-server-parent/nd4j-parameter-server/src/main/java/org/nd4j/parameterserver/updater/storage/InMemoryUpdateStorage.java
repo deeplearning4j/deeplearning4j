@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.updater.storage;
 
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class InMemoryUpdateStorage extends BaseUpdateStorage {
 
-    private List<INDArray> updates = new CopyOnWriteArrayList<>();
+    private List<NDArrayMessage> updates = new CopyOnWriteArrayList<>();
 
     /**
      * Add an ndarray to the storage
@@ -21,7 +22,7 @@ public class InMemoryUpdateStorage extends BaseUpdateStorage {
      * @param array the array to add
      */
     @Override
-    public void addUpdate(INDArray array) {
+    public void addUpdate(NDArrayMessage array) {
         updates.add(array);
     }
 
@@ -52,7 +53,7 @@ public class InMemoryUpdateStorage extends BaseUpdateStorage {
      * @return the ndarray at the specified index
      */
     @Override
-    public INDArray doGetUpdate(int index) {
+    public NDArrayMessage doGetUpdate(int index) {
         return updates.get(index);
     }
 }
