@@ -22,6 +22,16 @@ public class StackTree {
         //
     }
 
+    public String renderTree() {
+        StringBuilder builder = new StringBuilder();
+
+        // we'll always have single entry here, but let's keep loop here
+        for (StackNode cNode: basement.values()) {
+            cNode.traverse(0);
+        }
+
+        return builder.toString();
+    }
 
     public void consumeStackTrace(@NonNull StackDescriptor descriptor) {
         eventsCount.incrementAndGet();

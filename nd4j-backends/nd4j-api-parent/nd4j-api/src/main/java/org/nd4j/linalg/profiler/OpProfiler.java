@@ -306,6 +306,15 @@ public class OpProfiler {
         logger.info("--- Time spent within methods: ---");
         System.out.println(methodsAggregator.asPercentageString());
         System.out.println();
+        logger.info("--- Bad strides stack tree: ---");
+        stridedAggregator.renderTree();
+        System.out.println();
+        logger.info("--- non-EWS access stack tree: ---");
+        nonEwsAggregator.renderTree();
+        System.out.println();
+        logger.info("--- Mixed orders access stack tree: ---");
+        mixedOrderAggregator.renderTree();
+        System.out.println();
     }
 
 

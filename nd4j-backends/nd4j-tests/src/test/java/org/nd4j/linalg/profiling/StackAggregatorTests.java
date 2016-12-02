@@ -91,5 +91,7 @@ public class StackAggregatorTests {
 
         assertEquals(2, aggregator.getTotalEventsNumber());
         assertEquals(2, aggregator.getUniqueBranchesNumber());
+
+        aggregator.renderTree();
     }
 }

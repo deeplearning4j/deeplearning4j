@@ -20,6 +20,10 @@ public class StackAggregator {
         // nothing to do here so far
     }
 
+    public void renderTree(){
+        tree.renderTree();
+    }
+
     public void reset() {
         tree.reset();
     }

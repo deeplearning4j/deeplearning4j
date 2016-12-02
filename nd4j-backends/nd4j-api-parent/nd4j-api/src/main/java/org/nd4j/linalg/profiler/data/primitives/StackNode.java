@@ -3,8 +3,10 @@ package org.nd4j.linalg.profiler.data.primitives;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -20,6 +22,24 @@ public class StackNode implements Comparable<StackNode> {
         this.nodeURI = uri;
     }
 
+    public Collection<StackNode> getNodes() {
+        return entries.values();
+    }
+
+    public void traverse(int ownLevel) {
+        StringBuilder builder = new StringBuilder();
+
+        for (int x = 0; x < ownLevel; x++) {
+            builder.append("   ");
+        }
+
+        builder.append("").append(nodeURI).append("\n");
+        System.out.print(builder.toString());
+
+        for (StackNode node: entries.values()) {
+            node.traverse(ownLevel + 1);
+        }
+    }
 
     public void consume(@NonNull StackDescriptor descriptor, int lastLevel) {
         boolean gotEntry = false;
