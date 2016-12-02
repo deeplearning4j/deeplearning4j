@@ -7,7 +7,7 @@
     <parent>
         <artifactId>rl4j</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.1</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>rl4j-core</artifactId>
