@@ -119,18 +119,29 @@ public class VariationalAutoencoder implements Layer {
         INDArray xzw = params.get("dXZW");
         INDArray xzb = params.get("dXZb");
 
+
         INDArray pxzDistributionParams = current.mmul(xzw).addiRowVector(xzb);
-        double logProb = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
-        System.out.println("Log probability: " + logProb);
+        this.score = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
 
         INDArray dpdpxz = reconstructionDistribution.gradient(input, pxzDistributionParams);
 
 
+        /////////////////////////////////////////////////////////
+
+        INDArray dLdxzw = gradientViews.get("dXZW");
+        INDArray dLdxzb = gradientViews.get("dXZb");
+        INDArray lastDecActivations = decoderActivations[decoderActivations.length-1];
+        Nd4j.gemm(lastDecActivations,dpdpxz,dLdxzw,true,false,1.0,0.0);
+        dLdxzb.assign(dpdpxz.sum(0));    //TODO: do this without the assign
+
+        //Do backprop for output probability distribution -> final decoder layer
+        INDArray epsilon = xzw.mmul(dpdpxz.transpose()).transpose();
+
         //Next: we chain derivatives backwards...
         String afn = conf().getLayer().getActivationFunction();
 
-        Gradient gradient = new DefaultGradient();
-        INDArray epsilon = dpdpxz;
+        Gradient gradient = new DefaultGradient(gradientsFlattened);
+//        INDArray epsilon = dpdpxz;
         for( int i=nDecoderLayers-1; i>=0; i-- ){
             String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "d" + i + BIAS_KEY_SUFFIX;
@@ -138,7 +149,6 @@ public class VariationalAutoencoder implements Layer {
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
                 Nd4j.getOpFactory().createTransform(afn, decoderPreOut[i]).derivative());
 
-            System.out.println(i + "\t" + Arrays.toString(epsilon.shape()) + "\t" + Arrays.toString(sigmaPrimeZ.shape()));
             INDArray currentDelta = epsilon.muli(sigmaPrimeZ);
 
             INDArray weights = params.get(wKey);
@@ -180,7 +190,6 @@ public class VariationalAutoencoder implements Layer {
         INDArray lastEncoderActivation = fwd.activations[fwd.activations.length-1];
         Nd4j.gemm(lastEncoderActivation, dLdmu, dLdZXMeanW, true, false, 1.0, 0.0);
         Nd4j.gemm(lastEncoderActivation, dLdLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
-        System.out.println(Arrays.toString(dLdZXMeanb.shape()) + "\t" + Arrays.toString(dLdmu.shape()));
         dLdZXMeanb.assign(dLdmu.sum(0));
         dLdZXLogStdev2b.assign(dLdLogSigma2.sum(0));
 
@@ -381,7 +390,6 @@ public class VariationalAutoencoder implements Layer {
         double l2Sum = 0.0;
         for(Map.Entry<String,INDArray> e : paramTable().entrySet()){
             double l2 = conf().getL2ByParam(e.getKey());
-//            System.out.println(backpropParamsOnly + "\t" + e.getKey() + "\t" + l2 + "\t" + isPretrainParam(e.getKey()));
             if(l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))){
                 continue;
             }
@@ -452,7 +460,6 @@ public class VariationalAutoencoder implements Layer {
         INDArray lastHiddenActivation = fwd.activations[fwd.activations.length-1];
         Nd4j.gemm(lastHiddenActivation,currentDelta,dmW,true,false,1.0,0.0);
         INDArray dmB = gradientViews.get(pzxBiasParamName);
-//        System.out.println("dmB = " + Arrays.toString(dmB.shape()) + "\tcurrdelta = " + Arrays.toString(currentDelta.shape()));
         dmB.assign(currentDelta.sum(0));    //TODO: do this without the assign
 
         gradient.gradientForVariable().put(pzxMeanParamName, dmW);

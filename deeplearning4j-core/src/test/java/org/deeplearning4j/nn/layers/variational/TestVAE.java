@@ -110,6 +110,8 @@ public class TestVAE {
             assertArrayEquals(paramTable.get(s).shape(), gradTable.get(s).shape());
         }
 
+        System.out.println("Num params: " + net.numParams());
+
         INDArray data = Nd4j.rand(1, inputSize);
 
 
