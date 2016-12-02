@@ -67,28 +67,12 @@ public class NDArrayFragmentHandler implements FragmentHandler {
 
             if(chunkAccumulator.allPresent(chunk.getId())) {
                 NDArrayMessage message = chunkAccumulator.reassemble(chunk.getId());
-                INDArray arr = message.getArr();
-                //of note for ndarrays
-                int[] dimensions = message.getDimensions();
-                boolean whole = dimensions.length == 1 && dimensions[0] == -1;
-
-                if(!whole)
-                    ndArrayCallback.onNDArrayPartial(arr,message.getIndex(),dimensions);
-                else
-                    ndArrayCallback.onNDArray(arr);
+                ndArrayCallback.onNDArrayMessage(message);
             }
         }
         else {
             NDArrayMessage message = NDArrayMessage.fromBuffer(buffer,offset);
-            INDArray arr = message.getArr();
-            //of note for ndarrays
-            int[] dimensions = message.getDimensions();
-            boolean whole = dimensions.length == 1 && dimensions[0] == -1;
-
-            if(!whole)
-                ndArrayCallback.onNDArrayPartial(arr,message.getIndex(),dimensions);
-            else
-                ndArrayCallback.onNDArray(arr);
+            ndArrayCallback.onNDArrayMessage(message);
         }
 
 

@@ -245,6 +245,24 @@ public class ParameterServerClient implements NDArrayCallback {
     }
 
     /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        INDArray arr = message.getArr();
+        //of note for ndarrays
+        int[] dimensions = message.getDimensions();
+        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+
+        if(!whole)
+            onNDArrayPartial(arr,message.getIndex(),dimensions);
+        else
+            onNDArray(arr);
+    }
+
+    /**
      * Used for partial updates using tensor along
      * dimension
      *  @param arr        the array to count as an update

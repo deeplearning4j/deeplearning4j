@@ -24,7 +24,7 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
     private int totalUpdates;
     private int streamId;
     private String connectionInfo;
-    private Map<String,Object> parameterUpdaterStatus;
+    private Map<String,Number> parameterUpdaterStatus;
     /**
      * Returns an empty subscriber state
      * with -1 as total updates, master as false

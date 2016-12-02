@@ -3,6 +3,7 @@ package org.nd4j.parameterserver;
 import lombok.Data;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayHolder;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
@@ -31,6 +32,24 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
         this.arr = Nd4j.create(shape);
     }
 
+
+    /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        INDArray arr = message.getArr();
+        //of note for ndarrays
+        int[] dimensions = message.getDimensions();
+        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+
+        if(!whole)
+            onNDArrayPartial(arr,message.getIndex(),dimensions);
+        else
+            onNDArray(arr);
+    }
 
     /**
      * Used for partial updates using tensor along

@@ -26,12 +26,14 @@ import org.nd4j.parameterserver.model.MasterConnectionInfo;
 import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.model.SubscriberState;
+import org.nd4j.parameterserver.util.CheckSocket;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -71,7 +73,7 @@ public class ParameterServerSubscriber {
     private String mediaDriverDirectoryName;
     @Parameter(names={"-sp","--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
     private int statusServerPort = 9000;
-    @Parameter(names={"-sp","--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
+    @Parameter(names={"-sh","--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
     private String statusServerHost = "localhost";
     @Parameter(names={"-up","--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
     private String updateTypeString;
@@ -93,6 +95,8 @@ public class ParameterServerSubscriber {
     private AeronNDArrayResponder responder;
     private AeronNDArraySubscriber subscriber;
     private NDArrayCallback callback;
+    //alias for the callback where relevant
+    private ParameterServerListener parameterServerListener;
     private Aeron aeron;
     private ScheduledExecutorService heartbeat;
 
@@ -114,6 +118,7 @@ public class ParameterServerSubscriber {
      */
     public SubscriberState asState() {
         return SubscriberState.builder()
+                .parameterUpdaterStatus(parameterServerListener == null ? Collections.emptyMap() : parameterServerListener.getUpdater().status())
                 .isMaster(isMaster()).connectionInfo(isMaster() ? slaveConnectionInfo().toString() : masterConnectionInfo().toString())
                 .totalUpdates(getResponder().getNdArrayHolder().totalUpdates())
                 .serverState(subscriberLaunched() ?
@@ -199,7 +204,7 @@ public class ParameterServerSubscriber {
                     .senderIdleStrategy(new BusySpinIdleStrategy());
 
             mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx);
-            //set the variable since we are using a media dirver directly
+            //set the variable since we are using a media driver directly
             mediaDriverDirectoryName = mediaDriver.aeronDirectoryName();
             log.info("Using media driver directory " + mediaDriver.aeronDirectoryName());
         }
@@ -212,6 +217,7 @@ public class ParameterServerSubscriber {
         if(master) {
             //instantiate with shape instead of just length
             callback =  new ParameterServerListener(Ints.toArray(shape));
+            parameterServerListener = (ParameterServerListener) callback;
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
             responder = AeronNDArrayResponder.startSubscriber(
@@ -248,20 +254,25 @@ public class ParameterServerSubscriber {
             LockSupport.parkNanos(100000);
         }
 
-        scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        //send heartbeat to a status server. There will usually be 1 status server per master.
+        //Only schedule this if a remote server is available.
+       if(CheckSocket.remotePortTaken(statusServerHost,statusServerPort,10000)) {
+           scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
-                    Unirest.post(String.format("http://%s:%d/updatestatus/%d",statusServerHost,statusServerPort,streamId))
-                            .body(jsonObject).getEntity();
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
-            }
-        },1000,heartbeatMs, TimeUnit.MILLISECONDS);
+           scheduledExecutorService.scheduleAtFixedRate(() -> {
+               try {
+                   JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
+                   Unirest.post(String.format("http://%s:%d/updatestatus/%d",statusServerHost,statusServerPort,streamId))
+                           .body(jsonObject).getEntity();
+               } catch (JsonProcessingException e) {
+                   e.printStackTrace();
+               }
+           },1000,heartbeatMs, TimeUnit.MILLISECONDS);
+
+       }
+       else {
+            log.info("No status server found. Will not send heartbeats. Specified host was " + statusServerHost + " and port was " + statusServerPort);
+       }
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

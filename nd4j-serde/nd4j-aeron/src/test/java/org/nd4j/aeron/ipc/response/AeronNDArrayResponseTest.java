@@ -105,6 +105,16 @@ public class AeronNDArrayResponseTest {
                 host,
                 40123,
                 new NDArrayCallback() {
+                    /**
+                     * A listener for ndarray message
+                     *
+                     * @param message the message for the callback
+                     */
+                    @Override
+                    public void onNDArrayMessage(NDArrayMessage message) {
+
+                    }
+
                     @Override
                     public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
                         count.incrementAndGet();
