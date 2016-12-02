@@ -5,9 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.model.SubscriberState;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +28,17 @@ public abstract  class BaseStatusStorage implements StatusStorage {
 
     public BaseStatusStorage() {
         this(1000,1000);
+    }
+
+    /**
+     * The list of state ids
+     * for the given {@link SubscriberState}
+     *
+     * @return the list of ids for the given state
+     */
+    @Override
+    public List<Integer> ids() {
+        return new ArrayList<>(statusStorageMap.keySet());
     }
 
     /**

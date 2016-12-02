@@ -2,6 +2,8 @@ package org.nd4j.parameterserver.status.play;
 
 import org.nd4j.parameterserver.model.SubscriberState;
 
+import java.util.List;
+
 /**
  * An interface for storing information
  * about the status of a {@link org.nd4j.parameterserver.ParameterServerSubscriber}
@@ -9,6 +11,13 @@ import org.nd4j.parameterserver.model.SubscriberState;
  * @author Adam Gibson
  */
 public interface StatusStorage {
+
+    /**
+     * The list of state ids
+     * for the given {@link SubscriberState}
+     * @return the list of ids for the given state
+     */
+    List<Integer> ids();
     /**
      * Returns the number of states
      * held by this storage

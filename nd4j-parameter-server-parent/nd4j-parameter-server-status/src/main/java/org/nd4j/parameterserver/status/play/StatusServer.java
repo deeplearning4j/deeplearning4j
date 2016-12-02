@@ -9,6 +9,8 @@ import play.mvc.Result;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
+import java.util.List;
+
 import static play.libs.Json.*;
 import static play.libs.Json.toJson;
 import static play.mvc.Controller.*;
@@ -41,13 +43,21 @@ public class StatusServer {
      * /type: returns the type information (master/slave)
      * /started: if it's a master node, it returns master:started/stopped and responder:started/stopped
      * /connectioninfo: See the SlaveConnectionInfo and MasterConnectionInfo classes for fields.
-     *
+     * /ids: the list of ids for all of the subscribers
      * @param statusStorage the subscriber to base
      *                   the status server on
      * @return the started server
      */
     public static Server startServer(StatusStorage statusStorage,int statusServerPort) {
         RoutingDsl dsl = new RoutingDsl();
+        dsl.GET("/ids").routeTo(new F.Function<Object,Result>() {
+
+            @Override
+            public Result apply(Object o) throws Throwable {
+                List<Integer> ids = statusStorage.ids();
+                return ok(toJson(ids));
+            }
+        });
         dsl.GET("/type/:id").routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
