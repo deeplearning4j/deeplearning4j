@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 @Ignore
 public class NativeOpExecutionerTest {
     @Before
@@ -447,6 +449,13 @@ public class NativeOpExecutionerTest {
         INDArray expC = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape(4, 4);
 
         assertEquals(expC, C);
+
+        Nd4j.enableFallbackMode(true);
+
+        INDArray CF = A.mmul(B);
+        assertEquals(expC, CF);
+
+        Nd4j.enableFallbackMode(false);
     }
 
     @Test
@@ -463,6 +472,13 @@ public class NativeOpExecutionerTest {
         INDArray expF = Nd4j.create(new double[]{20.0, 23.0, 26.0, 29.0, 56.0, 68.0, 80.0, 92.0, 92.0, 113.0, 134.0, 155.0, 128.0, 158.0, 188.0, 218.0}).reshape('f', 4, 4);
 
         assertEquals(expF, C);
+
+        Nd4j.enableFallbackMode(true);
+
+        INDArray CF = A.mmul(B);
+        assertEquals(expF, CF);
+
+        Nd4j.enableFallbackMode(false);
     }
 
     @Test
@@ -484,6 +500,31 @@ public class NativeOpExecutionerTest {
         //Outputs here should be identical:
         System.out.println(Arrays.toString(s1.data().asDouble()));
         System.out.println(Arrays.toString(s2.getRow(0).dup().data().asDouble()));
+    }
+
+    @Test
+    public void testGemmPerf() {
+        INDArray A = Nd4j.create(new int[]{10000, 1000}, 'c');
+        INDArray B = Nd4j.create(new int[]{1000, 10000}, 'f');
+
+        Nd4j.enableFallbackMode(false);
+        A.mmul(B);
+        long time1 = System.currentTimeMillis();
+        INDArray C1 = A.mmul(B);
+        long time2 = System.currentTimeMillis();
+
+        log.info("OpenBLAS time: {}", (time2 - time1));
+
+        Nd4j.enableFallbackMode(true);
+        A.mmul(B);
+
+        time1 = System.currentTimeMillis();
+        INDArray C2 = A.mmul(B);
+        time2 = System.currentTimeMillis();
+
+        log.info("Fallback time: {}", (time2 - time1));
+
+        Nd4j.enableFallbackMode(false);
     }
 
     public static INDArray scoreArray(INDArray labels, INDArray preOutput) {
@@ -599,5 +640,18 @@ public class NativeOpExecutionerTest {
     public void testWrongDimensions() {
         INDArray arr = Nd4j.create(10,10,10);
         arr.mean(0,2,3);
+    }
+
+    @Test
+    public void testFallbackEcho() {
+        log.info("Fallback enabled? {}", Nd4j.isFallbackModeEnabled());
+    }
+
+
+    @Test
+    public void testPewPew() {
+        INDArray array = Nd4j.ones(2, 2).eq(1);
+
+        log.info("Result: {} ", array);
     }
 }

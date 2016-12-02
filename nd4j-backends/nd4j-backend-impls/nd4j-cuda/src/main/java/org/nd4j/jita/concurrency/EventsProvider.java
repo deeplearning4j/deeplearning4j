@@ -22,7 +22,8 @@ public class EventsProvider {
     private AtomicLong cacheCounter = new AtomicLong(0);
 
     public EventsProvider() {
-        int numDev = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDev = Nd4j.getAffinityManager().getNumberOfDevices();
+
         for (int i = 0; i < numDev; i++) {
             queue.add(new ConcurrentLinkedQueue<cudaEvent_t>());
         }

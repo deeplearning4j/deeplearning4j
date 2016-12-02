@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -43,6 +43,14 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform.linux-ppc64le}</classifier>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-armhf}</classifier>
+        </dependency>
+        -->
     </dependencies>
 
 </project>

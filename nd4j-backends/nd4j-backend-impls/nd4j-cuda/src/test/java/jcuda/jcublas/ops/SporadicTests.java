@@ -23,6 +23,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
+import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -513,5 +514,56 @@ public class SporadicTests {
 
         System.out.println("Expected: " + Arrays.toString(exp));
         System.out.println("Actual:   " + Arrays.toString(arr.sum(1).data().asDouble()));
+    }
+
+
+    @Test
+    public void testDataSetSaveLost() throws Exception {
+        INDArray features = Nd4j.linspace(1, 16 * 784, 16 * 784).reshape(16, 784);
+        INDArray labels = Nd4j.linspace(1, 160, 160).reshape(16, 10);
+
+        for (int i = 0; i < 100; i++) {
+            DataSet ds = new DataSet(features, labels);
+
+            File tempFile = File.createTempFile("dataset", "temp");
+            tempFile.deleteOnExit();
+
+            ds.save(tempFile);
+
+            DataSet restore = new DataSet();
+            restore.load(tempFile);
+
+            assertEquals(features, restore.getFeatureMatrix());
+            assertEquals(labels, restore.getLabels());
+
+        }
+    }
+
+    @Test
+    public void testEps() throws Exception {
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+
+        INDArray arr = Nd4j.create(new double[]{0,0,0,1,1,1,2,2,2});
+
+        System.out.println(arr.eps(0.0));
+        System.out.println(arr.eps(1.0));
+        System.out.println(arr.eps(2.0));
+    }
+
+    @Test
+    public void testNeg() {
+        INDArray rnd = Nd4j.rand(2, 2);
+        System.out.println(rnd.equals(rnd.neq(1)));
+    }
+
+    @Test
+    public void testEq() {
+        INDArray z = Nd4j.ones(2, 2)
+                .eq(2);
+
+        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        System.out.println("Z: " + z);
     }
 }

@@ -2,7 +2,7 @@
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -41,6 +41,12 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jackson</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -106,7 +112,11 @@
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
-                    <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
+                    <preloadPaths>
+                        <!-- Needs to be all caps on Windows -->
+                        <preloadPath>${env.OPENBLAS_HOME}/bin</preloadPath>
+                        <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
+                    </preloadPaths>
                 </configuration>
                 <executions>
                     <execution>

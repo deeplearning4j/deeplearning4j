@@ -3,7 +3,7 @@
     <parent>
         <artifactId>nd4j-parameter-server-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.7.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -85,7 +85,7 @@
     </build>
 
     <properties>
-        <playframework.version>2.4.8</playframework.version>
+        <playframework.version>2.4.6</playframework.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>

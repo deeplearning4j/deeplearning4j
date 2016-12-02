@@ -391,17 +391,37 @@ public class Configuration implements Serializable {
     }
 
     /**
-     * This method forces one specific device to be used. All other devices present in system will be ignored.
+     * This method forces specific device to be used. All other devices present in system will be ignored.
      *
      * @param deviceId
      * @return
      */
     public Configuration useDevice(@NonNull Integer deviceId) {
-        if (!availableDevices.contains(deviceId))
-            throw new IllegalStateException("Non-existent device request: ["+deviceId+"]");
+        return useDevices(deviceId);
+    }
 
-        availableDevices.clear();
-        availableDevices.add(0, deviceId);
+    /**
+     * This method forces specific devices to be used. All other devices present in system will be ignored.
+     *
+     * @param devices
+     * @return
+     */
+    public Configuration useDevices(@NonNull int... devices) {
+        List<Integer> usableDevices = new ArrayList<>();
+        for (int device: devices) {
+            if (!availableDevices.contains(device)) {
+                logger.warn("Non-existent device [{}] requested, ignoring...", device);
+            } else {
+                if (!usableDevices.contains(device))
+                    usableDevices.add(device);
+            }
+
+        }
+
+        if (usableDevices.size() > 0) {
+            availableDevices.clear();
+            availableDevices.addAll(usableDevices);
+        }
 
         return this;
     }

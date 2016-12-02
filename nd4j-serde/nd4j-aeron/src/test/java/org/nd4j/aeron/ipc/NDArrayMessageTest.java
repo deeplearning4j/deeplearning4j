@@ -16,6 +16,7 @@ public class NDArrayMessageTest {
     public void testNDArrayMessageToAndFrom() {
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
         DirectBuffer bufferConvert = NDArrayMessage.toBuffer(message);
+        bufferConvert.byteBuffer().rewind();
         NDArrayMessage newMessage = NDArrayMessage.fromBuffer(bufferConvert,0);
         assertEquals(message,newMessage);
 

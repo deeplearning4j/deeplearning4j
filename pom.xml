@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.6.1-SNAPSHOT</version>
+    <version>0.7.1-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -134,6 +134,15 @@
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>arm</id>
+            <activation>
+                <os><arch>arm</arch></os>
+            </activation>
+            <properties>
+                <os.arch>arm</os.arch>
             </properties>
         </profile>
 
@@ -257,7 +266,7 @@
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>
         <logback.version>1.1.2</logback.version>
-        <javacpp.version>1.2.5</javacpp.version>
+        <javacpp.version>1.2.7</javacpp.version>
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->

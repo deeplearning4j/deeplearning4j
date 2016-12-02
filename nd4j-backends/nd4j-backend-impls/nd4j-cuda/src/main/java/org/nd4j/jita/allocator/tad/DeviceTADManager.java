@@ -7,6 +7,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.TadDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class DeviceTADManager extends BasicTADManager {
     private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
 
     public DeviceTADManager() {
-        int numDevices =  configuration.getAvailableDevices().size();
+        int numDevices =  Nd4j.getAffinityManager().getNumberOfDevices();
 
         for (int i = 0; i < numDevices; i++ ) {
             tadCache.add(i, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
@@ -42,7 +43,7 @@ public class DeviceTADManager extends BasicTADManager {
 
         tadCache = new ArrayList<>();
 
-        int numDevices =  configuration.getAvailableDevices().size();
+        int numDevices =  Nd4j.getAffinityManager().getNumberOfDevices();
 
         for (int i = 0; i < numDevices; i++ ) {
             logger.info("Resetting device: [{}]", i);

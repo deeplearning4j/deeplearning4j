@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 /**
  * Base class with common functionality for standardize normalizers
@@ -24,14 +26,14 @@ abstract class AbstractNormalizerStandardize {
     protected void preProcess(INDArray theFeatures, DistributionStats stats) {
         if (theFeatures.rank() == 2) {
             theFeatures.subiRowVector(stats.getMean());
-            theFeatures.diviRowVector(stats.getStd());
+            theFeatures.diviRowVector(filteredStd(stats));
         }
         // if feature Rank is 3 (time series) samplesxfeaturesxtimesteps
         // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
         // both cases operations should be carried out in dimension 1
         else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(theFeatures, stats.getMean(), theFeatures, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theFeatures, stats.getStd(), theFeatures, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(theFeatures, filteredStd(stats), theFeatures, 1));
         }
     }
 
@@ -39,11 +41,20 @@ abstract class AbstractNormalizerStandardize {
 
     void revert(INDArray data, DistributionStats distribution) {
         if (data.rank() == 2) {
-            data.muliRowVector(distribution.getStd());
+            data.muliRowVector(filteredStd(distribution));
             data.addiRowVector(distribution.getMean());
         } else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(data, distribution.getStd(), data, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(data, filteredStd(distribution), data, 1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(data, distribution.getMean(), data, 1));
         }
+    }
+
+    private INDArray filteredStd(DistributionStats stats) {
+        /*
+            To avoid division by zero when the std deviation is zero, replace by zeros by one
+         */
+        INDArray stdCopy = stats.getStd();
+        BooleanIndexing.replaceWhere(stdCopy, 1.0, Conditions.equals(0));
+        return stdCopy;
     }
 }

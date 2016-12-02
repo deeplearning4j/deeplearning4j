@@ -85,6 +85,11 @@ public class DataSetUtil {
              */
             INDArray columnMask = Nd4j.toFlattened('c', mask).transpose();
             int actualSamples = columnMask.sumNumber().intValue();
+            if (actualSamples == 0) {
+                // All samples are masked, so we can only return null to represent an empty data set
+                return null;
+            }
+
             INDArray in2dMask = Nd4j.create(actualSamples, features);
             int i = 0;
             //definitely a faster way to do this as you can skip the rest of the timesteps after the first zero in the mask

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -8,7 +9,9 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.NDArrayFactory;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base class for level 3 functions, abstract headers pulled from:
@@ -16,6 +19,7 @@ import org.nd4j.linalg.factory.NDArrayFactory;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     /**
      * gemm performs a matrix-matrix operation
@@ -37,51 +41,51 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         GemmParams params = new GemmParams(A,B,C);
 
         int charOder = Order;
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemm(Order
-                    ,params.getTransA()
-                    ,params.getTransB()
-                    ,params.getM()
-                    ,params.getN()
-                    ,params.getK()
-                    ,1.0
-                    ,params.getA()
-                    ,params.getLda()
-                    ,params.getB()
-                    ,params.getLdb()
-                    ,0
-                    ,C
-                    ,params.getLdc());
-        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
-            sgemm(Order
-                    , params.getTransA()
-                    , params.getTransB()
-                    , params.getM()
-                    , params.getN()
-                    , params.getK()
-                    , 1.0f
-                    , params.getA()
-                    , params.getLda()
-                    , params.getB()
-                    , params.getLdb()
-                    , 0
-                    , C
-                    , params.getLdc());
-        else
-            hgemm(Order
-                    , params.getTransA()
-                    , params.getTransB()
-                    , params.getM()
-                    , params.getN()
-                    , params.getK()
-                    , 1.0f
-                    , params.getA()
-                    , params.getLda()
-                    , params.getB()
-                    , params.getLdb()
-                    , 0
-                    , C
-                    , params.getLdc());
+            if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+                dgemm(Order
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , 1.0
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , 0
+                        , C
+                        , params.getLdc());
+            else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+                sgemm(Order
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , 1.0f
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , 0
+                        , C
+                        , params.getLdc());
+            else
+                hgemm(Order
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , 1.0f
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , 0
+                        , C
+                        , params.getLdc());
 
     }
 
@@ -90,51 +94,51 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemm(A.ordering()
-                    ,params.getTransA()
-                    ,params.getTransB()
-                    ,params.getM()
-                    ,params.getN()
-                    ,params.getK()
-                    ,alpha
-                    ,params.getA()
-                    ,params.getLda()
-                    ,params.getB()
-                    ,params.getLdb()
-                    ,beta
-                    ,C
-                    ,params.getLdc());
-        else if(A.data().dataType() == DataBuffer.Type.FLOAT)
-            sgemm(A.ordering()
-                    , params.getTransA()
-                    , params.getTransB()
-                    , params.getM()
-                    , params.getN()
-                    , params.getK()
-                    , (float) alpha
-                    , params.getA()
-                    , params.getLda()
-                    , params.getB()
-                    , params.getLdb()
-                    , (float) beta
-                    , C
-                    , params.getLdc());
-        else
-            hgemm(A.ordering()
-                    , params.getTransA()
-                    , params.getTransB()
-                    , params.getM()
-                    , params.getN()
-                    , params.getK()
-                    , (float) alpha
-                    , params.getA()
-                    , params.getLda()
-                    , params.getB()
-                    , params.getLdb()
-                    , (float) beta
-                    , C
-                    , params.getLdc());
+            if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+                dgemm(A.ordering()
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , alpha
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , beta
+                        , C
+                        , params.getLdc());
+            else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+                sgemm(A.ordering()
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , (float) alpha
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , (float) beta
+                        , C
+                        , params.getLdc());
+            else
+                hgemm(A.ordering()
+                        , params.getTransA()
+                        , params.getTransB()
+                        , params.getM()
+                        , params.getN()
+                        , params.getK()
+                        , (float) alpha
+                        , params.getA()
+                        , params.getLda()
+                        , params.getB()
+                        , params.getLdb()
+                        , (float) beta
+                        , C
+                        , params.getLdc());
     }
 
 

@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.Random;
@@ -98,6 +100,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
          */
+        checkForCompression(op);
 
         invokeWatchdog(op);
 
@@ -415,7 +418,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 // TODO: extend non-experimental support for MetaOps
                 // we enable this only for PairwisetTransforms.Set followed by scalar
                 if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
-                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null) {
+                    // FIXME: get rid of those instanceof
+                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null && !(op instanceof ScalarMax) && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11) && op.opNum() != 16 && op.opNum() != 13 ) {
                         return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
                     }
                 }

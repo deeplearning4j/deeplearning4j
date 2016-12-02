@@ -1,6 +1,8 @@
 package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
+import io.aeron.AvailableImageHandler;
+import io.aeron.Image;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.uri.AeronUri;
@@ -10,6 +12,7 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.aeron.util.AeronStat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -28,7 +31,7 @@ public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
-    private String channel = "aeron:udp?endpoint=localhost:40123";
+    private String channel = "aeron:udp?endpoint=localhost:40132";
     private int streamId = 10;
     private  int length = (int) 1e7;
 
@@ -44,90 +47,6 @@ public class NdArrayIpcTest {
     public void after() {
         CloseHelper.quietClose(mediaDriver);
     }
-
-    @Test
-    public void testMultiThreadedIpcBig() throws Exception {
-        int length = (int) 1e7;
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
-        INDArray arr = Nd4j.ones(length);
-
-        //length of array * sizeof(float)
-        int ipcLength =  length * 4;
-        //padding for NDArrayMessage
-        ipcLength += 64;
-        //must be a power of 2
-        ipcLength *= 2;
-        //ipc length must be positive power of 2
-        while(!BitUtil.isPowerOfTwo(ipcLength))
-            ipcLength += 2;
-        //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
-        System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
-        final AtomicBoolean running = new AtomicBoolean(true);
-        Aeron aeron = Aeron.connect(getContext());
-        int numSubscribers = 10;
-        AeronNDArraySubscriber[] subscribers = new AeronNDArraySubscriber[numSubscribers];
-        for(int i = 0; i < numSubscribers; i++) {
-            AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.builder()
-                    .streamId(streamId)
-                    .ctx(getContext()).channel(channel).aeron(aeron)
-                    .running(running)
-                    .ndArrayCallback(new NDArrayCallback() {
-                        @Override
-                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-
-                        }
-
-                        @Override
-                        public void onNDArray(INDArray arr) {
-                            running.set(false);
-                        }
-                    }).build();
-
-
-            Thread t = new Thread(() -> {
-                try {
-                    subscriber.launch();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-            });
-
-            t.start();
-
-            subscribers[i] = subscriber;
-        }
-
-        AeronNDArrayPublisher publisher =   AeronNDArrayPublisher
-                .builder()
-                .streamId(streamId)
-                .channel(channel).aeron(aeron)
-                .build();
-
-        Thread.sleep(10000);
-
-        for(int i = 0; i< 10 && running.get(); i++) {
-            executorService.execute(() -> {
-                try {
-                    log.info("About to send array.");
-                    publisher.publish(arr);
-                    log.info("Sent array");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-        }
-
-        Thread.sleep(100000);
-
-        for(int i = 0; i < numSubscribers; i++)
-            CloseHelper.close(subscribers[i]);
-        CloseHelper.close(aeron);
-        CloseHelper.close(publisher);
-        assertFalse(running.get());
-    }
-
 
     @Test
     public void testMultiThreadedIpc() throws Exception {
@@ -239,31 +158,46 @@ public class NdArrayIpcTest {
 
         t.start();
 
+        while(!subscriber.launched())
+            Thread.sleep(1000);
+
+        Thread.sleep(10000);
+
         AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
                 .streamId(streamId)
                 .aeron(aeron)
                 .channel(channel)
                 .build();
-        for(int i = 0; i < 10 && running.get(); i++) {
+        for(int i = 0; i < 1 && running.get(); i++) {
             publisher.publish(arr);
-            Thread.sleep(10);
         }
 
-        Thread.sleep(10000);
 
 
-        CloseHelper.close(aeron);
-        CloseHelper.close(publisher);
+
+
+        Thread.sleep(30000);
 
         assertFalse(running.get());
+
+
+        publisher.close();
+        subscriber.close();
 
     }
 
 
     private Aeron.Context getContext() {
-        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+        if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(1000)
+                .availableImageHandler(new AvailableImageHandler() {
+                    @Override
+                    public void onAvailableImage(Image image) {
+                        System.out.println(image);
+                    }
+                })
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .keepAliveInterval(1000)
                 .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }

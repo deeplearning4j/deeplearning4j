@@ -53,16 +53,13 @@ public class AeronUtil {
        //ipc length must be positive power of 2
        while(!BitUtil.isPowerOfTwo(ipcLength))
            ipcLength += 2;
-       //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
-       System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
-
+     // System.setProperty("aeron.term.buffer.size",String.valueOf(ipcLength));
        final MediaDriver.Context ctx = new MediaDriver.Context()
-               .threadingMode(ThreadingMode.DEDICATED)
+               .threadingMode(ThreadingMode.SHARED)
                .dirsDeleteOnStart(true)
-               .ipcTermBufferLength(ipcLength)
+             /*  .ipcTermBufferLength(ipcLength)
                .publicationTermBufferLength(ipcLength)
-               .maxTermBufferLength(ipcLength)
-               .termBufferSparseFile(false)
+               .maxTermBufferLength(ipcLength)*/
                .conductorIdleStrategy(new BusySpinIdleStrategy())
                .receiverIdleStrategy(new BusySpinIdleStrategy())
                .senderIdleStrategy(new BusySpinIdleStrategy());
@@ -79,8 +76,12 @@ public class AeronUtil {
     public static String aeronChannel(String host,int port) {
         return String.format("aeron:udp?endpoint=%s:%d",host,port);
     }
+
     /**
-     * Return a reusable, parameterised event loop that calls a default idler when no messages are received
+     * Return a reusable, parametrized
+     * event loop that calls a
+     * default idler
+     * when no messages are received
      *
      * @param fragmentHandler to be called back for each message.
      * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
@@ -108,7 +109,8 @@ public class AeronUtil {
             final FragmentHandler fragmentHandler,
             final int limit,
             final AtomicBoolean running,
-            final IdleStrategy idleStrategy,final AtomicBoolean launched)
+            final IdleStrategy idleStrategy,
+            final AtomicBoolean launched)
     {
         return (subscription) -> {
             try {

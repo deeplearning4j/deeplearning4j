@@ -16,6 +16,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -65,7 +66,7 @@ public class AsynchronousFlowController implements FlowController{
 
     public AsynchronousFlowController() {
         int numLanes = configuration.getCommandLanesNumber();
-        int numDevices = configuration.getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
         for (int d = 0; d < numDevices; d++) {
             eventsBarrier.add(d, new ArrayList<Queue<cudaEvent_t>>());
@@ -163,6 +164,11 @@ public class AsynchronousFlowController implements FlowController{
 
         Integer deviceId = allocator.getDeviceId();
         fillTail(deviceId, event.getLaneId(), event);
+    }
+
+    @Override
+    public void registerActionAllWrite(CudaContext context, INDArray... operands) {
+
     }
 
     protected void setWriteLane(INDArray array, cudaEvent_t event) {
@@ -453,6 +459,11 @@ public class AsynchronousFlowController implements FlowController{
 
 
         return context;
+    }
+
+    @Override
+    public CudaContext prepareActionAllWrite(INDArray... operands) {
+        return null;
     }
 
     private float getAsyncHitRatio() {

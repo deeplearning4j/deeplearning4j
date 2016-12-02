@@ -3,11 +3,10 @@ package org.nd4j.parameterserver.client;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,18 +23,18 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 10/3/16.
  */
+@Slf4j
 public class ParameterServerClientPartialTest {
-    private MediaDriver mediaDriver;
-    private static Logger log = LoggerFactory.getLogger(ParameterServerClientPartialTest.class);
-    private Aeron.Context ctx;
-    private ParameterServerSubscriber masterNode,slaveNode;
+    private static MediaDriver mediaDriver;
+    private static Aeron.Context ctx;
+    private static ParameterServerSubscriber masterNode,slaveNode;
     private int[] shape = {2,2};
-    private Aeron aeron;
+    private static Aeron aeron;
 
-    @Before
-    public void before() throws Exception {
+    @BeforeClass
+    public static void before() throws Exception {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
+                .threadingMode(ThreadingMode.SHARED)
                 .dirsDeleteOnStart(true)
                 .termBufferSparseFile(false)
                 .conductorIdleStrategy(new BusySpinIdleStrategy())
@@ -48,17 +47,17 @@ public class ParameterServerClientPartialTest {
         masterNode.setAeron(aeron);
         masterNode.run(new String[] {
                 "-m","true",
-                "-p","40123",
+                "-p","40223",
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "10000",
+                "-sp", "20000",
                 "-s","2,2"
         });
 
         assertTrue(masterNode.isMaster());
         assertEquals(1000,masterNode.getParameterLength());
-        assertEquals(40123,masterNode.getPort());
+        assertEquals(40223,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
         assertEquals(12,masterNode.getResponder().getStreamId());
@@ -67,17 +66,17 @@ public class ParameterServerClientPartialTest {
         slaveNode = new ParameterServerSubscriber(mediaDriver);
         slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
-                "-p","40126",
+                "-p","40226",
                 "-h","localhost",
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "11000"
+                "-sp", "21000"
         });
 
         assertFalse(slaveNode.isMaster());
         assertEquals(1000,slaveNode.getParameterLength());
-        assertEquals(40126,slaveNode.getPort());
+        assertEquals(40226,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
 
@@ -96,12 +95,10 @@ public class ParameterServerClientPartialTest {
     }
 
 
-    @After
-    public void after() {
-        if(mediaDriver != null)
-            CloseHelper.close(mediaDriver);
-        if(aeron != null)
-            CloseHelper.close(aeron);
+    @AfterClass
+    public static void after() {
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(mediaDriver);
     }
 
     @Test
@@ -112,9 +109,9 @@ public class ParameterServerClientPartialTest {
                 .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
                 .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl())
                 .subscriberHost("localhost")
-                .subscriberPort(40125)
+                .subscriberPort(40325)
                 .subscriberStream(12).build();
-        assertEquals("localhost:40125:12",client.connectionUrl());
+        assertEquals("localhost:40325:12",client.connectionUrl());
         //flow 1:
         /**
          * Client (40125:12): sends array to listener on slave(40126:10)
@@ -124,7 +121,7 @@ public class ParameterServerClientPartialTest {
          */
         client.pushNDArrayMessage(NDArrayMessage.of(Nd4j.ones(2),new int[]{0},0));
         log.info("Pushed ndarray");
-        Thread.sleep(10000);
+        Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
         assertEquals(1,listener.getTotalN().get());
         INDArray assertion = Nd4j.create(new int[]{2,2});
@@ -139,12 +136,12 @@ public class ParameterServerClientPartialTest {
 
 
 
-    private Aeron.Context getContext() {
+    private static Aeron.Context getContext() {
         if(ctx == null)
             ctx = new Aeron.Context().publicationConnectionTimeout(-1)
                     .availableImageHandler(AeronUtil::printAvailableImage)
                     .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
                     .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }

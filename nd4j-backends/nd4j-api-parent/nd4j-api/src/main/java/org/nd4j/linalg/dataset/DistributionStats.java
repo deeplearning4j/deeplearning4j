@@ -99,6 +99,11 @@ public class DistributionStats {
             data = DataSetUtil.tailor2d(data, mask);
 
             // Using https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+            if (data == null) {
+                // Nothing to add. Either data is empty or completely masked. Just skip it, otherwise we will get
+                // division by 0 exceptions.
+                return this;
+            }
             INDArray mean = data.mean(0);
             INDArray variance = data.var(false, 0);
             int count = data.size(0);
@@ -133,6 +138,9 @@ public class DistributionStats {
          * online.
          */
         public DistributionStats build() {
+            if (runningMean == null) {
+                throw new RuntimeException("No data was added, statistics cannot be determined");
+            }
             return new DistributionStats(runningMean.dup(), Transforms.sqrt(runningVariance, true));
         }
 
