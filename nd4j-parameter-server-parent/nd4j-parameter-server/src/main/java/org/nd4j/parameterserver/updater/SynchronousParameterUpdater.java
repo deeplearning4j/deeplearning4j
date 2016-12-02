@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.updater;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NoArgsConstructor;
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
@@ -21,6 +22,13 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
     private int workers = Runtime.getRuntime().availableProcessors();
     private int accumulatedUpdates;
     private static ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Initialize with the number of workers
+     * for the updater
+     * @param workers the number of workers for the updater.
+     *                Defaults to the number of cores on the machine.
+     */
     public SynchronousParameterUpdater(int workers) {
         this.workers = workers;
     }
@@ -72,6 +80,32 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
     @Override
     public boolean shouldReplicate() {
         return accumulatedUpdates == workers;
+    }
+
+    /**
+     * Do an update based on the ndarray message.
+     *
+     * @param message
+     */
+    @Override
+    public void update(NDArrayMessage message) {
+
+    }
+
+    /**
+     * Updates result
+     * based on arr along a particular
+     * {@link INDArray#tensorAlongDimension(int, int...)}
+     *
+     * @param arr        the array to update
+     * @param result     the result ndarray to update
+     * @param idx        the index to update
+     * @param dimensions the dimensions to update
+     */
+    @Override
+    public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
+        result.tensorAlongDimension((int) idx,dimensions).addi(result);
+        accumulatedUpdates++;
     }
 
     /**

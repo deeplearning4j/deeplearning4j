@@ -91,6 +91,7 @@
         <module>nd4j-parameter-server-client</module>
         <module>nd4j-parameterserver-model</module>
         <module>nd4j-parameter-server-status</module>
+        <module>nd4j-parameter-server-rocksdb-storage</module>
     </modules>
 
     <properties>

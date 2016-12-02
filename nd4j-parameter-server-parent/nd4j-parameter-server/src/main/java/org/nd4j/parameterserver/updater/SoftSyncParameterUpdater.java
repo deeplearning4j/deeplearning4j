@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.updater;
 
+import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
@@ -55,6 +56,31 @@ public class SoftSyncParameterUpdater implements ParameterServerUpdater  {
     @Override
     public boolean shouldReplicate() {
         return accumulatedUpdates == s;
+    }
+
+    /**
+     * Do an update based on the ndarray message.
+     *
+     * @param message
+     */
+    @Override
+    public void update(NDArrayMessage message) {
+
+    }
+
+    /**
+     * Updates result
+     * based on arr along a particular
+     * {@link INDArray#tensorAlongDimension(int, int...)}
+     *
+     * @param arr        the array to update
+     * @param result     the result ndarray to update
+     * @param idx        the index to update
+     * @param dimensions the dimensions to update
+     */
+    @Override
+    public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
+
     }
 
     /**
