@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Created by agibsonccc on 12/1/16.
  */
-public class TimeDelayedParameterUpdater implements ParameterServerUpdater {
+public class TimeDelayedParameterUpdater extends BaseParameterUpdater {
     private long syncTime;
     private long lastSynced;
 

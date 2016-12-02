@@ -9,18 +9,20 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.ParameterServerUpdater;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Parameter server
- * listener
+ * listener. This holds an
+ * {@link INDArray} in memory
+ * and maintains the "master copy"
+ *
+ * of the ndarray.
  * @author Adam Gibson
  */
 @Data
 public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
     private INDArray arr;
     private ParameterServerUpdater updater = new SynchronousParameterUpdater();
-    private AtomicInteger totalN = new AtomicInteger(0);
     private boolean master;
     private int[] shape;
 
@@ -40,15 +42,7 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
      */
     @Override
     public void onNDArrayMessage(NDArrayMessage message) {
-        INDArray arr = message.getArr();
-        //of note for ndarrays
-        int[] dimensions = message.getDimensions();
-        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
-
-        if(!whole)
-            onNDArrayPartial(arr,message.getIndex(),dimensions);
-        else
-            onNDArray(arr);
+        updater.update(message);
     }
 
     /**
@@ -60,9 +54,7 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
      */
     @Override
     public synchronized  void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-        INDArray arr2 = this.arr.tensorAlongDimension((int) idx,dimensions);
-        arr2.addi(arr);
-        totalN.incrementAndGet();
+       updater.partialUpdate(arr,this.arr,idx,dimensions);
     }
 
     /**
@@ -73,17 +65,16 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
     @Override
     public synchronized void onNDArray(INDArray arr) {
         if(shape == null)
-           updater.update(arr.reshape(1,arr.length()),this.arr);
+            updater.update(arr.reshape(1,arr.length()),this.arr);
         else
             updater.update(arr,this.arr);
-        totalN.incrementAndGet();
     }
 
     /**
      * Do a final divide for averaging
      */
     public synchronized void finish() {
-        this.arr.divi(totalN);
+        this.arr.divi(totalUpdates());
     }
 
     /**
@@ -94,7 +85,7 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
      */
     @Override
     public int totalUpdates() {
-        return totalN.get();
+        return updater.numUpdates();
     }
 
     /**

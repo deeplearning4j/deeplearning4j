@@ -14,6 +14,13 @@ import java.util.Map;
 public interface ParameterServerUpdater {
 
 
+    /**
+     * Num updates passed through
+     * the updater
+     * @return the number of updates
+     *
+     */
+    int numUpdates();
 
 
     /**

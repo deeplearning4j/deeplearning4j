@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Created by agibsonccc on 12/1/16.
  */
-public class SoftSyncParameterUpdater implements ParameterServerUpdater  {
+public class SoftSyncParameterUpdater extends BaseParameterUpdater  {
     //s is the number of updates
     private int s;
     private int currentVersion;

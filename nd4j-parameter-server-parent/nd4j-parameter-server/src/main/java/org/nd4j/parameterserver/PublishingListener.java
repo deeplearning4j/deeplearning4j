@@ -30,15 +30,16 @@ public class PublishingListener implements NDArrayCallback {
      */
     @Override
     public void onNDArrayMessage(NDArrayMessage message) {
-        INDArray arr = message.getArr();
-        //of note for ndarrays
-        int[] dimensions = message.getDimensions();
-        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+                .streamId(streamId)
+                .ctx(aeronContext).channel(masterUrl)
+                .build()) {
+            publisher.publish(message);
+            log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-        if(!whole)
-            onNDArrayPartial(arr,message.getIndex(),dimensions);
-        else
-            onNDArray(arr);
     }
 
     /**

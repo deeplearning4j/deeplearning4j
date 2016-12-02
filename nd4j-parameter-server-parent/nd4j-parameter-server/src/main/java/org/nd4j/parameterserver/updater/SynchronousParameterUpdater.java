@@ -17,10 +17,9 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class SynchronousParameterUpdater implements ParameterServerUpdater {
+public class SynchronousParameterUpdater extends BaseParameterUpdater {
 
     private int workers = Runtime.getRuntime().availableProcessors();
-    private int accumulatedUpdates;
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -43,7 +42,7 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
     public Map<String, Number> status() {
         Map<String,Number> ret = new HashMap<>();
         ret.put("workers",workers);
-        ret.put("accumulatedUpdates",accumulatedUpdates);
+        ret.put("accumulatedUpdates",numUpdates());
         return ret;
     }
 
@@ -61,14 +60,6 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
         }
     }
 
-    /**
-     * Reset internal counters
-     * such as number of updates accumulated.
-     */
-    @Override
-    public void reset() {
-        accumulatedUpdates = 0;
-    }
 
     /**
      * Returns true if
@@ -79,7 +70,7 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
      */
     @Override
     public boolean shouldReplicate() {
-        return accumulatedUpdates == workers;
+        return numUpdates() == workers;
     }
 
     /**
@@ -89,7 +80,7 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
      */
     @Override
     public void update(NDArrayMessage message) {
-
+        updateStorage.addUpdate(message);
     }
 
     /**
@@ -105,7 +96,6 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
     @Override
     public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
         result.tensorAlongDimension((int) idx,dimensions).addi(result);
-        accumulatedUpdates++;
     }
 
     /**
@@ -118,6 +108,5 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
     @Override
     public void update(INDArray arr, INDArray result) {
         result.addi(arr);
-        accumulatedUpdates++;
     }
 }
