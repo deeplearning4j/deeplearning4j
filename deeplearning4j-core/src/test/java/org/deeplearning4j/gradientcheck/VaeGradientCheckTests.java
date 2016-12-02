@@ -53,14 +53,13 @@ public class VaeGradientCheckTests {
         //Post pre-training: a VAE can be used as a MLP, by taking the mean value from p(z|x) as the output
         //This gradient check tests this part
 
-//        String[] activFns = {"identity","tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
-        String[] activFns = {"tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        String[] activFns = {"identity","tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
 
-//        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-//        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        String[] outputActivations = {"softmax", "tanh"};    //i.e., lossFunctions[i] used with outputActivations[i] here
 
-        LossFunction[] lossFunctions = {LossFunction.MSE};
-        String[] outputActivations = {"tanh"};
+        double[] l2vals = {0.0, 0.4, 0.0, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -73,52 +72,54 @@ public class VaeGradientCheckTests {
 
         for (String afn : activFns) {
             for (int i = 0; i < lossFunctions.length; i++) {
-                LossFunction lf = lossFunctions[i];
-                String outputActivation = outputActivations[i];
+                for (int k = 0; k < l2vals.length; k++) {
+                    LossFunction lf = lossFunctions[i];
+                    String outputActivation = outputActivations[i];
+                    double l2 = l2vals[k];
+                    double l1 = l1vals[k];
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .regularization(false)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(1.0)
-                        .seed(12345L)
-                        .list()
-                        .layer(0, new VariationalAutoencoder.Builder()
-                                .nIn(4).nOut(3)
-                                .encoderLayerSizes(5)
-                                .decoderLayerSizes(6)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                .activation(afn)
-                                .updater(Updater.SGD)
-                                .build())
-                        .layer(1, new OutputLayer.Builder(lf)
-                                .activation(outputActivation)
-                                .nIn(3).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                .updater(Updater.SGD)
-                                .build())
-                        .pretrain(false).backprop(true)
-                        .build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .regularization(true)
+                            .l2(l2).l1(l1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .learningRate(1.0)
+                            .seed(12345L)
+                            .list()
+                            .layer(0, new VariationalAutoencoder.Builder()
+                                    .nIn(4).nOut(3)
+                                    .encoderLayerSizes(5)
+                                    .decoderLayerSizes(6)
+                                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                    .activation(afn)
+                                    .updater(Updater.SGD)
+                                    .build())
+                            .layer(1, new OutputLayer.Builder(lf)
+                                    .activation(outputActivation)
+                                    .nIn(3).nOut(3)
+                                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                    .updater(Updater.SGD)
+                                    .build())
+                            .pretrain(false).backprop(true)
+                            .build();
 
-                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                mln.init();
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
 
-                if (PRINT_RESULTS) {
-                    System.out.println("testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation);
-                    for (int j = 0; j < mln.getnLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                    if (PRINT_RESULTS) {
+                        System.out.println("testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                                + ", l2=" + l2 + ", l1=" + l1);
+                        for (int j = 0; j < mln.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    String msg = "testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                            + ", l2=" + l2 + ", l1=" + l1;;
+                    assertTrue(msg, gradOK);
                 }
-
-                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                String msg = "testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation;
-                assertTrue(msg, gradOK);
             }
         }
-    }
-
-    @Test
-    public void testVaeAsMLP_L1L2Simple() {
-        fail();
     }
 }
