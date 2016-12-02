@@ -106,7 +106,7 @@ public class ParameterServerClientTest {
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
-        assertEquals(1,listener.getTotalN().get());
+        assertEquals(1,listener.getUpdater().numUpdates());
         assertEquals(Nd4j.ones(parameterLength),listener.getArr());
         INDArray arr = client.getArray();
         assertEquals(Nd4j.ones(1000),arr);

@@ -123,7 +123,7 @@ public class ParameterServerClientPartialTest {
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
-        assertEquals(1,listener.getTotalN().get());
+        assertEquals(1,listener.getUpdater().numUpdates());
         INDArray assertion = Nd4j.create(new int[]{2,2});
         assertion.getColumn(0).addi(1.0);
         assertEquals(assertion,listener.getArr());
