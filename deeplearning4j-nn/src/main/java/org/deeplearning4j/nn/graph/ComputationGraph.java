@@ -1228,7 +1228,7 @@ public class ComputationGraph implements Serializable, Model {
     public double calcL2() {
         double l2 = 0.0;
         for (Layer l : layers) {
-            l2 += l.calcL2();
+            l2 += l.calcL2(true);
         }
         return l2;
     }
@@ -1240,7 +1240,7 @@ public class ComputationGraph implements Serializable, Model {
     public double calcL1() {
         double l1 = 0.0;
         for (Layer l : layers) {
-            l1 += l.calcL1();
+            l1 += l.calcL1(true);
         }
         return l1;
     }

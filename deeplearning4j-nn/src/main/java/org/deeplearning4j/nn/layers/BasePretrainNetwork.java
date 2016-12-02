@@ -102,7 +102,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
-        score += calcL1() + calcL2();
+        score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
 
         this.score = score;
@@ -156,6 +156,29 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         return result;
+    }
+
+
+    @Override
+    public double calcL2(boolean backpropParamsOnly) {
+        if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+        double l2Sum = super.calcL2(true);
+        if(backpropParamsOnly) return l2Sum;
+        if(conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0){
+            double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
+            l2Sum += 0.5 * conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
+        }
+        return l2Sum;
+    }
+
+    @Override
+    public double calcL1(boolean backpropParamsOnly) {
+        if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
+        double l1Sum = super.calcL1(true);
+        if(conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0){
+            l1Sum += conf.getLayer().getL1() * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
+        }
+        return l1Sum;
     }
 
 }
