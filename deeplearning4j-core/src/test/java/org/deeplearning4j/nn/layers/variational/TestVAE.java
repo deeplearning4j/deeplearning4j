@@ -80,4 +80,35 @@ public class TestVAE {
         }
     }
 
+    @Test
+    public void testPretrainSimple(){
+
+        int inputSize = 10;
+
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .nIn(inputSize).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
+                .pretrain(true).backprop(false)
+                .build();
+
+        NeuralNetConfiguration c = mlc.getConf(0);
+        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae = (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+
+        int allParams = vae.initializer().numParams(c);
+
+        //                  Encoder         Encoder -> p(z|x)       Decoder         //p(x|z)
+        int expNumParams = (10 * 12 + 12) + (12 * (2*5) + (2*5)) + (5 * 13 + 13) + (13 * (2*10) + (2*10));
+        assertEquals(expNumParams, allParams);
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        INDArray data = Nd4j.rand(1, inputSize);
+
+        net.fit(data);
+
+
+    }
+
 }
