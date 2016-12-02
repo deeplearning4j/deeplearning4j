@@ -646,4 +646,12 @@ public class NativeOpExecutionerTest {
     public void testFallbackEcho() {
         log.info("Fallback enabled? {}", Nd4j.isFallbackModeEnabled());
     }
+
+
+    @Test
+    public void testPewPew() {
+        INDArray array = Nd4j.ones(2, 2).eq(1);
+
+        log.info("Result: {} ", array);
+    }
 }

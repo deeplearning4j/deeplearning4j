@@ -550,4 +550,20 @@ public class SporadicTests {
         System.out.println(arr.eps(1.0));
         System.out.println(arr.eps(2.0));
     }
+
+    @Test
+    public void testNeg() {
+        INDArray rnd = Nd4j.rand(2, 2);
+        System.out.println(rnd.equals(rnd.neq(1)));
+    }
+
+    @Test
+    public void testEq() {
+        INDArray z = Nd4j.ones(2, 2)
+                .eq(2);
+
+        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        System.out.println("Z: " + z);
+    }
 }
