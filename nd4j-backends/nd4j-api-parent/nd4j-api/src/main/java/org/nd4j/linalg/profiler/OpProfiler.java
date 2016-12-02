@@ -307,14 +307,26 @@ public class OpProfiler {
         System.out.println(methodsAggregator.asPercentageString());
         System.out.println();
         logger.info("--- Bad strides stack tree: ---");
+        System.out.println("Unique entries: " + stridedAggregator.getUniqueBranchesNumber());
         stridedAggregator.renderTree();
         System.out.println();
         logger.info("--- non-EWS access stack tree: ---");
+        System.out.println("Unique entries: " + nonEwsAggregator.getUniqueBranchesNumber());
         nonEwsAggregator.renderTree();
         System.out.println();
         logger.info("--- Mixed orders access stack tree: ---");
+        System.out.println("Unique entries: " + mixedOrderAggregator.getUniqueBranchesNumber());
         mixedOrderAggregator.renderTree();
         System.out.println();
+        logger.info("--- TAD bad strides stack tree: ---");
+        System.out.println("Unique entries: " + tadStridedAggregator.getUniqueBranchesNumber());
+        tadStridedAggregator.renderTree();
+        System.out.println();
+        logger.info("--- TAD non-EWS access stack tree: ---");
+        System.out.println("Unique entries: " + tadNonEwsAggregator.getUniqueBranchesNumber());
+        tadNonEwsAggregator.renderTree();
+        System.out.println();
+
     }
 
 
