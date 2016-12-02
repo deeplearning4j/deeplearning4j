@@ -89,7 +89,7 @@ Each of these optimization algorithms may be paired with training features (know
 
 ### Activation functions 
 
-Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
+Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
 
 * ReLU
 * Leaky ReLU
