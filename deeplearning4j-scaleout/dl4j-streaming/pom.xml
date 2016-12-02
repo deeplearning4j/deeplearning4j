@@ -7,12 +7,12 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-streaming_2.10</artifactId>
     <packaging>jar</packaging>
-    <version>0.7.1</version>
+    <version>0.7.2-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.1</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
 
     <properties>
