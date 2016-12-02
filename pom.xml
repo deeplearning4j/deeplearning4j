@@ -18,7 +18,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>arbiter</artifactId>
-    <version>0.7.1-SNAPSHOT</version>
+    <version>0.7.1</version>
     <modules>
         <module>arbiter-deeplearning4j</module>
         <module>arbiter-core</module>
@@ -54,9 +54,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dl4j.version>0.7.1-SNAPSHOT</dl4j.version>
-        <nd4j.version>0.7.1-SNAPSHOT</nd4j.version>
-        <datavec.version>0.7.1-SNAPSHOT</datavec.version>
+        <dl4j.version>0.7.1</dl4j.version>
+        <nd4j.version>0.7.1</nd4j.version>
+        <datavec.version>0.7.1</datavec.version>
         <commons.math.version>3.4.1</commons.math.version>
         <commons.lang.version>3.3.1</commons.lang.version>
         <commons.io.version>2.4</commons.io.version>
