@@ -46,7 +46,7 @@ public class ActivationRRelu implements IActivation {
     }
 
     private boolean overWriteAlpha(int[] inShape) {
-        return !forwardSaved && Arrays.equals(inShape,alpha.shape());
+        return !forwardSaved || !Arrays.equals(inShape,alpha.shape());
 
     }
 
@@ -83,7 +83,7 @@ public class ActivationRRelu implements IActivation {
                 1; x>=0
                 alpha; x<0
          */
-        if (overWriteAlpha(in)) {
+        if (overWriteAlpha(in.shape())) {
             //should never have to overwrite alpha here, throw error/warning?
             //only as a result of user error
                 //computegradient was called before compute activation
