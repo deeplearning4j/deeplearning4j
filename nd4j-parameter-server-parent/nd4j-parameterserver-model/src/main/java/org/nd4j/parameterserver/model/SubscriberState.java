@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.*;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Reflects the state of
@@ -22,7 +24,7 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
     private int totalUpdates;
     private int streamId;
     private String connectionInfo;
-
+    private Map<String,Object> parameterUpdaterStatus;
     /**
      * Returns an empty subscriber state
      * with -1 as total updates, master as false
@@ -31,7 +33,7 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
      */
     public static SubscriberState empty() {
         return SubscriberState.builder().serverState("empty")
-                .streamId(-1)
+                .streamId(-1).parameterUpdaterStatus(Collections.emptyMap())
                 .totalUpdates(-1).isMaster(false).build();
     }
 
@@ -50,6 +52,7 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
         dataOutput.writeUTF(serverState);
         dataOutput.writeInt(totalUpdates);
         dataOutput.writeInt(streamId);
+
     }
 
     /**
@@ -67,7 +70,8 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
                 .isMaster(dataInput.readBoolean())
                 .serverState(dataInput.readUTF())
                 .totalUpdates(dataInput.readInt())
-                .streamId(dataInput.readInt()).build();
+                .streamId(dataInput.readInt())
+                .build();
     }
 
 

@@ -3,6 +3,9 @@ package org.nd4j.parameterserver.updater;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Adds the 2 arrays together,
  * synchronizing when
@@ -18,6 +21,30 @@ public class SynchronousParameterUpdater implements ParameterServerUpdater {
 
     public SynchronousParameterUpdater(int workers) {
         this.workers = workers;
+    }
+
+    /**
+     * Returns the current status of this parameter server
+     * updater
+     *
+     * @return
+     */
+    @Override
+    public Map<String, Number> status() {
+        Map<String,Number> ret = new HashMap<>();
+        ret.put("workers",workers);
+        ret.put("accumulatedUpdates",accumulatedUpdates);
+        return ret;
+    }
+
+    /**
+     * Serialize this updater as json
+     *
+     * @return
+     */
+    @Override
+    public String toJson() {
+        return null;
     }
 
     /**

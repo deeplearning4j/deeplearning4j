@@ -2,6 +2,8 @@ package org.nd4j.parameterserver.updater;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Map;
+
 /**
  * Created by agibsonccc on 12/1/16.
  */
@@ -9,6 +11,27 @@ public class TimeDelayedParameterUpdater implements ParameterServerUpdater {
     private long syncTime;
     private long lastSynced;
 
+
+    /**
+     * Returns the current status of this parameter server
+     * updater
+     *
+     * @return
+     */
+    @Override
+    public Map<String, Number> status() {
+        return null;
+    }
+
+    /**
+     * Serialize this updater as json
+     *
+     * @return
+     */
+    @Override
+    public String toJson() {
+        return null;
+    }
 
     /**
      * Reset internal counters

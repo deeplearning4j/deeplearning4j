@@ -2,6 +2,8 @@ package org.nd4j.parameterserver.updater;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Map;
+
 /**
  * A parameter server updater
  * for applying updates on the parameter server
@@ -10,6 +12,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface ParameterServerUpdater {
 
+
+    /**
+     * Returns the current status of this parameter server
+     * updater
+     * @return
+     */
+    Map<String,Number> status();
+
+    /**
+     * Serialize this updater as json
+     * @return
+     */
+    String toJson();
 
     /**
      * Reset internal counters
