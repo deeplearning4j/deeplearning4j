@@ -107,7 +107,7 @@ public class ParameterServerClientTest {
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
         assertEquals(1,listener.getUpdater().numUpdates());
-        assertEquals(Nd4j.ones(parameterLength),listener.getArr());
+        assertEquals(Nd4j.ones(parameterLength),listener.getUpdater().ndArrayHolder().get());
         INDArray arr = client.getArray();
         assertEquals(Nd4j.ones(1000),arr);
     }

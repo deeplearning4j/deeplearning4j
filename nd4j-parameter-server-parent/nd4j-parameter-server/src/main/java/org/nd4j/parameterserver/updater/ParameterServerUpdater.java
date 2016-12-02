@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.updater;
 
+import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -13,6 +14,12 @@ import java.util.Map;
  */
 public interface ParameterServerUpdater {
 
+    /**
+     * Get the ndarray holder for this
+     * updater
+     * @return the ndarray holder for this updater
+     */
+    NDArrayHolder ndArrayHolder();
 
     /**
      * Num updates passed through

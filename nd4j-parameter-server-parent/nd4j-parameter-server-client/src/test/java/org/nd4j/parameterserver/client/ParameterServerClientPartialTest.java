@@ -126,7 +126,7 @@ public class ParameterServerClientPartialTest {
         assertEquals(1,listener.getUpdater().numUpdates());
         INDArray assertion = Nd4j.create(new int[]{2,2});
         assertion.getColumn(0).addi(1.0);
-        assertEquals(assertion,listener.getArr());
+        assertEquals(assertion,listener.getUpdater().ndArrayHolder().get());
         INDArray arr = client.getArray();
         assertEquals(assertion,arr);
     }

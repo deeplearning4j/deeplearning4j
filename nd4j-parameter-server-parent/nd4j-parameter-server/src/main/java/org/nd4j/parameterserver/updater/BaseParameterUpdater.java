@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.updater;
 
+import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.updater.storage.UpdateStorage;
 
@@ -12,6 +13,18 @@ import org.nd4j.parameterserver.updater.storage.UpdateStorage;
  */
 public abstract class BaseParameterUpdater implements ParameterServerUpdater {
     protected UpdateStorage updateStorage;
+    protected NDArrayHolder ndArrayHolder;
+
+    /**
+     * Get the ndarray holder for this
+     * updater
+     *
+     * @return the ndarray holder for this updater
+     */
+    @Override
+    public NDArrayHolder ndArrayHolder() {
+        return ndArrayHolder;
+    }
 
     /**
      * Initialize this updater

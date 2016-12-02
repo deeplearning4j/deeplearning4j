@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.updater;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.aeron.ipc.NDArrayMessage;
+import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -30,6 +31,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
      */
     public SynchronousParameterUpdater(int workers) {
         this.workers = workers;
+        this.ndArrayHolder = new InMemoryNDArrayHolder();
     }
 
     /**

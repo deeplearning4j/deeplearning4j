@@ -55,39 +55,40 @@ public class ParameterServerSubscriber {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
 
-    @Parameter(names={"-p","--port"}, description = "The port to listen on for the daemon", arity = 1)
+    @Parameter(names = {"-p", "--port"}, description = "The port to listen on for the daemon", arity = 1)
     private int port = 40123;
-    @Parameter(names={"-id","--streamId"}, description = "The stream id to listen on", arity = 1)
+    @Parameter(names = {"-id", "--streamId"}, description = "The stream id to listen on", arity = 1)
     private int streamId = 10;
-    @Parameter(names={"-h","--host"}, description = "Host for the server to bind to", arity = 1)
+    @Parameter(names = {"-h", "--host"}, description = "Host for the server to bind to", arity = 1)
     private String host = "localhost";
-    @Parameter(names={"-l","--parameterLength"}, description = "Parameter length for parameter averaging", arity = 1)
+    @Parameter(names = {"-l", "--parameterLength"}, description = "Parameter length for parameter averaging", arity = 1)
     private int parameterLength = 1000;
-    @Parameter(names={"-d","--deleteDirectoryOnStart"}, description = "Delete aeron directory on startup.", arity = 1)
+    @Parameter(names = {"-d", "--deleteDirectoryOnStart"}, description = "Delete aeron directory on startup.", arity = 1)
     private boolean deleteDirectoryOnStart = true;
-    @Parameter(names={"-m","--master"}, description = "Whether this subscriber is a master node or not.", arity = 1)
+    @Parameter(names = {"-m", "--master"}, description = "Whether this subscriber is a master node or not.", arity = 1)
     private boolean master = false;
-    @Parameter(names={"-pm","--publishmaster"}, description = "Publish master url: host:port - this is for peer nodes needing to publish to another peer.", arity = 1)
+    @Parameter(names = {"-pm", "--publishmaster"}, description = "Publish master url: host:port - this is for peer nodes needing to publish to another peer.", arity = 1)
     private String publishMasterUrl = "localhost:40123";
-    @Parameter(names={"-md","--mediadriverdirectory"}, description = "The media driver directory name. This is for when the media driver is started as a separate process.", arity = 1)
+    @Parameter(names = {"-md", "--mediadriverdirectory"}, description = "The media driver directory name. This is for when the media driver is started as a separate process.", arity = 1)
     private String mediaDriverDirectoryName;
-    @Parameter(names={"-sp","--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
+    @Parameter(names = {"-sp", "--statusserverport"}, description = "The status server port, defaults to 9000.", arity = 1)
     private int statusServerPort = 9000;
-    @Parameter(names={"-sh","--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
+    @Parameter(names = {"-sh", "--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
     private String statusServerHost = "localhost";
-    @Parameter(names={"-up","--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
+    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
     private String updateTypeString;
 
     private UpdateType updateType = UpdateType.SYNC;
 
-    @Parameter(names={"-s","--shape"}, description = "The shape of the ndarray", arity = 1)
+    @Parameter(names = {"-s", "--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
-    @Parameter(names={"-hbi","--heartbeatinterval"}, description = "The shape of the ndarray", arity = 1)
+    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "The shape of the ndarray", arity = 1)
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
+
     public enum UpdateType {
-        HOGWILD,SYNC,TIME_DELAYED,SOFTSYNC
+        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC
     }
 
 
@@ -103,6 +104,7 @@ public class ParameterServerSubscriber {
     /**
      * Allow passing in a
      * media driver that already exists
+     *
      * @param mediaDriver
      */
     public ParameterServerSubscriber(MediaDriver mediaDriver) {
@@ -114,6 +116,7 @@ public class ParameterServerSubscriber {
     /**
      * Return the current {@link SubscriberState}
      * of this subscriber
+     *
      * @return the current state of this subscriber
      */
     public SubscriberState asState() {
@@ -132,10 +135,11 @@ public class ParameterServerSubscriber {
      * it returns the connection url for this node
      * and the associated master connection urls in the form of:
      * host:port:streamId
+     *
      * @return the slave connection info
      */
     public SlaveConnectionInfo slaveConnectionInfo() {
-        if(isMaster())
+        if (isMaster())
             throw new IllegalStateException("Unable to determine slave connection info. This is a master node");
         return SlaveConnectionInfo.builder()
                 .connectionUrl(subscriber.connectionUrl())
@@ -150,10 +154,11 @@ public class ParameterServerSubscriber {
      * it's slaves (if any exist) and the responder
      * connection url in the form of:
      * host:port:streamId
+     *
      * @return the master connection info
      */
     public MasterConnectionInfo masterConnectionInfo() {
-        if(!isMaster())
+        if (!isMaster())
             throw new IllegalStateException("Unable to determine master connection info. This is a slave node");
         return MasterConnectionInfo.builder()
                 .connectionUrl(subscriber.connectionUrl())
@@ -162,7 +167,6 @@ public class ParameterServerSubscriber {
     }
 
     /**
-     *
      * @param args
      */
     public void run(String[] args) {
@@ -170,20 +174,23 @@ public class ParameterServerSubscriber {
 
         try {
             jcmdr.parse(args);
-        } catch(ParameterException e) {
+        } catch (ParameterException e) {
             //User provides invalid input -> print the usage info
             jcmdr.usage();
-            try{ Thread.sleep(500); } catch(Exception e2){ }
+            try {
+                Thread.sleep(500);
+            } catch (Exception e2) {
+            }
             System.exit(1);
         }
 
-        if(publishMasterUrl == null && !master)
+        if (publishMasterUrl == null && !master)
             throw new IllegalStateException("Please specify a master url or set master to true");
 
         //allows passing in a media driver for things like unit tests
         //also ensure we don't use a media driver when a directory is specified
         //for a remote one
-        if(mediaDriver == null && mediaDriverDirectoryName == null) {
+        if (mediaDriver == null && mediaDriverDirectoryName == null) {
             //length of array * sizeof(float)
             int ipcLength = ArrayUtil.prod(Ints.toArray(shape)) * 4;
             //must be a power of 2
@@ -191,7 +198,7 @@ public class ParameterServerSubscriber {
             //padding for NDArrayMessage
             ipcLength += 64;
             //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
-            System.setProperty("aeron.socket.so_rcvbuf",String.valueOf(ipcLength));
+            System.setProperty("aeron.socket.so_rcvbuf", String.valueOf(ipcLength));
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
                     .threadingMode(ThreadingMode.DEDICATED)
                     .dirsDeleteOnStart(deleteDirectoryOnStart)
@@ -209,27 +216,25 @@ public class ParameterServerSubscriber {
             log.info("Using media driver directory " + mediaDriver.aeronDirectoryName());
         }
 
-        if(aeron == null)
+        if (aeron == null)
             this.aeron = Aeron.connect(getContext());
 
 
-
-        if(master) {
+        if (master) {
             //instantiate with shape instead of just length
-            callback =  new ParameterServerListener(Ints.toArray(shape));
+            callback = new ParameterServerListener(Ints.toArray(shape));
             parameterServerListener = (ParameterServerListener) callback;
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
             responder = AeronNDArrayResponder.startSubscriber(
                     aeron,
-                    host,port + 1,
-                    cast,
+                    host, port + 1,
+                    cast.getUpdater().ndArrayHolder(),
                     streamId + 1);
             log.info("Started responder on master node " + responder.connectionUrl());
-        }
-        else {
+        } else {
             String[] publishMasterUrlArr = publishMasterUrl.split(":");
-            if(publishMasterUrlArr == null || publishMasterUrlArr.length < 2)
+            if (publishMasterUrlArr == null || publishMasterUrlArr.length < 2)
                 throw new IllegalStateException("Please specify publish master url as host:port");
 
             callback = new PublishingListener(
@@ -240,55 +245,53 @@ public class ParameterServerSubscriber {
                     getContext());
         }
 
-        log.info("Starting subscriber on " +  host + ":" + port + " and stream " + streamId);
+        log.info("Starting subscriber on " + host + ":" + port + " and stream " + streamId);
         AtomicBoolean running = new AtomicBoolean(true);
 
         //start a node
         subscriber = AeronNDArraySubscriber.startSubscriber(
                 aeron,
-                host,port,
+                host, port,
                 callback,
-                streamId,running);
+                streamId, running);
 
-        while(!subscriber.launched()) {
+        while (!subscriber.launched()) {
             LockSupport.parkNanos(100000);
         }
 
         //send heartbeat to a status server. There will usually be 1 status server per master.
         //Only schedule this if a remote server is available.
-       if(CheckSocket.remotePortTaken(statusServerHost,statusServerPort,10000)) {
-           scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        if (CheckSocket.remotePortTaken(statusServerHost, statusServerPort, 10000)) {
+            scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-           scheduledExecutorService.scheduleAtFixedRate(() -> {
-               try {
-                   JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
-                   Unirest.post(String.format("http://%s:%d/updatestatus/%d",statusServerHost,statusServerPort,streamId))
-                           .body(jsonObject).getEntity();
-               } catch (JsonProcessingException e) {
-                   e.printStackTrace();
-               }
-           },1000,heartbeatMs, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.scheduleAtFixedRate(() -> {
+                try {
+                    JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
+                    Unirest.post(String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId))
+                            .body(jsonObject).getEntity();
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+            }, 1000, heartbeatMs, TimeUnit.MILLISECONDS);
 
-       }
-       else {
+        } else {
             log.info("No status server found. Will not send heartbeats. Specified host was " + statusServerHost + " and port was " + statusServerPort);
-       }
+        }
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if(subscriber != null)
+            if (subscriber != null)
                 CloseHelper.quietClose(subscriber);
-            if(responder != null)
+            if (responder != null)
                 CloseHelper.quietClose(responder);
-            if(aeron != null)
+            if (aeron != null)
                 CloseHelper.quietClose(aeron);
-            if(scheduledExecutorService != null)
+            if (scheduledExecutorService != null)
                 scheduledExecutorService.shutdown();
 
         }));
 
         //set the server for the status of the master and slave nodes
-
 
 
     }
@@ -307,6 +310,7 @@ public class ParameterServerSubscriber {
     /**
      * Get the master ndarray from the
      * internal {@link NDArrayHolder}
+     *
      * @return the master ndarray
      */
     public INDArray getMasterArray() {
@@ -317,6 +321,7 @@ public class ParameterServerSubscriber {
 
     /**
      * Returns true if the subscriber is launched
+     *
      * @return
      */
     public boolean subscriberLaunched() {

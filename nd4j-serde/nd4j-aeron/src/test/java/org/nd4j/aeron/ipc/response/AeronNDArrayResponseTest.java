@@ -59,7 +59,18 @@ public class AeronNDArrayResponseTest {
                 host,
                 40124,
                 new NDArrayHolder() {
-                    /**
+                            /**
+                             * Set the ndarray
+                             *
+                             * @param arr the ndarray for this holder
+                             *            to use
+                             */
+                            @Override
+                            public void setArray(INDArray arr) {
+
+                            }
+
+                            /**
                      * The number of updates
                      * that have been sent to this older.
                      *
