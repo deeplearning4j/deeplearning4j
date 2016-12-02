@@ -123,7 +123,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         if(initializeParameters){
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist, weightParamView, false);
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist, weightParamView, true);
         } else {
             return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, null, weightParamView, false);
         }
@@ -145,7 +145,4 @@ public class DefaultParamInitializer implements ParamInitializer {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);
         }
     }
-
-
-
 }

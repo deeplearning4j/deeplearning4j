@@ -6,10 +6,8 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -113,7 +111,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         for(int i = 0; i < nParams; i++) {
             //Get param name
-            if(i > paramEnds[currParamNameIdx]){
+            if(i >= paramEnds[currParamNameIdx]){
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);

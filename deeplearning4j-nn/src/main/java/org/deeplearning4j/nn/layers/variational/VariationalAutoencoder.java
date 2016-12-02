@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -217,12 +218,32 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public double calcL2() {
-        return 0.0;     //TODO
+        //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
+        if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+
+        double sum = 0.0;
+        for(Map.Entry<String,INDArray> e : paramTable().entrySet()){
+            double l2 = conf().getL2ByParam(e.getKey());
+            if(l2 <= 0.0) continue;
+            double l2Norm = e.getValue().norm2Number().doubleValue();
+            sum += 0.5 * l2 * l2Norm * l2Norm;
+        }
+        return sum;
     }
 
     @Override
     public double calcL1() {
-        return 0.0;     //TODO
+        //TODO *** During backprop, we should only consider the backprop params, not _all_ params ***
+        if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
+
+        double sum = 0.0;
+        for(Map.Entry<String,INDArray> e : paramTable().entrySet()){
+            double l1 = conf().getL1ByParam(e.getKey());
+            if(l1 <= 0.0) continue;
+            double l1Norm = e.getValue().norm1Number().doubleValue();
+            sum += l1 * l1Norm;
+        }
+        return sum;
     }
 
     @Override
