@@ -81,6 +81,7 @@ Note, be sure to install the ND4J modules you need first, especially the backend
 ---
 ## Contribute
 
+
 1. Check for open issues or open a fresh one to start a discussion around a feature idea or a bug. 
 2. If you feel uncomfortable or uncertain about an issue or your changes, don't hesitate to contact us on Gitter using the link above.
 3. Fork [the repository](https://github.com/deeplearning4j/deeplearning4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
