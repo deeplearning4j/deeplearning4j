@@ -12,6 +12,15 @@ import java.io.Serializable;
  */
 public interface NDArrayHolder extends Serializable {
 
+
+    /**
+     * Set the ndarray
+     * @param arr the ndarray for this holder
+     *            to use
+     */
+    void setArray(INDArray arr);
+
+
     /**
      * The number of updates
      * that have been sent to this older.

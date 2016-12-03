@@ -2,21 +2,27 @@ package org.nd4j.parameterserver;
 
 import lombok.Data;
 import org.nd4j.aeron.ipc.NDArrayCallback;
-import org.nd4j.aeron.ipc.NDArrayHolder;
+import org.nd4j.aeron.ipc.NDArrayMessage;
+import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
+import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Parameter server
- * listener
+ * listener. This holds an
+ * {@link INDArray} in memory
+ * and maintains the "master copy"
+ *
+ * of the ndarray.
  * @author Adam Gibson
  */
 @Data
-public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
-    private INDArray arr;
-    private AtomicInteger totalN = new AtomicInteger(0);
+public class ParameterServerListener implements NDArrayCallback {
+    private ParameterServerUpdater updater;
     private boolean master;
     private int[] shape;
 
@@ -25,9 +31,19 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
      * @param shape the shape of the array
      */
     public ParameterServerListener(int[] shape) {
-        this.arr = Nd4j.create(shape);
+        updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(shape),Runtime.getRuntime().availableProcessors());
     }
 
+
+    /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        updater.update(message);
+    }
 
     /**
      * Used for partial updates using tensor along
@@ -38,9 +54,7 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
      */
     @Override
     public synchronized  void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-        INDArray arr2 = this.arr.tensorAlongDimension((int) idx,dimensions);
-        arr2.addi(arr);
-        totalN.incrementAndGet();
+       updater.partialUpdate(arr,updater.ndArrayHolder().get(),idx,dimensions);
     }
 
     /**
@@ -51,52 +65,17 @@ public class ParameterServerListener implements NDArrayCallback,NDArrayHolder {
     @Override
     public synchronized void onNDArray(INDArray arr) {
         if(shape == null)
-            this.arr.addi(arr.reshape(1,arr.length()));
+            updater.update(arr.reshape(1,arr.length()),updater.ndArrayHolder().get());
         else
-            this.arr.addi(arr);
-        totalN.incrementAndGet();
+            updater.update(arr,updater.ndArrayHolder().get());
     }
 
     /**
      * Do a final divide for averaging
      */
     public synchronized void finish() {
-        this.arr.divi(totalN);
+        updater.ndArrayHolder().get().divi(updater.numUpdates());
     }
 
-    /**
-     * The number of updates
-     * that have been sent to this older.
-     *
-     * @return
-     */
-    @Override
-    public int totalUpdates() {
-        return totalN.get();
-    }
 
-    /**
-     * Retrieve an ndarray
-     *
-     * @return
-     */
-    @Override
-    public synchronized  INDArray get() {
-        return arr;
-    }
-
-    /**
-     * Retrieve a partial view of the ndarray.
-     * This method uses tensor along dimension internally
-     * Note this will call dup()
-     *
-     * @param idx        the index of the tad to get
-     * @param dimensions the dimensions to use
-     * @return the tensor along dimension based on the index and dimensions
-     * from the master array.
-     */
-    @Override
-    public synchronized INDArray getTad(int idx, int... dimensions) {
-        return arr.tensorAlongDimension(idx,dimensions);
-    }
 }

@@ -1,11 +1,8 @@
 package org.nd4j.parameterserver.client;
 
-import akka.io.Tcp;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.*;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,7 +44,6 @@ public class ParameterServerClientTest {
         });
 
         assertTrue(masterNode.isMaster());
-        assertEquals(1000,masterNode.getParameterLength());
         assertEquals(40323,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
@@ -66,7 +62,6 @@ public class ParameterServerClientTest {
         });
 
         assertFalse(slaveNode.isMaster());
-        assertEquals(1000,slaveNode.getParameterLength());
         assertEquals(40426,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
@@ -109,8 +104,8 @@ public class ParameterServerClientTest {
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
-        assertEquals(1,listener.getTotalN().get());
-        assertEquals(Nd4j.ones(parameterLength),listener.getArr());
+        assertEquals(1,listener.getUpdater().numUpdates());
+        assertEquals(Nd4j.ones(parameterLength),listener.getUpdater().ndArrayHolder().get());
         INDArray arr = client.getArray();
         assertEquals(Nd4j.ones(1000),arr);
     }

@@ -12,9 +12,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.model.MasterStatus;
 import org.nd4j.parameterserver.model.ServerTypeJson;
+import org.nd4j.parameterserver.model.SubscriberState;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,6 +87,45 @@ public class ParameterServerClient implements NDArrayCallback {
     }
 
     /**
+     * Block the clint till ready
+     * for next phase.
+     *
+     */
+    public void blockTillReady() {
+        while(!isReadyForNext())
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+    }
+
+
+    /**
+     * Returns true if the client is
+     * ready for a next array or not
+     * @return true if the client is
+     * ready for the next array or not,false otherwise
+     */
+    public boolean isReadyForNext() {
+        if(objectMapper == null)
+            objectMapper = new ObjectMapper();
+
+        try {
+            int masterStream = Integer.parseInt(ndarraySendUrl.split(":")[2]);
+            SubscriberState subscriberState =  objectMapper.readValue(Unirest.get(String.format("http://%s:%d/state/%d",masterStatusHost,masterStatusPort,masterStream))
+                    .asJson()
+                    .getBody()
+                    .toString(),SubscriberState.class);
+            return subscriberState.isReady();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    /**
      * Sends a post request to the
      * status server to determine if the master node is started.
      * @return
@@ -108,6 +147,8 @@ public class ParameterServerClient implements NDArrayCallback {
         }
         return false;
     }
+
+
 
 
 
@@ -230,7 +271,6 @@ public class ParameterServerClient implements NDArrayCallback {
             //wait for array to be available
             while (arr.get() == none) {
                 Thread.sleep(1000);
-                hostPortPublisher.send();
                 log.info("Waiting on array to be updated.");
             }
 
@@ -243,6 +283,24 @@ public class ParameterServerClient implements NDArrayCallback {
         INDArray arr2 = arr.get();
         arr.set(none);
         return arr2;
+    }
+
+    /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        INDArray arr = message.getArr();
+        //of note for ndarrays
+        int[] dimensions = message.getDimensions();
+        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+
+        if(!whole)
+            onNDArrayPartial(arr,message.getIndex(),dimensions);
+        else
+            onNDArray(arr);
     }
 
     /**
