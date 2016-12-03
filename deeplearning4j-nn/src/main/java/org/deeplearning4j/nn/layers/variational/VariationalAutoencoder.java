@@ -78,23 +78,22 @@ public class VariationalAutoencoder implements Layer {
         //TODO handle multiple samples as an option...
         VAEFwdHelper fwd = doForward(true, true);
 
-        INDArray pzxMean = fwd.preOuts[fwd.preOuts.length-1];
-
         INDArray pzxLogStdev2W = params.get("eZXLogStdev2" + WEIGHT_KEY_SUFFIX);
         INDArray pzxLogStdev2b = params.get("eZXLogStdev2" + BIAS_KEY_SUFFIX);
 
-        INDArray pzxLogStdev2 = fwd.activations[fwd.activations.length-1].mmul(pzxLogStdev2W).addiRowVector(pzxLogStdev2b);
+        INDArray pzxLogStdev2 = fwd.encoderActivations[fwd.encoderActivations.length-1].mmul(pzxLogStdev2W).addiRowVector(pzxLogStdev2b);
 
         INDArray pzxSigma = Transforms.exp(pzxLogStdev2,true);
         Transforms.sqrt(pzxSigma,false);
 
         int minibatch = input.size(0);
-        int size = pzxMean.size(1);
+        int size = fwd.pzxPreOut.size(1);
 
         //TODO test mode for backprop...
         INDArray e = Nd4j.rand(minibatch, size);
 
-        INDArray z = pzxMean.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
+        //TODO NEED ACTIVATION FUNCTION HERE
+        INDArray z = fwd.pzxPreOut.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
 
         //Next: need to do forward pass through decoder...
 
@@ -122,6 +121,11 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray pxzDistributionParams = current.mmul(xzw).addiRowVector(xzb);
         this.score = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
+        //Need to add other component of score:
+        INDArray temp = fwd.pzxPreOut.mul(fwd.pzxPreOut).addi(pzxSigma.mul(pzxSigma)).negi();       //TODO ACTIVATION FUNCTION
+        temp.addi(pzxLogStdev2).addi(1.0);
+        double scorePt1 = 0.5 / temp.size(0) * temp.sumNumber().doubleValue();
+        this.score += scorePt1;
 
         INDArray dpdpxz = reconstructionDistribution.gradient(input, pxzDistributionParams);
 
@@ -141,7 +145,6 @@ public class VariationalAutoencoder implements Layer {
         String afn = conf().getLayer().getActivationFunction();
 
         Gradient gradient = new DefaultGradient(gradientsFlattened);
-//        INDArray epsilon = dpdpxz;
         for( int i=nDecoderLayers-1; i>=0; i-- ){
             String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "d" + i + BIAS_KEY_SUFFIX;
@@ -178,26 +181,28 @@ public class VariationalAutoencoder implements Layer {
         INDArray eZXLogStdev2b = params.get("eZXLogStdev2b");
 
         INDArray dLdz = epsilon;
-        INDArray dLdmu = dLdz.sub(pzxMean);
+        INDArray dLdmu = dLdz.sub(fwd.pzxPreOut);       //TODO ACTIVATION FUNCTION
 
-        INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma).subi(pzxSigma.mul(pzxSigma)).subi(1).muli(0.5);
+        INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma)
+                .subi(pzxSigma.mul(pzxSigma)).addi(1).muli(0.5);
 
         INDArray dLdZXMeanW = gradientViews.get("eZXMeanW");
         INDArray dLdZXLogStdev2W = gradientViews.get("eZXLogStdev2W");
         INDArray dLdZXMeanb = gradientViews.get("eZXMeanb");
         INDArray dLdZXLogStdev2b = gradientViews.get("eZXLogStdev2b");
 
-        INDArray lastEncoderActivation = fwd.activations[fwd.activations.length-1];
+        INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length-1];
         Nd4j.gemm(lastEncoderActivation, dLdmu, dLdZXMeanW, true, false, 1.0, 0.0);
         Nd4j.gemm(lastEncoderActivation, dLdLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
-        dLdZXMeanb.assign(dLdmu.sum(0));
+//        dLdZXMeanb.assign(dLdmu.sub(fwd.getPzxPreOut()).sum(0));        //TODO activation function
+        dLdZXMeanb.assign(dLdmu.sub(fwd.getPzxPreOut()).sum(0));        //TODO activation function
         dLdZXLogStdev2b.assign(dLdLogSigma2.sum(0));
 
         //TODO check order
-        gradient.gradientForVariable().put("eZXMeanW", eZXMeanW);
-        gradient.gradientForVariable().put("eZXMeanb", eZXMeanb);
-        gradient.gradientForVariable().put("eZXLogStdev2W", eZXLogStdev2W);
-        gradient.gradientForVariable().put("eZXLogStdev2b", eZXLogStdev2b);
+        gradient.gradientForVariable().put("eZXMeanW", dLdZXMeanW);
+        gradient.gradientForVariable().put("eZXMeanb", dLdZXMeanb);
+        gradient.gradientForVariable().put("eZXLogStdev2W", dLdZXLogStdev2W);
+        gradient.gradientForVariable().put("eZXLogStdev2b", dLdZXLogStdev2b);
 
         epsilon = eZXMeanW.mmul(dLdmu.transpose()).transpose();
         epsilon.addi(eZXLogStdev2W.mmul(dLdLogSigma2.transpose()).transpose());
@@ -216,7 +221,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray dLdW = gradientViews.get(wKey);
             INDArray dLdB = gradientViews.get(bKey);
 
-            INDArray preOut = fwd.preOuts[i];
+            INDArray preOut = fwd.encoderPreOuts[i];
             INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
                     Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
 
@@ -226,7 +231,7 @@ public class VariationalAutoencoder implements Layer {
             if(i == 0){
                 actInput = input;
             } else {
-                actInput = fwd.activations[i];
+                actInput = fwd.encoderActivations[i];
             }
             Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
             dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
@@ -444,9 +449,9 @@ public class VariationalAutoencoder implements Layer {
         Gradient gradient = new DefaultGradient();
 
         VAEFwdHelper fwd = doForward(true, true);
-        INDArray finalPreOut = fwd.preOuts[fwd.preOuts.length-1];
+        INDArray finalEncoderPreOut = fwd.encoderPreOuts[fwd.encoderPreOuts.length-1];
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
-                Nd4j.getOpFactory().createTransform(afn, finalPreOut).derivative());
+                Nd4j.getOpFactory().createTransform(afn, finalEncoderPreOut).derivative());
 
         INDArray currentDelta = epsilon.muli(activationDerivative);
 
@@ -457,8 +462,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray mB = params.get(pzxBiasParamName);
 
         INDArray dmW = gradientViews.get(pzxMeanParamName); //f order
-        INDArray lastHiddenActivation = fwd.activations[fwd.activations.length-1];
-        Nd4j.gemm(lastHiddenActivation,currentDelta,dmW,true,false,1.0,0.0);
+        INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length-1];
+        Nd4j.gemm(lastEncoderActivation,currentDelta,dmW,true,false,1.0,0.0);
         INDArray dmB = gradientViews.get(pzxBiasParamName);
         dmB.assign(currentDelta.sum(0));    //TODO: do this without the assign
 
@@ -480,7 +485,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray dLdW = gradientViews.get(wKey);
             INDArray dLdB = gradientViews.get(bKey);
 
-            INDArray preOut = fwd.preOuts[i];
+            INDArray preOut = fwd.encoderPreOuts[i];
             activationDerivative = Nd4j.getExecutioner().execAndReturn(
                     Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
 
@@ -490,7 +495,7 @@ public class VariationalAutoencoder implements Layer {
             if(i == 0){
                 actInput = input;
             } else {
-                actInput = fwd.activations[i];
+                actInput = fwd.encoderActivations[i];
             }
             Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
             dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
@@ -532,13 +537,14 @@ public class VariationalAutoencoder implements Layer {
 
     public INDArray preOutput(boolean training) {
         VAEFwdHelper f = doForward(training, false);
-        return f.preOuts[f.preOuts.length-1];
+        return f.pzxPreOut;
     }
 
     @AllArgsConstructor @Data
     private static class VAEFwdHelper {
-        private INDArray[] preOuts;
-        private INDArray[] activations;
+        private INDArray[] encoderPreOuts;
+        private INDArray pzxPreOut;
+        private INDArray[] encoderActivations;
     }
 
 
@@ -551,8 +557,8 @@ public class VariationalAutoencoder implements Layer {
 
         int nEncoderLayers = encoderLayerSizes.length;
 
-        INDArray[] preOuts = new INDArray[encoderLayerSizes.length+1];
-        INDArray[] activations = new INDArray[encoderLayerSizes.length];
+        INDArray[] encoderPreOuts = new INDArray[encoderLayerSizes.length];
+        INDArray[] encoderActivations = new INDArray[encoderLayerSizes.length];
         INDArray current = input;
         for( int i=0; i<nEncoderLayers; i++ ){
             String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
@@ -563,11 +569,11 @@ public class VariationalAutoencoder implements Layer {
 
             current = current.mmul(weights).addiRowVector(bias);
             if(forBackprop){
-                preOuts[i] = current.dup();
+                encoderPreOuts[i] = current.dup();
             }
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
                     conf.getLayer().getActivationFunction(), current, conf.getExtraArgs() ));
-            activations[i] = current;
+            encoderActivations[i] = current;
         }
 
         //Finally, calculate mean value:
@@ -576,10 +582,10 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = params.get(pzxMeanParamName);
         INDArray mB = params.get(pzxBiasParamName);
 
-        current = current.mmul(mW).addiRowVector(mB);
-        preOuts[preOuts.length-1] = current;
+        INDArray pzxMean = current.mmul(mW).addiRowVector(mB);
 
-        return new VAEFwdHelper(preOuts, activations);
+
+        return new VAEFwdHelper(encoderPreOuts, pzxMean, encoderActivations);
     }
 
     @Override
