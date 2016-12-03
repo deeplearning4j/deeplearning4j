@@ -55,13 +55,68 @@ The first step is to download DeepLearning4J and the examples. If you have an ex
 4. Go to https://github.com/deeplearning4j/dl4j-examples
 5. Click "clone or download" and select "download zip"
 ![download dl4j-examples](./img/dl4j-example-download.png)
-6. Unzip both files to a folder. I used Github client to clone both repositories
+6. Unzip both files to a folder. I recommend having both folders at the same level. A picture of the folder layout shows what it would look like.
 ![unzipped-dl4j](./img/folder-layout.png)
 
 
+## <a name="libraries">Getting the libraries used by DL4J</a>
+
+Similar to other popular open source projects written in Java, DL4J uses third party libraries. I've created a github project with all the necessary jars for 0.6.x release. If you're using a newer release, most of the third party jar files should be similar. This tutorial won't dive deep into third party libraries, that is for a future tutorial.
+
+Here is a list of the jars and a short description.
+
+  * arbiter-deeplearning4j-0.6.0.jar - contains common DL4J classes
+  * commons-compress-1.8.1.jar - apache commons lib for compression utilities
+  * commons-io-2.5 - apache commons lib for input/output utilities
+  * commons-lang3-3.4.jar - apache commons lib for language utilities
+  * commons-math3-3.4.jar - apache commons math libs
+  * datavec-api-0.6.0.jar - DL4J lib for converting data into common vector format
+  * datavec-data-codec-0.6.0.jar - DL4J lib for codec (codec stands for code and decode)
+  * datavec-data-image-0.6.0.jar - DL4J lib for image data
+  * datavec-nd4j-common-0.6.0.jar - DL4J data lib that handles ND4J integration
+  * deeplearning4j-aws-0.6.0.jar - Amazon AWS lib
+  * deeplearning4j-core-0.6.0.jar - the core classes for DL4J
+  * deeplearning4j-cuda-8.0-0.6.0.jar - CUDA related classes for DL4J
+  * deeplearning4j-graph-0.6.0.jar - classes for handling graphs
+  * deeplearning4j-nlp-0.6.0.jar - classes for natural language parsing
+  * deeplearning4j-nlp-uima-0.6.0.jar - framework for unstructured information management
+  * deeplearning4j-nn-0.6.0.jar - neural net related classes
+  * deeplearning4j-ui-0.6.0.jar - user interface related classes
+  * deeplearning4j-ui-components-0.6.0.jar - components related to user interface
+  * ffmpeg-3.0.2-1.2.jar - java library that uses ffmpeg library
+  * ffmpeg-3.0.2-1.2-windows-x86_64.jar - windows specific libraries for ffmpeg
+  * guava-10.0.jar - google guava lib is a collection of useful utilities
+  * jackson-annotations-2.5.1.jar - popular JSON processing library
+  * jackson-databind-2.3.1.jar - databinding classes for jackson
+  * jackson-dataformat-yaml-2.5.1.jar - classes for pasing YAML format
+  * jackson-datatype-guava-2.5.1.jar - classes related to guava
+  * jackson-dataype-jdk7-2.5.1.jar - classes related to JDK1.7
+  * jackson-datatype-joda-2.4.4.jar - classes related to Joda time date library
+  * jackson-jaxrs-json-provider-2.5.1.jar - support for JAXRS specification
+  * javacpp-1.2.4.jar - library for connecting Java to C++ stuff
+  * javacv-1.2.jar - java library for Open Computer Vision
+  * javassist-3.19.0-GA.jar - java library for bytecode manipulation
+  * jfreechart-1.0.13.jar - jfreechart is a java charting framework
+  * leptonica-1.73-1.2.jar - image processing library
+  * leptonica-1.73-1.2-windows-x86_64.jar - windows specific libraries for calling native code
+  * nd4j-api-0.6.0 - NDJ4 is a scientific library for java
+  * nd4j-buffer-0.6.0.jar - jars related to buffers
+  * nd4j-common-0.6.0.jar - common classes for ND4J
+  * nd4j-context-0.6.0.jar - ND4J context classes
+  * nd4j-cuda-7.5-0.6.0.jar - CUDA 7.5 common classes
+  * nd4j-cuda-7.5-0.6.0-windows-x86_64.jar - windows specific classes for CUDA
+  * nd4j-jackson-0.6.0.jar - jackson related classes for nd4j
+  * nd4j-native-0.6.0.jar - common classes for using CPU for image processing
+  * nd4j-native-0.6.0-windows-x86_64.jar - windows specific classes
+  * nd4j-native-api - API for ND4J
+  * nd4j-native-platform-0.6.0.jar - classes for handling platform specific calls
+  * opencv-3.1.0-1.2.jar - OpenCV related java classes that expose opencv calls
+  * opencv-3.1.0-1.2-windows-x86_64.jar - windows specific classes for opencv
+  * reflections-0.9.10.jar - reflection utilities
+  * slf4j-api-1.7.2.jar - SLF4J logging API
 
 
-## <a name="examples">DL4J Examples in a Few Easy Steps</a>
+## <a name="newProject">Creating a new Eclipse Project</a>
 
 1. Use command line to enter the following:
 
