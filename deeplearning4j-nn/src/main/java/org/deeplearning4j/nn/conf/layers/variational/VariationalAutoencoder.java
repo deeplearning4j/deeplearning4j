@@ -22,12 +22,14 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private int[] encoderLayerSizes;
     private int[] decoderLayerSizes;
     private ReconstructionDistribution outputDistribution;
+    private String pzxActivationFunction;
 
     private VariationalAutoencoder(Builder builder){
         super(builder);
         this.encoderLayerSizes = builder.encoderLayerSizes;
         this.decoderLayerSizes = builder.decoderLayerSizes;
         this.outputDistribution = builder.outputDistribution;
+        this.pzxActivationFunction = builder.pzxActivationFunction;
     }
 
     @Override
@@ -81,6 +83,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         private int[] encoderLayerSizes = new int[]{100};
         private int[] decoderLayerSizes = new int[]{100};
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
+        private String pzxActivationFunction = "identity";
 
         public Builder encoderLayerSizes(int... encoderLayerSizes){
             this.encoderLayerSizes = encoderLayerSizes;
@@ -94,6 +97,19 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         public Builder reconstructionDistribution(ReconstructionDistribution distribution){
             this.outputDistribution = distribution;
+            return this;
+        }
+
+        /**
+         * Activation function for the input to P(z|x).
+         * Care should be taken with this, as some activation functions (relu, etc) are not suitable due to being
+         * bounded in range [0,infinity).
+         *
+         * @param activationFunction    Activation function for p(z|x)
+         * @return
+         */
+        public Builder pzxActivationFunction(String activationFunction){
+            this.pzxActivationFunction = activationFunction;
             return this;
         }
 

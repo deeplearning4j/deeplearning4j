@@ -47,6 +47,7 @@ public class VariationalAutoencoder implements Layer {
     protected int[] encoderLayerSizes;
     protected int[] decoderLayerSizes;
     protected ReconstructionDistribution reconstructionDistribution;
+    protected String pzxAfn;
 
     public VariationalAutoencoder(NeuralNetConfiguration conf){
         this.conf = conf;
@@ -54,6 +55,7 @@ public class VariationalAutoencoder implements Layer {
         this.encoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getEncoderLayerSizes();
         this.decoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getDecoderLayerSizes();
         this.reconstructionDistribution = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getOutputDistribution();
+        this.pzxAfn = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf.getLayer()).getPzxActivationFunction();
     }
 
 
@@ -81,7 +83,17 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxLogStdev2W = params.get("eZXLogStdev2" + WEIGHT_KEY_SUFFIX);
         INDArray pzxLogStdev2b = params.get("eZXLogStdev2" + BIAS_KEY_SUFFIX);
 
-        INDArray pzxLogStdev2 = fwd.encoderActivations[fwd.encoderActivations.length-1].mmul(pzxLogStdev2W).addiRowVector(pzxLogStdev2b);
+        INDArray pzxLogStdev2Pre = fwd.encoderActivations[fwd.encoderActivations.length-1].mmul(pzxLogStdev2W).addiRowVector(pzxLogStdev2b);
+
+        INDArray mu = fwd.pzxPreOut.dup();
+        INDArray pzxLogStdev2 = pzxLogStdev2Pre.dup();
+        if(!"identity".equals(pzxAfn)){
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    pzxAfn, mu, conf.getExtraArgs() ));
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                    pzxAfn, pzxLogStdev2, conf.getExtraArgs() ));
+        }
+
 
         INDArray pzxSigma = Transforms.exp(pzxLogStdev2,true);
         Transforms.sqrt(pzxSigma,false);
@@ -89,11 +101,8 @@ public class VariationalAutoencoder implements Layer {
         int minibatch = input.size(0);
         int size = fwd.pzxPreOut.size(1);
 
-        //TODO test mode for backprop...
         INDArray e = Nd4j.rand(minibatch, size);
-
-        //TODO NEED ACTIVATION FUNCTION HERE
-        INDArray z = fwd.pzxPreOut.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
+        INDArray z = mu.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
 
         //Next: need to do forward pass through decoder...
 
@@ -122,7 +131,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray pxzDistributionParams = current.mmul(xzw).addiRowVector(xzb);
         this.score = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
         //Need to add other component of score:
-        INDArray temp = fwd.pzxPreOut.mul(fwd.pzxPreOut).addi(pzxSigma.mul(pzxSigma)).negi();       //TODO ACTIVATION FUNCTION
+        INDArray temp = mu.mul(mu).addi(pzxSigma.mul(pzxSigma)).negi();
         temp.addi(pzxLogStdev2).addi(1.0);
         double scorePt1 = 0.5 / temp.size(0) * temp.sumNumber().doubleValue();
         this.score += scorePt1;
@@ -181,7 +190,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray eZXLogStdev2b = params.get("eZXLogStdev2b");
 
         INDArray dLdz = epsilon;
-        INDArray dLdmu = dLdz.sub(fwd.pzxPreOut);       //TODO ACTIVATION FUNCTION
+        INDArray dLdmu = dLdz.sub(mu);
 
         INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma)
                 .subi(pzxSigma.mul(pzxSigma)).addi(1).muli(0.5);
@@ -191,12 +200,19 @@ public class VariationalAutoencoder implements Layer {
         INDArray dLdZXMeanb = gradientViews.get("eZXMeanb");
         INDArray dLdZXLogStdev2b = gradientViews.get("eZXLogStdev2b");
 
+
+        INDArray dLdPreMu = dLdmu.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                pzxAfn, fwd.getPzxPreOut().dup(), conf.getExtraArgs() ).derivative()));
+
+        INDArray dLdPreLogSigma2 = dLdLogSigma2.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                pzxAfn, pzxLogStdev2Pre.dup(), conf.getExtraArgs() ).derivative()));
+
         INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length-1];
-        Nd4j.gemm(lastEncoderActivation, dLdmu, dLdZXMeanW, true, false, 1.0, 0.0);
-        Nd4j.gemm(lastEncoderActivation, dLdLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
-//        dLdZXMeanb.assign(dLdmu.sub(fwd.getPzxPreOut()).sum(0));        //TODO activation function
-        dLdZXMeanb.assign(dLdmu.sub(fwd.getPzxPreOut()).sum(0));        //TODO activation function
-        dLdZXLogStdev2b.assign(dLdLogSigma2.sum(0));
+        Nd4j.gemm(lastEncoderActivation, dLdPreMu, dLdZXMeanW, true, false, 1.0, 0.0);
+        Nd4j.gemm(lastEncoderActivation, dLdPreLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
+
+        dLdZXMeanb.assign(dLdPreMu.sub(mu).sum(0));
+        dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
 
         //TODO check order
         gradient.gradientForVariable().put("eZXMeanW", dLdZXMeanW);
@@ -204,8 +220,8 @@ public class VariationalAutoencoder implements Layer {
         gradient.gradientForVariable().put("eZXLogStdev2W", dLdZXLogStdev2W);
         gradient.gradientForVariable().put("eZXLogStdev2b", dLdZXLogStdev2b);
 
-        epsilon = eZXMeanW.mmul(dLdmu.transpose()).transpose();
-        epsilon.addi(eZXLogStdev2W.mmul(dLdLogSigma2.transpose()).transpose());
+        epsilon = eZXMeanW.mmul(dLdPreMu.transpose()).transpose();
+        epsilon.addi(eZXLogStdev2W.mmul(dLdPreLogSigma2.transpose()).transpose());
 
 
         //Backprop through encoder:
@@ -602,7 +618,7 @@ public class VariationalAutoencoder implements Layer {
     public INDArray activate(boolean training) {
         INDArray output = preOutput(training);  //Mean values for p(z|x)
 
-        if(!"identity".equals(conf.getLayer().getActivationFunction())){
+        if(!"identity".equals(pzxAfn)){
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
                     conf.getLayer().getActivationFunction(), output, conf.getExtraArgs() ));
         }
