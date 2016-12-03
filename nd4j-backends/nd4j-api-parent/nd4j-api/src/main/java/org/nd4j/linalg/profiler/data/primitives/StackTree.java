@@ -22,18 +22,22 @@ public class StackTree {
         //
     }
 
-    public String renderTree() {
+    public String renderTree(boolean displayCounts) {
         StringBuilder builder = new StringBuilder();
 
         // we'll always have single entry here, but let's keep loop here
         for (StackNode cNode: basement.values()) {
-            cNode.traverse(0);
+            cNode.traverse(0, displayCounts);
         }
 
         return builder.toString();
     }
 
     public void consumeStackTrace(@NonNull StackDescriptor descriptor) {
+        consumeStackTrace(descriptor, 1);
+    }
+
+    public void consumeStackTrace(@NonNull StackDescriptor descriptor, long increment) {
         eventsCount.incrementAndGet();
 
         lastDescriptor = descriptor;
@@ -48,7 +52,7 @@ public class StackTree {
             basement.put(entry, new StackNode(entry));
 
         // propagate stack trace across tree
-        basement.get(entry).consume(descriptor, 0);
+        basement.get(entry).consume(descriptor, 0, increment);
     }
 
     public long getTotalEventsNumber() {

@@ -37,7 +37,7 @@ public class OpProfiler {
     private static AtomicLong invocationsCount = new AtomicLong(0);
     private static OpProfiler ourInstance = new OpProfiler();
 
-    private static StringAggregator methodsAggregator = new StringAggregator();
+
 
     private static StringAggregator classAggergator = new StringAggregator();
     private static StringAggregator longAggergator = new StringAggregator();
@@ -53,6 +53,8 @@ public class OpProfiler {
     private static StringCounter matchingCounterInverted = new StringCounter();
 
     private static StringCounter orderCounter = new StringCounter();
+
+    private static StackAggregator methodsAggregator = new StackAggregator();
 
     private static StackAggregator mixedOrderAggregator = new StackAggregator();
     private static StackAggregator nonEwsAggregator = new StackAggregator();
@@ -304,7 +306,7 @@ public class OpProfiler {
         System.out.println(longAggergator.asPercentageString());
         System.out.println();
         logger.info("--- Time spent within methods: ---");
-        System.out.println(methodsAggregator.asPercentageString());
+        methodsAggregator.renderTree(true);
         System.out.println();
         logger.info("--- Bad strides stack tree: ---");
         System.out.println("Unique entries: " + stridedAggregator.getUniqueBranchesNumber());
@@ -342,13 +344,18 @@ public class OpProfiler {
      * @param op
      */
     public void processStackCall(Op op, long timeStart ) {
-        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
+        //StackTraceElement stack[] = Thread.currentThread().getStackTrace();
+
+        long timeSpent = System.nanoTime() - timeStart;
+
+        methodsAggregator.incrementCount(timeSpent);
 
         /*
            basically we want to unroll stack trace for few levels ABOVE nd4j classes
            and update invocations list for last few levels, to keep that stat on few levels
          */
 
+/*
         int level = 0;
         String level1 = null;
         String level2 = null;
@@ -375,9 +382,10 @@ public class OpProfiler {
 
 
             long timeSpent = System.nanoTime() - timeStart;
-            methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
+           // methodsAggregator.putTime(cClass + "." + stack[e].getMethodName() + "() :" + stack[e].getLineNumber(),  timeSpent);
 
         }
+        */
     }
 
 

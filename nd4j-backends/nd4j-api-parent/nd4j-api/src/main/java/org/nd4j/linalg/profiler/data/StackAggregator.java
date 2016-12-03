@@ -21,7 +21,11 @@ public class StackAggregator {
     }
 
     public void renderTree(){
-        tree.renderTree();
+        tree.renderTree(false);
+    }
+
+    public void renderTree(boolean displayCounts){
+        tree.renderTree(displayCounts);
     }
 
     public void reset() {
@@ -29,8 +33,12 @@ public class StackAggregator {
     }
 
     public void incrementCount() {
+        incrementCount(1);
+    }
+
+    public void incrementCount(long time) {
         StackDescriptor descriptor = new StackDescriptor(Thread.currentThread().getStackTrace());
-        tree.consumeStackTrace(descriptor);
+        tree.consumeStackTrace(descriptor, time);
     }
 
     public long getTotalEventsNumber() {

@@ -26,22 +26,30 @@ public class StackNode implements Comparable<StackNode> {
         return entries.values();
     }
 
-    public void traverse(int ownLevel) {
+    public void traverse(int ownLevel, boolean displayCounts) {
         StringBuilder builder = new StringBuilder();
 
         for (int x = 0; x < ownLevel; x++) {
             builder.append("   ");
         }
 
-        builder.append("").append(nodeURI).append("\n");
-        System.out.print(builder.toString());
+        builder.append("").append(nodeURI);
+
+        if (displayCounts)
+            builder.append("  ").append(counter.get()).append(" ms");
+
+        System.out.println(builder.toString());
 
         for (StackNode node: entries.values()) {
-            node.traverse(ownLevel + 1);
+            node.traverse(ownLevel + 1, displayCounts);
         }
     }
 
     public void consume(@NonNull StackDescriptor descriptor, int lastLevel) {
+        consume(descriptor, lastLevel, 1);
+    }
+
+    public void consume(@NonNull StackDescriptor descriptor, int lastLevel, long delta) {
         boolean gotEntry = false;
         for (int e = 0; e < descriptor.size(); e++) {
             String entryName = descriptor.getElementName(e);
@@ -50,7 +58,7 @@ public class StackNode implements Comparable<StackNode> {
             if (!gotEntry) {
                 if (entryName.equalsIgnoreCase(nodeURI) && e >= lastLevel) {
                     gotEntry = true;
-                    counter.incrementAndGet();
+                    counter.addAndGet(delta);
                 }
             } else {
                 // after current entry is found, we just fill first node after it
