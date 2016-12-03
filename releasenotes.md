@@ -6,6 +6,10 @@ layout: default
 * RBM and AutoEncoder key fixes: 
     - Ensured visual bias updated and applied during pretraining. 
     - RBM HiddenUnit is the activation function for this layer; thus, established derivative calculations for backprop according to respective HiddenUnit.
+* RNG performance issues fixed for CUDA backend
+* OpenBLAS issues fixed for macOS, powerpc, linux.
+* DataVec is back to java8 now.
+* Multiple minor bugs fixed for ND4J/DL4J
 
 # <a name="zerosevenzero">Release Notes for Version 0.7.0</a>
 
