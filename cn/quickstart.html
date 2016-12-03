@@ -115,11 +115,15 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 <p><h2>在您自己的项目中使用DL4J：配置POM.xml文件</h2></p>
 <p>若要在您自己的项目中运行DL4J，我们强烈推荐Java用户使用Maven，Scala用户使用SBT等工具。基本的依赖项及其版本如下所示。其中包括：</p>
-
-- <code>deeplearning4j-core</code>，包含神经网络实现方法
-- <code>nd4j-native-platform</code>，ND4J库的CPU版本，驱动DL4J
-- <code>datavec-api</code> - Datavec是我们的数据向量化和加载库
-
+<ul>
+  <li><code>deeplearning4j-core</code>，包含神经网络实现方法
+  </li>
+  <li><code>nd4j-native-platform</code>，ND4J库的CPU版本，驱动DL4J
+  </li>
+  <li><code>datavec-api</code> - Datavec是我们的数据向量化和加载库
+    
+  </li>
+</ul>
 <p>每个Maven项目都有一个POM文件。运行示例时，<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml" title="POM file" target="_blank">POM文件的内容应当如此处所示</a>。</p>
 <p>在IntelliJ中，你需要选择将要运行的第一个Deeplearning4j示例。我们建议选择<code>MLPLinearClassifier</code>，在我们的用户界面中几乎能立即看到该网络将数据分类为两组。文件可以<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java" title="MPLinearClassifier" target="_blank">在Github上找到</a>。</p>
 <p>右击示例，在下拉菜单中选择绿色按钮即可运行。你会在IntelliJ底部的窗口中看到一系列分值。最右边的数字是网络分类的误差得分。如果网络在进行学习，该数字就会随着处理批次的增加而减少。最后，该窗口会告诉你神经网络模型最终的准确度。</p>
