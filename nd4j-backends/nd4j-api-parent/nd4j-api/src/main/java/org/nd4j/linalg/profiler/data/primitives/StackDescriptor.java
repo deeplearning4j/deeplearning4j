@@ -20,7 +20,7 @@ public class StackDescriptor {
         for (; start < stack.length; start++) {
             if (!stack[start].getClassName().contains("OpProfiler")) {
                 // we make one more step, to skip profilerHookIn method
-                if (stack[start+1].getClassName().contains("profilerHookIn"))
+                if (stack[start].getClassName().contains("DefaultOpExecutioner"))
                     start++;
                 break;
             }

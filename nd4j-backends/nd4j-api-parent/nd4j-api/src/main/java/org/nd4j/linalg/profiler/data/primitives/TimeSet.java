@@ -70,6 +70,6 @@ public class TimeSet implements Comparable<TimeSet> {
 
     @Override
     public int compareTo(TimeSet o) {
-        return Long.compare(o.size(), this.size());
+        return Long.compare(o.getSum(), this.getSum());
     }
 }
