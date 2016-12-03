@@ -65,7 +65,6 @@
             <artifactId>spark-sql_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.10</artifactId>
@@ -73,8 +72,19 @@
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
+            <artifactId>datavec-nd4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.datavec</groupId>
             <artifactId>datavec-spark_2.10</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.spark</groupId>
