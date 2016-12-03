@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -60,10 +61,11 @@ public class ParameterServerNodeTest {
         int numCores = Runtime.getRuntime().availableProcessors();
         ExecutorService executorService = Executors.newFixedThreadPool(numCores);
         ParameterServerClient[] clients = new ParameterServerClient[numCores];
+        String host = "localhost";
         for(int i = 0; i < numCores; i++) {
             clients[i] = ParameterServerClient.builder()
-                    .aeron(aeron).masterStatusHost("localhost")
-                    .masterStatusPort(9000).subscriberHost("localhost").subscriberPort(40325 + i).subscriberStream(10 + i)
+                    .aeron(aeron).masterStatusHost(host)
+                    .masterStatusPort(9000).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
                     .ndarrayRetrieveUrl(parameterServerNode.getSubscriber().getResponder().connectionUrl())
                     .ndarraySendUrl(parameterServerNode.getSubscriber().getSubscriber().connectionUrl())
                     .build();
@@ -87,6 +89,13 @@ public class ParameterServerNodeTest {
         //all arrays should have been sent
         for(int i = 0; i < numCores; i++) {
             assertTrue(clients[i].isReadyForNext());
+        }
+
+        Thread.sleep(10000);
+
+        for(int i = 0; i < 1; i++) {
+            assertEquals(Nd4j.valueArrayOf(1,parameterLength,numCores),clients[i].getArray());
+            Thread.sleep(1000);
         }
 
         executorService.shutdown();

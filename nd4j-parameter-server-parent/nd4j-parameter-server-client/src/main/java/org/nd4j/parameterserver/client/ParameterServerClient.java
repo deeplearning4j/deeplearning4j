@@ -271,7 +271,6 @@ public class ParameterServerClient implements NDArrayCallback {
             //wait for array to be available
             while (arr.get() == none) {
                 Thread.sleep(1000);
-                hostPortPublisher.send();
                 log.info("Waiting on array to be updated.");
             }
 
