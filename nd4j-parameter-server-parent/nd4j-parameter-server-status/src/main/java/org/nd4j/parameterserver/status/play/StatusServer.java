@@ -1,7 +1,7 @@
 package org.nd4j.parameterserver.status.play;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.nd4j.parameterserver.ParameterServerSubscriber;
+
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.model.*;
 import play.libs.F;
 import play.libs.Json;
@@ -11,7 +11,6 @@ import play.server.Server;
 
 import java.util.List;
 
-import static play.libs.Json.*;
 import static play.libs.Json.toJson;
 import static play.mvc.Controller.*;
 import static play.mvc.Results.ok;
@@ -30,6 +29,7 @@ import static play.mvc.Results.ok;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class StatusServer {
 
     /**
@@ -50,14 +50,23 @@ public class StatusServer {
      */
     public static Server startServer(StatusStorage statusStorage,int statusServerPort) {
         RoutingDsl dsl = new RoutingDsl();
-        dsl.GET("/ids").routeTo(new F.Function<Object,Result>() {
+        dsl.GET("/ids/").routeTo(new F.Function0<Result>() {
 
             @Override
-            public Result apply(Object o) throws Throwable {
+            public Result apply() throws Throwable {
                 List<Integer> ids = statusStorage.ids();
                 return ok(toJson(ids));
             }
         });
+
+
+        dsl.GET("/state/:id").routeTo(new F.Function<String, Result>() {
+            @Override
+            public Result apply(String id) throws Throwable {
+                return ok(toJson(statusStorage.getState(Integer.parseInt(id))));
+            }
+        });
+
         dsl.GET("/type/:id").routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
@@ -90,7 +99,9 @@ public class StatusServer {
                 return ok(toJson(statusStorage.getState(Integer.parseInt(id)).getConnectionInfo()));
             }
         });
-        dsl.POST("/updatestatus/:id").routeTo(new F.Function<String, Result>() {
+
+        dsl.POST("/updatestatus/:id")
+                .routeTo(new F.Function<String, Result>() {
             @Override
             public Result apply(String id) throws Throwable {
                 SubscriberState subscriberState = Json.fromJson(request().body().asJson(),SubscriberState.class);

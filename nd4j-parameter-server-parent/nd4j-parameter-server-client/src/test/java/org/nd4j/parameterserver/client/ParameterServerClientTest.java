@@ -44,7 +44,6 @@ public class ParameterServerClientTest {
         });
 
         assertTrue(masterNode.isMaster());
-        assertEquals(1000,masterNode.getParameterLength());
         assertEquals(40323,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
@@ -63,7 +62,6 @@ public class ParameterServerClientTest {
         });
 
         assertFalse(slaveNode.isMaster());
-        assertEquals(1000,slaveNode.getParameterLength());
         assertEquals(40426,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());

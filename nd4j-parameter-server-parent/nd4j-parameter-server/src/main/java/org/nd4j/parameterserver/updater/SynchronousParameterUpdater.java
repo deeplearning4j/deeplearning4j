@@ -23,6 +23,31 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * Returns the number of required
+     * updates for a new pass
+     *
+     * @return the number of required updates for a new pass
+     */
+    @Override
+    public int requiredUpdatesForPass() {
+        return workers;
+    }
+
+    /**
+     * Returns true if the
+     * given updater is async
+     * or synchronous
+     * updates
+     *
+     * @return true if the given updater
+     * is async or synchronous updates
+     */
+    @Override
+    public boolean isAsync() {
+        return false;
+    }
+
+    /**
      *
      * @param updateStorage
      * @param ndArrayHolder

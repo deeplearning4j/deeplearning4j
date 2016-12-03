@@ -25,6 +25,11 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
     private int streamId;
     private String connectionInfo;
     private Map<String,Number> parameterUpdaterStatus;
+    private boolean isAsync;
+    private boolean isReady;
+
+
+
     /**
      * Returns an empty subscriber state
      * with -1 as total updates, master as false
@@ -36,6 +41,8 @@ public class SubscriberState implements Serializable,Comparable<SubscriberState>
                 .streamId(-1).parameterUpdaterStatus(Collections.emptyMap())
                 .totalUpdates(-1).isMaster(false).build();
     }
+
+
 
     /**
      * Write the subscriber state to the given {@link DataInput}

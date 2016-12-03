@@ -21,6 +21,31 @@ public abstract class BaseParameterUpdater implements ParameterServerUpdater {
     }
 
     /**
+     * Returns true if the updater is
+     * ready for a new array
+     *
+     * @return
+     */
+    @Override
+    public boolean isReady() {
+        return  numUpdates()  == requiredUpdatesForPass();
+    }
+
+    /**
+     * Returns true if the
+     * given updater is async
+     * or synchronous
+     * updates
+     *
+     * @return true if the given updater
+     * is async or synchronous updates
+     */
+    @Override
+    public boolean isAsync() {
+        return true;
+    }
+
+    /**
      * Get the ndarray holder for this
      * updater
      *

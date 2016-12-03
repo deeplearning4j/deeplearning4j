@@ -15,6 +15,30 @@ import java.util.Map;
 public interface ParameterServerUpdater {
 
     /**
+     * Returns the number of required
+     * updates for a new pass
+     * @return the number of required updates for a new pass
+     */
+    int requiredUpdatesForPass();
+
+    /**
+     * Returns true if the updater is
+     * ready for a new array
+     * @return
+     */
+    boolean isReady();
+
+    /**
+     * Returns true if the
+     * given updater is async
+     * or synchronous
+     * updates
+     * @return true if the given updater
+     * is async or synchronous updates
+     */
+    boolean isAsync();
+
+    /**
      * Get the ndarray holder for this
      * updater
      * @return the ndarray holder for this updater

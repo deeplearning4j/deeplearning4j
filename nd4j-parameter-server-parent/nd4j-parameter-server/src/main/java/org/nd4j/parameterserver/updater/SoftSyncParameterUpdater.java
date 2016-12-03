@@ -9,12 +9,26 @@ import java.util.Map;
  * Created by agibsonccc on 12/1/16.
  */
 public class SoftSyncParameterUpdater extends BaseParameterUpdater  {
+    //track time stamps of messages coming in to find out which generation a message is meant for
+    //alxways log where the message time stamp began
+    private Map<Long,Integer> timeStampsForGeneration;
     //s is the number of updates
     private int s;
     private int currentVersion;
     private int accumulatedUpdates = 0;
     private double scalingFactor;
 
+
+    /**
+     * Returns the number of required
+     * updates for a new pass
+     *
+     * @return the number of required updates for a new pass
+     */
+    @Override
+    public int requiredUpdatesForPass() {
+        return 0;
+    }
 
     /**
      * Returns the current status of this parameter server

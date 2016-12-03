@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.updater.storage;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NoUpdateStorage extends BaseUpdateStorage {
     private AtomicInteger updateCount = new AtomicInteger(0);
     /**
@@ -18,6 +20,7 @@ public class NoUpdateStorage extends BaseUpdateStorage {
      */
     @Override
     public void addUpdate(NDArrayMessage array) {
+        log.info("Adding array " + updateCount.get());
         updateCount.incrementAndGet();
     }
 

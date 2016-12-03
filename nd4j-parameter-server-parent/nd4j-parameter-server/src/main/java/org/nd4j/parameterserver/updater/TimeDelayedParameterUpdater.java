@@ -14,6 +14,17 @@ public class TimeDelayedParameterUpdater extends BaseParameterUpdater {
 
 
     /**
+     * Returns the number of required
+     * updates for a new pass
+     *
+     * @return the number of required updates for a new pass
+     */
+    @Override
+    public int requiredUpdatesForPass() {
+        return 0;
+    }
+
+    /**
      * Returns the current status of this parameter server
      * updater
      *

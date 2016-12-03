@@ -6,6 +6,7 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
+import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
@@ -14,6 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.apache.http.HttpEntity;
 import org.json.JSONObject;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -61,8 +63,6 @@ public class ParameterServerSubscriber {
     private int streamId = 10;
     @Parameter(names = {"-h", "--host"}, description = "Host for the server to bind to", arity = 1)
     private String host = "localhost";
-    @Parameter(names = {"-l", "--parameterLength"}, description = "Parameter length for parameter averaging", arity = 1)
-    private int parameterLength = 1000;
     @Parameter(names = {"-d", "--deleteDirectoryOnStart"}, description = "Delete aeron directory on startup.", arity = 1)
     private boolean deleteDirectoryOnStart = true;
     @Parameter(names = {"-m", "--master"}, description = "Whether this subscriber is a master node or not.", arity = 1)
@@ -122,8 +122,9 @@ public class ParameterServerSubscriber {
     public SubscriberState asState() {
         return SubscriberState.builder()
                 .parameterUpdaterStatus(parameterServerListener == null ? Collections.emptyMap() : parameterServerListener.getUpdater().status())
-                .isMaster(isMaster()).connectionInfo(isMaster() ? slaveConnectionInfo().toString() : masterConnectionInfo().toString())
-                .totalUpdates(getResponder().getNdArrayHolder().totalUpdates())
+                .isMaster(isMaster()).connectionInfo(isMaster() ? masterConnectionInfo().toString() : slaveConnectionInfo().toString())
+                .isAsync(parameterServerListener.getUpdater().isAsync()).isReady(parameterServerListener.getUpdater().isReady())
+                .totalUpdates(getResponder().getNdArrayHolder().totalUpdates()).streamId(streamId)
                 .serverState(subscriberLaunched() ?
                         ServerState.STARTED.name().toLowerCase() :
                         ServerState.STOPPED.name().toLowerCase())
@@ -266,13 +267,14 @@ public class ParameterServerSubscriber {
 
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
-                    JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(asState()));
-                    Unirest.post(String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId))
-                            .body(jsonObject).getEntity();
-                } catch (JsonProcessingException e) {
+                    SubscriberState subscriberState = asState();
+                    JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
+                    String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId);
+                    HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json").body(jsonObject).asString();
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }, 1000, heartbeatMs, TimeUnit.MILLISECONDS);
+            }, 0, heartbeatMs, TimeUnit.MILLISECONDS);
 
         } else {
             log.info("No status server found. Will not send heartbeats. Specified host was " + statusServerHost + " and port was " + statusServerPort);

@@ -38,7 +38,7 @@ public class CheckSocket {
         } finally {
             if (s != null) {
                 if ( s.isConnected()) {
-                    return false;
+                    return true;
                 } else {
                 }
                 try {
@@ -47,7 +47,7 @@ public class CheckSocket {
                 }
             }
 
-            return true;
+            return false;
         }
 
     }

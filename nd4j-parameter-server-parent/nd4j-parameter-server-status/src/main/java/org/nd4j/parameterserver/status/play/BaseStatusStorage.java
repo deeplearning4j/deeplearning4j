@@ -91,7 +91,7 @@ public abstract  class BaseStatusStorage implements StatusStorage {
                 }
 
             }
-        },1000,checkInterval, TimeUnit.MILLISECONDS);
+        },30000,checkInterval, TimeUnit.MILLISECONDS);
     }
 
 
