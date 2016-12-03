@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7d74aff8-a4bb-47e8-9f50-e8d0961cbf18" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/.name" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/releasenotes.md" afterPath="$PROJECT_DIR$/releasenotes.md" />
     </list>
@@ -29,8 +27,8 @@
         <entry file="file://$PROJECT_DIR$/releasenotes.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="165">
-                <caret line="11" column="16" lean-forward="false" selection-start-line="11" selection-start-column="16" selection-end-line="11" selection-end-column="16" />
+              <first_editor relative-caret-position="150">
+                <caret line="10" column="22" lean-forward="false" selection-start-line="10" selection-start-column="22" selection-end-line="10" selection-end-column="22" />
                 <folding />
               </first_editor>
               <second_editor />
@@ -604,7 +602,7 @@
       <updated>1430780050544</updated>
       <workItem from="1480275288196" duration="739000" />
       <workItem from="1480692678565" duration="433000" />
-      <workItem from="1480783014689" duration="141000" />
+      <workItem from="1480783014689" duration="180000" />
     </task>
     <task id="LOCAL-00001" summary="- cover new methods for parallelism thresholds tuning&#10;- cover fallback mode enabler">
       <created>1480276158339</created>
@@ -620,11 +618,18 @@
       <option name="project" value="LOCAL" />
       <updated>1480693091241</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="release notes update">
+      <created>1480783165561</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1480783165561</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="1313000" />
+    <option name="totallyTimeSpent" value="1352000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
@@ -689,7 +694,8 @@
     <option name="CHECK_NEW_TODO" value="false" />
     <MESSAGE value="- cover new methods for parallelism thresholds tuning&#10;- cover fallback mode enabler" />
     <MESSAGE value="rng seed info added to persistence guide" />
-    <option name="LAST_COMMIT_MESSAGE" value="rng seed info added to persistence guide" />
+    <MESSAGE value="release notes update" />
+    <option name="LAST_COMMIT_MESSAGE" value="release notes update" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -759,8 +765,8 @@
     <entry file="file://$PROJECT_DIR$/releasenotes.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="165">
-            <caret line="11" column="16" lean-forward="false" selection-start-line="11" selection-start-column="16" selection-end-line="11" selection-end-column="16" />
+          <first_editor relative-caret-position="150">
+            <caret line="10" column="22" lean-forward="false" selection-start-line="10" selection-start-column="22" selection-end-line="10" selection-end-column="22" />
             <folding />
           </first_editor>
           <second_editor />
