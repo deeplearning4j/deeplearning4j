@@ -56,6 +56,9 @@ public class OpProfiler {
 
     private static StackAggregator methodsAggregator = new StackAggregator();
 
+    // this aggregator holds getScalar/putScalar entries
+    private static StackAggregator scalarAggregator = new StackAggregator();
+
     private static StackAggregator mixedOrderAggregator = new StackAggregator();
     private static StackAggregator nonEwsAggregator = new StackAggregator();
     private static StackAggregator stridedAggregator = new StackAggregator();
@@ -90,6 +93,13 @@ public class OpProfiler {
         matchingCounterDetailed.reset();
         matchingCounterInverted.reset();
         methodsAggregator.reset();
+
+        scalarAggregator.reset();
+        nonEwsAggregator.reset();
+        stridedAggregator.reset();
+        tadNonEwsAggregator.reset();
+        tadStridedAggregator.reset();
+        mixedOrderAggregator.reset();
 
         orderCounter.reset();
     }
@@ -136,6 +146,7 @@ public class OpProfiler {
      */
     public void processScalarCall() {
         invocationsCount.incrementAndGet();
+        scalarAggregator.incrementCount();
     }
 
     /**
@@ -222,6 +233,10 @@ public class OpProfiler {
     public StackAggregator getMixedOrderAggregator() {
         // FIXME: remove this method, or make it protected
         return mixedOrderAggregator;
+    }
+
+    public StackAggregator getScalarAggregator(){
+        return scalarAggregator;
     }
 
     protected void updatePairs(String opName, String opClass) {
@@ -328,6 +343,10 @@ public class OpProfiler {
         System.out.println("Unique entries: " + tadNonEwsAggregator.getUniqueBranchesNumber());
         tadNonEwsAggregator.renderTree();
         System.out.println();
+        logger.info("--- Scalar access stack tree: ---");
+        System.out.println("Unique entries: " + scalarAggregator.getUniqueBranchesNumber());
+        scalarAggregator.renderTree(false);
+        System.out.println();
 
     }
 
@@ -346,15 +365,14 @@ public class OpProfiler {
     public void processStackCall(Op op, long timeStart ) {
         //StackTraceElement stack[] = Thread.currentThread().getStackTrace();
 
-        long timeSpent = System.nanoTime() - timeStart;
-
-        methodsAggregator.incrementCount(timeSpent);
+        long timeSpent = (System.nanoTime() - timeStart) / 1000;
 
         /*
            basically we want to unroll stack trace for few levels ABOVE nd4j classes
            and update invocations list for last few levels, to keep that stat on few levels
          */
 
+        methodsAggregator.incrementCount(timeSpent);
 /*
         int level = 0;
         String level1 = null;

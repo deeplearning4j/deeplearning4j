@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.ops.ScalarOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -45,6 +46,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -1130,6 +1132,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(i < 0)
             i += rank();
         if(isScalar()) {
+            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+                OpProfiler.getInstance().processScalarCall();
+
             data.put(i,value);
             return this;
         }
@@ -1172,6 +1177,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }else if(indexes.length == 4){
             return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
         }else {
+            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+                OpProfiler.getInstance().processScalarCall();
+
             long offset = Shape.getOffset(shapeInformation, indexes);
             data.put(offset, value);
         }
@@ -1180,6 +1188,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int row, int col, double value){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         if(rank != 2) throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank + " INDArray");
         long offset = Shape.getOffsetUnsafe(shapeInformation, row, col);
         data.put(offset, value);
@@ -1188,6 +1199,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, double value){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         if(rank != 3) throw new IllegalStateException("Cannot use putScalar(int,int,int,double) on a rank " + rank + " INDArray");
         long offset = Shape.getOffsetUnsafe(shapeInformation, dim0, dim1, dim2);
         data.put(offset, value);
@@ -1196,6 +1210,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value){
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         if(rank != 4) throw new IllegalStateException("Cannot use putScalar(int,int,int,int,double) on a rank " + rank + " INDArray");
         long offset = Shape.getOffsetUnsafe(shapeInformation, dim0, dim1, dim2, dim3);
         data.put(offset, value);
@@ -1554,6 +1571,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double getDouble(int... indices) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         Nd4j.getCompressor().autoDecompress(this);
 
         for(int i = 0; i < indices.length; i++) {
@@ -3459,6 +3479,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         Nd4j.getCompressor().autoDecompress(this);
 
 
@@ -3570,6 +3593,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalarUnsafe(int offset, double value) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            OpProfiler.getInstance().processScalarCall();
+
         data().put(offset,value);
         return this;
     }

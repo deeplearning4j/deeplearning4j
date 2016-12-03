@@ -94,4 +94,22 @@ public class StackAggregatorTests {
 
         aggregator.renderTree();
     }
+
+    @Test
+    public void testScalarAggregator() {
+        INDArray x = Nd4j.create(10);
+
+        x.putScalar(0, 1.0);
+
+        double x_0 = x.getDouble(0);
+
+        assertEquals(1.0, x_0, 1e-5);
+
+        StackAggregator aggregator = OpProfiler.getInstance().getScalarAggregator();
+
+        assertEquals(2, aggregator.getTotalEventsNumber());
+        assertEquals(2, aggregator.getUniqueBranchesNumber());
+
+        aggregator.renderTree(false);
+    }
 }

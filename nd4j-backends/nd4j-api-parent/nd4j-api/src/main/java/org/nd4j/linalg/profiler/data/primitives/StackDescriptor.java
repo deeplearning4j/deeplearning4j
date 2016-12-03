@@ -2,6 +2,7 @@ package org.nd4j.linalg.profiler.data.primitives;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
@@ -9,21 +10,35 @@ import java.util.Arrays;
 /**
  * @author raver119
  */
+@Slf4j
 public class StackDescriptor {
     @Getter protected StackTraceElement stackTrace[];
 
     public StackDescriptor(@NonNull StackTraceElement stack[]) {
         // we cut off X first elements from stack, because they belong to profiler
         // basically, we just want to make sure, no profiler-related code is mentioned in stack trace
-        int start = 2;
+        int start = 0;
+        for (; start < stack.length; start++) {
+            if (stack[start].getClassName().contains("DefaultOpExecutioner"))
+                break;
+        }
+
+        // in tests it's quite possible to have no DefaultOpExecutioner calls being used
+        if (start == stack.length) {;
+            for (start = 0; start < stack.length; start++) {
+                if (!stack[start+1].getClassName().contains("OpProfiler") && !stack[start+1].getClassName().contains("StackAggregator"))
+                    break;
+            }
+        } else {
+            for (; start < stack.length; start++) {
+                if (!stack[start].getClassName().contains("DefaultOpExecutioner"))
+                    break;
+            }
+        }
 
         for (; start < stack.length; start++) {
-            if (!stack[start].getClassName().contains("OpProfiler")) {
-                // we make one more step, to skip profilerHookIn method
-                if (stack[start].getClassName().contains("DefaultOpExecutioner"))
-                    start++;
+            if (!stack[start].getClassName().contains("OpProfiler"))
                 break;
-            }
         }
 
         this.stackTrace = Arrays.copyOfRange(stack, start, stack.length);

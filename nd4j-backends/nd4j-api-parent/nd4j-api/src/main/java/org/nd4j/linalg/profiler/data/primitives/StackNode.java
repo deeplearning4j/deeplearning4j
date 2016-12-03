@@ -36,7 +36,7 @@ public class StackNode implements Comparable<StackNode> {
         builder.append("").append(nodeURI);
 
         if (displayCounts)
-            builder.append("  ").append(counter.get()).append(" ms");
+            builder.append("  ").append(counter.get()).append(" us");
 
         System.out.println(builder.toString());
 
