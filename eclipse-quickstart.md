@@ -117,27 +117,50 @@ Here is a list of the jars and a short description.
 
 
 ## <a name="newProject">Creating a new Eclipse Project</a>
+Now that you have the source code for DL4J, DL4j examples and the robottag project, you're ready to create a new project. I'm going to assume you have used Eclipse before, but just in case you haven't here are the step-by-step instructions. Feel free to skip ahead.
 
-1. Use command line to enter the following:
+1. Start Eclipse
 
-        $ git clone https://github.com/deeplearning4j/dl4j-examples.git
-        $ cd dl4j-examples/
-        $ mvn clean install
+2. Click File
 
-2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-examples' directory. (Note that it is dl4j-0.4-examples on pictures, that is an outdated repository name, you should use dl4j-examples everywhere).
+3. Select New -> Java Project
 
-![select directory](./img/Install_IntJ_1.png)
+![new project](./img/eclipse-new-project.png)
 
-3. Choose 'Import project from external model' and ensure that Maven is selected. 
-![import project](./img/Install_IntJ_2.png)
+4. Give the project a name. I am using MyProject in the example, change it to what you want 
+![project name](./img/eclipse-new-proj-wiz.png)
 
-4. Continue through the wizard's options. Select the SDK that begins with `jdk`. (You may need to click on a plus sign to see your options...) Then click Finish. Wait a moment for IntelliJ to download all the dependencies. You'll see the horizontal bar working on the lower right.
+5. Click "Use project specific JRE"
 
-5. Pick an example from the file tree on the left.
-![run IntelliJ example](./img/Install_IntJ_3.png)
-Right-click the file to run. 
+6. Select Java 8
 
+7. Click Finish and eclipse will create the project
 
+8. Select the project and right click
+
+9. Select New -> folder to add a folder for the JAR libraries
+![add lib dir](./img/eclipse-add-lib-dir.png)
+
+10. Enter "lib" for the name of the folder and click Finish
+![new folder](./img/eclipse-folder-wiz.png)
+
+11. Using windows explorer, copy all of the jar files from robottag/lib/ folder and paste them into the new lib folder
+
+12. Select your project, right click and select Refresh. You can also use the short-cut key F5 to refresh
+
+13. Right click on the project and select Properties. We will add the JAR libraries to the project
+![project properties](./img/proj-properties.png)
+
+14. Select Java build path
+![project java build path](./img/proj-build-path.png)
+
+15. Click Libraries tab
+![project add libraries](./img/add-libraries.png)
+
+16. Click Add Libraries
+
+17. Select all of the jars in the lib folder that doesn't have CUDA in the file name. If you have a NVidia video card and want to use CUDA, also add the CUDA jar files
+![project add jars](./img/add-jar-screen.png)
 
 ## Next Steps
 
@@ -149,11 +172,6 @@ Right-click the file to run.
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
 
-### Additional links
-
-- [Deeplearning4j artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
-- [ND4J artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cnd4j)
-- [Datavec artifacts on Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cdatavec)
 
 ### Troubleshooting
 
