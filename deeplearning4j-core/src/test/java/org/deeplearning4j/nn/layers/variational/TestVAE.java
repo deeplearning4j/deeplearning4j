@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.variational;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -9,7 +10,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -173,6 +176,63 @@ public class TestVAE {
 
             assertArrayEquals(pArr.shape(), gvArr.shape());
             assertTrue(gvArr == gArr);  //Should be the exact same object due to view mechanics
+        }
+    }
+
+
+    @Test
+    public void testPretrainParamsDuringBackprop(){
+        //Idea: pretrain-specific parameters shouldn't change during backprop
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .nIn(10).nOut(5).encoderLayerSizes(12,13).decoderLayerSizes(14,15).build())
+                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).activation("tanh").build())
+                .pretrain(true).backprop(true)
+                .build();
+
+        NeuralNetConfiguration c = mlc.getConf(0);
+        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae = (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        net.initGradientsView();
+
+        org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
+
+        INDArray input = Nd4j.rand(3, 10);
+//        layer.fit(input);
+        net.pretrain(input);
+
+        //Get a snapshot of the pretrain params after fitting:
+        Map<String,INDArray> layerParams = layer.paramTable();
+        Map<String,INDArray> pretrainParamsBefore = new HashMap<>();
+        for(String s : layerParams.keySet()){
+            if(layer.isPretrainParam(s)){
+                pretrainParamsBefore.put(s, layerParams.get(s).dup());
+            }
+        }
+
+
+        INDArray features = Nd4j.rand(3, 10);
+        INDArray labels = Nd4j.rand(3, 6);
+
+        net.getLayerWiseConfigurations().setPretrain(false);
+
+        for( int i=0; i<3; i++ ){
+            net.fit(features, labels);
+        }
+
+        Map<String,INDArray> layerParamsAfter = layer.paramTable();
+
+        for(String s : pretrainParamsBefore.keySet()){
+            INDArray before = pretrainParamsBefore.get(s);
+            INDArray after = layerParamsAfter.get(s);
+            assertEquals(before, after);
         }
     }
 }
