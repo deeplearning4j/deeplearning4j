@@ -9,10 +9,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
-import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
-import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
-import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -20,12 +17,14 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Arrays;
@@ -212,62 +211,80 @@ public class VaeGradientCheckTests {
     @Test
     public void testVaePretrainReconstructionDistributions() {
 
-        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
-        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
+        int inOutSize = 6;
 
         ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
-                new GaussianReconstructionDistribution("identity"), new GaussianReconstructionDistribution("tanh"),
-                new BernoulliReconstructionDistribution("sigmoid")};
+                new GaussianReconstructionDistribution("identity"),
+                new GaussianReconstructionDistribution("tanh"),
+                new BernoulliReconstructionDistribution("sigmoid"),
+                new CompositeReconstructionDistribution.Builder()
+                        .addDistribution(2, new GaussianReconstructionDistribution("identity"))
+                        .addDistribution(2, new BernoulliReconstructionDistribution())
+                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build()};
 
         Nd4j.getRandom().setSeed(12345);
-        for(int minibatch : new int[]{1, 5}) {
-            INDArray features = Nd4j.rand(minibatch, 4);
+        for (int minibatch : new int[]{1, 5}) {
+            for (int i = 0; i < reconstructionDistributions.length; i++) {
 
-            for (int ls = 0; ls < encoderLayerSizes.length; ls++) {
-                int[] encoderSizes = encoderLayerSizes[ls];
-                int[] decoderSizes = decoderLayerSizes[ls];
-
-                for(ReconstructionDistribution rd : reconstructionDistributions) {
-
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .regularization(true)
-                            .l2(0.2).l1(0.3)
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                            .learningRate(1.0)
-                            .seed(12345L)
-                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                            .list()
-                            .layer(0, new VariationalAutoencoder.Builder()
-                                    .nIn(4).nOut(3)
-                                    .encoderLayerSizes(encoderSizes)
-                                    .decoderLayerSizes(decoderSizes)
-                                    .pzxActivationFunction("tanh")
-                                    .reconstructionDistribution(rd)
-                                    .activation("tanh")
-                                    .updater(Updater.SGD)
-                                    .build())
-                            .pretrain(true).backprop(false)
-                            .build();
-
-                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                    mln.init();
-                    mln.initGradientsView();
-
-                    org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
-
-                    String msg = "testVaePretrainReconstructionDistributions() - " + rd + ", encLayerSizes = " + Arrays.toString(encoderSizes)
-                            + ", decLayerSizes = " + Arrays.toString(decoderSizes);
-                    if (PRINT_RESULTS) {
-                        System.out.println(msg);
-                        for (int j = 0; j < mln.getnLayers(); j++)
-                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                    }
-
-                    boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
-
-                    assertTrue(msg, gradOK);
+                INDArray data;
+                switch (i) {
+                    case 0: //Gaussian + identity
+                    case 1: //Gaussian + tanh
+                        data = Nd4j.rand(minibatch, inOutSize);
+                        break;
+                    case 2: //Bernoulli
+                        data = Nd4j.create(minibatch, inOutSize);
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(data, 0.5), Nd4j.getRandom());
+                        break;
+                    case 3: //Composite
+                        data = Nd4j.create(minibatch, inOutSize);
+                        data.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2)).assign(Nd4j.rand(minibatch, 2));
+                        Nd4j.getExecutioner().exec(
+                                new BernoulliDistribution(data.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), 0.5),
+                                Nd4j.getRandom());
+                        data.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 6)).assign(Nd4j.rand(minibatch, 2));
+                        break;
+                    default:
+                        throw new RuntimeException();
                 }
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(true)
+                        .l2(0.2).l1(0.3)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(1.0)
+                        .seed(12345L)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .list()
+                        .layer(0, new VariationalAutoencoder.Builder()
+                                .nIn(inOutSize).nOut(3)
+                                .encoderLayerSizes(5)
+                                .decoderLayerSizes(6)
+                                .pzxActivationFunction("tanh")
+                                .reconstructionDistribution(reconstructionDistributions[i])
+                                .activation("tanh")
+                                .updater(Updater.SGD)
+                                .build())
+                        .pretrain(true).backprop(false)
+                        .build();
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
+                mln.initGradientsView();
+
+                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+
+                String msg = "testVaePretrainReconstructionDistributions() - " + reconstructionDistributions[i];
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < mln.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, data, 12345);
+
+                assertTrue(msg, gradOK);
             }
         }
     }
