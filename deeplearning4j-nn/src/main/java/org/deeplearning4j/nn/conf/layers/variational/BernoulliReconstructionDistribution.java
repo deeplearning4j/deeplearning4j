@@ -22,7 +22,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public int distributionParamCount(int dataSize) {
+    public int distributionInputSize(int dataSize) {
         return dataSize;
     }
 
