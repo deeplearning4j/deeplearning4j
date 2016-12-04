@@ -1,14 +1,11 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +64,7 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+    public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
 
         int inputSoFar = 0;
         int paramsSoFar = 0;
@@ -80,7 +77,7 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
             INDArray inputSubset = x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
             INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
 
-            logProbSum += reconstructionDistributions[i].logProbability(inputSubset, paramsSubset, average);
+            logProbSum += reconstructionDistributions[i].negLogProbability(inputSubset, paramsSubset, average);
 
             inputSoFar += thisInputSize;
             paramsSoFar += thisParamsSize;

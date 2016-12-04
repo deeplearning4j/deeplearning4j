@@ -47,7 +47,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
-    public double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+    public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
         INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
@@ -65,9 +65,9 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         double logProb = x.size(0) * size * NEG_HALF_LOG_2PI - 0.5 * logStdevSquared.sumNumber().doubleValue() - lastTerm.sumNumber().doubleValue();
 
         if(average){
-            return logProb / x.size(0);
+            return - logProb / x.size(0);
         } else {
-            return logProb;
+            return - logProb;
         }
     }
 
@@ -105,7 +105,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
             grad.muli(sigmaPrimeZ);
         }
 
-        return grad;
+        return grad.negi();
     }
 
     @Override

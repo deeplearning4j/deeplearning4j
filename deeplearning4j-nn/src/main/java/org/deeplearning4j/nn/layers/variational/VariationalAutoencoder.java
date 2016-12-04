@@ -29,6 +29,11 @@ import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitialize
  * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - https://arxiv.org/abs/1312.6114
  *<p>
  * This implementation allows multiple encoder and decoder layers, the number and sizes of which can be set independently.
+ * <p>
+ * A note on scores during pretraining: This implementation minimizes the negative of the variational lower bound objective
+ * as described in Kingma & Welling; the mathematics in that paper is based on maximization of the variational lower bound instead.
+ * Thus, scores reported during pretraining in DL4J are the negative of the variational lower bound equation in the paper.
+ * The backpropagation and learning procedure is otherwise as described there.
  *
  * @author Alex Black
  */
@@ -139,11 +144,13 @@ public class VariationalAutoencoder implements Layer {
 
 
         INDArray pxzDistributionParams = current.mmul(pxzw).addiRowVector(pxzb);
-        this.score = reconstructionDistribution.logProbability(input, pxzDistributionParams, true);
-        //Need to add other component of score, in addition to log probability
+        this.score = reconstructionDistribution.negLogProbability(input, pxzDistributionParams, true);
+        //Need to add other component of score, in addition to negative log probability
+        //Note the negative here vs. the equation in Kingma & Welling: this is because we are minimizing the negative of
+        // that, rather than maximizing the
         INDArray temp = meanZ.mul(meanZ).addi(pzxSigma.mul(pzxSigma)).negi();
         temp.addi(logStdev2Z).addi(1.0);
-        double scorePt1 = 0.5 / minibatch * temp.sumNumber().doubleValue();
+        double scorePt1 = - 0.5 / minibatch * temp.sumNumber().doubleValue();
         this.score += scorePt1 + (calcL1(false) + calcL2(false))/minibatch;
 
         /////////////////////////////////////////////////////////
@@ -201,10 +208,11 @@ public class VariationalAutoencoder implements Layer {
         INDArray eZXLogStdev2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
 
         INDArray dLdz = epsilon;
-        INDArray dLdmu = dLdz.sub(meanZ);
+        //If we were maximizing the equation in Kinga and Welling, this would be a .sub(meanZ). Here: we are minimizing the negative instead
+        INDArray dLdmu = dLdz.add(meanZ);
 
         INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma)
-                .subi(pzxSigma.mul(pzxSigma)).addi(1).muli(0.5);
+                .addi(pzxSigma.mul(pzxSigma)).subi(1).muli(0.5);
 
 
         INDArray dLdPreMu = dLdmu.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
@@ -225,7 +233,8 @@ public class VariationalAutoencoder implements Layer {
                 pzxActivationFn, fwd.getPzxMeanPreOut().dup(), conf.getExtraArgs() ).derivative());
         INDArray dLdZXMeanb = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B);
         INDArray dLdZXLogStdev2b = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B);
-        dLdZXMeanb.assign(dLdz.sub(meanZ).mul(sigmaPrimePreMu).sum(0));
+        //If we were maximizing the equation in Kinga and Welling, this would be a .sub(meanZ). Here: we are minimizing the negative instead
+        dLdZXMeanb.assign(dLdz.add(meanZ).mul(sigmaPrimePreMu).sum(0));
         dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
 
         gradientMap.put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, dLdZXMeanW);
@@ -758,5 +767,12 @@ public class VariationalAutoencoder implements Layer {
         }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
+    }
+
+
+
+    public INDArray reconstructionLogProbability(INDArray data, int numSamples){
+
+        return null;
     }
 }

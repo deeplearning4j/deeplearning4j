@@ -44,7 +44,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
-    public double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+    public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
         INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
@@ -56,9 +56,9 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         INDArray logProb = logOutput.muli(x).addi(x.rsub(1.0).muli(log1SubOut));
 
         if(average){
-            return logProb.sumNumber().doubleValue() / x.size(0);
+            return - logProb.sumNumber().doubleValue() / x.size(0);
         } else {
-            return logProb.sumNumber().doubleValue();
+            return - logProb.sumNumber().doubleValue();
         }
     }
 
@@ -80,7 +80,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
             grad.muli(sigmaPrimeZ);
         }
 
-        return grad;
+        return grad.negi();
     }
 
     @Override
