@@ -9,6 +9,9 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -153,49 +156,117 @@ public class VaeGradientCheckTests {
 
                 for (String afn : activFns) {
                     for (String pzxAfn : activFns) {
-                        for (int k = 0; k < l2vals.length; k++) {
-                            double l2 = l2vals[k];
-                            double l1 = l1vals[k];
+                        for (String pxzAfn : activFns) {
+                            for (int k = 0; k < l2vals.length; k++) {
+                                double l2 = l2vals[k];
+                                double l1 = l1vals[k];
 
-                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                    .regularization(true)
-                                    .l2(l2).l1(l1)
-                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                    .learningRate(1.0)
-                                    .seed(12345L)
-                                    .list()
-                                    .layer(0, new VariationalAutoencoder.Builder()
-                                            .nIn(4).nOut(3)
-                                            .encoderLayerSizes(encoderSizes)
-                                            .decoderLayerSizes(decoderSizes)
-                                            .pzxActivationFunction(pzxAfn)
-                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .activation(afn)
-                                            .updater(Updater.SGD)
-                                            .build())
-                                    .pretrain(true).backprop(false)
-                                    .build();
+                                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                        .regularization(true)
+                                        .l2(l2).l1(l1)
+                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                        .learningRate(1.0)
+                                        .seed(12345L)
+//                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                        .weightInit(WeightInit.XAVIER)
+                                        .list()
+                                        .layer(0, new VariationalAutoencoder.Builder()
+                                                .nIn(4).nOut(3)
+                                                .encoderLayerSizes(encoderSizes)
+                                                .decoderLayerSizes(decoderSizes)
+                                                .pzxActivationFunction(pzxAfn)
+                                                .reconstructionDistribution(new GaussianReconstructionDistribution(pxzAfn))
+                                                .activation(afn)
+                                                .updater(Updater.SGD)
+                                                .build())
+                                        .pretrain(true).backprop(false)
+                                        .build();
 
-                            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                            mln.init();
-                            mln.initGradientsView();
+                                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                                mln.init();
+                                mln.initGradientsView();
 
-                            org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
 
-                            String msg = "testVaePretrain() - activationFn=" + afn + ", encLayerSizes = " + Arrays.toString(encoderSizes)
-                                    + ", decLayerSizes = " + Arrays.toString(decoderSizes) + ", l2=" + l2 + ", l1=" + l1;
-                            if (PRINT_RESULTS) {
-                                System.out.println(msg);
-                                for (int j = 0; j < mln.getnLayers(); j++)
-                                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                                String msg = "testVaePretrain() - activationFn=" + afn + ", p(z|x) afn = " + pzxAfn + ", p(x|z) afn = " + pxzAfn +
+                                        ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
+                                        + ", l2=" + l2 + ", l1=" + l1;
+                                if (PRINT_RESULTS) {
+                                    System.out.println(msg);
+                                    for (int j = 0; j < mln.getnLayers(); j++)
+                                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                                }
+
+                                boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
+
+                                assertTrue(msg, gradOK);
                             }
-
-                            boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
-
-                            assertTrue(msg, gradOK);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testVaePretrainReconstructionDistributions() {
+
+        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
+        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
+
+        ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
+                new GaussianReconstructionDistribution("identity"), new GaussianReconstructionDistribution("tanh"),
+                new BernoulliReconstructionDistribution("sigmoid")};
+
+        Nd4j.getRandom().setSeed(12345);
+        for(int minibatch : new int[]{1, 5}) {
+            INDArray features = Nd4j.rand(minibatch, 4);
+
+            for (int ls = 0; ls < encoderLayerSizes.length; ls++) {
+                int[] encoderSizes = encoderLayerSizes[ls];
+                int[] decoderSizes = decoderLayerSizes[ls];
+
+                for(ReconstructionDistribution rd : reconstructionDistributions) {
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .regularization(true)
+                            .l2(0.2).l1(0.3)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .learningRate(1.0)
+                            .seed(12345L)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                            .list()
+                            .layer(0, new VariationalAutoencoder.Builder()
+                                    .nIn(4).nOut(3)
+                                    .encoderLayerSizes(encoderSizes)
+                                    .decoderLayerSizes(decoderSizes)
+                                    .pzxActivationFunction("tanh")
+                                    .reconstructionDistribution(rd)
+                                    .activation("tanh")
+                                    .updater(Updater.SGD)
+                                    .build())
+                            .pretrain(true).backprop(false)
+                            .build();
+
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
+                    mln.initGradientsView();
+
+                    org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+
+                    String msg = "testVaePretrainReconstructionDistributions() - " + rd + ", encLayerSizes = " + Arrays.toString(encoderSizes)
+                            + ", decLayerSizes = " + Arrays.toString(decoderSizes);
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < mln.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
+
+                    assertTrue(msg, gradOK);
                 }
             }
         }
