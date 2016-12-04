@@ -235,4 +235,41 @@ public class TestVAE {
             assertEquals(before, after);
         }
     }
+
+
+    @Test
+    public void testJsonYaml(){
+
+        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new GaussianReconstructionDistribution("identity"))
+                        .nIn(3).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new GaussianReconstructionDistribution("tanh"))
+                        .nIn(7).nOut(8).encoderLayerSizes(9).decoderLayerSizes(10).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new BernoulliReconstructionDistribution())
+                        .nIn(11).nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new CompositeReconstructionDistribution.Builder()
+                                .addDistribution(5, new GaussianReconstructionDistribution())
+                                .addDistribution(5, new GaussianReconstructionDistribution("tanh"))
+                                .addDistribution(5, new BernoulliReconstructionDistribution())
+                                .build())
+                        .nIn(15).nOut(16).encoderLayerSizes(17).decoderLayerSizes(18).build())
+                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(18).nOut(19).activation("tanh").build())
+                .pretrain(true).backprop(true)
+                .build();
+
+        String asJson = config.toJson();
+        String asYaml = config.toYaml();
+
+        MultiLayerConfiguration fromJson = MultiLayerConfiguration.fromJson(asJson);
+        MultiLayerConfiguration fromYaml = MultiLayerConfiguration.fromYaml(asYaml);
+
+        assertEquals(config, fromJson);
+        assertEquals(config, fromYaml);
+    }
 }

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -19,11 +20,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author Alex Black
  */
+@Data
 public class GaussianReconstructionDistribution implements ReconstructionDistribution {
 
     private static final double NEG_HALF_LOG_2PI = -0.5*Math.log(2*Math.PI);
 
-    private String activationFn;
+    private final String activationFn;
 
     /**
      * Create a GaussianReconstructionDistribution with the default identity activation function.

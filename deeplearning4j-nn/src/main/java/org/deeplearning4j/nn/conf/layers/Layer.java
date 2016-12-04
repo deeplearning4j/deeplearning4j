@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
@@ -55,7 +56,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-        @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation")
+        @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
+        @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder")
 })
 @Data
 @NoArgsConstructor
