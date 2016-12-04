@@ -432,7 +432,7 @@ public class VariationalAutoencoder implements Layer {
         this.maskArray = null;
     }
 
-    private boolean isPretrainParam(String param){
+    public boolean isPretrainParam(String param){
         return !(param.startsWith("e") || param.startsWith(VariationalAutoencoderParamInitializer.PZX_MEAN_PREFIX));
     }
 
