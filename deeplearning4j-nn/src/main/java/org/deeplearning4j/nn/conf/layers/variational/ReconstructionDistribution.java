@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface ReconstructionDistribution {
 
-    int distributionParamCount(int dataSize);
+    int distributionInputSize(int dataSize);
 
     double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average);
 

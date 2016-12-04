@@ -25,13 +25,14 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Alex Black 14 Aug 2015
+ * @author Alex Black
  */
 public class VaeGradientCheckTests {
 
@@ -61,6 +62,10 @@ public class VaeGradientCheckTests {
         double[] l2vals = {0.0, 0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
+        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
+        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
+
+        Nd4j.getRandom().setSeed(12345);
         for(int minibatch : new int[]{1, 5}) {
             INDArray input = Nd4j.rand(minibatch, 4);
             INDArray labels = Nd4j.create(minibatch, 3);
@@ -68,55 +73,58 @@ public class VaeGradientCheckTests {
                 labels.putScalar(i, i%3, 1.0);
             }
 
-            for (String afn : activFns) {
-                for (int i = 0; i < lossFunctions.length; i++) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
+            for( int ls=0; ls < encoderLayerSizes.length; ls++ ) {
+                int[] encoderSizes = encoderLayerSizes[ls];
+                int[] decoderSizes = decoderLayerSizes[ls];
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .regularization(true)
-                                .l2(l2).l1(l1)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                .learningRate(1.0)
-                                .seed(12345L)
-                                .list()
-                                .layer(0, new VariationalAutoencoder.Builder()
-                                        .nIn(4).nOut(3)
-                                        .encoderLayerSizes(5)
-                                        .decoderLayerSizes(6)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .activation(afn)
-                                        .updater(Updater.SGD)
-                                        .build())
-                                .layer(1, new OutputLayer.Builder(lf)
-                                        .activation(outputActivation)
-                                        .nIn(3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.SGD)
-                                        .build())
-                                .pretrain(false).backprop(true)
-                                .build();
+                for (String afn : activFns) {
+                    for (int i = 0; i < lossFunctions.length; i++) {
+                        for (int k = 0; k < l2vals.length; k++) {
+                            LossFunction lf = lossFunctions[i];
+                            String outputActivation = outputActivations[i];
+                            double l2 = l2vals[k];
+                            double l1 = l1vals[k];
 
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
+                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .regularization(true)
+                                    .l2(l2).l1(l1)
+                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                    .learningRate(1.0)
+                                    .seed(12345L)
+                                    .list()
+                                    .layer(0, new VariationalAutoencoder.Builder()
+                                            .nIn(4).nOut(3)
+                                            .encoderLayerSizes(encoderSizes)
+                                            .decoderLayerSizes(decoderSizes)
+                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                            .activation(afn)
+                                            .updater(Updater.SGD)
+                                            .build())
+                                    .layer(1, new OutputLayer.Builder(lf)
+                                            .activation(outputActivation)
+                                            .nIn(3).nOut(3)
+                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                            .updater(Updater.SGD)
+                                            .build())
+                                    .pretrain(false).backprop(true)
+                                    .build();
 
-                        if (PRINT_RESULTS) {
-                            System.out.println("testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                    + ", l2=" + l2 + ", l1=" + l1);
-                            for (int j = 0; j < mln.getnLayers(); j++)
-                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                            mln.init();
+
+                            String msg = "testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                                    + ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
+                                    + ", l2=" + l2 + ", l1=" + l1;
+                            if (PRINT_RESULTS) {
+                                System.out.println(msg);
+                                for (int j = 0; j < mln.getnLayers(); j++)
+                                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                            }
+
+                            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            assertTrue(msg, gradOK);
                         }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        String msg = "testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                + ", l2=" + l2 + ", l1=" + l1;
-                        ;
-                        assertTrue(msg, gradOK);
                     }
                 }
             }
@@ -132,54 +140,61 @@ public class VaeGradientCheckTests {
         double[] l2vals = {0.0, 0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
-        Nd4j.getRandom().setSeed(12345);
+        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
+        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
 
+        Nd4j.getRandom().setSeed(12345);
         for(int minibatch : new int[]{1, 5}) {
             INDArray features = Nd4j.rand(minibatch, 4);
 
-            for (String afn : activFns) {
-                for (String pzxAfn : activFns) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
+            for (int ls = 0; ls < encoderLayerSizes.length; ls++) {
+                int[] encoderSizes = encoderLayerSizes[ls];
+                int[] decoderSizes = decoderLayerSizes[ls];
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .regularization(true)
-                                .l2(l2).l1(l1)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                .learningRate(1.0)
-                                .seed(12345L)
-                                .list()
-                                .layer(0, new VariationalAutoencoder.Builder()
-                                        .nIn(4).nOut(3)
-                                        .encoderLayerSizes(5)
-                                        .decoderLayerSizes(6)
-                                        .pzxActivationFunction(pzxAfn)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .activation(afn)
-                                        .updater(Updater.SGD)
-                                        .build())
-                                .pretrain(true).backprop(false)
-                                .build();
+                for (String afn : activFns) {
+                    for (String pzxAfn : activFns) {
+                        for (int k = 0; k < l2vals.length; k++) {
+                            double l2 = l2vals[k];
+                            double l1 = l1vals[k];
 
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
-                        mln.initGradientsView();
+                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .regularization(true)
+                                    .l2(l2).l1(l1)
+                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                    .learningRate(1.0)
+                                    .seed(12345L)
+                                    .list()
+                                    .layer(0, new VariationalAutoencoder.Builder()
+                                            .nIn(4).nOut(3)
+                                            .encoderLayerSizes(encoderSizes)
+                                            .decoderLayerSizes(decoderSizes)
+                                            .pzxActivationFunction(pzxAfn)
+                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                            .activation(afn)
+                                            .updater(Updater.SGD)
+                                            .build())
+                                    .pretrain(true).backprop(false)
+                                    .build();
 
-                        org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                            mln.init();
+                            mln.initGradientsView();
 
-                        if (PRINT_RESULTS) {
-                            System.out.println("testVaePretrain() - minibatch = " + minibatch + ", activationFn=" + afn + ", pzxAfn = "
-                                    + pzxAfn + ", l2=" + l2 + ", l1=" + l1);
-                            for (int j = 0; j < mln.getnLayers(); j++)
-                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                            org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+
+                            String msg = "testVaePretrain() - activationFn=" + afn + ", encLayerSizes = " + Arrays.toString(encoderSizes)
+                                    + ", decLayerSizes = " + Arrays.toString(decoderSizes) + ", l2=" + l2 + ", l1=" + l1;
+                            if (PRINT_RESULTS) {
+                                System.out.println(msg);
+                                for (int j = 0; j < mln.getnLayers(); j++)
+                                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                            }
+
+                            boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
+
+                            assertTrue(msg, gradOK);
                         }
-
-                        boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
-
-                        String msg = "testVaePretrain() - activationFn=" + afn + ", pzxAfn = " + pzxAfn + ", l2=" + l2 + ", l1=" + l1;
-                        assertTrue(msg, gradOK);
                     }
                 }
             }

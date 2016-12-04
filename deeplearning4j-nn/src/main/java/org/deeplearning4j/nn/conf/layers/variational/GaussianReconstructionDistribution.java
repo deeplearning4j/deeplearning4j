@@ -20,7 +20,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
-    public int distributionParamCount(int dataSize) {
+    public int distributionInputSize(int dataSize) {
         return 2*dataSize;
     }
 
