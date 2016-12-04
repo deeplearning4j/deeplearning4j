@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.variational;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -31,13 +32,13 @@ import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitialize
  *
  * @author Alex Black
  */
-@Data
 public class VariationalAutoencoder implements Layer {
 
     protected INDArray input;
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
     protected Map<String,INDArray> params;
+    @Getter
     protected transient Map<String,INDArray> gradientViews;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
@@ -54,6 +55,8 @@ public class VariationalAutoencoder implements Layer {
     protected int[] decoderLayerSizes;
     protected ReconstructionDistribution reconstructionDistribution;
     protected String pzxActivationFn;
+
+    protected boolean zeroedPretrainParamGradients = false;
 
     public VariationalAutoencoder(NeuralNetConfiguration conf){
         this.conf = conf;
@@ -492,6 +495,15 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        if(!zeroedPretrainParamGradients){
+            for(Map.Entry<String,INDArray> entry : gradientViews.entrySet()){
+                if(isPretrainParam(entry.getKey())){
+                    entry.getValue().assign(0);
+                }
+            }
+            zeroedPretrainParamGradients = true;
+        }
+
         Gradient gradient = new DefaultGradient();
 
         VAEFwdHelper fwd = doForward(true, true);
