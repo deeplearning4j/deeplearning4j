@@ -46,7 +46,7 @@ public class TestReconstructionDistributions {
 
                 ReconstructionDistribution dist = new GaussianReconstructionDistribution("identity");
 
-                double logProb = dist.logProbability(x, distributionParams, average);
+                double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -64,16 +64,16 @@ public class TestReconstructionDistributions {
                     }
                 }
 
-                double expLogProb;
+                double expNegLogProb;
                 if (average) {
-                    expLogProb = logProbSum / minibatch;
+                    expNegLogProb = - logProbSum / minibatch;
                 } else {
-                    expLogProb = logProbSum;
+                    expNegLogProb = - logProbSum;
                 }
 
 
-                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
-                assertEquals(expLogProb, logProb, 1e-6);
+//                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
+                assertEquals(expNegLogProb, negLogProb, 1e-6);
             }
         }
     }
@@ -102,7 +102,7 @@ public class TestReconstructionDistributions {
 
                 ReconstructionDistribution dist = new BernoulliReconstructionDistribution("sigmoid");
 
-                double logProb = dist.logProbability(x, distributionParams, average);
+                double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -119,17 +119,17 @@ public class TestReconstructionDistributions {
                     }
                 }
 
-                double expLogProb;
+                double expNegLogProb;
                 if (average) {
-                    expLogProb = logProbSum / minibatch;
+                    expNegLogProb = - logProbSum / minibatch;
                 } else {
-                    expLogProb = logProbSum;
+                    expNegLogProb = - logProbSum;
                 }
 
 //                System.out.println(x);
 
-                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
-                assertEquals(expLogProb, logProb, 1e-6);
+//                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
+                assertEquals(expNegLogProb, negLogProb, 1e-6);
             }
         }
     }
@@ -185,9 +185,9 @@ public class TestReconstructionDistributions {
                     for (int j = 0; j < distributionParams.size(0); j++) {
                         double initial = distributionParams.getDouble(j, i);
                         distributionParams.putScalar(j, i, initial + eps);
-                        double scorePlus = rd.logProbability(x, distributionParams, false);
+                        double scorePlus = rd.negLogProbability(x, distributionParams, false);
                         distributionParams.putScalar(j, i, initial - eps);
-                        double scoreMinus = rd.logProbability(x, distributionParams, false);
+                        double scoreMinus = rd.negLogProbability(x, distributionParams, false);
                         distributionParams.putScalar(j, i, initial);
 
                         double numericalGrad = (scorePlus - scoreMinus) / (2.0 * eps);

@@ -28,21 +28,31 @@ public interface ReconstructionDistribution extends Serializable {
      * Get the number of distribution parameters for the given input data size.
      * For example, a Gaussian distribution has 2 parameters value (mean and log(variance)) for each data value,
      * whereas a Bernoulli distribution has only 1 parameter value (probability) for each data value.
-     * @param dataSize    Size of the data. i.e., nIn value
+     *
+     * @param dataSize Size of the data. i.e., nIn value
      * @return Number of distribution parameters for the given reconstruction distribution
      */
     int distributionInputSize(int dataSize);
 
     /**
-     * Calculate the log probability
-     * @param x                           Data to be modelled (reconstructions)
-     * @param preOutDistributionParams    Distribution parameters used by this reconstruction distribution (for example,
-     *                                    mean and log variance values for Gaussian)
-     * @param average                     Whether the log probability should be averaged over the minibatch, or simply summed.
-     * @return                            Log probability of the reconstruction given the distribution parameters
+     * Calculate the negative log probability
+     *
+     * @param x                        Data to be modelled (reconstructions)
+     * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
+     *                                 mean and log variance values for Gaussian)
+     * @param average                  Whether the log probability should be averaged over the minibatch, or simply summed.
+     * @return Log probability of the reconstruction given the distribution parameters
      */
-    double logProbability(INDArray x, INDArray preOutDistributionParams, boolean average);
+    double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average);
 
+    /**
+     * Calculate the gradient of the negative log probability with respect to the preOutDistributionParams
+     *
+     * @param x                        Data
+     * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
+     *                                 mean and log variance values for Gaussian)
+     * @return Gradient with respect to the preOutDistributionParams
+     */
     INDArray gradient(INDArray x, INDArray preOutDistributionParams);
 
 }
