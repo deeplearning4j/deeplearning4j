@@ -237,16 +237,6 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         ret.put("eZXMean" + WEIGHT_KEY_SUFFIX, pzxWeightGradMeanReshaped);
         ret.put("eZXMean" + BIAS_KEY_SUFFIX, pzxBiasGradMeanReshaped);
 
-
-        //TODO handle backprop params..
-
-        //eZXLogStdev2W
-        //eZXLogStdev2b
-        //d0W
-        //d0b
-        //dXZW
-        //dXZb
-
         ////////////////////////////////////////////////////////
 
         String sW = "eZXLogStdev2" + WEIGHT_KEY_SUFFIX;
