@@ -48,6 +48,28 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     @Override
     public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+        int size = preOutDistributionParams.size(1)/2;
+
+        INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
+        double logProb = x.size(0) * size * NEG_HALF_LOG_2PI - 0.5 * logProbArrays[0].sumNumber().doubleValue() - logProbArrays[1].sumNumber().doubleValue();
+
+        if(average){
+            return - logProb / x.size(0);
+        } else {
+            return - logProb;
+        }
+    }
+
+    @Override
+    public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
+        int size = preOutDistributionParams.size(1)/2;
+
+        INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
+
+        return logProbArrays[0].sum(1).muli(0.5).subi(size * NEG_HALF_LOG_2PI).addi(logProbArrays[1].sum(1));
+    }
+
+    private INDArray[] calcLogProbArrayExConstants(INDArray x, INDArray preOutDistributionParams){
         INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
@@ -62,13 +84,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         lastTerm.muli(lastTerm);
         lastTerm.divi(sigmaSquared).divi(2);
 
-        double logProb = x.size(0) * size * NEG_HALF_LOG_2PI - 0.5 * logStdevSquared.sumNumber().doubleValue() - lastTerm.sumNumber().doubleValue();
-
-        if(average){
-            return - logProb / x.size(0);
-        } else {
-            return - logProb;
-        }
+        return new INDArray[]{logStdevSquared, lastTerm};
     }
 
     @Override

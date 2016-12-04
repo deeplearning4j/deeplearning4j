@@ -35,15 +35,26 @@ public interface ReconstructionDistribution extends Serializable {
     int distributionInputSize(int dataSize);
 
     /**
-     * Calculate the negative log probability
+     * Calculate the negative log probability (summed or averaged over each example in the minibatch)
      *
      * @param x                        Data to be modelled (reconstructions)
      * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
      *                                 mean and log variance values for Gaussian)
      * @param average                  Whether the log probability should be averaged over the minibatch, or simply summed.
-     * @return Log probability of the reconstruction given the distribution parameters
+     * @return Average or sum of negative log probability of the reconstruction given the distribution parameters
      */
     double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average);
+
+    /**
+     * Calculate the negative log probability for each example individually
+     *
+     * @param x                        Data to be modelled (reconstructions)
+     * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
+     *                                 mean and log variance values for Gaussian)
+     * @return Negative log probability of the reconstruction given the distribution parameters, for each example individually.
+     * Column vector, shape [numExamples, 1]
+     */
+    INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams);
 
     /**
      * Calculate the gradient of the negative log probability with respect to the preOutDistributionParams
