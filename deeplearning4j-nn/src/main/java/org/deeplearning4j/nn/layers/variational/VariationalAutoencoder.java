@@ -140,6 +140,7 @@ public class VariationalAutoencoder implements Layer {
 
 
         /////////////////////////////////////////////////////////
+        Gradient gradient = new DefaultGradient(gradientsFlattened);
 
         INDArray dLdxzw = gradientViews.get("dXZW");
         INDArray dLdxzb = gradientViews.get("dXZb");
@@ -147,13 +148,16 @@ public class VariationalAutoencoder implements Layer {
         Nd4j.gemm(lastDecActivations,dpdpxz,dLdxzw,true,false,1.0,0.0);
         dLdxzb.assign(dpdpxz.sum(0));    //TODO: do this without the assign
 
+        gradient.gradientForVariable().put("dXZW", dLdxzw); //TODO not sure on order here...
+        gradient.gradientForVariable().put("dXZb", dLdxzb);
+
         //Do backprop for output probability distribution -> final decoder layer
         INDArray epsilon = xzw.mmul(dpdpxz.transpose()).transpose();
 
         //Next: we chain derivatives backwards...
         String afn = conf().getLayer().getActivationFunction();
 
-        Gradient gradient = new DefaultGradient(gradientsFlattened);
+
         for( int i=nDecoderLayers-1; i>=0; i-- ){
             String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "d" + i + BIAS_KEY_SUFFIX;
@@ -185,9 +189,7 @@ public class VariationalAutoencoder implements Layer {
 
         //Backprop through p(z|x)
         INDArray eZXMeanW = params.get("eZXMeanW");
-        INDArray eZXMeanb = params.get("eZXMeanb");
         INDArray eZXLogStdev2W = params.get("eZXLogStdev2W");
-        INDArray eZXLogStdev2b = params.get("eZXLogStdev2b");
 
         INDArray dLdz = epsilon;
         INDArray dLdmu = dLdz.sub(mu);
@@ -211,7 +213,10 @@ public class VariationalAutoencoder implements Layer {
         Nd4j.gemm(lastEncoderActivation, dLdPreMu, dLdZXMeanW, true, false, 1.0, 0.0);
         Nd4j.gemm(lastEncoderActivation, dLdPreLogSigma2, dLdZXLogStdev2W, true, false, 1.0, 0.0);
 
-        dLdZXMeanb.assign(dLdPreMu.sub(mu).sum(0));
+        INDArray sigmaPrimePreMu = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+                pzxAfn, fwd.getPzxPreOut().dup(), conf.getExtraArgs() ).derivative());
+        dLdZXMeanb.assign(dLdz.sub(mu).mul(sigmaPrimePreMu).sum(0));
+
         dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
 
         //TODO check order
