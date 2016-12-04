@@ -12,7 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Created by Alex on 25/11/2016.
+ * Parameter initializer for the Variational Autoencoder model.
+ *
+ * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - https://arxiv.org/abs/1312.6114
+ *
+ * @author Alex Black
  */
 public class VariationalAutoencoderParamInitializer extends DefaultParamInitializer {
 
@@ -24,13 +28,23 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
     public static final String WEIGHT_KEY_SUFFIX = "W";
     public static final String BIAS_KEY_SUFFIX = "b";
+    public static final String PZX_MEAN_PREFIX = "pZXMean";
+    public static final String PZX_LOGSTD2_PREFIX = "pZXLogStd2";
 
+    /** Key for weight parameters connecting the last encoder layer and the mean values for p(z|data) */
     public static final String PZX_MEAN_W = "pZXMean" + WEIGHT_KEY_SUFFIX;
+    /** Key for bias parameters for the mean values for p(z|data) */
     public static final String PZX_MEAN_B = "pZXMean" + BIAS_KEY_SUFFIX;
-    public static final String PZX_LOGSTD2_W = "pZXLogStd2" + WEIGHT_KEY_SUFFIX;
-    public static final String PZX_LOGSTD2_B = "pZXLogStd2" + BIAS_KEY_SUFFIX;
+    /** Key for weight parameters connecting the last encoder layer and the log(sigma^2) values for p(z|data) */
+    public static final String PZX_LOGSTD2_W = PZX_LOGSTD2_PREFIX + WEIGHT_KEY_SUFFIX;
+    /** Key for bias parameters for log(sigma^2) in p(z|data) */
+    public static final String PZX_LOGSTD2_B = PZX_LOGSTD2_PREFIX + BIAS_KEY_SUFFIX;
 
+    /** Key for weight parameters connecting the last decoder layer and p(data|z) (according to whatever
+     *  {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution} is set for the VAE) */
     public static final String PXZ_W = "pXZ" + WEIGHT_KEY_SUFFIX;
+    /** Key for bias parameters connecting the last decoder layer and p(data|z) (according to whatever
+     *  {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution} is set for the VAE) */
     public static final String PXZ_B = "pXZ" + BIAS_KEY_SUFFIX;
 
 
