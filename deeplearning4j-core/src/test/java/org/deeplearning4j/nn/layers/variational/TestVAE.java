@@ -4,16 +4,19 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 26/11/2016.
@@ -116,9 +119,60 @@ public class TestVAE {
 
 
         net.fit(data);
-
-
-
     }
 
+
+    @Test
+    public void testParamGradientOrderAndViews() {
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .nIn(10).nOut(5).encoderLayerSizes(12,13).decoderLayerSizes(14,15).build())
+                .build();
+
+        NeuralNetConfiguration c = mlc.getConf(0);
+        org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae = (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        net.initGradientsView();
+
+        org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
+
+        Map<String,INDArray> layerParams = layer.paramTable();
+        Map<String,INDArray> layerGradViews = layer.getGradientViews();
+
+        layer.setInput(Nd4j.rand(3,10));
+        layer.computeGradientAndScore();;
+        Gradient g = layer.gradient();
+        Map<String,INDArray> grads = g.gradientForVariable();
+
+        assertEquals(layerParams.size(), layerGradViews.size());
+        assertEquals(layerParams.size(), grads.size());
+
+        //Iteration order should be consistent due to linked hashmaps
+        Iterator<String> pIter = layerParams.keySet().iterator();
+        Iterator<String> gvIter = layerGradViews.keySet().iterator();
+        Iterator<String> gIter = grads.keySet().iterator();
+
+        while(pIter.hasNext()){
+            String p = pIter.next();
+            String gv = gvIter.next();
+            String gr = gIter.next();
+
+//            System.out.println(p + "\t" + gv + "\t" + gr);
+
+            assertEquals(p, gv);
+            assertEquals(p, gr);
+
+            INDArray pArr = layerParams.get(p);
+            INDArray gvArr = layerGradViews.get(p);
+            INDArray gArr = grads.get(p);
+
+            assertArrayEquals(pArr.shape(), gvArr.shape());
+            assertTrue(gvArr == gArr);  //Should be the exact same object due to view mechanics
+        }
+    }
 }
