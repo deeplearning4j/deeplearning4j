@@ -45,6 +45,24 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
     @Override
     public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
+
+        INDArray logProb = calcLogProbArray(x, preOutDistributionParams);
+
+        if(average){
+            return - logProb.sumNumber().doubleValue() / x.size(0);
+        } else {
+            return - logProb.sumNumber().doubleValue();
+        }
+    }
+
+    @Override
+    public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
+        INDArray logProb = calcLogProbArray(x, preOutDistributionParams);
+
+        return logProb.sum(1).negi();
+    }
+
+    private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams){
         INDArray output = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
@@ -53,13 +71,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         INDArray logOutput = Transforms.log(output, true);
         INDArray log1SubOut = Transforms.log(output.rsubi(1.0), false);
 
-        INDArray logProb = logOutput.muli(x).addi(x.rsub(1.0).muli(log1SubOut));
-
-        if(average){
-            return - logProb.sumNumber().doubleValue() / x.size(0);
-        } else {
-            return - logProb.sumNumber().doubleValue();
-        }
+        return logOutput.muli(x).addi(x.rsub(1.0).muli(log1SubOut));
     }
 
     @Override

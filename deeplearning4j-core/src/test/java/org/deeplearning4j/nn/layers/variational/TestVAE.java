@@ -1,15 +1,22 @@
 package org.deeplearning4j.nn.layers.variational;
 
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.HashMap;
@@ -205,7 +212,6 @@ public class TestVAE {
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
 
         INDArray input = Nd4j.rand(3, 10);
-//        layer.fit(input);
         net.pretrain(input);
 
         //Get a snapshot of the pretrain params after fitting:
@@ -271,5 +277,94 @@ public class TestVAE {
 
         assertEquals(config, fromJson);
         assertEquals(config, fromYaml);
+    }
+
+    @Test
+    public void testReconstructionDistributionsSimple(){
+
+        int inOutSize = 6;
+
+        ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
+                new GaussianReconstructionDistribution("identity"),
+                new GaussianReconstructionDistribution("tanh"),
+                new BernoulliReconstructionDistribution("sigmoid"),
+                new CompositeReconstructionDistribution.Builder()
+                        .addDistribution(2, new GaussianReconstructionDistribution("identity"))
+                        .addDistribution(2, new BernoulliReconstructionDistribution())
+                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build()};
+
+        Nd4j.getRandom().setSeed(12345);
+        for (int minibatch : new int[]{1, 5}) {
+            for (int i = 0; i < reconstructionDistributions.length; i++) {
+                INDArray data;
+                switch (i) {
+                    case 0: //Gaussian + identity
+                    case 1: //Gaussian + tanh
+                        data = Nd4j.rand(minibatch, inOutSize);
+                        break;
+                    case 2: //Bernoulli
+                        data = Nd4j.create(minibatch, inOutSize);
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(data, 0.5), Nd4j.getRandom());
+                        break;
+                    case 3: //Composite
+                        data = Nd4j.create(minibatch, inOutSize);
+                        data.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2)).assign(Nd4j.rand(minibatch, 2));
+                        Nd4j.getExecutioner().exec(
+                                new BernoulliDistribution(data.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), 0.5),
+                                Nd4j.getRandom());
+                        data.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 6)).assign(Nd4j.rand(minibatch, 2));
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(true)
+                        .l2(0.2).l1(0.3)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(1.0)
+                        .seed(12345L)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .list()
+                        .layer(0, new VariationalAutoencoder.Builder()
+                                .nIn(inOutSize).nOut(3)
+                                .encoderLayerSizes(5)
+                                .decoderLayerSizes(6)
+                                .pzxActivationFunction("tanh")
+                                .reconstructionDistribution(reconstructionDistributions[i])
+                                .activation("tanh")
+                                .updater(Updater.SGD)
+                                .build())
+                        .pretrain(true).backprop(false)
+                        .build();
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
+                mln.initGradientsView();
+                mln.fit(data);
+
+                org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
+
+
+                Nd4j.getRandom().setSeed(12345);
+                INDArray reconstructionProb = layer.reconstructionProbability(data, 50);
+                assertArrayEquals(new int[]{minibatch, 1}, reconstructionProb.shape());
+
+                Nd4j.getRandom().setSeed(12345);
+                INDArray reconstructionLogProb = layer.reconstructionLogProbability(data, 50);
+                assertArrayEquals(new int[]{minibatch, 1}, reconstructionLogProb.shape());
+
+//                System.out.println(reconstructionDistributions[i]);
+                for( int j=0; j<minibatch; j++ ){
+                    double p = reconstructionProb.getDouble(j);
+                    double logp = reconstructionLogProb.getDouble(j);
+                    assertTrue(p >= 0.0 && p <= 1.0);
+                    assertTrue(logp <= 0.0);
+
+                    double pFromLogP = Math.exp(logp);
+                    assertEquals(p, pFromLogP, 1e-6);
+                }
+            }
+        }
     }
 }

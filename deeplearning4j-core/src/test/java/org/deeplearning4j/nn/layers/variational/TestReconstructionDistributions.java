@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Random;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -48,10 +49,14 @@ public class TestReconstructionDistributions {
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
+                INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
+                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+
                 //Calculate the same thing, but using Apache Commons math
 
                 double logProbSum = 0.0;
                 for (int i = 0; i < minibatch; i++) {
+                    double exampleSum = 0.0;
                     for (int j = 0; j < inputSize; j++) {
                         double mu = mean.getDouble(i, j);
                         double logSigma2 = logStdevSquared.getDouble(i, j);
@@ -61,7 +66,9 @@ public class TestReconstructionDistributions {
                         double xVal = x.getDouble(i, j);
                         double thisLogProb = nd.logDensity(xVal);
                         logProbSum += thisLogProb;
+                        exampleSum += thisLogProb;
                     }
+                    assertEquals(-exampleNegLogProb.getDouble(i), exampleSum, 1e-6);
                 }
 
                 double expNegLogProb;
@@ -104,10 +111,14 @@ public class TestReconstructionDistributions {
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
+                INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
+                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+
                 //Calculate the same thing, but using Apache Commons math
 
                 double logProbSum = 0.0;
                 for (int i = 0; i < minibatch; i++) {
+                    double exampleSum = 0.0;
                     for (int j = 0; j < inputSize; j++) {
                         double p = prob.getDouble(i, j);
 
@@ -116,7 +127,9 @@ public class TestReconstructionDistributions {
                         double xVal = x.getDouble(i, j);
                         double thisLogProb = binomial.logProbability((int) xVal);
                         logProbSum += thisLogProb;
+                        exampleSum += thisLogProb;
                     }
+                    assertEquals(-exampleNegLogProb.getDouble(i), exampleSum, 1e-6);
                 }
 
                 double expNegLogProb;

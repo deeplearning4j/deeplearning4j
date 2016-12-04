@@ -87,6 +87,33 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
+    public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
+
+        int inputSoFar = 0;
+        int paramsSoFar = 0;
+        INDArray exampleLogProbSum = null;
+        for( int i=0; i<distributionSizes.length; i++ ){
+            int thisInputSize = distributionSizes[i];
+            int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
+
+
+            INDArray inputSubset = x.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+
+            if(i == 0){
+                exampleLogProbSum = reconstructionDistributions[i].exampleNegLogProbability(inputSubset, paramsSubset);
+            } else {
+                exampleLogProbSum.addi(reconstructionDistributions[i].exampleNegLogProbability(inputSubset, paramsSubset));
+            }
+
+            inputSoFar += thisInputSize;
+            paramsSoFar += thisParamsSize;
+        }
+
+        return exampleLogProbSum;
+    }
+
+    @Override
     public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
         int inputSoFar = 0;
         int paramsSoFar = 0;
