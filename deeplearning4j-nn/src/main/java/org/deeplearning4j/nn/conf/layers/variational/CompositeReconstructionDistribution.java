@@ -1,9 +1,14 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,11 +24,20 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 public class CompositeReconstructionDistribution implements ReconstructionDistribution {
 
     private final int[] distributionSizes;
     private final ReconstructionDistribution[] reconstructionDistributions;
     private final int totalSize;
+
+    public CompositeReconstructionDistribution(@JsonProperty("distributionSizes") int[] distributionSizes,
+                                               @JsonProperty("reconstructionDistributions") ReconstructionDistribution[] reconstructionDistributions,
+                                               @JsonProperty("totalSize") int totalSize){
+        this.distributionSizes = distributionSizes;
+        this.reconstructionDistributions = reconstructionDistributions;
+        this.totalSize = totalSize;
+    }
 
     private CompositeReconstructionDistribution(Builder builder){
         distributionSizes = new int[builder.distributionSizes.size()];

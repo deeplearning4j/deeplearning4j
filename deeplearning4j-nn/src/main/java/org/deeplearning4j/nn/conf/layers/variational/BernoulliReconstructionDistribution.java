@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -14,10 +15,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author Alex Black
  */
-@Slf4j
+@Slf4j @Data
 public class BernoulliReconstructionDistribution implements ReconstructionDistribution {
 
-    private String activationFn;
+    private final String activationFn;
 
     /**
      * Create a BernoulliReconstructionDistribution with the default Sigmoid activation function
