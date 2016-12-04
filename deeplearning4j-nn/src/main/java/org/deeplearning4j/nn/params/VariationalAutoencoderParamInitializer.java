@@ -119,6 +119,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         INDArray pzxWeightsMean = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
         INDArray pzxBiasMean = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        soFar += nOut;
 
         INDArray pzxWeightsMeanReshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut, weightInit, dist, pzxWeightsMean, initializeParams);
         INDArray pzxBiasMeanReshaped = createBias(nOut, 0.0, pzxBiasMean, initializeParams);       //TODO don't hardcode 0
@@ -228,6 +229,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         INDArray pzxWeightsMean = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
         INDArray pzxBiasMean = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        soFar += nOut;
 
         INDArray pzxWeightGradMeanReshaped = pzxWeightsMean.reshape('f', encoderLayerSizes[encoderLayerSizes.length - 1], nOut);
         INDArray pzxBiasGradMeanReshaped = pzxBiasMean;  //Already correct shape (row vector)
