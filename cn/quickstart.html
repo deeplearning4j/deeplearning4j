@@ -23,8 +23,8 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .backprop(true)
         .build();
 </code></pre>
-<p>在Deeplearning4j中，添加一个层的方式是通过<code>NeuralNetConfiguration.Builder()</code>调用<code>layer</code>，指定其在所有层中的先后位置（下面示例中标记为零的层是输入层）、输入及输出节点数<code>nIn</code>和<code>nOut</code>，以及层的类型：DenseLayer。</p>
-<pre><code class="language-java">
+<p>在Deeplearning4j中，添加一个层的方式是通过<code>NeuralNetConfiguration.Builder()</code>调用<code>layer</code>，指定其在所有层中的先后位置（下面示例中标记为零的层是输入层）、输入及输出节点数<code>nIn</code>和<code>nOut</code>，以及层的类型：<code>DenseLayer</code>。</p>
+<pre class="line-numbers"><code class="language-java">
 .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
                 .build())
 </code></pre>
