@@ -145,8 +145,8 @@ public class VariationalAutoencoder implements Layer {
 
         /////////////////////////////////////////////////////////
         //Backprop
+        Map<String,INDArray> gradientMap = new HashMap<>();
 
-        Gradient gradient = new DefaultGradient(gradientsFlattened);
 
         //First: calculate the gradients at the input to the reconstruction distribution
         INDArray dpdpxz = reconstructionDistribution.gradient(input, pxzDistributionParams);
@@ -158,8 +158,8 @@ public class VariationalAutoencoder implements Layer {
         Nd4j.gemm(lastDecActivations,dpdpxz,dLdxzw,true,false,1.0,0.0);
         dLdxzb.assign(dpdpxz.sum(0));    //TODO: do this without the assign
 
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PXZ_W, dLdxzw);
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PXZ_B, dLdxzb);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PXZ_W, dLdxzw);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PXZ_B, dLdxzb);
 
         INDArray epsilon = pxzw.mmul(dpdpxz.transpose()).transpose();
 
@@ -187,8 +187,8 @@ public class VariationalAutoencoder implements Layer {
             Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
             dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
 
-            gradient.gradientForVariable().put(wKey, dLdW);
-            gradient.gradientForVariable().put(bKey, dLdB);
+            gradientMap.put(wKey, dLdW);
+            gradientMap.put(bKey, dLdB);
 
             epsilon = weights.mmul(currentDelta.transpose()).transpose();
         }
@@ -225,11 +225,10 @@ public class VariationalAutoencoder implements Layer {
         dLdZXMeanb.assign(dLdz.sub(meanZ).mul(sigmaPrimePreMu).sum(0));
         dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
 
-        //TODO check order
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, dLdZXMeanW);
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_B, dLdZXMeanb);
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W, dLdZXLogStdev2W);
-        gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B, dLdZXLogStdev2b);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, dLdZXMeanW);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PZX_MEAN_B, dLdZXMeanb);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W, dLdZXLogStdev2W);
+        gradientMap.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B, dLdZXLogStdev2b);
 
         //Epsilon (dL/dActivation) at output of the last encoder layer:
         epsilon = eZXMeanW.mmul(dLdPreMu.transpose()).transpose();
@@ -262,11 +261,34 @@ public class VariationalAutoencoder implements Layer {
             Nd4j.gemm(actInput,currentDelta,dLdW,true,false,1.0,0.0);
             dLdB.assign(currentDelta.sum(0));    //TODO: do this without the assign
 
-            gradient.gradientForVariable().put(wKey, dLdW);
-            gradient.gradientForVariable().put(bKey, dLdB);
+            gradientMap.put(wKey, dLdW);
+            gradientMap.put(bKey, dLdB);
 
             epsilon = weights.mmul(currentDelta.transpose()).transpose();
         }
+
+        //Insert the gradients into the Gradient map in the correct order, in case we need to flatten the gradient later
+        // to match the parameters iteration order
+        Gradient gradient = new DefaultGradient(gradientsFlattened);
+        Map<String,INDArray> g = gradient.gradientForVariable();
+        for( int i=0; i<nEncoderLayers; i++ ){
+            String w = "e" + i + VariationalAutoencoderParamInitializer.WEIGHT_KEY_SUFFIX;
+            g.put(w, gradientMap.get(w));
+            String b = "e" + i + VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX;
+            g.put(b, gradientMap.get(b));
+        }
+        g.put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W));
+        g.put(VariationalAutoencoderParamInitializer.PZX_MEAN_B, gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B));
+        g.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W, gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W));
+        g.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B, gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B));
+        for( int i=0; i<nDecoderLayers; i++ ){
+            String w = "d" + i + VariationalAutoencoderParamInitializer.WEIGHT_KEY_SUFFIX;
+            g.put(w, gradientMap.get(w));
+            String b = "d" + i + VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX;
+            g.put(b, gradientMap.get(b));
+        }
+        g.put(VariationalAutoencoderParamInitializer.PXZ_W, gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_W));
+        g.put(VariationalAutoencoderParamInitializer.PXZ_B, gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_B));
 
         this.gradient = gradient;
     }
