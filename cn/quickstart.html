@@ -12,7 +12,7 @@ redirect_from: /zh-quickstart
 <p>Deeplearning4j是一种用于配置深度多层神经网络的领域专用语言。首先都需要用<code>MultiLayerConfiguration</code>来设定网络的层及其超参数。</p>
 <p>超参数是决定神经网络学习方式的变量，包括模型的权重更新次数、如何初始化权重、为节点添加哪些激活函数、使用哪些优化算法以及模型的学习速度。网络配置的示例如下：
 </p>
-<pre><code class="language-java">
+<pre class="line-numbers"><code class="language-java">
 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .iterations(1)
         .weightInit(WeightInit.XAVIER)
