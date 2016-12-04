@@ -7,7 +7,17 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * Created by Alex on 25/11/2016.
+ * Gaussian reconstruction distribution for variational autoencoder.<br>
+ * Outputs are modelled by a Gaussian distribution, with the mean and variances (diagonal covariance matrix) for each
+ * output determined by the network forward pass.<br>
+ * <p>
+ * Specifically, the GaussianReconstructionDistribution models mean and log(stdev^2). This parameterization gives log(1) = 0,
+ * and inputs can be in range (-infinity,infinity). Other parameterizations for variance are of course possible but may be
+ * problematic with respect to the average pre-activation function values and activation function ranges.<br>
+ * For activation functions, identity and perhaps tanh are typical - though tanh (unlike identity) implies a minimum/maximum
+ * possible value for mean and log variance. Asymmetric activation functions such as sigmoid or relu should be avoided.
+ *
+ * @author Alex Black
  */
 public class GaussianReconstructionDistribution implements ReconstructionDistribution {
 
@@ -15,6 +25,16 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     private String activationFn;
 
+    /**
+     * Create a GaussianReconstructionDistribution with the default identity activation function.
+     */
+    public GaussianReconstructionDistribution(){
+        this("identity");
+    }
+
+    /**
+     * @param activationFn    Activation function for the reconstruction distribution. Typically identity or tanh.
+     */
     public GaussianReconstructionDistribution(String activationFn){
         this.activationFn = activationFn;
     }
