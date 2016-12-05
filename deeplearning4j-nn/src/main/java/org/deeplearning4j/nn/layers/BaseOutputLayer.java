@@ -411,4 +411,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return labels;
     }
 
+    @Override
+    public boolean isPretrainLayer(){
+        return false;
+    }
 }

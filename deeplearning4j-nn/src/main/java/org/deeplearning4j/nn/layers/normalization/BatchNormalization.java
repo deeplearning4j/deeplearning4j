@@ -431,6 +431,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return index;
     }
 
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
     public int[] getShape(INDArray x) {
         if(x.rank() == 2 || x.rank() == 4)
             return new int[] {1, x.size(1)};

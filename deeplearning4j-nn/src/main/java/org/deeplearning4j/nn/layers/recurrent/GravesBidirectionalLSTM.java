@@ -268,6 +268,11 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     }
 
     @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
     public double calcL2(boolean backpropParamsOnly) {
         if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
 
