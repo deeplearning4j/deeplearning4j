@@ -18,4 +18,11 @@ public interface IActivation extends Serializable {
 
     Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in);
 
+    /*
+    numParams();
+
+    setParamsViewArray(INDArray, boolean initialize);
+
+    setBackpropViewArray();
+    */
 }
