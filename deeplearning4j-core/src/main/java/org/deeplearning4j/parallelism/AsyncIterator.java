@@ -68,6 +68,8 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
             shouldWork.set(false);
             thread.interrupt();
             try {
+                // Shutdown() should be a synchronous operation since the iterator is reset after shutdown() is
+                // called in AsyncLabelAwareIterator.reset().
                 thread.join();
             } catch (InterruptedException e) {
 
