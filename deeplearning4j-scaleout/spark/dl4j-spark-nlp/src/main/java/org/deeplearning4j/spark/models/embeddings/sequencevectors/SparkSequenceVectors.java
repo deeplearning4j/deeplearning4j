@@ -123,8 +123,11 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         // proceed to training
         TrainingFunction<T> trainer = new TrainingFunction<>(vocabCacheBroadcast, configurationBroadcast);
-        for (int e = 0; e < configuration.getEpochs(); e++)
-            corpus.foreach(trainer);
+
+        if (configuration != null)
+            for (int e = 0; e < configuration.getEpochs(); e++)
+                corpus.foreach(trainer);
+
 
         // at this particular moment training should be pretty much done, and we're good to go for export
 

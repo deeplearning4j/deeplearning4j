@@ -66,8 +66,8 @@ public class Huffman {
     public void build() {
         buildTrigger = true;
         long[] count = new long[words.size() * 2 + 1];
-        int[] binary = new int[words.size() * 2 + 1];
-        int[] code = new int[MAX_CODE_LENGTH];
+        byte[] binary = new byte[words.size() * 2 + 1];
+        byte[] code = new byte[MAX_CODE_LENGTH];
         int[] point = new int[MAX_CODE_LENGTH];
         int[] parentNode = new int[words.size() * 2 + 1];
         int a = 0;
