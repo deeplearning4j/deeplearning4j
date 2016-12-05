@@ -30,7 +30,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
 
     //used in comparison when building the huffman tree
     protected int index = -1;
-    protected List<Integer> codes = new ArrayList<>();
+    protected List<Byte> codes = new ArrayList<>();
 
     protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
@@ -183,7 +183,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * Returns Huffman tree codes
      * @return
      */
-    public List<Integer> getCodes() {
+    public List<Byte> getCodes() {
         return codes;
     }
 
@@ -191,7 +191,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * Sets Huffman tree codes
      * @param codes
      */
-    public void setCodes(List<Integer> codes) {
+    public void setCodes(List<Byte> codes) {
         this.codes = codes;
     }
 
@@ -246,7 +246,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         this.codeLength = codeLength;
         if(codes.size() < codeLength) {
             for(int i = 0; i < codeLength; i++)
-                codes.add(0);
+                codes.add((byte)0);
         }
 
         if(points.size() < codeLength) {
