@@ -40,7 +40,7 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
                 continue;
 
             // FIXME: hashcode is bad idea here. we need Long id
-            localCounter.incrementCount((long) element.hashCode(), 1.0);
+            localCounter.incrementCount(element.getStorageId(), 1.0);
             seqLen++;
         }
 

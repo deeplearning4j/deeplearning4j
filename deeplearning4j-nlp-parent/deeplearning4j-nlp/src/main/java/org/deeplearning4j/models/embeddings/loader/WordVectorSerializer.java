@@ -1029,7 +1029,7 @@ public class WordVectorSerializer {
                 codes.add(Byte.parseByte(split[i]));
             }
             word.setCodes(codes);
-            word.setCodeLength(codes.size());
+            word.setCodeLength((short) codes.size());
         }
         reader.close();
 
