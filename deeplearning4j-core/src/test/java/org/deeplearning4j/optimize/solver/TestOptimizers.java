@@ -382,6 +382,11 @@ public class TestOptimizers {
         public void setInput(INDArray input) {
 
         }
+
+        @Override
+        public boolean isPretrainLayer() {
+            return false;
+        }
     }
 
 
@@ -558,6 +563,11 @@ public class TestOptimizers {
         @Override
         public void setInput(INDArray input) {
 
+        }
+
+        @Override
+        public boolean isPretrainLayer() {
+            return false;
         }
     }
 
@@ -743,6 +753,11 @@ public class TestOptimizers {
         @Override
         public void setInput(INDArray input) {
 
+        }
+
+        @Override
+        public boolean isPretrainLayer() {
+            return false;
         }
     }
 

@@ -239,6 +239,11 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         throw new UnsupportedOperationException("Not applicable");
     }
 
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {

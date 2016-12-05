@@ -164,6 +164,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *             usually gives very good results and is the default in quite a few situations.
      */
     public void pretrain(DataSetIterator iter) {
+        if(flattenedGradients == null) initGradientsView();
         if (!layerWiseConfigurations.isPretrain())
             return;
 
@@ -173,7 +174,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int i = 0; i < getnLayers(); i++) {
             layer = layers[i];
             layer.conf().setPretrain(true);
-            if (i == 0 && layer instanceof BasePretrainNetwork) {
+            if (i == 0 && layer.isPretrainLayer()) {
+                log.info("Starting unsupervised training on layer " + (i + 1));
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     if(getLayerWiseConfigurations().getInputPreProcess(i) != null) {
@@ -187,19 +189,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     if (this.getInput() == null || this.getLayers() == null)
                         initializeLayers(layerInput);
                     layer.fit(layerInput);
-                    log.info("Training on layer " + (i + 1) + " with " + input().size(0) + " examples");
                 }
 
-            } else {
+            } else if(layer.isPretrainLayer()){
+                log.info("Starting unsupervised training on layer " + (i + 1));
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     input = next.getFeatureMatrix();
                     layerInput = next.getFeatureMatrix();
-                    for (int j = 1; j <= i; j++)
-                        layerInput = activationFromPrevLayer(j - 1, layerInput,true);
-                    log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
-                    if (layer instanceof BasePretrainNetwork)
+                    for (int j = 1; j <= i; j++) {
+                        layerInput = activationFromPrevLayer(j - 1, layerInput, true);
+                    }
+                    if (layer instanceof BasePretrainNetwork) {
                         layer.fit(layerInput);
+                    }
                 }
             }
             // Turn off pretrain after it is complete
@@ -2109,6 +2112,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public INDArray getMaskArray(){
         return mask;
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
     }
 
     //==========

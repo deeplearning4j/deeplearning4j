@@ -99,6 +99,11 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {

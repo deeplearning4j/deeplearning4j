@@ -329,6 +329,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
