@@ -47,8 +47,6 @@ public class VariationalAutoencoder implements Layer {
     @Getter
     protected transient Map<String, INDArray> gradientViews;
     protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
-    protected boolean dropoutApplied = false;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
@@ -112,8 +110,8 @@ public class VariationalAutoencoder implements Layer {
                     pzxActivationFn, logStdev2Z, conf.getExtraArgs()));
         }
 
-        INDArray pzxSigma = Transforms.exp(logStdev2Z, true);
-        Transforms.sqrt(pzxSigma, false);
+        INDArray pzxSigmaSquared = Transforms.exp(logStdev2Z, true);
+        INDArray pzxSigma = Transforms.sqrt(pzxSigmaSquared, true);
 
         int minibatch = input.size(0);
         int size = fwd.pzxMeanPreOut.size(1);
@@ -123,14 +121,14 @@ public class VariationalAutoencoder implements Layer {
         double scaleFactor = 1.0 / numSamples;
         Level1 blasL1 = Nd4j.getBlasWrapper().level1();
         INDArray[] encoderActivationDerivs = (numSamples > 1 ? new INDArray[encoderLayerSizes.length] : null);
-        for( int l=0; l<numSamples; l++ ) {
-            double gemmCConstant = (l == 0 ? 0.0 : 1.0);        //0 for first one (to get rid of previous buffer data), otherwise 1
+        for( int l=0; l<numSamples; l++ ) { //Default (and in most cases) numSamples == 1
+            double gemmCConstant = (l == 0 ? 0.0 : 1.0);        //0 for first one (to get rid of previous buffer data), otherwise 1 (for adding)
 
             INDArray e = Nd4j.randn(minibatch, size);
-            INDArray z = meanZ.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
+            INDArray z = pzxSigma.mul(e).addi(meanZ);      //z = mu + sigma * e, with e ~ N(0,1)
 
 
-            //Next: need to do forward pass through decoder layers
+            //Need to do forward pass through decoder layers
             int nDecoderLayers = decoderLayerSizes.length;
             INDArray current = z;
             INDArray[] decoderPreOut = new INDArray[nDecoderLayers];        //Need pre-out for backprop later
@@ -155,7 +153,8 @@ public class VariationalAutoencoder implements Layer {
                 //Need to add other component of score, in addition to negative log probability
                 //Note the negative here vs. the equation in Kingma & Welling: this is because we are minimizing the negative of
                 // variational lower bound, rather than maximizing the variational lower bound
-                INDArray temp = meanZ.mul(meanZ).addi(pzxSigma.mul(pzxSigma)).negi();
+                //Unlike log probability (which is averaged over samples) this should be calculated just once
+                INDArray temp = meanZ.mul(meanZ).addi(pzxSigmaSquared).negi();
                 temp.addi(logStdev2Z).addi(1.0);
                 double scorePt1 = -0.5 / minibatch  * temp.sumNumber().doubleValue();
                 this.score = scorePt1 + (calcL1(false) + calcL2(false)) / minibatch;
@@ -239,7 +238,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray dLdmu = dLdz.add(meanZ);
 
             INDArray dLdLogSigma2 = dLdz.mul(e).muli(pzxSigma)
-                    .addi(pzxSigma.mul(pzxSigma)).subi(1).muli(0.5);
+                    .addi(pzxSigmaSquared).subi(1).muli(0.5);
 
 
             INDArray dLdPreMu = dLdmu.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
@@ -279,11 +278,11 @@ public class VariationalAutoencoder implements Layer {
             gradientMap.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B, dLdZXLogStdev2b);
 
             //Epsilon (dL/dActivation) at output of the last encoder layer:
-            epsilon = eZXMeanW.mmul(dLdPreMu.transpose()).transpose();
-            epsilon.addi(eZXLogStdev2W.mmul(dLdPreLogSigma2.transpose()).transpose());
+            epsilon = Nd4j.gemm(dLdPreMu,eZXMeanW,false,true);      //Equivalent to: epsilon = eZXMeanW.mmul(dLdPreMu.transpose()).transpose(); using   (AxB^T)^T = BxA^T
+            //Next line: equivalent to epsilon.addi(eZXLogStdev2W.mmul(dLdPreLogSigma2.transpose()).transpose());       using: (AxB^T)^T = BxA^T
+            Nd4j.gemm(dLdPreLogSigma2,eZXLogStdev2W,epsilon,false,true,1.0,1.0);
 
             //Backprop through encoder:
-            //TODO code reuse with non-pretrain backprop
             int nEncoderLayers = encoderLayerSizes.length;
             for (int i = nEncoderLayers - 1; i >= 0; i--) {
                 String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
@@ -576,7 +575,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
                 Nd4j.getOpFactory().createTransform(pzxActivationFn, fwd.pzxMeanPreOut).derivative());
 
-        INDArray currentDelta = epsilon.muli(activationDerivative);
+        INDArray currentDelta = activationDerivative.muli(epsilon);
 
         //Finally, calculate mean value:
         INDArray meanW = params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W);
@@ -875,10 +874,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxLogStd2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
         INDArray pzxLogStd2b = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B);
 
-        INDArray pzxLogStd2Pre = fwd.encoderActivations[fwd.encoderActivations.length - 1].mmul(pzxLogStd2W).addiRowVector(pzxLogStd2b);
-
-        INDArray meanZ = fwd.pzxMeanPreOut.dup();
-        INDArray logStdev2Z = pzxLogStd2Pre.dup();
+        INDArray meanZ = fwd.pzxMeanPreOut;
+        INDArray logStdev2Z = fwd.encoderActivations[fwd.encoderActivations.length - 1].mmul(pzxLogStd2W).addiRowVector(pzxLogStd2b);
         if (!"identity".equals(pzxActivationFn)) {
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
                     pzxActivationFn, meanZ, conf.getExtraArgs()));
@@ -886,7 +883,7 @@ public class VariationalAutoencoder implements Layer {
                     pzxActivationFn, logStdev2Z, conf.getExtraArgs()));
         }
 
-        INDArray pzxSigma = Transforms.exp(logStdev2Z, true);
+        INDArray pzxSigma = Transforms.exp(logStdev2Z, false);
         Transforms.sqrt(pzxSigma, false);
 
         int minibatch = input.size(0);
@@ -908,7 +905,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray sumReconstructionNegLogProbability = null;
         for( int i=0; i<numSamples; i++ ) {
             INDArray e = Nd4j.randn(minibatch, size);
-            INDArray z = meanZ.add(pzxSigma.mul(e));      //z = mu + sigma * e, with e ~ N(0,1)
+            INDArray z = e.muli(pzxSigma).addi(meanZ);      //z = mu + sigma * e, with e ~ N(0,1)
 
             //Do forward pass through decoder
             int nDecoderLayers = decoderLayerSizes.length;
