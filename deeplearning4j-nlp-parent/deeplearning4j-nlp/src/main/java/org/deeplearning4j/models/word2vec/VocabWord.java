@@ -59,7 +59,7 @@ public  class VocabWord extends SequenceElement implements Serializable {
 			throw new IllegalArgumentException("Word must not be null or empty");
 		this.word = word;
         this.elementFrequency.set(wordFrequency);
-        this.storageId = (long) word.hashCode();
+        this.storageId = SequenceElement.getLongHash(word);
 	}
 
 	public VocabWord(double wordFrequency, @NonNull String word, long storageId) {
