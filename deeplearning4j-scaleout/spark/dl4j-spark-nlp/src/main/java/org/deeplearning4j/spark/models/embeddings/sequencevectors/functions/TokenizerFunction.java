@@ -24,7 +24,9 @@ public class TokenizerFunction implements Function<String, Sequence<VocabWord>> 
 
     public TokenizerFunction(@NonNull Broadcast<VectorsConfiguration> configurationBroadcast) {
         this.configurationBroadcast = configurationBroadcast;
+    }
 
+    public void instantiateTokenizerFactory() {
         String tfClassName = this.configurationBroadcast.getValue().getTokenizerFactory();
         String tpClassName = this.configurationBroadcast.getValue().getTokenPreProcessor();
 
@@ -51,6 +53,9 @@ public class TokenizerFunction implements Function<String, Sequence<VocabWord>> 
 
     @Override
     public Sequence<VocabWord> call(String s) throws Exception {
+        if (tokenizerFactory == null)
+            instantiateTokenizerFactory();
+
         List<String> tokens =  tokenizerFactory.create(s).getTokens();
         Sequence<VocabWord> seq = new Sequence<>();
         for (String token: tokens) {

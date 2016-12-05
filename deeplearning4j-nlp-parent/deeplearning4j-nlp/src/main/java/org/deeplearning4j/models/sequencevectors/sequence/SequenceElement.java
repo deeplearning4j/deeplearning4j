@@ -32,9 +32,8 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected int index = -1;
     protected List<Byte> codes = new ArrayList<>();
 
-    protected INDArray historicalGradient;
     protected List<Integer> points = new ArrayList<>();
-    protected int codeLength = 0;
+    protected short codeLength = 0;
 
     // this var defines, if this token can't be truncated with minWordFrequency threshold
     @Getter @Setter protected boolean special;
@@ -45,7 +44,6 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     // this var defines how many documents/sequences contain this word
     protected AtomicLong sequencesCount = new AtomicLong(0);
 
-    protected AdaGrad adaGrad;
 
     // this var is used as state for preciseWeightInit routine, to avoid multiple initializations for the same data
     @Getter @Setter protected boolean init;
@@ -242,7 +240,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      *
      * @param codeLength
      */
-    public void setCodeLength(int codeLength) {
+    public void setCodeLength(short codeLength) {
         this.codeLength = codeLength;
         if(codes.size() < codeLength) {
             for(int i = 0; i < codeLength; i++)
@@ -263,24 +261,35 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
      * @param lr
      * @return
      */
+    @Deprecated
     public double getGradient(int index, double g, double lr) {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), lr);
 
         return adaGrad.getGradient(g, index, new int[]{1, getCodeLength()});
+        */
+        return 0.0;
     }
 
+    @Deprecated
     public void setHistoricalGradient(INDArray gradient) {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
 
         adaGrad.setHistoricalGradient(gradient);
+        */
     }
 
+    @Deprecated
     public INDArray getHistoricalGradient() {
+        /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
         return adaGrad.getHistoricalGradient();
+        */
+        return null;
     }
 
     /**

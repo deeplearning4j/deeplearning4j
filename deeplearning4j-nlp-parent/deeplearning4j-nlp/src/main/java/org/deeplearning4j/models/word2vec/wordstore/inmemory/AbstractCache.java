@@ -19,7 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     // map for label->object dictionary
-    private volatile Map<String, T> vocabulary = new ConcurrentHashMap<>();
+    private volatile Map<Long, T> vocabulary = new ConcurrentHashMap<>();
+
+    private volatile Map<String, T> extendedVocabulary = new ConcurrentHashMap<>();
 
     private volatile Map<Integer, T> idxMap = new ConcurrentHashMap<>();
 
@@ -80,7 +82,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public Collection<String> words() {
-        return Collections.unmodifiableCollection(vocabulary.keySet());
+        return Collections.unmodifiableCollection(extendedVocabulary.keySet());
     }
 
     /**
@@ -209,7 +211,12 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public T wordFor(@NonNull String label) {
-        return vocabulary.get(label);
+        return extendedVocabulary.get(label);
+    }
+
+    @Override
+    public T wordFor(long id) {
+        return vocabulary.get(id);
     }
 
     /**
@@ -225,6 +232,12 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             idxMap.put(index, tokenFor(label));
             tokenFor(label).setIndex(index);
         }
+    }
+
+    @Override
+    public void addWordToIndex(int index, long elementId) {
+        if (index >= 0)
+            idxMap.put(index, tokenFor(elementId));
     }
 
     @Override
@@ -330,13 +343,14 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void addToken(T element) {
-        if (!vocabulary.containsKey(element.getLabel())) {
-            vocabulary.put(element.getLabel(), element);
+        if (!vocabulary.containsKey(element.getStorageId())) {
+            vocabulary.put(element.getStorageId(), element);
 
-            // TODO: remove this stupid int limitation
+            if (element.getLabel() != null)
+                extendedVocabulary.put(element.getLabel(), element);
         } else {
-            vocabulary.get(element.getLabel()).incrementSequencesCount(element.getSequencesCount());
-            vocabulary.get(element.getLabel()).increaseElementFrequency((int) element.getElementFrequency());
+            vocabulary.get(element.getStorageId()).incrementSequencesCount(element.getSequencesCount());
+            vocabulary.get(element.getStorageId()).increaseElementFrequency((int) element.getElementFrequency());
         }
         totalWordCount.addAndGet((long) element.getElementFrequency());
     }
@@ -350,6 +364,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public T tokenFor(String label) {
         return wordFor(label);
+    }
+
+    @Override
+    public T tokenFor(long id) {
+        return vocabulary.get(id);
     }
 
     /**
