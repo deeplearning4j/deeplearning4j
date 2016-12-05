@@ -67,6 +67,11 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
         if (shouldWork.get()) {
             shouldWork.set(false);
             thread.interrupt();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+
+            }
             nextElement = terminator;
         }
     }
