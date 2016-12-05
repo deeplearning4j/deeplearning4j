@@ -3,8 +3,10 @@ package org.deeplearning4j.nn.layers.variational;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.distribution.BinomialDistribution;
+import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.ExponentialReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.junit.Test;
@@ -148,6 +150,70 @@ public class TestReconstructionDistributions {
     }
 
     @Test
+    public void testExponentialLogProb() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int inputSize = 4;
+        int[] mbs = new int[]{1, 2, 5};
+
+        Random r = new Random(12345);
+
+        for (boolean average : new boolean[]{true, false}) {
+            for (int minibatch : mbs) {
+
+                INDArray x = Nd4j.zeros(minibatch, inputSize);
+                for (int i = 0; i < minibatch; i++) {
+                    for (int j = 0; j < inputSize; j++) {
+                        x.putScalar(i, j, r.nextInt(2));
+                    }
+                }
+
+                INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);  //i.e., pre-afn gamma
+                INDArray gammas = Transforms.tanh(distributionParams, true);
+
+                ReconstructionDistribution dist = new ExponentialReconstructionDistribution("tanh");
+
+                double negLogProb = dist.negLogProbability(x, distributionParams, average);
+
+                INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
+                assertArrayEquals(new int[]{minibatch, 1}, exampleNegLogProb.shape());
+
+                //Calculate the same thing, but using Apache Commons math
+
+                double logProbSum = 0.0;
+                for (int i = 0; i < minibatch; i++) {
+                    double exampleSum = 0.0;
+                    for (int j = 0; j < inputSize; j++) {
+                        double gamma = gammas.getDouble(i, j);
+                        double lambda = Math.exp(gamma);
+                        double mean = 1.0 / lambda;
+
+                        ExponentialDistribution exp = new ExponentialDistribution(mean);    //Commons math uses mean = 1/lambda
+
+                        double xVal = x.getDouble(i, j);
+                        double thisLogProb = exp.logDensity(xVal);
+                        logProbSum += thisLogProb;
+                        exampleSum += thisLogProb;
+                    }
+                    assertEquals(-exampleNegLogProb.getDouble(i), exampleSum, 1e-6);
+                }
+
+                double expNegLogProb;
+                if (average) {
+                    expNegLogProb = - logProbSum / minibatch;
+                } else {
+                    expNegLogProb = - logProbSum;
+                }
+
+//                System.out.println(x);
+
+//                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
+                assertEquals(expNegLogProb, negLogProb, 1e-6);
+            }
+        }
+    }
+
+    @Test
     public void gradientCheckReconstructionDistributions() {
         double eps = 1e-6;
         double maxRelError = 1e-7;
@@ -163,7 +229,9 @@ public class TestReconstructionDistributions {
         ReconstructionDistribution[] distributions = new ReconstructionDistribution[]{
                 new GaussianReconstructionDistribution("identity"),
                 new GaussianReconstructionDistribution("tanh"),
-                new BernoulliReconstructionDistribution("sigmoid")
+                new BernoulliReconstructionDistribution("sigmoid"),
+                new ExponentialReconstructionDistribution("identity"),
+                new ExponentialReconstructionDistribution("tanh")
         };
 
 
@@ -178,7 +246,7 @@ public class TestReconstructionDistributions {
                 if (rd instanceof GaussianReconstructionDistribution) {
                     distributionParams = Nd4j.rand(minibatch, inputSize * 2).muli(2).subi(1);
                     x = Nd4j.rand(minibatch, inputSize);
-                } else {
+                } else if(rd instanceof BernoulliReconstructionDistribution ){
                     distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);
                     x = Nd4j.zeros(minibatch, inputSize);
                     for (int i = 0; i < minibatch; i++) {
@@ -186,6 +254,11 @@ public class TestReconstructionDistributions {
                             x.putScalar(i, j, r.nextInt(2));
                         }
                     }
+                } else if(rd instanceof ExponentialReconstructionDistribution){
+                    distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1);
+                    x = Nd4j.rand(minibatch, inputSize);
+                } else {
+                    throw new RuntimeException();
                 }
 
                 INDArray gradient = rd.gradient(x, distributionParams);
