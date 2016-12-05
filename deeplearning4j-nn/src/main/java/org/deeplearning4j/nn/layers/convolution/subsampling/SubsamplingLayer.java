@@ -30,10 +30,13 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +191,10 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 // instead of a zero initialization + an addiColumnVector op
                 col2d.addiColumnVector(epsilon1d);
                 break;
+            case PNORM:
+                col2d.addiColumnVector(epsilon1d);
+                col2d.muli(kernel[0]*kernel[1]);
+                break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Unsupported pooling type");
@@ -266,6 +273,16 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 break;
             case MAX:
                 reduced = col2d.max(1);
+                break;
+            case PNORM:
+                // pnorm pooling is used for signal loss recovery it is mixed with avg pooling,
+                // applying the exponent to the input and recovering the signal by multiplying the kernel of
+                // the pooling layer and then applying the same inverse exponent
+                int pnorm = layerConf().getPnorm();
+                Transforms.pow(col2d, pnorm, false);
+                reduced = col2d.mean(1);
+                reduced.muli(kernel[0]*kernel[1]);
+                Transforms.pow(reduced, (1/pnorm));
                 break;
             case NONE:
                 return input;

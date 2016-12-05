@@ -33,9 +33,10 @@ public class SubsamplingLayer extends Layer {
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
+    protected int pnorm;
 
     public enum PoolingType {
-        MAX, AVG, SUM, NONE
+        MAX, AVG, SUM, PNORM, NONE
     }
 
     private SubsamplingLayer(Builder builder) {
@@ -49,6 +50,7 @@ public class SubsamplingLayer extends Layer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
+        this.pnorm = builder.pnorm;
     }
 
     @Override
@@ -121,6 +123,10 @@ public class SubsamplingLayer extends Layer {
         return 0;
     }
 
+    public int getPnorm() {
+        return pnorm;
+    }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         private PoolingType poolingType = PoolingType.MAX;
@@ -128,6 +134,7 @@ public class SubsamplingLayer extends Layer {
         private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
         private int[] padding = new int[] {0, 0};
         private ConvolutionMode convolutionMode = null;
+        private int pnorm;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.poolingType = poolingType;
@@ -220,6 +227,12 @@ public class SubsamplingLayer extends Layer {
         public Builder padding(int... padding){
             if(padding.length != 2) throw new IllegalArgumentException("Invalid input: must be length 2");
             this.padding = padding;
+            return this;
+        }
+
+        public Builder pnorm(int pnorm){
+            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
+            this.pnorm = pnorm;
             return this;
         }
     }
