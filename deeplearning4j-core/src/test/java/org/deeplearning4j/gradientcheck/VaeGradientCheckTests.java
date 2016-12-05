@@ -220,7 +220,10 @@ public class VaeGradientCheckTests {
                 new CompositeReconstructionDistribution.Builder()
                         .addDistribution(2, new GaussianReconstructionDistribution("identity"))
                         .addDistribution(2, new BernoulliReconstructionDistribution())
-                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build()};
+                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build(),
+                new ExponentialReconstructionDistribution("identity"),
+                new ExponentialReconstructionDistribution("tanh"),
+        };
 
         Nd4j.getRandom().setSeed(12345);
         for (int minibatch : new int[]{1, 5}) {
@@ -243,6 +246,10 @@ public class VaeGradientCheckTests {
                                 new BernoulliDistribution(data.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), 0.5),
                                 Nd4j.getRandom());
                         data.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 6)).assign(Nd4j.rand(minibatch, 2));
+                        break;
+                    case 4:
+                    case 5:
+                        data = Nd4j.rand(minibatch, inOutSize);
                         break;
                     default:
                         throw new RuntimeException();
