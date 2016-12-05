@@ -137,7 +137,9 @@ public class VaeGradientCheckTests {
     @Test
     public void testVaePretrain() {
 
-        String[] activFns = {"identity", "tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        String[] activFns = {"identity", "identity", "tanh", "tanh"};    //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        String[] pzxAfns = {"identity", "tanh", "identity", "tanh"};
+        String[] pxzAfns = {"tanh", "identity", "tanh", "identity"};
 
         double[] l2vals = {0.0, 0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
@@ -153,56 +155,52 @@ public class VaeGradientCheckTests {
                 int[] encoderSizes = encoderLayerSizes[ls];
                 int[] decoderSizes = decoderLayerSizes[ls];
 
-                for (String afn : activFns) {
-                    for (String pzxAfn : activFns) {
-                        for (String pxzAfn : activFns) {
-                            for (int k = 0; k < l2vals.length; k++) {
-                                double l2 = l2vals[k];
-                                double l1 = l1vals[k];
+                for (int j = 0; j < activFns.length; j++) {
+                    String afn = activFns[j];
+                    String pzxAfn = pzxAfns[j];
+                    String pxzAfn = pxzAfns[j];
+                    double l2 = l2vals[j];  //Ideally we'd do the cartesian product of l1/l2 and the activation functions, but that takes too long...
+                    double l1 = l1vals[j];
 
-                                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                        .regularization(true)
-                                        .l2(l2).l1(l1)
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .learningRate(1.0)
-                                        .seed(12345L)
-//                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .weightInit(WeightInit.XAVIER)
-                                        .list()
-                                        .layer(0, new VariationalAutoencoder.Builder()
-                                                .nIn(4).nOut(3)
-                                                .encoderLayerSizes(encoderSizes)
-                                                .decoderLayerSizes(decoderSizes)
-                                                .pzxActivationFunction(pzxAfn)
-                                                .reconstructionDistribution(new GaussianReconstructionDistribution(pxzAfn))
-                                                .activation(afn)
-                                                .updater(Updater.SGD)
-                                                .build())
-                                        .pretrain(true).backprop(false)
-                                        .build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .regularization(true)
+                            .l2(l2).l1(l1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .learningRate(1.0)
+                            .seed(12345L)
+                            .weightInit(WeightInit.XAVIER)
+                            .list()
+                            .layer(0, new VariationalAutoencoder.Builder()
+                                    .nIn(4).nOut(3)
+                                    .encoderLayerSizes(encoderSizes)
+                                    .decoderLayerSizes(decoderSizes)
+                                    .pzxActivationFunction(pzxAfn)
+                                    .reconstructionDistribution(new GaussianReconstructionDistribution(pxzAfn))
+                                    .activation(afn)
+                                    .updater(Updater.SGD)
+                                    .build())
+                            .pretrain(true).backprop(false)
+                            .build();
 
-                                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                                mln.init();
-                                mln.initGradientsView();
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
+                    mln.initGradientsView();
 
-                                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+                    org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
 
-                                String msg = "testVaePretrain() - activationFn=" + afn + ", p(z|x) afn = " + pzxAfn + ", p(x|z) afn = " + pxzAfn +
-                                        ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
-                                        + ", l2=" + l2 + ", l1=" + l1;
-                                if (PRINT_RESULTS) {
-                                    System.out.println(msg);
-                                    for (int j = 0; j < mln.getnLayers(); j++)
-                                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                                }
-
-                                boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
-
-                                assertTrue(msg, gradOK);
-                            }
-                        }
+                    String msg = "testVaePretrain() - activationFn=" + afn + ", p(z|x) afn = " + pzxAfn + ", p(x|z) afn = " + pxzAfn +
+                            ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
+                            + ", l2=" + l2 + ", l1=" + l1;
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int l = 0; l < mln.getnLayers(); l++)
+                            System.out.println("Layer " + l + " # params: " + mln.getLayer(l).numParams());
                     }
+
+                    boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
+
+                    assertTrue(msg, gradOK);
                 }
             }
         }
