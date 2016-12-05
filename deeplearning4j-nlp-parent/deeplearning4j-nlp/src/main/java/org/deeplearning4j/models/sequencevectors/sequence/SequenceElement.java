@@ -1,5 +1,6 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import lombok.NonNull;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -253,6 +254,14 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         }
     }
 
+    public static final long getLongHash(@NonNull String string) {
+        long p = 2045584067;
+        int l = string.length();
+        for (int e = 0; e < l; e++) {
+            p = 31 * p + string.charAt(e);
+        }
+        return p;
+    }
 
     /**
      * Returns gradient for this specific element, at specific position

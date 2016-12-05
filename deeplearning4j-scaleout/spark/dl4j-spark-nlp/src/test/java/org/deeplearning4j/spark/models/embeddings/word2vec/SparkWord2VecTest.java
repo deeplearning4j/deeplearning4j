@@ -4,6 +4,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -57,7 +58,7 @@ public class SparkWord2VecTest {
         assertNotEquals(null, vocabCache);
 
         assertEquals(9, vocabCache.numWords());
-        assertEquals(2.0, vocabCache.wordFor((long) "one".hashCode()).getElementFrequency(), 1e-5);
-        assertEquals(1.0, vocabCache.wordFor((long) "two".hashCode()).getElementFrequency(), 1e-5);
+        assertEquals(2.0, vocabCache.wordFor(SequenceElement.getLongHash("one")).getElementFrequency(), 1e-5);
+        assertEquals(1.0, vocabCache.wordFor(SequenceElement.getLongHash("two")).getElementFrequency(), 1e-5);
     }
 }
