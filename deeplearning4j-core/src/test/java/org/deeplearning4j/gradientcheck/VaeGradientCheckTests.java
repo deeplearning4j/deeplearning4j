@@ -64,18 +64,18 @@ public class VaeGradientCheckTests {
         double[] l2vals = {0.0, 0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
-        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
-        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
+        int[][] encoderLayerSizes = new int[][]{{5}, {5, 6}};
+        int[][] decoderLayerSizes = new int[][]{{6}, {7, 8}};
 
         Nd4j.getRandom().setSeed(12345);
-        for(int minibatch : new int[]{1, 5}) {
+        for (int minibatch : new int[]{1, 5}) {
             INDArray input = Nd4j.rand(minibatch, 4);
             INDArray labels = Nd4j.create(minibatch, 3);
-            for( int i= 0; i<minibatch; i++ ){
-                labels.putScalar(i, i%3, 1.0);
+            for (int i = 0; i < minibatch; i++) {
+                labels.putScalar(i, i % 3, 1.0);
             }
 
-            for( int ls=0; ls < encoderLayerSizes.length; ls++ ) {
+            for (int ls = 0; ls < encoderLayerSizes.length; ls++) {
                 int[] encoderSizes = encoderLayerSizes[ls];
                 int[] decoderSizes = decoderLayerSizes[ls];
 
@@ -142,11 +142,11 @@ public class VaeGradientCheckTests {
         double[] l2vals = {0.0, 0.4, 0.0, 0.4};
         double[] l1vals = {0.0, 0.0, 0.5, 0.5};    //i.e., use l2vals[i] with l1vals[i]
 
-        int[][] encoderLayerSizes = new int[][]{{5}, {5,6}};
-        int[][] decoderLayerSizes = new int[][]{{6}, {7,8}};
+        int[][] encoderLayerSizes = new int[][]{{5}, {5, 6}};
+        int[][] decoderLayerSizes = new int[][]{{6}, {7, 8}};
 
         Nd4j.getRandom().setSeed(12345);
-        for(int minibatch : new int[]{1, 5}) {
+        for (int minibatch : new int[]{1, 5}) {
             INDArray features = Nd4j.rand(minibatch, 4);
 
             for (int ls = 0; ls < encoderLayerSizes.length; ls++) {
@@ -290,6 +290,57 @@ public class VaeGradientCheckTests {
 
                 boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                         PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, data, 12345);
+
+                assertTrue(msg, gradOK);
+            }
+        }
+    }
+
+    @Test
+    public void testVaePretrainMultipleSamples() {
+
+        Nd4j.getRandom().setSeed(12345);
+        for (int minibatch : new int[]{1, 5}) {
+            for (int numSamples : new int[]{1, 10}) {
+//            for (int numSamples : new int[]{10}) {
+                INDArray features = Nd4j.rand(minibatch, 4);
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(true)
+                        .l2(0.2).l1(0.3)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(1.0)
+                        .seed(12345L)
+                        .weightInit(WeightInit.XAVIER)
+                        .list()
+                        .layer(0, new VariationalAutoencoder.Builder()
+                                .nIn(4).nOut(3)
+                                .encoderLayerSizes(5, 6)
+                                .decoderLayerSizes(7, 8)
+                                .pzxActivationFunction("tanh")
+                                .reconstructionDistribution(new GaussianReconstructionDistribution("tanh"))
+                                .numSamples(numSamples)
+                                .activation("tanh")
+                                .updater(Updater.SGD)
+                                .build())
+                        .pretrain(true).backprop(false)
+                        .build();
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
+                mln.initGradientsView();
+
+                org.deeplearning4j.nn.api.Layer layer = mln.getLayer(0);
+
+                String msg = "testVaePretrainMultipleSamples() - numSamples = " + numSamples;
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < mln.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, 12345);
 
                 assertTrue(msg, gradOK);
             }

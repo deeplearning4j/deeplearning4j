@@ -35,6 +35,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private int[] decoderLayerSizes;
     private ReconstructionDistribution outputDistribution;
     private String pzxActivationFunction;
+    private int numSamples;
 
     private VariationalAutoencoder(Builder builder){
         super(builder);
@@ -42,6 +43,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         this.decoderLayerSizes = builder.decoderLayerSizes;
         this.outputDistribution = builder.outputDistribution;
         this.pzxActivationFunction = builder.pzxActivationFunction;
+        this.numSamples = builder.numSamples;
     }
 
     @Override
@@ -96,6 +98,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         private int[] decoderLayerSizes = new int[]{100};
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
         private String pzxActivationFunction = "identity";
+        private int numSamples = 1;
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link org.deeplearning4j.nn.conf.layers.DenseLayer}.
@@ -160,6 +163,19 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         @Override
         public Builder nOut(int nOut){
             super.nOut(nOut);
+            return this;
+        }
+
+        /**
+         * Set the number of samples per data point (from VAE state Z) used when doing pretraining. Default value: 1.
+         * <p>
+         * This is parameter L from Kingma and Welling: "In our experiments we found that the number of samples L per
+         * datapoint can be set to 1 as long as the minibatch size M was large enough, e.g. M = 100."
+         *
+         * @param numSamples    Number of samples per data point for pretraining
+         */
+        public Builder numSamples(int numSamples){
+            this.numSamples = numSamples;
             return this;
         }
 
