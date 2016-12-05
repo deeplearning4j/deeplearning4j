@@ -15,4 +15,6 @@ That's important chiefly because different frameworks solve different problems, 
 
 It is also certified on Cloudera's CDH and Hortonworks's HDP distributions of the Hadoop ecosystem. For deep-learning practitioners seeking to take their neural-net models and put them to work in the the production stack of large organizations, model import from Keras to Deeplearning4j may help. 
 
+Not every architecture supported by other deep learning frameworks is currently supported, but we're working to expand the number of nets that can be imported from Keras to DL4J. 
+
 Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
