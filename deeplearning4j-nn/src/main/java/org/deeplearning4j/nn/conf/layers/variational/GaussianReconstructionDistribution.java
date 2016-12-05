@@ -125,6 +125,35 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
+    public INDArray generateRandom(INDArray preOutDistributionParams) {
+        INDArray output = preOutDistributionParams.dup();
+        if(!"identity".equals(activationFn)){
+            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
+        }
+
+        int size = output.size(1)/2;
+        INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size));
+        INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size,2*size));
+
+        INDArray sigma = Transforms.exp(logStdevSquared,true);
+        Transforms.sqrt(sigma, false);
+
+        INDArray e = Nd4j.randn(sigma.shape());
+        return e.muli(sigma).addi(mean);   //mu + sigma * N(0,1) ~ N(mu,sigma^2)
+    }
+
+    @Override
+    public INDArray generateAtMean(INDArray preOutDistributionParams) {
+        int size = preOutDistributionParams.size(1)/2;
+        INDArray mean = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size)).dup();
+        if(!"identity".equals(activationFn)){
+            mean = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, mean));
+        }
+
+        return mean;
+    }
+
+    @Override
     public String toString(){
         return "GaussianReconstructionDistribution(afn=" + activationFn + ")";
     }

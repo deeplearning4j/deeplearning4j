@@ -3,7 +3,11 @@ package org.deeplearning4j.nn.conf.layers.variational;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -93,6 +97,37 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         }
 
         return grad.negi();
+    }
+
+    @Override
+    public INDArray generateRandom(INDArray preOutDistributionParams) {
+        INDArray p = preOutDistributionParams.dup();
+        if(!"identity".equals(activationFn)){
+            p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
+        }
+
+        INDArray rand = Nd4j.rand(p.shape());
+        //Can simply randomly sample by looking where values are < p...
+        //i.e., sample = 1 if randNum < p, 0 otherwise
+
+        INDArray out = Nd4j.createUninitialized(p.shape());
+
+        Nd4j.getExecutioner().execAndReturn(new LessThan(rand, p, out, p.length()));
+        return out;
+    }
+
+    @Override
+    public INDArray generateAtMean(INDArray preOutDistributionParams) {
+        //mean value for bernoulli: same as probability parameter...
+        //Obviously we can't produce exactly the mean value - bernoulli should produce only {0,1} values
+        //Instead: return the most likely value...
+        INDArray p = preOutDistributionParams.dup();
+        if(!"identity".equals(activationFn)){
+            p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
+        }
+
+        Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(p, 0.5));
+        return p;
     }
 
     @Override

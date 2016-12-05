@@ -136,6 +136,42 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
         return gradient;
     }
 
+    @Override
+    public INDArray generateRandom(INDArray preOutDistributionParams) {
+        return randomSample(preOutDistributionParams, false);
+    }
+
+    @Override
+    public INDArray generateAtMean(INDArray preOutDistributionParams) {
+        return randomSample(preOutDistributionParams, true);
+    }
+
+    private INDArray randomSample(INDArray preOutDistributionParams, boolean isMean){
+        int inputSoFar = 0;
+        int paramsSoFar = 0;
+        INDArray out = Nd4j.createUninitialized(new int[]{preOutDistributionParams.size(0), totalSize});
+        for( int i=0; i<distributionSizes.length; i++ ){
+            int thisDataSize = distributionSizes[i];
+            int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisDataSize);
+
+            INDArray paramsSubset = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+
+            INDArray thisRandomSample;
+            if(isMean){
+                thisRandomSample = reconstructionDistributions[i].generateAtMean(paramsSubset);
+            } else {
+                thisRandomSample = reconstructionDistributions[i].generateRandom(paramsSubset);
+            }
+
+            out.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisDataSize)}, thisRandomSample);
+
+            inputSoFar += thisDataSize;
+            paramsSoFar += thisParamsSize;
+        }
+
+        return out;
+    }
+
     public static class Builder {
 
         private List<Integer> distributionSizes = new ArrayList<>();
