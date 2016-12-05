@@ -223,6 +223,25 @@ public class ComputationGraphConfigurationTest {
         assertEquals(5,sigv.getSecondVal());
     }
 
+    @Test
+    public void testOutputOrderDoesntChangeWhenCloning() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .graphBuilder()
+            .addInputs("in")
+            .addLayer("out1", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+            .addLayer("out2", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+            .addLayer("out3", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+            .setOutputs("out1", "out2", "out3")
+            .build();
+
+        ComputationGraphConfiguration cloned = conf.clone();
+
+        String json = conf.toJson();
+        String jsonCloned = cloned.toJson();
+
+        assertEquals(json, jsonCloned);
+    }
+
     @AllArgsConstructor @NoArgsConstructor @Data @EqualsAndHashCode(callSuper=false)
     public static class StaticInnerGraphVertex extends GraphVertex {
 
