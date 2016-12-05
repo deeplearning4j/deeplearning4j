@@ -51,7 +51,7 @@ public interface ReconstructionDistribution extends Serializable {
      *
      * @param x                        Data to be modelled (reconstructions)
      * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
-     *                                 mean and log variance values for Gaussian)
+     *                                 mean and log variance values for Gaussian) - before applying activation function
      * @return Negative log probability of the reconstruction given the distribution parameters, for each example individually.
      * Column vector, shape [numExamples, 1]
      */
@@ -62,9 +62,27 @@ public interface ReconstructionDistribution extends Serializable {
      *
      * @param x                        Data
      * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
-     *                                 mean and log variance values for Gaussian)
+     *                                 mean and log variance values for Gaussian) - before applying activation function
      * @return Gradient with respect to the preOutDistributionParams
      */
     INDArray gradient(INDArray x, INDArray preOutDistributionParams);
 
+    /**
+     * Randomly sample from P(x|z) using the specified distribution parameters
+     *
+     * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
+     *                                 mean and log variance values for Gaussian) - before applying activation function
+     * @return A random sample of x given the distribution parameters
+     */
+    INDArray generateRandom(INDArray preOutDistributionParams);
+
+    /**
+     * Generate a sample from P(x|z), where x = E[P(x|z)]
+     * i.e., return the mean value for the distribution
+     *
+     * @param preOutDistributionParams Distribution parameters used by this reconstruction distribution (for example,
+     *                                 mean and log variance values for Gaussian) - before applying activation function
+     * @return A deterministic sample of x (mean/expected value) given the distribution parameters
+     */
+    INDArray generateAtMean(INDArray preOutDistributionParams);
 }

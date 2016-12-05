@@ -94,6 +94,37 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
     }
 
     @Override
+    public INDArray generateRandom(INDArray preOutDistributionParams) {
+        INDArray gamma = preOutDistributionParams.dup();
+        if (!"identity".equals(activationFn)) {
+            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
+        }
+
+        INDArray lambda = Transforms.exp(gamma, true);
+
+        //Inverse cumulative distribution function: -log(1-p)/lambda
+
+        INDArray u = Nd4j.rand(preOutDistributionParams.shape());
+
+        //Note here: if u ~ U(0,1) then 1-u ~ U(0,1)
+        return Transforms.log(u,false).divi(lambda).negi();
+    }
+
+    @Override
+    public INDArray generateAtMean(INDArray preOutDistributionParams) {
+        //Input: gamma = log(lambda)    ->  lambda = exp(gamma)
+        //Mean for exponential distribution: 1/lambda
+
+        INDArray gamma = preOutDistributionParams.dup();
+        if (!"identity".equals(activationFn)) {
+            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
+        }
+
+        INDArray lambda = Transforms.exp(gamma, true);
+        return lambda.rdivi(1.0);   //mean = 1.0 / lambda
+    }
+
+    @Override
     public String toString() {
         return "ExponentialReconstructionDistribution(afn=" + activationFn + ")";
     }

@@ -22,6 +22,7 @@ import java.util.Random;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 25/11/2016.
@@ -83,6 +84,13 @@ public class TestReconstructionDistributions {
 
 //                System.out.println(expLogProb + "\t" + logProb + "\t" + (logProb / expLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
+
+
+                //Also: check random sampling...
+                int count = minibatch * inputSize;
+                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray sampleMean = dist.generateAtMean(arr);
+                INDArray sampleRandom = dist.generateRandom(arr);
             }
         }
     }
@@ -145,6 +153,21 @@ public class TestReconstructionDistributions {
 
 //                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
+
+                //Also: check random sampling...
+                int count = minibatch * inputSize;
+                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray sampleMean = dist.generateAtMean(arr);
+                INDArray sampleRandom = dist.generateRandom(arr);
+
+                for( int i=0; i<minibatch; i++ ){
+                    for( int j=0; j<inputSize; j++ ){
+                        double d1 = sampleMean.getDouble(i,j);
+                        double d2 = sampleRandom.getDouble(i,j);
+                        assertTrue( d1 == 0.0 || d1 == 1.0 );
+                        assertTrue( d2 == 0.0 || d2 == 1.0 );
+                    }
+                }
             }
         }
     }
@@ -209,6 +232,21 @@ public class TestReconstructionDistributions {
 
 //                System.out.println(expNegLogProb + "\t" + logProb + "\t" + (logProb / expNegLogProb));
                 assertEquals(expNegLogProb, negLogProb, 1e-6);
+
+                //Also: check random sampling...
+                int count = minibatch * inputSize;
+                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray sampleMean = dist.generateAtMean(arr);
+                INDArray sampleRandom = dist.generateRandom(arr);
+
+                for( int i=0; i<minibatch; i++ ){
+                    for( int j=0; j<inputSize; j++ ){
+                        double d1 = sampleMean.getDouble(i,j);
+                        double d2 = sampleRandom.getDouble(i,j);
+                        assertTrue( d1 >= 0.0 );
+                        assertTrue( d2 >= 0.0 );
+                    }
+                }
             }
         }
     }

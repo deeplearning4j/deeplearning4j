@@ -928,4 +928,55 @@ public class VariationalAutoencoder implements Layer {
         setInput(null);
         return sumReconstructionNegLogProbability.divi(-numSamples);
     }
+
+    /**
+     * Given a specified values for the latent space as input (latent space being z in p(z|data)), generate output
+     * from P(x|z), where x = E[P(x|z)]<br>
+     * i.e., return the mean value for the distribution P(x|z)
+     *
+     * @param latentSpaceValues    Values for the latent space. size(1) must equal nOut configuration parameter
+     * @return Sample of data: E[P(x|z)]
+     */
+    public INDArray generateAtMeanGivenZ(INDArray latentSpaceValues){
+        INDArray pxzDistributionPreOut = decodeGivenLatentSpaceValues(latentSpaceValues);
+        return reconstructionDistribution.generateAtMean(pxzDistributionPreOut);
+    }
+
+    /**
+     * Given a specified values for the latent space as input (latent space being z in p(z|data)), randomly generate output
+     * x, where x ~ P(x|z)
+     *
+     * @param latentSpaceValues    Values for the latent space. size(1) must equal nOut configuration parameter
+     * @return Sample of data: x ~ P(x|z)
+     */
+    public INDArray generateRandomGivenZ(INDArray latentSpaceValues){
+        INDArray pxzDistributionPreOut = decodeGivenLatentSpaceValues(latentSpaceValues);
+        return reconstructionDistribution.generateRandom(latentSpaceValues);
+    }
+
+    private INDArray decodeGivenLatentSpaceValues(INDArray latentSpaceValues){
+        if(latentSpaceValues.size(1) != params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W).size(1)){
+            throw new IllegalArgumentException("Invalid latent space values: expected size " + params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W).size(1)
+                    + ", got size (dimension 1) = " + latentSpaceValues.size(1));
+        }
+
+        //Do forward pass through decoder
+
+        int nDecoderLayers = decoderLayerSizes.length;
+        INDArray currentActivations = latentSpaceValues;
+        String afn = conf().getLayer().getActivationFunction();
+
+        for (int i = 0; i < nDecoderLayers; i++) {
+            String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
+            String bKey = "d" + i + BIAS_KEY_SUFFIX;
+            INDArray w = params.get(wKey);
+            INDArray b = params.get(bKey);
+            currentActivations = currentActivations.mmul(w).addiRowVector(b);
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, currentActivations, conf.getExtraArgs()));
+        }
+
+        INDArray pxzw = params.get(VariationalAutoencoderParamInitializer.PXZ_W);
+        INDArray pxzb = params.get(VariationalAutoencoderParamInitializer.PXZ_B);
+        return currentActivations.mmul(pxzw).addiRowVector(pxzb);
+    }
 }
