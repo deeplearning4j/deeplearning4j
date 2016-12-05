@@ -10,11 +10,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+
 import java.util.Arrays;
 
 /**
  * Created by susaneraly on 12/1/16.
  */
+
 public class ActivationRRelu implements IActivation {
 
     //How is the seed set for repeatability? This should be the seed from the conf.
@@ -32,12 +34,10 @@ public class ActivationRRelu implements IActivation {
     }
 
     public INDArray getAlpha() {
-        if(forwardSaved) {
-            return alpha;
-        }
-        else {
+        if(!forwardSaved) {
             //throw exception - alpha not saved from forward pass
         }
+        return alpha;
     }
 
     private void setAlpha(int[] inShape) {

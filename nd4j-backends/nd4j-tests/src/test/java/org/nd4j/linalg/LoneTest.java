@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
@@ -127,5 +128,35 @@ public class LoneTest extends BaseNd4jTest {
         DataSet fullDataSetCopy = fullDataSet.copy();
         assertTrue(fullDataSetCopy.getFeaturesMaskArray() != null);
 
+    }
+
+    @Test
+    public void leakyRELU() {
+        //FIXME: Make more generic to use neuralnetconfs
+        int sizeX = 4;
+        int scaleX = 10;
+        System.out.println("Here is a leaky vector..");
+        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX);
+        leakyVector = leakyVector.mul(scaleX);
+        System.out.println(leakyVector);
+
+
+        double myAlpha = 0.5;
+        System.out.println("======================");
+        System.out.println("Exec and Return: Leaky Relu transformation with alpha = 0.5 ..");
+        System.out.println("======================");
+        INDArray outDef = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
+        System.out.println(outDef);
+
+        String confActivation = "leakyrelu";
+        Object [] confExtra = {myAlpha};
+        INDArray outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(),confExtra));
+        System.out.println("======================");
+        System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
+        System.out.println("======================");
+        System.out.println(outMine);
+
+        //Test equality for ndarray elementwise
+        //assertArrayEquals(..)
     }
 }
