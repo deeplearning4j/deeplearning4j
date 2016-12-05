@@ -1,13 +1,11 @@
 package org.deeplearning4j.spark.models.embeddings.sequencevectors;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
-import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
@@ -15,6 +13,8 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
+import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.CountFunction;
@@ -36,10 +36,18 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
 
     protected Broadcast<VocabCache<T>> vocabCacheBroadcast;
+    protected Broadcast<VocabCache<ShallowSequenceElement>> shallowVocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
+
+    protected transient boolean isEnvironmentReady = false;
+    protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
     protected SparkSequenceVectors() {
 
+    }
+
+    protected VocabCache<ShallowSequenceElement> getShallowVocabCache() {
+        return shallowVocabCache;
     }
 
     /**
@@ -48,6 +56,14 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     @Override
     public void fit() {
         throw new UnsupportedOperationException("To use fit() method, please consider using standalone implementation");
+    }
+
+    protected void broadcastEnvironment(JavaSparkContext context) {
+        if (!isEnvironmentReady) {
+            configurationBroadcast = context.broadcast(configuration);
+
+            isEnvironmentReady = true;
+        }
     }
 
     /**
@@ -89,6 +105,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         final JavaSparkContext sc = new JavaSparkContext(corpus.context());
 
+        // this will have any effect only if wasn't called before, in extension classes
+        broadcastEnvironment(sc);
+
         // set up freqs accumulator
         elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
         CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, false);
@@ -115,14 +134,14 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
 
         // build huffman tree, and update original RDD with huffman encoding info
-        VocabCache<T> vocabCache = buildVocabularyFromCounter(finalCounter);
+        shallowVocabCache = buildShallowVocabCache(finalCounter);
         // TODO: right at this place we should launch one more map, that will update original RDD with huffman encoding
-        vocabCacheBroadcast = sc.broadcast(vocabCache);
-        configurationBroadcast = sc.broadcast(configuration);
+        shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
+
 
 
         // proceed to training
-        TrainingFunction<T> trainer = new TrainingFunction<>(vocabCacheBroadcast, configurationBroadcast);
+        TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast);
 
         if (configuration != null)
             for (int e = 0; e < configuration.getEpochs(); e++)
@@ -138,20 +157,24 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     }
 
     /**
-     * This method updates builds limited RDD of Sequence<T> with Huffman info embedded
+     * This method builds shadow vocabulary and huffman tree
      *
      * @param counter
      * @return
      */
-    protected VocabCache<T> buildVocabularyFromCounter(Counter<Long> counter) {
+    protected VocabCache<ShallowSequenceElement> buildShallowVocabCache(Counter<Long> counter) {
 
         // TODO: need simplified cache here, that will operate on Long instead of string labels
-        VocabCache<T> vocabCache = new AbstractCache<>();
+        VocabCache<ShallowSequenceElement> vocabCache = new AbstractCache<>();
         for (Long id : counter.keySet()) {
-            // TODO: to be implemented
+            ShallowSequenceElement shallowElement = new ShallowSequenceElement(counter.getCount(id), id);
+            vocabCache.addToken(shallowElement);
         }
 
-        // TODO: build huffman tree here
+        // building huffman tree
+        Huffman huffman = new Huffman(vocabCache.vocabWords());
+        huffman.build();
+        huffman.applyIndexes(vocabCache);
 
         return vocabCache;
     }

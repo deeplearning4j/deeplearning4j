@@ -552,7 +552,6 @@ public class SequenceVectorsTest {
                     ", index=" + index +
                     ", codes=" + codes +
                     ", word='" + String.valueOf(id) + '\'' +
-                    ", historicalGradient=" + historicalGradient +
                     ", points=" + points +
                     ", codeLength=" + codeLength +
                     '}';
