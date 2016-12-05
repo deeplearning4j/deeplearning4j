@@ -132,6 +132,7 @@ First, in the JVM running the UI:
     UIServer uiServer = UIServer.getInstance();
     uiServer.enableRemoteListener();        //Necessary: remote support is not enabled by default
 ```
+This will require the ```deeplearning4j-ui_2.10``` or ```deeplearning4j-ui_2.11``` dependency.
 
 Second, in the Spark training instance:
 
@@ -141,6 +142,7 @@ Second, in the Spark training instance:
     StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://UI_MACHINE_IP:9000");
     sparkNet.setListeners(remoteUIRouter, Collections.singletonList(new StatsListener(null)));
 ```
+To avoid dependency conflicts with Spark, you should use the ```deeplearning4j-ui-model``` dependency to get the StatsListener, *not* the full ```deeplearning4j-ui_2.10``` UI dependency.
 
 Note: you should replace ```UI_MACHINE_IP`` with the IP address of the machine running the user interface instance.
 
