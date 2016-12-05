@@ -221,6 +221,4 @@ public interface Model {
      * Clear input
      */
     void clear();
-
-
 }

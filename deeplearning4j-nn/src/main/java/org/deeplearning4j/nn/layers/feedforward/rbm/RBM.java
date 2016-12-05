@@ -484,5 +484,10 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         return r;
     }
 
+    @Override
+    public boolean isPretrainLayer() {
+        return true;
+    }
+
 
 }

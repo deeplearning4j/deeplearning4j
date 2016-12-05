@@ -301,6 +301,11 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
     public void iterate(INDArray input) {
         throw new UnsupportedOperationException();
     }
