@@ -16,40 +16,12 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class TokenizerFunction implements Function<String, Sequence<VocabWord>> {
-    protected Broadcast<VectorsConfiguration> configurationBroadcast;
-
-    protected transient TokenizerFactory tokenizerFactory;
-    protected transient TokenPreProcess tokenPreprocessor;
+public class TokenizerFunction extends BaseTokenizerFunction implements Function<String, Sequence<VocabWord>> {
 
     public TokenizerFunction(@NonNull Broadcast<VectorsConfiguration> configurationBroadcast) {
-        this.configurationBroadcast = configurationBroadcast;
+        super(configurationBroadcast);
     }
 
-    public void instantiateTokenizerFactory() {
-        String tfClassName = this.configurationBroadcast.getValue().getTokenizerFactory();
-        String tpClassName = this.configurationBroadcast.getValue().getTokenPreProcessor();
-
-        if (tfClassName != null && !tfClassName.isEmpty()) {
-            try {
-                tokenizerFactory = (TokenizerFactory) Class.forName(tfClassName).newInstance();
-
-                if (tpClassName != null && !tpClassName.isEmpty()) {
-                    try {
-                        tokenPreprocessor = (TokenPreProcess) Class.forName(tpClassName).newInstance();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to instantiate TokenPreProcessor.", e);
-                    }
-                }
-
-                if (tokenPreprocessor != null) {
-                    tokenizerFactory.setTokenPreProcessor(tokenPreprocessor);
-                }
-            } catch (Exception e ) {
-                throw new RuntimeException("Unable to instantiate TokenizerFactory.", e);
-            }
-        } else throw new RuntimeException("TokenizerFactory wasn't defined.");
-    }
 
     @Override
     public Sequence<VocabWord> call(String s) throws Exception {
@@ -59,7 +31,7 @@ public class TokenizerFunction implements Function<String, Sequence<VocabWord>> 
         List<String> tokens =  tokenizerFactory.create(s).getTokens();
         Sequence<VocabWord> seq = new Sequence<>();
         for (String token: tokens) {
-            if (token == null)
+            if (token == null || token.isEmpty())
                 continue;
 
             seq.addElement(new VocabWord(1.0, token));

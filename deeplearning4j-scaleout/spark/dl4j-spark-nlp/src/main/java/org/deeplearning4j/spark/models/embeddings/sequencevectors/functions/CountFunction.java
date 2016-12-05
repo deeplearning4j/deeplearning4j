@@ -44,6 +44,12 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
             seqLen++;
         }
 
+        // FIXME: we're missing label information here due to shallow vocab mechanics
+        if (sequence.getSequenceLabels() != null)
+            for (T label: sequence.getSequenceLabels()) {
+                localCounter.incrementCount(label.getStorageId(), 1.0);
+            }
+
         accumulator.add(localCounter);
 
         return Pair.makePair(sequence, seqLen);
