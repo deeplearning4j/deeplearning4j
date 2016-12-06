@@ -38,9 +38,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-/**Base/abstract class for conducting early stopping training locally (single machine).<br>
- * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping
- * @author Alex Black
+/**
+ * Conduct parallel early stopping training with ParallelWrapper under the hood.<br>
+ * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping.
+ *
+ * @author Justin Long (crockpotveggies)
  */
 public abstract class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 
