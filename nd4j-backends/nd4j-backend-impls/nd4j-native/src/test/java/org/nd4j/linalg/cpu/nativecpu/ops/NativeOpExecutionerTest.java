@@ -654,4 +654,14 @@ public class NativeOpExecutionerTest {
 
         log.info("Result: {} ", array);
     }
+
+
+    @Test
+    public void testCreate() {
+        INDArray array1 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new int[]{3, 3}, 'c');
+        INDArray array2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9,10,11,12, 13,14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29}, new int[]{3, 3, 3}, 'c');
+
+        assertEquals(2, array1.rank());
+        assertEquals(3, array2.rank());
+    }
 }
