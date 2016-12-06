@@ -126,7 +126,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
             p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
         }
 
-        Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(p, 0.5));
+//        Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(p, 0.5));
         return p;
     }
 

@@ -7,6 +7,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -864,6 +865,11 @@ public class VariationalAutoencoder implements Layer {
     public INDArray reconstructionLogProbability(INDArray data, int numSamples) {
         if(numSamples <= 0){
             throw new IllegalArgumentException("Invalid input: numSamples must be > 0. Got: " + numSamples);
+        }
+        if(reconstructionDistribution instanceof LossFunctionWrapper){
+            throw new UnsupportedOperationException("Cannot calculate reconstruction log probability when using "
+                    + "a LossFunction (via LossFunctionWrapper) instead of a ReconstructionDistribution: ILossFunction "
+                    + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability");
         }
 
         //Forward pass through the encoder and mean for P(Z|X)
