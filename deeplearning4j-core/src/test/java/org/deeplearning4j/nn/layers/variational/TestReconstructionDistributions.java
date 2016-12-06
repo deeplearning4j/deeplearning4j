@@ -164,7 +164,7 @@ public class TestReconstructionDistributions {
                     for( int j=0; j<inputSize; j++ ){
                         double d1 = sampleMean.getDouble(i,j);
                         double d2 = sampleRandom.getDouble(i,j);
-                        assertTrue( d1 == 0.0 || d1 == 1.0 );
+                        assertTrue( d1 >= 0.0 || d1 <= 1.0 );       //Mean value - probability... could do 0 or 1 (based on most likely) but that isn't very useful...
                         assertTrue( d2 == 0.0 || d2 == 1.0 );
                     }
                 }

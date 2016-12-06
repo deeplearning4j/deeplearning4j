@@ -26,6 +26,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -221,6 +223,8 @@ public class VaeGradientCheckTests {
                         .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build(),
                 new ExponentialReconstructionDistribution("identity"),
                 new ExponentialReconstructionDistribution("tanh"),
+                new LossFunctionWrapper("tanh",new LossMSE()),
+                new LossFunctionWrapper("identity",new LossMAE())
         };
 
         Nd4j.getRandom().setSeed(12345);
@@ -248,6 +252,10 @@ public class VaeGradientCheckTests {
                     case 4:
                     case 5:
                         data = Nd4j.rand(minibatch, inOutSize);
+                        break;
+                    case 6:
+                    case 7:
+                        data = Nd4j.randn(minibatch, inOutSize);
                         break;
                     default:
                         throw new RuntimeException();
