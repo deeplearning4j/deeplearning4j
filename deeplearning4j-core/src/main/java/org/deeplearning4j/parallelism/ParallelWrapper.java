@@ -341,8 +341,8 @@ public class ParallelWrapper implements AutoCloseable {
         iterationsCounter.set(0);
     }
 
-    public static class Builder {
-        private Model model;
+    public static class Builder<T extends Model> {
+        private T model;
         private int workers = 2;
         private int prefetchSize = 16;
         private int averagingFrequency = 1;
@@ -353,19 +353,10 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          * Build ParallelWrapper for MultiLayerNetwork
          *
-         * @param mln
+         * @param model
          */
-        public Builder(@NonNull MultiLayerNetwork mln) {
-            model = mln;
-        }
-
-        /**
-         * Build ParallelWrapper for ComputationGraph
-         *
-         * @param graph
-         */
-        public Builder(@NonNull ComputationGraph graph) {
-            model = graph;
+        public Builder(@NonNull T model) {
+            this.model = model;
         }
 
         /**
