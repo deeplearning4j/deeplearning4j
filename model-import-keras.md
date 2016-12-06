@@ -44,5 +44,7 @@ A video tutorial demonstrating working code to load a keras model into DeepLearn
 
 Video lecture by instructor Tom Hanlon on Keras Model Import. Tom provides an overview of a simple Classifier over Iris Data built in Keras with a Theano backend and exported and then Loaded into DeepLearning4J.
 
-<iframe width="560" height="315" src="https://www.youtube.com/watch?v=FCZlkGW8-2I" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/watch?v=bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+
+More information is also available [here](http://deeplearning4j.org/keras)
 
