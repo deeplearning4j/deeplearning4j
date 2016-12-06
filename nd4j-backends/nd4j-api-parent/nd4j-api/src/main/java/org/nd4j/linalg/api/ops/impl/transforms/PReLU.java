@@ -27,6 +27,13 @@ public class PReLU extends BaseTransformOp {
         setY(alphaA);
     }
 
+    public PReLU(INDArray x, double l, double u) {
+        super(x);
+        this.l = l;
+        this.u = u;
+        this.alphaA = Nd4j.rand(x.shape(),l,u,Nd4j.getRandom());
+    }
+
     public PReLU(INDArray x, INDArray y) {
         super(x);
         this.alphaA = y;
@@ -35,6 +42,7 @@ public class PReLU extends BaseTransformOp {
 
     public PReLU(INDArray x, INDArray y, INDArray z) {
         super(x,y,z,x.lengthLong());
+        this.alphaA = y;
     }
 
     public INDArray getAlpha() {
@@ -129,7 +137,7 @@ public class PReLU extends BaseTransformOp {
     @Override
     public TransformOp derivative() {
         //must fix
-        return new LeakyReLUDerivative(x,y,z,n,alpha);
+        return new LeakyReLUDerivative(x,y,z,n,1.0);
     }
 
     @Override
