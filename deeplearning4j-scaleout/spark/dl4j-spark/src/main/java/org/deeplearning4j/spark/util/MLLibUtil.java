@@ -252,7 +252,7 @@ public class MLLibUtil {
      * @return a JavaRDD<Dataset> with a continuous label
      */
     @Deprecated
-    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaRDD<LabeledPoint> data) {
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
         List<LabeledPoint> labeledPoints = data.collect();
         List<DataSet> dataSets = new ArrayList<>();
         for (LabeledPoint labeledPoint : labeledPoints) {
