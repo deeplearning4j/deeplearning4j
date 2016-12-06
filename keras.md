@@ -18,3 +18,5 @@ It is also certified on Cloudera's CDH and Hortonworks's HDP distributions of th
 Not every architecture supported by other deep learning frameworks is currently supported, but we're working to expand the number of nets that can be imported from Keras to DL4J. 
 
 Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
+
+For more information [model-import](https://deeplearning4j.org/model-import-keras)
