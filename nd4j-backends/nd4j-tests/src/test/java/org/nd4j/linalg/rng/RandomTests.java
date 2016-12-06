@@ -767,6 +767,15 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(expCUDA, res);
     }
 
+    @Test
+    public void testLinspace2() throws Exception {
+        INDArray res = Nd4j.linspace(1, 5, 5);
+        INDArray exp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        assertEquals(exp, res);
+
+    }
+
     @Override
     public char ordering() {
         return 'c';

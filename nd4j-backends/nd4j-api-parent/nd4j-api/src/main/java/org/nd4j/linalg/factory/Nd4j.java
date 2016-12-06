@@ -1717,7 +1717,13 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(int lower, int upper, int num) {
-        return linspace((double) lower, (double) upper, num);
+        // for now we'll temporarty keep original impl
+        double approx = (double) num / ((double) (upper - lower) + 1);
+        if (approx % 1 <= EPS_THRESHOLD) {
+            return INSTANCE.linspace(lower, upper, num);
+        } else  {
+            return linspace((double) lower, (double) upper, num);
+        }
     }
 
 
