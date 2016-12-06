@@ -19,16 +19,22 @@ public class PReLU extends BaseTransformOp {
 
     public PReLU(INDArray x) {
         super(x);
-        setY(Nd4j.rand(x.shape()));
+        this.alphaA = Nd4j.rand(x.shape());
+        setY(alphaA);
     }
 
     public PReLU(INDArray x, INDArray y) {
         super(x);
-        setY(y);
+        this.alphaA = y;
+        setY(alphaA);
     }
 
     public PReLU(INDArray x, INDArray y, INDArray z) {
         super(x,y,z,x.lengthLong());
+    }
+
+    public INDArray getAlpha() {
+        return alphaA;
     }
 
     @Override

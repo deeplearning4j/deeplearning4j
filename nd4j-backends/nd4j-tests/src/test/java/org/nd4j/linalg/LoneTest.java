@@ -5,12 +5,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.PReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -148,12 +150,13 @@ public class LoneTest extends BaseNd4jTest {
         INDArray outDef = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
         System.out.println(outDef);
 
-        String confActivation = "leakyrelu";
-        Object [] confExtra = {myAlpha};
-        INDArray outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(),confExtra));
+        INDArray myAlphaA = Nd4j.rand(leakyVector.shape());
+        INDArray outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("prelu", leakyVector.dup(),myAlphaA));
         System.out.println("======================");
-        System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
+        System.out.println("Exec and Return: Random Leaky Relu transformation with a value via getOpFactory");
         System.out.println("======================");
+        System.out.println(leakyVector);
+        System.out.println(myAlphaA);
         System.out.println(outMine);
 
         //Test equality for ndarray elementwise

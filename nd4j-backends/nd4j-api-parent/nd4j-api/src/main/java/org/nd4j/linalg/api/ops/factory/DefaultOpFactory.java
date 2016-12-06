@@ -280,6 +280,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new Step(x,y);
             case "cube":
                 return new Cube(x, y);
+            case "prelu":
+                return new PReLU(x,y);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -351,6 +353,8 @@ public class DefaultOpFactory implements OpFactory {
             	return new Step(x);
             case "cube":
                 return new Cube(x);
+            case "prelu":
+                return new PReLU(x);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
