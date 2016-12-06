@@ -1,6 +1,6 @@
 ---
 title: 通过DL4J使用递归网络
-layout: default
+layout: cn-default
 ---
 
 # DL4J中的递归网络
@@ -21,10 +21,10 @@ layout: default
 ## <a name="basics">基础内容：数据和网络配置</a>
 DL4J目前支持以下各类递归神经网络
 * GravesLSTM（长短期记忆）
-* BidirectionalGravesLSTM（双向长短期记忆） 
+* BidirectionalGravesLSTM（双向长短期记忆）
 * BaseRecurrent
 
-每种网络均有Java文档可供参考：[GravesLSTM](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesLSTM.html)、 
+每种网络均有Java文档可供参考：[GravesLSTM](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesLSTM.html)、
  [BidirectionalGravesLSTM](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.html)、[BaseRecurrent](https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/BaseRecurrentLayer.html)
 
 #### RNN的数据
