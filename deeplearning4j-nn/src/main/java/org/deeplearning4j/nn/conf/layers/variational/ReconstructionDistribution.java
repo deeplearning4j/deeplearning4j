@@ -21,7 +21,8 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = GaussianReconstructionDistribution.class, name = "Gaussian"),
         @JsonSubTypes.Type(value = BernoulliReconstructionDistribution.class, name = "Bernoulli"),
         @JsonSubTypes.Type(value = ExponentialReconstructionDistribution.class, name = "Exponential"),
-        @JsonSubTypes.Type(value = CompositeReconstructionDistribution.class, name = "Composite")
+        @JsonSubTypes.Type(value = CompositeReconstructionDistribution.class, name = "Composite"),
+        @JsonSubTypes.Type(value = LossFunctionWrapper.class, name = "LossWrapper")
 })
 public interface ReconstructionDistribution extends Serializable {
 

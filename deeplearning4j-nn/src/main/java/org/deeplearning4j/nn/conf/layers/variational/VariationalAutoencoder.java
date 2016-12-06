@@ -10,6 +10,8 @@ import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collection;
 import java.util.Map;
@@ -139,6 +141,34 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         public Builder reconstructionDistribution(ReconstructionDistribution distribution){
             this.outputDistribution = distribution;
             return this;
+        }
+
+        /**
+         * Configure the VAE to use the specified loss function for the reconstruction, instead of a ReconstructionDistribution.
+         * Note that this is NOT following the standard VAE design (as per Kingma & Welling), which assumes a probabilistic
+         * output - i.e., some p(x|z). It is however a valid network configuration, allowing for optimization of more traditional
+         * objectives such as mean squared error.<br>
+         * Note: clearly, setting the loss function here will override any previously set recontruction distribution
+         *
+         * @param outputActivationFn Activation function for the output/reconstruction
+         * @param lossFunction       Loss function to use
+         */
+        public Builder lossFunction(String outputActivationFn, LossFunctions.LossFunction lossFunction){
+            return lossFunction(outputActivationFn, lossFunction.getILossFunction());
+        }
+
+        /**
+         * Configure the VAE to use the specified loss function for the reconstruction, instead of a ReconstructionDistribution.
+         * Note that this is NOT following the standard VAE design (as per Kingma & Welling), which assumes a probabilistic
+         * output - i.e., some p(x|z). It is however a valid network configuration, allowing for optimization of more traditional
+         * objectives such as mean squared error.<br>
+         * Note: clearly, setting the loss function here will override any previously set recontruction distribution
+         *
+         * @param outputActivationFn Activation function for the output/reconstruction
+         * @param lossFunction       Loss function to use
+         */
+        public Builder lossFunction(String outputActivationFn, ILossFunction lossFunction){
+            return reconstructionDistribution(new LossFunctionWrapper(outputActivationFn, lossFunction));
         }
 
         /**
