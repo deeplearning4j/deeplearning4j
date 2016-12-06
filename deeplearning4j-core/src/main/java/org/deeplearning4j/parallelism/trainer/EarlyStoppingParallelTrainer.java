@@ -44,7 +44,7 @@ import java.util.*;
  *
  * @author Justin Long (crockpotveggies)
  */
-public abstract class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
+public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 
     private static Logger log = LoggerFactory.getLogger(EarlyStoppingParallelTrainer.class);
 
@@ -63,8 +63,19 @@ public abstract class EarlyStoppingParallelTrainer<T extends Model> implements I
     private int iterCount = 0;
     protected IterationTerminationCondition terminationReason = null;
 
+    public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
+                                        DataSetIterator train, MultiDataSetIterator trainMulti,
+                                        int workers, int prefetchBuffer, int averagingFrequency) {
+        this(earlyStoppingConfiguration, model, train, trainMulti, null, workers, prefetchBuffer, averagingFrequency, true, true);
+    }
 
-    protected EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
+    public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
+                                        DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
+                                        int workers, int prefetchBuffer, int averagingFrequency) {
+        this(earlyStoppingConfiguration, model, train, trainMulti, listener, workers, prefetchBuffer, averagingFrequency, true, true);
+    }
+
+    public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
                                            DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener,
                                            int workers, int prefetchBuffer, int averagingFrequency, boolean reportScoreAfterAveraging, boolean useLegacyAveraging) {
         this.esConfig = earlyStoppingConfiguration;
@@ -126,8 +137,6 @@ public abstract class EarlyStoppingParallelTrainer<T extends Model> implements I
         // iterate through epochs
         while (true) {
             reset();
-            boolean terminate = false;
-
 
             try {
                 if (train != null) {
