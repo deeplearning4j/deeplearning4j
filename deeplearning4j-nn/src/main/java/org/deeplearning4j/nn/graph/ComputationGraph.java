@@ -1419,7 +1419,7 @@ public class ComputationGraph implements Serializable, Model {
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
-            score += ol.computeScore(l1, l2, true);
+            score += ol.computeScore(l1, l2, training);
 
             //Only want to add l1/l2 once...
             l1 = 0.0;
