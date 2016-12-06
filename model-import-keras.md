@@ -3,7 +3,7 @@ title: Deeplearning4j Keras Model Import
 layout: default
 ---
 
-# DL4J Keras Model Import
+# Importing Models From Keras to Deeplearning4j
 
 The `deeplearning4j-modelimport` module provides routines for importing neural network models originally configured
 and trained using [Keras](https://keras.io/), the most popular python deep learning library that provides abstraction
@@ -46,5 +46,5 @@ Video lecture by instructor Tom Hanlon on Keras Model Import. Tom provides an ov
 
 <iframe width="560" height="315" src="https://www.youtube.com/watch?v=bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
-More information is also available [here](http://deeplearning4j.org/keras)
+More information is also available [here](http://deeplearning4j.org/keras).
 
