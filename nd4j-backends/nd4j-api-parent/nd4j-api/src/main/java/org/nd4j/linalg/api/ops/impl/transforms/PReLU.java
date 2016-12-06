@@ -12,14 +12,18 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by susaneraly on 12/5/16.
  */
 public class PReLU extends BaseTransformOp {
-    private double alpha = 1.0;
+    /*
+    FIXME: need to add support for U and L for alphaA
+     */
+    private double u = 1/3.0;
+    private double l = 1/8.0;
     private INDArray alphaA;
     public PReLU() {
     }
 
     public PReLU(INDArray x) {
         super(x);
-        this.alphaA = Nd4j.rand(x.shape());
+        this.alphaA = Nd4j.rand(x.shape()); //this should be u and l uniform distribution
         setY(alphaA);
     }
 

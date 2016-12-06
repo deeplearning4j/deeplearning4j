@@ -150,13 +150,18 @@ public class LoneTest extends BaseNd4jTest {
         INDArray outDef = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
         System.out.println(outDef);
 
-        INDArray myAlphaA = Nd4j.rand(leakyVector.shape());
+        INDArray myAlphaA = Nd4j.rand(leakyVector.shape(),1/8.0,1/3.0,Nd4j.getRandom());
         INDArray outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("prelu", leakyVector.dup(),myAlphaA));
         System.out.println("======================");
         System.out.println("Exec and Return: Random Leaky Relu transformation with a value via getOpFactory");
         System.out.println("======================");
         System.out.println(leakyVector);
         System.out.println(myAlphaA);
+        System.out.println(outMine);
+        INDArray someArr = Nd4j.randn(new int[] {3,3});
+        outMine = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("prelu", someArr.dup()));
+        System.out.println("======================");
+        System.out.println(someArr);
         System.out.println(outMine);
 
         //Test equality for ndarray elementwise
