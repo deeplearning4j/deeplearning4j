@@ -19,4 +19,4 @@ Not every architecture supported by other deep learning frameworks is currently 
 
 Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
 
-For more information [model-import](https://deeplearning4j.org/model-import-keras)
+For more information, please see this page on [model import](https://deeplearning4j.org/model-import-keras).
