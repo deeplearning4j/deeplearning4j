@@ -326,10 +326,10 @@ You can reload the vectors into memory like this:
 You can then use Word2vec as a lookup table:
 
 ``` java
-        WeightLookupTable weightLookupTable = wordVectors.lookupTable();
+        WeightLookupTable weightLookupTable = word2Vec.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
-        INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
-        double[] wordVector = wordVectors.getWordVector("myword");
+        INDArray wordVectorMatrix = word2Vec.getWordVectorMatrix("myword");
+        double[] wordVector = word2Vec.getWordVector("myword");
 ```
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
