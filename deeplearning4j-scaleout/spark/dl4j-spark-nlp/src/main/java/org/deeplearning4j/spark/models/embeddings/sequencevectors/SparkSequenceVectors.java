@@ -17,12 +17,12 @@ import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.CountFunction;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.ElementsFrequenciesAccumulator;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.ListSequenceConvertFunction;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.TrainingFunction;
+import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.*;
+import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.ExtraCounter;
+import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.NetworkInformation;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Generic SkipGram/CBOW implementation for dl4j-spark-nlp
@@ -32,6 +32,7 @@ import java.util.List;
 @Slf4j
 public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVectors<T> {
     protected Accumulator<Counter<Long>> elementsFreqAccum;
+    protected Accumulator<ExtraCounter<Long>> elementsFreqAccumExtra;
     protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY();
 
 
@@ -41,6 +42,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
     protected transient boolean isEnvironmentReady = false;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
+    protected boolean isAutoDiscoveryMode = true;
 
     protected SparkSequenceVectors() {
 
@@ -108,18 +110,41 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         // this will have any effect only if wasn't called before, in extension classes
         broadcastEnvironment(sc);
 
-        // set up freqs accumulator
-        elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
-        CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, false);
+        Counter<Long> finalCounter;
+        long numberOfSequences = 0;
 
-        // count all sequence elements and their sum
-        JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
+        if (isAutoDiscoveryMode) {
+            elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
 
-        // just to trigger map function, since we need huffman tree before proceeding
-        long numberOfSequences = countedCorpus.count();
+            ExtraCountFunction<T> elementsCounter = new ExtraCountFunction<>(elementsFreqAccumExtra, false);
 
-        // now we grab counter, which contains frequencies for all SequenceElements in corpus
-        Counter<Long> finalCounter = elementsFreqAccum.value();
+            JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
+
+            // just to trigger map function, since we need huffman tree before proceeding
+            numberOfSequences = countedCorpus.count();
+
+            finalCounter = elementsFreqAccumExtra.value();
+
+            ExtraCounter<Long> spareReference = (ExtraCounter<Long>) finalCounter;
+
+            // getting list of available hosts
+            Set<NetworkInformation> availableHosts = spareReference.getNetworkInformation();
+
+            // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
+        } else {
+            // set up freqs accumulator
+            elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
+            CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, false);
+
+            // count all sequence elements and their sum
+            JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
+
+            // just to trigger map function, since we need huffman tree before proceeding
+            numberOfSequences = countedCorpus.count();
+
+            // now we grab counter, which contains frequencies for all SequenceElements in corpus
+            finalCounter = elementsFreqAccum.value();
+        }
 
         long numberOfElements = (long) finalCounter.totalCount();
 
@@ -180,6 +205,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     }
 
     protected Counter<Long> getCounter() {
-        return elementsFreqAccum.value();
+        if (isAutoDiscoveryMode)
+            return elementsFreqAccumExtra.value();
+        else
+            return elementsFreqAccum.value();
     }
 }
