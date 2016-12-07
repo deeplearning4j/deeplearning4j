@@ -33,21 +33,6 @@ public class ActivationRRelu implements IActivation {
         this.u = u;
     }
 
-    public INDArray getAlpha() {
-        return alpha;
-    }
-
-    // alpha comes from the layer
-    private void setAlpha(INDArray alpha) {
-        this.alpha = alpha;
-    }
-
-    /*
-    private boolean overWriteAlpha(int[] inShape) {
-        return !forwardSaved || !Arrays.equals(inShape,alpha.shape());
-
-    }
-    */
 
     @Override
     public INDArray computeActivation(INDArray in) {

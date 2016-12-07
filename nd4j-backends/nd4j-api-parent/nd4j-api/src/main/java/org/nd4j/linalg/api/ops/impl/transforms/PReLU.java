@@ -32,6 +32,7 @@ public class PReLU extends BaseTransformOp {
         this.l = l;
         this.u = u;
         this.alphaA = Nd4j.rand(x.shape(),l,u,Nd4j.getRandom());
+        setY(alphaA);
     }
 
     public PReLU(INDArray x, INDArray y) {
