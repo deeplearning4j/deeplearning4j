@@ -90,12 +90,12 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
     }
 
-    protected void setTerminationReason(IterationTerminationCondition terminationReason) {
+    protected synchronized void setTerminationReason(IterationTerminationCondition terminationReason) {
         this.terminationReason = terminationReason;
     }
 
     @Override
-    public EarlyStoppingResult<T> fit() {
+    public synchronized EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
         if (esConfig.getScoreCalculator() == null)
             log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
@@ -120,7 +120,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
         // append the iteration listener
         int epochCount = 0;
-        TrainerIterationListener trainerListener = new TrainerIterationListener(this);
+        AveragingIterationListener trainerListener = new AveragingIterationListener(this);
 
         if (model instanceof MultiLayerNetwork) {
             Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
@@ -136,8 +136,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
         // iterate through epochs
         while (true) {
-            reset();
-
+            // note that we don't call train.reset() because ParallelWrapper does it already
             try {
                 if (train != null) {
                     wrapper.fit(train);
@@ -183,6 +182,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
+
+                wrapper.shutdown();
 
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
@@ -269,6 +270,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                         listener.onCompletion(result);
                     }
 
+                    wrapper.shutdown();
                     return result;
                 }
             }
@@ -277,28 +279,33 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
     }
 
-    public void setLatestScore(double latestScore) {
+    public synchronized void setLatestScore(double latestScore) {
         this.latestScore = latestScore;
     }
 
-    public void incrementIteration() {
+    public synchronized void incrementIteration() {
         iterCount++;
     }
 
-    public void setTermination(boolean terminate) {
+    public synchronized void setTermination(boolean terminate) {
         this.terminate = terminate;
     }
 
-    public boolean getTermination() { return terminate; }
+    public synchronized boolean getTermination() { return terminate; }
 
-    private class TrainerIterationListener<T extends Model> implements IterationListener {
-        private final Logger log = LoggerFactory.getLogger(TrainerIterationListener.class);
+    /**
+     * AveragingIterationListener is attached to the primary model within ParallelWrapper. It is invoked
+     * with each averaging step, and thus averaging is considered analogous to an iteration.
+     * @param <T>
+     */
+    private class AveragingIterationListener<T extends Model> implements IterationListener {
+        private final Logger log = LoggerFactory.getLogger(AveragingIterationListener.class);
         private boolean invoked = false;
         private IterationTerminationCondition terminationReason = null;
         private EarlyStoppingParallelTrainer<T> trainer;
 
         /** Default constructor printing every 10 iterations */
-        public TrainerIterationListener(EarlyStoppingParallelTrainer<T> trainer) {
+        public AveragingIterationListener(EarlyStoppingParallelTrainer<T> trainer) {
             this.trainer = trainer;
         }
 
@@ -310,6 +317,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
         @Override
         public void iterationDone(Model model, int iteration) {
+            invoke();
             //Check per-iteration termination conditions
             double latestScore = model.score();
             trainer.setLatestScore(latestScore);
@@ -323,6 +331,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             if (trainer.getTermination()) {
                 wrapper.shutdown();
             }
+            System.out.println(latestScore);
 
             trainer.incrementIteration();
         }
