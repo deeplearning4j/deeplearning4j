@@ -29,7 +29,6 @@ import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.model.SubscriberState;
 import org.nd4j.parameterserver.util.CheckSocket;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +81,7 @@ public class ParameterServerSubscriber {
 
     @Parameter(names = {"-s", "--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
-    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "The shape of the ndarray", arity = 1)
+    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "Heartbeat interval in ms", arity = 1)
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
