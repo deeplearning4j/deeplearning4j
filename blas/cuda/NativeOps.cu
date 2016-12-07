@@ -10,17 +10,7 @@ int element_threshold = 32;
 #include <helpers/shape.h>
 
 #include <cublas_v2.h>
-<<<<<<< HEAD
 #include <cusolverDn.h>
-#include <reduce3.h>
-#include <reduce.h>
-#include <indexreduce.h>
-#include <pairwise_transform.h>
-#include <transform.h>
-#include <scalar.h>
-#include <broadcasting.h>
-#include <summarystatsreduce.h>
-=======
 #include <loops/reduce3.h>
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
@@ -30,7 +20,7 @@ int element_threshold = 32;
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/random.h>
->>>>>>> 741c2bb99aa8fb91606c8896578c39e7f2a5d13b
+
 #include <thread>
 #include <map>
 #include <cuda.h>
@@ -6096,8 +6086,6 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
-<<<<<<< HEAD
-=======
 
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -6274,4 +6262,3 @@ void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer 
     buffer->setOffset(0);
     buffer->propagateToDevice(buffer, *stream);
 }
->>>>>>> 741c2bb99aa8fb91606c8896578c39e7f2a5d13b
