@@ -1,41 +1,27 @@
 package org.deeplearning4j.earlystopping;
 
-import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
-import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
-import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.parallelism.trainer.EarlyStoppingParallelTrainer;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Sin;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -55,7 +41,7 @@ public class TestParallelEarlyStopping {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
-        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        DataSetIterator irisIter = new IrisDataSetIterator(150,300);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
@@ -99,7 +85,7 @@ public class TestParallelEarlyStopping {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
-        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        DataSetIterator irisIter = new IrisDataSetIterator(150,300);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
@@ -134,7 +120,7 @@ public class TestParallelEarlyStopping {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
-        DataSetIterator irisIter = new IrisDataSetIterator(150,150);
+        DataSetIterator irisIter = new IrisDataSetIterator(50,500);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
@@ -144,7 +130,7 @@ public class TestParallelEarlyStopping {
                 .modelSaver(saver)
                 .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingParallelTrainer<>(esConf,net,irisIter,null,2,6,1);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingParallelTrainer<>(esConf,net,irisIter,null,2,2,2);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
