@@ -19,6 +19,9 @@ Content
 * <a href="#caffe">Caffe</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
+* <a href="#keras">Keras</a>
+* <a href="#mxnet">Mxnet</a>
+* <a href="#paddle">Paddle</a>
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
@@ -122,6 +125,18 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 * (+) Handles Sparse encoding!
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
+
+### <a name="keras">Keras</a>
+
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras).
+
+### <a name="mxnet">Mxnet</a>
+
+[Mxnet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been adopted by Amazon Web Services. Fast and flexible. 
+
+### <a name="paddle">Paddle</a>
+
+[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework created and supported by Baidu. It stands for Parallel Distributed Deep LEarning. 
 
 ### <a name="licensing">Licensing</a>
 
