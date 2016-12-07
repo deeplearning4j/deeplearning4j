@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.ui.flow.beans.Description;
 import org.deeplearning4j.ui.flow.beans.LayerInfo;
 import org.deeplearning4j.ui.flow.beans.ModelInfo;
@@ -178,7 +179,7 @@ public class TrainModuleUtils {
             }
 
             vertexNames.add("z");
-            originalVertexName.add("z");
+            originalVertexName.add(VariationalAutoencoderParamInitializer.PZX_PREFIX);
             layerTypes.add("VAE-LatentVariable");
             layerInputs.add(Collections.singletonList(layerIndex-1));
             layerIndex++;
@@ -212,7 +213,7 @@ public class TrainModuleUtils {
             }
 
             vertexNames.add("x");
-            originalVertexName.add("x");
+            originalVertexName.add(VariationalAutoencoderParamInitializer.PXZ_PREFIX);
             layerTypes.add("VAE-Reconstruction");
             layerInputs.add(Collections.singletonList(layerIndex-1));
             layerIndex++;
