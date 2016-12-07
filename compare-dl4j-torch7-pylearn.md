@@ -137,7 +137,7 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 ### <a name="paddle">Paddle</a>
 
-[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework created and supported by Baidu. It stands for PArallel Distributed Deep LEarning. Paddle is the most recent major framework to be released. 
+[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework [created and supported by Baidu](http://www.infoworld.com/article/3114175/artificial-intelligence/baidu-open-sources-python-driven-machine-learning-framework.html). Its name stands for PArallel Distributed Deep LEarning. Paddle is the most recent major framework to be released, and like most others, it offers a Python API. 
 
 ### <a name="licensing">Licensing</a>
 
