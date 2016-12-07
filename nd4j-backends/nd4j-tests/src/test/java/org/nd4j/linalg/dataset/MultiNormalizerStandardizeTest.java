@@ -15,6 +15,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -75,11 +76,42 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testRevert() {
+    public void testRevertFeaturesINDArray() {
         SUT.fit(data);
 
         MultiDataSet transformed = data.copy();
+        SUT.preProcess(transformed);
 
+        INDArray reverted = transformed.getFeatures(0).dup();
+        SUT.revertFeatures(reverted, 0);
+
+        assertNotEquals(reverted, transformed.getFeatures(0));
+
+        SUT.revert(transformed);
+        assertEquals(reverted, transformed.getFeatures(0));
+    }
+
+    @Test
+    public void testRevertLabelsINDArray() {
+        SUT.fit(data);
+
+        MultiDataSet transformed = data.copy();
+        SUT.preProcess(transformed);
+
+        INDArray reverted = transformed.getLabels(0).dup();
+        SUT.revertLabels(reverted, 0);
+
+        assertNotEquals(reverted, transformed.getLabels(0));
+
+        SUT.revert(transformed);
+        assertEquals(reverted, transformed.getLabels(0));
+    }
+
+    @Test
+    public void testRevertMultiDataSet() {
+        SUT.fit(data);
+
+        MultiDataSet transformed = data.copy();
         SUT.preProcess(transformed);
 
         double diffBeforeRevert = getMaxRelativeDifference(data, transformed);
