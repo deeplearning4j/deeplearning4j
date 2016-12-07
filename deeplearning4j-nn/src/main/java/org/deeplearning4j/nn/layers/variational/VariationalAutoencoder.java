@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,6 +53,7 @@ public class VariationalAutoencoder implements Layer {
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<TrainingListener> trainingListeners = null;
     protected int index = 0;
     protected INDArray maskArray;
     protected Solver solver;
@@ -163,7 +165,21 @@ public class VariationalAutoencoder implements Layer {
             double logPTheta = reconstructionDistribution.negLogProbability(input, pxzDistributionPreOut, true);
             this.score += logPTheta / numSamples;
 
-
+            //If we have any training listeners (for example, for UI StatsListener - pass on activations)
+            if(trainingListeners != null && trainingListeners.size() > 0 && l == 0){        //Note: only doing this on the *first* sample
+                Map<String,INDArray> activations = new LinkedHashMap<>();
+                for( int i=0; i<fwd.encoderActivations.length; i++ ){
+                    activations.put("e" + i, fwd.encoderActivations[i]);
+                }
+                activations.put("z",z);
+                for( int i=0; i<decoderActivations.length; i++ ){
+                    activations.put("d" + i, decoderActivations[i]);
+                }
+                activations.put("x|z",reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
+                for(TrainingListener tl : trainingListeners){
+                    tl.onForwardPass(this, activations);
+                }
+            }
 
             /////////////////////////////////////////////////////////
             //Backprop
@@ -764,8 +780,15 @@ public class VariationalAutoencoder implements Layer {
     public void setListeners(Collection<IterationListener> listeners) {
         if (iterationListeners == null) iterationListeners = new ArrayList<>();
         else iterationListeners.clear();
+        if (trainingListeners == null) trainingListeners = new ArrayList<>();
+        else trainingListeners.clear();
 
         iterationListeners.addAll(listeners);
+        for(IterationListener il : listeners){
+            if(il instanceof TrainingListener){
+                trainingListeners.add((TrainingListener)il);
+            }
+        }
     }
 
     @Override
@@ -790,7 +813,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public int getInputMiniBatchSize() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return input.size(0);
     }
 
     @Override
@@ -822,8 +845,9 @@ public class VariationalAutoencoder implements Layer {
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
             int updaterStateSize = updater.stateSizeForLayer(this);
-            if (updaterStateSize > 0)
+            if (updaterStateSize > 0) {
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[]{1, updaterStateSize}, Nd4j.order()), true);
+            }
         }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
