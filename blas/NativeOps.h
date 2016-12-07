@@ -1174,6 +1174,9 @@ public:
 
     int setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
 
+    Nd4jPointer createSolverHandle() ;
+    int setSolverStream(Nd4jPointer handle, Nd4jPointer stream) ;
+
     int setDevice(Nd4jPointer ptrToDeviceId);
 
     int getDevice();

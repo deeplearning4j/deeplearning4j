@@ -127,6 +127,7 @@ case "$OS" in
     ;;
 
     generic)
+	export CC=/usr/bin/gcc-5
     ;;
 
     linux*)

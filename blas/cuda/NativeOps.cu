@@ -10,6 +10,17 @@ int element_threshold = 32;
 #include <helpers/shape.h>
 
 #include <cublas_v2.h>
+<<<<<<< HEAD
+#include <cusolverDn.h>
+#include <reduce3.h>
+#include <reduce.h>
+#include <indexreduce.h>
+#include <pairwise_transform.h>
+#include <transform.h>
+#include <scalar.h>
+#include <broadcasting.h>
+#include <summarystatsreduce.h>
+=======
 #include <loops/reduce3.h>
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
@@ -19,6 +30,7 @@ int element_threshold = 32;
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/random.h>
+>>>>>>> 741c2bb99aa8fb91606c8896578c39e7f2a5d13b
 #include <thread>
 #include <map>
 #include <cuda.h>
@@ -5067,6 +5079,25 @@ int NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
 	else return 1L;
 }
 
+Nd4jPointer NativeOps::createSolverHandle() {
+        Nd4jPointer nativeHandle= 0;
+        cusolverStatus_t result = cusolverDnCreate((cusolverDnHandle_t *) &nativeHandle);
+        if (result != 0) {
+        printf("cusolverDn errorCode: [%i] from cusolverDnCreate()\n", result);
+                return 0L;
+    }
+        else return nativeHandle;
+}
+
+int NativeOps::setSolverStream(Nd4jPointer handle, Nd4jPointer stream) {
+        cusolverDnHandle_t *pHandle = reinterpret_cast<cusolverDnHandle_t *>(&handle);
+        cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
+
+        cusolverStatus_t result = cusolverDnSetStream(*pHandle, *pStream);
+        if (result != 0)
+                return 0L;
+        else return 1L;
+}
 int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
 	int deviceId = getDeviceId(ptrToDeviceId);
 	cudaError_t result = cudaSetDevice(deviceId);
@@ -6065,6 +6096,8 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+<<<<<<< HEAD
+=======
 
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, float *z, int *zShapeBuffer, float *extraArguments) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -6241,3 +6274,4 @@ void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer 
     buffer->setOffset(0);
     buffer->propagateToDevice(buffer, *stream);
 }
+>>>>>>> 741c2bb99aa8fb91606c8896578c39e7f2a5d13b

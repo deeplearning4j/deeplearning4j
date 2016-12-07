@@ -2050,6 +2050,12 @@ Nd4jPointer NativeOps::createEvent() {
 Nd4jPointer NativeOps::createBlasHandle() {
     return 0L;
 }
+Nd4jPointer NativeOps::createSolverHandle() {
+    return 0L;
+}
+int NativeOps::setSolverStream(Nd4jPointer handle, Nd4jPointer stream) {
+    return 0L;
+}
 
 int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
     return 0;
@@ -2620,6 +2626,8 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
 void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
     // TODO: add support for fp16
 }
+<<<<<<< HEAD
+=======
 
 void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
     NativeOpExcutioner<float>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
@@ -2693,3 +2701,4 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
     delete buffer;
 }
 
+>>>>>>> 741c2bb99aa8fb91606c8896578c39e7f2a5d13b

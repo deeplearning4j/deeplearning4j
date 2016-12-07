@@ -1,5 +1,6 @@
 #include "../NativeBlas.h"
 #include <cublas_v2.h>
+#include <cusolverDn.h>
 #include <pointercast.h>
 #include <stdio.h>
 #include <types/float16.h>
