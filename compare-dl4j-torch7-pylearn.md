@@ -1,5 +1,5 @@
 ---
-title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow"
+title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe vs. TensorFlow vs. MxNet vs. CNTK"
 layout: default
 ---
 
@@ -117,7 +117,7 @@ Pros and Cons:
 
 ### <a name="cntk">CNTK</a>
 
-[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. 
+[**CNTK**](https://github.com/Microsoft/CNTK) is Microsoft's open-source deep-learning framework. The acronym stands for "Computational Network Toolkit." The library includes feed-forward DNNs, convolutional nets and recurrent networks. CNTK offers a Python API over C++ code. While CNTK appears to have a [permissive license](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md), it has not adopted one of the more conventional licenses, such as ASF 2.0, BSD or MIT. This license does not apply to the method by which CNTK makes distributed training easy -- one-bit SGD -- which is not licensed for commercial use. 
 
 ### <a name="dsstne">DSSTNE</a>
 
@@ -128,15 +128,15 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 ### <a name="keras">Keras</a>
 
-[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras).
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by Francois Chollet, a software engineer at Google. 
 
 ### <a name="mxnet">Mxnet</a>
 
-[Mxnet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been adopted by Amazon Web Services. Fast and flexible. 
+[Mxnet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been adopted by Amazon Web Services. Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. 
 
 ### <a name="paddle">Paddle</a>
 
-[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework created and supported by Baidu. It stands for Parallel Distributed Deep LEarning. 
+[Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework created and supported by Baidu. It stands for PArallel Distributed Deep LEarning. Paddle is the most recent major framework to be released. 
 
 ### <a name="licensing">Licensing</a>
 
