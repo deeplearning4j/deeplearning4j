@@ -242,7 +242,7 @@ public class StatsUtils {
             for (EventStats e : list) {
                 machineIDs.add(e.getMachineID());
                 jvmIDs.add(e.getJvmID());
-                uniqueTuples.add(new Tuple3<>(e.getMachineID(), e.getJvmID(), e.getThreadID()));
+                uniqueTuples.add(new Tuple3<String, String, Long>(e.getMachineID(), e.getJvmID(), e.getThreadID()));
                 earliestStart = Math.min(earliestStart, e.getStartTime());
                 latestEnd = Math.max(latestEnd, e.getStartTime() + e.getDurationMs());
             }
