@@ -125,14 +125,15 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 * (+) Handles Sparse encoding!
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
+* (-) Amazon has chosen another framework for use on AWS.
 
 ### <a name="keras">Keras</a>
 
-[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by Francois Chollet, a software engineer at Google. 
+[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
 
 ### <a name="mxnet">Mxnet</a>
 
-[Mxnet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been adopted by Amazon Web Services. Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. 
+[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. 
 
 ### <a name="paddle">Paddle</a>
 
