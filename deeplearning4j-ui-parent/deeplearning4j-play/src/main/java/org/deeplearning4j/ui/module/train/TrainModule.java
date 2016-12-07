@@ -55,6 +55,7 @@ public class TrainModule implements UIModule {
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static enum ModelType {MLN, CG, Layer};
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
@@ -492,6 +493,9 @@ public class TrainModule implements UIModule {
                     modelType = "ComputationGraph";
                 } else {
                     modelType = className;
+                    if(modelType.lastIndexOf('.') > 0){
+                        modelType = modelType.substring(modelType.lastIndexOf('.')+1);
+                    }
                 }
 
                 modelInfo[0][1] = modelType;
@@ -664,7 +668,11 @@ public class TrainModule implements UIModule {
         }
 
         //Get mean magnitudes line chart
-        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, conf.getFirst() != null);
+        ModelType mt;
+        if(conf.getFirst() != null) mt = ModelType.MLN;
+        else if(conf.getSecond() != null) mt = ModelType.CG;
+        else mt = ModelType.Layer;
+        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, mt);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
         mmRatioMap.put("iterCounts", mm.getIterations());
@@ -682,7 +690,7 @@ public class TrainModule implements UIModule {
         result.put("activations", activationMap);
 
         //Get learning rate vs. time chart for layer
-        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates, iterationCounts);
+        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates, iterationCounts, mt);
         result.put("learningRates", lrs);
 
         //Parameters histogram data
@@ -865,13 +873,13 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, boolean isMLN) {
+    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
 
         String layerName = gi.getVertexNames().get(layerIdx);
-        if (isMLN) {
+        if (modelType != ModelType.CG) {
             //Get the original name, for the index...
             layerName = gi.getOriginalVertexName().get(layerIdx);
         }
@@ -903,7 +911,13 @@ public class TrainModule implements UIModule {
                 Map<String, Double> paramMM = sp.getMeanMagnitudes(StatsType.Parameters);
                 Map<String, Double> updateMM = sp.getMeanMagnitudes(StatsType.Updates);
                 for (String s : paramMM.keySet()) {
-                    String prefix = layerName + "_";
+                    String prefix;
+                    if(modelType == ModelType.Layer){
+                        prefix = layerName;
+                    } else {
+                        prefix = layerName + "_";
+                    }
+
                     if (s.startsWith(prefix)) {
                         //Relevant parameter for this layer...
                         String layerParam = s.substring(prefix.length());
@@ -1001,7 +1015,7 @@ public class TrainModule implements UIModule {
     }
 
     private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                      List<Integer> iterationCounts) {
+                                                      List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return Collections.emptyMap();
         }
@@ -1026,9 +1040,17 @@ public class TrainModule implements UIModule {
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
                 Map<String, Double> lrs = sp.getLearningRates();
 
+                String prefix;
+                if(modelType == ModelType.Layer){
+                    prefix = layerName;
+                } else {
+                    prefix = layerName + "_";
+                }
+
                 for (String p : lrs.keySet()) {
-                    if (p.startsWith(layerName + "_")) {
-                        String layerParamName = p.substring(Math.min(p.length(), layerName.length() + 1));
+
+                    if (p.startsWith(prefix)) {
+                        String layerParamName = p.substring(Math.min(p.length(), prefix.length()));
                         if (!byName.containsKey(layerParamName)) {
                             byName.put(layerParamName, new float[size]);
                         }
@@ -1067,7 +1089,16 @@ public class TrainModule implements UIModule {
         if (layerName != null) {
             for (String s : map.keySet()) {
                 if (s.startsWith(layerName)) {
-                    String paramName = s.substring(layerName.length() + 1);
+                    String paramName;
+                    if(s.charAt(layerName.length()) == '_'){
+                        //MLN or CG parameter naming convention
+                        paramName = s.substring(layerName.length() + 1);
+                    } else {
+                        //Pretrain layer (VAE, RBM) naming convention
+                        paramName = s.substring(layerName.length());
+                    }
+
+
                     paramNames.add(paramName);
                     Histogram h = map.get(s);
                     Map<String, Object> thisHist = new HashMap<>();

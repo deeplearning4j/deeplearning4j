@@ -28,8 +28,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
     public static final String WEIGHT_KEY_SUFFIX = "W";
     public static final String BIAS_KEY_SUFFIX = "b";
-    public static final String PZX_MEAN_PREFIX = "pZXMean";
-    public static final String PZX_LOGSTD2_PREFIX = "pZXLogStd2";
+    public static final String PZX_PREFIX = "pZX";
+    public static final String PZX_MEAN_PREFIX = PZX_PREFIX + "Mean";
+    public static final String PZX_LOGSTD2_PREFIX = PZX_PREFIX + "LogStd2";
 
     /** Key for weight parameters connecting the last encoder layer and the mean values for p(z|data) */
     public static final String PZX_MEAN_W = "pZXMean" + WEIGHT_KEY_SUFFIX;
@@ -40,12 +41,13 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     /** Key for bias parameters for log(sigma^2) in p(z|data) */
     public static final String PZX_LOGSTD2_B = PZX_LOGSTD2_PREFIX + BIAS_KEY_SUFFIX;
 
+    public static final String PXZ_PREFIX = "pXZ";
     /** Key for weight parameters connecting the last decoder layer and p(data|z) (according to whatever
      *  {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution} is set for the VAE) */
-    public static final String PXZ_W = "pXZ" + WEIGHT_KEY_SUFFIX;
+    public static final String PXZ_W = PXZ_PREFIX + WEIGHT_KEY_SUFFIX;
     /** Key for bias parameters connecting the last decoder layer and p(data|z) (according to whatever
      *  {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution} is set for the VAE) */
-    public static final String PXZ_B = "pXZ" + BIAS_KEY_SUFFIX;
+    public static final String PXZ_B = PXZ_PREFIX + BIAS_KEY_SUFFIX;
 
 
 
