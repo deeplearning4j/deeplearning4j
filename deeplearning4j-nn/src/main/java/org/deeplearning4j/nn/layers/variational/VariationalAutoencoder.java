@@ -171,11 +171,11 @@ public class VariationalAutoencoder implements Layer {
                 for( int i=0; i<fwd.encoderActivations.length; i++ ){
                     activations.put("e" + i, fwd.encoderActivations[i]);
                 }
-                activations.put("z",z);
+                activations.put(VariationalAutoencoderParamInitializer.PZX_PREFIX,z);
                 for( int i=0; i<decoderActivations.length; i++ ){
                     activations.put("d" + i, decoderActivations[i]);
                 }
-                activations.put("x|z",reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
+                activations.put(VariationalAutoencoderParamInitializer.PXZ_PREFIX,reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
                 for(TrainingListener tl : trainingListeners){
                     tl.onForwardPass(this, activations);
                 }
