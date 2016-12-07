@@ -349,6 +349,10 @@ public class StatsListener implements RoutingIterationListener {
                         lrs.put(layerName + "_" + entry.getKey(), entry.getValue());
                     }
                 }
+            } else if(model instanceof Layer){
+                Layer l = (Layer)model;
+                Map<String,Double> map = l.conf().getLearningRateByParam();
+                lrs.putAll(map);
             }
             report.reportLearningRates(lrs);
         }
@@ -551,6 +555,11 @@ public class StatsListener implements RoutingIterationListener {
                 jsonConf = cg.getConfiguration().toJson();
                 numLayers = cg.getNumLayers();
                 numParams = cg.numParams();
+            } else if (model instanceof Layer ){
+                Layer l = (Layer)model;
+                jsonConf = l.conf().toJson();
+                numLayers = 1;
+                numParams = l.numParams();
             } else {
                 throw new RuntimeException("Invalid model: Expected MultiLayerNetwork or ComputationGraph. Got: "
                         + (model == null ? null : model.getClass()));
@@ -634,7 +643,6 @@ public class StatsListener implements RoutingIterationListener {
     }
 
     private static Map<String, Histogram> getHistograms(Map<String, INDArray> map, int nBins) {
-        //TODO This is temporary approach... update to native histogram code later
         Map<String, Histogram> out = new LinkedHashMap<>();
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {

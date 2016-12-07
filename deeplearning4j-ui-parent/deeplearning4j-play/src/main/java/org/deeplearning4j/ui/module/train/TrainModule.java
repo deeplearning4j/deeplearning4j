@@ -522,7 +522,7 @@ public class TrainModule implements UIModule {
     }
 
     private TrainModuleUtils.GraphInfo getGraphInfo() {
-        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
         if (conf == null) {
             return null;
         }
@@ -531,12 +531,14 @@ public class TrainModule implements UIModule {
             return TrainModuleUtils.buildGraphInfo(conf.getFirst());
         } else if (conf.getSecond() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getSecond());
+        } else if( conf.getThird() != null){
+            return TrainModuleUtils.buildGraphInfo(conf.getThird());
         } else {
             return null;
         }
     }
 
-    private Pair<MultiLayerConfiguration, ComputationGraphConfiguration> getConfig() {
+    private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig() {
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
@@ -548,10 +550,17 @@ public class TrainModule implements UIModule {
 
         if (modelClass.endsWith("MultiLayerNetwork")) {
             MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-            return new Pair<>(conf, null);
+            return new Triple<>(conf, null, null);
         } else if (modelClass.endsWith("ComputationGraph")) {
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
-            return new Pair<>(null, conf);
+            return new Triple<>(null, conf, null);
+        } else {
+            try{
+                NeuralNetConfiguration layer = NeuralNetConfiguration.mapper().readValue(config, NeuralNetConfiguration.class);
+                return new Triple<>(null, null, layer);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -580,7 +589,7 @@ public class TrainModule implements UIModule {
         Map<String, Object> result = new HashMap<>();
         result.put("updateTimestamp", lastUpdateTime);
 
-        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
         if (conf == null) {
             return ok(Json.toJson(result));
         }
@@ -783,6 +792,12 @@ public class TrainModule implements UIModule {
                         if (gv != null) {
                             layerType = gv.getClass().getSimpleName();
                         }
+                    }
+                } else if(modelClass.endsWith("VariationalAutoencoder")){
+                    layerType = gi.getVertexTypes().get(layerIdx);
+                    Map<String,String> map = gi.getVertexInfo().get(layerIdx);
+                    for(Map.Entry<String,String> entry : map.entrySet()){
+                        layerInfoRows.add(new String[]{entry.getKey(), entry.getValue()});
                     }
                 }
 
