@@ -192,15 +192,27 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 col2d.addiColumnVector(epsilon1d);
                 break;
             case PNORM:
-                INDArray out = activate(true);
-                INDArray fwdPassCol2d = out.reshape('c',miniBatch*inDepth*outH*outW,1);
                 int pnorm = layerConf().getPnorm();
-                INDArray absp2 = Transforms.pow(Transforms.abs(input, true), pnorm-2, true);
-                INDArray numerator = input.mul(absp2);
-                INDArray denom = Transforms.pow(fwdPassCol2d, pnorm-1, false);
 
-                INDArray dPNormdIn = numerator.diviColumnVector(denom);
-                INDArray epsNext = dPNormdIn.muliColumnVector(epsilon1d);
+                //First: do forward pass to get pNorm array
+                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
+                Transforms.pow(pNorm, pnorm, false);
+                pNorm = pNorm.sum(1);
+                Transforms.pow(pNorm, (1.0/pnorm), false);
+
+                //dL/dIn = dL/dOut * dOut/dIn
+                //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
+                INDArray numerator;
+                if(pnorm == 2){
+                    numerator = col2d;
+                } else {
+                    INDArray absp2 = Transforms.pow(Transforms.abs(col2d, true), pnorm-2, false);
+                    numerator = col2d.muli(absp2);
+                }
+
+                INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
@@ -241,10 +253,6 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-//        int[] pad = layerConf().getPadding();
-
-//        int outH = Convolution.outSize(inH, kernel[0], strides[0], pad[0],false);
-//        int outW = Convolution.outSize(inW, kernel[1], strides[1], pad[1], false);
         int[] pad;
         int[] outSize;
         if(convolutionMode == ConvolutionMode.Same){
@@ -289,8 +297,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
-                reduced.muli(reduced.size(1));
-                Transforms.pow(reduced, (1/pnorm), false);
+                Transforms.pow(reduced, (1.0/pnorm), false);
                 break;
             case NONE:
                 return input;
