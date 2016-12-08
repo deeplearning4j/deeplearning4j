@@ -220,6 +220,7 @@ public class CNNGradientCheckTest {
 
     @Test
     public void testCnnWithSubsampling(){
+        Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
 
         int[] minibatchSizes = {1,3};
@@ -293,9 +294,10 @@ public class CNNGradientCheckTest {
         int[] kernel = {2,2};
         int[] stride = {1,1};
         int[] padding = {0,0};
+        int pNorm = 3;
 
         String[] activations = {"sigmoid","tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
+        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for(String afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
@@ -319,6 +321,7 @@ public class CNNGradientCheckTest {
                                     .kernelSize(kernel)
                                     .stride(stride)
                                     .padding(padding)
+                                    .pnorm(pNorm)
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(3).nOut(2)
