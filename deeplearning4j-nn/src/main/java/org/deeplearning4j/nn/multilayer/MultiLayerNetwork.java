@@ -192,6 +192,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
 
             } else if(layer.isPretrainLayer()){
+                if(!iter.hasNext() && iter.resetSupported()){
+                    iter.reset();
+                }
                 log.info("Starting unsupervised training on layer " + (i + 1));
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
@@ -200,9 +203,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     for (int j = 1; j <= i; j++) {
                         layerInput = activationFromPrevLayer(j - 1, layerInput, true);
                     }
-                    if (layer instanceof BasePretrainNetwork) {
-                        layer.fit(layerInput);
-                    }
+                    layer.fit(layerInput);
                 }
             }
             // Turn off pretrain after it is complete

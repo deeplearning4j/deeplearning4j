@@ -33,7 +33,6 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
@@ -55,23 +54,47 @@ public class StatsListener implements RoutingIterationListener {
     private String sessionID;
     private String workerID;
 
-    private int iterCount = 0;
-
-    private long initTime;
-    private long lastReportTime = -1;
-    private int lastReportIteration = -1;
-    private int examplesSinceLastReport = 0;
-    private int minibatchesSinceLastReport = 0;
-
-    private long totalExamples = 0;
-    private long totalMinibatches = 0;
-
-    private String[] paramNames;
     private List<GarbageCollectorMXBean> gcBeans;
     private Map<String, Pair<Long, Long>> gcStatsAtLastReport;
 
     private Map<String, INDArray> activationsMap;
     private Map<String, INDArray> gradientsPreUpdateMap = new HashMap<>();
+
+    //NOTE: may have multiple models, due to multiple pretrain layers all using the same StatsListener
+    private List<ModelInfo> modelInfos = new ArrayList<>();
+
+    private static class ModelInfo {
+        private final Model model;
+        private long initTime;
+        private long lastReportTime = -1;
+        private int lastReportIteration = -1;
+        private int examplesSinceLastReport = 0;
+        private int minibatchesSinceLastReport = 0;
+
+        private long totalExamples = 0;
+        private long totalMinibatches = 0;
+
+        private int iterCount = 0;
+
+        private ModelInfo(Model model){
+            this.model = model;
+        }
+    }
+
+    private ModelInfo getModelInfo(Model model){
+        ModelInfo mi = null;
+        for(ModelInfo m : modelInfos){
+            if(m.model == model){
+                mi = m;
+                break;
+            }
+        }
+        if(mi == null){
+            mi = new ModelInfo(model);
+            modelInfos.add(mi);
+        }
+        return mi;
+    }
 
     /**
      * Create a StatsListener with network information collected at every iteration. Equivalent to {@link #StatsListener(StatsStorageRouter, int)}
@@ -151,9 +174,20 @@ public class StatsListener implements RoutingIterationListener {
         return sessionID;
     }
 
+    private String getSessionID(Model model){
+        if(model instanceof MultiLayerNetwork || model instanceof ComputationGraph) return sessionID;
+        if(model instanceof Layer){
+            //Keep in mind MultiLayerNetwork implements Layer also...
+            Layer l = (Layer)model;
+            int layerIdx = l.getIndex();
+            return sessionID + "_layer" + layerIdx;
+        }
+        return sessionID;   //Should never happen
+    }
+
     @Override
     public boolean invoked() {
-        return iterCount > 0;
+        return modelInfos.size() > 0;
     }
 
     @Override
@@ -173,6 +207,7 @@ public class StatsListener implements RoutingIterationListener {
 
     @Override
     public void onForwardPass(Model model, List<INDArray> activations) {
+        int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             //Assumption: we have input, layer 0, layer 1, ...
             activationsMap = new HashMap<>();
@@ -187,6 +222,7 @@ public class StatsListener implements RoutingIterationListener {
 
     @Override
     public void onForwardPass(Model model, Map<String, INDArray> activations) {
+        int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             activationsMap = activations;
         }
@@ -194,6 +230,7 @@ public class StatsListener implements RoutingIterationListener {
 
     @Override
     public void onGradientCalculation(Model model) {
+        int iterCount = getModelInfo(model).iterCount;
         if (storeGradients() && updateConfig.reportingFrequency() > 0 && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             Gradient g = model.gradient();
             gradientsPreUpdateMap.clear();
@@ -222,9 +259,11 @@ public class StatsListener implements RoutingIterationListener {
     public void iterationDone(Model model, int iteration) {
         StatsUpdateConfiguration config = updateConfig;
 
+        ModelInfo modelInfo = getModelInfo(model);
+
         long currentTime = getTime();
-        if (iterCount == 0) {
-            initTime = currentTime;
+        if (modelInfo.iterCount == 0) {
+            modelInfo.initTime = currentTime;
             doInit(model);
         }
 
@@ -232,33 +271,33 @@ public class StatsListener implements RoutingIterationListener {
             updateExamplesMinibatchesCounts(model);
         }
 
-        if (config.reportingFrequency() > 1 && (iterCount == 0 || iterCount % config.reportingFrequency() != 0)) {
-            iterCount++;
+        if (config.reportingFrequency() > 1 && (modelInfo.iterCount == 0 || modelInfo.iterCount % config.reportingFrequency() != 0)) {
+            modelInfo.iterCount++;
             return;
         }
 
         StatsReport report = new SbeStatsReport();
-        report.reportIDs(sessionID, TYPE_ID, workerID, System.currentTimeMillis()); //TODO support NTP time
+        report.reportIDs(getSessionID(model), TYPE_ID, workerID, System.currentTimeMillis()); //TODO support NTP time
 
         //--- Performance and System Stats ---
         if (config.collectPerformanceStats()) {
             //Stats to collect: total runtime, total examples, total minibatches, iterations/second, examples/second
             double examplesPerSecond;
             double minibatchesPerSecond;
-            if (iterCount == 0) {
+            if (modelInfo.iterCount == 0) {
                 //Not possible to work out perf/second: first iteration...
                 examplesPerSecond = 0.0;
                 minibatchesPerSecond = 0.0;
             } else {
-                long deltaTimeMS = currentTime - lastReportTime;
-                examplesPerSecond = 1000.0 * examplesSinceLastReport / deltaTimeMS;
-                minibatchesPerSecond = 1000.0 * minibatchesSinceLastReport / deltaTimeMS;
+                long deltaTimeMS = currentTime - modelInfo.lastReportTime;
+                examplesPerSecond = 1000.0 * modelInfo.examplesSinceLastReport / deltaTimeMS;
+                minibatchesPerSecond = 1000.0 * modelInfo.minibatchesSinceLastReport / deltaTimeMS;
             }
-            long totalRuntimeMS = currentTime - initTime;
-            report.reportPerformance(totalRuntimeMS, totalExamples, totalMinibatches, examplesPerSecond, minibatchesPerSecond);
+            long totalRuntimeMS = currentTime - modelInfo.initTime;
+            report.reportPerformance(totalRuntimeMS, modelInfo.totalExamples, modelInfo.totalMinibatches, examplesPerSecond, minibatchesPerSecond);
 
-            examplesSinceLastReport = 0;
-            minibatchesSinceLastReport = 0;
+            modelInfo.examplesSinceLastReport = 0;
+            modelInfo.minibatchesSinceLastReport = 0;
         }
 
         if (config.collectMemoryStats()) {
@@ -299,7 +338,7 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         if (config.collectGarbageCollectionStats()) {
-            if (lastReportIteration == -1 || gcBeans == null) {
+            if (modelInfo.lastReportIteration == -1 || gcBeans == null) {
                 //Haven't reported GC stats before...
                 gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
                 gcStatsAtLastReport = new HashMap<>();
@@ -448,15 +487,15 @@ public class StatsListener implements RoutingIterationListener {
 
         long endTime = getTime();
         report.reportStatsCollectionDurationMS((int) (endTime - currentTime));    //Amount of time required to alculate all histograms, means etc.
-        lastReportTime = currentTime;
-        lastReportIteration = iterCount;
-        report.reportIterationCount(iterCount);
+        modelInfo.lastReportTime = currentTime;
+        modelInfo.lastReportIteration = modelInfo.iterCount;
+        report.reportIterationCount(modelInfo.iterCount);
 
         this.router.putUpdate(report);
 
         //TODO error handling
 
-        iterCount++;
+        modelInfo.iterCount++;
         activationsMap = null;
     }
 
@@ -468,7 +507,7 @@ public class StatsListener implements RoutingIterationListener {
     private void doInit(Model model) {
         long initTime = System.currentTimeMillis(); //TODO support NTP
         StatsInitializationReport initReport = new SbeStatsInitializationReport();
-        initReport.reportIDs(sessionID, TYPE_ID, workerID, initTime);
+        initReport.reportIDs(getSessionID(model), TYPE_ID, workerID, initTime);
 
         if (initConfig.collectSoftwareInfo()) {
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
@@ -576,11 +615,11 @@ public class StatsListener implements RoutingIterationListener {
         }
 
         StorageMetaData meta = new SbeStorageMetaData(
-                initTime, sessionID, TYPE_ID, workerID,
+                initTime, getSessionID(model), TYPE_ID, workerID,
                 SbeStatsInitializationReport.class, SbeStatsReport.class);
 
         List<String> paramNames = new ArrayList<>(model.paramTable().keySet());
-        this.paramNames = paramNames.toArray(new String[paramNames.size()]);
+//        this.paramNames = paramNames.toArray(new String[paramNames.size()]);
 
         router.putStorageMetaData(meta);
         router.putStaticInfo(initReport);   //TODO error handling
@@ -605,6 +644,7 @@ public class StatsListener implements RoutingIterationListener {
     }
 
     private void updateExamplesMinibatchesCounts(Model model) {
+        ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
             examplesThisMinibatch = ((MultiLayerNetwork) model).getInput().size(0);
@@ -613,10 +653,10 @@ public class StatsListener implements RoutingIterationListener {
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }
-        examplesSinceLastReport += examplesThisMinibatch;
-        totalExamples += examplesThisMinibatch;
-        minibatchesSinceLastReport++;
-        totalMinibatches++;
+        modelInfo.examplesSinceLastReport += examplesThisMinibatch;
+        modelInfo.totalExamples += examplesThisMinibatch;
+        modelInfo.minibatchesSinceLastReport++;
+        modelInfo.totalMinibatches++;
     }
 
     private static Map<String, Double> calculateSummaryStats(Map<String, INDArray> source, StatType statType) {
