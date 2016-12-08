@@ -18,6 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Slf4j
+@Data
 public class Configuration implements Serializable {
     private int port;
     private int numberOfShards;

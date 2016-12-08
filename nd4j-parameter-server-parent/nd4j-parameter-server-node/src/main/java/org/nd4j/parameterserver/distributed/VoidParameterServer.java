@@ -6,6 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -47,6 +50,7 @@ public class VoidParameterServer {
     /**
      * This method starts ParameterServer instance
      *
+     * PLEASE NOTE: This method is blocking for first caller only
      */
     public void init(@NonNull Configuration configuration){
         /**
@@ -67,16 +71,59 @@ public class VoidParameterServer {
             if (initLocker.compareAndSet(false, true)) {
                 this.configuration = configuration;
 
-                // we need to start coordination channel, to start election process
+            // first we need to check, if our current IP matches designated shards or backup
+            nodeRole = getRole(configuration, getLocalAddresses());
 
+            // role-dependent additional initialization
+            switch (nodeRole) {
+                case SHARD: {
+                    log.info("Initializing as Shard...");
+                    break;
+                }
+                case BACKUP: {
+                    log.info("Initializing as Backup...");
 
-                // after coordination channel is set, we start decision process, which role this node going to serve
+                    break;
+                }
+                case MASTER: {
+                    log.info("Initializing as Master...");
+
+                    break;
+                }
+                case CLIENT:
+                default: {
+                    log.info("Initializing as Client...");
+                    break;
+                }
+            }
 
                 initFinished.set(true);
             }
         }
     }
 
+    /**
+     * This method checks for designated role, according to local IP addresses and configuration passed into method
+     *
+     * @param configuration
+     * @param localIPs
+     * @return
+     */
+    protected NodeRole getRole(@NonNull Configuration configuration, @NonNull Collection<String> localIPs) {
+        NodeRole result = NodeRole.CLIENT;
+
+        for (String ip: localIPs) {
+            if (configuration.getShardAddresses().contains(ip))
+                return NodeRole.SHARD;
+        }
+
+        for (String ip: localIPs) {
+            if (configuration.getBackupAddresses().contains(ip))
+                return NodeRole.BACKUP;
+        }
+
+        return result;
+    }
 
     /**
      * This method initiates shutdown sequence for this instance.
@@ -89,6 +136,39 @@ public class VoidParameterServer {
          */
         if (initLocker.get() && shutdownLocker.compareAndSet(false, true)) {
             // do shutdown
+        }
+    }
+
+    /**
+     * This method returns set of local IP addresses available in system.
+     *
+     * PLEASE NOTE: loopback, disabled interfaces, IPv6 addresses are ignored here.
+     *
+     * @return
+     */
+    protected static Set<String> getLocalAddresses() {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+
+            Set<String> result = new HashSet<>();
+
+            for (NetworkInterface networkInterface : interfaces) {
+                if (networkInterface.isLoopback() || !networkInterface.isUp())
+                    continue;
+
+                for(InterfaceAddress address: networkInterface.getInterfaceAddresses()) {
+                    String addr = address.getAddress().getHostAddress();
+
+                    if (addr == null || addr.isEmpty() || addr.contains(":"))
+                        continue;
+
+                    result.add(addr);
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
