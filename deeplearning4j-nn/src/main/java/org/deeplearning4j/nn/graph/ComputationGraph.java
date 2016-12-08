@@ -1685,10 +1685,14 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
         //Get all parameters from all layers
         Map<String, INDArray> allParams = new LinkedHashMap<>();
         for (Layer layer : layers) {
-            Map<String, INDArray> paramMap = layer.paramTable();
+            Map<String, INDArray> paramMap = layer.paramTable(backpropParamsOnly);
             for (Map.Entry<String, INDArray> entry : paramMap.entrySet()) {
                 String newKey = layer.conf().getLayer().getLayerName() + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());
