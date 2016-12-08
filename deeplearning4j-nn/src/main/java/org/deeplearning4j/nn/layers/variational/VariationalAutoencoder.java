@@ -500,6 +500,17 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
+        Map<String,INDArray> map = new LinkedHashMap<>();
+        for(Map.Entry<String,INDArray> e : params.entrySet()){
+            if(isPretrainParam(e.getKey())){
+                map.put(e.getKey(), e.getValue());
+            }
+        }
+        return map;
+    }
+
+    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         this.params = paramTable;
     }

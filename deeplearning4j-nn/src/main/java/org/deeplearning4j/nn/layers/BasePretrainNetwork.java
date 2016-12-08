@@ -30,10 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -106,7 +103,15 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         score /= getInputMiniBatchSize();
 
         this.score = score;
+    }
 
+    @Override
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
+        if(!backpropParamsOnly) return params;
+        Map<String,INDArray> map = new LinkedHashMap<>();
+        map.put(PretrainParamInitializer.WEIGHT_KEY, params.get(PretrainParamInitializer.WEIGHT_KEY));
+        map.put(PretrainParamInitializer.BIAS_KEY, params.get(PretrainParamInitializer.BIAS_KEY));
+        return map;
     }
 
     public INDArray params() {

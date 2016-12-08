@@ -922,6 +922,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
+            return paramTable();
+        }
+
+        @Override
         public void setParamTable(Map<String, INDArray> paramTable) { throw new UnsupportedOperationException(); }
 
         @Override
