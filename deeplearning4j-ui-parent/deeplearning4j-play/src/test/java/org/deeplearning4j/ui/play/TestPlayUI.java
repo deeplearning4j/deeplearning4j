@@ -92,15 +92,27 @@ public class TestPlayUI {
                         .activation("leakyrelu")
                         .updater(Updater.SGD)
                         .build())
-                .pretrain(true).backprop(false).build();
+                .layer(1, new VariationalAutoencoder.Builder()
+                        .nIn(3).nOut(3)
+                        .encoderLayerSizes(7)
+                        .decoderLayerSizes(8)
+                        .weightInit(WeightInit.XAVIER)
+                        .pzxActivationFunction("identity")
+                        .reconstructionDistribution(new GaussianReconstructionDistribution())
+                        .activation("leakyrelu")
+                        .updater(Updater.SGD)
+                        .build())
+                .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
+                .pretrain(true).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
+//        net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 50; i++) {
             net.fit(iter);
             Thread.sleep(100);
         }
