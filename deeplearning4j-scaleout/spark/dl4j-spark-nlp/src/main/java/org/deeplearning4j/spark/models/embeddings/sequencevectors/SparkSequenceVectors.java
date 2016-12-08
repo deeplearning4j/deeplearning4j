@@ -20,6 +20,8 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.*;
 import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.NetworkInformation;
+import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 
 import java.util.List;
 import java.util.Set;
@@ -113,6 +115,12 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         Counter<Long> finalCounter;
         long numberOfSequences = 0;
 
+        Configuration paramServerConfiguration = Configuration.builder()
+                .faultToleranceStrategy(FaultToleranceStrategy.NONE)
+                .numberOfShards(2)
+                .port(40123)
+                .build();
+
         if (isAutoDiscoveryMode) {
             elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
 
@@ -163,10 +171,10 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         // TODO: right at this place we should launch one more map, that will update original RDD with huffman encoding
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
 
-
+        Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
         // proceed to training
-        TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast);
+        TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
 
         if (configuration != null)
             for (int e = 0; e < configuration.getEpochs(); e++)
