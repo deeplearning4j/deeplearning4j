@@ -102,8 +102,11 @@ public class TestPlayUI {
                         .activation("leakyrelu")
                         .updater(Updater.SGD)
                         .build())
+//                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+//                .layer(1, new DenseLayer.Builder().nIn(3).nOut(3).build())
                 .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
-                .pretrain(true).backprop(true).build();
+//                .pretrain(true).backprop(true).build();
+                .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

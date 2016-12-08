@@ -333,6 +333,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    @Override
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
         return params;
     }
 
