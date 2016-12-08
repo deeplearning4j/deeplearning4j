@@ -47,7 +47,6 @@ public class VoidParameterServer {
     /**
      * This method starts ParameterServer instance
      *
-     * PLEASE NOTE: This method is blocking for first caller only
      */
     public void init(@NonNull Configuration configuration){
         /**
@@ -61,15 +60,20 @@ public class VoidParameterServer {
          *      wait for incoming task queries (according to role
          *
          */
-        if (initLocker.compareAndSet(false, true)) {
-            this.configuration = configuration;
+        if (initFinished.get())
+            return;
 
-            // we need to start coordination channel, to start election process
+        synchronized (this) {
+            if (initLocker.compareAndSet(false, true)) {
+                this.configuration = configuration;
+
+                // we need to start coordination channel, to start election process
 
 
-            // after coordination channel is set, we start decision process, which role this node going to serve
+                // after coordination channel is set, we start decision process, which role this node going to serve
 
-
+                initFinished.set(true);
+            }
         }
     }
 
