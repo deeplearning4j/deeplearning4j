@@ -52,7 +52,7 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
-     * FFit the model with a MultiDataSetIterator to calculate means and standard deviations with
+     * Fit the model with a MultiDataSetIterator to calculate means and standard deviations with
      *
      * @param iterator
      */
@@ -126,16 +126,33 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     public void revert(@NonNull MultiDataSet data) {
         assertIsFit();
 
-        INDArray[] inputs = data.getFeatures();
-        for (int i = 0; i < inputs.length; i++) {
-            revert(inputs[i], featureStats.get(i));
-        }
+        revertFeatures(data.getFeatures());
         if (fitLabels) {
-            INDArray[] outputs = data.getLabels();
-            for (int i = 0; i < outputs.length; i++) {
-                revert(outputs[i], labelStats.get(i));
-            }
+            revertLabels(data.getLabels());
         }
+    }
+
+    public void revertFeatures(@NonNull INDArray[] features) {
+        for (int i = 0; i < features.length; i ++) {
+            revertFeatures(features[i], i);
+        }
+    }
+
+    public void revertFeatures(@NonNull INDArray features, int input) {
+        revert(features, featureStats.get(input));
+    }
+
+    public void revertLabels(@NonNull INDArray[] labels) {
+        for (int i = 0; i < labels.length; i ++) {
+            revertLabels(labels[i], i);
+        }
+    }
+
+    public void revertLabels(@NonNull INDArray labels, int output) {
+        if (!fitLabels) {
+            return;
+        }
+        revert(labels, labelStats.get(output));
     }
 
     public int numInputs() {
