@@ -260,6 +260,7 @@ public class StatsListener implements RoutingIterationListener {
         StatsUpdateConfiguration config = updateConfig;
 
         ModelInfo modelInfo = getModelInfo(model);
+        boolean backpropParamsOnly = backpropParamsOnly(model);
 
         long currentTime = getTime();
         if (modelInfo.iterCount == 0) {
@@ -373,7 +374,9 @@ public class StatsListener implements RoutingIterationListener {
                 for (Layer l : ((MultiLayerNetwork) model).getLayers()) {
                     NeuralNetConfiguration conf = l.conf();
                     Map<String, Double> layerLrs = conf.getLearningRateByParam();
+                    Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
+                        if(!backpropParams.contains(entry.getKey())) continue;  //Skip pretrain params
                         lrs.put(layerIdx + "_" + entry.getKey(), entry.getValue());
                     }
                     layerIdx++;
@@ -384,7 +387,9 @@ public class StatsListener implements RoutingIterationListener {
                     NeuralNetConfiguration conf = l.conf();
                     Map<String, Double> layerLrs = conf.getLearningRateByParam();
                     String layerName = conf.getLayer().getLayerName();
+                    Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
+                        if(!backpropParams.contains(entry.getKey())) continue;  //Skip pretrain params
                         lrs.put(layerName + "_" + entry.getKey(), entry.getValue());
                     }
                 }
@@ -400,7 +405,7 @@ public class StatsListener implements RoutingIterationListener {
         //--- Histograms ---
 
         if (config.collectHistograms(StatsType.Parameters)) {
-            Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(), config.numHistogramBins(StatsType.Parameters));
+            Map<String, Histogram> paramHistograms = getHistograms(model.paramTable(backpropParamsOnly), config.numHistogramBins(StatsType.Parameters));
             report.reportHistograms(StatsType.Parameters, paramHistograms);
         }
 
@@ -423,7 +428,7 @@ public class StatsListener implements RoutingIterationListener {
         //--- Summary Stats: Mean, Variance, Mean Magnitudes ---
 
         if (config.collectMean(StatsType.Parameters)) {
-            Map<String, Double> meanParams = calculateSummaryStats(model.paramTable(), StatType.Mean);
+            Map<String, Double> meanParams = calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Mean);
             report.reportMean(StatsType.Parameters, meanParams);
         }
 
@@ -444,7 +449,7 @@ public class StatsListener implements RoutingIterationListener {
 
 
         if (config.collectStdev(StatsType.Parameters)) {
-            Map<String, Double> stdevParams = calculateSummaryStats(model.paramTable(), StatType.Stdev);
+            Map<String, Double> stdevParams = calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.Stdev);
             report.reportStdev(StatsType.Parameters, stdevParams);
         }
 
@@ -465,7 +470,7 @@ public class StatsListener implements RoutingIterationListener {
 
 
         if (config.collectMeanMagnitudes(StatsType.Parameters)) {
-            Map<String, Double> meanMagParams = calculateSummaryStats(model.paramTable(), StatType.MeanMagnitude);
+            Map<String, Double> meanMagParams = calculateSummaryStats(model.paramTable(backpropParamsOnly), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Parameters, meanMagParams);
         }
 
@@ -505,6 +510,7 @@ public class StatsListener implements RoutingIterationListener {
     }
 
     private void doInit(Model model) {
+        boolean backpropParamsOnly = backpropParamsOnly(model);
         long initTime = System.currentTimeMillis(); //TODO support NTP
         StatsInitializationReport initReport = new SbeStatsInitializationReport();
         initReport.reportIDs(getSessionID(model), TYPE_ID, workerID, initTime);
@@ -604,7 +610,7 @@ public class StatsListener implements RoutingIterationListener {
                         + (model == null ? null : model.getClass()));
             }
 
-            Map<String, INDArray> paramMap = model.paramTable();
+            Map<String, INDArray> paramMap = model.paramTable(backpropParamsOnly);
             String[] paramNames = new String[paramMap.size()];
             int i = 0;
             for (String s : paramMap.keySet()) {      //Assuming sensible iteration order - LinkedHashMaps are used in MLN/CG for example
@@ -617,9 +623,6 @@ public class StatsListener implements RoutingIterationListener {
         StorageMetaData meta = new SbeStorageMetaData(
                 initTime, getSessionID(model), TYPE_ID, workerID,
                 SbeStatsInitializationReport.class, SbeStatsReport.class);
-
-        List<String> paramNames = new ArrayList<>(model.paramTable().keySet());
-//        this.paramNames = paramNames.toArray(new String[paramNames.size()]);
 
         router.putStorageMetaData(meta);
         router.putStaticInfo(initReport);   //TODO error handling
@@ -657,6 +660,12 @@ public class StatsListener implements RoutingIterationListener {
         modelInfo.totalExamples += examplesThisMinibatch;
         modelInfo.minibatchesSinceLastReport++;
         modelInfo.totalMinibatches++;
+    }
+
+    private boolean backpropParamsOnly(Model model){
+        //For pretrain layers (VAE, RBM) we *do* want pretrain params also; for MLN and CG we only want backprop params
+        // as we only have backprop gradients
+        return model instanceof MultiLayerNetwork || model instanceof ComputationGraph;
     }
 
     private static Map<String, Double> calculateSummaryStats(Map<String, INDArray> source, StatType statType) {
