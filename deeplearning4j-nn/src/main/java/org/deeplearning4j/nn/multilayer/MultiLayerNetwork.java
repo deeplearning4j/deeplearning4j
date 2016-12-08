@@ -308,7 +308,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //Get all parameters from all layers
         Map<String,INDArray> allParams = new LinkedHashMap<>();
         for( int i=0; i<layers.length; i++ ){
-            Map<String,INDArray> paramMap = layers[i].paramTable();
+            Map<String,INDArray> paramMap = layers[i].paramTable(backpropParamsOnly);
             for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
                 String newKey = i + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());
