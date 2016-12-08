@@ -230,6 +230,7 @@ public class CNNGradientCheckTest {
         int[] kernel = {2,2};
         int[] stride = {1,1};
         int[] padding = {0,0};
+        int pnorm = 2;
 
         String[] activations = {"sigmoid","tanh"};
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
@@ -256,6 +257,7 @@ public class CNNGradientCheckTest {
                                     .kernelSize(kernel)
                                     .stride(stride)
                                     .padding(padding)
+                                    .pnorm(pnorm)
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
                                     .nIn(3 * 3 * 3)
