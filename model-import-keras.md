@@ -41,7 +41,7 @@ In DeepLEarning4J you wouldimport both the model config and the weights, using m
 
 Below is a video tutorial demonstrating working code to load a Keras model into DeepLearning4J and validating the working network. Instructor Tom Hanlon provides an overview of a simple classifier over Iris data built in Keras with a Theano backend, and exported and loaded into DeepLearning4J:
 
-<iframe width="560" height="315" src="https://www.youtube.com/watch?v=bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
 ## Why Keras?
 
