@@ -45,6 +45,7 @@ public interface OpExecutioner {
 
     enum ProfilingMode {
         DISABLED,
+        NAN_PANIC,
         OPERATIONS,
         METHODS,
         ALL

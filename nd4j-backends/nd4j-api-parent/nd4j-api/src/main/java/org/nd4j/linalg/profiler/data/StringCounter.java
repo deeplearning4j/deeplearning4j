@@ -60,6 +60,10 @@ public class StringCounter {
         for (String key: sortedCounter.keySet()) {
             long currentCnt = sortedCounter.get(key).get();
             long totalCnt = totals.get();
+
+            if (totalCnt == 0)
+                continue;
+
             float perc = currentCnt * 100 / totalCnt;
 
             builder.append(key).append("  >>> [").append(currentCnt).append("]").append(" perc: [").append(perc).append("]").append("\n");

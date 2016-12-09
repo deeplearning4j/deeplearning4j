@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.data.StackAggregator;
@@ -251,6 +252,34 @@ public class OperationProfilerTests {
         a.mmul(b);
 
         OpProfiler.getInstance().printOutDashboard();
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testNaNPanic1() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+
+        INDArray a = Nd4j.create(new float[]{1f, 2f, 3f, Float.NaN});
+
+        a.muli(3f);
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testNaNPanic2() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+
+        INDArray a = Nd4j.create(new float[]{1f, 2f, 3f, Float.POSITIVE_INFINITY});
+
+        a.muli(3f);
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testNaNPanic3() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+
+        INDArray a = Nd4j.create(new float[]{1f, 2f, 3f, Float.NEGATIVE_INFINITY});
+
+        a.muli(3f);
     }
 
 }

@@ -28,12 +28,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -470,6 +472,22 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 break;
             case OPERATIONS:
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case NAN_PANIC: {
+                    if (op.z() != null && !(op instanceof MatchCondition)) {
+                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
+                        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
+
+                        condition = new MatchCondition(op.z(), Conditions.isInfinite());
+                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
+                    }
+                }
                 break;
             case DISABLED:
             default:
