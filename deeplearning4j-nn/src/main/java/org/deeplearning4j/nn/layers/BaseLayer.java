@@ -108,9 +108,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setListeners(IterationListener... listeners) {
-        this.iterationListeners = new ArrayList<>();
-        for(IterationListener l : listeners)
-            iterationListeners.add(l);
+        setListeners(Arrays.asList(listeners));
     }
 
     @Override

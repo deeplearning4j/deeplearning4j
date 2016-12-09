@@ -670,6 +670,9 @@ public class StatsListener implements RoutingIterationListener {
 
     private static Map<String, Double> calculateSummaryStats(Map<String, INDArray> source, StatType statType) {
         Map<String, Double> out = new LinkedHashMap<>();
+
+        if(source == null) return out;
+
         for (Map.Entry<String, INDArray> entry : source.entrySet()) {
             String name = entry.getKey();
             double value;
@@ -693,6 +696,8 @@ public class StatsListener implements RoutingIterationListener {
 
     private static Map<String, Histogram> getHistograms(Map<String, INDArray> map, int nBins) {
         Map<String, Histogram> out = new LinkedHashMap<>();
+
+        if(map == null) return out;
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
 
