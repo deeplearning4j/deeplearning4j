@@ -18,6 +18,7 @@ package org.datavec.image.transform;
 import java.util.Random;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.CanvasFrame;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
@@ -128,7 +129,7 @@ public class TestImageTransform {
         assertEquals(null, transform.transform(null));
     }
 
-    @Test
+    @Ignore @Test
     public void testFilterImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 4);
         Frame frame = writable.getFrame();
