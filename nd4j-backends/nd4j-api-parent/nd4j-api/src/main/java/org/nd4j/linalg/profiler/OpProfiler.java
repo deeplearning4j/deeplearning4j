@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
+
 /**
  * This class is suited for execution statistics gathering on Op/Array level: number of sequential ops executed on the same data
  *
@@ -105,6 +107,7 @@ public class OpProfiler {
         mixedOrderAggregator.reset();
 
         blasAggregator.reset();
+        blasOrderCounter.reset();
 
         orderCounter.reset();
     }
@@ -355,6 +358,11 @@ public class OpProfiler {
         System.out.println();
         logger.info("--- Blas GEMM odrders count: ---");
         System.out.println(blasOrderCounter.asString());
+        System.out.println();
+        logger.info("--- BLAS access stack trace: ---");
+        System.out.println("Unique entries: " + blasAggregator.getUniqueBranchesNumber());
+        blasAggregator.renderTree(false);
+        System.out.println();
 
     }
 
@@ -435,32 +443,52 @@ public class OpProfiler {
     }
 
     public void processBlasCall(boolean isGemm, INDArray... operands) {
-        /**
-         * by default we only care about strides.
-         */
+
         if (isGemm) {
             /**
              * but for gemm we also care about equal orders case: FF, CC
              */
             String key = processOrders(operands);
             blasOrderCounter.incrementCount(key);
-        }
 
-        PenaltyCause[] causes = processOperands(operands);
-        for (PenaltyCause cause: causes) {
-            switch (cause) {
-                case NON_EWS_ACCESS:
-                    nonEwsAggregator.incrementCount();
+            PenaltyCause[] causes = processOperands(operands);
+            for (PenaltyCause cause : causes) {
+                switch (cause) {
+                    case NON_EWS_ACCESS:
+                    case STRIDED_ACCESS:
+                    case NONE: {
+                        blasAggregator.incrementCount();
+                    }
                     break;
-                case STRIDED_ACCESS:
-                    stridedAggregator.incrementCount();
-                    break;
-                case MIXED_ORDER:
-                    mixedOrderAggregator.incrementCount();
-                    break;
-                case NONE:
-                default:
-                    break;
+                    case MIXED_ORDER: // we wo nothing for gemm in this case
+                    default:
+                        break;
+                }
+            }
+
+        } else {
+            /**
+             *
+             * by default we only care about strides.
+             *
+             */
+
+            PenaltyCause[] causes = processOperands(operands);
+            for (PenaltyCause cause : causes) {
+                switch (cause) {
+                    case NON_EWS_ACCESS:
+                        nonEwsAggregator.incrementCount();
+                        break;
+                    case STRIDED_ACCESS:
+                        stridedAggregator.incrementCount();
+                        break;
+                    case MIXED_ORDER:
+                        mixedOrderAggregator.incrementCount();
+                        break;
+                    case NONE:
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -487,7 +515,7 @@ public class OpProfiler {
 
 
         if (penalties.isEmpty())
-            penalties.add(PenaltyCause.NONE);
+            penalties.add(NONE);
 
         return penalties.toArray(new PenaltyCause[0]);
     }
@@ -510,7 +538,7 @@ public class OpProfiler {
         }
 
         if (causes.isEmpty())
-            causes.add(PenaltyCause.NONE);
+            causes.add(NONE);
 
         return causes.toArray(new PenaltyCause[0]);
     }
@@ -525,11 +553,11 @@ public class OpProfiler {
             PenaltyCause causeXY[] = processOperands(x, y);
             PenaltyCause causeXZ[] = processOperands(x, z);
 
-            if ((causeXY.length == 1 && causeXY[0] == PenaltyCause.NONE) && (causeXZ.length == 1 && causeXZ[0] == PenaltyCause.NONE)) {
+            if ((causeXY.length == 1 && causeXY[0] == NONE) && (causeXZ.length == 1 && causeXZ[0] == NONE)) {
                 return causeXY;
-            } else if (causeXY.length == 1 && causeXY[0] == PenaltyCause.NONE) {
+            } else if (causeXY.length == 1 && causeXY[0] == NONE) {
                 return causeXZ;
-            } else if (causeXZ.length == 1 && causeXZ[0] == PenaltyCause.NONE) {
+            } else if (causeXZ.length == 1 && causeXZ[0] == NONE) {
                 return causeXY;
             } else return joinDistinct(causeXY, causeXZ);
         }
@@ -558,7 +586,7 @@ public class OpProfiler {
      */
     public PenaltyCause[] processOperands(INDArray... operands) {
         if (operands == null)
-            return new PenaltyCause[]{PenaltyCause.NONE};
+            return new PenaltyCause[]{NONE};
 
         List<PenaltyCause> causes = new ArrayList<>();
         for (int e = 0; e < operands.length - 1; e++) {
@@ -568,12 +596,12 @@ public class OpProfiler {
             PenaltyCause lc[] = processOperands(operands[e], operands[e+1]);
 
             for (PenaltyCause cause: lc) {
-                if (cause != PenaltyCause.NONE && !causes.contains(cause))
+                if (cause != NONE && !causes.contains(cause))
                     causes.add(cause);
             }
         }
         if (causes.isEmpty())
-            causes.add(PenaltyCause.NONE);
+            causes.add(NONE);
 
         return causes.toArray(new PenaltyCause[0]);
     }

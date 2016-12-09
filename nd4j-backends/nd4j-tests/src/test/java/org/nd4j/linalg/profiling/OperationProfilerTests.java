@@ -240,4 +240,17 @@ public class OperationProfilerTests {
         assertEquals("C x C x C", ret);
     }
 
+
+    @Test
+    public void testBlasFF() throws Exception {
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
+
+        INDArray a = Nd4j.create(10, 10).reshape('f',10,10);
+        INDArray b = Nd4j.create(10, 10).reshape('f',10,10);
+
+        a.mmul(b);
+
+        OpProfiler.getInstance().printOutDashboard();
+    }
+
 }
