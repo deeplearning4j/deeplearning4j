@@ -1228,7 +1228,7 @@ public class ComputationGraph implements Serializable, Model {
     public double calcL2() {
         double l2 = 0.0;
         for (Layer l : layers) {
-            l2 += l.calcL2();
+            l2 += l.calcL2(true);
         }
         return l2;
     }
@@ -1240,7 +1240,7 @@ public class ComputationGraph implements Serializable, Model {
     public double calcL1() {
         double l1 = 0.0;
         for (Layer l : layers) {
-            l1 += l.calcL1();
+            l1 += l.calcL1(true);
         }
         return l1;
     }
@@ -1685,10 +1685,14 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
         //Get all parameters from all layers
         Map<String, INDArray> allParams = new LinkedHashMap<>();
         for (Layer layer : layers) {
-            Map<String, INDArray> paramMap = layer.paramTable();
+            Map<String, INDArray> paramMap = layer.paramTable(backpropParamsOnly);
             for (Map.Entry<String, INDArray> entry : paramMap.entrySet()) {
                 String newKey = layer.conf().getLayer().getLayerName() + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());

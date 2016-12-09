@@ -279,6 +279,11 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
+    public Map<String,INDArray> paramTable(boolean backprapParamsOnly){
+        return null;
+    }
+
+    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
 
     }

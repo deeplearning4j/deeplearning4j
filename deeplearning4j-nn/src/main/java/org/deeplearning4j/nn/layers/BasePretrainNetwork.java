@@ -25,15 +25,14 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -45,6 +44,8 @@ import java.util.Set;
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
         extends BaseLayer<LayerConfT> {
 
+    protected Collection<TrainingListener> trainingListeners = null;
+
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -53,6 +54,28 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         super(conf, input);
     }
 
+
+    @Override
+    public void setListeners(Collection<IterationListener> listeners) {
+        if (iterationListeners == null) iterationListeners = new ArrayList<>();
+        else iterationListeners.clear();
+        if (trainingListeners == null) trainingListeners = new ArrayList<>();
+        else trainingListeners.clear();
+
+        if(listeners != null && listeners.size() > 0) {
+            iterationListeners.addAll(listeners);
+            for (IterationListener il : listeners) {
+                if (il instanceof TrainingListener) {
+                    trainingListeners.add((TrainingListener) il);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        setListeners(Arrays.asList(listeners));
+    }
 
     /**
      * Corrupts the given input by doing a binomial sampling
@@ -102,11 +125,19 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
-        score += calcL1() + calcL2();
+        score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
 
         this.score = score;
+    }
 
+    @Override
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
+        if(!backpropParamsOnly) return params;
+        Map<String,INDArray> map = new LinkedHashMap<>();
+        map.put(PretrainParamInitializer.WEIGHT_KEY, params.get(PretrainParamInitializer.WEIGHT_KEY));
+        map.put(PretrainParamInitializer.BIAS_KEY, params.get(PretrainParamInitializer.BIAS_KEY));
+        return map;
     }
 
     public INDArray params() {
@@ -156,6 +187,29 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         return result;
+    }
+
+
+    @Override
+    public double calcL2(boolean backpropParamsOnly) {
+        if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+        double l2Sum = super.calcL2(true);
+        if(backpropParamsOnly) return l2Sum;
+        if(conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0){
+            double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
+            l2Sum += 0.5 * conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
+        }
+        return l2Sum;
+    }
+
+    @Override
+    public double calcL1(boolean backpropParamsOnly) {
+        if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
+        double l1Sum = super.calcL1(true);
+        if(conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0){
+            l1Sum += conf.getLayer().getL1() * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
+        }
+        return l1Sum;
     }
 
 }
