@@ -19,13 +19,15 @@ public class LayerConfiguration {
     public static final String KERAS_MODEL_PROPERTY_CLASS = "keras_class";
 
     /* Keras layer types. */
+    public static final String KERAS_LAYER_TYPE_ACTIVATION = "Activation";
+    public static final String KERAS_LAYER_TYPE_DROPOUT = "Dropout";
     public static final String KERAS_LAYER_TYPE_DENSE = "Dense";
     public static final String KERAS_LAYER_TYPE_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense";
     public static final String KERAS_LAYER_TYPE_LSTM = "LSTM";
     public static final String KERAS_LAYER_TYPE_CONVOLUTION_2D = "Convolution2D";
     public static final String KERAS_LAYER_TYPE_MAX_POOLING_2D = "MaxPooling2D";
-    public static final String KERAS_LAYER_TYPE_FLATTEN = "Flatten";
     public static final String KERAS_LAYER_TYPE_AVERAGE_POOLING_2D = "AveragePooling2D";
+    public static final String KERAS_LAYER_TYPE_FLATTEN = "Flatten";
 
     /* Keras layer properties. */
     public static final String KERAS_LAYER_PROPERTY_NAME = "name";
@@ -100,6 +102,12 @@ public class LayerConfiguration {
     public static Layer buildLayer(String kerasLayerClass, Map<String,Object> kerasConfig, boolean isOutput) {
         Layer layer = null;
         switch (kerasLayerClass) {
+            case KERAS_LAYER_TYPE_ACTIVATION:
+                layer = buildActivationLayer(kerasConfig);
+                break;
+            case KERAS_LAYER_TYPE_DROPOUT:
+                layer = buildDropoutLayer(kerasConfig);
+                break;
             case KERAS_LAYER_TYPE_DENSE:
             case KERAS_LAYER_TYPE_TIME_DISTRIBUTED_DENSE:
                 layer = buildDenseLayer(kerasConfig);
@@ -274,6 +282,34 @@ public class LayerConfiguration {
                 throw new UnsupportedOperationException("Bias regularization not implemented");
         }
         return builder;
+    }
+
+    /**
+     * Configure DL4J ActivationLayer from a Keras Activation configuration.
+     *
+     * @param kerasConfig      Map containing Keras Activation layer properties
+     * @return                 DL4J ActivationLayer configuration
+     * @throws UnsupportedOperationException
+     * @see ActivationLayer
+     */
+    public static ActivationLayer buildActivationLayer(Map<String, Object> kerasConfig) {
+        ActivationLayer.Builder builder = new ActivationLayer.Builder();
+        finishLayerConfig(builder, kerasConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J DropoutLayer from a Keras Dropout configuration.
+     *
+     * @param kerasConfig      Map containing Keras Dropout layer properties
+     * @return                 DL4J DropoutLayer configuration
+     * @throws UnsupportedOperationException
+     * @see DropoutLayer
+     */
+    public static DropoutLayer buildDropoutLayer(Map<String, Object> kerasConfig) {
+        DropoutLayer.Builder builder = new DropoutLayer.Builder();
+        finishLayerConfig(builder, kerasConfig);
+        return builder.build();
     }
 
     /**
