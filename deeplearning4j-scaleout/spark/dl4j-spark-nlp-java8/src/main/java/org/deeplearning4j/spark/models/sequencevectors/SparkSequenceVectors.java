@@ -1,6 +1,5 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors;
+package org.deeplearning4j.spark.models.sequencevectors;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
@@ -17,9 +16,9 @@ import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.*;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.ExtraCounter;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.NetworkInformation;
+import org.deeplearning4j.spark.models.sequencevectors.functions.*;
+import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
+import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 

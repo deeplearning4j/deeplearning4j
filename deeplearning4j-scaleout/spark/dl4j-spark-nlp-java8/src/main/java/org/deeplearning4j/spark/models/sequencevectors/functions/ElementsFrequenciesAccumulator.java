@@ -1,6 +1,5 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors.functions;
+package org.deeplearning4j.spark.models.sequencevectors.functions;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.AccumulatorParam;
 import org.deeplearning4j.berkeley.Counter;
 

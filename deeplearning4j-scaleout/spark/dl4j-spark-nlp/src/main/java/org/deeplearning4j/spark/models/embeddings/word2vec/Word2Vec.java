@@ -58,7 +58,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-@Deprecated
 public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable  {
 
     private INDArray trainedSyn1;
