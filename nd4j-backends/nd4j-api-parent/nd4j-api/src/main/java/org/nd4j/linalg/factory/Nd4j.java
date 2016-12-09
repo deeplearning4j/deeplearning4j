@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -1716,8 +1717,40 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(int lower, int upper, int num) {
-        return INSTANCE.linspace(lower, upper, num);
+        // for now we'll temporarty keep original impl
+        double approx = (double) num / ((double) (upper - lower) + 1);
+        if (approx % 1 <= EPS_THRESHOLD) {
+            return INSTANCE.linspace(lower, upper, num);
+        } else  {
+            return linspace((double) lower, (double) upper, num);
+        }
     }
+
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(double lower, double upper, int num) {
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num));
+    }
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(float lower, float upper, int num) {
+        return linspace((double) lower, (double) upper, num);
+    }
+
 
     /**
      * Create a long row vector of all of the given ndarrays

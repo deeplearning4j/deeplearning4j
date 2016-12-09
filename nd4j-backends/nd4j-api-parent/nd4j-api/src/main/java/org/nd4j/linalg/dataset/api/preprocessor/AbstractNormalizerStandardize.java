@@ -51,7 +51,7 @@ abstract class AbstractNormalizerStandardize {
 
     private INDArray filteredStd(DistributionStats stats) {
         /*
-            To avoid division by zero when the std deviation is zero, replace by zeros by one
+            To avoid division by zero when the std deviation is zero, replace zeros by one
          */
         INDArray stdCopy = stats.getStd();
         BooleanIndexing.replaceWhere(stdCopy, 1.0, Conditions.equals(0));

@@ -235,7 +235,6 @@ public class BooleanIndexing {
             final Function<Number,Number> dynamic = new Function<Number, Number>() {
                 @Override
                 public Number apply(Number number) {
-                    System.out.println("Number: " + number.doubleValue());
                     return value;
                 }
             };

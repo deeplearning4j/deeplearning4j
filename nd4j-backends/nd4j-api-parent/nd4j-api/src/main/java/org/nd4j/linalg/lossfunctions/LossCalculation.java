@@ -18,8 +18,11 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 /**
  * @author Adam Gibson
+ * @deprecated Use {@link org.nd4j.linalg.lossfunctions.ILossFunction} for equivalent functionality.
+ * Allows for custom loss functions. Use computeScore with an instance of the loss function classs instead.
  */
 public @Data @Builder
+@Deprecated
 class LossCalculation {
     private INDArray labels;
     private INDArray z;
