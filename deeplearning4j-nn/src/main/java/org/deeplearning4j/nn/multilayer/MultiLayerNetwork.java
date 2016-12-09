@@ -223,9 +223,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *              usually gives very good results and is the default in quite a few situations.
      */
     public void pretrain(INDArray input) {
-
         if (!layerWiseConfigurations.isPretrain())
             return;
+        if(flattenedGradients == null) initGradientsView();
+
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
 
         int miniBatchSize = input.size(0);
@@ -244,7 +245,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             } else {
                 layerInput = activationFromPrevLayer(i - 1, layerInput, true);
             }
-            log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
             layer.conf().setPretrain(true);
             layer.fit(layerInput);
             layer.conf().setPretrain(false);
