@@ -5,10 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.Arrays;
 
 /**
  * Bernoulli reconstruction distribution for variational autoencoder.<br>
@@ -49,7 +53,6 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
     @Override
     public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
-
         INDArray logProb = calcLogProbArray(x, preOutDistributionParams);
 
         if(average){
@@ -75,6 +78,11 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         INDArray logOutput = Transforms.log(output, true);
         INDArray log1SubOut = Transforms.log(output.rsubi(1.0), false);
 
+        //For numerical stability: if output = 0, then log(output) == -infinity
+        //then x * log(output) = NaN, but lim(x->0, output->0)[ x * log(output) ] == 0
+        // therefore: want 0*log(0) = 0, NOT 0*log(0) = NaN by default
+        BooleanIndexing.replaceWhere(logOutput, 0.0, Conditions.isInfinite());  //log(out)= +/- inf -> x == 0.0 -> 0 * log(0) = 0
+        BooleanIndexing.replaceWhere(log1SubOut, 0.0, Conditions.isInfinite()); //log(out)= +/- inf -> x == 0.0 -> 0 * log(0) = 0
         return logOutput.muli(x).addi(x.rsub(1.0).muli(log1SubOut));
     }
 
@@ -85,10 +93,10 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
             output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
         }
 
-        INDArray dif = x.sub(output);
+        INDArray diff = x.sub(output);
         INDArray outOneMinusOut = output.rsub(1.0).muli(output);
 
-        INDArray grad = dif.divi(outOneMinusOut);
+        INDArray grad = diff.divi(outOneMinusOut);
 
         if(!"identity".equals(activationFn)){
             INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
@@ -96,6 +104,10 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
             grad.muli(sigmaPrimeZ);
         }
 
+        //Issue: if output == 0 or output == 1, then (assuming sigmoid output or similar)
+        //sigmaPrime == 0, sigmaPrime * (x-out) / (out*(1-out)) == 0 * (x-out) / 0 -> 0/0 -> NaN. But taking limit, we want
+        //0*(x-out)/0 == 0 -> implies 0 gradient at the far extremes (0 or 1) of the output
+        BooleanIndexing.replaceWhere(grad, 0.0, Conditions.isNan());
         return grad.negi();
     }
 
@@ -120,13 +132,12 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
         //mean value for bernoulli: same as probability parameter...
         //Obviously we can't produce exactly the mean value - bernoulli should produce only {0,1} values
-        //Instead: return the most likely value...
+        //but returning the actual mean value is more useful
         INDArray p = preOutDistributionParams.dup();
         if(!"identity".equals(activationFn)){
             p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
         }
 
-//        Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(p, 0.5));
         return p;
     }
 
