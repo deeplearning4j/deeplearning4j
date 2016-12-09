@@ -8,6 +8,9 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 /**
  * Base class for level 2 functions, abstract headers pulled from:
@@ -33,6 +36,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         GemvParameters parameters = new GemvParameters(A,X,Y);
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemv(order
@@ -79,6 +85,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         GemvParameters parameters = new GemvParameters(A,X,Y);
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
@@ -130,6 +139,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
         else
@@ -175,6 +187,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dger(order,A.rows(),A.columns(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
         else
@@ -322,6 +337,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void sbmv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dsbmv(order,Uplo,X.length(),A.columns(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
         else
@@ -340,6 +358,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spmv(char order, char Uplo, double alpha, INDArray Ap, INDArray X, double beta, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X, Y);
+
         if(Ap.data().dataType() == DataBuffer.Type.DOUBLE)
             dspmv(order,Uplo,X.length(),alpha,Ap,X, Ap.majorStride(),beta,Y,Y.majorStride());
         else
@@ -359,6 +380,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr(char order, char Uplo, double alpha, INDArray X, INDArray Ap) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dspr(order,Uplo,X.length(),alpha,X,X.majorStride(),Ap);
         else
@@ -379,6 +403,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dspr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A);
         else
@@ -401,6 +428,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void symv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dsymv(order,Uplo,X.length(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
         else
@@ -421,6 +451,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr(char order, char Uplo, int N, double alpha, INDArray X, INDArray A) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dsyr(order,Uplo,X.length(),alpha,X,X.majorStride(),A,A.size(0));
         else
@@ -438,6 +471,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dsyr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
         else
@@ -458,6 +494,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dtbmv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
         else
@@ -477,6 +516,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dtbsv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
         else
@@ -496,6 +538,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpmv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dtpmv(order,Uplo,TransA,Diag,Ap.length(),Ap,X,X.majorStride());
         else
@@ -515,6 +560,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpsv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, Ap, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dtpsv(order,Uplo,TransA,Diag,X.length(),Ap,X,X.majorStride());
         else
@@ -534,6 +582,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dtrmv(order,Uplo,TransA,Diag,X.length(),A,A.size(0),X,X.majorStride());
         else
@@ -553,6 +604,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dtrsv(order,Uplo,TransA,Diag,A.length(),A,A.size(0),X,X.majorStride());
         else

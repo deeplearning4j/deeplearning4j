@@ -25,6 +25,14 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  * Created by agibsonccc on 10/8/14.
  */
 public class GreaterThanOrEqual extends BaseCondition {
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public GreaterThanOrEqual(){
+        super(0.0);
+    }
+
     public GreaterThanOrEqual(Number value) {
         super(value);
     }

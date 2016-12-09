@@ -10,12 +10,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author raver119@gmail.com
  */
 public class ConstantBuffersCache extends BasicConstantHandler {
     protected Map<ArrayDescriptor, DataBuffer> buffersCache = new ConcurrentHashMap<>();
+    private AtomicInteger counter = new AtomicInteger(0);
+    private static final int MAX_ENTRIES = 100;
 
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
@@ -24,7 +27,10 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         if (!buffersCache.containsKey(descriptor)) {
             DataBuffer buffer = Nd4j.createBuffer(array);
 
-            buffersCache.put(descriptor, buffer);
+            if (counter.get() < MAX_ENTRIES) {
+                counter.incrementAndGet();
+                buffersCache.put(descriptor, buffer);
+            }
             return buffer;
         }
 
@@ -46,7 +52,10 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         if (!buffersCache.containsKey(descriptor)) {
             DataBuffer buffer = Nd4j.createBuffer(array);
 
-            buffersCache.put(descriptor, buffer);
+            if (counter.get() < MAX_ENTRIES) {
+                counter.incrementAndGet();
+                buffersCache.put(descriptor, buffer);
+            }
             return buffer;
         }
 
@@ -60,7 +69,10 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         if (!buffersCache.containsKey(descriptor)) {
             DataBuffer buffer = Nd4j.createBuffer(array);
 
-            buffersCache.put(descriptor, buffer);
+            if (counter.get() < MAX_ENTRIES) {
+                counter.incrementAndGet();
+                buffersCache.put(descriptor, buffer);
+            }
             return buffer;
         }
 

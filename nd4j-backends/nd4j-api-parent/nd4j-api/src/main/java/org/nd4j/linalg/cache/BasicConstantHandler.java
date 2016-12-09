@@ -16,7 +16,6 @@ public abstract class BasicConstantHandler implements ConstantHandler{
 
     @Override
     public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
-        System.out.println("No-op fired");
         return dataBuffer;
     }
 }

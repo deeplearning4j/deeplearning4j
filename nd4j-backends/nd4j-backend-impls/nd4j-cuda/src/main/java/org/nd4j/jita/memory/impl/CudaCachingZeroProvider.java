@@ -166,6 +166,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
+                Pointer.memset(point.getHostPointer(), 0, reqMemory);
                 cache.put(new CudaPointer(point.getHostPointer().address()));
             } else {
                 long cacheEntries = cache.size();
@@ -175,6 +176,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 long cacheDepth = cacheEntries * reqMemory;
 
              //   if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
+                    Pointer.memset(point.getHostPointer(), 0, reqMemory);
                     cache.put(new CudaPointer(point.getHostPointer().address()));
             //    } else {
              //       super.free(point);
