@@ -744,7 +744,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray output = preOutput(training);  //Mean values for p(z|x)
 
         if (!"identity".equals(pzxActivationFn)) {
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), output));
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, output));
         }
         return output;
     }

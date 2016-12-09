@@ -51,6 +51,7 @@ import static play.mvc.Results.redirect;
  */
 @Slf4j
 public class TrainModule implements UIModule {
+    public static final double NAN_REPLACEMENT_VALUE = 0.0; //UI front-end chokes on NaN in JSON
     public static final int DEFAULT_MAX_CHART_POINTS = 512;
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
@@ -420,7 +421,11 @@ public class TrainModule implements UIModule {
                         double currUpdate = updateMM.get(s);
                         double currParam = paramMM.get(s);
                         double ratio = currUpdate / currParam;
-                        ratioHistory.add(ratio);
+                        if(Double.isNaN(ratio)){
+                            ratioHistory.add(NAN_REPLACEMENT_VALUE);
+                        } else {
+                            ratioHistory.add(ratio);
+                        }
                     }
                 }
 
@@ -682,7 +687,7 @@ public class TrainModule implements UIModule {
         result.put("meanMag", mmRatioMap);
 
         //Get activations line chart for layer
-        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, iterationCounts, conf.getFirst(), conf.getSecond());
+        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, iterationCounts);
         Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
         activationMap.put("mean", activationsData.getSecond());
@@ -924,9 +929,15 @@ public class TrainModule implements UIModule {
                         //TODO check and handle not collected case...
                         double pmm = paramMM.get(s);
                         double umm = updateMM.get(s);
+                        if(Double.isNaN(pmm)){
+                            pmm = NAN_REPLACEMENT_VALUE;
+                        }
+                        if(Double.isNaN(umm)){
+                            umm = NAN_REPLACEMENT_VALUE;
+                        }
                         double ratio;
                         if(umm == 0.0 && pmm == 0.0){
-                            ratio = 1.0;    //To avoid NaN from 0/0
+                            ratio = 0.0;    //To avoid NaN from 0/0
                         } else {
                             ratio = umm / pmm;
                         }
@@ -960,8 +971,7 @@ public class TrainModule implements UIModule {
 
     private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
     private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                                List<Integer> iterationCounts,
-                                                                MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
+                                                                List<Integer> iterationCounts) {
         if (gi == null) {
             return EMPTY_TRIPLE;
         }
@@ -1000,6 +1010,12 @@ public class TrainModule implements UIModule {
                 if (means != null && means.containsKey(layerName)) {
                     mean[used] = means.get(layerName).floatValue();
                     stdev[used] = stdevs.get(layerName).floatValue();
+                    if(Float.isNaN(mean[used])){
+                        mean[used] = (float)NAN_REPLACEMENT_VALUE;
+                    }
+                    if(Float.isNaN(stdev[used])){
+                        stdev[used] = (float)NAN_REPLACEMENT_VALUE;
+                    }
                     used++;
                 }
             }
@@ -1102,8 +1118,15 @@ public class TrainModule implements UIModule {
                     paramNames.add(paramName);
                     Histogram h = map.get(s);
                     Map<String, Object> thisHist = new HashMap<>();
-                    thisHist.put("min", h.getMin());
-                    thisHist.put("max", h.getMax());
+                    double min = h.getMin();
+                    double max = h.getMax();
+                    if(Double.isNaN(min)){
+                        //If either is NaN, both will be
+                        min = NAN_REPLACEMENT_VALUE;
+                        max = NAN_REPLACEMENT_VALUE;
+                    }
+                    thisHist.put("min", min);
+                    thisHist.put("max", max);
                     thisHist.put("bins", h.getNBins());
                     thisHist.put("counts", h.getBinCounts());
                     ret.put(paramName, thisHist);
