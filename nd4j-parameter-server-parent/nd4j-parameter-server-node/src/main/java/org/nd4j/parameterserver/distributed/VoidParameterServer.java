@@ -5,6 +5,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Connector;
+import org.nd4j.parameterserver.distributed.logic.Shard;
 
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -37,6 +39,9 @@ public class VoidParameterServer {
     protected AtomicBoolean shutdownLocker = new AtomicBoolean(false);
     protected AtomicBoolean shutdownFinished = new AtomicBoolean(false);
 
+
+
+    protected Connector connector;
 
     protected VoidParameterServer() {
         nodeRole = NodeRole.NONE;
@@ -78,6 +83,8 @@ public class VoidParameterServer {
             switch (nodeRole) {
                 case SHARD: {
                     log.info("Initializing as Shard...");
+
+                    connector = new Shard(configuration);
                     break;
                 }
                 case BACKUP: {
@@ -146,7 +153,7 @@ public class VoidParameterServer {
      *
      * @return
      */
-    protected static Set<String> getLocalAddresses() {
+    public static Set<String> getLocalAddresses() {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
 

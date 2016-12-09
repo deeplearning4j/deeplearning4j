@@ -96,7 +96,8 @@ public class VoidParameterServerTest {
                     VoidParameterServer node = new VoidParameterServer();
                     node.init(conf);
 
-
+                    if (node.getNodeRole() != NodeRole.SHARD)
+                        failCnt.incrementAndGet();
                 }
             });
 
