@@ -10,6 +10,8 @@ and trained using [Keras](https://keras.io/), a popular Python deep learning lib
 layers on top of both [Theano](http://deeplearning.net/software/theano/) and [TensorFlow](https://www.tensorflow.org)
 backends. You can learn more about saving Keras models on the Keras [FAQ Page](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model).
 
+![Model Import Schema](./img/model-import-keras.png)
+
 An `IncompatibleKerasConfigurationException` message indicates that you are attempting to import a Keras model configuration
 that is not currently supported in Deeplearning4j (either because model import does not cover it, or DL4J does not implement the model, layer, or feature).
 
