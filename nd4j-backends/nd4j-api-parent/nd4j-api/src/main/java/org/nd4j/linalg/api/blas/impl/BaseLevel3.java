@@ -10,8 +10,10 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 /**
  * Base class for level 3 functions, abstract headers pulled from:
@@ -38,6 +40,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(true, A, B, C);
+
         GemmParams params = new GemmParams(A,B,C);
 
         int charOder = Order;
@@ -93,6 +98,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(true, A, B, C);
+
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
             if (A.data().dataType() == DataBuffer.Type.DOUBLE)
                 dgemm(A.ordering()
@@ -160,6 +168,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void symm(char Order, char Side, char Uplo, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, B, C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dsymm(Order,Side,Uplo,C.rows(),C.columns(),alpha,A,A.size(0),B,B.size(0),beta,C,C.size(0));
         else
@@ -184,6 +195,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syrk(char Order, char Uplo, char Trans, double alpha, INDArray A, double beta, INDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dsyrk(Order,Uplo,Trans,C.rows(),1,alpha,A,A.size(0),beta,C,C.size(0));
         else
@@ -209,6 +223,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, B, C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0),beta,C,C.size(0));
         }
@@ -236,6 +253,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B, INDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, B, C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
         }
@@ -263,6 +283,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, A, B);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dtrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
         }
@@ -288,6 +311,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(true, A, B, C);
+
         GemmParams params = new GemmParams(A,B,C);
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {

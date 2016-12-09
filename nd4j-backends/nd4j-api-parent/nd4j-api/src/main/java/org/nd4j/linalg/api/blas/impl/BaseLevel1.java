@@ -8,8 +8,10 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 /**
  * Base class for level 1 functions, abstract headers pulled from:
@@ -29,6 +31,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             return ddot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(Y));
         else if (X.data().dataType() == DataBuffer.Type.FLOAT)
@@ -80,6 +85,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double nrm2(INDArray arr) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, arr);
+
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
             return dnrm2(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
         return snrm2(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
@@ -104,6 +112,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double asum(INDArray arr) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, arr);
+
         if (arr.data().dataType() == DataBuffer.Type.DOUBLE)
             return dasum(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
         else if (arr.data().dataType() == DataBuffer.Type.FLOAT)
@@ -146,6 +157,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
 
     @Override
     public int iamax(int n, INDArray arr, int stride) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, arr);
+
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
             return idamax(n,arr,stride);
         return isamax(n,arr,stride);
@@ -176,6 +190,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public int iamax(INDArray arr) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, arr);
+
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
             return idamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         return isamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
@@ -225,6 +242,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void swap(INDArray x, INDArray y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, x, y);
+
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
             dswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         else
@@ -251,6 +271,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void copy(INDArray x, INDArray y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, x, y);
+
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
             dcopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         else
@@ -306,6 +329,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, x, y);
+
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
             daxpy(n, alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         else if(x.data().dataType() == DataBuffer.Type.FLOAT)
@@ -374,6 +400,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void rot(int N, INDArray X, INDArray Y, double c, double s) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, X, Y);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             drot(N, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(X), c, s);
         else
@@ -431,6 +460,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void scal(int N, double alpha, INDArray X) {
+        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+            OpProfiler.getInstance().processBlasCall(false, X);
+
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
             dscal(N, alpha, X, BlasBufferUtil.getBlasStride(X));
         else if(X.data().dataType() == DataBuffer.Type.FLOAT)

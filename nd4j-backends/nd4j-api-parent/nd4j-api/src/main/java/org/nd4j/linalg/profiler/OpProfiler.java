@@ -65,6 +65,9 @@ public class OpProfiler {
     private static StackAggregator tadStridedAggregator = new StackAggregator();
     private static StackAggregator tadNonEwsAggregator = new StackAggregator();
 
+    private static StackAggregator blasAggregator = new StackAggregator();
+    private static StringCounter blasOrderCounter = new StringCounter();
+
     private static Logger logger = LoggerFactory.getLogger(OpProfiler.class);
 
     private static final long THRESHOLD = 100000;
@@ -100,6 +103,8 @@ public class OpProfiler {
         tadNonEwsAggregator.reset();
         tadStridedAggregator.reset();
         mixedOrderAggregator.reset();
+
+        blasAggregator.reset();
 
         orderCounter.reset();
     }
@@ -264,6 +269,7 @@ public class OpProfiler {
     /**
      * This method tracks blasCalls
      */
+    @Deprecated
     public void processBlasCall(String blasOpName) {
         String key = "BLAS";
         invocationsCount.incrementAndGet();
@@ -347,6 +353,8 @@ public class OpProfiler {
         System.out.println("Unique entries: " + scalarAggregator.getUniqueBranchesNumber());
         scalarAggregator.renderTree(false);
         System.out.println();
+        logger.info("--- Blas GEMM odrders count: ---");
+        System.out.println(blasOrderCounter.asString());
 
     }
 
@@ -426,6 +434,36 @@ public class OpProfiler {
         return buffer.toString();
     }
 
+    public void processBlasCall(boolean isGemm, INDArray... operands) {
+        /**
+         * by default we only care about strides.
+         */
+        if (isGemm) {
+            /**
+             * but for gemm we also care about equal orders case: FF, CC
+             */
+            String key = processOrders(operands);
+            blasOrderCounter.incrementCount(key);
+        }
+
+        PenaltyCause[] causes = processOperands(operands);
+        for (PenaltyCause cause: causes) {
+            switch (cause) {
+                case NON_EWS_ACCESS:
+                    nonEwsAggregator.incrementCount();
+                    break;
+                case STRIDED_ACCESS:
+                    stridedAggregator.incrementCount();
+                    break;
+                case MIXED_ORDER:
+                    mixedOrderAggregator.incrementCount();
+                    break;
+                case NONE:
+                default:
+                    break;
+            }
+        }
+    }
 
     public PenaltyCause[] processOperands(INDArray x, INDArray y) {
         List<PenaltyCause> penalties = new ArrayList<>();
