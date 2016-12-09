@@ -106,7 +106,7 @@ Then run the following command on the dl4j repo packages to install them on your
     $ sudo yum install [package name] -y
     $ sudo yum install nd4j-cli -y # for example
 
-Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova & dl4j.
+Note, be sure to install the nd4j modules you need first, especially the backend and then install DataVec & dl4j.
 
 ---
 ## Tests
