@@ -10,11 +10,8 @@ public class NativeOpsHolder {
 
     @Getter private final NativeOps deviceNativeOps;
 
-    @Getter private final Nd4jBlas deviceNativeBlas;
-
     private NativeOpsHolder() {
         deviceNativeOps = new NativeOps();
-        deviceNativeBlas = new Nd4jBlas();
     }
 
     public static NativeOpsHolder getInstance() {

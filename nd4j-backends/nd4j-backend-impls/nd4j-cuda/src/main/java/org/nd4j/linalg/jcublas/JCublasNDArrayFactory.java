@@ -38,6 +38,7 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.blas.CudaBlas;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
@@ -75,6 +76,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createBlas() {
+        blas = new CudaBlas();
     }
 
     @Override

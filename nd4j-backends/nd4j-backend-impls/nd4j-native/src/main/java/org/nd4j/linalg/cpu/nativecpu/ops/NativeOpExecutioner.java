@@ -22,6 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jBlas;
 
 import java.util.*;
 
@@ -1011,8 +1012,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         properties.put("backend","CPU");
         properties.put("omp.threads", loop.ompGetMaxThreads());
-        properties.put("blas.threads", NativeOpsHolder.getInstance().getDeviceNativeBlas().getMaxThreads());
-        properties.put("blas.vendor", NativeOpsHolder.getInstance().getDeviceNativeBlas().getBlasVendor().toString());
+        properties.put("blas.threads", Nd4j.factory().blas().getMaxThreads());
+        properties.put("blas.vendor", ((Nd4jBlas)Nd4j.factory().blas()).getBlasVendor().toString());
 
         return properties;
     }

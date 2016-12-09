@@ -3,8 +3,6 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -13,25 +11,23 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
-
+import static org.bytedeco.javacpp.openblas.*;
 
 
 /**
  * @author Adam Gibson
  */
 public class CpuLevel1 extends BaseLevel1 {
-    private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
-    private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
+    private Nd4jBlas nd4jBlas = (Nd4jBlas)Nd4j.factory().blas();
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.sdsdot(DUMMY,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        return cblas_sdsdot(N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected double dsdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return nd4jBlas.dsdot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        return cblas_dsdot(N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
@@ -47,7 +43,7 @@ public class CpuLevel1 extends BaseLevel1 {
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (incX >= 1 && incY >= 1) {
-            return nd4jBlas.sdot(DUMMY, N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
+            return cblas_sdot(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
         } else {
             // non-EWS dot variant
             Dot dot = new Dot(X, Y);
@@ -64,7 +60,7 @@ public class CpuLevel1 extends BaseLevel1 {
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         if (incX >= 1 && incY >= 1) {
-            return nd4jBlas.ddot(DUMMY, N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY);
+            return cblas_ddot(N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY);
         } else {
             // non-EWS dot variant
             Dot dot = new Dot(X, Y);
@@ -102,13 +98,13 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        return nd4jBlas.snrm2(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX);
+        return cblas_snrm2(N,(FloatPointer)X.data().addressPointer(),incX);
 
     }
 
     @Override
     protected float sasum(int N, INDArray X, int incX) {
-        return nd4jBlas.sasum(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX);
+        return cblas_sasum(N,(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
@@ -118,12 +114,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double dnrm2(int N, INDArray X, int incX) {
-        return nd4jBlas.dnrm2(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX);
+        return cblas_dnrm2(N,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
-        return nd4jBlas.dasum(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX);
+        return cblas_dasum(N,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
@@ -156,7 +152,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        return nd4jBlas.isamax(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX);
+        return (int)cblas_isamax(N,(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
@@ -166,7 +162,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        return nd4jBlas.idamax(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX);
+        return (int)cblas_idamax(N,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
@@ -186,12 +182,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.sswap(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_sswap(N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.scopy(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_scopy(N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
@@ -206,7 +202,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.saxpy(DUMMY,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_saxpy(N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
@@ -222,12 +218,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.dswap(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dswap(N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.dcopy(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dcopy(N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
@@ -237,7 +233,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-        nd4jBlas.daxpy(DUMMY,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_daxpy(N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY);
 
     }
 
@@ -289,52 +285,49 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
-        DataBuffer addr = Nd4j.createBuffer(new float[]{d1,d2,b1,b2});
-        nd4jBlas.srotmg(DUMMY,(FloatPointer)addr.addressPointer(),(FloatPointer)P.data().addressPointer());
+        cblas_srotmg(new FloatPointer(d1), new FloatPointer(d2), new FloatPointer(b1), b2, (FloatPointer)P.data().addressPointer());
     }
 
     @Override
     protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-        nd4jBlas.srot(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,c,s);
+        cblas_srot(N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,c,s);
     }
 
     @Override
     protected void srotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        nd4jBlas.srotm(DUMMY,N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)P.data().addressPointer());
+        cblas_srotm(N,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)P.data().addressPointer());
 
     }
 
     @Override
     protected void drotg(double a, double b, double c, double s) {
-        DataBuffer buff = Nd4j.createBuffer(new double[]{a, b, c, s});
-        nd4jBlas.drotg(DUMMY,(DoublePointer)buff.addressPointer());
+        cblas_drotg(new DoublePointer(a), new DoublePointer(b), new DoublePointer(c), new DoublePointer(s));
     }
 
     @Override
     protected void drotmg(double d1, double d2, double b1, double b2, INDArray P) {
-        DataBuffer buff = Nd4j.createBuffer(new double[]{d1, d2, b1, b2});
-        nd4jBlas.drotmg(DUMMY,(DoublePointer)buff.addressPointer(),(DoublePointer)P.data().addressPointer());
+        cblas_drotmg(new DoublePointer(d1), new DoublePointer(d2), new DoublePointer(b1), b2, (DoublePointer)P.data().addressPointer());
     }
 
     @Override
     protected void drot(int N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
-        nd4jBlas.drot(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,c,s);
+        cblas_drot(N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,c,s);
     }
 
 
     @Override
     protected void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        nd4jBlas.drotm(DUMMY,N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)P.data().addressPointer());
+        cblas_drotm(N,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)P.data().addressPointer());
     }
 
     @Override
     protected void sscal(int N, float alpha, INDArray X, int incX) {
-        nd4jBlas.sscal(DUMMY,N,alpha,(FloatPointer)X.data().addressPointer(),incX);
+        cblas_sscal(N,alpha,(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dscal(int N, double alpha, INDArray X, int incX) {
-        nd4jBlas.dscal(DUMMY,N,alpha,(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dscal(N,alpha,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override

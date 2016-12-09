@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 
 import java.util.*;
 
+import org.nd4j.linalg.api.blas.Blas;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -31,10 +32,8 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -51,6 +50,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     // We don't really care about dtype field we'll use context instead
     // protected DataBuffer.Type dtype;
     protected char order;
+    protected Blas blas;
     protected Level1 level1;
     protected Level2 level2;
     protected Level3 level3;
@@ -63,6 +63,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(lapack == null)
             createLapack();
         return lapack;
+    }
+
+    @Override
+    public Blas blas() {
+        if(blas == null)
+            createBlas();
+        return blas;
     }
 
     @Override

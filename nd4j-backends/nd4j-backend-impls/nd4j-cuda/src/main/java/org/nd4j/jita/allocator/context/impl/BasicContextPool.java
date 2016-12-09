@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
+import static org.bytedeco.javacpp.cublas.*;
+
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
  *
@@ -163,9 +165,11 @@ public class BasicContextPool implements ContextPool {
     }
 
     protected cublasHandle_t createNewCublasHandle() {
-        Pointer pointer = nativeOps.createBlasHandle();
-        if (pointer == null)
-            throw new IllegalStateException("Can't create new cuBLAS handle!");
+        cublasContext pointer = new cublasContext();
+        int result = cublasCreate_v2(pointer);
+        if (result != 0) {
+            throw new IllegalStateException("Can't create new cuBLAS handle! cuBLAS errorCode: [" + result + "]");
+        }
 
         cublasHandle_t handle = new cublasHandle_t(pointer);
 
@@ -174,9 +178,7 @@ public class BasicContextPool implements ContextPool {
 
 
     protected cublasHandle_t createNewCublasHandle(cudaStream_t stream) {
-        cublasHandle_t handle = new cublasHandle_t(nativeOps.createBlasHandle());
-
-        return handle;
+        return createNewCublasHandle();
     }
 
     protected CUcontext createNewContext(Integer deviceId) {

@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory;
 
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.blas.Blas;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -49,6 +50,12 @@ public interface NDArrayFactory {
     char FORTRAN = 'f';
     char C = 'c';
 
+    /**
+     * Return extra blas operations
+     * @return
+     */
+    Blas blas();
+
     Lapack lapack();
 
     /**
@@ -68,6 +75,11 @@ public interface NDArrayFactory {
      * @return
      */
     Level3 level3();
+
+    /**
+     * Create blas
+     */
+    void createBlas();
 
     /**
      * Create level 1
