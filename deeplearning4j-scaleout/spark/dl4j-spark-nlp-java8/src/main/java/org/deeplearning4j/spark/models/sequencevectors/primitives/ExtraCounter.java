@@ -1,9 +1,6 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives;
+package org.deeplearning4j.spark.models.sequencevectors.primitives;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 

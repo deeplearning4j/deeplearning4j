@@ -1,13 +1,12 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors.functions;
+package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
-import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives.ExtraCounter;
+import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 
 /**
  * This accumulator function does count individual elements, using provided Accumulator

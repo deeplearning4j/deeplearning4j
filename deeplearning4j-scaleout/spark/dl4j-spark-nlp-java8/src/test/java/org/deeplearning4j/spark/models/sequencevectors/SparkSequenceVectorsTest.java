@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors;
+package org.deeplearning4j.spark.models.sequencevectors;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
