@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors.functions;
+package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;

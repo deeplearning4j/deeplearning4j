@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.models.embeddings.paragraphvectors.functions;
+package org.deeplearning4j.spark.models.paragraphvectors.functions;
 
 import lombok.NonNull;
 import org.apache.spark.api.java.function.Function;
@@ -6,11 +6,8 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.functions.BaseTokenizerFunction;
+import org.deeplearning4j.spark.models.sequencevectors.functions.BaseTokenizerFunction;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
-import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import scala.Tuple2;
 
 import java.util.List;
 

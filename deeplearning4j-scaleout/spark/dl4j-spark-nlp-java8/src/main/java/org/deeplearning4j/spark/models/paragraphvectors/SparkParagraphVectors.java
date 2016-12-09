@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.models.embeddings.paragraphvectors;
+package org.deeplearning4j.spark.models.paragraphvectors;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -7,9 +7,9 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.models.embeddings.paragraphvectors.functions.DocumentSequenceConvertFunction;
-import org.deeplearning4j.spark.models.embeddings.paragraphvectors.functions.KeySequenceConvertFunction;
-import org.deeplearning4j.spark.models.embeddings.sequencevectors.SparkSequenceVectors;
+import org.deeplearning4j.spark.models.paragraphvectors.functions.DocumentSequenceConvertFunction;
+import org.deeplearning4j.spark.models.paragraphvectors.functions.KeySequenceConvertFunction;
+import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
 /**

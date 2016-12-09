@@ -24,10 +24,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dl4j-spark-nlp_2.10</artifactId>
+    <artifactId>dl4j-spark-nlp-java8_2.10</artifactId>
     <packaging>jar</packaging>
 
-    <name>dl4j-spark-nlp</name>
+    <name>dl4j-spark-nlp-java8</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -52,6 +52,11 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-spark_2.10</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-parameter-server-node_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

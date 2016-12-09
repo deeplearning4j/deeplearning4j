@@ -1,6 +1,5 @@
-package org.deeplearning4j.spark.models.embeddings.sequencevectors.primitives;
+package org.deeplearning4j.spark.models.sequencevectors.primitives;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

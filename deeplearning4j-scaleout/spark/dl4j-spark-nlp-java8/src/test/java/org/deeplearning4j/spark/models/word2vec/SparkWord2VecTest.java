@@ -1,12 +1,10 @@
-package org.deeplearning4j.spark.models.embeddings.word2vec;
+package org.deeplearning4j.spark.models.word2vec;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
-import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.junit.After;
 import org.junit.Before;
