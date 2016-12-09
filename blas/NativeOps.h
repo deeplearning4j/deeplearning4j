@@ -1166,16 +1166,9 @@ public:
 
     Nd4jPointer createEvent();
 
-    Nd4jPointer createBlasHandle();
-
     int registerEvent(Nd4jPointer event, Nd4jPointer stream);
 
     int destroyEvent(Nd4jPointer event);
-
-    int setBlasStream(Nd4jPointer handle, Nd4jPointer stream);
-
-    Nd4jPointer createSolverHandle() ;
-    int setSolverStream(Nd4jPointer handle, Nd4jPointer stream) ;
 
     int setDevice(Nd4jPointer ptrToDeviceId);
 

@@ -9,8 +9,6 @@ int element_threshold = 32;
 #include <buffer.h>
 #include <helpers/shape.h>
 
-#include <cublas_v2.h>
-#include <cusolverDn.h>
 #include <loops/reduce3.h>
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
@@ -5038,16 +5036,6 @@ Nd4jPointer NativeOps::createEvent() {
 	else return nativeEvent;
 }
 
-Nd4jPointer NativeOps::createBlasHandle() {
-	Nd4jPointer nativeHandle= 0;
-	cublasStatus_t result = cublasCreate((cublasHandle_t *) &nativeHandle);
-	if (result != 0) {
-        printf("cuBLAS errorCode: [%i]\n", result);
-		return 0L;
-    }
-	else return nativeHandle;
-}
-
 int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
@@ -5059,35 +5047,6 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	else return 1;
 }
 
-int NativeOps::setBlasStream(Nd4jPointer handle, Nd4jPointer stream) {
-	cublasHandle_t *pHandle = reinterpret_cast<cublasHandle_t *>(&handle);
-	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
-
-	cublasStatus_t result = cublasSetStream(*pHandle, *pStream);
-	if (result != 0)
-		return 0L;
-	else return 1L;
-}
-
-Nd4jPointer NativeOps::createSolverHandle() {
-        Nd4jPointer nativeHandle= 0;
-        cusolverStatus_t result = cusolverDnCreate((cusolverDnHandle_t *) &nativeHandle);
-        if (result != 0) {
-        printf("cusolverDn errorCode: [%i] from cusolverDnCreate()\n", result);
-                return 0L;
-    }
-        else return nativeHandle;
-}
-
-int NativeOps::setSolverStream(Nd4jPointer handle, Nd4jPointer stream) {
-        cusolverDnHandle_t *pHandle = reinterpret_cast<cusolverDnHandle_t *>(&handle);
-        cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&stream);
-
-        cusolverStatus_t result = cusolverDnSetStream(*pHandle, *pStream);
-        if (result != 0)
-                return 0L;
-        else return 1L;
-}
 int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
 	int deviceId = getDeviceId(ptrToDeviceId);
 	cudaError_t result = cudaSetDevice(deviceId);
