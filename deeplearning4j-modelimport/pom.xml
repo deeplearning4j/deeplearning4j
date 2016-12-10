@@ -23,12 +23,10 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>
-        <javacpp.version>1.2.7</javacpp.version>
-        <javacpp-presets.version>1.2</javacpp-presets.version>
         <hdf5.version>1.10.0-patch1</hdf5.version>
     </properties>
     <build>
@@ -116,13 +114,6 @@
         </dependency>
 
         <!-- For unit tests -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->

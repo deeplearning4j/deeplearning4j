@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -22,7 +23,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  */
 public class TestConvolutionalListener {
 
-    @Test
+    @Test @Ignore   //Should be run manually
     public void testUI() throws Exception {
 
         int nChannels = 1; // Number of input channels

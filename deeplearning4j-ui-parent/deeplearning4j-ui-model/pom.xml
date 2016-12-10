@@ -3,7 +3,7 @@
     <parent>
         <artifactId>deeplearning4j-ui-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -47,14 +47,6 @@
             <artifactId>nd4j-native-api</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
 
         <!-- Agrona. Used for Stats listener encoding/decoding via SBE -->
         <dependency>

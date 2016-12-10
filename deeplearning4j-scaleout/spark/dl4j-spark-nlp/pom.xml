@@ -20,7 +20,7 @@
     <parent>
         <artifactId>spark_2.10</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -54,13 +54,6 @@
             <artifactId>dl4j-spark_2.10</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

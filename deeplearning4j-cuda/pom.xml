@@ -23,13 +23,11 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
 
     <properties>
         <cuda.version>8.0</cuda.version>
-        <javacpp-presets.version>1.2</javacpp-presets.version>
-        <javacpp.version>1.2.7</javacpp.version>
     </properties>
 
     <dependencyManagement>
@@ -49,6 +47,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -62,10 +65,6 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-${cuda.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>

@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -357,7 +358,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static synchronized void registerSubtypes(ObjectMapper mapper){
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class);
+        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
         List<String> classNames = new ArrayList<>(4);
         for(Class<?> c : classes) classNames.add(c.getName());
 
@@ -371,7 +372,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 subtypesClassCache = Collections.emptySet();
             } else {
 
-                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class);
+                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, ReconstructionDistribution.class);
                 List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
                 Collection<URL> urls = ClasspathHelper.forClassLoader();

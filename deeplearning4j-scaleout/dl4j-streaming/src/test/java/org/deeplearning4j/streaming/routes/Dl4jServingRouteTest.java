@@ -1,5 +1,6 @@
 package org.deeplearning4j.streaming.routes;
 
+import com.google.common.io.Files;
 import kafka.serializer.StringEncoder;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
@@ -44,7 +45,7 @@ public class Dl4jServingRouteTest extends CamelTestSupport {
     private static EmbeddedKafkaCluster kafkaCluster;
     private static int zkPort;
     public final static String LOCALHOST = "localhost";
-    private File dir = new File("tmpdir");
+    private File dir = Files.createTempDir();
     private DataSet next;
     private static String topicName = "predict";
 

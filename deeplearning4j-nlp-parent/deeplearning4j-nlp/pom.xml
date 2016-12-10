@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-nlp-parent</artifactId>
-    <version>0.7.1-SNAPSHOT</version>
+    <version>0.7.2-SNAPSHOT</version>
   </parent>
   <build>
     <pluginManagement>
@@ -47,13 +47,6 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native-api</artifactId>
       <version>${nd4j.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native</artifactId>
-      <version>${nd4j.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
