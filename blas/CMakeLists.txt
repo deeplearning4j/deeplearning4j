@@ -110,7 +110,6 @@ if(CUDA_BLAS)
         target_link_libraries(nd4j ${CUDA_LIBRARIES})
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
     endif(CUDA_FOUND)
-
 elseif(CPU_BLAS)
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
@@ -126,13 +125,11 @@ elseif(CPU_BLAS)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     endif()
 
+    if(APPLE OR MSYS)
+        SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
+    endif()
+
     #install(TARGETS mySharedLib DESTINATION /some/full/path)
     install(TARGETS nd4j DESTINATION  $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cpu)
-
-
-
 endif()
-
-
-
