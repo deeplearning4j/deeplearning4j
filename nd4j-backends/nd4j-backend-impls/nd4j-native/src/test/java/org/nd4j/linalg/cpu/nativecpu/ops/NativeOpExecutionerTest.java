@@ -22,9 +22,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -653,5 +655,30 @@ public class NativeOpExecutionerTest {
         INDArray array = Nd4j.ones(2, 2).eq(1);
 
         log.info("Result: {} ", array);
+    }
+
+
+    @Test
+    public void testCreate() {
+        INDArray array1 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new int[]{3, 3}, 'c');
+        INDArray array2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9,10,11,12, 13,14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29}, new int[]{3, 3, 3}, 'c');
+
+        assertEquals(2, array1.rank());
+        assertEquals(3, array2.rank());
+    }
+
+    @Test
+    public void testConditionalUpdate() {
+        INDArray arr = Nd4j.linspace(-2, 2, 5);
+        INDArray ones = Nd4j.ones(5);
+
+        System.out.println("arr: " + arr);
+        System.out.println("ones: " + ones);
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(ones, arr, ones, Conditions.equals(0.0)));
+
+        System.out.println("After:");
+        System.out.println("arr: " + arr);
+        System.out.println("ones: " + ones);
     }
 }

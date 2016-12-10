@@ -8,6 +8,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface NDArrayCallback {
 
+
+    /**
+     * A listener for ndarray message
+     * @param message the message for the callback
+     */
+    void onNDArrayMessage(NDArrayMessage message);
+
     /**
      * Used for partial updates using tensor along
      * dimension

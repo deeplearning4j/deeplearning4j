@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,6 +24,7 @@ import java.util.List;
  * @author Ede Meijer
  */
 @Getter
+@EqualsAndHashCode
 public class DistributionStats {
     private static final Logger logger = LoggerFactory.getLogger(NormalizerStandardize.class);
 

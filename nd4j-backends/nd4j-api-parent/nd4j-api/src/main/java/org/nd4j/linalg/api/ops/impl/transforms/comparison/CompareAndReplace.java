@@ -27,6 +27,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
  * Element-wise Compare-and-Replace implementation as Op
+ * Basically this op does the same as Compare-and-Set, but op.X is checked against Condition instead
  *
  * @author raver119@gmail.com
  */
@@ -43,12 +44,33 @@ public class CompareAndReplace extends BaseTransformOp {
     }
 
 
-
-
+    /**
+     * With this constructor, op will check each X element against given Condition, and if condition met, element Z will be set to Y value, and X otherwise
+     *
+     * PLEASE NOTE: X will be modified inplace.
+     *
+     * Pseudocode:
+     * z[i] = condition(x[i]) ? y[i] : x[i];
+     *
+     * @param x
+     * @param y
+     * @param condition
+     */
     public CompareAndReplace(INDArray x, INDArray y, Condition condition) {
         this(x, y, x, condition);
     }
 
+    /**
+     * With this constructor, op will check each X element against given Condition, and if condition met, element Z will be set to Y value, and X otherwise
+     *
+     * Pseudocode:
+     * z[i] = condition(x[i]) ? y[i] : x[i];
+     *
+     * @param x
+     * @param y
+     * @param z
+     * @param condition
+     */
     public CompareAndReplace(INDArray x, INDArray y, INDArray z, Condition condition) {
         super(x, y, z, x.lengthLong());
         this.compare = condition.getValue();

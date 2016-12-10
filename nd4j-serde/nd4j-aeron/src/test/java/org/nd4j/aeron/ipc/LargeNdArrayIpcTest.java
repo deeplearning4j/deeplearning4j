@@ -67,8 +67,19 @@ public class LargeNdArrayIpcTest {
                     .streamId(streamId)
                     .ctx(getContext()).channel(channel).aeron(aeron)
                     .running(running)
-                    .ndArrayCallback(new NDArrayCallback() {
-                        @Override
+                    .ndArrayCallback(new
+                                             NDArrayCallback() {
+                                                 /**
+                                                  * A listener for ndarray message
+                                                  *
+                                                  * @param message the message for the callback
+                                                  */
+                                                 @Override
+                                                 public void onNDArrayMessage(NDArrayMessage message) {
+
+                                                 }
+
+                                                 @Override
                         public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
 
                         }

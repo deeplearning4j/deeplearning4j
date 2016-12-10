@@ -439,6 +439,18 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testConditionalUpdate() {
+        INDArray arr = Nd4j.linspace(-2, 2, 5);
+        INDArray ones = Nd4j.ones(5);
+        INDArray exp = Nd4j.create(new double[]{1, 1, 0, 1, 1});
+
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(ones, arr, ones, Conditions.equals(0.0)));
+
+        assertEquals(exp, ones);
+    }
+
     @Override
     public char ordering() {
         return 'c';

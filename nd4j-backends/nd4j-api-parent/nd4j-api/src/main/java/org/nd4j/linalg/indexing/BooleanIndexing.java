@@ -101,7 +101,7 @@ public class BooleanIndexing {
                 @Override
                 public void process(int[]... coord) {
                     if (a.get())
-                        a.compareAndSet(true, a.get() && cond.apply(n.getFloat(coord[0])));
+                        a.compareAndSet(true, a.get() && cond.apply(n.getDouble(coord[0])));
                 }
             });
 
@@ -187,7 +187,7 @@ public class BooleanIndexing {
                 @Override
                 public void process(int[]... coord) {
                     if (!a.get())
-                        a.compareAndSet(false, a.get() || cond.apply(n.getFloat(coord[0])));
+                        a.compareAndSet(false, a.get() || cond.apply(n.getDouble(coord[0])));
                 }
             });
 
@@ -210,7 +210,7 @@ public class BooleanIndexing {
                 @Override
                 public void process(int[]... coord) {
                     if (condition.apply(to.getDouble(coord[0])))
-                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+                        to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
 
                 }
             });
@@ -235,7 +235,6 @@ public class BooleanIndexing {
             final Function<Number,Number> dynamic = new Function<Number, Number>() {
                 @Override
                 public Number apply(Number number) {
-                    System.out.println("Number: " + number.doubleValue());
                     return value;
                 }
             };
@@ -244,7 +243,7 @@ public class BooleanIndexing {
                 @Override
                 public void process(int[]... coord) {
                     if (condition.apply(to.getDouble(coord[0])))
-                        to.putScalar(coord[0], dynamic.apply(to.getDouble(coord[0])).floatValue());
+                        to.putScalar(coord[0], dynamic.apply(to.getDouble(coord[0])).doubleValue());
 
                 }
             });
@@ -313,10 +312,10 @@ public class BooleanIndexing {
         Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
-                if (condition.apply(to.getFloat(coord[0]))) {
-                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+                if (condition.apply(to.getDouble(coord[0]))) {
+                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
                 } else {
-                    to.putScalar(coord[0], alternativeFunction.apply(to.getDouble(coord[0])).floatValue());
+                    to.putScalar(coord[0], alternativeFunction.apply(to.getDouble(coord[0])).doubleValue());
                 }
             }
         });
@@ -334,7 +333,7 @@ public class BooleanIndexing {
     public static void applyWhere(IComplexNDArray to, Condition condition, Function<IComplexNumber, IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();
         for (int i = 0; i < linear.linearView().length(); i++) {
-            if (condition.apply(linear.getFloat(i))) {
+            if (condition.apply(linear.getDouble(i))) {
                 linear.putScalar(i, function.apply(linear.getComplex(i)));
             }
         }

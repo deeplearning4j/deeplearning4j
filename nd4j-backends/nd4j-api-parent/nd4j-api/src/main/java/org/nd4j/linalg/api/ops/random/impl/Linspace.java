@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,7 +22,7 @@ public class Linspace extends BaseRandomOp {
         this(Nd4j.createUninitialized(new int[]{1,length}, Nd4j.order()), from, to);
     }
 
-    public Linspace(INDArray z, double from, double to) {
+    public Linspace(@NonNull INDArray z, double from, double to) {
         this.from = from;
         this.to = to;
         init(null, null, z, z.length());

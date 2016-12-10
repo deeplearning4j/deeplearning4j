@@ -38,6 +38,7 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.blas.CudaBlas;
 import org.nd4j.linalg.jcublas.blas.JcublasLapack;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
 import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
@@ -75,6 +76,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createBlas() {
+        blas = new CudaBlas();
     }
 
     @Override
@@ -577,7 +583,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         long[] offsetsPointers = new long[toConcat.length];
         long[] hostShapeInfoPointers = new long[toConcat.length];
 
-        TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
         for(int i = 0; i < toConcat.length; i++) {
             shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
@@ -741,7 +747,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         Pointer pIndex = AtomicAllocator.getInstance().getPointer(tempIndexes, context);
 
-        TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[]{sourceDimension});
         Pair<DataBuffer, DataBuffer> zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[]{sourceDimension});
@@ -975,7 +981,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
 
 
-            TADManager tadManager = ((CudaExecutioner) Nd4j.getExecutioner()).getTadManager();
+            TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 

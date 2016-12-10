@@ -56,7 +56,6 @@ public class ParameterServerClientPartialTest {
         });
 
         assertTrue(masterNode.isMaster());
-        assertEquals(1000,masterNode.getParameterLength());
         assertEquals(40223,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
@@ -75,7 +74,6 @@ public class ParameterServerClientPartialTest {
         });
 
         assertFalse(slaveNode.isMaster());
-        assertEquals(1000,slaveNode.getParameterLength());
         assertEquals(40226,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
@@ -123,10 +121,10 @@ public class ParameterServerClientPartialTest {
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
-        assertEquals(1,listener.getTotalN().get());
+        assertEquals(1,listener.getUpdater().numUpdates());
         INDArray assertion = Nd4j.create(new int[]{2,2});
         assertion.getColumn(0).addi(1.0);
-        assertEquals(assertion,listener.getArr());
+        assertEquals(assertion,listener.getUpdater().ndArrayHolder().get());
         INDArray arr = client.getArray();
         assertEquals(assertion,arr);
     }

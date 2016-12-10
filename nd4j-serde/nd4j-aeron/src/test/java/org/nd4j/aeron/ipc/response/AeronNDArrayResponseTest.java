@@ -59,7 +59,18 @@ public class AeronNDArrayResponseTest {
                 host,
                 40124,
                 new NDArrayHolder() {
-                    /**
+                            /**
+                             * Set the ndarray
+                             *
+                             * @param arr the ndarray for this holder
+                             *            to use
+                             */
+                            @Override
+                            public void setArray(INDArray arr) {
+
+                            }
+
+                            /**
                      * The number of updates
                      * that have been sent to this older.
                      *
@@ -105,6 +116,16 @@ public class AeronNDArrayResponseTest {
                 host,
                 40123,
                 new NDArrayCallback() {
+                    /**
+                     * A listener for ndarray message
+                     *
+                     * @param message the message for the callback
+                     */
+                    @Override
+                    public void onNDArrayMessage(NDArrayMessage message) {
+
+                    }
+
                     @Override
                     public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
                         count.incrementAndGet();

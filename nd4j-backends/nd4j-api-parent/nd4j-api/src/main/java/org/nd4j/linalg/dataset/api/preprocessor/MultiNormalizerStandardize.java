@@ -1,6 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DistributionStats;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -18,9 +20,10 @@ import java.util.List;
  *
  * @author Ede Meijer
  */
+@EqualsAndHashCode
 public class MultiNormalizerStandardize extends AbstractNormalizerStandardize implements MultiDataSetPreProcessor {
-    private List<DistributionStats> featureStats;
-    private List<DistributionStats> labelStats;
+    @Setter private List<DistributionStats> featureStats;
+    @Setter private List<DistributionStats> labelStats;
     private boolean fitLabels = false;
 
     public void fitLabel(boolean fitLabels) {
@@ -49,7 +52,7 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
-     * FFit the model with a MultiDataSetIterator to calculate means and standard deviations with
+     * Fit the model with a MultiDataSetIterator to calculate means and standard deviations with
      *
      * @param iterator
      */
@@ -123,18 +126,44 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     public void revert(@NonNull MultiDataSet data) {
         assertIsFit();
 
-        INDArray[] inputs = data.getFeatures();
-        for (int i = 0; i < inputs.length; i++) {
-            revert(inputs[i], featureStats.get(i));
-        }
+        revertFeatures(data.getFeatures());
         if (fitLabels) {
-            INDArray[] outputs = data.getLabels();
-            for (int i = 0; i < outputs.length; i++) {
-                revert(outputs[i], labelStats.get(i));
-            }
+            revertLabels(data.getLabels());
         }
     }
 
+    public void revertFeatures(@NonNull INDArray[] features) {
+        for (int i = 0; i < features.length; i ++) {
+            revertFeatures(features[i], i);
+        }
+    }
+
+    public void revertFeatures(@NonNull INDArray features, int input) {
+        revert(features, featureStats.get(input));
+    }
+
+    public void revertLabels(@NonNull INDArray[] labels) {
+        for (int i = 0; i < labels.length; i ++) {
+            revertLabels(labels[i], i);
+        }
+    }
+
+    public void revertLabels(@NonNull INDArray labels, int output) {
+        if (!fitLabels) {
+            return;
+        }
+        revert(labels, labelStats.get(output));
+    }
+
+    public int numInputs() {
+        assertIsFit();
+        return featureStats.size();
+    }
+
+    public int numOutputs() {
+        assertIsFit();
+        return labelStats.size();
+    }
 
     public INDArray getFeatureMean(int input) {
         assertIsFit();
@@ -183,6 +212,8 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
+     * @deprecated use {@link NormalizerSerializer} instead
+     *
      * Save the current means and standard deviations to the file system
      *
      * @param featureFiles target files for features, requires 2 files per input, alternating mean and stddev files

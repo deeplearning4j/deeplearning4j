@@ -24,6 +24,25 @@ public class PublishingListener implements NDArrayCallback {
     private Aeron.Context aeronContext;
 
     /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        try (AeronNDArrayPublisher publisher =   AeronNDArrayPublisher.builder()
+                .streamId(streamId)
+                .ctx(aeronContext).channel(masterUrl)
+                .build()) {
+            publisher.publish(message);
+            log.debug("NDArray PublishingListener publishing to channel " + masterUrl + ":" + streamId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    /**
      * Used for partial updates using tensor along
      * dimension
      *
