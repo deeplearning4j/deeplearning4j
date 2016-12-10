@@ -26,6 +26,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by agibsonccc on 10/8/14.
  */
 public class EpsilonNotEquals extends BaseCondition {
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public EpsilonNotEquals(){
+        super(0.0);
+    }
+
     public EpsilonNotEquals(Number value) {
         super(value);
     }

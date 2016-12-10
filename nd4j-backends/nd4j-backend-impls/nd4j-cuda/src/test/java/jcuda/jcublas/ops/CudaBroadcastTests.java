@@ -27,7 +27,7 @@ public class CudaBroadcastTests {
                 .setFirstMemory(AllocationStatus.DEVICE)
                 .setMaximumBlockSize(64)
                 .setMaximumGridSize(128)
-                .enableDebug(false);
+                .enableDebug(true);
 
         System.out.println("Init called");
     }
@@ -227,6 +227,37 @@ public class CudaBroadcastTests {
 
         assertEquals(1002, array.getFloat(0), 0.1f);
         assertEquals(2003, array.getFloat(1), 0.1f);
+    }
+
+    @Test
+    public void execBroadcastOpTimed2() throws Exception {
+        Nd4j.create(1);
+        System.out.println("A ----------------");
+        INDArray array = Nd4j.zeros(2048, 1024);
+        System.out.println("0 ----------------");
+        INDArray arrayRow = Nd4j.ones(1024);
+
+        System.out.println("1 ----------------");
+
+        float sum = (float) array.sumNumber().doubleValue();
+        float sum2 = (float) arrayRow.sumNumber().doubleValue();
+
+        System.out.println("2 ----------------");
+
+        long time1 = System.nanoTime();
+        for (int x = 0; x < 1000; x++) {
+            array.addiRowVector(arrayRow);
+        }
+        long time2 = System.nanoTime();
+
+        System.out.println("Execution time: " + ((time2 - time1) / 1000));
+
+        for (int x = 0; x < array.rows(); x++) {
+            INDArray row = array.getRow(x);
+            for (int y = 0; y < array.columns(); y++) {
+                assertEquals("Failed on x.y: ["+x+"."+y+"]",1000f, row.getFloat(y), 0.01);
+            }
+        }
     }
 }
 

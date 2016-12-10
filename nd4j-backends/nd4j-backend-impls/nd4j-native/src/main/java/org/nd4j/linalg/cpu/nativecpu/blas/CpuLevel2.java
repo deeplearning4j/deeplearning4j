@@ -3,32 +3,30 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
+import static org.bytedeco.javacpp.openblas.*;
+import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
 
 
 /**
  * @author Adam Gibson
  */
 public class CpuLevel2 extends BaseLevel2 {
-    private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
-    private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
-
+    private Nd4jBlas nd4jBlas = (Nd4jBlas)Nd4j.factory().blas();
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sgemv(DUMMY,'f',TransA,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_sgemv(convertOrder('f'),convertTranspose(TransA),M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sgbmv(DUMMY,'f',TransA,M,N,KL,KU,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_sgbmv(convertOrder('f'),convertTranspose(TransA),M,N,KL,KU,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
@@ -38,69 +36,68 @@ public class CpuLevel2 extends BaseLevel2 {
 
     @Override
     protected void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.stbmv(DUMMY,'f',Uplo,TransA,Diag,N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        cblas_stbmv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.stpmv(DUMMY,'f',Uplo,TransA,Diag,N,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
+        cblas_stpmv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void strsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.strsv(DUMMY,'f',Uplo,TransA,Diag,N,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        cblas_strsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void stbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.stbsv(DUMMY,'f',Uplo,TransA,Diag,N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
+        cblas_stbsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX);
 
     }
 
     @Override
     protected void stpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.stpsv(DUMMY,'f',Uplo,TransA,Diag,N, (FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
+        cblas_stpsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N, (FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dgemv(DUMMY,'f',TransA,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dgemv(convertOrder('f'),convertTranspose(TransA),M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dgbmv(char order, char TransA, int M, int N, int KL, int KU, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dgbmv(DUMMY,'f',TransA,M,N,KL,KU,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
-
+        cblas_dgbmv(convertOrder('f'),convertTranspose(TransA),M,N,KL,KU,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dtrmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtrmv(DUMMY,'f',Uplo,TransA,Diag,N,0.0,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtrmv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtbmv(DUMMY,'f',Uplo,TransA,Diag,N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtbmv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dtpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.dtpmv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtpmv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dtrsv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtrsv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtrsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dtbsv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-        nd4jBlas.dtbsv(DUMMY,'f',Uplo,TransA,Diag,N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtbsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,K,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
     protected void dtpsv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-        nd4jBlas.dtpsv(DUMMY,'f',Uplo,TransA,Diag,N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
+        cblas_dtpsv(convertOrder('f'),convertUplo(Uplo),convertTranspose(TransA),convertDiag(Diag),N,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX);
     }
 
     @Override
@@ -199,84 +196,83 @@ public class CpuLevel2 extends BaseLevel2 {
 
     @Override
     protected void ssymv(char order, char Uplo, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.ssymv(DUMMY,'f',Uplo,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_ssymv(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void ssbmv(char order, char Uplo, int N, int K, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-      nd4jBlas.ssbmv(DUMMY,'f',Uplo,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_ssbmv(convertOrder('f'),convertUplo(Uplo),N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void sspmv(char order, char Uplo, int N, float alpha, INDArray Ap, INDArray X, int incX, float beta, INDArray Y, int incY) {
-        nd4jBlas.sspmv(DUMMY,'f',Uplo,N,alpha,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
+        cblas_sspmv(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)Ap.data().addressPointer(),(FloatPointer)X.data().addressPointer(),incX,beta,(FloatPointer)Y.data().addressPointer(),incY);
 
     }
 
     @Override
     protected void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.sger(DUMMY,'f',M,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
+        cblas_sger(convertOrder('f'),M,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void ssyr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray A, int lda) {
-        nd4jBlas.ssyr(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)A.data().addressPointer(),lda);
+        cblas_ssyr(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void sspr(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Ap) {
-        nd4jBlas.sspr(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Ap.data().addressPointer());
+        cblas_sspr(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Ap.data().addressPointer());
     }
 
     @Override
     protected void ssyr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.ssyr2(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
+        cblas_ssyr2(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void sspr2(char order, char Uplo, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A) {
-        nd4jBlas.sspr2(DUMMY,'f',Uplo,N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer());
+        cblas_sspr2(convertOrder('f'),convertUplo(Uplo),N,alpha,(FloatPointer)X.data().addressPointer(),incX,(FloatPointer)Y.data().addressPointer(),incY,(FloatPointer)A.data().addressPointer());
     }
 
     @Override
     protected void dsymv(char order, char Uplo, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dsymv(DUMMY,'f',Uplo,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dsymv(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dsbmv(char order, char Uplo, int N, int K, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dsbmv(DUMMY,'f',Uplo,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dsbmv(convertOrder('f'),convertUplo(Uplo),N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dspmv(char order, char Uplo, int N, double alpha, INDArray Ap, INDArray X, int incX, double beta, INDArray Y, int incY) {
-        nd4jBlas.dspmv(DUMMY,'f',Uplo,N,alpha,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
+        cblas_dspmv(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)Ap.data().addressPointer(),(DoublePointer)X.data().addressPointer(),incX,beta,(DoublePointer)Y.data().addressPointer(),incY);
     }
 
     @Override
     protected void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.dger(DUMMY,'f',M,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
-        
+        cblas_dger(convertOrder('f'),M,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void dsyr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray A, int lda) {
-        nd4jBlas.dsyr(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)A.data().addressPointer(),lda);
+        cblas_dsyr(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void dspr(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Ap) {
-        nd4jBlas.dspr(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Ap.data().addressPointer());
+        cblas_dspr(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Ap.data().addressPointer());
     }
 
     @Override
     protected void dsyr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
-        nd4jBlas.dsyr2(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
+        cblas_dsyr2(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer(),lda);
     }
 
     @Override
     protected void dspr2(char order, char Uplo, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A) {
-        nd4jBlas.dspr2(DUMMY,'f',Uplo,N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer());
+        cblas_dspr2(convertOrder('f'),convertUplo(Uplo),N,alpha,(DoublePointer)X.data().addressPointer(),incX,(DoublePointer)Y.data().addressPointer(),incY,(DoublePointer)A.data().addressPointer());
     }
 
     @Override

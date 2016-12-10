@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -38,15 +39,15 @@ public class DropOutInverted extends BaseRandomOp {
 
     }
 
-    public DropOutInverted(INDArray x, double p) {
+    public DropOutInverted(@NonNull INDArray x, double p) {
         this(x, x, p, x.length());
     }
 
-    public DropOutInverted(INDArray x, INDArray z, double p) {
+    public DropOutInverted(@NonNull INDArray x, @NonNull INDArray z, double p) {
         this(x, z, p, x.length());
     }
 
-    public DropOutInverted(INDArray x, INDArray z, double p, long n) {
+    public DropOutInverted(@NonNull INDArray x, @NonNull INDArray z, double p, long n) {
         this.p = p;
         init(x, null, z, n);
     }

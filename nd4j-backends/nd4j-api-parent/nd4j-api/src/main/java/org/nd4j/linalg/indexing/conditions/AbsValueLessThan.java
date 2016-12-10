@@ -6,6 +6,14 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 /**Boolean condition on absolute value: abs(x) < value
  */
 public class AbsValueLessThan extends BaseCondition {
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public AbsValueLessThan(){
+        super(0.0);
+    }
+
     public AbsValueLessThan(Number value){
         super(value);
     }

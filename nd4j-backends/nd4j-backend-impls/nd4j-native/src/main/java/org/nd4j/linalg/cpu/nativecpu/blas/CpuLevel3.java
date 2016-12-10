@@ -3,8 +3,6 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -14,6 +12,8 @@ import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
+import static org.bytedeco.javacpp.openblas.*;
+import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
 
 
 /**
@@ -23,9 +23,7 @@ import org.nd4j.nativeblas.Nd4jBlas;
  * @author Adam Gibson
  */
 public class CpuLevel3 extends BaseLevel3 {
-    private Nd4jBlas nd4jBlas = NativeOpsHolder.getInstance().getDeviceNativeBlas();
-    private static PointerPointer DUMMY = new PointerPointer(new Pointer[] {null});
-
+    private Nd4jBlas nd4jBlas = (Nd4jBlas)Nd4j.factory().blas();
     @Override
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         throw new UnsupportedOperationException();
@@ -34,7 +32,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         if (!Nd4j.isFallbackModeEnabled()) {
-            nd4jBlas.sgemm(DUMMY, 'f', TransA, TransB, M, N, K, alpha, (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(), ldb, beta, (FloatPointer) C.data().addressPointer(), ldc);
+            cblas_sgemm(convertOrder('f'),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
         } else {
             Nd4j.getExecutioner().exec(new AggregateGEMM('f',
                     TransA,
@@ -55,36 +53,33 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        nd4jBlas.ssymm(DUMMY,'f',Side,Uplo,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
+        cblas_ssymm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta, INDArray C, int ldc) {
-        nd4jBlas.ssyrk(DUMMY,'f',Uplo,Trans,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,beta,(FloatPointer)C.data().addressPointer(),ldc);
-
+        cblas_ssyrk(convertOrder('f'),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,beta,(FloatPointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        nd4jBlas.ssyr2k(DUMMY,'f',Uplo,Trans,N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
-
+        cblas_ssyr2k(convertOrder('f'),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb,beta,(FloatPointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
-        nd4jBlas.strmm(DUMMY,'f',Side,Uplo,TransA,Diag,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb);
+        cblas_strmm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),Diag,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb);
     }
 
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
-        nd4jBlas.strsm(DUMMY,'f',Side,Uplo,TransA,Diag,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb);
-
+        cblas_strsm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),Diag,M,N,alpha,(FloatPointer)A.data().addressPointer(),lda,(FloatPointer)B.data().addressPointer(),ldb);
     }
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
         if (!Nd4j.isFallbackModeEnabled()) {
-            nd4jBlas.dgemm(DUMMY,'f',TransA,TransB,M,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
+            cblas_dgemm(convertOrder('f'),convertTranspose(TransA),convertTranspose(TransB),M,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
         } else {
             Nd4j.getExecutioner().exec(new AggregateGEMM('f',
                     TransA,
@@ -105,30 +100,27 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        nd4jBlas.dsymm(DUMMY,'f',Side,Uplo,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
-
+        cblas_dsymm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
-        nd4jBlas.dsyrk(DUMMY,'f',Uplo,Trans,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,beta,(DoublePointer)C.data().addressPointer(),ldc);
-
+        cblas_dsyrk(convertOrder('f'),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,beta,(DoublePointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        nd4jBlas.dsyr2k(DUMMY,'f',Uplo,Trans,N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
+        cblas_dsyr2k(convertOrder('f'),convertUplo(Uplo),convertTranspose(Trans),N,K,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb,beta,(DoublePointer)C.data().addressPointer(),ldc);
     }
 
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
-        nd4jBlas.dtrmm(DUMMY,'f',Side,Uplo,TransA,Diag,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb);
-
+        cblas_dtrmm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),Diag,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb);
     }
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
-        nd4jBlas.dtrsm(DUMMY,'f',Side,Uplo,TransA,Diag,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb);
+        cblas_dtrsm(convertOrder('f'),convertSide(Side),convertUplo(Uplo),convertTranspose(TransA),Diag,M,N,alpha,(DoublePointer)A.data().addressPointer(),lda,(DoublePointer)B.data().addressPointer(),ldb);
     }
 
     @Override

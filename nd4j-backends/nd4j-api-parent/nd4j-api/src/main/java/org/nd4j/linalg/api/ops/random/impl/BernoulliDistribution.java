@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -20,7 +21,7 @@ public class BernoulliDistribution extends BaseRandomOp {
      * @param z
 
      */
-    public BernoulliDistribution(INDArray z, double prob) {
+    public BernoulliDistribution(@NonNull INDArray z, double prob) {
         init(null, null, z, z.length());
         this.prob = prob;
         this.extraArgs = new Object[]{this.prob};

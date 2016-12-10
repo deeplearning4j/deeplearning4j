@@ -23,8 +23,6 @@ package org.nd4j.linalg.cpu.nativecpu;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -42,6 +40,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel1;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel2;
 import org.nd4j.linalg.cpu.nativecpu.blas.CpuLevel3;
+import org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexDouble;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexFloat;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
@@ -73,6 +72,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     public CpuNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createBlas() {
+        blas = new CpuBlas();
     }
 
     @Override
@@ -670,7 +674,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
 
@@ -867,7 +871,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
 
-        TADManager tadManager = ((NativeOpExecutioner) Nd4j.getExecutioner()).getTadManager();
+        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
         IntPointer ptrMap = new IntPointer(map);
 

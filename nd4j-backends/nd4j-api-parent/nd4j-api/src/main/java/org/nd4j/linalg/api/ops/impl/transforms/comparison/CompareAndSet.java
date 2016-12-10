@@ -30,6 +30,8 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 /**
  * Element-wise Compare-and-set implementation as Op
  *
+ * Please check javadoc to specific constructors, for detail information.
+ *
  * @author raver119@gmail.com
  */
 public class CompareAndSet extends BaseTransformOp {
@@ -62,10 +64,34 @@ public class CompareAndSet extends BaseTransformOp {
     }
 
 
+    /**
+     * With this constructor, op will check each X element against given Condition, and if condition met, element will be replaced with Set value
+     *
+     *
+     * Pseudocode:
+     * z[i] = condition(x[i]) ? set : x[i];
+     *
+     * PLEASE NOTE: X will be modified inplace.
+     *
+     * @param x
+     * @param set
+     * @param condition
+     */
     public CompareAndSet(INDArray x, double set, Condition condition) {
         this(x, x, set, condition);
     }
 
+
+    /**
+     * With this constructor, op will check each X element against given Condition, and if condition met, element will be replaced with Set value
+     *
+     * Pseudocode:
+     * z[i] = condition(x[i]) ? set : x[i];
+     *
+     * @param x
+     * @param set
+     * @param condition
+     */
     public CompareAndSet(INDArray x, INDArray z, double set, Condition condition) {
         super(x, null, z, x.lengthLong());
         this.compare = condition.getValue();
@@ -74,10 +100,34 @@ public class CompareAndSet extends BaseTransformOp {
         init(x, null, z, x.lengthLong());
     }
 
+    /**
+     * With this constructor, op will check each Y element against given Condition, and if condition met, element Z will be set to Y value, and X otherwise
+     *
+     * PLEASE NOTE: X will be modified inplace.
+     *
+     * Pseudocode:
+     * z[i] = condition(y[i]) ? y[i] : x[i];
+     *
+     * @param x
+     * @param y
+     * @param condition
+     */
     public CompareAndSet(INDArray x, INDArray y, Condition condition) {
         this(x, y, x, condition);
     }
 
+
+    /**
+     * With this constructor, op will check each Y element against given Condition, and if condition met, element Z will be set to Y value, and X otherwise
+     *
+     * Pseudocode:
+     * z[i] = condition(y[i]) ? y[i] : x[i];
+     *
+     * @param x
+     * @param y
+     * @param z
+     * @param condition
+     */
     public CompareAndSet(INDArray x, INDArray y, INDArray z, Condition condition) {
         super(x, y, z, x.lengthLong());
         this.compare = condition.getValue();
@@ -86,7 +136,15 @@ public class CompareAndSet extends BaseTransformOp {
         init(x, y, z, x.lengthLong());
     }
 
-
+    /**
+     * This constructor is shortcut to epsEquals.
+     *
+     * @param x
+     * @param z
+     * @param compare
+     * @param set
+     * @param eps
+     */
     public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps) {
         super(x,z);
         this.compare = compare;
@@ -96,6 +154,15 @@ public class CompareAndSet extends BaseTransformOp {
         init(x, null, z, x.length());
     }
 
+    /**
+     * This constructor is shortcut to epsEquals.
+     *
+     * @param x
+     * @param z
+     * @param compare
+     * @param set
+     * @param eps
+     */
     public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps, long n) {
         super(x,z,n);
         this.compare = compare;

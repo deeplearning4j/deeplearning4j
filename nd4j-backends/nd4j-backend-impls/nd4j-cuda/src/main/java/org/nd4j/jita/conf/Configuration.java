@@ -2,7 +2,6 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
@@ -51,7 +50,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
-    @Getter private boolean gatherStatistics = false;
+    @Getter private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
 
@@ -272,8 +271,8 @@ public class Configuration implements Serializable {
      * @param reallyEnable
      * @return
      */
-    public Configuration enableStatisticsGathering(boolean reallyEnable) {
-        gatherStatistics = reallyEnable;
+    public Configuration enableDashboard(boolean reallyEnable) {
+        fillDashboard = reallyEnable;
         return this;
     }
 
@@ -311,7 +310,6 @@ public class Configuration implements Serializable {
         this.maximumHostCache = maxCache;
         return this;
     }
-
 
     /**
      * This method allows you to specify maximum memory cache per device

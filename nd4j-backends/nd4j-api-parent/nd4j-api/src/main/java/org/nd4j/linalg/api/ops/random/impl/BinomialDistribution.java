@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -22,7 +23,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param trials
      * @param probability
      */
-    public BinomialDistribution(INDArray z, int trials, double probability) {
+    public BinomialDistribution(@NonNull INDArray z, int trials, double probability) {
         init(z, z, z, z.length());
         this.trials = trials;
         this.probability = probability;
@@ -35,7 +36,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param trials
      * @param probabilities array with probability value for each trial
      */
-    public BinomialDistribution(INDArray z, int trials, INDArray probabilities) {
+    public BinomialDistribution(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
         if (trials > probabilities.length())
             throw new IllegalStateException("Number of trials is > then amount of probabilities provided");
 
@@ -56,7 +57,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param z
      * @param probabilities
      */
-    public BinomialDistribution(INDArray z, INDArray probabilities) {
+    public BinomialDistribution(@NonNull INDArray z, @NonNull INDArray probabilities) {
         this(z, probabilities.length(), probabilities);
     }
 
