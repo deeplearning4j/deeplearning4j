@@ -12,13 +12,5 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 public interface Transport {
 
 
-    void init(Configuration configuration, NodeRole role);
-
-    void sendToShard();
-
-    void sendToClient();
-
-    void sendToAllShards();
-
-    void sendToAllClients();
+    void init(Configuration configuration, NodeRole role, String localIp);
 }
