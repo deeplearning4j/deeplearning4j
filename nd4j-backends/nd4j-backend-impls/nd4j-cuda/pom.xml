@@ -238,4 +238,28 @@
         </dependency>
 
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>msvc</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <properties>${javacpp.platform}</properties>
+                            <compilerOptions>
+                                <compilerOption>/MT</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
