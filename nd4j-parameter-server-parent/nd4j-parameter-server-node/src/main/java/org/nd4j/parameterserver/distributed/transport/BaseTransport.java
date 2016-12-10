@@ -60,11 +60,13 @@ public abstract class BaseTransport implements Transport {
             case 12:
                 // this command is possible to issue only from Shard
                 sendFeedbackToClient(message);
+                break;
             // messages 20..29 inclusive are reserved for Shard->Shard commands
             case 20:
             case 21:
             case 22:
                 sendCoordinationCommand(message);
+                break;
             default:
                 throw new RuntimeException("Unknown messageType passed for delivery");
         }
