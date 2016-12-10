@@ -7,6 +7,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Connector;
 import org.nd4j.parameterserver.distributed.logic.Shard;
+import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -39,6 +40,7 @@ public class VoidParameterServer {
     protected AtomicBoolean shutdownLocker = new AtomicBoolean(false);
     protected AtomicBoolean shutdownFinished = new AtomicBoolean(false);
 
+    protected transient Transport transport;
 
 
     protected Connector connector;

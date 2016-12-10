@@ -6,10 +6,13 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
  * Transport implementation based on Aeron UDP multicast
@@ -19,27 +22,8 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class MulticastTransport implements Transport {
-
-    private Configuration configuration;
-    private NodeRole nodeRole;
-
-    private Aeron aeron;
-    private Aeron.Context context;
-
-    private String multicastChannelUri;
-    private String unicastChannelUri;
-
-    private String ip;
-
-    // TODO: move this to singleton holder
-    private MediaDriver driver;
-
-    private Publication publicationForShards;
-    private Publication publicationForClients;
-
-    private Subscription subscriptionForShards;
-    private Subscription subscriptionForClients;
+public class MulticastTransport extends BaseTransport {
+    protected String multicastChannelUri;
 
     public MulticastTransport() {
         // no-op
@@ -106,5 +90,33 @@ public class MulticastTransport implements Transport {
         }
     }
 
+    /**
+     * This command is possible to issue only from Client
+     *
+     * @param message
+     */
+    @Override
+    protected void sendCommandToShard(VoidMessage message) {
+        publicationForShards.offer(message.asUnsafeBuffer());
+    }
 
+    /**
+     * This command is possible to issue only from Shard
+     *
+     * @param message
+     */
+    @Override
+    protected void sendCoordinationCommand(VoidMessage message) {
+        publicationForShards.offer(message.asUnsafeBuffer());
+    }
+
+    /**
+     * This command is possible to issue only from Shard
+     *
+     * @param message
+     */
+    @Override
+    protected void sendFeedbackToClient(VoidMessage message) {
+        publicationForClients.offer(message.asUnsafeBuffer());
+    }
 }
