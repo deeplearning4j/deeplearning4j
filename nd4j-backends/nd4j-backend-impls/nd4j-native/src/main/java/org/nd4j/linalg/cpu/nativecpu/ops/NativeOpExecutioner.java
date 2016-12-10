@@ -12,13 +12,18 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jBlas;
 
 import java.util.*;
 
@@ -131,6 +136,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 hostTadOffsets
         );
 
+        long st = profilingHookIn(op, tadBuffers.getFirst());
+
         Pointer x = op.x().data().addressPointer();
         Pointer z = op.z().data().addressPointer();
 
@@ -181,6 +188,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
         }
+        profilingHookOut(op, st);
         return op.z();
     }
 
@@ -188,8 +196,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
-
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -229,6 +240,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 hostTadShapeInfo,
                 hostTadOffsets
         );
+
+        long st = profilingHookIn(op, tadBuffers.getFirst());
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
 
@@ -443,6 +456,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
+            long st = profilingHookIn(op);
+
             if (op.getDimension() != null) {
                 invoke(op, op.getDimension());
                 return;
@@ -497,6 +512,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer)getPointerForExtraArgs(op));
 
             }
+
+            profilingHookOut(op, st);
         }
     }
 
@@ -507,7 +524,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-            PointerPointer dummy = new PointerPointer(4);
+        long st = 0;
+
+        PointerPointer dummy = new PointerPointer(4);
 
         if(op.opNum() == 41 && op.extraArgs() != null) {
             int[] dimension = new int[] {(int) op.extraArgs()[1] };
@@ -521,7 +540,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Pointer off = offsets == null ? null : offsets.addressPointer();
             dummy.put(0, tad);
             dummy.put(1, off);
-        }
+
+            st = profilingHookIn(op, tadBuffers.getFirst());
+        } else st = profilingHookIn(op);
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
@@ -629,11 +650,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+            profilingHookOut(op, st);
     }
 
     @Override
     public INDArray exec(BroadcastOp op,int...dimension) {
+        long st = profilingHookIn(op);
         Arrays.sort(dimension);
+
+        for (int i = 0; i < dimension.length; i++)
+            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
@@ -687,6 +714,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            long st = profilingHookIn(op);
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.setFinalResult((int) loop.execIndexReduceScalarDouble(
@@ -704,16 +732,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
                         (FloatPointer)getPointerForExtraArgs(op)));
             }
-
+            profilingHookOut(op, st);
         }
     }
 
     private void exec(Accumulation op) {
         if(op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-
         }
         else {
+            long st = profilingHookIn(op);
+
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op instanceof Variance) {
@@ -767,6 +796,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer)getPointerForExtraArgs(op)));
                 }
             }
+            profilingHookOut(op, st);
         }
     }
 
@@ -792,6 +822,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
+        //profilingHookIn(batch);
 
         IntPointer pointer = (IntPointer) getPointer(batch);
 
@@ -913,6 +944,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void exec(Aggregate op) {
+       // long st = profilingHookIn(op);
 
         int numArguments = op.getArguments().size();
         int numIndexArguments = op.getIndexingArguments().size();
@@ -1000,9 +1032,107 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         properties.put("backend","CPU");
         properties.put("omp.threads", loop.ompGetMaxThreads());
-        properties.put("blas.threads", NativeOpsHolder.getInstance().getDeviceNativeBlas().getMaxThreads());
-        properties.put("blas.vendor", NativeOpsHolder.getInstance().getDeviceNativeBlas().getBlasVendor().toString());
+        properties.put("blas.threads", Nd4j.factory().blas().getMaxThreads());
+        properties.put("blas.vendor", ((Nd4jBlas)Nd4j.factory().blas()).getBlasVendor().toString());
 
         return properties;
+    }
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    @Override
+    public INDArray exec(RandomOp op, Random rng) {
+        if (rng.getStateBuffer() == null)
+            throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");
+
+        long st = profilingHookIn(op);
+
+        if (op.x() != null && op.y() != null && op.z() != null) {
+            // triple arg call
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer()
+                );
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer()
+                );
+            }
+        } else if (op.x() != null && op.z() != null) {
+            //double arg call
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
+                    rng.getStatePointer(), // rng state ptr
+                    (FloatPointer) op.x().data().addressPointer(),
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.extraArgsDataBuff().addressPointer());
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer());
+            }
+
+        } else {
+            // single arg call
+
+            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+                loop.execRandomFloat(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer()
+                        );
+            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+                loop.execRandomDouble(null, op.opNum(),
+                        rng.getStatePointer(), // rng state ptr
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer()
+                );
+            }
+        }
+
+        profilingHookOut(op, st);
+
+        return op.z();
+    }
+
+    @Override
+    public TADManager getTADManager() {
+        return tadManager;
     }
 }

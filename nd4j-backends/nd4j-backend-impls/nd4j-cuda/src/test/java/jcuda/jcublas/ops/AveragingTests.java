@@ -106,7 +106,7 @@ public class AveragingTests {
     public void testMultiDeviceAveraging() throws Exception {
         final List<Pair<INDArray, INDArray>> pairs = new ArrayList<>();
 
-        int numDevices = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
 

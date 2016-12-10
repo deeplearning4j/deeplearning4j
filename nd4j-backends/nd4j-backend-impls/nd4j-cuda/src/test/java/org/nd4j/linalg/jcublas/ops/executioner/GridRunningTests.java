@@ -1,9 +1,14 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -65,5 +70,35 @@ public class GridRunningTests {
 
         assertTrue(res1 == res2);
         assertTrue(res3 == res2);
+    }
+
+    @Test
+    public void testMul_Scalar1() throws Exception {
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        INDArray x = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        INDArray y = Nd4j.create(10).assign(0.000003);
+
+        x.muli(y);
+        x.divi(0.0000022);
+
+        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+        INDArray eX = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+        INDArray eY = Nd4j.create(10).assign(0.000003);
+        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+        eX.muli(eY);
+        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+        System.out.println("Data before divi2: " + Arrays.toString(eX.data().asDouble()));
+
+        eX.divi(0.0000022);
+        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+
+        System.out.println("Data1: " + Arrays.toString(x.data().asDouble()));
+        System.out.println("Data2: " + Arrays.toString(eX.data().asDouble()));
+
+        assertEquals(eX, x);
     }
 }

@@ -2,12 +2,16 @@
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.7.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-native</artifactId>
     <name>nd4j-native</name>
+
+    <properties>
+        <openblas.version>0.2.19</openblas.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -17,6 +21,54 @@
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
         </dependency>
+
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>android-arm</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>android-x86</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>macosx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>windows-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>linux-ppc64le</classifier>
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
@@ -44,9 +96,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>openblas</artifactId>
-            <version>0.2.19-1.2</version> 
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -111,7 +164,6 @@
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
-                    <preloadPath>${env.OpenBLAS_HOME}/lib</preloadPath>
                 </configuration>
                 <executions>
                     <execution>
@@ -121,10 +173,8 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <propertyFile>${project.basedir}/src/main/resources/org/bytedeco/javacpp/properties/${javacpp.platform}-nd4j.properties</propertyFile>
                             <skip>${process-classes.skip}</skip>
                             <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.Nd4jBlas</classOrPackageName>
                                 <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
                             </classOrPackageNames>
                             <copyLibs>true</copyLibs>
@@ -155,7 +205,7 @@
                                 </requireProperty>
                                 <requireFilesExist>
                                     <files>
-                                        <file>${env.LIBND4J_HOME}/blas/NativeBlas.h</file>
+                                        <file>${env.LIBND4J_HOME}/blas/NativeOps.h</file>
                                         <file>${env.LIBND4J_HOME}/blasbuild/cpu/blas</file>
                                     </files>
                                     <message>!!! You have to compile libnd4j with cpu support first!</message>

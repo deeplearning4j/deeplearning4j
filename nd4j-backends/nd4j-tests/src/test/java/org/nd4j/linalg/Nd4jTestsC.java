@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -37,6 +38,10 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -68,17 +73,18 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public  class Nd4jTestsC extends BaseNd4jTest {
 
+    DataBuffer.Type initialType;
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
+        this.initialType = Nd4j.dataType();
     }
 
 
     @Before
     public void before() throws  Exception {
         super.before();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -86,9 +92,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @After
     public void after() throws Exception {
         super.after();
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
@@ -1253,7 +1257,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2Double() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        DataBuffer.Type initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
         double norm3 = n.norm2Number().doubleValue();
@@ -1264,7 +1269,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         double norm2 = row1.norm2Number().doubleValue();
         double assertion2 = 5.0f;
         assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
-
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 
@@ -1820,12 +1825,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNullPointerDataBuffer() {
+        DataBuffer.Type initialType = Nd4j.dataType();
+
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+
         ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
         allocate.asFloatBuffer().put(new float[]{1,2,3,4,5,6,7,8,9,10});
         DataBuffer buff = Nd4j.createBuffer(allocate, DataBuffer.Type.FLOAT, 10);
         float sum = Nd4j.create(buff).sumNumber().floatValue();
         System.out.println(sum);
         assertEquals(55f, sum, 0.001f);
+
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
     @Test
@@ -3148,6 +3159,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, result);
     }
 
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation1() {
+        Nd4j.pullRows(Nd4j.create(10,10), 2, new int[]{0, 1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation2() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, -1, 2});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation3() {
+        Nd4j.pullRows(Nd4j.create(10,10), 1, new int[]{0, 1, 10});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation4() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2, 3});
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testPullRowsValidation5() {
+        Nd4j.pullRows(Nd4j.create(3,10), 1, new int[]{0, 1, 2},'e');
+    }
+
+
+
     @Test
     public void testVPull2() {
         int indexes[] = new int[]{0, 2, 4};
@@ -3287,6 +3325,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(array2.equalsWithEps(array3, Nd4j.EPS_THRESHOLD));
         assertTrue(array1.equalsWithEps(array2, 0.7f));
         assertEquals(array2, array3);
+    }
+
+    @Test
+    public void testIMaxIAMax(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imax = Nd4j.getExecutioner().execAndReturn(new IMax(arr.dup())).getFinalResult();
+        double iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(arr.dup())).getFinalResult();
+        System.out.println("IMAX: " + imax);
+        System.out.println("IAMAX: " + iamax);
+
+        assertEquals(3, imax, 0.0);
+        assertEquals(1, iamax, 0.0);
+    }
+
+
+    @Test
+    public void testIMinIAMin(){
+        INDArray arr = Nd4j.create(new double[]{-0.24, -0.26, -0.07, -0.01});
+
+        double imin = Nd4j.getExecutioner().execAndReturn(new IMin(arr.dup())).getFinalResult();
+        double iamin = Nd4j.getExecutioner().execAndReturn(new IAMin(arr.dup())).getFinalResult();
+        System.out.println("IMin: " + imin);
+        System.out.println("IAMin: " + iamin);
+
+        assertEquals(1, imin, 0.0);
+        assertEquals(3, iamin, 0.0);
     }
 
     @Override

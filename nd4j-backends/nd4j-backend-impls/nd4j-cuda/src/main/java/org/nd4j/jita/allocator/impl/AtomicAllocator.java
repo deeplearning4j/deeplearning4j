@@ -235,6 +235,10 @@ public class AtomicAllocator implements Allocator {
         return memoryHandler.getDevicePointer(buffer, context);
     }
 
+    public Pointer getPointer(DataBuffer buffer) {
+        return memoryHandler.getDevicePointer(buffer, (CudaContext) getDeviceContext().getContext());
+    }
+
     /**
      * This method returns actual device pointer valid for specified shape of current object
      *
@@ -321,7 +325,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     public Integer getDeviceId(INDArray array) {
-        return memoryHandler.getDeviceId();
+        return getAllocationPoint(array).getDeviceId();
     }
 
 

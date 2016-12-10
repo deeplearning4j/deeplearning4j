@@ -139,12 +139,12 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public float zeroFloat(){
-        return -Float.MAX_VALUE;
+        return 0.0f;
     }
 
     @Override
     public double zeroDouble(){
-        return -Double.MAX_VALUE;
+        return 0.0;
     }
 
     @Override

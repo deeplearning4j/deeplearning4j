@@ -6,25 +6,34 @@ import org.nd4j.linalg.api.shape.ShapeDescriptor;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
  */
 public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
     private Map<ShapeDescriptor, DataBuffer> shapeCache = new ConcurrentHashMap<>();
+    private AtomicInteger counter = new AtomicInteger(0);
+    private static final int MAX_ENTRIES = 100;
 
     @Override
     public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
 
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
         if (!shapeCache.containsKey(descriptor)) {
-            synchronized (this) {
-                if (!shapeCache.containsKey(descriptor)) {
-                    DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
-                    shapeCache.put(descriptor, buffer);
+            if (counter.get() < MAX_ENTRIES) {
+                synchronized (this) {
+                    if (!shapeCache.containsKey(descriptor)) {
+                        counter.incrementAndGet();
+                        DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                        shapeCache.put(descriptor, buffer);
 
-                    return buffer;
-                } else return shapeCache.get(descriptor);
+                        return buffer;
+                    } else return shapeCache.get(descriptor);
+                }
+            } else {
+                return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             }
         }
 

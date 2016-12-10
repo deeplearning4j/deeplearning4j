@@ -19,11 +19,16 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
+import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
+import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -95,6 +100,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
          */
+        checkForCompression(op);
 
         invokeWatchdog(op);
 
@@ -108,7 +114,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         } else if (op instanceof BroadcastOp) {
             invoke((BroadcastOp) op);
         } else {
-            logger.info("Random op: {}", op.getClass().getSimpleName());
+            //logger.info("Random op: {}", op.getClass().getSimpleName());
             pushToGrid(new OpDescriptor(op));
         }
 
@@ -126,17 +132,17 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (watchdog.size() > 0)
             for (WatchdogPair pair: watchdog) {
                 if (compareArrays(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using JVM eq", op.getClass().getSimpleName(), pair.getTag());
+                //    logger.info("WATCHDOG: Invoked {} op on {} using JVM eq", op.getClass().getSimpleName(), pair.getTag());
                     continue;
                 }
 
                 if (compareDevicePointers(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using device PTR; Thread ID: {}; deviceId: {}", op.getClass().getSimpleName(), pair.getTag(), Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                  //  logger.info("WATCHDOG: Invoked {} op on {} using device PTR; Thread ID: {}; deviceId: {}", op.getClass().getSimpleName(), pair.getTag(), Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
                     throw new RuntimeException();
                 }
 
                 if (compareHostPointers(pair.getArray(), op)) {
-                    logger.info("WATCHDOG: Invoked {} op on {} using host PTR", op.getClass().getSimpleName(), pair.getTag());
+                //    logger.info("WATCHDOG: Invoked {} op on {} using host PTR", op.getClass().getSimpleName(), pair.getTag());
                     continue;
                 }
             }
@@ -217,6 +223,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             //logger.info("Sending TransformOp to CudaExecutioner");
             super.invoke(t);
+        } else if (op instanceof Variance) {
+            Variance acc = (Variance) op;
+            if (flush) flushQueue();
+
+            super.naiveExec(acc, dimensions);
         } else if (op instanceof Accumulation) {
             Accumulation acc = (Accumulation) op;
             if (flush) flushQueue();
@@ -251,7 +262,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             metaCounter.incrementAndGet();
             exec((MetaOp) op);
         } else if (op instanceof GridOp) {
-            logger.info("Executing GridOp");
+        //    logger.info("Executing GridOp");
             exec((GridOp) op);
         }
     }
@@ -292,7 +303,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     pushToGrid(last, false);
 
                     //|| op instanceof ScalarOp
-                    if ((op instanceof TransformOp && op.y() != null) ) {
+                    if ((op instanceof TransformOp && op.y() != null) && onCurrentDeviceXYZ(op)) {
                         enqueueOp(new OpDescriptor(op, dimension));
                     } else {
                         pushToGrid(new OpDescriptor(op, dimension), false);
@@ -307,6 +318,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 case INVERTED_PREDICATE: {
                     OpDescriptor currentOp = new OpDescriptor(op, dimension);
 
+          //          logger.info("Calling for Meta: {}+{}", last.getOp().getClass().getSimpleName(), currentOp.getOp().getClass().getSimpleName());
                     dequeueOp(last);
                     dequeueOp(currentOp);
 
@@ -324,7 +336,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             }
         } else {
             //&& Nd4j.dataType() != DataBuffer.Type.HALF
-            if ((op instanceof TransformOp && op.y() != null ) ) {
+            if ((op instanceof TransformOp && op.y() != null && onCurrentDeviceXYZ(op)) ) {
                 enqueueOp(new OpDescriptor(op, dimension));
             } else {
                 pushToGrid(new OpDescriptor(op, dimension), false);
@@ -336,12 +348,23 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         //return op;
     }
 
+    protected boolean onCurrentDeviceXYZ(Op op) {
+        int deviceId = AtomicAllocator.getInstance().getDeviceId();
+        int deviceX = AtomicAllocator.getInstance().getDeviceId(op.x());
+        int deviceY = AtomicAllocator.getInstance().getDeviceId(op.y());
+        int deviceZ = AtomicAllocator.getInstance().getDeviceId(op.y());
+
+        return deviceId == deviceX && deviceY == deviceZ && deviceZ == deviceX;
+    }
+
     protected void enqueueOp(OpDescriptor descriptor) {
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().x()).markEnqueued(true);
         AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().z()).markEnqueued(true);
 
         if (descriptor.getOp().y() != null)
             AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(true);
+
+     //   logger.info("Enqueued op: " + descriptor.getOp().getClass().getSimpleName());
 
         lastOp.set(descriptor);
     }
@@ -353,6 +376,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if (descriptor.getOp().y() != null)
             AtomicAllocator.getInstance().getAllocationPoint(descriptor.getOp().y()).markEnqueued(false);
+
+     //   logger.info("Dequeued op: " + descriptor.getOp().getClass().getSimpleName());
     }
 
     protected MetaType getMetaOpType(Op op, int... dimension) {
@@ -393,7 +418,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 // TODO: extend non-experimental support for MetaOps
                 // we enable this only for PairwisetTransforms.Set followed by scalar
                 if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
-                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null) {
+                    // FIXME: get rid of those instanceof
+                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null && !(op instanceof ScalarMax) && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11) && op.opNum() != 16 && op.opNum() != 13 ) {
                         return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
                     }
                 }
@@ -894,6 +920,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             Basically we just want to form GridOp and pass it to native executioner
             But since we don't have GridOp interface yet, we'll send everything to underlying CudaExecutioner.
          */
+    //    logger.info("Non-Blocking flush");
         // TODO: proper implementation for GridOp creation required here
 /*
         Deque<OpDescriptor> currentQueue = deviceQueues.get();
@@ -935,12 +962,26 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public void flushQueueBlocking() {
         flushQueue();
 
+    //    logger.info("Blocking flush");
+
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
 
     public void addToWatchdog(INDArray array, String tag) {
         watchdog.add(new WatchdogPair(array, tag));
     }
+
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
 
     @Override
     public void exec(List<Aggregate> batch) {
@@ -982,6 +1023,13 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         // we enqueue op for specific device here
         aggregates.get(deviceId).add(new AggregateDescriptor(op, key, opCounter.get().getAndIncrement()));
+    }
+
+    @Override
+    public INDArray exec(RandomOp op, Random rng) {
+        flushQueue();
+
+        return super.exec(op, rng);
     }
 
     protected void buildAggregation() {

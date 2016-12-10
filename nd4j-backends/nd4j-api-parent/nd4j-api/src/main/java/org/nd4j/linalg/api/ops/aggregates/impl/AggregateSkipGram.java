@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ops.aggregates.impl;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AggregateSkipGram extends BaseAggregate {
     private int vectorLength;
 
@@ -20,7 +23,7 @@ public class AggregateSkipGram extends BaseAggregate {
         indexingArguments.set(8, inferenceVector == null ? 0 : 1); // set isInference to true
     }
 
-    public AggregateSkipGram(INDArray syn0, INDArray syn1, INDArray syn1Neg, INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
+    public AggregateSkipGram(@NonNull INDArray syn0, INDArray syn1, INDArray syn1Neg, @NonNull INDArray expTable, INDArray negTable, int idxSyn0, int[] idxSyn1, int[] codes, int negativeRounds, int ngStarter, int vectorLength, double alpha, long nextRandom, int vocabSize) {
         indexingArguments.add(idxSyn0);
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);

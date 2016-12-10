@@ -26,83 +26,131 @@ public class TestSerialization extends BaseNd4jTest {
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
         int length = 100;
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrC = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrF = Nd4j.linspace(1,length,length).reshape('f',10,10);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(DataOutputStream dos = new DataOutputStream(baos)){
-            Nd4j.write(arr,dos);
+            Nd4j.write(arrC,dos);
         }
-        byte[] bytes = baos.toByteArray();
+        byte[] bytesC = baos.toByteArray();
+        baos = new ByteArrayOutputStream();
+        try(DataOutputStream dos = new DataOutputStream(baos)){
+            Nd4j.write(arrF,dos);
+        }
+        byte[] bytesF = baos.toByteArray();
 
-        INDArray arr2;
-        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))){
-            arr2 = Nd4j.read(dis);
+        INDArray arr2C;
+        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytesC))){
+            arr2C = Nd4j.read(dis);
+        }
+        INDArray arr2F;
+        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytesF))){
+            arr2F = Nd4j.read(dis);
         }
 
-        assertEquals(arr,arr2);
+        assertEquals(arrC,arr2C);
+        assertEquals(arrF,arr2F);
     }
 
     @Test
     public void testSerializationFullArrayJava() throws Exception {
         int length = 100;
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
-
-
+        INDArray arrC = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrF = Nd4j.linspace(1,length,length).reshape('f',10,10);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
-            oos.writeObject(arr);
+            oos.writeObject(arrC);
         }
-        byte[] bytes = baos.toByteArray();
+        byte[] bytesC = baos.toByteArray();
 
-        INDArray arr2;
-        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
-            arr2 = (INDArray) ois.readObject();
+        baos = new ByteArrayOutputStream();
+        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+            oos.writeObject(arrF);
+        }
+        byte[] bytesF = baos.toByteArray();
+
+        INDArray arr2C;
+        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytesC))){
+            arr2C = (INDArray) ois.readObject();
+        }
+        INDArray arr2F;
+        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytesF))){
+            arr2F = (INDArray) ois.readObject();
         }
 
-        assertEquals(arr,arr2);
+        assertEquals(arrC,arr2C);
+        assertEquals(arrF,arr2F);
     }
 
     @Test
     public void testSerializationOnViewsNd4jWriteRead() throws Exception {
         int length = 100;
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrC = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrF = Nd4j.linspace(1,length,length).reshape('f',10,10);
 
-        INDArray sub = arr.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray subC = arrC.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray subF = arrF.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(DataOutputStream dos = new DataOutputStream(baos)){
-            Nd4j.write(sub,dos);
+            Nd4j.write(subC,dos);
         }
-        byte[] bytes = baos.toByteArray();
+        byte[] bytesC = baos.toByteArray();
 
-        INDArray arr2;
-        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes))){
-            arr2 = Nd4j.read(dis);
+        baos = new ByteArrayOutputStream();
+        try(DataOutputStream dos = new DataOutputStream(baos)){
+            Nd4j.write(subF,dos);
+        }
+        byte[] bytesF = baos.toByteArray();
+
+
+        INDArray arr2C;
+        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytesC))){
+            arr2C = Nd4j.read(dis);
         }
 
-        assertEquals(sub,arr2);
+        INDArray arr2F;
+        try( DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytesF))){
+            arr2F = Nd4j.read(dis);
+        }
+
+        assertEquals(subC,arr2C);
+        assertEquals(subF,arr2F);
     }
 
     @Test
     public void testSerializationOnViewsJava() throws Exception {
         int length = 100;
-        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrC = Nd4j.linspace(1,length,length).reshape('c',10,10);
+        INDArray arrF = Nd4j.linspace(1,length,length).reshape('f',10,10);
 
-        INDArray sub = arr.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray subC = arrC.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
+        INDArray subF = arrF.get(NDArrayIndex.interval(5,10), NDArrayIndex.interval(5,10));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
-            oos.writeObject(sub);
+            oos.writeObject(subC);
         }
-        byte[] bytes = baos.toByteArray();
+        byte[] bytesC = baos.toByteArray();
+        baos = new ByteArrayOutputStream();
+        try(ObjectOutputStream oos = new ObjectOutputStream(baos)){
+            oos.writeObject(subF);
+        }
+        byte[] bytesF = baos.toByteArray();
 
-        INDArray arr2;
-        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
-            arr2 = (INDArray) ois.readObject();
+        INDArray arr2C;
+        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytesC))){
+            arr2C = (INDArray) ois.readObject();
+        }
+        INDArray arr2F;
+        try( ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytesF))){
+            arr2F = (INDArray) ois.readObject();
         }
 
-        assertEquals(sub,arr2);
+        assertEquals(subC,arr2C);
+        assertEquals(subF,arr2F);
     }
 
     @Override

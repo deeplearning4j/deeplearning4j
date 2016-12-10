@@ -136,6 +136,12 @@ public interface MultiDataSet extends Serializable {
      */
     List<MultiDataSet> asList();
 
+    /**
+     * Clone the dataset
+     *
+     * @return a clone of the dataset
+     */
+    MultiDataSet copy();
 
     /**
      * Set the metadata for this MultiDataSet<br>

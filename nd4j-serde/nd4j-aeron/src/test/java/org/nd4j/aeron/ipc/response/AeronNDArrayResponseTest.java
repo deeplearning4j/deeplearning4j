@@ -3,6 +3,8 @@ package org.nd4j.aeron.ipc.response;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import lombok.extern.slf4j.Slf4j;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,16 +23,14 @@ import static org.nd4j.linalg.factory.Nd4j.scalar;
 /**
  * Created by agibsonccc on 10/3/16.
  */
+@Slf4j
 public class AeronNDArrayResponseTest {
     private MediaDriver mediaDriver;
-    private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
-    private Aeron.Context ctx;
-    private Aeron.Context ctx2;
 
     @Before
     public void before() {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
+                .threadingMode(ThreadingMode.SHARED)
                 .dirsDeleteOnStart(true)
                 .termBufferSparseFile(false)
                 .conductorIdleStrategy(new BusySpinIdleStrategy())
@@ -47,53 +47,105 @@ public class AeronNDArrayResponseTest {
         int streamId = 10;
         int responderStreamId = 11;
         String host = "127.0.0.1";
+        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+                .availableImageHandler(AeronUtil::printAvailableImage)
+                .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                .errorHandler(e -> log.error(e.toString(), e));
+
+        Aeron aeron = Aeron.connect(ctx);
         AeronNDArrayResponder responder = AeronNDArrayResponder.startSubscriber(
-                getContext2(),
+                aeron,
                 host,
                 40124,
-               new NDArrayHolder() {
-                   /**
-                    * The number of updates
-                    * that have been sent to this older.
-                    *
-                    * @return
-                    */
-                   @Override
-                   public int totalUpdates() {
-                       return 1;
-                   }
+                new NDArrayHolder() {
+                            /**
+                             * Set the ndarray
+                             *
+                             * @param arr the ndarray for this holder
+                             *            to use
+                             */
+                            @Override
+                            public void setArray(INDArray arr) {
 
-                   /**
-                    * Retrieve an ndarray
-                    *
-                    * @return
-                    */
-                   @Override
-                   public INDArray get() {
-                       return Nd4j.scalar(1.0);
-                   }
-               }
+                            }
+
+                            /**
+                     * The number of updates
+                     * that have been sent to this older.
+                     *
+                     * @return
+                     */
+                    @Override
+                    public int totalUpdates() {
+                        return 1;
+                    }
+
+                    /**
+                     * Retrieve an ndarray
+                     *
+                     * @return
+                     */
+                    @Override
+                    public INDArray get() {
+                        return Nd4j.scalar(1.0);
+                    }
+
+                    /**
+                     * Retrieve a partial view of the ndarray.
+                     * This method uses tensor along dimension internally
+                     * Note this will call dup()
+                     *
+                     * @param idx        the index of the tad to get
+                     * @param dimensions the dimensions to use
+                     * @return the tensor along dimension based on the index and dimensions
+                     * from the master array.
+                     */
+                    @Override
+                    public INDArray getTad(int idx, int... dimensions) {
+                        return Nd4j.scalar(1.0);
+                    }
+                }
 
                 ,responderStreamId);
 
         AtomicInteger count = new AtomicInteger(0);
         AtomicBoolean running = new AtomicBoolean(true);
         AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.startSubscriber(
-                getContext(),
+                aeron,
                 host,
                 40123,
-                arr -> count.incrementAndGet()
-                ,streamId,running);
+                new NDArrayCallback() {
+                    /**
+                     * A listener for ndarray message
+                     *
+                     * @param message the message for the callback
+                     */
+                    @Override
+                    public void onNDArrayMessage(NDArrayMessage message) {
+
+                    }
+
+                    @Override
+                    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                        count.incrementAndGet();
+                    }
+
+                    @Override
+                    public void onNDArray(INDArray arr) {
+                        count.incrementAndGet();
+                    }
+                }
+                , streamId, running);
 
         int expectedResponses = 10;
         HostPortPublisher publisher = HostPortPublisher
-                .builder().ctx(getContext2())
+                .builder().aeron(aeron)
                 .uriToSend(host + ":40123:" + streamId)
                 .channel(AeronUtil
                         .aeronChannel(host,40124))
                 .streamId(responderStreamId).build();
 
-        Thread.sleep(10000);
 
 
         for(int i = 0; i < expectedResponses; i++) {
@@ -103,32 +155,19 @@ public class AeronNDArrayResponseTest {
 
         Thread.sleep(60000);
 
-        publisher.close();
+
 
         assertEquals(expectedResponses,count.get());
 
         System.out.println("After");
+
+        CloseHelper.close(responder);
+        CloseHelper.close(subscriber);
+        CloseHelper.close(publisher);
+        CloseHelper.close(aeron);
+
     }
 
 
-    private Aeron.Context getContext2() {
-        if(ctx2 == null)
-            ctx2 = new Aeron.Context().publicationConnectionTimeout(-1)
-                    .availableImageHandler(AeronUtil::printAvailableImage)
-                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                    .errorHandler(e -> log.error(e.toString(), e));
-        return ctx2;
-    }
-
-    private Aeron.Context getContext() {
-        if(ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
-                    .availableImageHandler(AeronUtil::printAvailableImage)
-                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                    .errorHandler(e -> log.error(e.toString(), e));
-        return ctx;
-    }
 
 }

@@ -26,6 +26,13 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
  */
 public class LessThan extends BaseCondition {
 
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public LessThan(){
+        super(0.0);
+    }
+
     public LessThan(Number value) {
         super(value);
     }

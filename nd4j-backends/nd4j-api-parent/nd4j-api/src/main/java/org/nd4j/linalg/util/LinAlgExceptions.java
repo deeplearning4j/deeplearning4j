@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.Arrays;
 
@@ -79,11 +80,13 @@ public class LinAlgExceptions {
      * @param nd2 the right ndarray
      */
     public static void assertMultiplies(INDArray nd1, INDArray nd2) {
-        if (nd1.columns() == nd2.rows() || nd1.rows() == nd2.columns()){
+        if (nd1.rank() == 2 && nd2.rank() == 2 && nd1.columns() == nd2.rows()){
             return;
         }
-        throw new IllegalStateException("Column of left array " + nd1.columns() + " != rows of right " + nd2.rows() +
-                " or rows of left array "  + nd1.rows() + " != columns of right " + nd2.columns());
+        throw new ND4JIllegalStateException("Cannot execute matrix multiplication: " + Arrays.toString(nd1.shape()) + "x" +
+                Arrays.toString(nd2.shape()) +
+                (nd1.rank() != 2 || nd2.rank() != 2 ? ": inputs are not matrices" :
+                ": Column of left array " + nd1.columns() + " != rows of right " + nd2.rows()));
     }
 
 

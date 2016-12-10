@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.cache.TADManager;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,14 @@ public interface OpExecutioner {
 
     enum ExecutionMode {
         JAVA, NATIVE
+    }
+
+    enum ProfilingMode {
+        DISABLED,
+        NAN_PANIC,
+        OPERATIONS,
+        METHODS,
+        ALL
     }
 
 
@@ -192,9 +202,47 @@ public interface OpExecutioner {
     void exec(List<Aggregate> batch);
 
     /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    INDArray exec(RandomOp op);
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    INDArray exec(RandomOp op, Random rng);
+
+    /**
      * This method return set of key/value and key/key/value objects, describing current environment
      *
      * @return
      */
     Properties getEnvironmentInformation();
+
+    /**
+     * This method specifies desired profiling mode
+     *
+     * @param mode
+     */
+    void setProfilingMode(ProfilingMode mode);
+
+    /**
+     * Ths method returns current profiling
+     *
+     * @return
+     */
+    ProfilingMode getProfilingMode();
+
+
+    /**
+     * This method returns TADManager instance used for this OpExecutioner
+     *
+     * @return
+     */
+    TADManager getTADManager();
+
 }

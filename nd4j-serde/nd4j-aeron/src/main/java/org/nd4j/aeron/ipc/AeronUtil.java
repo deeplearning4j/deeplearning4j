@@ -17,8 +17,11 @@ package org.nd4j.aeron.ipc;
 
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -30,6 +33,40 @@ import java.util.function.Consumer;
  * Utility functions for samples
  */
 public class AeronUtil {
+
+    /**
+     * Get a media driver context
+     * for sending ndarrays
+     * based on a given length
+     * where length is the length (number of elements)
+     * in the ndarrays hat are being sent
+     * @param length the length to based the ipc length
+     * @return the media driver context based on the given length
+     */
+   public static MediaDriver.Context getMediaDriverContext(int length) {
+       //length of array * sizeof(float)
+       int ipcLength =  length * 16;
+       //padding for NDArrayMessage
+       ipcLength += 64;
+       //must be a power of 2
+       ipcLength *= 2;
+       //ipc length must be positive power of 2
+       while(!BitUtil.isPowerOfTwo(ipcLength))
+           ipcLength += 2;
+     // System.setProperty("aeron.term.buffer.size",String.valueOf(ipcLength));
+       final MediaDriver.Context ctx = new MediaDriver.Context()
+               .threadingMode(ThreadingMode.SHARED)
+               .dirsDeleteOnStart(true)
+             /*  .ipcTermBufferLength(ipcLength)
+               .publicationTermBufferLength(ipcLength)
+               .maxTermBufferLength(ipcLength)*/
+               .conductorIdleStrategy(new BusySpinIdleStrategy())
+               .receiverIdleStrategy(new BusySpinIdleStrategy())
+               .senderIdleStrategy(new BusySpinIdleStrategy());
+       return ctx;
+   }
+
+
     /**
      * Aeron channel generation
      * @param host the host
@@ -39,8 +76,12 @@ public class AeronUtil {
     public static String aeronChannel(String host,int port) {
         return String.format("aeron:udp?endpoint=%s:%d",host,port);
     }
+
     /**
-     * Return a reusable, parameterised event loop that calls a default idler when no messages are received
+     * Return a reusable, parametrized
+     * event loop that calls a
+     * default idler
+     * when no messages are received
      *
      * @param fragmentHandler to be called back for each message.
      * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
@@ -68,7 +109,8 @@ public class AeronUtil {
             final FragmentHandler fragmentHandler,
             final int limit,
             final AtomicBoolean running,
-            final IdleStrategy idleStrategy,final AtomicBoolean launched)
+            final IdleStrategy idleStrategy,
+            final AtomicBoolean launched)
     {
         return (subscription) -> {
             try {

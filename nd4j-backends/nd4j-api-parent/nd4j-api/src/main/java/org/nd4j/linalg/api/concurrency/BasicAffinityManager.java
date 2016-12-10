@@ -60,4 +60,14 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public DataBuffer replicateToDevice(Integer deviceId, DataBuffer buffer) {
         return null;
     }
+
+    @Override
+    public void tagLocation(INDArray array, Location location) {
+        // no-op
+    }
+
+    @Override
+    public void tagLocation(DataBuffer buffer, Location location) {
+        // no-op
+    }
 }

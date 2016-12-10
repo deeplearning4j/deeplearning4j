@@ -27,6 +27,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by agibsonccc on 10/8/14.
  */
 public class EqualsCondition extends BaseCondition {
+
+    /**
+     * Special constructor for pairwise boolean operations.
+     */
+    public EqualsCondition() {
+        super(0.0);
+    }
+
     public EqualsCondition(Number value) {
         super(value);
     }
@@ -47,7 +55,7 @@ public class EqualsCondition extends BaseCondition {
 
     @Override
     public Boolean apply(Number input) {
-        if (Nd4j.dtype == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
             return input.doubleValue() == value.doubleValue();
         else
             return input.floatValue() == value.floatValue();

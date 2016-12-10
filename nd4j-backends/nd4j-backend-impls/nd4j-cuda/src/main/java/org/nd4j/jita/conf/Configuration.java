@@ -2,7 +2,6 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
@@ -51,7 +50,7 @@ public class Configuration implements Serializable {
 
     @Getter private boolean verbose = false;
 
-    @Getter private boolean gatherStatistics = false;
+    @Getter private boolean fillDashboard = false;
 
     private boolean forceSingleGPU = false;
 
@@ -272,8 +271,8 @@ public class Configuration implements Serializable {
      * @param reallyEnable
      * @return
      */
-    public Configuration enableStatisticsGathering(boolean reallyEnable) {
-        gatherStatistics = reallyEnable;
+    public Configuration enableDashboard(boolean reallyEnable) {
+        fillDashboard = reallyEnable;
         return this;
     }
 
@@ -311,7 +310,6 @@ public class Configuration implements Serializable {
         this.maximumHostCache = maxCache;
         return this;
     }
-
 
     /**
      * This method allows you to specify maximum memory cache per device
@@ -391,17 +389,37 @@ public class Configuration implements Serializable {
     }
 
     /**
-     * This method forces one specific device to be used. All other devices present in system will be ignored.
+     * This method forces specific device to be used. All other devices present in system will be ignored.
      *
      * @param deviceId
      * @return
      */
     public Configuration useDevice(@NonNull Integer deviceId) {
-        if (!availableDevices.contains(deviceId))
-            throw new IllegalStateException("Non-existent device request: ["+deviceId+"]");
+        return useDevices(deviceId);
+    }
 
-        availableDevices.clear();
-        availableDevices.add(0, deviceId);
+    /**
+     * This method forces specific devices to be used. All other devices present in system will be ignored.
+     *
+     * @param devices
+     * @return
+     */
+    public Configuration useDevices(@NonNull int... devices) {
+        List<Integer> usableDevices = new ArrayList<>();
+        for (int device: devices) {
+            if (!availableDevices.contains(device)) {
+                logger.warn("Non-existent device [{}] requested, ignoring...", device);
+            } else {
+                if (!usableDevices.contains(device))
+                    usableDevices.add(device);
+            }
+
+        }
+
+        if (usableDevices.size() > 0) {
+            availableDevices.clear();
+            availableDevices.addAll(usableDevices);
+        }
 
         return this;
     }

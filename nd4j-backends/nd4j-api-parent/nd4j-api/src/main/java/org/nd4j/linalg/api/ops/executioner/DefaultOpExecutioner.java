@@ -21,20 +21,25 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -45,13 +50,16 @@ import java.util.Properties;
  */
 public class DefaultOpExecutioner implements OpExecutioner {
 
-
+    protected ProfilingMode profilingMode = ProfilingMode.DISABLED;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
     public DefaultOpExecutioner() {
     }
 
     protected void checkForCompression(Op op) {
+        // check for INT datatype arrays
+        interceptIntDataType(op);
+
         if (op.x().isCompressed())
             Nd4j.getCompressor().decompressi(op.x());
 
@@ -60,6 +68,24 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (op.z() != null && op.z().isCompressed())
             Nd4j.getCompressor().decompressi(op.z());
+    }
+
+    /**
+     * This method checks if any Op operand has data type of INT, and throws exception if any.
+     *
+     * @param op
+     */
+    protected void interceptIntDataType(Op op) {
+        // FIXME: Remove this method, after we'll add support for <int> dtype operations
+
+        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.X contains INT data. Operations on INT dataType are not supported yet");
+
+        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.Z contains INT data. Operations on INT dataType are not supported yet");
+
+        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Op.Y contains INT data. Operations on INT dataType are not supported yet.");
     }
 
     @Override
@@ -364,6 +390,114 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void exec(List<Aggregate> batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
+     *
+     * @param op
+     */
+    @Override
+    public INDArray exec(RandomOp op) {
+        return exec(op, Nd4j.getRandom());
+    }
+
+    /**
+     * This method executes specific RandomOp against specified RNG
+     *
+     * @param op
+     * @param rng
+     */
+    @Override
+    public INDArray exec(RandomOp op, Random rng) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public void setProfilingMode(ProfilingMode mode) {
+        profilingMode = mode;
+    }
+
+    @Override
+    public ProfilingMode getProfilingMode() {
+        return profilingMode;
+    }
+
+    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case METHODS:
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case DISABLED:
+            default:
+                return 0L;
+        }
+
+        return System.nanoTime();
+    }
+
+    public long profilingHookIn(Op op){
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processOpCall(op);
+                break;
+            case METHODS:
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().processOpCall(op);
+                break;
+            case DISABLED:
+            default:
+                return 0L;
+        }
+
+        return System.nanoTime();
+    }
+
+    public void profilingHookOut(Op op, long timeStart){
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case METHODS:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case NAN_PANIC: {
+                    if (op.z() != null && !(op instanceof MatchCondition)) {
+                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
+                        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
+
+                        condition = new MatchCondition(op.z(), Conditions.isInfinite());
+                        match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
+                    }
+                }
+                break;
+            case DISABLED:
+            default:
+                break;
+        }
+    }
+
+
+    @Override
+    public TADManager getTADManager() {
         throw new UnsupportedOperationException();
     }
 }

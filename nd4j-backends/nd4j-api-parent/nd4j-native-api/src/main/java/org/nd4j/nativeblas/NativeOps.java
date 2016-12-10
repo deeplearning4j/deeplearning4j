@@ -1,7 +1,5 @@
 package org.nd4j.nativeblas;
 
-
-import java.util.Properties;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -11,7 +9,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Platform;
-
+import org.bytedeco.javacpp.annotation.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,19 +20,15 @@ import org.slf4j.LoggerFactory;
  * op execution on cpu
  * @author Adam Gibson
  */
-@Platform(include = "NativeOps.h", compiler = "cpp11", link = "nd4j", library = "jnind4j")
+@Properties({@Platform(include = "NativeOps.h", compiler = "cpp11", link = "nd4j", library = "jnind4j", preload = "libnd4j"),
+             @Platform(value = "linux", preload = {"libnd4j", "gcc_s@.1", "gomp@.1"},
+                       preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
+                                      "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}) })
 public class NativeOps extends Pointer {
     private static Logger log = LoggerFactory.getLogger(NativeOps.class);
     static {
-        // using our custom platform properties from resources, and on user request,
-        // load in priority libraries found in the library path over bundled ones
-        String platform = Loader.getPlatform();
-        Properties properties = Loader.loadProperties(platform + "-nd4j", platform);
-        properties.remove("platform.preloadpath");
-        String s = System.getProperty("org.nd4j.nativeblas.pathsfirst", "false").toLowerCase();
-        boolean pathsFirst = s.equals("true") || s.equals("t") || s.equals("");
         try {
-            Loader.load(NativeOps.class, properties, pathsFirst);
+            Loader.load(NativeOps.class);
         } catch (UnsatisfiedLinkError e) {
             throw new RuntimeException("ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html", e);
         }
@@ -1236,15 +1230,9 @@ public class NativeOps extends Pointer {
 
     public native Pointer createEvent();
 
-    public native Pointer createBlasHandle();
-    public native Pointer createSolverHandle();
-    public native int setSolverStream(Pointer handle, Pointer stream);
-
     public native int registerEvent(Pointer event, Pointer stream);
 
     public native int destroyEvent(Pointer event);
-
-    public native int setBlasStream(Pointer handle, Pointer stream);
 
     public native int setDevice(Pointer ptrToDeviceId);
 
@@ -1470,4 +1458,34 @@ public class NativeOps extends Pointer {
     public native void execAggregateBatchDouble(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
 
     public native void execAggregateBatchHalf(PointerPointer extras, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, Pointer ptrToArguments);
+
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer y, IntPointer yShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
+    public native void execRandomFloat(PointerPointer extraPointers, int opNum, Pointer state, FloatPointer x, IntPointer xShapeBuffer, FloatPointer z, IntPointer zShapeBuffer, FloatPointer extraArguments);
+
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer x, IntPointer xShapeBuffer, DoublePointer y, IntPointer yShapeBuffer, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+    public native void execRandomDouble(PointerPointer extraPointers, int opNum, Pointer state, DoublePointer x, IntPointer xShapeBuffer, DoublePointer z, IntPointer zShapeBuffer, DoublePointer extraArguments);
+
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer x, IntPointer xShapeBuffer, @Cast("float16*") ShortPointer y, IntPointer yShapeBuffer, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+    public native void execRandomHalf(PointerPointer extraPointers, int opNum, Pointer state, @Cast("float16*") ShortPointer x, IntPointer xShapeBuffer, @Cast("float16*") ShortPointer z, IntPointer zShapeBuffer, @Cast("float16*") ShortPointer extraArguments);
+
+
+    public native Pointer initRandom(PointerPointer extraPointers, long seed, long numberOfElements, Pointer pointerToBuffer);
+
+    public native void refreshBuffer(PointerPointer extraPointers, long seed, Pointer pointer);
+
+    public native void reSeedBuffer(PointerPointer extraPointers, long seed, Pointer pointer);
+
+    public native void destroyRandom(Pointer pointer);
 }

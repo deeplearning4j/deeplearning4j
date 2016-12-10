@@ -11,6 +11,7 @@ import org.nd4j.jita.conf.DeviceInformation;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -47,7 +48,7 @@ public class AtomicAllocatorTest {
 
     @Before
     public void setUp() throws Exception {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
         if (allocator == null) {
 
 

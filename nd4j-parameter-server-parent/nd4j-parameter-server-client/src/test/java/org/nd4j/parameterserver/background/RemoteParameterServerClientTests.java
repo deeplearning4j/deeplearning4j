@@ -4,6 +4,7 @@ import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +28,7 @@ public class RemoteParameterServerClientTests {
     private MediaDriver mediaDriver;
     private AtomicInteger masterStatus = new AtomicInteger(0);
     private AtomicInteger slaveStatus = new AtomicInteger(0);
+    private Aeron aeron;
 
     @Before
     public void before() throws Exception {
@@ -39,6 +41,7 @@ public class RemoteParameterServerClientTests {
                 .senderIdleStrategy(new BusySpinIdleStrategy());
 
         mediaDriver = MediaDriver.launchEmbedded(ctx);
+        aeron = Aeron.connect(getContext());
 
         Thread t = new Thread(() -> {
             try {
@@ -71,7 +74,8 @@ public class RemoteParameterServerClientTests {
 
     @After
     public void after() throws Exception {
-        mediaDriver.close();
+        CloseHelper.close(mediaDriver);
+        CloseHelper.close(aeron);
     }
 
     @Test
@@ -81,7 +85,7 @@ public class RemoteParameterServerClientTests {
 
         ParameterServerClient client = ParameterServerClient
                 .builder()
-                .ctx(getContext())
+                .aeron(aeron)
                 .ndarrayRetrieveUrl(BackgroundDaemonStarter.masterResponderUrl())
                 .ndarraySendUrl(BackgroundDaemonStarter.slaveConnectionUrl())
                 .subscriberHost("localhost")

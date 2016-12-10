@@ -6,7 +6,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
+import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,9 +35,16 @@ public class BasicNDArrayCompressor {
             We scan classpath for NDArrayCompressor implementations and add them one by one to codecs map
          */
         codecs = new ConcurrentHashMap<>();
-        Reflections reflections = new Reflections("org.nd4j");
-        Set<Class<? extends NDArrayCompressor>> classes = reflections.getSubTypesOf(NDArrayCompressor.class);
+        Set<Class<? extends NDArrayCompressor>> classes = new Reflections(new ConfigurationBuilder()
+                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
+                        .exclude("^(?!.*\\.class$).*$"))   //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                .setUrls(ClasspathHelper.forPackage("org.nd4j"))
+                .setScanners(new SubTypesScanner())).getSubTypesOf(NDArrayCompressor.class);
+
         for (Class<? extends NDArrayCompressor> impl : classes) {
+            if(Modifier.isAbstract(impl.getModifiers()) || impl.isInterface())
+                continue;
+
             try {
                 NDArrayCompressor compressor = impl.newInstance();
 

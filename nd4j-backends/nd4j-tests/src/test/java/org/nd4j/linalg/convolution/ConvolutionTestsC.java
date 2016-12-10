@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -118,12 +119,12 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
             modes = new DataBuffer.AllocationMode[]{DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
         }
 
+        DataBuffer.Type initialType = Nd4j.dataType();
         for( int i=0; i<types.length; i++ ) {
             DataBuffer.Type type = types[i];
             DataBuffer.AllocationMode mode = modes[i];
 
-            Nd4j.factory().setDType(type);
-            Nd4j.dtype = type;
+            DataTypeUtil.setDTypeForContext(type);
             Nd4j.alloc = mode;
 
             AllocUtil.setAllocationModeForContext(mode);
@@ -164,6 +165,8 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
                 }
             }
         }
+
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 

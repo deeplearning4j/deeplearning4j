@@ -21,16 +21,16 @@ public class Nd4jTest extends BaseNd4jTest {
     }
     @Test
     public void testRandShapeAndRNG() {
-        INDArray ret = Nd4j.rand(new int[]{4, 2}, new DefaultRandom(123));
-        INDArray ret2 = Nd4j.rand(new int[]{4, 2}, new DefaultRandom(123));
+        INDArray ret = Nd4j.rand(new int[]{4, 2}, Nd4j.getRandomFactory().getNewRandomInstance(123));
+        INDArray ret2 = Nd4j.rand(new int[]{4, 2}, Nd4j.getRandomFactory().getNewRandomInstance(123));
 
         assertEquals(ret, ret2);
     }
 
     @Test
     public void testRandShapeAndMinMax() {
-        INDArray ret = Nd4j.rand(new int[]{4, 2}, -0.125f, 0.125f, new DefaultRandom(123));
-        INDArray ret2 = Nd4j.rand(new int[]{4, 2}, -0.125f, 0.125f, new DefaultRandom(123));
+        INDArray ret = Nd4j.rand(new int[]{4, 2}, -0.125f, 0.125f, Nd4j.getRandomFactory().getNewRandomInstance(123));
+        INDArray ret2 = Nd4j.rand(new int[]{4, 2}, -0.125f, 0.125f, Nd4j.getRandomFactory().getNewRandomInstance(123));
         assertEquals(ret, ret2);
     }
 

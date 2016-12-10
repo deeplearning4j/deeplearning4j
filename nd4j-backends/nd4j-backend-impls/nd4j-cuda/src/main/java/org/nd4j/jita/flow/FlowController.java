@@ -38,6 +38,8 @@ public interface FlowController {
      */
     void registerAction(CudaContext context, INDArray result, INDArray... operands);
 
+    void registerActionAllWrite(CudaContext context, INDArray... operands);
+
     /**
      * This method is called before operation was executed
      *
@@ -45,6 +47,14 @@ public interface FlowController {
      * @param operands
      */
     CudaContext prepareAction(INDArray result, INDArray... operands);
+
+    /**
+     *
+     *
+     * @param operands
+     * @return
+     */
+    CudaContext prepareActionAllWrite(INDArray... operands);
 
     CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands);
 

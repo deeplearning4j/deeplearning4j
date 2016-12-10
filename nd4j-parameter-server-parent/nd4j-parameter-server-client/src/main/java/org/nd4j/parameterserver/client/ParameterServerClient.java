@@ -1,22 +1,20 @@
 package org.nd4j.parameterserver.client;
 
-import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import io.aeron.Aeron;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.aeron.ipc.*;
 import org.nd4j.aeron.ipc.response.HostPortPublisher;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.model.MasterStatus;
-import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.ServerTypeJson;
+import org.nd4j.parameterserver.model.SubscriberState;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,12 +36,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @Data
 @AllArgsConstructor
 @Builder
+@Slf4j
 public class ParameterServerClient implements NDArrayCallback {
     //the url to send ndarrays to
     private String ndarraySendUrl;
     //the url to retrieve ndarrays from
     private String ndarrayRetrieveUrl;
-    private Aeron.Context ctx;
     private AeronNDArraySubscriber subscriber;
     //host to listen on for the subscriber
     private String subscriberHost;
@@ -55,14 +53,15 @@ public class ParameterServerClient implements NDArrayCallback {
     private AtomicReference<INDArray> arr;
     private INDArray none = Nd4j.scalar(1.0);
     private AtomicBoolean running;
-    private static Logger log = LoggerFactory.getLogger(ParameterServerClient.class);
     private String masterStatusHost;
     private int masterStatusPort;
     private ObjectMapper objectMapper = new ObjectMapper();
-
+    private Aeron aeron;
+    private boolean compressArray = true;
 
     /**
-     * Tracks number of arrays send to responder.
+     * Tracks number of
+     * arrays send to responder.
      * @return
      */
     public int arraysSentToResponder() {
@@ -88,6 +87,45 @@ public class ParameterServerClient implements NDArrayCallback {
     }
 
     /**
+     * Block the clint till ready
+     * for next phase.
+     *
+     */
+    public void blockTillReady() {
+        while(!isReadyForNext())
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+    }
+
+
+    /**
+     * Returns true if the client is
+     * ready for a next array or not
+     * @return true if the client is
+     * ready for the next array or not,false otherwise
+     */
+    public boolean isReadyForNext() {
+        if(objectMapper == null)
+            objectMapper = new ObjectMapper();
+
+        try {
+            int masterStream = Integer.parseInt(ndarraySendUrl.split(":")[2]);
+            SubscriberState subscriberState =  objectMapper.readValue(Unirest.get(String.format("http://%s:%d/state/%d",masterStatusHost,masterStatusPort,masterStream))
+                    .asJson()
+                    .getBody()
+                    .toString(),SubscriberState.class);
+            return subscriberState.isReady();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    /**
      * Sends a post request to the
      * status server to determine if the master node is started.
      * @return
@@ -110,20 +148,24 @@ public class ParameterServerClient implements NDArrayCallback {
         return false;
     }
 
+
+
+
+
     /**
-     * Push an ndarray to the specified
+     * Push an ndarray message to the specified
      * ndarray send url in the form of:
      * host;port:stream
      * where stream is the stream for connecting
      * to a listening aeron server
-     * @param arr the array to send
+     * @param message the array to send
      */
-    public void pushNDArray(INDArray arr) {
+    public void pushNDArrayMessage(NDArrayMessage message) {
         //start a subscriber that can send us ndarrays
         if(subscriber == null) {
             running = new AtomicBoolean(true);
             subscriber = AeronNDArraySubscriber.startSubscriber(
-                    ctx,
+                    aeron,
                     subscriberHost,
                     subscriberPort,
                     this,
@@ -137,19 +179,31 @@ public class ParameterServerClient implements NDArrayCallback {
         String channel = AeronUtil.aeronChannel(split[0],port);
         log.debug("Parameter server client publishing to " + ndarraySendUrl);
         try(AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder()
-                .streamId(streamToPublish)
-                .ctx(ctx).channel(channel)
+                .streamId(streamToPublish).compress(isCompressArray())
+                .aeron(aeron).channel(channel)
                 .build()) {
-            publisher.publish(arr);
+            publisher.publish(message);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
 
+    /**
+     * Push an ndarray to the specified
+     * ndarray send url in the form of:
+     * host;port:stream
+     * where stream is the stream for connecting
+     * to a listening aeron server
+     * @param arr the array to send
+     */
+    public void pushNDArray(INDArray arr) {
+        pushNDArrayMessage(NDArrayMessage.wholeArrayUpdate(arr));
+    }
+
 
     /**
-     * Get the connection url for the subscrber
+     * Get the connection url for the subscriber
      * in the format:
      * host:port:stream
      * @return the connection url for the subscriber
@@ -176,7 +230,7 @@ public class ParameterServerClient implements NDArrayCallback {
         if(subscriber == null) {
             running = new AtomicBoolean(true);
             subscriber = AeronNDArraySubscriber.startSubscriber(
-                    ctx,
+                    aeron,
                     subscriberHost,
                     subscriberPort,
                     this,
@@ -204,7 +258,7 @@ public class ParameterServerClient implements NDArrayCallback {
         //note here that we send the ndarray send url, because the
         //master also hosts
         try (HostPortPublisher hostPortPublisher = HostPortPublisher
-                .builder().channel(channel).ctx(ctx)
+                .builder().channel(channel).aeron(aeron)
                 //note here that we send our subscriber's listening information
                 .streamId(streamToPublish)
                 .uriToSend(AeronConnectionInformation.of(subscriberHost, subscriberPort, subscriberStream).toString())
@@ -217,7 +271,6 @@ public class ParameterServerClient implements NDArrayCallback {
             //wait for array to be available
             while (arr.get() == none) {
                 Thread.sleep(1000);
-                hostPortPublisher.send();
                 log.info("Waiting on array to be updated.");
             }
 
@@ -233,12 +286,45 @@ public class ParameterServerClient implements NDArrayCallback {
     }
 
     /**
+     * A listener for ndarray message
+     *
+     * @param message the message for the callback
+     */
+    @Override
+    public void onNDArrayMessage(NDArrayMessage message) {
+        INDArray arr = message.getArr();
+        //of note for ndarrays
+        int[] dimensions = message.getDimensions();
+        boolean whole = dimensions.length == 1 && dimensions[0] == -1;
+
+        if(!whole)
+            onNDArrayPartial(arr,message.getIndex(),dimensions);
+        else
+            onNDArray(arr);
+    }
+
+    /**
+     * Used for partial updates using tensor along
+     * dimension
+     *  @param arr        the array to count as an update
+     * @param idx        the index for the tensor along dimension
+     * @param dimensions the dimensions to act on for the tensor along dimension
+     */
+    @Override
+    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+        INDArray get = this.arr.get();
+        get.tensorAlongDimension((int) idx,dimensions).assign(arr);
+
+    }
+
+    /**
      * Setup an ndarray
      *
      * @param arr
      */
     @Override
     public  void onNDArray(INDArray arr) {
+        log.info("Received array");
         this.arr.set(arr);
     }
 }

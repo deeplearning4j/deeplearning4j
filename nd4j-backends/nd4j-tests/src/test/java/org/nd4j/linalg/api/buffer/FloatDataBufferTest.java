@@ -22,9 +22,11 @@ package org.nd4j.linalg.api.buffer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -46,14 +48,21 @@ import static org.junit.Assert.assertEquals;
  */
 public  class FloatDataBufferTest  extends BaseNd4jTest {
 
+    DataBuffer.Type initialType;
     public FloatDataBufferTest(Nd4jBackend backend) {
         super(backend);
+        initialType = Nd4j.dataType();
     }
 
     @Before
     public void before() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
         System.out.println("DATATYPE HERE: "+ Nd4j.dataType());
+    }
+
+    @After
+    public void after() {
+        DataTypeUtil.setDTypeForContext(initialType);
     }
 
 

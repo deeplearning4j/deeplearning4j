@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author raver119@gmail.com
@@ -26,6 +27,8 @@ public class CpuTADManager implements TADManager {
     private NativeOps nativeOps;
     private ConstantHandler constantHandler;
     private static Logger logger = LoggerFactory.getLogger(CpuTADManager.class);
+    private AtomicInteger counter = new AtomicInteger(0);
+    private static final int MAX_ENTRIES = 100;
 
     public CpuTADManager() {
         //
@@ -54,7 +57,7 @@ public class CpuTADManager implements TADManager {
             if (!cache.containsKey(descriptor)) {
                 int dimensionLength = dimension.length;
 
-                int targetRank = array.rank(); ///Math.max(array.rank() - dimensionLength, 2);
+                int targetRank = dimensionLength <= 1 ? 2 : dimensionLength;
                 int offsetLength = 0;
                 int tadLength = 1;
                 for (int i = 0; i < dimensionLength; i++) {
@@ -76,7 +79,10 @@ public class CpuTADManager implements TADManager {
                 nativeOps.tadOnlyShapeInfo((IntPointer)xShapeInfo, (IntPointer)dimensionPointer, dimension.length, (IntPointer)targetPointer, (IntPointer)offsetsPointer);
 
                 Pair<DataBuffer, DataBuffer> pair = new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
-                cache.put(descriptor, pair);
+                if (counter.get() < MAX_ENTRIES) {
+                    counter.incrementAndGet();
+                    cache.put(descriptor, pair);
+                }
                 return pair;
             }
 

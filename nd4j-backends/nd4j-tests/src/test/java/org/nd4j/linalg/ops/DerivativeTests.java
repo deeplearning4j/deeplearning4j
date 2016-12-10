@@ -230,8 +230,12 @@ public class DerivativeTests extends BaseNd4jTest {
         INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("cube", z).derivative());
 
         for (int i = 0; i < 100; i++) {
-            double relError = Math.abs(expOut[i] - zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
-            assertTrue(relError < REL_ERROR_TOLERANCE);
+            double d1 = expOut[i];
+            double d2 = zPrime.getDouble(i);
+            double relError = Math.abs(d1-d1) / (Math.abs(d1) + Math.abs(d2));
+            if(d1 == 0.0 && d2 == 0.0) relError = 0.0;
+            String str = "exp=" + expOut[i] + ", act=" + zPrime.getDouble(i) + "; relError = " + relError;
+            assertTrue(str, relError < REL_ERROR_TOLERANCE);
         }
     }
 

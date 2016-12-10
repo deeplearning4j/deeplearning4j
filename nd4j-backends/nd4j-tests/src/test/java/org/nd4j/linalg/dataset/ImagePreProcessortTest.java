@@ -27,6 +27,7 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
         INDArray gChannels = Nd4j.zeros(10,10).addi(64);
         INDArray bChannels = Nd4j.zeros(10,10).addi(255);
         INDArray image = Nd4j.vstack(rChannels,gChannels,bChannels).reshape(3,10,10);
+        INDArray orig = image.dup();
 
         //System.out.println(Arrays.toString(image.shape()));
         DataSet ds = new DataSet(image.reshape(1,3,10,10),Nd4j.ones(1,1));
@@ -61,6 +62,13 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
         myScaler = new ImagePreProcessingScaler(0,(256*256*256-1),1);
         myScaler.transform(ds);
         assertTrue(Transforms.abs(ds.getFeatures().sub(image)).maxNumber().doubleValue() <= 1 );
+
+        //Revert:
+        before = orig.dup();
+        myScaler = new ImagePreProcessingScaler(0,1,1);
+        myScaler.transform(before);
+        myScaler.revertFeatures(before);
+        assertEquals(orig, before);
 
     }
     @Override

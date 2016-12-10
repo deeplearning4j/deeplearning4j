@@ -11,15 +11,16 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class Col2Im extends BaseTransformOp {
     private int sy = 0,sx = 0,ph = 0,pw = 0,  h = 0,  w = 0;
+    private boolean isSameMode = false;
 
     public Col2Im() {
     }
 
     public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w) {
-        this(x,sy,sx,ph,pw,h,w, getNewOutputArray(x,h,w));
+        this(x,sy,sx,ph,pw,h,w, false, getNewOutputArray(x,h,w));
     }
 
-    public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w, INDArray z) {
+    public Col2Im(INDArray x, int sy, int sx, int ph, int pw, int h, int w, boolean isSameMode, INDArray z) {
         super(x);
         this.sy = sy;
         this.sx = sx;
@@ -28,6 +29,7 @@ public class Col2Im extends BaseTransformOp {
         this.h = h;
         this.w = w;
         this.z = z;
+        this.isSameMode = isSameMode;
         extraArgs = this.extraArgs();
     }
 
@@ -38,7 +40,7 @@ public class Col2Im extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {sx,sy,pw,ph,h,w};
+        return new Object[] {sx,sy,pw,ph,h,w,isSameMode ? 1.0 : 0.0};
     }
 
     @Override

@@ -34,7 +34,22 @@ public class AeronNDArraySerdeTest {
         INDArray back = AeronNDArraySerde.toArray(buffer);
         INDArray decompressed = Nd4j.getCompressor().decompress(compress);
         assertEquals(arr,decompressed);
+        assertEquals(arr,back);
     }
+
+
+    @Test
+    public void testToAndFromCompressedLarge() {
+        INDArray arr = Nd4j.zeros((int) 1e7);
+        INDArray compress = Nd4j.getCompressor().compress(arr,"GZIP");
+        assertTrue(compress.isCompressed());
+        UnsafeBuffer buffer = AeronNDArraySerde.toBuffer(compress);
+        INDArray back = AeronNDArraySerde.toArray(buffer);
+        INDArray decompressed = Nd4j.getCompressor().decompress(compress);
+        assertEquals(arr,decompressed);
+        assertEquals(arr,back);
+    }
+
 
     @Test
     public void timeOldVsNew() throws Exception {

@@ -226,8 +226,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             float stdNaturalNums = (float) Math.sqrt((samples*samples*timeSteps*timeSteps - 1)/12);
             expectedStd = Nd4j.create(new float[] {stdNaturalNums,stdNaturalNums,stdNaturalNums}).reshape(3,1);
             expectedStd.muliColumnVector(Transforms.abs(featureScale,true));
-            //std calculates the sample std so divides by (n-1) not n
-            expectedStd.muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN-1));
+            //preprocessors use the population std so divides by n not (n-1)
+            expectedStd.muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN));
 
             //min max assumes all scaling values are +ve
             expectedMin = Nd4j.ones(3,1).muliColumnVector(featureScale);

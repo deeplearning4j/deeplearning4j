@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -48,7 +49,11 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
-import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.api.ops.random.impl.Choice;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
+import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
@@ -59,6 +64,7 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
@@ -76,6 +82,8 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -110,11 +118,12 @@ public class Nd4j {
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
     public final static String MEMORY_MANAGER = "memorymanager";
+    public final static String RANDOM_PROVIDER = "random";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
     //the datatype used for allocating buffers
-    public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
+    protected static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
     //the allocation mode for the heap
     public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
@@ -132,6 +141,7 @@ public class Nd4j {
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
     public static Nd4jBackend backend;
+    public static RandomFactory randomFactory;
 
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
@@ -156,12 +166,13 @@ public class Nd4j {
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
     protected static OpFactory OP_FACTORY_INSTANCE;
-    protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
     protected static ConstantHandler constantHandler;
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
+
+    protected static AtomicBoolean fallbackMode;
 
 
     protected static Properties props = new Properties();
@@ -171,6 +182,7 @@ public class Nd4j {
     private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
     static {
+        fallbackMode = new AtomicBoolean(false);
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
     }
@@ -501,10 +513,18 @@ public class Nd4j {
      *
      * @return the current random generator
      */
-    public static synchronized  org.nd4j.linalg.api.rng.Random getRandom() {
-        if(random == null)
-            throw new IllegalStateException("Illegal random not found");
-        return random;
+    public static org.nd4j.linalg.api.rng.Random getRandom() {
+
+        return randomFactory.getRandom();
+    }
+
+    /**
+     * This method returns RandomFactory instance
+     *
+     * @return
+     */
+    public static RandomFactory getRandomFactory() {
+        return randomFactory;
     }
 
     /**
@@ -1352,6 +1372,14 @@ public class Nd4j {
         return DataTypeUtil.getDtypeFromContext();
     }
 
+    /**
+     * This method sets dataType for the current JVM runtime
+     * @param dType
+     */
+    public static void setDataType(@NonNull DataBuffer.Type dType) {
+        DataTypeUtil.setDTypeForContext(dType);
+    }
+
     public static Nd4jBackend getBackend() {
         return backend;
     }
@@ -1689,8 +1717,40 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(int lower, int upper, int num) {
-        return INSTANCE.linspace(lower, upper, num);
+        // for now we'll temporarty keep original impl
+        double approx = (double) num / ((double) (upper - lower) + 1);
+        if (approx % 1 <= EPS_THRESHOLD) {
+            return INSTANCE.linspace(lower, upper, num);
+        } else  {
+            return linspace((double) lower, (double) upper, num);
+        }
     }
+
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(double lower, double upper, int num) {
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num));
+    }
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(float lower, float upper, int num) {
+        return linspace((double) lower, (double) upper, num);
+    }
+
 
     /**
      * Create a long row vector of all of the given ndarrays
@@ -2562,6 +2622,61 @@ public class Nd4j {
         return diag(x, 0);
     }
 
+
+    /**
+     * This method samples value from Source array to Target, with probabilites provided in Probs argument
+     *
+     * @param source
+     * @param probs
+     * @param target
+     * @return
+     */
+    public static INDArray choice(@NonNull INDArray source, @NonNull INDArray probs, @NonNull INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        if (source.length() != probs.length())
+            throw new ND4JIllegalStateException("Nd4j.choice() requires lengths of Source and Probs to be equal");
+
+        return Nd4j.getExecutioner().exec(new Choice(source, probs, target), rng);
+    }
+
+    /**
+     * This method samples value from Source array to Target, with probabilites provided in Probs argument
+     *
+     * @param source
+     * @param probs
+     * @param target
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, INDArray target) {
+        return choice(source, probs, target, Nd4j.getRandom());
+    }
+
+    /**
+     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     *
+     * @param source
+     * @param probs
+     * @param numSamples
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, int numSamples, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        if (numSamples < 1)
+            throw new ND4JIllegalStateException("Nd4j.choice() numSamples must be positive value");
+
+        return choice(source, probs, createUninitialized(numSamples), rng);
+    }
+
+    /**
+     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     *
+     * @param source
+     * @param probs
+     * @param numSamples
+     * @return
+     */
+    public static INDArray choice(INDArray source, INDArray probs, int numSamples) {
+        return choice(source, probs, numSamples, Nd4j.getRandom());
+    }
+
     public static INDArray appendBias(INDArray... vectors) {
         INDArray ret = INSTANCE.appendBias(vectors);
         logCreationIfNecessary(ret);
@@ -2602,9 +2717,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2615,9 +2730,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int[] shape) {
-        INDArray ret = INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(shape, order); //INSTANCE.rand(order, shape);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2645,9 +2760,12 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns) {
-        INDArray ret = INSTANCE.rand(rows, columns, Nd4j.getRandom());
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
+        INDArray ret = createUninitialized(new int[]{rows, columns}, Nd4j.order());//INSTANCE.rand(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2658,9 +2776,12 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.rand(order, rows, columns);
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
 
@@ -2672,9 +2793,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2685,9 +2807,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(long seed,int...shape) {
-        INDArray ret = INSTANCE.rand(shape, seed);
+        INDArray ret = createUninitialized(shape, Nd4j.order());//INSTANCE.rand(shape, seed);
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2699,9 +2822,10 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.rand(rows, columns, seed);
+        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         logCreationIfNecessary(ret);
-        return ret;
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new UniformDistribution(ret), Nd4j.getRandom());
     }
 
     /**
@@ -2712,9 +2836,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, rng);
+        INDArray ret = createUninitialized(shape, Nd4j.order()); //INSTANCE.rand(shape, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2725,9 +2849,9 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape, Distribution dist) {
-        INDArray ret = INSTANCE.rand(shape, dist);
-        logCreationIfNecessary(ret);
-        return ret;
+        //INDArray ret = INSTANCE.rand(shape, dist);
+        //logCreationIfNecessary(ret);
+        return dist.sample(shape);
     }
 
     /**
@@ -2738,11 +2862,10 @@ public class Nd4j {
      * @param rng       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    @Deprecated
     public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(rows, columns, rng);
+        INDArray ret = createUninitialized(new int[]{rows, columns}, order());//INSTANCE.rand(rows, columns, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret), rng);
     }
 
     /**
@@ -2755,9 +2878,9 @@ public class Nd4j {
      * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
     }
 
     /**
@@ -2772,9 +2895,22 @@ public class Nd4j {
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
-        INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
+        INDArray ret = createUninitialized(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
-        return ret;
+        return getExecutioner().exec(new UniformDistribution(ret, min, max), rng);
+    }
+
+    /**
+     * This method returns uninitialized 2D array of rows x columns
+     *
+     * PLEASE NOTE: memory of underlying array will be NOT initialized, and won't be set to 0.0
+     *
+     * @param rows
+     * @param columns
+     * @return
+     */
+    public static INDArray createUninitialized(int rows, int columns) {
+        return createUninitialized(new int[]{rows, columns});
     }
 
     /**
@@ -2785,7 +2921,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape) {
-        INDArray ret = INSTANCE.randn(shape, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2797,7 +2933,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      */
     public static INDArray randn(char order, int[] shape) {
-        INDArray ret = INSTANCE.randn(order,shape);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2810,6 +2946,7 @@ public class Nd4j {
      */
     public static INDArray randn(int[] shape, long seed) {
         Nd4j.getRandom().setSeed(seed);
+        Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), Nd4j.getRandom());
         return randn(shape, Nd4j.getRandom());
     }
 
@@ -2822,7 +2959,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns) {
-        INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2835,7 +2972,7 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      */
     public static INDArray randn(char order, int rows, int columns) {
-        INDArray ret = INSTANCE.randn(order, rows, columns);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order)), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2848,7 +2985,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.randn(rows, columns, seed);
+        Nd4j.getRandom().setSeed(seed);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2862,7 +3000,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(rows, columns, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(new int[]{rows, columns}, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2875,7 +3013,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(shape, r);
+        INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3108,6 +3246,9 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
+        if (columns < 1)
+            throw new ND4JIllegalStateException("Number of columns should be positive for new INDArray");
+
         INDArray ret = INSTANCE.create(new int[]{1, columns}, Nd4j.getStrides(new int[]{1, columns}, order),0,order);
         logCreationIfNecessary(ret);
         return ret;
@@ -3143,6 +3284,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, order);
         logCreationIfNecessary(ret);
         return ret;
@@ -3162,6 +3305,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -3179,6 +3324,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
@@ -3198,6 +3345,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -3215,6 +3364,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
@@ -3235,6 +3386,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
         logCreationIfNecessary(ret);
         return ret;
@@ -3253,6 +3406,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
         logCreationIfNecessary(ret);
@@ -3273,6 +3428,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3292,6 +3449,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3307,6 +3466,8 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3323,6 +3484,9 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3339,6 +3503,9 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3355,6 +3522,9 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3370,6 +3540,9 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3389,6 +3562,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
         logCreationIfNecessary(ret);
         return ret;
@@ -3406,6 +3581,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
@@ -3426,6 +3603,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3443,6 +3622,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(list, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -3458,6 +3639,9 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         IComplexNDArray ret = INSTANCE.createComplex(rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3473,6 +3657,9 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, int offset) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         INDArray ret = INSTANCE.create(rows, columns, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3491,6 +3678,8 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3509,6 +3698,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, offset);
         logCreationIfNecessary(ret);
@@ -3633,6 +3824,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3651,6 +3844,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
@@ -3671,6 +3866,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, strides, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3689,6 +3886,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape), offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3705,6 +3904,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        checkShapeValues(newShape);
+
         INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3723,6 +3924,9 @@ public class Nd4j {
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, newStrides, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3740,6 +3944,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
         logCreationIfNecessary(ret);
@@ -3761,6 +3967,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, newStrides, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3779,6 +3987,9 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3791,6 +4002,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(DataBuffer data, int[] shape) {
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -3803,6 +4016,8 @@ public class Nd4j {
      * @return
      */
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -3825,6 +4040,9 @@ public class Nd4j {
      * @return the complex numbers
      */
     public static IComplexNDArray createComplex(IComplexNumber[] iComplexNumbers) {
+        if (iComplexNumbers == null || iComplexNumbers.length < 1)
+            throw new ND4JIllegalStateException("Number of complex numbers can't be < 1 for new INDArray");
+
         return createComplex(iComplexNumbers,new int[]{1,iComplexNumbers.length});
     }
 
@@ -3860,6 +4078,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data,shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3882,6 +4102,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3893,6 +4115,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, dataType);
         logCreationIfNecessary(ret);
@@ -3900,7 +4123,7 @@ public class Nd4j {
     }
 
     public static INDArray zeros(int[] shape, DataBuffer.Type dataType) {
-        return zeros(shape, dataType);
+        return create(shape, dataType);
     }
 
     /**
@@ -3918,6 +4141,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -3938,6 +4162,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -3957,6 +4182,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -3976,6 +4202,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -3995,6 +4222,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -4014,6 +4242,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
         logCreationIfNecessary(ret);
@@ -4034,6 +4263,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
         logCreationIfNecessary(ret);
@@ -4053,6 +4283,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
         logCreationIfNecessary(ret);
@@ -4075,6 +4307,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
@@ -4098,6 +4331,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4116,6 +4351,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
@@ -4136,6 +4373,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4153,6 +4392,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape, ordering);
         logCreationIfNecessary(ret);
@@ -4169,6 +4409,9 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset, char ordering) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4190,6 +4433,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4208,6 +4453,8 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset, char ordering) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4226,6 +4473,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4252,6 +4501,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(shape, stride, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4271,6 +4522,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
@@ -4304,6 +4557,9 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4326,6 +4582,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
         logCreationIfNecessary(ret);
@@ -4359,6 +4617,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prodLong(shape) * 2), shape, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -4378,9 +4638,19 @@ public class Nd4j {
         else if(shape.length == 1) {
             shape = new int[] {1,shape[0]};
         }
+
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    protected static void checkShapeValues(int[] shape) {
+        for (int e = 0; e < shape.length; e++) {
+            if (shape[e] < 1)
+                throw new ND4JIllegalStateException("Requested INDArray shape " + Arrays.toString(shape) + " contains values < 1, which is impossible to have");
+        }
     }
 
 
@@ -4400,7 +4670,42 @@ public class Nd4j {
         else if(shape.length == 1) {
             shape = new int[] {1,shape[0]};
         }
+
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.createUninitialized(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
+     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray createUninitialized(int[] shape) {
+        checkShapeValues(shape);
+        //ensure shapes that wind up being scalar end up with the write shape
+        return createUninitialized(shape, Nd4j.order());
+    }
+
+    /**
+     * This method creates an *uninitialized* ndarray of specified length and default ordering.
+     *
+     * PLEASE NOTE: Do not use this method unless you're 100% sure why you use it.
+     *
+     * @param length
+     * @return
+     */
+    public static INDArray createUninitialized(int length) {
+        if (length < 1)
+            throw new IllegalStateException("INDArray length should be positive value");
+
+        int[] shape = new int[]{1, length};
+
+        INDArray ret = INSTANCE.createUninitialized(shape, order());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4421,6 +4726,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
@@ -4451,6 +4758,8 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(data, shape, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -4469,6 +4778,8 @@ public class Nd4j {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
+
+        checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
         logCreationIfNecessary(ret);
@@ -4494,6 +4805,8 @@ public class Nd4j {
      * @return
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -4557,6 +4870,8 @@ public class Nd4j {
     }
 
     public static IComplexNDArray complexValueOf(int[] shape, IComplexNumber value) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.complexValueOf(shape, value);
         logCreationIfNecessary(ret);
         return ret;
@@ -4567,6 +4882,8 @@ public class Nd4j {
     }
 
     public static IComplexNDArray complexValueOf(int[] shape, double value) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.complexValueOf(shape, value);
         logCreationIfNecessary(ret);
         return ret;
@@ -4581,6 +4898,8 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray valueArrayOf(int[] shape, double value) {
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.valueArrayOf(shape, value);
         logCreationIfNecessary(ret);
         return ret;
@@ -4609,6 +4928,9 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray valueArrayOf(int rows, int columns, double value) {
+        if (rows < 1 || columns < 1)
+            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
+
         INDArray ret = INSTANCE.valueArrayOf(rows, columns, value);
         logCreationIfNecessary(ret);
         return ret;
@@ -4823,13 +5145,14 @@ public class Nd4j {
      * @return
      */
     public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
-        INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes);
-        logCreationIfNecessary(ret);
-        return ret;
+        return pullRows(source, sourceDimension, indexes, Nd4j.order());
     }
 
     /**
-     * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
+     * This method produces concatenated array,
+     * that consist from tensors,
+     * fetched from source array,
+     * against some dimension and specified indexes
      *
      * @param source source tensor
      * @param sourceDimension dimension of source tensor
@@ -4837,6 +5160,20 @@ public class Nd4j {
      * @return
      */
     public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
+        if (sourceDimension >= source.rank())
+            throw new IllegalStateException("Source dimension can't be higher the rank of source tensor");
+
+        if (indexes == null || indexes.length == 0)
+            throw new IllegalStateException("Indexes shouldn't be empty");
+
+        if (order != 'c' && order != 'f' && order != 'a')
+            throw new IllegalStateException("Unknown order being passed in [" + order +"]");
+
+        for (int idx: indexes){
+            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1])
+                throw new IllegalStateException("Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+        }
+
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);
         logCreationIfNecessary(ret);
         return ret;
@@ -4878,6 +5215,8 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(int[] shape,char order) {
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.create(shape,order);
         logCreationIfNecessary(ret);
         return ret;
@@ -4890,9 +5229,7 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(int...shape) {
-        INDArray ret = INSTANCE.zeros(shape);
-        logCreationIfNecessary(ret);
-        return ret;
+        return Nd4j.create(shape);
 
     }
 
@@ -4903,6 +5240,8 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static IComplexNDArray complexZeros(int...shape) {
+        checkShapeValues(shape);
+
         IComplexNDArray ret = INSTANCE.complexZeros(shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -4916,6 +5255,8 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static INDArray ones(int...shape) {
+        checkShapeValues(shape);
+
         INDArray ret = INSTANCE.ones(shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -4928,6 +5269,7 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static IComplexNDArray complexOnes(int...shape) {
+        checkShapeValues(shape);
         IComplexNDArray ret = INSTANCE.complexOnes(shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -5262,7 +5604,10 @@ public class Nd4j {
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
             executionMode = props.getProperty(EXECUTION_MODE,"java").equals("java" ) ? OpExecutioner.ExecutionMode.JAVA : OpExecutioner.ExecutionMode.NATIVE;
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
-            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+
+            affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+            affinityManager = affinityManagerClazz.newInstance();
+
             fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
@@ -5270,12 +5615,13 @@ public class Nd4j {
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class.forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class.forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
-            affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class.forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class.forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
 
             allowsOrder = backend.allowsOrder();
-            String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
+            String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
+            randomFactory = new RandomFactory(randomClazz);
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
@@ -5287,12 +5633,11 @@ public class Nd4j {
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
 
-
             memoryManager = memoryManagerClazz.newInstance();
-            affinityManager = affinityManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
 
+            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
@@ -5305,13 +5650,29 @@ public class Nd4j {
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
 
 
-            random = randomClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
+
+            String fallback = System.getenv("ND4J_FALLBACK");
+            if (fallback != null && !fallback.isEmpty()) {
+                if (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1")) {
+                    fallbackMode.set(true);
+
+                    System.out.println();
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    System.out.println();
+                    System.out.println("                 ND4J_FALLBACK environment variable is detected!");
+                    System.out.println("                 Performance will be slightly reduced");
+                    System.out.println();
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    System.out.println();
+
+                } else fallbackMode.set(false);
+            } else fallbackMode.set(false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -5398,5 +5759,27 @@ public class Nd4j {
             case DOUBLE:
                 return 8;
         }
+    }
+
+    /**
+     * This method enables fallback to safe-mode for specific operations. Use of this method will reduce performance.
+     * Currently supported operations are:
+     *  1) CPU GEMM
+     *
+     * PLEASE NOTE: Do not use this method, unless you have too.
+     *
+     * @param reallyEnable
+     */
+    public static void enableFallbackMode(boolean reallyEnable) {
+        fallbackMode.set(reallyEnable);
+    }
+
+    /**
+     * This method checks, if fallback mode was enabled.
+     *
+     * @return
+     */
+    public static boolean isFallbackModeEnabled() {
+        return fallbackMode.get();
     }
 }

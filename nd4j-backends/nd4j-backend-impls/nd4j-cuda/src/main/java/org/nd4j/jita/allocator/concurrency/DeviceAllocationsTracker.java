@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.concurrency;
 
 import lombok.NonNull;
 import org.nd4j.jita.conf.Configuration;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,6 @@ public class DeviceAllocationsTracker {
 
     private final Map<Integer, ReentrantReadWriteLock> deviceLocks = new ConcurrentHashMap<>();
 
-    //private final Table<Integer, Long, AtomicLong> allocationTable = HashBasedTable.create();
-
     private final Map<Integer, AtomicLong> memoryTackled = new ConcurrentHashMap<>();
 
     private final Map<Integer, AtomicLong> reservedSpace = new ConcurrentHashMap<>();
@@ -33,7 +32,9 @@ public class DeviceAllocationsTracker {
     public DeviceAllocationsTracker(@NonNull Configuration configuration) {
         this.configuration = configuration;
 
-        for (Integer device: configuration.getAvailableDevices()) {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        for (int device = 0; device < numDevices; device++) {
             deviceLocks.put(device, new ReentrantReadWriteLock());
         }
     }

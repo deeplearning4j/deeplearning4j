@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.aggregates.impl;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,7 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class AggregateDot extends BaseAggregate {
     private int vectorLength;
 
-    public AggregateDot(INDArray x, INDArray y) {
+    public AggregateDot(@NonNull INDArray x, @NonNull INDArray y) {
         this.arguments.add(x);
         this.arguments.add(y);
 
