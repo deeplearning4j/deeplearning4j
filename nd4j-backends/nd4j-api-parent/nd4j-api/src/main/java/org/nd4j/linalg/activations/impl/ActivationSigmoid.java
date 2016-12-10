@@ -13,14 +13,21 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 public class ActivationSigmoid implements IActivation {
 
+    @Override
+    public INDArray computeActivation(INDArray in, boolean training) {
+        return computeActivation(in);
+    }
+
     public INDArray computeActivation(INDArray in){
         return Nd4j.getExecutioner().execAndReturn(new Sigmoid(in));
     }
 
+    @Override
     public INDArray computeGradient(INDArray in) {
         return Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(in));
     }
 
+    @Override
     public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
         return new Pair<INDArray, INDArray>(
                 computeActivation(in),
@@ -28,12 +35,24 @@ public class ActivationSigmoid implements IActivation {
         );
     }
 
-    /* need to implement
-    numParams();
+    @Override
+    public int numParams() {
+        return 0;
+    }
 
-    setParamsViewArray(INDArray, boolean initialize);
+    @Override
+    public void setParamsViewArray (INDArray params, boolean initialize) {
 
-    setBackpropViewArray();
+    }
 
-    */
+    @Override
+    public void setBackpropViewArray(INDArray params) {
+
+    }
+
+    @Override
+    public String toString() {
+        return "sigmoid";
+    }
+
 }

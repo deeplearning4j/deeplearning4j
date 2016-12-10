@@ -18,6 +18,7 @@ public class PReLU extends BaseTransformOp {
     private double u = 1/3.0;
     private double l = 1/8.0;
     private INDArray alphaA;
+    private float alpha = 0.5f;
     public PReLU() {
     }
 
@@ -61,27 +62,6 @@ public class PReLU extends BaseTransformOp {
     }
 
     @Override
-    public IComplexNumber op(IComplexNumber origin, double other) {
-        //must fix
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha*rv,0) : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, float other) {
-        //must fix
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha*rv,0) : origin;
-    }
-
-    @Override
-    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        //must fix
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha*rv,0) : origin;
-    }
-
-    @Override
     public float op(float origin, float other) {
         //must fix
         return origin < 0 ? (float) alpha * origin : origin;
@@ -107,14 +87,26 @@ public class PReLU extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        //must fix
-        double rv = origin.realComponent().doubleValue();
-        return rv < 0 ? Nd4j.createComplexNumber(alpha*rv,0) : origin;
+        return origin;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        return origin;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        return origin;
+    }
+
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        return origin;
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        //must fix
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
@@ -125,14 +117,12 @@ public class PReLU extends BaseTransformOp {
 
     @Override
     public Op opForDimension(int index, int... dimension) {
-        //must fix
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
             return new LeakyReLU(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
         else
             return new LeakyReLU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
-
     }
 
     @Override

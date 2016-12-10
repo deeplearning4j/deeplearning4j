@@ -34,11 +34,11 @@ public class ActivationRRelu implements IActivation {
     }
 
 
-    @Override
     public INDArray computeActivation(INDArray in) {
         return Nd4j.getExecutioner().execAndReturn(new PReLU(in,alpha));
     }
 
+    @Override
     public INDArray computeActivation(INDArray in, boolean training) {
         if (!training) {
             return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in.dup(), (l+u)/2));
@@ -61,22 +61,14 @@ public class ActivationRRelu implements IActivation {
                 //computegradient was called before compute activation
                 //computegradient is called with a different shape than the shape compute activation was called with
         //}
+        /*
         INDArray gradients = in.dup();
         BooleanIndexing.replaceWhere(gradients, 1.0, Conditions.greaterThanOrEqual(0.0));
         BooleanIndexing.replaceWhere(gradients, getAlpha(), Conditions.lessThan(0));
         return gradients;
+        */
+        return in;
     }
-
-    public INDArray computeGradient(INDArray in, boolean training) {
-        if (!training) {
-            //why would you ever need the gradient for test?
-            return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(in.dup(), (l+u)/2).derivative());
-        }
-        else {
-            return computeGradient(in);
-        }
-    }
-
 
     @Override
     public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
@@ -85,6 +77,26 @@ public class ActivationRRelu implements IActivation {
                 computeGradient(in)
         ); //thread safety?
 
+    }
+
+    @Override
+    public int numParams() {
+        return 0;
+    }
+
+    @Override
+    public void setParamsViewArray (INDArray params, boolean initialize) {
+
+    }
+
+    @Override
+    public void setBackpropViewArray(INDArray params) {
+
+    }
+
+    @Override
+    public String toString() {
+        return "prelu";
     }
 
 }
