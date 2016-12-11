@@ -11,8 +11,19 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  * @author raver119@gmail.com
  */
 public interface Transport {
+    enum ThreadingModel {
+        SAME_THREAD, // DO NOT USE IT IN REAL ENVIRONMENT!!!11oneoneeleven
+        SINGLE_THREAD,
+        DEDICATED_THREADS,
+    }
 
-
+    /**
+     * This method does initialization of Transport instance
+     *
+     * @param configuration
+     * @param role
+     * @param localIp
+     */
     void init(Configuration configuration, NodeRole role, String localIp);
 
 
@@ -36,4 +47,16 @@ public interface Transport {
      * @return
      */
     VoidMessage takeMessage();
+
+    /**
+     * This method starts transport mechanisms.
+     *
+     * PLEASE NOTE: init() method should be called prior to launch() call
+     */
+    void launch(ThreadingModel threading);
+
+    /**
+     * This method stops transport system.
+     */
+    void shutdown();
 }

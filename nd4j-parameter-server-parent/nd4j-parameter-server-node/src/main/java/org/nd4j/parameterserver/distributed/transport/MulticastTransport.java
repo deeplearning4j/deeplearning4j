@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.transport;
 
 import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
@@ -68,6 +69,14 @@ public class MulticastTransport extends BaseTransport {
 
                 // this channel will be used to receive messages from other Shards
                 subscriptionForClients = aeron.addSubscription(multicastChannelUri, configuration.getStreamId() + 2);
+
+                messageHandlerForShards = new FragmentAssembler(
+                        (buffer, offset, length, header) -> shardMessageHandler(buffer, offset, length, header)
+                );
+
+                messageHandlerForClients = new FragmentAssembler(
+                        ((buffer, offset, length, header) -> internalMessageHandler(buffer, offset, length, header))
+                );
                 break;
             case CLIENT:
 
@@ -83,11 +92,17 @@ public class MulticastTransport extends BaseTransport {
 
                 // this channel will be used to receive completion reports from Shards
                 subscriptionForClients = aeron.addSubscription(multicastChannelUri, configuration.getStreamId() + 1);
+
+                messageHandlerForClients = new FragmentAssembler(
+                        (buffer, offset, length, header) -> clientMessageHandler(buffer, offset, length, header)
+                );
                 break;
             default:
                 log.warn("Unknown role passed: {}", nodeRole);
                 throw new RuntimeException();
         }
+
+
     }
 
     /**
