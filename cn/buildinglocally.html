@@ -198,7 +198,7 @@ export LIBND4J_HOME=/home/user/directory/libnd4j
 export MKL_THREADING_LAYER=GNU
 export LD_PRELOAD=/lib64/libgomp.so.1
 </code></pre>
-<p>如果无法重新构建libnd4j，也可以把运行时的加载对象从OpenBLAS改为MKL库，但这种办法更复杂一些。请按下列附加步骤操作。</p>
+<p>如果无法重新构建libnd4j，也可以把运行时的加载对象从OpenBLAS改为MKL库，但这种办法更复杂一些。请按下列附加步骤操作：</p>
 <ul class="step-text">
   <li>
 	  <p>确保<code>/lib64/libopenblas.so.0</code>和<code>/lib64/libblas.so.3</code>等文件不可用（或者在Windows的<code>PATH</code>中处于靠后位置），否则它们一开始就会被libnd4j用绝对路径加载。</p>
