@@ -51,7 +51,7 @@ sudo apt-get install maven build-essentials cmake libgomp1
 <p><h3>OSX</h3></p>
 <p>可以用Homebrew来安装必备软件。如果本地计算机上已安装Homebrew，请按以下步骤安装必要的工具。</p>
 <p>在使用Homebrew之前，首先需要确保已安装最新版本的Xcode（用作主编译器）：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 xcode-select --install
 </code></pre>
 <p>最后安装必备工具：</p>
@@ -87,7 +87,8 @@ pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cma
 <p><h4>Linux</h4></p>
 <p><strong>Ubuntu</strong></p>
 <p>Ubuntu用户可以用如下方式安装OpenBLAS：</p>
-<pre class="line-numbers"><code class="language-java">sudo apt-get install libopenblas-dev
+<pre><code class="language-java">
+sudo apt-get install libopenblas-dev
 </code></pre>
 <p>同时还需要确保 <code>PATH</code> 已设置为 <code>/opt/OpenBLAS/lib</code>（或其他自定义的OpenBLAS主目录）。为了能在Apache Spark中使用OpenBLAS，还需要输入以下命令：</p>
 <pre class="line-numbers"><code class="language-java">
@@ -98,11 +99,11 @@ sudo cp libopenblas.so libblas.so.3
 
 <p><strong>CentOS</strong></p>
 <p>以root用户的身份在终端（或ssh会话）中输入下列命令：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 yum groupinstall 'Development Tools'
 </code></pre>
 <p>随后应当能看到终端进行许多安装活动。若要了解安装状态，比如需要确认gcc是否安装成功，可输入如下命令：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 gcc --version
 </code></pre>
 <p>更完整的说明请<a href="http://www.cyberciti.biz/faq/centos-linux-install-gcc-c-c-compiler/" target="_blank">参见此页</a>。</p>
@@ -110,7 +111,7 @@ gcc --version
 
 <p><h4>OS X</h4></p>
 <p>您可以用Homebrew Science在OS X上安装OpenBLAS：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 brew install homebrew/science/openblas
 </code></pre>
 <br />
@@ -123,14 +124,14 @@ brew install homebrew/science/openblas
 <p><h4>Linux</h4></p>
 <p><strong>Ubuntu</strong></p>
 <p>用apt安装包在Ubuntu上安装ATLAS：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 sudo apt-get install libatlas-base-dev libatlas-dev
 </code></pre>
 <br />
 
 <p><strong>CentOS</strong></p>
 <p>在CentOS上安装ATLAS的方法：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 sudo yum install atlas-devel
 </code></pre>
 <br />
@@ -186,7 +187,7 @@ make install
 
 <p><h4>LIBND4J_HOME</h4></p>
 <p>您需要知道运行DL4J构建代码的准确路径（建议使用空目录），否则构建将会失败。确定路径后，在其末尾添加<code>/libnd4j</code>，导出到本地环境。示例如下：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 export LIBND4J_HOME=/home/user/directory/libnd4j
 </code></pre>
 <br>
@@ -205,14 +206,14 @@ export LD_PRELOAD=/lib64/libgomp.so.1
 
   <li>
 	  <p>在<code>/path/to/intel64/lib/</code>中，为<code>libmkl_rt.so</code>（Windows系统为<code>mkl_rt.dll</code>）创建一个符号链接或副本，用libnd4j计划加载的文件名命名，例如：</p>
-	  <pre class="line-numbers"><code class="language-java">
-	  ln -s libmkl_rt.so libopenblas.so.0
-      ln -s libmkl_rt.so libblas.so.3
+<pre class="line-numbers"><code class="language-java">
+ln -s libmkl_rt.so libopenblas.so.0
+ln -s libmkl_rt.so libblas.so.3
       </code></pre>
       <br />
-      <pre class="line-numbers"><code class="language-java">
-      copy mkl_rt.dll libopenblas.dll
-      copy mkl_rt.dll libblas3.dll
+<pre class="line-numbers"><code class="language-java">
+copy mkl_rt.dll libopenblas.dll
+copy mkl_rt.dll libblas3.dll
       </code></pre>
   </li>
 
@@ -225,17 +226,16 @@ export LD_PRELOAD=/lib64/libgomp.so.1
 <p><h2>构建脚本</h2></p>
 <p>Github社区中有一套用bash编写的build-dl4j-stack.sh脚本，可以克隆DL4J stack堆栈，构建所有代码库并将其安装到本地的Maven中。这一脚本在Linux和OS X平台上都可以运行。请仔细阅读下列说明。</p>
 <p>CPU架构请使用以下构建脚本：</p>
-<pre class="line-numbers"><code class="language-java">
-./build-dl4j-stack.sh
-</code></pre>
+<pre><code class="language-java">
+./build-dl4j-stack.sh</code></pre>
 <br />
 <p>如果采用的是GPU后端，请改用：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 ./build-dl4j-stack.sh -c cuda
 </code></pre>
 <br />
 <p>Scala用户可以传入二进制版本号，确保与Spark相兼容：</p>
-<pre class="line-numbers"><code class="language-java">
+<pre><code class="language-java">
 ./build-dl4j-stack.sh -c cuda --scalav 2.11
 </code></pre>
 <p>上述构建脚本会将所有的选项和标志传递给libnd4j的<code>./buildnativeoperations.sh</code>脚本。用于这些脚本的所有标志都可以通过<code>build-dl4j-stack.sh</code>进行传递。</p>
