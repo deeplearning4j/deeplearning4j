@@ -229,7 +229,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             cnt++;
         }
 
-        indexes = ArrayUtils.removeElement(indexes, -1);
+        while(ArrayUtils.contains(indexes, -1)) {
+            indexes = ArrayUtils.removeElement(indexes, -1);
+        }
 
         INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
         return result;
