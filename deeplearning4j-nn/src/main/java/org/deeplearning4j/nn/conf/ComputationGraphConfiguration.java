@@ -184,12 +184,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     public ComputationGraphConfiguration clone() {
         ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
 
-        conf.vertices = new HashMap<>();
+        conf.vertices = new LinkedHashMap<>();
         for (Map.Entry<String, GraphVertex> entry : this.vertices.entrySet()) {
             conf.vertices.put(entry.getKey(), entry.getValue().clone());
         }
 
-        conf.vertexInputs = new HashMap<>();
+        conf.vertexInputs = new LinkedHashMap<>();
         for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
             conf.vertexInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }

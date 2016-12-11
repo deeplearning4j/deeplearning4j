@@ -51,10 +51,12 @@ import static play.mvc.Results.redirect;
  */
 @Slf4j
 public class TrainModule implements UIModule {
+    public static final double NAN_REPLACEMENT_VALUE = 0.0; //UI front-end chokes on NaN in JSON
     public static final int DEFAULT_MAX_CHART_POINTS = 512;
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static enum ModelType {MLN, CG, Layer};
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
@@ -419,7 +421,11 @@ public class TrainModule implements UIModule {
                         double currUpdate = updateMM.get(s);
                         double currParam = paramMM.get(s);
                         double ratio = currUpdate / currParam;
-                        ratioHistory.add(ratio);
+                        if(Double.isNaN(ratio)){
+                            ratioHistory.add(NAN_REPLACEMENT_VALUE);
+                        } else {
+                            ratioHistory.add(ratio);
+                        }
                     }
                 }
 
@@ -492,6 +498,9 @@ public class TrainModule implements UIModule {
                     modelType = "ComputationGraph";
                 } else {
                     modelType = className;
+                    if(modelType.lastIndexOf('.') > 0){
+                        modelType = modelType.substring(modelType.lastIndexOf('.')+1);
+                    }
                 }
 
                 modelInfo[0][1] = modelType;
@@ -522,7 +531,7 @@ public class TrainModule implements UIModule {
     }
 
     private TrainModuleUtils.GraphInfo getGraphInfo() {
-        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
         if (conf == null) {
             return null;
         }
@@ -531,12 +540,14 @@ public class TrainModule implements UIModule {
             return TrainModuleUtils.buildGraphInfo(conf.getFirst());
         } else if (conf.getSecond() != null) {
             return TrainModuleUtils.buildGraphInfo(conf.getSecond());
+        } else if( conf.getThird() != null){
+            return TrainModuleUtils.buildGraphInfo(conf.getThird());
         } else {
             return null;
         }
     }
 
-    private Pair<MultiLayerConfiguration, ComputationGraphConfiguration> getConfig() {
+    private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig() {
         boolean noData = currentSessionID == null;
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
@@ -548,10 +559,17 @@ public class TrainModule implements UIModule {
 
         if (modelClass.endsWith("MultiLayerNetwork")) {
             MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(config);
-            return new Pair<>(conf, null);
+            return new Triple<>(conf, null, null);
         } else if (modelClass.endsWith("ComputationGraph")) {
             ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(config);
-            return new Pair<>(null, conf);
+            return new Triple<>(null, conf, null);
+        } else {
+            try{
+                NeuralNetConfiguration layer = NeuralNetConfiguration.mapper().readValue(config, NeuralNetConfiguration.class);
+                return new Triple<>(null, null, layer);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -580,7 +598,7 @@ public class TrainModule implements UIModule {
         Map<String, Object> result = new HashMap<>();
         result.put("updateTimestamp", lastUpdateTime);
 
-        Pair<MultiLayerConfiguration, ComputationGraphConfiguration> conf = getConfig();
+        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
         if (conf == null) {
             return ok(Json.toJson(result));
         }
@@ -655,7 +673,11 @@ public class TrainModule implements UIModule {
         }
 
         //Get mean magnitudes line chart
-        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, conf.getFirst() != null);
+        ModelType mt;
+        if(conf.getFirst() != null) mt = ModelType.MLN;
+        else if(conf.getSecond() != null) mt = ModelType.CG;
+        else mt = ModelType.Layer;
+        MeanMagnitudes mm = getLayerMeanMagnitudes(layerIdx, gi, updates, iterationCounts, mt);
         Map<String, Object> mmRatioMap = new HashMap<>();
         mmRatioMap.put("layerParamNames", mm.getRatios().keySet());
         mmRatioMap.put("iterCounts", mm.getIterations());
@@ -665,7 +687,7 @@ public class TrainModule implements UIModule {
         result.put("meanMag", mmRatioMap);
 
         //Get activations line chart for layer
-        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, iterationCounts, conf.getFirst(), conf.getSecond());
+        Triple<int[], float[], float[]> activationsData = getLayerActivations(layerIdx, gi, updates, iterationCounts);
         Map<String, Object> activationMap = new HashMap<>();
         activationMap.put("iterCount", activationsData.getFirst());
         activationMap.put("mean", activationsData.getSecond());
@@ -673,7 +695,7 @@ public class TrainModule implements UIModule {
         result.put("activations", activationMap);
 
         //Get learning rate vs. time chart for layer
-        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates, iterationCounts);
+        Map<String, Object> lrs = getLayerLearningRates(layerIdx, gi, updates, iterationCounts, mt);
         result.put("learningRates", lrs);
 
         //Parameters histogram data
@@ -784,6 +806,12 @@ public class TrainModule implements UIModule {
                             layerType = gv.getClass().getSimpleName();
                         }
                     }
+                } else if(modelClass.endsWith("VariationalAutoencoder")){
+                    layerType = gi.getVertexTypes().get(layerIdx);
+                    Map<String,String> map = gi.getVertexInfo().get(layerIdx);
+                    for(Map.Entry<String,String> entry : map.entrySet()){
+                        layerInfoRows.add(new String[]{entry.getKey(), entry.getValue()});
+                    }
                 }
 
                 if (layer != null) {
@@ -850,13 +878,13 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, boolean isMLN) {
+    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
         }
 
         String layerName = gi.getVertexNames().get(layerIdx);
-        if (isMLN) {
+        if (modelType != ModelType.CG) {
             //Get the original name, for the index...
             layerName = gi.getOriginalVertexName().get(layerIdx);
         }
@@ -888,16 +916,28 @@ public class TrainModule implements UIModule {
                 Map<String, Double> paramMM = sp.getMeanMagnitudes(StatsType.Parameters);
                 Map<String, Double> updateMM = sp.getMeanMagnitudes(StatsType.Updates);
                 for (String s : paramMM.keySet()) {
-                    String prefix = layerName + "_";
+                    String prefix;
+                    if(modelType == ModelType.Layer){
+                        prefix = layerName;
+                    } else {
+                        prefix = layerName + "_";
+                    }
+
                     if (s.startsWith(prefix)) {
                         //Relevant parameter for this layer...
                         String layerParam = s.substring(prefix.length());
                         //TODO check and handle not collected case...
                         double pmm = paramMM.get(s);
                         double umm = updateMM.get(s);
+                        if(Double.isNaN(pmm)){
+                            pmm = NAN_REPLACEMENT_VALUE;
+                        }
+                        if(Double.isNaN(umm)){
+                            umm = NAN_REPLACEMENT_VALUE;
+                        }
                         double ratio;
                         if(umm == 0.0 && pmm == 0.0){
-                            ratio = 1.0;    //To avoid NaN from 0/0
+                            ratio = 0.0;    //To avoid NaN from 0/0
                         } else {
                             ratio = umm / pmm;
                         }
@@ -931,8 +971,7 @@ public class TrainModule implements UIModule {
 
     private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
     private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                                List<Integer> iterationCounts,
-                                                                MultiLayerConfiguration conf, ComputationGraphConfiguration gConf) {
+                                                                List<Integer> iterationCounts) {
         if (gi == null) {
             return EMPTY_TRIPLE;
         }
@@ -971,6 +1010,12 @@ public class TrainModule implements UIModule {
                 if (means != null && means.containsKey(layerName)) {
                     mean[used] = means.get(layerName).floatValue();
                     stdev[used] = stdevs.get(layerName).floatValue();
+                    if(Float.isNaN(mean[used])){
+                        mean[used] = (float)NAN_REPLACEMENT_VALUE;
+                    }
+                    if(Float.isNaN(stdev[used])){
+                        stdev[used] = (float)NAN_REPLACEMENT_VALUE;
+                    }
                     used++;
                 }
             }
@@ -986,7 +1031,7 @@ public class TrainModule implements UIModule {
     }
 
     private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi, List<Persistable> updates,
-                                                      List<Integer> iterationCounts) {
+                                                      List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return Collections.emptyMap();
         }
@@ -1011,9 +1056,17 @@ public class TrainModule implements UIModule {
                 //TODO PROPER VALIDATION ETC, ERROR HANDLING
                 Map<String, Double> lrs = sp.getLearningRates();
 
+                String prefix;
+                if(modelType == ModelType.Layer){
+                    prefix = layerName;
+                } else {
+                    prefix = layerName + "_";
+                }
+
                 for (String p : lrs.keySet()) {
-                    if (p.startsWith(layerName + "_")) {
-                        String layerParamName = p.substring(Math.min(p.length(), layerName.length() + 1));
+
+                    if (p.startsWith(prefix)) {
+                        String layerParamName = p.substring(Math.min(p.length(), prefix.length()));
                         if (!byName.containsKey(layerParamName)) {
                             byName.put(layerParamName, new float[size]);
                         }
@@ -1052,12 +1105,28 @@ public class TrainModule implements UIModule {
         if (layerName != null) {
             for (String s : map.keySet()) {
                 if (s.startsWith(layerName)) {
-                    String paramName = s.substring(layerName.length() + 1);
+                    String paramName;
+                    if(s.charAt(layerName.length()) == '_'){
+                        //MLN or CG parameter naming convention
+                        paramName = s.substring(layerName.length() + 1);
+                    } else {
+                        //Pretrain layer (VAE, RBM) naming convention
+                        paramName = s.substring(layerName.length());
+                    }
+
+
                     paramNames.add(paramName);
                     Histogram h = map.get(s);
                     Map<String, Object> thisHist = new HashMap<>();
-                    thisHist.put("min", h.getMin());
-                    thisHist.put("max", h.getMax());
+                    double min = h.getMin();
+                    double max = h.getMax();
+                    if(Double.isNaN(min)){
+                        //If either is NaN, both will be
+                        min = NAN_REPLACEMENT_VALUE;
+                        max = NAN_REPLACEMENT_VALUE;
+                    }
+                    thisHist.put("min", min);
+                    thisHist.put("max", max);
                     thisHist.put("bins", h.getNBins());
                     thisHist.put("counts", h.getBinCounts());
                     ret.put(paramName, thisHist);

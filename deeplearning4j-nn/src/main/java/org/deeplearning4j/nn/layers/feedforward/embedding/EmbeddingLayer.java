@@ -116,6 +116,11 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
     protected void applyDropOutIfNecessary(boolean training){
         throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer");
     }

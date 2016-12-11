@@ -29,4 +29,9 @@ public class CustomLayerImpl extends BaseLayer<CustomLayer> {
     public CustomLayerImpl(NeuralNetConfiguration conf) {
         super(conf);
     }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
 }
