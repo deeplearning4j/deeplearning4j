@@ -125,7 +125,9 @@ elseif(CPU_BLAS)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     endif()
 
-    if(APPLE OR MSYS)
+    if(APPLE)
+        SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+    elseif(MSYS)
         SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
     endif()
 
