@@ -11,33 +11,33 @@ redirect_from: /zh-index
 
 <br />
 <p><h2>Deeplearning4j的功能</h2></p>
+<p>Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通的单线程深度学习框架。定型过程以集群进行，也就是说，Deeplearning4j可以快速处理大量数据。神经网络可通过[迭代化简]平行定型，与<strong>Java</strong>、<strong><a href="http://nd4j.org/scala.html" target="_blank">Scala</a></strong>和<strong><a href="https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj" target="_blank">Clojure</a></strong>均兼容。Deeplearning4j在开放堆栈中作为模块组件的功能，使之成为首个为<a href="http://microservices.io/patterns/microservices.html" target="_blank">微服务架构</a>打造的深度学习框架。</p>
 <ul class="categorized-view view-col-3">
   <li>
     <h5>兼容</h5>
-    <a href="http://www.cloudera.com/">Cloudera CDH</a>
-    <a href="http://hortonworks.com/">Hortonworks HDP</a>
-    <a href="http://www.nvidia.com/object/deep-learning-system.html">NVIDIA DGXs</a>
-    <a href="http://hadoop.apache.org/">Hadoop</a>
-    <a href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html">Hadoop Yarn</a>
-    <a href="http://spark.apache.org/">Apache Spark</a>
-    <a href="https://flink.apache.org/">Apache Flink</a>
-    <a href="http://storm.apache.org/">Apache Storm</a>
-    <a href="https://www.canonical.com/">Canonical</a>
-    <a href="https://www.lightbend.com/platform">Reacive Platform</a>    
+    <a href="http://www.cloudera.com/" target="_blank">Cloudera CDH</a>
+    <a href="http://hortonworks.com/" target="_blank">Hortonworks HDP</a>
+    <a href="http://www.nvidia.com/object/deep-learning-system.html" target="_blank">NVIDIA DGXs</a>
+    <a href="http://hadoop.apache.org/" target="_blank">Hadoop</a>
+    <a href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html" target="_blank">Hadoop Yarn</a>
+    <a href="http://spark.apache.org/" target="_blank">Apache Spark</a>
+    <a href="https://flink.apache.org/" target="_blank">Apache Flink</a>
+    <a href="http://storm.apache.org/" target="_blank">Apache Storm</a>
+    <a href="https://www.canonical.com/" target="_blank">Canonical</a>
+    <a href="https://www.lightbend.com/platform" target="_blank">Reacive Platform</a>    
   </li>
 
   <li>
     <h5>神经网络</h5>
-    <a href="restrictedboltzmannmachine">受限玻尔兹曼机（Restricted Boltzmann Machine）</a>
-    <a href="convolutionalnets">卷积网络（Convolutional Nets）- 图像</a>
-    <a href="lstm">递归网络/LSTMs（Long Short Terms Memory） - 时间序列和传感器数据</a>
-    <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java">递归自动编码器（Recursive Autoencoders）</a>
-    <a href="deepbeliefnetwork">深度置信网络（Deep-Belief Networks）</a>
-    <a href="deepautoencoder">深度自动编码器（Deep Autoencoders）- 问－答／数据压缩</a>
-    <a href="usingrnns">递归神经传感器网络（Recurrent Neural Network） - 场景、分析</a>
-    <a href="stackeddenoisingautoencoder">堆叠式降噪自动编码器（Stacked Denoising Autoencoders）</a>
-    <a href="https://github.com/deeplearning4j/rl4j">深度增强学习（Deep Reinforcement Learning）</a>
-    <a href="neuralnetworktable">更多用途请参见《如何选择神经网络》</a>
+    <a href="restrictedboltzmannmachine">受限玻尔兹曼机</a>
+    <a href="convolutionalnets">卷积网络</a>
+    <a href="lstm">递归网络/LSTMs</a>
+    <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java" target="_blank">递归自动编码器（Recursive Autoencoders）</a>
+    <a href="deepbeliefnetwork">深度置信网络</a>
+    <a href="deepautoencoder">深度自动编码器</a>
+    <a href="usingrnns">递归神经传感器网络</a>
+    <a href="stackeddenoisingautoencoder">堆叠式降噪自动编码器</a>
+    <a href="https://github.com/deeplearning4j/rl4j" target="_blank">深度增强学习</a>
   </li>
 
   <li>
@@ -45,8 +45,8 @@ redirect_from: /zh-index
     <a href="gpu">支持分布式 GPUs </a>
 	  <a href="keras">通过Keras导入Python模型</a>
     <a href="use_cases">DL4J用例</a>
-    <a href="compare-dl4j-torch7-pylearn">DL4J与Torch、Theano、Caffe、TensorFlow等的比较</a>
-    <a href="releasenotes">版本更新与前景发展</a>
+    <a href="compare-dl4j-torch7-pylearn">与其它平台比较</a>
+    <a href="releasenotes">版本更新与前未来发展</a>
 
     
   </li>
@@ -55,6 +55,9 @@ redirect_from: /zh-index
 <p>
 <h2>Deeplearning4j系列工具</h2>
 </p>
+<p>深度神经网络能够实现<a href="accuracy">前所未有的准确度</a>。对神经网络的简介请参见<a href="neuralnet-overview">概览</a>页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为layer）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。</p>
+<p>此处为我们已经建立的各个库及其在系统整体中的所处位置：</p>
+<br />
 <p align="center"><a href="../img/dl4j-eco-cn.jpg.jpg" data-lity><img src="../img/dl4j-ecosystem-cn-small.png" alt="dl4j ecosystem"/></a></p>
 <hr color="#DBDBDB" />
 
