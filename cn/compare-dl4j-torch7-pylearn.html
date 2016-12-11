@@ -35,15 +35,15 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
   <li>从企业的角度看，许多公司需要思考的问题在于是否要依靠谷歌来提供这些工具。 </li>
 </ul><br />
 <p><h3>利与弊:</h3></p>
-<span class="label label-success">利：</span>Python + NumPy <br />
-<span class="label label-success">利：</span>与Theano类似的计算图抽象化 <br />
-<span class="label label-success">利：</span>编译时间比Theano快很多 <br />
-<span class="label label-success">利：</span>用TensorBoard进行可视化 <br />
-<span class="label label-success">利：</span>同时支持数据并行和模型并行 <br />
-<span class="label label-danger">弊：</span>速度比其他框架慢 <br />
-<span class="label label-danger">弊：</span>比Torch笨重许多；更难理解 <br />
-<span class="label label-danger">弊：</span>已预定型的模型不多 <br />
-<span class="label label-danger">弊：</span>计算图纯粹基于Python，所以速度较慢 <br />
+<span class="label label-success">利</span> Python + NumPy <br />
+<span class="label label-success">利</span> 与Theano类似的计算图抽象化 <br />
+<span class="label label-success">利</span> 编译时间比Theano快很多 <br />
+<span class="label label-success">利</span> 用TensorBoard进行可视化 <br />
+<span class="label label-success">利</span> 同时支持数据并行和模型并行 <br />
+<span class="label label-danger">弊</span> 速度比其他框架慢 <br />
+<span class="label label-danger">弊</span> 比Torch笨重许多；更难理解 <br />
+<span class="label label-danger">弊</span> 已预定型的模型不多 <br />
+<span class="label label-danger">弊</span> 计算图纯粹基于Python，所以速度较慢 <br />
 <br />
 
 <p><h2><a name="theano">Theano及其生态系统</a></h2></p>
@@ -53,15 +53,15 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 </p>
 <br />
 <p><h3>利与弊:</h3></p>
-<span class="label label-success">利：</span>Python + NumPy <br />
-<span class="label label-success">利：</span>计算图是良好的抽象化方式 <br />
-<span class="label label-success">利：</span>RNN与计算图匹配良好 <br />
-<span class="label label-success">利：</span>高级的包装界面（Keras、Lasagne）减少了使用时的麻烦 <br />
-<span class="label label-danger">弊：</span>原始的Theano级别偏低 <br />
-<span class="label label-danger">弊：</span>错误信息可能没有帮助 <br />
-<span class="label label-danger">弊：</span>大型模型的编译时间可能较长 <br />
-<span class="label label-danger">弊：</span>比Torch笨重许多；更难理解 <br />
-<span class="label label-danger">弊：</span>对已预定型模型的支持不够完善 <br />
+<span class="label label-success">利</span> Python + NumPy <br />
+<span class="label label-success">利</span> 计算图是良好的抽象化方式 <br />
+<span class="label label-success">利</span> RNN与计算图匹配良好 <br />
+<span class="label label-success">利</span> 高级的包装界面（Keras、Lasagne）减少了使用时的麻烦 <br />
+<span class="label label-danger">弊</span> 原始的Theano级别偏低 <br />
+<span class="label label-danger">弊</span> 错误信息可能没有帮助 <br />
+<span class="label label-danger">弊</span> 大型模型的编译时间可能较长 <br />
+<span class="label label-danger">弊</span> 比Torch笨重许多；更难理解 <br />
+<span class="label label-danger">弊</span> 对已预定型模型的支持不够完善 <br />
 <br />
 
 <p><h2><a name="torch">Torch</a></h2></p>
@@ -69,13 +69,13 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p>Torch7虽然功能强大，<a href="https://news.ycombinator.com/item?id=7929216" target="_blank">但其设计并不适合在两个群体中大范围普及</a>，即主要依赖Python的学术界，以及普遍使用Java的企业软件工程师。Deeplearning4j用Java编写，反映了我们对行业应用和使用便利的重视。我们认为可用性是阻碍深度学习实施工具广泛普及的限制因素。我们认为可扩展性应当通过Hadoop和Spark这样的开源分布式运行时系统来实现自动化。我们还认为，从确保工具正常运作和构建社区两方面来看，提供商业支持的开源框架是最恰当的解决方案。 </p>
 <br />
 <p><h3>利与弊:</h3></p>
-<span class="label label-success">利：</span>大量模块化组件，容易组合 <br />
-<span class="label label-success">利：</span> 很容易编写自己的层类型并在GPU上运行 <br />
-<span class="label label-success">利：</span>Lua. ;) （大多数学习库的代码是Lua，容易读取） <br />
-<span class="label label-success">利：</span>有很多已预定型的模型！ <br />
-<span class="label label-danger">弊：</span>Lua <br />
-<span class="label label-danger">弊：</span>通常需要自己编写定型代码（即插即用相对较少） <br />
-<span class="label label-danger">弊：</span>不适合递归神经网络 <br />
+<span class="label label-success">利</span> 大量模块化组件，容易组合 <br />
+<span class="label label-success">利</span>  很容易编写自己的层类型并在GPU上运行 <br />
+<span class="label label-success">利</span> Lua. ;) （大多数学习库的代码是Lua，容易读取） <br />
+<span class="label label-success">利</span> 有很多已预定型的模型！ <br />
+<span class="label label-danger">弊</span> Lua <br />
+<span class="label label-danger">弊</span> 通常需要自己编写定型代码（即插即用相对较少） <br />
+<span class="label label-danger">弊</span> 不适合递归神经网络 <br />
 <br />
 
 <p><h2><a name="caffe">Caffe</a></h2></p>
@@ -83,13 +83,13 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预定型的模型。Deeplearning4j正在开发将Caffe模型导入Spark的<a href="https://github.com/deeplearning4j/deeplearning4j/pull/480" target="_blank">开发解析器</a>。 </p>
 <br />
 <p><h3>利与弊:</h3></p>
-<span class="label label-success">利：</span>适合前馈网络和图像处理 <br />
-<span class="label label-success">利：</span>适合微调已有的网络 <br />
-<span class="label label-success">利：</span>定型模型而无需编写任何代码 <br />
-<span class="label label-success">利：</span>Python界面相当有用 <br />
-<span class="label label-danger">弊：</span>需要用C++ / CUDA编写新的GPU层 <br />
-<span class="label label-danger">弊：</span>不适合递归网络 <br />
-<span class="label label-danger">弊：</span>用于大型网络（GoogLeNet、ResNet）时过于繁琐 <br />
+<span class="label label-success">利</span> 适合前馈网络和图像处理 <br />
+<span class="label label-success">利</span> 适合微调已有的网络 <br />
+<span class="label label-success">利</span> 定型模型而无需编写任何代码 <br />
+<span class="label label-success">利</span> Python界面相当有用 <br />
+<span class="label label-danger">弊</span> 需要用C++ / CUDA编写新的GPU层 <br />
+<span class="label label-danger">弊</span> 不适合递归网络 <br />
+<span class="label label-danger">弊</span> 用于大型网络（GoogLeNet、ResNet）时过于繁琐 <br />
 <br />
 
 <p><h2><a name="cntk">CNTK</a></h2></p>
