@@ -55,8 +55,12 @@ public abstract class BaseTransport implements Transport {
     protected Thread threadA;
     protected Thread threadB;
 
+
+
     // TODO: make this configurable?
     protected IdleStrategy idler = new SleepingIdleStrategy(50000);
+
+    protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
     @Override
     public void sendMessage(@NonNull VoidMessage message) {
@@ -132,27 +136,66 @@ public abstract class BaseTransport implements Transport {
      */
     @Override
     public void launch(@NonNull ThreadingModel threading) {
+        this.threadingModel = threading;
+
         switch (threading) {
             case SINGLE_THREAD: {
-                    // single thread for all queues. shouldn't be used in real world
+
                     log.warn("SINGLE_THREAD model is used, performance will be significantly reduced");
+
+                    // single thread for all queues. shouldn't be used in real world
+                    threadA = new Thread(() -> {
+                        while (runner.get()) {
+                            if (subscriptionForShards != null)
+                                subscriptionForShards.poll(messageHandlerForShards, 512);
+
+                            idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
+                        }
+                    });
+
+                    threadA.start();
                 }
                 break;
             case DEDICATED_THREADS: {
                     // we start separate thread for each handler
+
+                    /**
+                    * We definitely might use less conditional code here, BUT i'll keep it as is,
+                    * only because we want code to be obvious for people
+                    */
                     if (nodeRole == NodeRole.NONE) {
                         throw new ND4JIllegalStateException("No role is set for current node!");
-                    } else if (nodeRole == NodeRole.SHARD) {
+                    } else if (nodeRole == NodeRole.SHARD || nodeRole == NodeRole.BACKUP || nodeRole == NodeRole.MASTER) {
                         // // Shard or Backup uses two subscriptions
-                        threadA = new Thread(() -> {});
-                        threadB = new Thread(() -> {});
+
+                        // setting up thread for shard->client communication listener
+                        threadB = new Thread(() -> {
+                            while (runner.get())
+                                idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
+                        });
+
+                        // setting up thread for inter-shard communication listener
+                        threadA = new Thread(() -> {
+                            while (runner.get())
+                                idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
+                        });
 
                         threadB.start();
+                        threadB.setDaemon(true);
+                        threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
+
                     } else {
-                        threadA = new Thread(() -> {});
+                        // setting up thread for shard->client communication listener
+                        threadA = new Thread(() -> {
+                            while (runner.get())
+                                idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
+                        });
                     }
 
+                    // all roles have threadA anyway
                     threadA.start();
+                    threadA.setDaemon(true);
+                    threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                 }
                 break;
             case SAME_THREAD: {
@@ -194,10 +237,23 @@ public abstract class BaseTransport implements Transport {
      */
     @Override
     public VoidMessage takeMessage() {
-        try {
-            return messages.take();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (threadingModel != ThreadingModel.SAME_THREAD) {
+            try {
+                return messages.take();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            /**
+             * PLEASE NOTE: This branch is suitable for debugging only, should never be used in wild life
+             */
+            // we do inplace poll
+            if (subscriptionForShards != null)
+                subscriptionForShards.poll(messageHandlerForShards, 512);
+
+            subscriptionForClients.poll(messageHandlerForClients, 512);
+
+            return messages.poll();
         }
     }
 

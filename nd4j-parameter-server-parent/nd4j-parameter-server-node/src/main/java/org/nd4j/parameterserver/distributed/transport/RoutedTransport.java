@@ -5,5 +5,7 @@ package org.nd4j.parameterserver.distributed.transport;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class RoutedTransport {
+    // TODO: to be implemented
 }

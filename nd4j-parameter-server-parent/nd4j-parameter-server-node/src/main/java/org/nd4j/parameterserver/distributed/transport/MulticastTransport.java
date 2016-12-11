@@ -32,6 +32,12 @@ public class MulticastTransport extends BaseTransport {
 
     @Override
     public void init(@NonNull Configuration configuration, @NonNull NodeRole role, @NonNull String localIp) {
+        if (configuration.getTtl() < 1)
+            throw new ND4JIllegalStateException("For MulticastTransport you should have TTL >= 1, it won't work otherwise");
+
+        if (configuration.getMulticastNetwork() == null || configuration.getMulticastNetwork().isEmpty())
+            throw new ND4JIllegalStateException("For MulticastTransport you should provide IP from multicast network available/allowed in your environment, i.e.: 224.0.1.1");
+
         this.configuration = configuration;
         this.nodeRole = role;
 
@@ -43,12 +49,11 @@ public class MulticastTransport extends BaseTransport {
 
         ip = localIp;
 
-        if (configuration.getMulticastNetwork() == null || configuration.getMulticastNetwork().isEmpty())
-            throw new ND4JIllegalStateException("For MulticastTransport you should provide IP from multicast network available/allowed in your environment, i.e.: 224.0.1.1");
-
         multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getPort();
         if (configuration.getMulticastInterface() != null && !configuration.getMulticastInterface().isEmpty())
             multicastChannelUri =  multicastChannelUri + "|interface=" + configuration.getMulticastInterface();
+
+        multicastChannelUri = multicastChannelUri + "|ttl=" + configuration.getTtl();
 
 
         switch (nodeRole) {
