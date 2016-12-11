@@ -4,9 +4,8 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -17,15 +16,39 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
+
 /**
  * Routines for importing saved Keras model configurations.
  *
- * @author davekale
+ * @author dave@skymind.io
  */
 public class ModelConfiguration {
-    public static final String KERAS_LAYER_TYPE_DROPOUT = "Dropout";
-    public static final String KERAS_LAYER_TYPE_ACTIVATION = "Activation";
-    public static final String KERAS_LAYER_TYPE_FLATTEN = "Flatten";
+    public static final String KERAS_MODEL_PROPERTY_CLASS_NAME = "class_name";
+    public static final String KERAS_MODEL_PROPERTY_CONFIG = "config";
+    public static final String KERAS_MODEL_CLASS_NAME_SEQUENTIAL = "Sequential";
+    public static final String KERAS_MODEL_CLASS_NAME_FUNCTIONAL_API = "Model";
+
+    /* Keras loss functions. */
+    public static final String KERAS_LOSS_SQUARED_LOSS_1 = "mean_squared_error";
+    public static final String KERAS_LOSS_SQUARED_LOSS_2 = "mse";
+    public static final String KERAS_LOSS_MEAN_ABSOLUTE_ERROR_1 = "mean_absolute_error";
+    public static final String KERAS_LOSS_MEAN_ABSOLUTE_ERROR_2 = "mae";
+    public static final String KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR_1 = "mean_absolute_percentage_error";
+    public static final String KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR_2 = "mape";
+    public static final String KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR_1 = "mean_squared_logarithmic_error";
+    public static final String KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR_2 = "msle";
+    public static final String KERAS_LOSS_SQUARED_HINGE = "squared_hinge";
+    public static final String KERAS_LOSS_HINGE    = "hinge";
+    public static final String KERAS_LOSS_XENT = "binary_crossentropy";
+    public static final String KERAS_LOSS_MCXENT = "categorical_crossentropy";
+    public static final String KERAS_LOSS_SP_XE    = "sparse_categorical_crossentropy";
+    public static final String KERAS_LOSS_KL_DIVERGENCE_1 = "kullback_leibler_divergence";
+    public static final String KERAS_LOSS_KL_DIVERGENCE_2 = "kld";
+    public static final String KERAS_LOSS_POISSON  = "poisson";
+    public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
+    public static final String KERAS_TRAINING_CONFIG_PROPERTY_LOSS = "loss";
+
     private static Logger log = LoggerFactory.getLogger(Model.class);
 
     private ModelConfiguration() {}
@@ -33,171 +56,121 @@ public class ModelConfiguration {
     /**
      * Imports a Keras Sequential model configuration saved using call to model.to_json().
      *
-     * @param configJsonFilename    Path to text file storing Keras configuration as valid JSON.
-     * @return                      DL4J MultiLayerConfiguration
+     * @param modelJsonFilename    Path to text file storing Keras Sequential configuration as valid JSON.
+     * @return                     DL4J MultiLayerConfiguration
      * @throws IOException
      */
-    public static MultiLayerConfiguration importSequentialModelConfigFromFile(String configJsonFilename)
+    public static MultiLayerConfiguration importSequentialModelConfigFromJsonFile(String modelJsonFilename)
             throws IOException {
-        String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
-        return importSequentialModelConfig(configJson);
+        String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
+        return importSequentialModelConfig(modelJson);
     }
 
     /**
      * Imports a Keras Functional API model configuration saved using call to model.to_json().
      *
-     * @param configJsonFilename    Path to text file storing Keras configuration as valid JSON.
-     * @return                      DL4J ComputationGraphConfiguration
+     * @param modelJsonFilename    Path to text file storing Keras Model configuration as valid JSON.
+     * @return                     DL4J ComputationGraphConfiguration
      * @throws IOException
      */
-    public static ComputationGraphConfiguration importFunctionalApiConfigFromFile(String configJsonFilename)
-        throws IOException {
-        String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
-        return importFunctionalApiConfig(configJson);
+    public static ComputationGraphConfiguration importModelConfigFromJsonFile(String modelJsonFilename)
+            throws IOException {
+        String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
+        return importModelConfig(modelJson);
     }
 
     /**
      * Imports a Keras Sequential model configuration saved using call to model.to_json().
      *
-     * @param configJson    String storing Keras configuration as valid JSON.
-     * @return              DL4J MultiLayerConfiguration
+     * @param modelJson    String storing Keras Sequential configuration as valid JSON.
+     * @return             DL4J MultiLayerConfiguration
      * @throws IOException
      */
-    public static MultiLayerConfiguration importSequentialModelConfig(String configJson)
+    public static MultiLayerConfiguration importSequentialModelConfig(String modelJson)
             throws IOException {
-        Map<String,Object> kerasConfig = parseJsonString(configJson);
-        MultiLayerConfiguration modelConfig = importSequentialModelConfig(kerasConfig);
-        return modelConfig;
+        return importSequentialModelConfig(modelJson, null);
     }
 
     /**
      * Imports a Keras Functional API model configuration saved using call to model.to_json().
      *
-     * @param configJson    String storing Keras configuration as valid JSON.
-     * @return              DL4J ComputationGraphConfiguration
+     * @param modelJson    String storing Keras Model configuration as valid JSON.
+     * @return             DL4J ComputationGraphConfiguration
      * @throws IOException
      */
-    public static ComputationGraphConfiguration importFunctionalApiConfig(String configJson)
+    public static ComputationGraphConfiguration importModelConfig(String modelJson)
             throws IOException {
-        Map<String,Object> kerasConfig = parseJsonString(configJson);
-        ComputationGraphConfiguration modelConfig = importFunctionalApiConfig(kerasConfig);
-        return modelConfig;
+        return importModelConfig(modelJson, null);
     }
 
     /**
-     * Imports a Keras Sequential model configuration saved using call to model.to_json().
+     * Imports a Keras Sequential model configuration saved using call to model.to_json() and
+     * training configuration stored in valid JSON string.
      *
-     * @param kerasConfig   Nested Map storing Keras configuration read from valid JSON.
-     * @return              DL4J MultiLayerConfiguration
+     * @param modelJson       String storing Keras Sequential configuration as valid JSON.
+     * @param trainingJson    String storing Keras training configuration as valid JSON.
+     * @return                DL4J MultiLayerConfiguration
      * @throws IOException
-     * @throws UnsupportedOperationException
      * @throws IncompatibleKerasConfigurationException
      */
-    private static MultiLayerConfiguration importSequentialModelConfig(Map<String,Object> kerasConfig)
+    public static MultiLayerConfiguration importSequentialModelConfig(String modelJson, String trainingJson)
             throws IOException, IncompatibleKerasConfigurationException {
-        String arch = (String)kerasConfig.get("class_name");
-        if (!arch.equals("Sequential"))
+        Map<String,Object> modelConfig = parseJsonString(modelJson);
+        String arch = (String)modelConfig.get(KERAS_MODEL_PROPERTY_CLASS_NAME);
+        if (!arch.equals(KERAS_MODEL_CLASS_NAME_SEQUENTIAL))
             throw new IncompatibleKerasConfigurationException("Expected \"Sequential\" model config, found " + arch);
 
-        /* Make first pass through layer configs to
-         * - merge dropout layers into subsequent layers
-         * - merge activation layers into previous layers
-         * TODO: remove this once Dropout layer added to DL4J
-         */
-        double prevDropout = 0.0;
-        List<Map<String,Object>> layerConfigs = new ArrayList<>();
-        for (Object o : (List<Object>)kerasConfig.get("config")) {
-            String kerasLayerName = (String)((Map<String,Object>)o).get("class_name");
-            Map<String,Object> layerConfig = (Map<String,Object>)((Map<String,Object>)o).get("config");
-            layerConfig.put("keras_class", kerasLayerName);
+        Map<String,Object> trainingConfig = null;
+        if (trainingJson != null)
+            trainingConfig = parseJsonString(trainingJson);
 
-            switch (kerasLayerName) {
-                case KERAS_LAYER_TYPE_DROPOUT:
-                    /* Store dropout layer so we can merge into subsequent layer.
-                     * TODO: remove once Dropout layer added to DL4J.
-                     */
-                    prevDropout = (double)layerConfig.get("p");
-                    continue;
-                case KERAS_LAYER_TYPE_ACTIVATION:
-                    /* Merge activation function into previous layer.
-                     * TODO: we have an Activation layer in DL4J so maybe remove this.
-                     */
-                    if (layerConfigs.size() == 0)
-                        throw new IncompatibleKerasConfigurationException("Plain activation layer applied to input not supported.");
-                    String activation = LayerConfiguration.mapActivation((String)layerConfig.get("activation"));
-                    layerConfigs.get(layerConfigs.size()-1).put("activation", activation);
-                    continue;
-                case KERAS_LAYER_TYPE_FLATTEN:
-                    /* NOTE: THIS IS A HACK! For any reshaping layers, we need to skip over the dropout logic below
-                     * so that the previous layer's dropout value is persisted for the next layer.
-                     * TODO: remove once Dropout layer added to DL4J.
-                     */
-                    layerConfigs.add(layerConfig);
-                    continue;
-            }
-
-            /* Merge dropout from previous layer.
-             * TODO: remove once Dropout layer added to DL4J.
-             */
-            if (prevDropout > 0) {
-                double oldDropout = layerConfig.containsKey("dropout") ? (double)layerConfig.get("dropout") : 0.0;
-                double newDropout = 1.0 - (1.0 - prevDropout) * (1.0 - oldDropout);
-                layerConfig.put("dropout", newDropout);
-                if (oldDropout != newDropout)
-                    log.warn("DL4J does not have a Dropout layer so we will incorporate dropout=" + prevDropout + " into next layer, changing that layer's dropout from " + oldDropout + " to " + newDropout);
-                prevDropout = 0.0;
-            }
-            layerConfigs.add(layerConfig);
-        }
-
-        /* Make pass through layer configs, building each in turn. In addition:
-         * - get input shape from "batch_input_shape" field of input layer config
-         * - get dim ordering (based on Keras backend)
-         * - determine whether model includes recurrent or convolutional layers
-         */
-        List<Integer> batchInputShape = null;
-        String dimOrdering = null;
-        boolean isRecurrent = false;
-        boolean isConvolutional = false;
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
+
+        /* Iterate through layer configs, building each in turn. In addition, determine
+         * input type, whether model is recurrent, and truncated BPTT length.
+         */
+        int[] inputShape = null;
+        InputType inputType = null;
+        int truncatedBPTT = -1;
+        List<Object> layerConfigObjects = (List<Object>)modelConfig.get(KERAS_MODEL_PROPERTY_CONFIG);
         int layerIndex = 0;
-        for (Map<String,Object> layerConfig : layerConfigs) {
-            String kerasLayerName = (String)layerConfig.get("keras_class");
+        for (Object layerConfigObject : layerConfigObjects) {
+            Map<String, Object> layerConfig = LayerConfiguration.processLayerConfigObject(layerConfigObject);
 
-            /* Look for "batch_input_shape" field, which should be set
-             * for input layer and ONLY for input layer.
+            /* Determine layer input shape, if any specified. */
+            int[] layerInputShape = LayerConfiguration.getLayerInputShape(layerConfig);
+
+            /* Set overall input shape based on input shape of first layer (index 0). Layer
+             * 0 MUST have a valid input shape, while other layers should not. Throw errors
+             * when needed.
              */
-            if (layerConfig.containsKey("batch_input_shape")) {
-                if (layerIndex > 0)
-                    throw new IncompatibleKerasConfigurationException("Non-input layer should not specify \"batch_input_shape\" field");
+            if (layerIndex == 0) {
+                if (layerInputShape != null)
+                    inputShape = layerInputShape;
                 else
-                    batchInputShape = (List<Integer>) layerConfig.get("batch_input_shape");
-            } else if (layerIndex == 0)
-                throw new IncompatibleKerasConfigurationException("Input layer must specify \"batch_input_shape\" field");
-
-            /* Look for "dim_ordering" field, which will generally
-             * show up only in convolutional and max pooling layers.
-             */
-            if (layerConfig.containsKey("dim_ordering")) {
-                String layerDimOrdering = (String)layerConfig.get("dim_ordering");
-                if (!layerDimOrdering.equals("th") && !layerDimOrdering.equals("tf"))
-                    throw new IncompatibleKerasConfigurationException("Unknown Keras backend: " + layerDimOrdering);
-                if (dimOrdering != null && !layerDimOrdering.equals(dimOrdering))
-                    throw new IncompatibleKerasConfigurationException("Found layers with conflicting Keras backends.");
-                dimOrdering = layerDimOrdering;
-            }
+                    throw new IncompatibleKerasConfigurationException("Layer " + layerIndex + " must specify \"batch_input_shape\" field");
+            } else if (layerInputShape != null)
+                throw new IncompatibleKerasConfigurationException("Layer " + layerIndex + " should not specify \"batch_input_shape\" field");
 
             /* Build layer based on name, config, order. */
-            Layer layer = LayerConfiguration.buildLayer(kerasLayerName, layerConfig, (layerIndex == layerConfigs.size()-1));
-            if (layer == null)
+            Layer layer = LayerConfiguration.buildLayer(layerConfig);
+
+            if (layer == null) //We want to skip some Keras layers (e.g., Input, Reshape)
                 continue;
 
-            /* Detect whether layer is recurrent or convolutional. */
-            if (layer instanceof BaseRecurrentLayer)
-                isRecurrent = true;
-            else if (layer instanceof ConvolutionLayer)
-                isConvolutional = true;
+            /* We determine input type from the first non-Input keras layer. */
+            if (inputType == null) {
+                if (layer instanceof BaseRecurrentLayer) {
+                    inputType = InputType.recurrent(inputShape[1]);
+                    truncatedBPTT = inputShape[0];
+                } else if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer)
+                    inputType = InputType.convolutional(inputShape[0], inputShape[1], inputShape[2]);
+                else
+                    inputType = InputType.feedForward(inputShape[0]);
+            }
+
+            /* Detect whether L1 or L2 regularization is being applied. */
             if (layer.getL1() > 0 || layer.getL2() > 0)
                 modelBuilder.regularization(true);
 
@@ -206,83 +179,176 @@ public class ModelConfiguration {
             layerIndex++;
         }
 
-        /* If layer is recurrent or convolutional, set input type to appropriate
-         * InputType with shape based on "batch_input_shape" field.
+        /* Set input type.
+         * TODO: should we throw an error if inputType is somehow not set (not really possible).
+         * */
+        if (inputType != null)
+            listBuilder.setInputType(inputType);
+
+        /* Handle truncated BPTT:
+         * - less than zero if no recurrent layers found
+         * - greater than zero if found recurrent layer and truncation length was set
+         * - equal to zero if found recurrent layer but no truncation length set (e.g., the
+         *   model was built with Theano backend and used scan symbolic loop instead of
+         *   unrolling the RNN for a fixed number of steps.
+         *
+         * TODO: do we need to throw an error for truncatedBPTT==0?
          */
-        if (isRecurrent && isConvolutional) {
-            throw new IncompatibleKerasConfigurationException("Recurrent convolutional architecture not supported.");
-        } else if (isRecurrent) {
-            listBuilder.setInputType(InputType.recurrent(batchInputShape.get(2)));
-            if (batchInputShape.get(1) == null)
-                log.warn("Input sequence length must be specified manually for truncated BPTT!");
-            else {
-                int sequenceLength = batchInputShape.get(1);
-                listBuilder.tBPTTForwardLength(sequenceLength).tBPTTBackwardLength(sequenceLength);
-            }
-        } else if (isConvolutional) {
-            int[] imageSize = new int[3];
-            if (dimOrdering.equals("tf")) {
-                /* TensorFlow convolutional input: # examples, # rows, # cols, # channels */
-                imageSize[0] = batchInputShape.get(1);
-                imageSize[1] = batchInputShape.get(2);
-                imageSize[2] = batchInputShape.get(3);
-            } else if (dimOrdering.equals("th")) {
-                /* Theano convolutional input: # examples, # channels, # rows, # cols */
-                imageSize[0] = batchInputShape.get(2);
-                imageSize[1] = batchInputShape.get(3);
-                imageSize[2] = batchInputShape.get(1);
-            } else {
-                throw new IncompatibleKerasConfigurationException("Unknown keras backend " + dimOrdering);
-            }
-            listBuilder.setInputType(InputType.convolutional(imageSize[0], imageSize[1], imageSize[2]));
-        } else {
-            listBuilder.setInputType(InputType.feedForward(batchInputShape.get(1)));
+        if (truncatedBPTT == 0)
+            throw new IncompatibleKerasConfigurationException("Cannot import recurrent models without fixed length sequence input.");
+        else if (truncatedBPTT > 0)
+            listBuilder.tBPTTForwardLength(truncatedBPTT).tBPTTBackwardLength(truncatedBPTT);
+
+        /* If received valid trainingConfig, add loss layer and set other params. */
+        if (trainingConfig != null) {
+            /* Add loss layer. */
+            String kerasLoss = (String)trainingConfig.get(KERAS_TRAINING_CONFIG_PROPERTY_LOSS);
+            LossFunctions.LossFunction dl4jLoss = mapLossFunction(kerasLoss);
+            listBuilder.layer(listBuilder.getLayerwise().size(), new LossLayer.Builder(dl4jLoss).build());
+
+            /* TODO: handle optimizer configuration. */
+            /* TODO: handle other configs (loss weights, sample weights). */
         }
+
         return listBuilder.build();
     }
 
     /**
      * Imports a Keras Functional API model configuration saved using call to model.to_json().
      *
-     * @param kerasConfig   Nested Map storing Keras configuration read from valid JSON.
-     * @return              DL4J ComputationGraph
+     * @param modelJson       String storing Keras Model configuration as valid JSON.
+     * @param trainingJson    String storing Keras training configuration as valid JSON.
+     * @return                DL4J ComputationGraphConfiguration
      * @throws IOException
-     * @throws UnsupportedOperationException
      * @throws IncompatibleKerasConfigurationException
+     * @throws UnsupportedOperationException
      */
-    private static ComputationGraphConfiguration importFunctionalApiConfig(Map<String,Object> kerasConfig)
-            throws IOException, UnsupportedOperationException, IncompatibleKerasConfigurationException {
-        throw new UnsupportedOperationException("Import of Keras Functional API model configs not supported.");
+    public static ComputationGraphConfiguration importModelConfig(String modelJson, String trainingJson)
+            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
+        Map<String,Object> modelConfig = parseJsonString(modelJson);
+        Map<String,Object> trainingConfig = null;
+        if (trainingJson != null)
+            trainingConfig = parseJsonString(trainingJson);
+
+        String arch = (String)modelConfig.get(KERAS_MODEL_PROPERTY_CLASS_NAME);
+        if (!arch.equals(KERAS_MODEL_CLASS_NAME_FUNCTIONAL_API))
+            throw new IncompatibleKerasConfigurationException("Expected \"Model\" model config, found " + arch);
+
+        NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
+        ComputationGraphConfiguration.GraphBuilder graphBuilder = modelBuilder.graphBuilder();
+
+        throw new UnsupportedOperationException("BLAH");
+//        /* Iterate through layer configs, building each in turn. In addition, determine
+//         * input type, whether model is recurrent, and truncated BPTT length.
+//         */
+//        Map<String,int[]> inputShapes = new HashMap<String,int[]>();
+//        List<InputType> inputTypes = new ArrayList<InputType>();
+//        List<Integer> truncatedBPTT = new ArrayList<Integer>();
+//        List<Object> layerConfigObjects = (List<Object>)modelConfig.get(KERAS_MODEL_PROPERTY_CONFIG);
+//        int layerIndex = 0;
+//        for (Object layerConfigObject : layerConfigObjects) {
+//            Map<String,Object> layerConfig = LayerConfiguration.processLayerConfigObject(layerConfigObject);
+//            String layerClassName = (String)layerConfig.get(LayerConfiguration.LAYER_PROPERTY_CLASS_NAME);
+//            if (layerClassName.equals(LayerConfiguration.LAYER_TYPE_INPUT)) {
+//                String layerName = (String)layerConfig.get(LayerConfiguration.LAYER_PROPERTY_NAME);
+//                int[] inputShape = getInputShapeFromInputLayer(layerConfig);
+//                inputShapes.put(layerName, inputShape);
+//            }
+//
+//            /* Build layer based on name, config, order. */
+//            Layer layer = LayerConfiguration.buildLayer(layerClassName, layerConfig, layerIndex == layerConfigObjects.size()-1);
+//            if (layer == null)
+//                continue;
+//        }
     }
 
     /**
-     * Extract Keras configuration properties that may are not relevant for configuring DL4J layers
-     * or models but may be important when importing stored model weights. Only relevant property
-     * at this time is the Keras backend (stored as "dim_ordering" in convolutional and pooling layers).
+     * Extract a Map from layer name to configuration. Primary use is for looking up layer properties
+     * that are necessary for interpreting weights (e.g., "dim_ordering" for convolutional layers) but
+     * that are not stored in DL4J layer configurations.
      *
-     * @param configJson    String storing Keras configuration as valid JSON
-     * @return              Map from metadata fields to relevant values
+     * @param modelJson    String storing Keras configuration as valid JSON
+     * @return             Map from metadata fields to relevant values
      * @throws IOException
      */
-    public static Map<String, Object> extractWeightsMetadataFromConfig(String configJson) throws IOException {
-        Map<String,Object> weightsMetadata = new HashMap<>();
-        ObjectMapper mapper = new ObjectMapper();
-        TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
-        Map<String,Object> kerasConfig = mapper.readValue(configJson, typeRef);
-        List<Map<String,Object>> layers = (List<Map<String,Object>>)kerasConfig.get("config");
-        for (Map<String,Object> layer : layers) {
-            Map<String,Object> layerConfig = (Map<String,Object>)layer.get("config");
-            if (layerConfig.containsKey("dim_ordering") && !weightsMetadata.containsKey("keras_backend"))
-                weightsMetadata.put("keras_backend", layerConfig.get("dim_ordering"));
+    public static Map<String, Object> getLayerConfigurationAsMap(String modelJson) throws IOException {
+        Map<String,Object> kerasConfig = parseJsonString(modelJson);
+        List<Object> layerConfigObjects = (List<Object>)kerasConfig.get(KERAS_MODEL_PROPERTY_CONFIG);
+        Map<String,Object> layerConfigs = new HashMap<>();
+        for (Object layerConfigObject : layerConfigObjects) {
+            Map<String,Object> layerConfig = LayerConfiguration.processLayerConfigObject(layerConfigObject);
+            String layerName = (String)layerConfig.get(LayerConfiguration.KERAS_LAYER_PROPERTY_NAME);
+            layerConfigs.put(layerName, layerConfig);
         }
-        return weightsMetadata;
+        return layerConfigs;
+    }
+
+    public static boolean modelIsSequential(String modelJson) throws IOException {
+        Map<String,Object> modelConfig = parseJsonString(modelJson);
+        return modelConfig.containsKey(KERAS_MODEL_PROPERTY_CLASS_NAME) &&
+                modelConfig.get(KERAS_MODEL_PROPERTY_CLASS_NAME).equals(KERAS_MODEL_CLASS_NAME_SEQUENTIAL);
+    }
+
+    /**
+     * Map Keras to DL4J loss functions.
+     *
+     * @param kerasLoss    String containing Keras activation function name
+     * @return             String containing DL4J activation function name
+     */
+    private static LossFunctions.LossFunction mapLossFunction(String kerasLoss) {
+        LossFunctions.LossFunction dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
+        switch (kerasLoss) {
+            case KERAS_LOSS_SQUARED_LOSS_1:
+            case KERAS_LOSS_SQUARED_LOSS_2:
+                dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
+                break;
+            case KERAS_LOSS_MEAN_ABSOLUTE_ERROR_1:
+            case KERAS_LOSS_MEAN_ABSOLUTE_ERROR_2:
+                dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR;
+                break;
+            case KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR_1:
+            case KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR_2:
+                dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR;
+                break;
+            case KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR_1:
+            case KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR_2:
+                dl4jLoss = LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR;
+                break;
+            case KERAS_LOSS_SQUARED_HINGE:
+                dl4jLoss = LossFunctions.LossFunction.SQUARED_HINGE;
+                break;
+            case KERAS_LOSS_HINGE:
+                dl4jLoss = LossFunctions.LossFunction.HINGE;
+                break;
+            case KERAS_LOSS_XENT:
+                dl4jLoss = LossFunctions.LossFunction.XENT;
+                break;
+            case KERAS_LOSS_SP_XE:
+                log.warn("Sparse cross entropy not implemented, using multiclass cross entropy instead.");
+            case KERAS_LOSS_MCXENT:
+                dl4jLoss = LossFunctions.LossFunction.MCXENT;
+                break;
+            case KERAS_LOSS_KL_DIVERGENCE_1:
+            case KERAS_LOSS_KL_DIVERGENCE_2:
+                dl4jLoss = LossFunctions.LossFunction.KL_DIVERGENCE;
+                break;
+            case KERAS_LOSS_POISSON:
+                dl4jLoss = LossFunctions.LossFunction.POISSON;
+                break;
+            case KERAS_LOSS_COSINE_PROXIMITY:
+                dl4jLoss = LossFunctions.LossFunction.COSINE_PROXIMITY;
+                break;
+            default:
+                throw new IncompatibleKerasConfigurationException("Unknown Keras loss function " + kerasLoss);
+        }
+        return dl4jLoss;
     }
 
     /**
      * Convenience function for parsing JSON strings.
      *
-     * @param json  String containing valid JSON
-     * @return      Nested Map with arbitrary depth
+     * @param json    String containing valid JSON
+     * @return        Nested Map with arbitrary depth
      * @throws IOException
      */
     private static Map<String,Object> parseJsonString(String json) throws IOException {
