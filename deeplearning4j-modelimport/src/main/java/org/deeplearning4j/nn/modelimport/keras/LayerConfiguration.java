@@ -15,10 +15,8 @@ import java.util.Set;
  * @author davekale
  */
 public class LayerConfiguration {
-    /* Keras model properties. */
-    public static final String KERAS_MODEL_PROPERTY_CLASS = "keras_class";
-
     /* Keras layer types. */
+    public static final String KERAS_LAYER_TYPE_INPUT = "Input";
     public static final String KERAS_LAYER_TYPE_ACTIVATION = "Activation";
     public static final String KERAS_LAYER_TYPE_DROPOUT = "Dropout";
     public static final String KERAS_LAYER_TYPE_DENSE = "Dense";
@@ -30,6 +28,8 @@ public class LayerConfiguration {
     public static final String KERAS_LAYER_TYPE_FLATTEN = "Flatten";
 
     /* Keras layer properties. */
+    public static final String KERAS_LAYER_PROPERTY_CLASS_NAME = "class_name";
+    public static final String KERAS_LAYER_PROPERTY_CONFIG = "config";
     public static final String KERAS_LAYER_PROPERTY_NAME = "name";
     public static final String KERAS_LAYER_PROPERTY_DROPOUT = "dropout";
     public static final String KERAS_LAYER_PROPERTY_ACTIVATION = "activation";
@@ -48,6 +48,8 @@ public class LayerConfiguration {
     public static final String KERAS_LAYER_PROPERTY_DROPOUT_U = "dropout_U";
     public static final String KERAS_LAYER_PROPERTY_FORGET_BIAS_INIT = "forget_bias_init";
     public static final String KERAS_LAYER_PROPERTY_DROPOUT_W = "dropout_W";
+    public static final String KERAS_LAYER_PROPERTY_BATCH_INPUT_SHAPE = "batch_input_shape";
+    public static final String KERAS_LAYER_PROPERTY_DIM_ORDERING = "dim_ordering";
 
     /* Keras weight regularizers. */
     public static final String KERAS_REGULARIZATION_TYPE_L1 = "l1";
@@ -70,65 +72,110 @@ public class LayerConfiguration {
     public static final String DL4J_ACTIVATION_IDENTITY = "identity";
 
     /* Keras LSTM forget gate bias initializations. */
-    public static final String KERAS_LSTM_FORGET_BIAS_INIT_ZERO = "zero";
-    public static final String KERAS_LSTM_FORGET_BIAS_INIT_ONE = "one";
+    public static final String LSTM_FORGET_BIAS_KERAS_INIT_ZERO = "zero";
+    public static final String LSTM_FORGET_BIAS_KERAS_INIT_ONE = "one";
+
+    /* Keras dimension ordering for, e.g., convolutional layers. */
+    public static final String KERAS_DIM_ORDERING_THEANO = "th";
+    public static final String KERAS_DIM_ORDERING_TENSORFLOW = "tf";
+    public static final String KERAS_LAYER_TYPE_RESHAPE = "Reshape";
+    public static final String KERAS_LAYER_TYPE_REPEATVECTOR = "RepeatVector";
 
     /* Logging. */
     private static Logger log = LoggerFactory.getLogger(LayerConfiguration.class);
 
     private LayerConfiguration() {}
 
-    /**
-     * Configure DL4J Layer from a Keras layer configuration.
-     *
-     * @param kerasLayerClass  String containing the Keras layer class type
-     * @param kerasConfig      Map containing Keras layer properties
-     * @return                 DL4J Layer configuration
-     * @see Layer
-     */
-    public static Layer buildLayer(String kerasLayerClass, Map<String,Object> kerasConfig) {
-        return buildLayer(kerasLayerClass, kerasConfig, false);
+    public static Map<String,Object> processLayerConfigObject(Object layerConfigObject) {
+        Map<String,Object> outerConfig = (Map<String,Object>)layerConfigObject;
+        Map<String,Object> layerConfig = (Map<String,Object>)outerConfig.get(KERAS_LAYER_PROPERTY_CONFIG);
+        for (String property : outerConfig.keySet())
+            if (!property.equals(KERAS_LAYER_PROPERTY_CONFIG))
+                layerConfig.put(property, outerConfig.get(property));
+        return layerConfig;
     }
 
     /**
      * Configure DL4J Layer from a Keras layer configuration.
      *
-     * @param kerasLayerClass  String containing the Keras layer class type
-     * @param kerasConfig      Map containing Keras layer properties
-     * @param isOutput         Whether this is an output layer
+     * @param layerConfig      Map containing Keras layer properties
      * @return                 DL4J Layer configuration
      * @see Layer
      */
-    public static Layer buildLayer(String kerasLayerClass, Map<String,Object> kerasConfig, boolean isOutput) {
+    public static Layer buildLayer(Map<String,Object> layerConfig) {
+        String kerasLayerClassName = (String)layerConfig.get(KERAS_LAYER_PROPERTY_CLASS_NAME);
         Layer layer = null;
-        switch (kerasLayerClass) {
+        switch (kerasLayerClassName) {
             case KERAS_LAYER_TYPE_ACTIVATION:
-                layer = buildActivationLayer(kerasConfig);
+                layer = buildActivationLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_DROPOUT:
-                layer = buildDropoutLayer(kerasConfig);
+                layer = buildDropoutLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_DENSE:
             case KERAS_LAYER_TYPE_TIME_DISTRIBUTED_DENSE:
-                layer = buildDenseLayer(kerasConfig);
+            /* TODO: test to make sure that mapping TimeDistributedDense to DenseLayer works.
+             * Also, Keras recently added support for TimeDistributed layer wrapper so may
+             * need to look into how that changes things.
+             * */
+                layer = buildDenseLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_LSTM:
-                layer = buildGravesLstmLayer(kerasConfig);
+                layer = buildGravesLstmLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_CONVOLUTION_2D:
-                layer = buildConvolutionLayer(kerasConfig);
+            /* TODO: Add support for 1D, 3D convolutional layers? */
+                layer = buildConvolutionLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_MAX_POOLING_2D:
             case KERAS_LAYER_TYPE_AVERAGE_POOLING_2D:
-                layer = buildSubsamplingLayer(kerasConfig);
+            /* TODO: Add support for 1D, 3D pooling layers? */
+                layer = buildSubsamplingLayer(layerConfig);
                 break;
             case KERAS_LAYER_TYPE_FLATTEN:
-                log.warn("DL4J adds reshaping layers during model compilation: https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/MultiLayerConfiguration.java#L429");
+            case KERAS_LAYER_TYPE_RESHAPE:
+            case KERAS_LAYER_TYPE_REPEATVECTOR:
+                log.warn("Found Keras " + kerasLayerClassName + ". DL4J adds reshaping/repeating layers during model compilation: https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/MultiLayerConfiguration.java#L429");
                 break;
             default:
-                throw new IncompatibleKerasConfigurationException("Unsupported keras layer type " + kerasLayerClass);
+                throw new IncompatibleKerasConfigurationException("Unsupported keras layer type " + kerasLayerClassName);
         }
         return layer;
+    }
+
+    /**
+     *
+     * @param layerConfig
+     * @return
+     */
+    public static int[] getLayerInputShape(Map<String,Object> layerConfig) {
+        if (!layerConfig.containsKey(KERAS_LAYER_PROPERTY_BATCH_INPUT_SHAPE))
+            return null;
+        List<Integer> batchInputShape = (List<Integer>)layerConfig.get(KERAS_LAYER_PROPERTY_BATCH_INPUT_SHAPE);
+        int[] inputShape = new int[batchInputShape.size()-1];
+        for (int i = 1; i < batchInputShape.size(); i++) {
+            inputShape[i - 1] = batchInputShape.get(i) != null ? batchInputShape.get(i) : 0;
+        }
+        if (layerConfig.containsKey(LayerConfiguration.KERAS_LAYER_PROPERTY_DIM_ORDERING)) {
+            int[] oldInputShape = inputShape.clone();
+            String dimOrdering = (String)layerConfig.get(LayerConfiguration.KERAS_LAYER_PROPERTY_DIM_ORDERING);
+            if (inputShape.length == 3) {
+                if (dimOrdering.equals(KERAS_DIM_ORDERING_TENSORFLOW)) {
+                    /* TensorFlow convolutional input: # rows, # cols, # channels */
+                    inputShape[0] = oldInputShape[0];
+                    inputShape[1] = oldInputShape[1];
+                    inputShape[2] = oldInputShape[2];
+                } else if (dimOrdering.equals(KERAS_DIM_ORDERING_THEANO)) {
+                    /* Theano convolutional input: # channels, # rows, # cols */
+                    inputShape[0] = oldInputShape[1];
+                    inputShape[1] = oldInputShape[2];
+                    inputShape[2] = oldInputShape[0];
+                } else
+                    throw new IncompatibleKerasConfigurationException("Unknown keras backend " + dimOrdering);
+            } else
+                throw new IncompatibleKerasConfigurationException("Invalid input rank " + inputShape.length + " for dim ordering " + dimOrdering);
+        }
+        return inputShape;
     }
 
     /**
@@ -239,33 +286,170 @@ public class LayerConfiguration {
     }
 
     /**
+     * Configure DL4J ActivationLayer from a Keras Activation configuration.
+     *
+     * @param layerConfig      Map containing Keras Activation layer properties
+     * @return                 DL4J ActivationLayer configuration
+     * @throws UnsupportedOperationException
+     * @see ActivationLayer
+     */
+    public static ActivationLayer buildActivationLayer(Map<String, Object> layerConfig) {
+        ActivationLayer.Builder builder = new ActivationLayer.Builder();
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J DropoutLayer from a Keras Dropout configuration.
+     *
+     * @param layerConfig      Map containing Keras Dropout layer properties
+     * @return                 DL4J DropoutLayer configuration
+     * @throws UnsupportedOperationException
+     * @see DropoutLayer
+     */
+    public static DropoutLayer buildDropoutLayer(Map<String, Object> layerConfig) {
+        DropoutLayer.Builder builder = new DropoutLayer.Builder();
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J DenseLayer from a Keras Dense configuration.
+     *
+     * @param layerConfig      Map containing Keras Dense layer properties
+     * @return                 DL4J DenseLayer configuration
+     * @throws UnsupportedOperationException
+     * @see DenseLayer
+     */
+    public static DenseLayer buildDenseLayer(Map<String,Object> layerConfig)
+        throws UnsupportedOperationException {
+        DenseLayer.Builder builder = new DenseLayer.Builder()
+                .nOut((int)layerConfig.get(KERAS_LAYER_PROPERTY_OUTPUT_DIM));
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J ConvolutionLayer from a Keras *Convolution configuration.
+     *
+     * @param layerConfig      Map containing Keras *Convolution layer properties
+     * @return                 DL4J ConvolutionLayer configuration
+     * @throws UnsupportedOperationException
+     * @see ConvolutionLayer
+     *
+     * TODO: verify whether works for 1D convolutions. What about 3D convolutions?
+     */
+    public static ConvolutionLayer buildConvolutionLayer(Map<String,Object> layerConfig)
+        throws UnsupportedOperationException {
+        List<Integer> stride = (List<Integer>)layerConfig.get(KERAS_LAYER_PROPERTY_SUBSAMPLE);
+        int nb_row = (Integer)layerConfig.get(KERAS_LAYER_PROPERTY_NB_ROW);
+        int nb_col = (Integer)layerConfig.get(KERAS_LAYER_PROPERTY_NB_COL);
+        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder()
+                .stride(stride.get(0), stride.get(1))
+                .kernelSize(nb_row, nb_col)
+                .nOut((int)layerConfig.get(KERAS_LAYER_PROPERTY_NB_FILTER));
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J SubsamplingLayer from a Keras *Pooling* configuration.
+     *
+     * @param layerConfig      Map containing Keras *Pooling* layer properties
+     * @return                 DL4J SubsamplingLayer configuration
+     * @throws UnsupportedOperationException
+     * @see SubsamplingLayer
+     *
+     * TODO: add other pooling layer types and shapes.
+     */
+    public static SubsamplingLayer buildSubsamplingLayer(Map<String,Object> layerConfig)
+        throws UnsupportedOperationException {
+        List<Integer> stride = (List<Integer>)layerConfig.get(KERAS_LAYER_PROPERTY_STRIDES);
+        List<Integer> pool = (List<Integer>)layerConfig.get(KERAS_LAYER_PROPERTY_POOL_SIZE);
+        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder()
+                                                .stride(stride.get(0), stride.get(1))
+                                                .kernelSize(pool.get(0), pool.get(1));
+        String layerClassName = (String)layerConfig.get(KERAS_LAYER_PROPERTY_CLASS_NAME);
+        switch (layerClassName) {
+            case KERAS_LAYER_TYPE_MAX_POOLING_2D:
+                builder.poolingType(SubsamplingLayer.PoolingType.MAX);
+                break;
+            case KERAS_LAYER_TYPE_AVERAGE_POOLING_2D:
+                builder.poolingType(SubsamplingLayer.PoolingType.AVG);
+                break;
+            /* TODO: 1D (and 3D?) shaped pooling layers. */
+            default:
+                throw new UnsupportedOperationException("Unsupported Keras pooling layer " + layerClassName);
+        }
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
+     * Configure DL4J GravesLSTM layer from a Keras LSTM configuration.
+     *
+     * @param layerConfig      Map containing Keras LSTM layer properties
+     * @return                 DL4J GravesLSTM configuration
+     * @throws IncompatibleKerasConfigurationException
+     * @throws UnsupportedOperationException
+     * @see GravesLSTM
+     */
+    public static GravesLSTM buildGravesLstmLayer(Map<String,Object> layerConfig)
+        throws IncompatibleKerasConfigurationException, UnsupportedOperationException {
+        if (!layerConfig.get(KERAS_LAYER_PROPERTY_ACTIVATION).equals(layerConfig.get(KERAS_LAYER_PROPERTY_INNER_ACTIVATION)))
+            throw new IncompatibleKerasConfigurationException("Specifying different activation for LSTM inner cells not supported.");
+        if (!layerConfig.get(KERAS_LAYER_PROPERTY_INIT).equals(layerConfig.get(KERAS_LAYER_PROPERTY_INNER_INIT)))
+            log.warn("Specifying different initialization for inner cells not supported.");
+        if ((double)layerConfig.get(KERAS_LAYER_PROPERTY_DROPOUT_U) > 0.0)
+            throw new IncompatibleKerasConfigurationException("Dropout > 0 on LSTM recurrent connections not supported.");
+
+        GravesLSTM.Builder builder = new GravesLSTM.Builder();
+        builder.nOut((int)layerConfig.get(KERAS_LAYER_PROPERTY_OUTPUT_DIM));
+        String forgetBiasInit = (String)layerConfig.get(KERAS_LAYER_PROPERTY_FORGET_BIAS_INIT);
+        switch (forgetBiasInit) {
+            case LSTM_FORGET_BIAS_KERAS_INIT_ZERO:
+                builder.forgetGateBiasInit(0.0);
+                break;
+            case LSTM_FORGET_BIAS_KERAS_INIT_ONE:
+                builder.forgetGateBiasInit(1.0);
+                break;
+            default:
+                log.warn("Unsupported bias initialization: " + forgetBiasInit + ".");
+                break;
+        }
+        layerConfig.put(KERAS_LAYER_PROPERTY_DROPOUT, (double)layerConfig.get(KERAS_LAYER_PROPERTY_DROPOUT_W));
+        finishLayerConfig(builder, layerConfig);
+        return builder.build();
+    }
+
+    /**
      * Perform layer configuration steps that are common across all Keras and DL4J layer types.
      *
      * @param builder       DL4J Layer builder object
-     * @param kerasConfig   Map containing Keras layer properties
+     * @param layerConfig   Map containing Keras layer properties
      * @return              DL4J Layer builder object
      * @throws UnsupportedOperationException
      * @see Layer.Builder
      */
-    public static Layer.Builder finishLayerConfig(Layer.Builder builder, Map<String,Object> kerasConfig)
-        throws UnsupportedOperationException {
-        if (kerasConfig.containsKey(KERAS_LAYER_PROPERTY_DROPOUT)) {
+    public static Layer.Builder finishLayerConfig(Layer.Builder builder, Map<String,Object> layerConfig)
+            throws UnsupportedOperationException {
+        if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_DROPOUT)) {
             /* NOTE: Keras "dropout" parameter determines dropout probability,
              * while DL4J "dropout" parameter determines retention probability.
              */
-            builder.dropOut(1.0-(double)kerasConfig.get(KERAS_LAYER_PROPERTY_DROPOUT));
+            builder.dropOut(1.0-(double)layerConfig.get(KERAS_LAYER_PROPERTY_DROPOUT));
         }
-        if (kerasConfig.containsKey(KERAS_LAYER_PROPERTY_ACTIVATION))
-            builder.activation(mapActivation((String)kerasConfig.get(KERAS_LAYER_PROPERTY_ACTIVATION)));
-        builder.name((String)kerasConfig.get(KERAS_LAYER_PROPERTY_NAME));
-        if (kerasConfig.containsKey(KERAS_LAYER_PROPERTY_INIT)) {
-            WeightInit init = mapWeightInitialization((String) kerasConfig.get(KERAS_LAYER_PROPERTY_INIT));
+        if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_ACTIVATION))
+            builder.activation(mapActivation((String)layerConfig.get(KERAS_LAYER_PROPERTY_ACTIVATION)));
+        builder.name((String)layerConfig.get(KERAS_LAYER_PROPERTY_NAME));
+        if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_INIT)) {
+            WeightInit init = mapWeightInitialization((String) layerConfig.get(KERAS_LAYER_PROPERTY_INIT));
             builder.weightInit(init);
             if (init == WeightInit.ZERO)
                 builder.biasInit(0.0);
         }
-        if (kerasConfig.containsKey(KERAS_LAYER_PROPERTY_W_REGULARIZER)) {
-            Map<String,Object> regularizerConfig = (Map<String,Object>)kerasConfig.get(KERAS_LAYER_PROPERTY_W_REGULARIZER);
+        if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_W_REGULARIZER)) {
+            Map<String,Object> regularizerConfig = (Map<String,Object>)layerConfig.get(KERAS_LAYER_PROPERTY_W_REGULARIZER);
             double l1 = getL1Regularization(regularizerConfig);
             if (l1 > 0)
                 builder.l1(l1);
@@ -274,156 +458,13 @@ public class LayerConfiguration {
                 builder.l2(l2);
             checkForUnknownRegularizer(regularizerConfig);
         }
-        if (kerasConfig.containsKey(KERAS_LAYER_PROPERTY_B_REGULARIZER)) {
-            Map<String,Object> regularizerConfig = (Map<String,Object>)kerasConfig.get(KERAS_LAYER_PROPERTY_B_REGULARIZER);
+        if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_B_REGULARIZER)) {
+            Map<String,Object> regularizerConfig = (Map<String,Object>)layerConfig.get(KERAS_LAYER_PROPERTY_B_REGULARIZER);
             double l1 = getL1Regularization(regularizerConfig);
             double l2 = getL2Regularization(regularizerConfig);
             if (l1 > 0 || l2 > 0)
                 throw new UnsupportedOperationException("Bias regularization not implemented");
         }
         return builder;
-    }
-
-    /**
-     * Configure DL4J ActivationLayer from a Keras Activation configuration.
-     *
-     * @param kerasConfig      Map containing Keras Activation layer properties
-     * @return                 DL4J ActivationLayer configuration
-     * @throws UnsupportedOperationException
-     * @see ActivationLayer
-     */
-    public static ActivationLayer buildActivationLayer(Map<String, Object> kerasConfig) {
-        ActivationLayer.Builder builder = new ActivationLayer.Builder();
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    /**
-     * Configure DL4J DropoutLayer from a Keras Dropout configuration.
-     *
-     * @param kerasConfig      Map containing Keras Dropout layer properties
-     * @return                 DL4J DropoutLayer configuration
-     * @throws UnsupportedOperationException
-     * @see DropoutLayer
-     */
-    public static DropoutLayer buildDropoutLayer(Map<String, Object> kerasConfig) {
-        DropoutLayer.Builder builder = new DropoutLayer.Builder();
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    /**
-     * Configure DL4J DenseLayer from a Keras Dense configuration.
-     *
-     * @param kerasConfig      Map containing Keras Dense layer properties
-     * @return                 DL4J DenseLayer configuration
-     * @throws UnsupportedOperationException
-     * @see DenseLayer
-     */
-    public static DenseLayer buildDenseLayer(Map<String,Object> kerasConfig)
-        throws UnsupportedOperationException {
-        DenseLayer.Builder builder = new DenseLayer.Builder()
-                .nOut((int)kerasConfig.get(KERAS_LAYER_PROPERTY_OUTPUT_DIM));
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    /**
-     * Configure DL4J ConvolutionLayer from a Keras *Convolution configuration.
-     *
-     * @param kerasConfig      Map containing Keras *Convolution layer properties
-     * @return                 DL4J ConvolutionLayer configuration
-     * @throws UnsupportedOperationException
-     * @see ConvolutionLayer
-     *
-     * TODO: verify whether works for 1D convolutions.
-     */
-    public static ConvolutionLayer buildConvolutionLayer(Map<String,Object> kerasConfig)
-        throws UnsupportedOperationException {
-        List<Integer> stride = (List<Integer>)kerasConfig.get(KERAS_LAYER_PROPERTY_SUBSAMPLE);
-        int nb_row = (Integer)kerasConfig.get(KERAS_LAYER_PROPERTY_NB_ROW);
-        int nb_col = (Integer)kerasConfig.get(KERAS_LAYER_PROPERTY_NB_COL);
-        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder()
-                .stride(stride.get(0), stride.get(1))
-                .kernelSize(nb_row, nb_col)
-                .nOut((int)kerasConfig.get(KERAS_LAYER_PROPERTY_NB_FILTER));
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    /**
-     * Configure DL4J SubsamplingLayer from a Keras *Pooling* configuration.
-     *
-     * @param kerasConfig      Map containing Keras *Pooling* layer properties
-     * @return                 DL4J SubsamplingLayer configuration
-     * @throws UnsupportedOperationException
-     * @see SubsamplingLayer
-     *
-     * TODO: add other pooling layer types and shapes.
-     */
-    public static SubsamplingLayer buildSubsamplingLayer(Map<String,Object> kerasConfig)
-        throws UnsupportedOperationException {
-        List<Integer> stride = (List<Integer>)kerasConfig.get(KERAS_LAYER_PROPERTY_STRIDES);
-        List<Integer> pool = (List<Integer>)kerasConfig.get(KERAS_LAYER_PROPERTY_POOL_SIZE);
-        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder()
-                                                .stride(stride.get(0), stride.get(1))
-                                                .kernelSize(pool.get(0), pool.get(1));
-        switch ((String)kerasConfig.get(KERAS_MODEL_PROPERTY_CLASS)) {
-            case KERAS_LAYER_TYPE_MAX_POOLING_2D:
-                builder.poolingType(SubsamplingLayer.PoolingType.MAX);
-                break;
-            /* TODO: add other pooling layer types and shapes. */
-            default:
-                throw new UnsupportedOperationException("Other pooling types and shapes not supported.");
-        }
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    /**
-     * Configure DL4J GravesLSTM layer from a Keras LSTM configuration.
-     *
-     * @param kerasConfig      Map containing Keras LSTM layer properties
-     * @return                 DL4J GravesLSTM configuration
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
-     * @see GravesLSTM
-     */
-    public static GravesLSTM buildGravesLstmLayer(Map<String,Object> kerasConfig)
-        throws IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        if (!kerasConfig.get(KERAS_LAYER_PROPERTY_ACTIVATION).equals(kerasConfig.get(KERAS_LAYER_PROPERTY_INNER_ACTIVATION)))
-            throw new IncompatibleKerasConfigurationException("Specifying different activation for LSTM inner cells not supported.");
-        if (!kerasConfig.get(KERAS_LAYER_PROPERTY_INIT).equals(kerasConfig.get(KERAS_LAYER_PROPERTY_INNER_INIT)))
-            log.warn("Specifying different initialization for inner cells not supported.");
-        if ((double)kerasConfig.get(KERAS_LAYER_PROPERTY_DROPOUT_U) > 0.0)
-            throw new IncompatibleKerasConfigurationException("Dropout > 0 on LSTM recurrent connections not supported.");
-
-        GravesLSTM.Builder builder = new GravesLSTM.Builder();
-        builder.nOut((int)kerasConfig.get(KERAS_LAYER_PROPERTY_OUTPUT_DIM));
-        String forgetBiasInit = (String)kerasConfig.get(KERAS_LAYER_PROPERTY_FORGET_BIAS_INIT);
-        switch (forgetBiasInit) {
-            case KERAS_LSTM_FORGET_BIAS_INIT_ZERO:
-                builder.forgetGateBiasInit(0.0);
-                break;
-            case KERAS_LSTM_FORGET_BIAS_INIT_ONE:
-                builder.forgetGateBiasInit(1.0);
-                break;
-            default:
-                log.warn("Unsupported bias initialization: " + forgetBiasInit + ".");
-                break;
-        }
-        kerasConfig.put(KERAS_LAYER_PROPERTY_DROPOUT, (double)kerasConfig.get(KERAS_LAYER_PROPERTY_DROPOUT_W));
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
-    }
-
-    public static BatchNormalization buildBatchNormalizationLayer(Map<String,Object> kerasConfig)
-            throws IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        BatchNormalization.Builder builder = new BatchNormalization.Builder();
-        /* TODO: go through this! */
-        builder.epsilon((double)kerasConfig.get("epsilon"));
-        builder.momentum((double)kerasConfig.get("momentum"));
-        finishLayerConfig(builder, kerasConfig);
-        return builder.build();
     }
 }

@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -27,14 +28,15 @@ import java.util.regex.Pattern;
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 import static org.bytedeco.javacpp.hdf5.H5O_TYPE_DATASET;
 import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
-import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.extractWeightsMetadataFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importFunctionalApiConfig;
-import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.importSequentialModelConfig;
+import static org.deeplearning4j.nn.modelimport.keras.LayerConfiguration.KERAS_LAYER_PROPERTY_DIM_ORDERING;
+import static org.deeplearning4j.nn.modelimport.keras.LayerConfiguration.KERAS_DIM_ORDERING_TENSORFLOW;
+import static org.deeplearning4j.nn.modelimport.keras.LayerConfiguration.KERAS_DIM_ORDERING_THEANO;
+import static org.deeplearning4j.nn.modelimport.keras.ModelConfiguration.*;
 
 /**
  * Routines for importing saved Keras models.
  *
- * @author davekale
+ * @author dave@skymind.io
  */
 public class Model {
     private static Logger log = LoggerFactory.getLogger(Model.class);
@@ -42,23 +44,90 @@ public class Model {
     private Model() {}
 
     /**
+     * Load Keras model saved using model.save_model(...).
+     *
+     * @param modelHdf5Filename    path to HDF5 archive storing Keras model
+     * @return                     DL4J Model interface
+     * @throws IOException
+     * @see org.deeplearning4j.nn.api.Model
+     */
+    public static org.deeplearning4j.nn.api.Model importModel(String modelHdf5Filename) throws IOException {
+        /* Read model and training configurations from top-level attributes. */
+        hdf5.H5File file = new hdf5.H5File(modelHdf5Filename, H5F_ACC_RDONLY);
+        String modelJson = readJsonStringFromHdf5Attribute(file, "model_config");
+        String trainingJson = readJsonStringFromHdf5Attribute(file, "training_config");
+        file.close();
+
+        /* Import model configuration. */
+        org.deeplearning4j.nn.api.Model model = null;
+        if (modelIsSequential(modelJson)) {
+            MultiLayerConfiguration modelConfig = importSequentialModelConfig(modelJson, trainingJson);
+            model = new MultiLayerNetwork(modelConfig);
+            ((MultiLayerNetwork)model).init();
+        } else {
+            ComputationGraphConfiguration modelConfig = importModelConfig(modelJson, trainingJson);
+            model = new ComputationGraph(modelConfig);
+            ((ComputationGraph)model).init();
+        }
+
+        /* Read weights from model archive. */
+        Map<String, Object> configMap = getLayerConfigurationAsMap(modelJson);
+        Map<String,Map<String,INDArray>> weights = readWeightsFromHdf5(modelHdf5Filename, "/model_weights");
+
+        /* Import weights into model. */
+        importWeights(model, weights, configMap);
+        return model;
+    }
+
+    /**
+     * Load Keras model where the config and weights were saved separately using calls to
+     * model.to_json() and model.save_weights(...).
+     *
+     * @param configJsonFilename    path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename   path to HDF5 archive storing Keras Functional API model weights
+     * @return                      DL4J Model interface
+     * @throws IOException
+     */
+    public static org.deeplearning4j.nn.api.Model importModel(String configJsonFilename, String weightsHdf5Filename)
+            throws IOException {
+        /* Read model configuration from JSON file. */
+        String modelJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
+
+        /* Import model configuration. */
+        org.deeplearning4j.nn.api.Model model = null;
+        if (modelIsSequential(modelJson)) {
+            MultiLayerConfiguration modelConfig = importSequentialModelConfig(modelJson);
+            model = new MultiLayerNetwork(modelConfig);
+            ((MultiLayerNetwork)model).init();
+        } else {
+            ComputationGraphConfiguration modelConfig = importModelConfig(modelJson);
+            model = new ComputationGraph(modelConfig);
+            ((ComputationGraph)model).init();
+        }
+
+        /* Open weights archive and read weights. */
+        Map<String,Map<String,INDArray>> weights = readWeightsFromHdf5(weightsHdf5Filename, "/");
+
+        /* Import weights into model. */
+        Map<String, Object> configMap = getLayerConfigurationAsMap(modelJson);
+        importWeights(model, weights, configMap);
+        return model;
+    }
+
+    /**
      * Imports a Keras Sequential model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param  modelHdf5Filename path to HDF5 archive storing Keras Sequential model
-     * @return                   DL4J MultiLayerNetwork
+     * @param modelHdf5Filename    path to HDF5 archive storing Keras Sequential model
+     * @return                     DL4J MultiLayerNetwork
      * @throws IOException
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
-     * @see    MultiLayerNetwork
-     * @see    MultiLayerConfiguration
-     *
-     * TODO: remove this once we have a shared model interface?
+     * @see MultiLayerNetwork
+     * @see MultiLayerConfiguration
+     * @deprecated importModel
      */
-    public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        MultiLayerNetwork model = importModel(modelHdf5Filename, true);
-        return model;
+    @Deprecated
+    public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename) throws IOException {
+        return (MultiLayerNetwork)importModel(modelHdf5Filename);
     }
 
     /**
@@ -68,170 +137,50 @@ public class Model {
      * @param modelHdf5Filename  path to HDF5 archive storing Keras Functional API model
      * @return                   DL4J ComputationGraph
      * @throws IOException
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
      * @see    ComputationGraph
      * @see    ComputationGraphConfiguration
-     *
-     * TODO: remove this once we have a shared model interface?
+     * @deprecated importModel
      */
-    public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        ComputationGraph model = importModel(modelHdf5Filename, false);
+    @Deprecated
+    public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename) throws IOException {
+        ComputationGraph model = (ComputationGraph)importModel(modelHdf5Filename);
         return model;
     }
 
     /**
-     * Load Keras model saved using model.save_model(...).
+     * Imports a Keras Sequential model saved using model.save_model(...). Model
+     * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param modelHdf5Filename  path to HDF5 archive storing Keras model
-     * @param isSequential       whether the model to be loaded is Sequential
-     * @param <T>
-     * @return                   DL4J MultiLayerNetwork or ComputationGraph
+     * @param configJsonFilename     path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename    path to HDF5 archive storing Keras Functional API model weights
+     * @return                       DL4J MultiLayerNetwork
      * @throws IOException
-     *
-     * TODO: make public and change return type to shared model interface once we have one.
-     */
-    private static <T> T importModel(String modelHdf5Filename, boolean isSequential) throws IOException {
-        /* Open model HDF5 file. */
-        hdf5.H5File file = new hdf5.H5File(modelHdf5Filename, H5F_ACC_RDONLY);
-        /* Read model config JSON string from "model_config" attribute. */
-        hdf5.Attribute attr = file.openAttribute("model_config");
-        hdf5.VarLenType vl = attr.getVarLenType();
-        int bufferSizeMult = 1;
-        String configJson = null;
-        /* TODO: find a less hacky way to do this.
-         * Reading variable length strings (from attributes) is a giant
-         * pain. There does not appear to be any way to determine the
-         * length of the string in advance, so we use a hack: choose a
-         * buffer size and read the config. If Jackson fails to parse
-         * it, then we must not have read the entire config. Increase
-         * buffer and repeat.
-         */
-        while (true) {
-            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
-            BytePointer attrPointer = new BytePointer(attrBuffer);
-            attr.read(vl, attrPointer);
-            attrPointer.get(attrBuffer);
-            configJson = new String(attrBuffer);
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
-            try {
-                mapper.readTree(configJson);
-                break;
-            } catch (IOException e) {}
-            bufferSizeMult++;
-            if (bufferSizeMult > 100) {
-                throw new IncompatibleKerasConfigurationException("Could not read abnormally long Keras config. Please file an issue!");
-            }
-        }
-        T model = importModel(configJson, file.asCommonFG().openGroup("/model_weights"), isSequential);
-        file.close();
-        return model;
-    }
-
-    /**
-     * Imports a Keras Sequential model where the config and weights were saved
-     * separately using calls to model.to_json() and model.save_weights(...).
-     *
-     * @param configJsonFilename   path to JSON file storing Keras Sequential model configuration
-     * @param weightsHdf5Filename  path to HDF5 archive storing Keras Sequential model weights
-     * @return                     DL4J MultiLayerNetwork
-     * @throws IOException
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
      * @see MultiLayerNetwork
      * @see MultiLayerConfiguration
-     *
-     * TODO: remove this once we have a shared model interface?
+     * @deprecated importModel
      */
+    @Deprecated
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        MultiLayerNetwork model = importModel(configJsonFilename, weightsHdf5Filename, true);
-        return model;
+            throws IOException {
+        return (MultiLayerNetwork)importModel(configJsonFilename, weightsHdf5Filename);
     }
 
     /**
-     * Imports a Keras Functional API model where the config and weights were saved
-     * separately using calls to model.to_json() and model.save_weights(...).
+     * Imports a Keras Functional API model saved using model.save_model(...). Model
+     * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param configJsonFilename   path to JSON file storing Keras Functional API model configuration
-     * @param weightsHdf5Filename  path to HDF5 archive storing Keras Functional API model weights
-     * @return                     DL4J ComputationGraph
+     * @param configJsonFilename     path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename    path to HDF5 archive storing Keras Functional API model weights
+     * @return                       DL4J ComputationGraph
      * @throws IOException
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
-     * @see ComputationGraph
-     * @see ComputationGraphConfiguration
-     *
-     * TODO: remove this once we have a shared model interface?
+     * @see    ComputationGraph
+     * @see    ComputationGraphConfiguration
+     * @deprecated importModel
      */
-    public static ComputationGraph importModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        ComputationGraph model = importModel(configJsonFilename, weightsHdf5Filename, false);
-        return model;
-    }
-
-    /**
-     * Load Keras model where the config and weights were saved separately using calls to
-     * model.to_json() and model.save_weights(...).
-     *
-     * @param configJsonFilename   path to JSON file storing Keras Functional API model configuration
-     * @param weightsHdf5Filename  path to HDF5 archive storing Keras Functional API model weights
-     * @param isSequential         whether the model to be loaded is Sequential
-     * @param <T>
-     * @return                     DL4J MultiLayerNetwork or ComputationGraph
-     * @throws IOException
-     * @throws IncompatibleKerasConfigurationException
-     * @throws UnsupportedOperationException
-     *
-     * TODO: make public and change return type to shared model interface once we have one.
-     */
-    private static <T> T importModel(String configJsonFilename, String weightsHdf5Filename, boolean isSequential)
-            throws IOException, IncompatibleKerasConfigurationException, UnsupportedOperationException {
-        String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
-        hdf5.H5File file = new hdf5.H5File();
-        file.openFile(weightsHdf5Filename, H5F_ACC_RDONLY);
-        T model = importModel(configJson, file.asCommonFG().openGroup("/"), isSequential);
-        file.close();
-        return model;
-    }
-
-    /**
-     * Helper function for importing Keras models.
-     *
-     * @param configJson    JSON string storing Keras model configuration
-     * @param weightsGroup  root HDF5 Group storing all Keras weights for single model
-     * @param isSequential  whether the model to be loaded is Sequential
-     * @param <T>
-     * @return              DL4J MultiLayerNetwork or ComputationGraph
-     * @throws IOException
-     * @throws UnsupportedOperationException
-     *
-     * TODO: change return type to shared model interface once we have one.
-     */
-    private static <T> T importModel(String configJson, hdf5.Group weightsGroup, boolean isSequential)
-            throws IOException, UnsupportedOperationException {
-        /* TODO: once we have a shared API/interface for MultilayerNetwork and ComputationGraph
-         * we can just call importModelConfig and infer return type.
-         */
-        T model = null;
-        if (isSequential) {
-            MultiLayerConfiguration config = importSequentialModelConfig(configJson);
-            MultiLayerNetwork mln = new MultiLayerNetwork(config);
-            mln.init();
-            model = (T)mln;
-        } else {
-            ComputationGraphConfiguration config = importFunctionalApiConfig(configJson);
-            ComputationGraph cg = new ComputationGraph(config);
-            cg.init();
-            model = (T)cg;
-            throw new UnsupportedOperationException("Keras Functional API models not supported.");
-        }
-
-        Map<String, Object> weightsMetadata = extractWeightsMetadataFromConfig(configJson);
-        Map<String, Map<String, INDArray>> weights = readWeightsFromHdf5(weightsGroup);
-        importWeights(model, weights, weightsMetadata, isSequential);
+    @Deprecated
+    public static ComputationGraph importFunctionalApiModel(String configJsonFilename, String weightsHdf5Filename)
+            throws IOException {
+        ComputationGraph model = (ComputationGraph)importModel(configJsonFilename, weightsHdf5Filename);
         return model;
     }
 
@@ -239,10 +188,14 @@ public class Model {
      * Read Keras model weights from HDF5 Group into nested Map of INDArrays, where outer
      * keys are layer names and inner keys are parameter names.
      *
-     * @param weightsGroup  root HDF5 Group storing all Keras weights for single model
+     * @param weightsHdf5Filename    name of HDF5 weights archive file
+     * @param weightsGroupName       name of root HDF5 Group storing all Keras weights for single model
      * @return              nested Map from layer names to parameter names to INDArrays
      */
-    private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(hdf5.Group weightsGroup) {
+    private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(String weightsHdf5Filename, String weightsGroupName) {
+        hdf5.H5File file = new hdf5.H5File(weightsHdf5Filename, H5F_ACC_RDONLY);
+        hdf5.Group weightsGroup = file.asCommonFG().openGroup(weightsGroupName);
+
         Map<String,Map<String,INDArray>> weightsMap = new HashMap<String,Map<String,INDArray>>();
 
         List<hdf5.Group> groups = new ArrayList<hdf5.Group>();
@@ -323,6 +276,7 @@ public class Model {
             }
             g.close();
         }
+        file.close();
         return weightsMap;
     }
 
@@ -331,30 +285,31 @@ public class Model {
      * on matched layer and parameter names. In general this seems to be straightforward for most
      * Keras models and layers, but there may be edge cases.
      *
-     * @param model             instantiated DL4J model (MultiLayerNetwork or ComputationGraph)
+     * @param model             DL4J Model interface
      * @param weights           nested Map from layer names to parameter names to INDArrays
-     * @param weightsMetadata   Map of metadata (e.g., Keras backend)
-     * @param isSequential      whether Keras model is Sequential
-     * @param <T>
-     * @return                  DL4J MultiLayerNetwork or ComputationGraph
+     * @param layerConfigMap    Map from layerName to layerConfig
+     * @return                  DL4J Model interface
      * @throws IncompatibleKerasConfigurationException
-     *
-     * TODO: change return type to shared model interface once we have one.
      */
-    private static <T> T importWeights(T model, Map<String, Map<String, INDArray>> weights,
-                                       Map<String, Object> weightsMetadata, boolean isSequential)
+    private static org.deeplearning4j.nn.api.Model importWeights(org.deeplearning4j.nn.api.Model model,
+                                                                 Map<String, Map<String, INDArray>> weights,
+                                                                 Map<String, Object> layerConfigMap)
             throws IncompatibleKerasConfigurationException {
+        boolean isSequential = (model instanceof MultiLayerNetwork);
+
         /* TODO: how might this break?
          * - mismatch between layer/parameter names?
          */
-        String kerasBackend = weightsMetadata.containsKey("keras_backend") ?
-                (String) weightsMetadata.get("keras_backend") : "none";
         for (String layerName : weights.keySet()) {
+            Map<String,Object> layerConfig = (Map<String,Object>)layerConfigMap.get(layerName);
             Layer layer = null;
             if (isSequential)
                 layer = ((MultiLayerNetwork)model).getLayer(layerName);
             else
                 layer = ((ComputationGraph)model).getLayer(layerName);
+            String dimOrdering = null;
+            if (layerConfig.containsKey(KERAS_LAYER_PROPERTY_DIM_ORDERING))
+                dimOrdering = (String)layerConfig.get(KERAS_LAYER_PROPERTY_DIM_ORDERING);
             for (String kerasParamName : weights.get(layerName).keySet()) {
                 String paramName = null;
                 /* TensorFlow backend often appends ":" followed by one
@@ -368,27 +323,67 @@ public class Model {
                 else
                     paramName = kerasParamName;
                 INDArray W = weights.get(layerName).get(kerasParamName);
-                if (layer instanceof ConvolutionLayer && paramName.equals("W")) {
+                if (layer instanceof ConvolutionLayer && paramName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
                     /* Theano and TensorFlow backends store convolutional weights
                      * with a different dimensional ordering than DL4J so we need
                      * to permute them to match.
                      *
                      * DL4J: (# outputs, # channels, # rows, # cols)
                      */
-                    if (kerasBackend.equals("tf")) {
-                        /* TensorFlow convolutional weights: # rows, # cols, # channels, # outputs */
-                        W = W.permute(3, 2, 0, 1);
-                    } else if (kerasBackend.equals("th")) {
-                        /* Theano convolutional weights: # channels, # rows, # cols, # outputs */
-                        W = W.permute(3, 0, 1, 2);
-                    } else {
-                        throw new IncompatibleKerasConfigurationException("Unknown keras backend " + kerasBackend);
-                    }
-                    layer.setParam(paramName, W);
+                    if (dimOrdering != null) {
+                        if (dimOrdering.equals(KERAS_DIM_ORDERING_TENSORFLOW)) {
+                            /* TensorFlow convolutional weights: # rows, # cols, # channels, # outputs */
+                            W = W.permute(3, 2, 0, 1);
+                        } else if (dimOrdering.equals(KERAS_DIM_ORDERING_THEANO)) {
+                            /* Theano convolutional weights: # channels, # rows, # cols, # outputs */
+                            W = W.permute(3, 0, 1, 2);
+                        } else
+                            throw new IncompatibleKerasConfigurationException("Unknown keras backend " + dimOrdering);
+                    } else
+                        throw new IncompatibleKerasConfigurationException("Convolutional layer must have \"dim_ordering\" property.");
                 }
                 layer.setParam(paramName, W);
             }
         }
         return model;
+    }
+
+    /**
+     *
+     * @param file
+     * @param attribute
+     * @return
+     */
+    private static String readJsonStringFromHdf5Attribute(hdf5.H5File file, String attribute) {
+        hdf5.Attribute attr = file.openAttribute(attribute);
+        hdf5.VarLenType vl = attr.getVarLenType();
+        int bufferSizeMult = 1;
+        String jsonString = null;
+        /* TODO: find a less hacky way to do this.
+         * Reading variable length strings (from attributes) is a giant
+         * pain. There does not appear to be any way to determine the
+         * length of the string in advance, so we use a hack: choose a
+         * buffer size and read the config. If Jackson fails to parse
+         * it, then we must not have read the entire config. Increase
+         * buffer and repeat.
+         */
+        while (true) {
+            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
+            BytePointer attrPointer = new BytePointer(attrBuffer);
+            attr.read(vl, attrPointer);
+            attrPointer.get(attrBuffer);
+            jsonString = new String(attrBuffer);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
+            try {
+                mapper.readTree(jsonString);
+                break;
+            } catch (IOException e) {}
+            bufferSizeMult++;
+            if (bufferSizeMult > 100) {
+                throw new IncompatibleKerasConfigurationException("Could not read abnormally long Keras config. Please file an issue!");
+            }
+        }
+        return jsonString;
     }
 }
