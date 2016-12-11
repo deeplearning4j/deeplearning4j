@@ -128,6 +128,15 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>${jackson.version}</version>
+
+            <!-- Exclude Jaxb annotation module to avoid issues with Spring framework tools.
+                See DL4J Issue: https://github.com/deeplearning4j/deeplearning4j/issues/2459 -->
+            <exclusions>
+                <exclusion>
+                    <artifactId>jackson-module-jaxb-annotations</artifactId>
+                    <groupId>com.fasterxml.jackson.module</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
