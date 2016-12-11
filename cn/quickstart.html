@@ -75,7 +75,7 @@ brew install maven
 
 <p><a name="Git"><h4>Git</h4></a></p>
 <p>请安装<a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git" title="Latest Git" target="_blank">最新版本的Git</a>。如您已经安装了Git，您可以让Git自行升级至最新版本：</p>
-<pre><code class="language-jave">
+<pre><code class="language-java">
 $ git clone git://git.kernel.org/pub/scm/git/git.git
 </code></pre>
 <br />
@@ -84,7 +84,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
   <li>
     <p>在命令行中输入：</p>
     
-    <pre><code class="language-jave">
+    <pre><code class="language-java">
     $ git clone https://github.com/deeplearning4j/dl4j-examples.git
 	 $ cd dl4j-examples/
  	 $ mvn clean install
@@ -160,7 +160,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 <p><strong>问：</strong> 我在Windows中使用64位的Java，但仍然发生<code>no jnind4j in java.library.path</code>错误</p>
 <p><strong>答：</strong>您的路径中可能有不兼容的DLL文件。您需要将以下代码作为VM参数添加（IntelliJ中选择运行 -> 编辑配置 -> VM选项），让DL4J忽略这些文件：</p>
-<pre><code class="language-jave">
+<pre><code class="language-java">
 -Djava.library.path=""
 </code></pre>
 <br />
