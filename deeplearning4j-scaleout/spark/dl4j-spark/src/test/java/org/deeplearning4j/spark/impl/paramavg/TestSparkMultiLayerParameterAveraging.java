@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -40,11 +41,15 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
+import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -66,9 +71,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -788,6 +791,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
             sparkNet.setListeners(new ScoreIterationListener(1));
 
+
+
             JavaRDD<DataSet> rdd = sc.parallelize(list);
 
             assertEquals(0, sparkNet.getNetwork().getLayerWiseConfigurations().getIterationCount());
@@ -845,5 +850,94 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
             sparkNet.getTrainingMaster().deleteTempFiles(sc);
         }
+    }
+
+
+    @Test
+    public void testVaePretrainSimple() {
+        //Simple sanity check on pretraining
+        int nIn = 8;
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.RMSPROP)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new VariationalAutoencoder.Builder()
+                        .nIn(8).nOut(10)
+                        .encoderLayerSizes(12)
+                        .decoderLayerSizes(13)
+                        .reconstructionDistribution(new GaussianReconstructionDistribution("identity"))
+                        .build())
+                .pretrain(true).backprop(false).build();
+
+        //Do training on Spark with one executor, for 3 separate minibatches
+        int rddDataSetNumExamples = 10;
+        int totalAveragings = 5;
+        int averagingFrequency = 3;
+        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(rddDataSetNumExamples)
+                .averagingFrequency(averagingFrequency)
+                .batchSizePerWorker(rddDataSetNumExamples)
+                .saveUpdater(true)
+                .workerPrefetchNumBatches(0)
+                .build();
+        Nd4j.getRandom().setSeed(12345);
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf.clone(), tm);
+
+        List<DataSet> trainData = new ArrayList<>();
+        int nDataSets = numExecutors() * totalAveragings * averagingFrequency;
+        for( int i=0; i<nDataSets; i++ ){
+            trainData.add(new DataSet(Nd4j.rand(rddDataSetNumExamples, nIn), null));
+        }
+
+        JavaRDD<DataSet> data = sc.parallelize(trainData);
+
+        sparkNet.fit(data);
+    }
+
+    @Test
+    public void testVaePretrainSimpleCG() {
+        //Simple sanity check on pretraining
+        int nIn = 8;
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(Updater.RMSPROP)
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new VariationalAutoencoder.Builder()
+                        .nIn(8).nOut(10)
+                        .encoderLayerSizes(12)
+                        .decoderLayerSizes(13)
+                        .reconstructionDistribution(new GaussianReconstructionDistribution("identity"))
+                        .build(), "in")
+                .setOutputs("0")
+                .pretrain(true).backprop(false).build();
+
+        //Do training on Spark with one executor, for 3 separate minibatches
+        int rddDataSetNumExamples = 10;
+        int totalAveragings = 5;
+        int averagingFrequency = 3;
+        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(rddDataSetNumExamples)
+                .averagingFrequency(averagingFrequency)
+                .batchSizePerWorker(rddDataSetNumExamples)
+                .saveUpdater(true)
+                .workerPrefetchNumBatches(0)
+                .build();
+        Nd4j.getRandom().setSeed(12345);
+        SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf.clone(), tm);
+
+        List<DataSet> trainData = new ArrayList<>();
+        int nDataSets = numExecutors() * totalAveragings * averagingFrequency;
+        for( int i=0; i<nDataSets; i++ ){
+            trainData.add(new DataSet(Nd4j.rand(rddDataSetNumExamples, nIn), null));
+        }
+
+        JavaRDD<DataSet> data = sc.parallelize(trainData);
+
+        sparkNet.fit(data);
     }
 }
