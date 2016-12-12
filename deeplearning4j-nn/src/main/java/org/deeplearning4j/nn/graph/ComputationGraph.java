@@ -23,6 +23,8 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -519,6 +521,7 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void pretrain(MultiDataSetIterator iter) {
         if (!configuration.isPretrain()) return;
+        if (flattenedGradients == null) initGradientsView();
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -552,7 +555,9 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
         if (!configuration.isPretrain()) return;
-        if(verticesMap.containsKey(layerName)){
+        if (flattenedGradients == null) initGradientsView();
+
+        if(!verticesMap.containsKey(layerName)){
             throw new IllegalStateException("Invalid vertex name: " + layerName);
         }
         if(!verticesMap.get(layerName).hasLayer()){
@@ -593,7 +598,6 @@ public class ComputationGraph implements Serializable, Model {
 
         GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
         Layer layer = gv.getLayer();
-        log.info("Pretraining on layer \"{}\"", vertices[layerIndex].getVertexName());
 
         if(!iter.hasNext() && iter.resetSupported()){
             iter.reset();
@@ -666,6 +670,7 @@ public class ComputationGraph implements Serializable, Model {
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
     public void fit(DataSetIterator iterator) {
+        if (flattenedGradients == null) initGradientsView();
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                     + " multiple inputs or outputs using a DataSetIterator");
@@ -742,6 +747,7 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
     public void fit(MultiDataSetIterator multi) {
+        if (flattenedGradients == null) initGradientsView();
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
@@ -803,13 +809,16 @@ public class ComputationGraph implements Serializable, Model {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+        if (flattenedGradients == null) initGradientsView();
+
         setInputs(inputs);
         setLabels(labels);
         setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
         update(TaskUtils.buildTask(inputs, labels));
 
         if (configuration.isPretrain()) {
-            throw new UnsupportedOperationException("Pretraining: Not yet implemented");
+            MultiDataSetIterator iter = new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels, featureMaskArrays, labelMaskArrays));
+            pretrain(iter);
         }
 
         if (configuration.isBackprop()) {
