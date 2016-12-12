@@ -1,6 +1,6 @@
 package org.nd4j.linalg.activations;
 
-import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.activations.impl.*;
 
 /**
  * Created by susaneraly on 12/8/16.
@@ -8,9 +8,9 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 public class Activations {
 
     public enum Activation {
-        identity,
         tanh,
         sigmoid,
+        identity,
         leakyrelu,
         relu,
         softmax,
@@ -18,8 +18,16 @@ public class Activations {
 
         public IActivation getActivationFunction() {
             switch(this) {
+                case tanh:
+                    return new ActivationTanH();
                 case sigmoid:
                     return new ActivationSigmoid();
+                case identity:
+                    return new ActivationIdentity();
+                case leakyrelu:
+                    return new ActivationLeakyReLU();
+                case relu:
+                    return new ActivationReLU();
                 default:
                     throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
             }

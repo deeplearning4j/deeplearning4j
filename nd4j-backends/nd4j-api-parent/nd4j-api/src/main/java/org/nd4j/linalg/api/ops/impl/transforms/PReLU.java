@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -10,10 +11,13 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by susaneraly on 12/5/16.
+ * Random relu where params are alpha,u,l
+ * and alpha is drawn from uniform(u,l)
  */
 public class PReLU extends BaseTransformOp {
     /*
-    FIXME: need to add support for U and L for alphaA
+    FIXME: It is better to modify leaky relu so it can take one alpha or an alpha per entry in first dimension (as broadcase)
+    or as a pairwisetransform
      */
     private double u = 1/3.0;
     private double l = 1/8.0;
@@ -43,8 +47,9 @@ public class PReLU extends BaseTransformOp {
     }
 
     public PReLU(INDArray x, INDArray y, INDArray z) {
-        super(x,y,z,x.lengthLong());
+        super(x,y);
         this.alphaA = y;
+        this.setZ(z);
     }
 
     public INDArray getAlpha() {
@@ -58,7 +63,7 @@ public class PReLU extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "prelu";
+        return "rrelu";
     }
 
     @Override
