@@ -1269,7 +1269,9 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numExamples() {
-        return getLabels().size(0);
+        if(getFeatureMatrix() != null) return getFeatureMatrix().size(0);
+        else if(getLabels() != null) return getLabels().size(0);
+        return 0;
     }
 
 
