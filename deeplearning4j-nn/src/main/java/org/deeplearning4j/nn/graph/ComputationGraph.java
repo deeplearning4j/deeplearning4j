@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -39,7 +38,6 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -85,6 +83,8 @@ public class ComputationGraph implements Serializable, Model {
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
+    protected boolean isParallel = false;
+    protected int manualBatchSize;
     @Setter
     private boolean initDone = false;
 
@@ -141,6 +141,35 @@ public class ComputationGraph implements Serializable, Model {
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
+
+    /**
+    * Is this model being used for a parallel operation?
+    */
+    public boolean isParallel() { return isParallel; }
+
+    /**
+     * Specify if this model is being used for parallel operations, such as usage
+     * by ParallelWrapper.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setParallelism(boolean parallelism) {
+        isParallel = parallelism;
+        manualBatchSize = 0;
+    }
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void incrementBatchSize(int batchNum) { manualBatchSize += batchNum; }
 
     /**
      * Returns the number of layers in the ComputationGraph
@@ -1679,7 +1708,7 @@ public class ComputationGraph implements Serializable, Model {
 
     @Override
     public int batchSize() {
-        return inputs[0].size(0);
+        return isParallel ? manualBatchSize : inputs[0].size(0);
     }
 
     @Override

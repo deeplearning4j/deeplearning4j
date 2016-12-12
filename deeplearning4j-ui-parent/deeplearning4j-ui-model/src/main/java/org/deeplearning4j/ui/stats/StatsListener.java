@@ -258,6 +258,13 @@ public class StatsListener implements RoutingIterationListener {
     @Override
     public void iterationDone(Model model, int iteration) {
         StatsUpdateConfiguration config = updateConfig;
+        boolean isParallel = false;
+        if(model instanceof ComputationGraph) {
+            isParallel = ((ComputationGraph) model).isParallel();
+        }
+        else if(model instanceof MultiLayerNetwork) {
+            isParallel = ((MultiLayerNetwork) model).isParallel();
+        }
 
         ModelInfo modelInfo = getModelInfo(model);
         boolean backpropParamsOnly = backpropParamsOnly(model);
@@ -414,7 +421,7 @@ public class StatsListener implements RoutingIterationListener {
             report.reportHistograms(StatsType.Gradients, gradientHistograms);
         }
 
-        if (config.collectHistograms(StatsType.Updates)) {
+        if (config.collectHistograms(StatsType.Updates) && !isParallel) {
             Map<String, Histogram> updateHistograms = getHistograms(model.gradient().gradientForVariable(), config.numHistogramBins(StatsType.Updates));
             report.reportHistograms(StatsType.Updates, updateHistograms);
         }
@@ -437,7 +444,7 @@ public class StatsListener implements RoutingIterationListener {
             report.reportMean(StatsType.Gradients, meanGradients);
         }
 
-        if (config.collectMean(StatsType.Updates)) {
+        if (config.collectMean(StatsType.Updates) && !isParallel) {
             Map<String, Double> meanUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Mean);
             report.reportMean(StatsType.Updates, meanUpdates);
         }
@@ -458,7 +465,7 @@ public class StatsListener implements RoutingIterationListener {
             report.reportStdev(StatsType.Gradients, stdevGradient);
         }
 
-        if (config.collectStdev(StatsType.Updates)) {
+        if (config.collectStdev(StatsType.Updates) && !isParallel) {
             Map<String, Double> stdevUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.Stdev);
             report.reportStdev(StatsType.Updates, stdevUpdates);
         }
@@ -479,7 +486,7 @@ public class StatsListener implements RoutingIterationListener {
             report.reportMeanMagnitudes(StatsType.Gradients, meanMagGradients);
         }
 
-        if (config.collectMeanMagnitudes(StatsType.Updates)) {
+        if (config.collectMeanMagnitudes(StatsType.Updates) && !isParallel) {
             Map<String, Double> meanMagUpdates = calculateSummaryStats(model.gradient().gradientForVariable(), StatType.MeanMagnitude);
             report.reportMeanMagnitudes(StatsType.Updates, meanMagUpdates);
         }
@@ -650,9 +657,9 @@ public class StatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).getInput().size(0);
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).getInput(0).size(0);
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }

@@ -253,6 +253,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     if (c.terminate(epochCount, score)) {
                         epochTerminate = true;
                         termReason = c;
+                        wrapper.stopFit();
                         break;
                     }
                 }
