@@ -1,117 +1,116 @@
 ---
-title: DataVec - A Vectorization and ETL Library
-layout: default
+title: DataVec - 向量化及表达式模板库
+layout: cn-default
 ---
 
-# DataVec: A Vectorization and ETL Library
+# DataVec：向量化及表达式模板库
 
-DataVec solves one of the most important obstacles to effective machine or deep learning: getting data into a format that neural nets can understand. Nets understand vectors. Vectorization is the first problem many data scientists will have to solve to start training their algorithms on data. If your data is in CSV (Comma Seperated Values) format stored in flat files that must be converted to numeric and ingested, or your data is a directory structure of labelled images then DataVec is the tool to help you organize that data for use in DeepLearning4J. 
-
-
-Please **read this entire page**, particularly the section [Reading Records](#record) below, before working with DataVec.
+DataVec帮助克服机器学习及深度学习实现过程中最重大的障碍之一：将数据转化为神经网络能够识别的格式。神经网络所能识别的是向量。因此，对许多数据科学家而言，在开始用数据定型自己的算法之前，首先必须要解决向量化的问题。如果您的数据以CSV（逗号分隔值）格式储存在平面文件中，必须先转换为数值格式再加以摄取，又或者您的数据是一些有标签的图像的目录结构，那么DataVec这款工具就可以帮助您组织数据，以供在Deeplearning4J中使用。 
 
 
+在开始使用DataVec之前，请**通读本页内容**，尤其是有关[读取记录](#record)的段落。
 
-## Introductory Video
 
-This video describes the conversion of image data to a vector. 
+
+## 简介视频
+
+以下视频介绍了图像数据如何转换为向量。 
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
 
-## Key Aspects
-- [DataVec](https://github.com/deeplearning4j/DataVec) uses an input/output format system (similar in some ways to how Hadoop MapReduce uses InputFormat to determine InputSplits and RecordReaders, DataVec also provides RecordReaders to Serialize Data)
-- Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
-- Uses an output format system to specify an implementation-neutral type of vector format (ARFF, SVMLight, etc.)
-- Can be extended for specialized input formats (such as exotic image formats); i.e. You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
-- Makes vectorization a first-class citizen
-- Built in Transformation tools to convert and normalize data
-- Please see the [DataVec Javadoc](http://deeplearning4j.org/datavecdoc/) here
+## 主要特点
+- [DataVec](https://github.com/deeplearning4j/DataVec)采用输入/输出格式系统（就像Hadoop MapReduce用InputFormat来确定具体的InputSplit和RecordReader一样，DataVec也会用不同的RecordReader来将数据序列化）
+- 支持所有主要的输入数据类型（文本、CSV、音频、图像、视频），每种类型都有相应的输入格式
+- 采用输出格式系统来指定一种与实现无关的向量格式（ARFF、SVMLight等）
+- 可以为特殊输入格式（如某些罕见的图像格式）进行扩展；也就是说，您可以编写自定义的输入格式，让余下的基本代码来处理转换加工管道
+- 让向量化成为“一等公民”
+- 内置数据转换及标准化工具
+- 请参阅[DataVec的Javadoc](http://deeplearning4j.org/datavecdoc/)
 
-There's a <a href="#tutorial">brief tutorial below</a>.
+下文中有一个<a href="#tutorial">简短的教程</a>。
 
-## A Few Examples
+## 应用举例
 
- * Convert the CSV-based UCI Iris dataset into svmLight open vector text format
- * Convert the MNIST dataset from raw binary files to the svmLight text format.
- * Convert raw text into the Metronome vector format
- * Convert raw text into TF-IDF based vectors in a text vector format {svmLight, metronome, arff}
- * Convert raw text into the word2vec in a text vector format {svmLight, metronome, arff}
+ * 将基于CSV格式的UCI鸢尾花数据集转换为svmLight开放式向量文本格式
+ * 将MNIST数据集的原始二进制文件转换为svmLight文本格式。
+ * 将原始文本转换为Metronome向量格式
+ * 用TF-IDF方法将原始文本转换为文本向量格式{svmLight, metronome, arff}
+ * 将原始文本转换为word2vec文本向量格式{svmLight, metronome, arff}
 
-## Targeted Vectorization Engines
+## 支持的向量化引擎
 
- * Any CSV to vectors with a scriptable transform language
- * MNIST to vectors
- * Text to vectors
+ * 用脚本语言将各种CSV转换为向量
+ * MNIST转换为向量
+ * 文本转换为向量
     * TF-IDF
-    * Bag of Words
-    * word2vec
+    * 词袋
+    * Word2vec
 
-## CSV Transformation Engine
+## CSV转换引擎
 
-If data is numeric and appropriately formatted then CSVRecordReader may be satisfactory.  If however your data has non-numeric fields such as strings representing boolean (T/F) or strings for labels then a Schema Transformation will be required. DataVec uses apache [Spark](http://spark.apache.org/) to perform transform operations. *note you do not need to know the internals of Spark to be succesful with DataVec Transform
+CSVRecordReader足以处理格式规范的数值数据；但如果数据包含表示布尔值（真/假）的字符串或标签的字符串等非数值字段，那就需要进行架构（Schema）转换。DataVec使用Apache [Spark](http://spark.apache.org/)来进行转换运算。*即使不了解Spark的内部细节，也能成功使用DataVec进行转换
 
-## Schema Transformation Video
+## 架构转换视频
 
-A video tutorial of a simple DataVec transform along with code is available [here](http://www.youtube.com/watch?v=L5DtC8_4F-c)
+[点击此处](http://www.youtube.com/watch?v=L5DtC8_4F-c)观看一个简单的DataVec转换示例教程及相关代码
 
-## Example Java Code
+## Java代码示例
 
-Our [examples](https://deeplearning4j.org/quickstart#examples) include a collection of DataVec examples.   
+我们的[示例](https://deeplearning4j.org/quickstart#examples)中包括一组DataVec示例。   
 
 <!-- Note to Tom, write DataVec setup content
 
-## <a name="tutorial">Setting Up DataVec</a>
+## <a name="tutorial">设置DataVec</a>
 
-Search for [DataVec](https://search.maven.org/#search%7Cga%7C1%7CDataVec) on Maven Central to get a list of JARs you can use.
+在Maven中央仓库中搜索[DataVec](https://search.maven.org/#search%7Cga%7C1%7CDataVec)，得到可以使用的JAR文件列表。
 
-Add the dependency information into your pom.xml.
+将依赖项信息添加到pom.xml当中。
 
 -->
 
 
-## <a name="record">Reading Records, Iterating Over Data</a>
+## <a name="record">读取记录，对数据进行迭代</a>
 
-The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
+以下代码可将示例中的原始图像转换为DL4J和ND4J可以识别的格式：
 
 ``` java
-// Instantiating RecordReader. Specify height and width of images.
+// 将RecordReader实例化。指定图像的高和宽。
 RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
 
-// Point to data path. 
+// 指向数据路径。 
 recordReader.initialize(new FileSplit(new File(labeledPath)));
 ```
 
-The RecordReader is a class in DataVec that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
+RecordReader是DataVec中的一个类，可以帮助将字节式输入转换为记录式的数据，亦即一组数值固定并以独特索引ID加以标识的元素。向量化是将数据转换为记录的过程。记录本身是一个向量，每个元素是一项特征。
 
-The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
+[ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java)是RecordReader的子类，用于自动载入28 x 28像素的图像。所以LFW数据集的图像会被缩放为28像素 x 28像素的大小。你可以改变输入ImageRecordReader的参数，将尺寸改为自定义图像的大小，但务必要调整超参数`nIn`，使之等于图像高与宽的乘积。 
 
-Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with DataVec (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
+上一例中还包括一些其他的参数：`true`指示加载器为记录追加一个标签，`labels`是一组用于验证神经网络模型结果的监督值（目标值）。以下是DataVec中所有预设的RecordReader扩展（显示方式是在IntelliJ中右击`RecordReader`，点击下拉菜单中的`Go To`，再选择`Implementations`）：
 
 ![Alt text](./img/recordreader_extensions.png)
 
-The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
+DataSetIterator是用于遍历列表元素的一个Deeplearning4J类。迭代器按顺序访问数据列表中的每个项目，同时通过指向当前的元素来记录进度，在遍历过程中每前进一步就自动指向下一个元素。
 
 ``` java
-// DataVec to DL4J
+// 从DataVec到DL4J
 DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
 ```
 
-The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
+DataSetIterator对输入数据集进行迭代，每次迭代均抓取一个或多个新样例，将其载入神经网络可以识别的DataSet对象。上述代码还指示[RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java)将图像转换为一条元素的直线（向量），而非一个28 x 28的网格（矩阵）；此外还设定了标签数的限制。
 
-`RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
+`RecordReaderDataSetIterator`的参数可以设置任意特定的recordReader（针对图像或声音等数据类型）和批次大小。进行有监督学习时，还可指定标签索引和可以为输入添加的标签数量（LFW数据集的标签数为5,749）。 
 
-For a walkthrough of the other steps associated with moving data from DataVec to Deeplearning4j, you can read about [how to build a customized image data pipeline here](./simple-image-load-transform).
+如需要详细了解将数据从DataVec移动至Deeplearning4j的其他步骤，可以参阅[定制图像数据加工管道的指南](./cn/zh-simple-image-load-transform)。
 
-## Execution
+## 执行方式
 
-Runs as both a local serial process and a MapReduce (MR engine on the roadmap) scale-out process with no code changes.
+可以作为本地串行进程和无需代码变化的MapReduce（MR引擎已在规划中）向外扩展进程来运行。
 
-## Targetted Vector Formats
+## 支持的向量格式
 * svmLight
 * libsvm
 * Metronome
 * ARFF
 
-## Built-In General Functionality
-* Understands how to take general text and convert it into vectors with stock techniques such as kernel hashing and TF-IDF
-
+## 内置通用功能
+* 能够用核函数哈希和TF-IDF等方法将常规文本转换为向量

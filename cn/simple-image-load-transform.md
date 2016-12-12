@@ -1,29 +1,29 @@
 ---
-title: Customized Data Pipelines for Loading Images Into Deep Neural Networks
+title: 用定制的数据加工管道将图像载入深度神经网络
 layout: default
 ---
 
-# Customized Data Pipelines for Images etc.
+# 针对图像等数据的定制数据加工管道
 
-Deeplearning4j's examples run on benchmark datasets that don't present any obstacles in the data pipeline, because we abstracted them away. But real-world users start with raw, messy data, which they need to preprocess, vectorize and use to train a neural net for clustering or classification. 
+Deeplearning4j示例所使用的基准数据集不会对数据加工管道造成任何障碍，因为我们已通过抽象化将这些障碍去除。但在实际工作中，用户接触的是未经处理的杂乱数据，需要先预处理、向量化，再用于定型神经网络，进行聚类或分类。 
 
-*DataVec* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [DataVec Javadoc is here](http://deeplearning4j.org/datavecdoc/).)
+*DataVec*是我们的机器学习向量化库，可以用于定制数据准备方法，便于神经网络学习。([DataVec Javadoc参见此处](http://deeplearning4j.org/datavecdoc/)。)
 
-This tutorial will walk through how to load an image dataset and carry out transforms on them. For the sake of simplicity this tutorial uses only 10 images from 3 of the classes in the *Oxford flower dataset*. Please do not copy paste the code below as they are only snippets for reference. 
-[Use the code from the full example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
+本页的教程将介绍如何加载图像数据集并对其进行转换操作。为求简明易懂，本教程仅使用*牛津花卉数据集*中的三个类别，各有十幅图像。下列代码片段仅供参考，请勿直接复制粘贴使用。 
+[请使用此处完整示例中的代码](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
 
-## Setting up your images in the correct directory structure
-In short, images in your dataset have to be organized in directories by class/label and these label/class directories live together in the parent directory.
+## 为图像建立正确的目录结构
+简而言之，数据集中的图像必须按类别/标签存放在不同的目录下，而标签/类别目录则位于父目录下。
 
-* Download your dataset. 
+* 下载数据集。 
 
-* Make a parent directory.
+* 建立父目录。
 
-* In your parent directory make subdirectories with names corresponding to the label/class names.
+* 在父目录中创建子目录，按相应的标签/类别名称命名。
 
-* Move all images belonging to a given class/label to it's corresponding directory.
+* 将所有属于某一类别/标签的图像移动到相应的目录下。
 
-Here is the directory structure expected in general.
+通常需要采用的目录结构如下图所示。
 
 >                                   parentDir
 >                                 /   / | \  \
@@ -35,34 +35,34 @@ Here is the directory structure expected in general.
 >                      label_0 label_1....label_n-1 label_n
 
 
-In this example the parentDir corresponds to `$PWD/src/main/resources/DataExamples/ImagePipeline/` and the subdirectories labelA, labelB, labelC all have 10 images each. 
+在本页的示例中，parentDir（父目录）对应`$PWD/src/main/resources/DataExamples/ImagePipeline/`，而子目录labelA、labelB、labelC（标签A、B、C）下各有十幅图像。 
 
-## Specifying particulars before image load
-* Specify path to the parent dir where the labeled images live in separate directories.
+## 加载图像前的详细设置
+* 指定包含已标记图像的各个目录所在的父目录路径。
  
 ~~~java
 File parentDir = new File(System.getProperty("user.dir"), "src/main/resources/DataExamples/ImagePipeline/");
 ~~~
 
-* Specify allowed extensions and a random number generator to use when splitting dataset into test and train 
+* 指定将数据集分为测试集和定型集时允许的扩展名和需要使用的随机数生成器。 
 
 ~~~java
 FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
 ~~~
 
-* Specifying a label maker so you do not have to manually specify labels. It will simply use the name of the subdirectories as label/class names.
+* 设置一个标签生成器，这样就无需手动指定标签。生成器会将子目录名称用作标签/类别的名称。
 
 ~~~java
 ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 ~~~
 
-* Specifying a path filter to gives you fine tune control of the min/max cases to load for each class. Below is a bare bones version. Refer to javadocs for details
+* 指定路径筛选器，以便精确控制每种类别所要加载的最小/最大样例数。以下是最基本的代码。有关细节请参阅javadoc。
 
 ~~~java
 BalancedPathFilter pathFilter = new BalancedPathFilter(randNumGen, allowedExtensions, labelMaker);
 ~~~
 
-* Specify your test train split, specified here as 80%-20%
+* 指定测试集与定型集的比例，此处为80%和20%
 
 ~~~java
 InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, 80, 20);
@@ -70,59 +70,59 @@ InputSplit trainData = filesInDirSplit[0];
 InputSplit testData = filesInDirSplit[1];
 ~~~
 
-## Specifying particulars for your image pipeline transformation
+## 图像数据加工管道的详细设置
 
-* Specify an image record reader with height and width you want the entire dataset resized to. 
+* 为图像记录加载器指定高度和宽度，调整数据集中所有图像的尺寸。 
 
 ~~~java
 ImageRecordReader recordReader = new ImageRecordReader(height,width,channels,labelMaker);
 ~~~
-Please *note that the images in your dataset do not have to be the same size*. DataVec can do this for you. As you can see in this example images are all of different size and they are all resized to the height and width specified below
+请注意：*数据集中的图像不必都是相同的尺寸*。DataVec可以调整图像尺寸。本示例中的图像均为不同尺寸，它们都会被调整为指定的高度和宽度
 
-* Specify transformations
+* 指定转换操作
 
-The advantage of neural nets is that they do not require you to manually feature engineer. However, there can be an advantage to transforming images to artificially increase the size of the dataset like in this winning kaggle entry <http://benanne.github.io/2014/04/05/galaxy-zoo.html>. Or you might want to crop an image down to only the relevant parts. An example would be detect a face and crop it down to size. DataVec has all the built in functionality/powerful features from OpenCV. A bare bones example that flips an image and then displays it is shown below:
+神经网络的优势在于无需人工进行特征工程。但是，通过转换图像来人为地扩大数据集规模可能会带来益处，例如这一kaggle竞赛的优胜作品<http://benanne.github.io/2014/04/05/galaxy-zoo.html>。或者，你可能需要裁剪图像，只留下相关的部分。例如检测出图像中的人脸，然后将图像裁剪至人脸的大小。DataVec拥有OpenCV所有内置的强大功能。以下是一个将图像翻转后加以显示的基本功能示例：
 
 ~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen,new FlipImageTransform(), new ShowImageTransform("After transform"));
 ~~~
 
-You can chain transformations as shown below, write your own classes that will automate whatever features you want.
+可以用以下方法实现链式转换操作，自行编写自动运行任何功能的类。
 
 ~~~java
 ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTransform(10), new FlipImageTransform(),new ScaleImageTransform(10), new WarpImageTransform(10));
 ~~~
 
-* Initialize the record reader with the train data and the transform chain
+* 用定型数据和转换操作链对记录加载器进行初始化
 
 ~~~java
 recordReader.initialize(trainData,transform);
 ~~~
 
-## Handing off to fit
-dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
+## 递交匹配
+DL4J的神经网络也需要用一个数据集或数据集迭代器来进行匹配。数据集和迭代器是我们的学习框架的基本概念。迭代器的具体使用方法请参见其他示例。以下是用图像记录加载器构建数据集迭代器的方法。
 
 ~~~java
 DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, outputNum);
 ~~~
 
-The DataSetIterator iterates through the input datasets via the recordReader, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with.
+DataSetIterator通过recordReader对输入数据集进行迭代，每次迭代均抓取一个或多个新样例，将其载入神经网络可以识别的DataSet对象。
 
-## Scaling the DataSet
-The DataSet passed by the DataIterator will be one or more arrays of pixel values. For example if we had specified our RecordReader with height of 10, width of 10 and channels of 1 for greyscale
+## 缩放DataSet
+由DataIterator传入的DataSet将包含一个或多个像素值数组。例如，假设我们指定RecordReader的高度为10，宽度为10， 通道为1，即灰阶图像
 
 ~~~java
         ImageRecordReader(height,width,channels)
 ~~~
 
-Then the DataSet returned would be a 10 by 10 collection of values between 0 and 255. With 0 for a black pixel and 255 for a white pixel. A value of 100 would be grey. If the image was color, then there would be three channels. 
+那么返回的DataSet将是一个10 x 10的矩阵，其元素为0到255之间的数值。0代表黑色像素，255代表白色像素。100则代表灰色。如果图像是彩色的，就会有三个通道。 
 
-It may be useful to scale the image pixel value on a range of 0 to 1, rather than 0 to 255. 
+将图像像素值的范围从0～255缩放到0～1可能会更有帮助。 
 
-This can be done with the following code. 
+这可以通过以下的代码来实现。 
 
 ~~~java
         DataNormalization scaler = new ImagePreProcessingScaler(0,1);
         scaler.fit(dataIter);
         dataIter.setPreProcessor(scaler);
-~~~        
+~~~
