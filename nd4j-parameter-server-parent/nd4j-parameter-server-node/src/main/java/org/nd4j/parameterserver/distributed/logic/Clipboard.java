@@ -40,8 +40,8 @@ public class Clipboard {
 
         int missing = existing.getMissingChunks();
         if (missing == 0) {
-            completedCounter.incrementAndGet();
             completedQueue.add(existing);
+            completedCounter.incrementAndGet();
 
             // TODO: delete it from tracking table probably?
 
@@ -88,7 +88,14 @@ public class Clipboard {
      */
     public VoidAggregation nextCandidate() {
         completedCounter.decrementAndGet();
-        return completedQueue.poll();
+
+        VoidAggregation result = completedQueue.poll();
+
+        // removing aggregation from tracking table
+        if (result != null)
+            clipboard.remove(result.getTaskId());
+
+        return result;
     }
 
     public int getNumberOfPinnedStacks() {
