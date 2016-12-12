@@ -15,6 +15,8 @@ public interface VoidAggregation {
 
     void accumulateAggregation(VoidAggregation aggregation);
 
+    int getMissingChunks();
+
     INDArray getPayload();
 
     INDArray getAccumulatedResult();

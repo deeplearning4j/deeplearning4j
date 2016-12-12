@@ -48,4 +48,9 @@ public abstract class BaseAggregation implements VoidAggregation, Serializable {
     public INDArray getAccumulatedResult() {
         return Nd4j.hstack(chunks.values());
     }
+
+    @Override
+    public int getMissingChunks() {
+        return aggregationWidth - chunksCounter.get();
+    }
 }

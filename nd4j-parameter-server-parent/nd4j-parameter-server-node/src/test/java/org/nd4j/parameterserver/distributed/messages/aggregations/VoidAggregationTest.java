@@ -133,6 +133,7 @@ public class VoidAggregationTest {
         }
 
         INDArray result = aggregation.getAccumulatedResult();
+        assertArrayEquals(exp.shapeInfoDataBuffer().asInt(), result.shapeInfoDataBuffer().asInt());
         assertEquals(exp, result);
     }
 
