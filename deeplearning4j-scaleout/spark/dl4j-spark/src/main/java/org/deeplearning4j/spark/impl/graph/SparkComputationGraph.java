@@ -56,9 +56,7 @@ import scala.Tuple2;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -278,18 +276,25 @@ public class SparkComputationGraph implements Serializable {
 
     /**
      * This method allows you to specify IterationListeners for this model.
-     * <p>
-     * PLEASE NOTE:
-     * 1. These iteration listeners should be configured to use remote UiServer
-     * 2. Remote UiServer should be accessible via network from Spark master node.
      *
-     * @param listeners
+     * @param listeners Iteration listeners
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         this.listeners.clear();
         this.listeners.addAll(listeners);
         if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
     }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     *
+     * @param listeners Iteration listeners
+     */
+    public void setListeners(@NonNull IterationListener... listeners) {
+        setListeners(Arrays.asList(listeners));
+    }
+
+
 
     protected void invokeListeners(ComputationGraph network, int iteration) {
         for (IterationListener listener : listeners) {

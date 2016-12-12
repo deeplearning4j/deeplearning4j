@@ -66,7 +66,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
 
-            iteration++;
+            BaseOptimizer.incrementIterationCount(model, 1);
         }
         return true;
     }
