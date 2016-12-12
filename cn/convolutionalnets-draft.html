@@ -3,7 +3,7 @@ title: "卷积网络"
 layout: cn-default
 redirect_from: /zh-convolutionalnets
 ---
-<p><h1>卷积网络（Convolutional Neural Networks)</h1>
+<p><h1>卷积网络（Convolutional Neural Networks）</h1>
 </p>
 <p>目录</p>
 <ul>
@@ -30,23 +30,20 @@ redirect_from: /zh-convolutionalnets
 [ 1, 2 ]
 [ 5, 8 ]
 </code></pre>
-<p>张量涵括了二维平面以上的维度。数组按立方体排列的三维张量很容易想象。所示为水平呈现的2x3x2张量（想象各二元数组的底元素沿Z轴延伸以直观把握三维数组的命名原因）：</p>
-<img class="img-shadow img-responsive center-block" src="../img/tensor.png" alt="tensor">
-<p>上述张量可以用代码表示为：<code>[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]]</code>.请见示意图：</p>
-<img class="img-shadow img-responsive center-block" src="../img/3d_matrix_cube.png" alt="3d matrix cube">
-<p>换言之，张量的形成原理为数组嵌套数组。这种嵌套可以无限持续下去，形成远超我们空间想象所能企及的、任意数量的维度。四维张量，即是用嵌套层次更深的数组取代上述各标量。卷积网络对四维张量的处理如下所示（请注意嵌套数组）。</p>
-<img class="img-shadow img-responsive center-block" src="../img/3d_matrix.png" alt="3d matrix">
+<p>张量涵括了二维平面以上的维度。数组按立方体排列的三维张量很容易想象。所示为水平呈现的2x3x2张量（想象各二元数组的底元素沿Z轴延伸以直观把握三维数组的命名原因）：</p><br />
+<img class="img-responsive center-block" src="../img/tensor.png" alt="tensor"><br />
+<p>上述张量可以用代码表示为：<code>[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]]</code>.请见示意图：</p><br />
+<img class="img-responsive center-block" src="../img/3d_matrix_cube.png" alt="3d matrix cube"><br />
+<p>换言之，张量的形成原理为数组嵌套数组。这种嵌套可以无限持续下去，形成远超我们空间想象所能企及的、任意数量的维度。四维张量，即是用嵌套层次更深的数组取代上述各标量。卷积网络对四维张量的处理如下所示（请注意嵌套数组）。</p><br />
+<img class="img-responsive center-block" src="../img/3d_matrix.png" alt="3d matrix"><br />
 <p>ND4J和Deeplearning4j对<code>NDArray</code>和 “张量” 同义互换使用。张量的维度<code>(1,2,3...n)</code>称为“阶”，也就是说，第五阶张量具有五个维度。</p>
 <p>图像的宽度和高度很容易理解。由于颜色的编码方式，必须有一个&ldquo;深度&rdquo;。例如，根据红－绿－蓝（RGB）编码，可生成三层深度的图像。每一层也叫作一个&ldquo;通道&rdquo;。通过卷积，只需根据时间本身的脉络即可生成存在于第四维的一堆特征映射图（见下文详述）。（所谓特征，即图像的细节信息，如直线或曲线等。卷积网络为特征创建映射图。）</p>
 <p>卷积网络将图像按照四维体而非二维面进行处理。上述概念将在下文深入阐述。</p>
 <br />
 <p><a name="define"><h2>定义</h2></a></p>
-<p>英文中的 <strong>to convolve</strong> 词源为拉丁文 <strong>convolvere</strong>，意为“卷在一起”。从数学角度说，卷积是指用来计算一个函数通过另一个函数时，两个函数有多少重叠的积分。卷积可以视为通过相乘的方式将两个函数进行混合。</p>
-<center>
-<!-- <iframe src="http://mathworld.wolfram.com/images/gifs/convgaus.gif" width="100%" height="260px;" style="border:none;"></iframe>
--->
-<iframe src="img/convgaus.gif" width="100%" height="260px;" style="border:none;"></iframe><br />
-<em>取自：<a href="http://mathworld.wolfram.com/">Mathworld</a>. &ldquo;The green curve shows the convolution of the blue and red curves as a function of t, the position indicated by the vertical green line. The gray region indicates the product g(tau)f(t-tau) as a function of t, so its area as a function of t is precisely the convolution.&rdquo;</em>
+<p>英文中的 <strong>to convolve</strong> 词源为拉丁文 <strong>convolvere</strong>，意为“卷在一起”。从数学角度说，卷积是指用来计算一个函数通过另一个函数时，两个函数有多少重叠的积分。卷积可以视为通过相乘的方式将两个函数进行混合。</p><br />
+<img class="img-responsive center-block" src="../img/convgaus.gif" alt="convgaus"><br />
+<em>取自：<a href="http://mathworld.wolfram.com/">Mathworld</a>. "The green curve shows the convolution of the blue and red curves as a function of t, the position indicated by the vertical green line. The gray region indicates the product g(tau)f(t-tau) as a function of t, so its area as a function of t is precisely the convolution."</em>
 </center>
 <p>设想在图表中间有一条既高且窄的钟形曲线。曲线下的区域是积分。设想该曲线附近有第二条较短较宽的钟形曲线从图表左侧向右侧缓慢漂移。这两个函数沿X轴各点的重叠部分之积，即是其的<a href="http://mathworld.wolfram.com/Convolution.html" target="_blank">卷积</a>。所以在一定意义上，两个函数是被“卷在了一起”。</p>
 <p>静态的底层函数是得到分析的输入图像，而动态的另一个函数被称为过滤器，因为该函数会获取图像的信号。两个函数通过乘法产生联系。若想以矩阵而非钟形曲线的方式对卷积进行想象，请见标题“卷积演示”下<a href="https://cs231n.github.io/convolutional-networks/" target="_blank">Andrej Karpathy的极佳动画演示</a>。</p>
@@ -67,34 +64,34 @@ redirect_from: /zh-convolutionalnets
 <p>需要特别注意图像体各维度的精确测量结果，因为这些结果是用来处理图像的线性代数运算的基础。</p>
 <p>对图像的各像素来说，R、G、B的强度将会以数字进行表示。该数字将是三个堆叠二维矩阵之一的元素。图像体由这些二维矩阵一起构成。</p>
 <p>这些数字是输入卷积网络的最初原始感官特征，卷积网络意在上述数字中寻找显著信号，从而更精确地对图像进行分类。（就像我们讨论过的其他前馈网络一样。）</p>
-<p>卷积网络并非对像素进行逐个处理，而是将包含多像素的方形片块经<strong<过滤器</strong>扫描进行处理。该过滤器是同样方形的矩阵，尺寸小于图像，与片块等大，也可称为<strong<内核</strong>。熟悉支持向量机的读者对此不会陌生。这一过滤器的工作是在像素间寻找图案。</p>
-<center>
+<p>卷积网络并非对像素进行逐个处理，而是将包含多像素的方形片块经<strong<过滤器</strong>扫描进行处理。该过滤器是同样方形的矩阵，尺寸小于图像，与片块等大，也可称为<strong<内核</strong>。熟悉支持向量机的读者对此不会陌生。这一过滤器的工作是在像素间寻找图案。</p><br />
+<div align="center">
 <iframe src="https://cs231n.github.io/assets/conv-demo/index.html" width="100%" height="700px;" style="border:none;"></iframe>
-</center>
+</div><br />
 <p>感谢<a href="https://cs231n.github.io/" target="_blank">Andrej Karpathy</a>提供这一极佳的动画演示。</p>
 <p>设想有两个矩阵，一个30x30，另一个3x3。也就是说，过滤器覆盖了图像通道表面积的十分之一。</p>
 <p>我们使用这块图像通道得到过滤器的点积。如果两个矩阵在相同位置均具有较高的值，则点积输出会很高。反之，则输出会很低。如此，通过一个单值（即点积输出）便可以确定底层图像的像素图案是否符合过滤器所表示的像素图案。</p>
 <p>设想过滤器表示的是一条水平线，其中第二行的值较高，第一、三行的值较低。现从底层图像左上角开始，逐步在图像上移动过滤器直至到达右上角。移动的幅度称为<strong>步幅</strong>。可每次以一列为单位向右移动过滤器，也可选择更大的步幅。</p>
 <p>在每一步获取一个点积，并将点积结果置于被称为<strong>激活映射图</strong>的第三个矩阵中。激活映射图上的宽度（或列数）与过滤器在底层图像上移动的步数一致。因为步幅越大，步数越小，所以步幅大则激活映射图小。这点之所以重要，是因为卷积网络在各层处理并生成的矩阵的尺寸，与计算成本及所需时间是呈正比的。步幅较大，则所需时间和计算量较小。</p>
 <p>置于前三行上的过滤器将经过这三行，而后再经过图像上的第4～6行。若步幅为三，那么生成的点积矩阵为10x10。代表水平线的相同过滤器也可用于底层图像的所有三个通道，亦即R、G和B。三个10x10的激活映射图可以叠加，因此底层图像三个通道上水平线的总体激活映射图也是10x10。</p>
-<p>由于图像上不同指向的线非常多，而且图像包含许多不同的形状和像素图案，因此需要使用其他过滤器扫描底层图像，以搜索这些图案。举例说，可以在像素中搜索96种不同图案。这96种图案可构成96张激活映射图，生成10x10x96的新体。在下图中，我们对输入图像、内核和输出的激活映射图重新作了标明。</p>
-<img class="img-shadow img-responsive center-block" src="../img/karpathy-convnet-labels.png" alt="karpathy convnet labels">
-<p>我们刚才描述的即是卷积。可以把卷积想象为信号处理中的一种奇特乘法。也可将两个矩阵生成点积想象为两个函数。图像就是底层函数，而过滤器就是在其上“卷过”的函数。</p>
-<img class="img-shadow img-responsive center-block" src="../img/convgaus.gif" alt="convgaus">
+<p>由于图像上不同指向的线非常多，而且图像包含许多不同的形状和像素图案，因此需要使用其他过滤器扫描底层图像，以搜索这些图案。举例说，可以在像素中搜索96种不同图案。这96种图案可构成96张激活映射图，生成10x10x96的新体。在下图中，我们对输入图像、内核和输出的激活映射图重新作了标明。</p><br />
+<img class="img-responsive center-block" src="../img/karpathy-convnet-labels.png" alt="karpathy convnet labels"><br />
+<p>我们刚才描述的即是卷积。可以把卷积想象为信号处理中的一种奇特乘法。也可将两个矩阵生成点积想象为两个函数。图像就是底层函数，而过滤器就是在其上“卷过”的函数。</p><br />
+<img class="img-responsive center-block" src="../img/convgaus.gif" alt="convgaus"><br />
 <p>图像的主要问题在于其高维度，原因是对高维度的处理时间和运算能力成本很高。卷积网络就是为了通过各种方式降低图像的维度而设计的。过滤器步幅即是减少维度的一种方法，另一种方法是降采样。</p>
 <br>
 
 <p><a name="max"><h2>最大池化／降采样</h2></a></p>
-<p>卷积网络的下一层有三个名称：最大池化、降采样和二次抽样。如卷积的方法一样，将激活映射图每次一个片块地输入降采样层。最大池化仅取图像一个片块的最大值，将之置于存有其他片块最大值的矩阵中，并放弃激活映射图中所载的其他信息。</p>
-<img class="img-shadow img-responsive center-block" src="../img/maxpool.png" alt="maxpool"><br />
-<em>感谢Andrej Karpathy供图。</em>
+<p>卷积网络的下一层有三个名称：最大池化、降采样和二次抽样。如卷积的方法一样，将激活映射图每次一个片块地输入降采样层。最大池化仅取图像一个片块的最大值，将之置于存有其他片块最大值的矩阵中，并放弃激活映射图中所载的其他信息。</p><br />
+<img class="img-responsive center-block" src="../img/maxpool.png" alt="maxpool"><br />
+<em>感谢Andrej Karpathy供图。</em><br />
 <p>仅保留图像中与各特征（最大值）相关性最大的位置。这些最大值一起构成了一个较低维度的空间。</p>
 <p>这一步骤会损失关于较低值的许多信息。这也激发了对替代方法的研究。不过，正因为信息的损失，降采样也有所需存储空间和处理过程较少的优势。</p>
 <br />
 
 <p><a name="commute"><h2>交流层</h2></a></p>
-<p>下图是另一种显示典型卷积网络所涉转换顺序的方式。</p>
-<img class="img-shadow img-responsive center-block" src="../img/convnet.png" alt="convnet">
+<p>下图是另一种显示典型卷积网络所涉转换顺序的方式。</p><br />
+<img class="img-responsive center-block" src="../img/convnet.png" alt="convnet"><br />
 <p>从左至右：</p>
 <ul>
   <li>为采集特征而得到扫描的实际输入图像。浅灰色矩形是扫描图像的过滤器。</li>
