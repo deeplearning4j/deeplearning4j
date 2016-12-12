@@ -7,8 +7,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class VectorAggregation extends BaseAggregation {
 
-    public VectorAggregation(short aggregationWidth, INDArray array) {
-        super(aggregationWidth);
+    public VectorAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray array) {
+        super(taskId, aggregationWidth, shardIndex);
         this.payload = array.isView() ? array.dup(array.ordering()) : array;
+
+        addToChunks(payload);
     }
 }

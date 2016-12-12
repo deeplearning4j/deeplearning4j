@@ -47,20 +47,20 @@ public class VoidAggregationTest {
             for (int e = 0; e < ELEMENTS_PER_NODE; j++, e++) {
                 array.putScalar(e, (double) j);
             }
-            VectorAggregation aggregation = new VectorAggregation(NODES, array);
-            aggregation.setShardIndex((short) i);
+            VectorAggregation aggregation = new VectorAggregation(1L, NODES, (short) i, array);
+
             aggregations.add(aggregation);
         }
 
 
         VectorAggregation aggregation = aggregations.get(0);
-
         for (VectorAggregation vectorAggregation: aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
         }
 
         INDArray payload = aggregation.getAccumulatedResult();
         log.info("Payload shape: {}", payload.shape());
+        assertEquals(exp.length(), payload.length());
         assertEquals(exp, payload);
     }
 
@@ -88,12 +88,13 @@ public class VoidAggregationTest {
 
             double dot = Nd4j.getBlasWrapper().dot(arrayX, arrayY);
 
-            DotAggregation aggregation = new DotAggregation(NODES, Nd4j.scalar(dot));
-            aggregation.setShardIndex((short) i);
+            DotAggregation aggregation = new DotAggregation(1L, NODES, (short) i, Nd4j.scalar(dot));
+
             aggregations.add(aggregation);
         }
 
         DotAggregation aggregation = aggregations.get(0);
+
 
         for (DotAggregation vectorAggregation: aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
@@ -121,15 +122,20 @@ public class VoidAggregationTest {
             arrayX.assign(2.0);
             arrayY.assign(2.0);
 
-            DotAggregation aggregation = new DotAggregation(NODES, arrayX.mul(arrayY));
-            aggregation.setShardIndex((short) i);
+            DotAggregation aggregation = new DotAggregation(1L, NODES, (short) i, arrayX.mul(arrayY));
+
             aggregations.add(aggregation);
         }
 
         DotAggregation aggregation = aggregations.get(0);
 
+        int cnt = 1;
         for (DotAggregation vectorAggregation: aggregations) {
             aggregation.accumulateAggregation(vectorAggregation);
+            cnt++;
+
+            // we're checking for actual number of missing chunks
+            //assertEquals( NODES - cnt,aggregation.getMissingChunks());
         }
 
         INDArray result = aggregation.getAccumulatedResult();

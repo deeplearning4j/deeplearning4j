@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.logic;
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
 
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -13,6 +14,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Clipboard {
 
+
+    protected Map<Long, VoidAggregation> clipboard = new HashMap<>();
+
+    protected Queue<VoidAggregation> completedQueue = new LinkedList<>();
+
+    protected AtomicInteger trackingCounter = new AtomicInteger(0);
     protected AtomicInteger completedCounter = new AtomicInteger(0);
 
     /**
@@ -22,8 +29,24 @@ public class Clipboard {
      * @return TRUE, if given VoidAggregation was the last chunk, FALSE otherwise
      */
     public boolean pin(@NonNull VoidAggregation aggregation) {
-        // TODO: to be implemented
-        return false;
+        VoidAggregation existing = clipboard.get(aggregation.getTaskId());
+        if (existing == null) {
+            existing = aggregation;
+            trackingCounter.incrementAndGet();
+            clipboard.put(aggregation.getTaskId(), aggregation);
+        }
+
+        existing.accumulateAggregation(aggregation);
+
+        int missing = existing.getMissingChunks();
+        if (missing == 0) {
+            completedCounter.incrementAndGet();
+            completedQueue.add(existing);
+
+            // TODO: delete it from tracking table probably?
+
+            return true;
+        } else return false;
     }
 
     /**
@@ -32,18 +55,21 @@ public class Clipboard {
      * @param aggregation
      */
     public VoidAggregation unpin(@NonNull VoidAggregation aggregation) {
-        // TODO: to be implemented
-        return null;
+        return unpin(aggregation.getTaskId());
     }
 
     /**
      * This method removes given VoidAggregation from clipboard, and returns it
      *
-     * @param batchId
+     * @param taskId
      */
-    public VoidAggregation unpin(long batchId) {
-        // TODO: to be implemented
-        return null;
+    public VoidAggregation unpin(long taskId) {
+        VoidAggregation aggregation;
+        if ((aggregation = clipboard.get(taskId)) != null) {
+            clipboard.remove(taskId);
+            trackingCounter.decrementAndGet();
+            return aggregation;
+        } else return null;
     }
 
     /**
@@ -52,7 +78,7 @@ public class Clipboard {
      * @return TRUE, if there's at least 1 candidate ready, FALSE otherwise
      */
     public boolean hasCandidates() {
-        return false;
+        return completedCounter.get() > 0;
     }
 
     /**
@@ -61,9 +87,19 @@ public class Clipboard {
      * @return
      */
     public VoidAggregation nextCandidate() {
-
         completedCounter.decrementAndGet();
+        return completedQueue.poll();
+    }
 
-        return null;
+    public int getNumberOfPinnedStacks() {
+        return trackingCounter.get();
+    }
+
+    public int getNumberOfCompleteStacks() {
+        return completedCounter.get();
+    }
+
+    public VoidAggregation getStackFromClipboard(long taskId) {
+        return clipboard.get(taskId);
     }
 }

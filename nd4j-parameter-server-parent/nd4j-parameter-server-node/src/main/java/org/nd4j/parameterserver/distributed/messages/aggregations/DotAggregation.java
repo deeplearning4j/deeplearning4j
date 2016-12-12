@@ -11,10 +11,11 @@ import org.nd4j.linalg.factory.Nd4j;
 @Data
 public class DotAggregation extends BaseAggregation{
 
-    public DotAggregation(short aggregationWidth, INDArray scalar) {
-        super(aggregationWidth);
+    public DotAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray scalar) {
+        super(taskId, aggregationWidth, shardIndex);
 
         this.payload = scalar;
+        addToChunks(payload);
     }
 
     @Override

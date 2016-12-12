@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface VoidAggregation {
 
+    Long getTaskId();
+
     short getShardIndex();
 
     short getAggregationType();
