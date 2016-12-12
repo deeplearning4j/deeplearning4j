@@ -905,6 +905,6 @@ public class MultiLayerTest {
 
         ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-        assertEquals(7, net.getDefaultConfiguration().getIterationCount());
+        assertEquals(7, net.getLayerWiseConfigurations().getIterationCount());
     }
 }
