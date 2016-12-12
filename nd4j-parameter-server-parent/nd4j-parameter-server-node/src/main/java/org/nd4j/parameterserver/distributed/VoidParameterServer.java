@@ -3,10 +3,16 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Connector;
 import org.nd4j.parameterserver.distributed.logic.Shard;
+import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.net.InterfaceAddress;
@@ -78,33 +84,17 @@ public class VoidParameterServer {
             if (initLocker.compareAndSet(false, true)) {
                 this.configuration = configuration;
 
-            // first we need to check, if our current IP matches designated shards or backup
-            nodeRole = getRole(configuration, getLocalAddresses());
+                // first we need to check, if our current IP matches designated shards or backup
+                Pair<NodeRole, String> pair = getRole(configuration, getLocalAddresses());
+                nodeRole = pair.getFirst();
 
-            // role-dependent additional initialization
-            switch (nodeRole) {
-                case SHARD: {
-                    log.info("Initializing as Shard...");
 
-                    connector = new Shard(configuration);
-                    break;
-                }
-                case BACKUP: {
-                    log.info("Initializing as Backup...");
+                // role-dependent additional initialization
+                transport = new MulticastTransport();
 
-                    break;
-                }
-                case MASTER: {
-                    log.info("Initializing as Master...");
+                // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
+                transport.init(configuration, nodeRole, pair.getSecond());
 
-                    break;
-                }
-                case CLIENT:
-                default: {
-                    log.info("Initializing as Client...");
-                    break;
-                }
-            }
 
                 initFinished.set(true);
             }
@@ -118,20 +108,21 @@ public class VoidParameterServer {
      * @param localIPs
      * @return
      */
-    protected NodeRole getRole(@NonNull Configuration configuration, @NonNull Collection<String> localIPs) {
+    protected Pair<NodeRole, String> getRole(@NonNull Configuration configuration, @NonNull Collection<String> localIPs) {
         NodeRole result = NodeRole.CLIENT;
 
         for (String ip: localIPs) {
             if (configuration.getShardAddresses().contains(ip))
-                return NodeRole.SHARD;
+                return Pair.create(NodeRole.SHARD, ip);
         }
 
         for (String ip: localIPs) {
             if (configuration.getBackupAddresses().contains(ip))
-                return NodeRole.BACKUP;
+                return Pair.create(NodeRole.BACKUP, ip);
         }
 
-        return result;
+        // local IP from pair is used for shard only, so we don't care
+        return Pair.create(result, "127.0.0.1");
     }
 
     /**
@@ -179,5 +170,49 @@ public class VoidParameterServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * This method takes AggregateOp, and sends them for execution over network
+     *
+     * PLEASE NOTE: This method is NOT blocking
+     *
+     * @param aggregate
+     */
+    public <T extends Aggregate> void execDistributed(@NonNull T aggregate) {
+        // we just form the message and send it
+
+
+        transport.sendMessage(null);
+    }
+
+    /**
+     * This method takes Batch of Aggregates, and executes them over network
+     *
+     * PLEASE NOTE: This method is NOT blocking
+     *
+     * @param batch
+     * @param <T>
+     */
+    public <T extends Aggregate> void execDistributed(@NonNull Batch<T> batch) {
+        // we form it and send it :)
+
+        transport.sendMessage(null);
+    }
+
+
+    /**
+     * This method returns INDArray matching requested storageId value
+     *
+     * PLEASE NOTE: This method IS blocking
+     *
+     * @param storageId
+     * @return
+     */
+    public INDArray getVector(long storageId) {
+        /**
+         * we create VoidMessage, send it, and block until it gets responded
+         */
+        return null;
     }
 }

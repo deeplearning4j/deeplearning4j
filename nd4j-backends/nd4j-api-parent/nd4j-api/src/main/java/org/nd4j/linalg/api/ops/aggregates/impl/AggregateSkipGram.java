@@ -50,6 +50,26 @@ public class AggregateSkipGram extends BaseAggregate {
         this.vectorLength = vectorLength;
     }
 
+    /**
+     * This is special signature suitable for use with VoidParameterServer, never ever use it outside of spark-nlp
+     *
+     * @param w1
+     * @param w2
+     * @param lr
+     * @param vectorLength
+     */
+    // TODO: probably this signature should be removed?
+    public AggregateSkipGram(int w1, int w2, int[] codes, int[] points, int negSamples, double lr, int vectorLength) {
+        indexingArguments.add(w1);
+        indexingArguments.add(w2);
+        indexingArguments.add(vectorLength);
+
+        intArrayArguments.add(codes);
+        intArrayArguments.add(points);
+
+        realArguments.add(lr);
+    }
+
 
     /**
      * This method returns amount of shared memory required for this specific Aggregate.
@@ -104,6 +124,7 @@ public class AggregateSkipGram extends BaseAggregate {
     @Override
     public int maxIntArraySize() {
         // we hardcode 40 here, due to w2v codeLength mechanics
+        // TODO: make sure this limitation doesn't bother with spark environment
         return 40;
     }
 

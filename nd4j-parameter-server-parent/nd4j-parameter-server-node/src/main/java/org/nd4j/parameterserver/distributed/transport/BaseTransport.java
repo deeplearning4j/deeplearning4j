@@ -102,6 +102,9 @@ public abstract class BaseTransport implements Transport {
      * @param header
      */
     protected void shardMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
+        /**
+         * All incoming messages here are supposed to be unicast messages.
+         */
         // TODO: to be implemented
     }
 
@@ -114,7 +117,12 @@ public abstract class BaseTransport implements Transport {
      * @param header
      */
     protected void internalMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
+        /**
+         * All incoming internal messages are either op commands, or aggregation messages that are tied to commands
+         */
+
         // TODO: to be implemented
+
     }
 
     /**
@@ -125,6 +133,9 @@ public abstract class BaseTransport implements Transport {
      * @param header
      */
     protected void clientMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
+        /**
+         *  All incoming messages here are supposed to be "just messages", only unicast communication
+         */
         // TODO: to be implemented
     }
 
@@ -180,10 +191,9 @@ public abstract class BaseTransport implements Transport {
                                 idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
                         });
 
-                        threadB.start();
                         threadB.setDaemon(true);
                         threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
-
+                        threadB.start();
                     } else {
                         // setting up thread for shard->client communication listener
                         threadA = new Thread(() -> {
@@ -193,9 +203,9 @@ public abstract class BaseTransport implements Transport {
                     }
 
                     // all roles have threadA anyway
-                    threadA.start();
                     threadA.setDaemon(true);
                     threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
+                    threadA.start();
                 }
                 break;
             case SAME_THREAD: {
