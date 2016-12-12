@@ -84,7 +84,7 @@ redirect_from: /zh-convolutionalnets
 <p><a name="max"><h2>最大池化／降采样</h2></a></p>
 <p>卷积网络的下一层有三个名称：最大池化、降采样和二次抽样。如卷积的方法一样，将激活映射图每次一个片块地输入降采样层。最大池化仅取图像一个片块的最大值，将之置于存有其他片块最大值的矩阵中，并放弃激活映射图中所载的其他信息。</p><br />
 <img class="img-responsive center-block" src="../img/maxpool.png" alt="maxpool"><br />
-<em>感谢Andrej Karpathy供图。</em><br />
+<div align="center"><em>感谢Andrej Karpathy供图。</em></div><br /><br />
 <p>仅保留图像中与各特征（最大值）相关性最大的位置。这些最大值一起构成了一个较低维度的空间。</p>
 <p>这一步骤会损失关于较低值的许多信息。这也激发了对替代方法的研究。不过，正因为信息的损失，降采样也有所需存储空间和处理过程较少的优势。</p>
 <br />
