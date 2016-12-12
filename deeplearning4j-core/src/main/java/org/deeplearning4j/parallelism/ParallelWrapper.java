@@ -46,6 +46,7 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean averageUpdaters = true;
     private boolean legacyAveraging = false;
     private boolean wasAveraged = false;
+    private boolean stopFit = false;
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -87,7 +88,13 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
+    /**
+    * Will stop a fit operation from continuing to iterate.
+    */
+    public void stopFit() { this.stopFit = true; }
+
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
+        stopFit = false;
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -109,7 +116,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
 
-        while (iterator.hasNext()) {
+        while (iterator.hasNext() && !stopFit) {
             MultiDataSet dataSet = iterator.next();
 
             /*
@@ -217,6 +224,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        stopFit = false;
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -233,7 +241,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
         int whiles = 0;
-        while (iterator.hasNext()) {
+        while (iterator.hasNext() && !stopFit) {
             whiles++;
             DataSet dataSet = iterator.next();
 
@@ -241,6 +249,7 @@ public class ParallelWrapper implements AutoCloseable {
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
+            if(zoo == null) throw new IllegalStateException("ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
             zoo[pos].feedDataSet(dataSet);
 
             /*
