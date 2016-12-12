@@ -43,8 +43,8 @@ redirect_from: /zh-convolutionalnets
 <p><a name="define"><h2>定义</h2></a></p>
 <p>英文中的 <strong>to convolve</strong> 词源为拉丁文 <strong>convolvere</strong>，意为“卷在一起”。从数学角度说，卷积是指用来计算一个函数通过另一个函数时，两个函数有多少重叠的积分。卷积可以视为通过相乘的方式将两个函数进行混合。</p><br />
 <img class="img-responsive center-block" src="../img/convgaus.gif" alt="convgaus"><br />
-<em>取自：<a href="http://mathworld.wolfram.com/">Mathworld</a>. "The green curve shows the convolution of the blue and red curves as a function of t, the position indicated by the vertical green line. The gray region indicates the product g(tau)f(t-tau) as a function of t, so its area as a function of t is precisely the convolution."</em>
-</center>
+<div align="center"><em>取自：<a href="http://mathworld.wolfram.com/">Mathworld</a>. "The green curve shows the convolution of the blue and red curves as a function of t, the position indicated by the vertical green line. The gray region indicates the product g(tau)f(t-tau) as a function of t, so its area as a function of t is precisely the convolution."</em></div>
+<br /><br />
 <p>设想在图表中间有一条既高且窄的钟形曲线。曲线下的区域是积分。设想该曲线附近有第二条较短较宽的钟形曲线从图表左侧向右侧缓慢漂移。这两个函数沿X轴各点的重叠部分之积，即是其的<a href="http://mathworld.wolfram.com/Convolution.html" target="_blank">卷积</a>。所以在一定意义上，两个函数是被“卷在了一起”。</p>
 <p>静态的底层函数是得到分析的输入图像，而动态的另一个函数被称为过滤器，因为该函数会获取图像的信号。两个函数通过乘法产生联系。若想以矩阵而非钟形曲线的方式对卷积进行想象，请见标题“卷积演示”下<a href="https://cs231n.github.io/convolutional-networks/" target="_blank">Andrej Karpathy的极佳动画演示</a>。</p>
 <p>我们还需理解，在卷积网络中，一张图像需经过多个过滤器的扫描，每个过滤器获取一个不同的信号。可以想象卷积网络中较早的一层在经过水平线过滤器、垂直线过滤器和对角线过滤器的扫描后，创建了图像边缘的映射图。</p>
@@ -66,9 +66,9 @@ redirect_from: /zh-convolutionalnets
 <p>这些数字是输入卷积网络的最初原始感官特征，卷积网络意在上述数字中寻找显著信号，从而更精确地对图像进行分类。（就像我们讨论过的其他前馈网络一样。）</p>
 <p>卷积网络并非对像素进行逐个处理，而是将包含多像素的方形片块经<strong<过滤器</strong>扫描进行处理。该过滤器是同样方形的矩阵，尺寸小于图像，与片块等大，也可称为<strong<内核</strong>。熟悉支持向量机的读者对此不会陌生。这一过滤器的工作是在像素间寻找图案。</p><br />
 <div align="center">
-<iframe src="https://cs231n.github.io/assets/conv-demo/index.html" width="100%" height="700px;" style="border:none;"></iframe>
+<iframe src="https://cs231n.github.io/assets/conv-demo/index.html" width="100%" height="700px;" style="border:none;" align="middle"></iframe>
 </div><br />
-<p>感谢<a href="https://cs231n.github.io/" target="_blank">Andrej Karpathy</a>提供这一极佳的动画演示。</p>
+<p align="center">感谢<a href="https://cs231n.github.io/" target="_blank">Andrej Karpathy</a>提供这一极佳的动画演示。</p><br />
 <p>设想有两个矩阵，一个30x30，另一个3x3。也就是说，过滤器覆盖了图像通道表面积的十分之一。</p>
 <p>我们使用这块图像通道得到过滤器的点积。如果两个矩阵在相同位置均具有较高的值，则点积输出会很高。反之，则输出会很低。如此，通过一个单值（即点积输出）便可以确定底层图像的像素图案是否符合过滤器所表示的像素图案。</p>
 <p>设想过滤器表示的是一条水平线，其中第二行的值较高，第一、三行的值较低。现从底层图像左上角开始，逐步在图像上移动过滤器直至到达右上角。移动的幅度称为<strong>步幅</strong>。可每次以一列为单位向右移动过滤器，也可选择更大的步幅。</p>
