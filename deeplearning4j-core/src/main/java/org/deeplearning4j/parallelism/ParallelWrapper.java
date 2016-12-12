@@ -46,7 +46,7 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean averageUpdaters = true;
     private boolean legacyAveraging = false;
     private boolean wasAveraged = false;
-    private boolean stopFit = false;
+    private AtomicBoolean stopFit = new AtomicBoolean(false);
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -55,8 +55,10 @@ public class ParallelWrapper implements AutoCloseable {
 
         if (this.model instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) this.model).getUpdater();
+            ((MultiLayerNetwork) this.model).setParallelism(true);
         } else if (this.model instanceof ComputationGraph) {
             ((ComputationGraph) this.model).getUpdater();
+            ((ComputationGraph) this.model).setParallelism(true);
         }
 
         zoo = new Trainer[workers];
@@ -91,10 +93,10 @@ public class ParallelWrapper implements AutoCloseable {
     /**
     * Will stop a fit operation from continuing to iterate.
     */
-    public void stopFit() { this.stopFit = true; }
+    public void stopFit() { stopFit.set(true); }
 
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
-        stopFit = false;
+        stopFit.set(false);
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -116,7 +118,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
 
-        while (iterator.hasNext() && !stopFit) {
+        while (iterator.hasNext() && !stopFit.get()) {
             MultiDataSet dataSet = iterator.next();
 
             /*
@@ -174,24 +176,32 @@ public class ParallelWrapper implements AutoCloseable {
                     if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray(state);
                                 }
                             }
+
+                            // update batch input data for stats listener
+                            ((ComputationGraph) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((ComputationGraph) model).setScore(score);
@@ -224,7 +234,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
-        stopFit = false;
+        stopFit.set(false);
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -241,7 +251,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
         int whiles = 0;
-        while (iterator.hasNext() && !stopFit) {
+        while (iterator.hasNext() && !stopFit.get()) {
             whiles++;
             DataSet dataSet = iterator.next();
 
@@ -300,24 +310,32 @@ public class ParallelWrapper implements AutoCloseable {
                     if (model instanceof MultiLayerNetwork) {
                         if (averageUpdaters) {
                             Updater updater = ((MultiLayerNetwork) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray().dup());
+                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray().dup());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray((MultiLayerNetwork) model, state, false);
                                 }
                             }
+
+                            // update batch input data for stats listener
+                            ((MultiLayerNetwork) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
@@ -327,24 +345,32 @@ public class ParallelWrapper implements AutoCloseable {
                     } else if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray(state);
                                 }
                             }
+
+                            // update batch input data for stats listener
+                            ((ComputationGraph) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((ComputationGraph) model).setScore(score);
