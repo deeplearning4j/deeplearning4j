@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
@@ -95,6 +94,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected Gradient gradient;
     protected INDArray epsilon;
     protected double score;
+    protected boolean isParallel = false;
+    protected int manualBatchSize;
     @Setter protected boolean initDone = false;
     protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
@@ -270,10 +271,38 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /**
+     * Is this model being used for a parallel operation?
+     */
+    public boolean isParallel() { return isParallel; }
+
+    /**
+     * Specify if this model is being used for parallel operations, such as usage
+     * by ParallelWrapper.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setParallelism(boolean parallelism) {
+        isParallel = parallelism;
+        manualBatchSize = 0;
+    }
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void incrementBatchSize(int batchNum) { manualBatchSize += batchNum; }
 
     @Override
     public int batchSize() {
-        return input.size(0);
+        return isParallel ? manualBatchSize : input.size(0);
     }
 
     @Override
