@@ -42,6 +42,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -748,5 +749,101 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         assertEquals(p1,p2);
         assertNotEquals(p1,p3);
+    }
+
+
+    @Test
+    public void testIterationCounts() throws Exception {
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        List<DataSet> list = new ArrayList<>();
+        int minibatchesPerWorkerPerEpoch = 10;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,batchSizePerExecutor*numExecutors()*minibatchesPerWorkerPerEpoch,false);
+        while(iter.hasNext()){
+            list.add(iter.next());
+        }
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10)
+                        .activation("softmax")
+                        .build())
+                .pretrain(false).backprop(true)
+                .build();
+
+        for( int avgFreq : new int[]{1, 5, 10}) {
+            System.out.println("--- Avg freq " + avgFreq + " ---");
+            SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf.clone(),
+                    new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                            .batchSizePerWorker(batchSizePerExecutor)
+                            .averagingFrequency(avgFreq)
+                            .repartionData(Repartition.Always)
+                            .build());
+
+            sparkNet.setListeners(new ScoreIterationListener(1));
+
+            JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+            assertEquals(0, sparkNet.getNetwork().getLayerWiseConfigurations().getIterationCount());
+            sparkNet.fit(rdd);
+            assertEquals(minibatchesPerWorkerPerEpoch, sparkNet.getNetwork().getLayerWiseConfigurations().getIterationCount());
+            sparkNet.fit(rdd);
+            assertEquals(2*minibatchesPerWorkerPerEpoch, sparkNet.getNetwork().getLayerWiseConfigurations().getIterationCount());
+
+            sparkNet.getTrainingMaster().deleteTempFiles(sc);
+        }
+    }
+
+    @Test
+    public void testIterationCountsGraph() throws Exception {
+        int dataSetObjSize = 5;
+        int batchSizePerExecutor = 25;
+        List<DataSet> list = new ArrayList<>();
+        int minibatchesPerWorkerPerEpoch = 10;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize,batchSizePerExecutor*numExecutors()*minibatchesPerWorkerPerEpoch,false);
+        while(iter.hasNext()){
+            list.add(iter.next());
+        }
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.RMSPROP)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .nIn(28*28).nOut(50).activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(50).nOut(10).activation("softmax").build(), "0")
+                .pretrain(false).backprop(true)
+                .setOutputs("1")
+                .build();
+
+        for( int avgFreq : new int[]{1, 5, 10}) {
+            System.out.println("--- Avg freq " + avgFreq + " ---");
+            SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf.clone(),
+                    new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
+                            .batchSizePerWorker(batchSizePerExecutor)
+                            .averagingFrequency(avgFreq)
+                            .repartionData(Repartition.Always)
+                            .build());
+
+            sparkNet.setListeners(new ScoreIterationListener(1));
+
+            JavaRDD<DataSet> rdd = sc.parallelize(list);
+
+            assertEquals(0, sparkNet.getNetwork().getConfiguration().getIterationCount());
+            sparkNet.fit(rdd);
+            assertEquals(minibatchesPerWorkerPerEpoch, sparkNet.getNetwork().getConfiguration().getIterationCount());
+            sparkNet.fit(rdd);
+            assertEquals(2*minibatchesPerWorkerPerEpoch, sparkNet.getNetwork().getConfiguration().getIterationCount());
+
+            sparkNet.getTrainingMaster().deleteTempFiles(sc);
+        }
     }
 }
