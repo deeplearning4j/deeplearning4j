@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.inmemory;
 
-import org.nd4j.shade.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
@@ -31,7 +30,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,7 +43,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-//import org.deeplearning4j.ui.UiServer;
 
 /**
  * Default word lookup table

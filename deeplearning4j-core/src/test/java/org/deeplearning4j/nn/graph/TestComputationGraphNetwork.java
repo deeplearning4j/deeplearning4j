@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -33,6 +34,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -861,6 +865,44 @@ public class TestComputationGraphNetwork {
             net.fit(iter.next());
 
         }
+    }
 
+    @Test
+    public void testIterationCountAndPresistence() throws IOException {
+        Nd4j.getRandom().setSeed(123);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .seed(123)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build(), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(3).nOut(3).build(), "0")
+                .setOutputs("1")
+                .backprop(true).pretrain(false).build();
+
+
+        ComputationGraph network = new ComputationGraph(conf);
+        network.init();
+
+        DataSetIterator iter = new IrisDataSetIterator(50, 150);
+
+        assertEquals(0, network.getConfiguration().getIterationCount());
+        network.fit(iter);
+        assertEquals(3, network.getConfiguration().getIterationCount());
+        iter.reset();
+        network.fit(iter);
+        assertEquals(6, network.getConfiguration().getIterationCount());
+        iter.reset();
+        network.fit(iter.next());
+        assertEquals(7, network.getConfiguration().getIterationCount());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ModelSerializer.writeModel(network, baos, true);
+        byte[] asBytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+        ComputationGraph net = ModelSerializer.restoreComputationGraph(bais, true);
+        assertEquals(7, net.getConfiguration().getIterationCount());
     }
 }

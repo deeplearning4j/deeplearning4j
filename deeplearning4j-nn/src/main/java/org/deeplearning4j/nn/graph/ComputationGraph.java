@@ -23,6 +23,8 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -503,13 +505,13 @@ public class ComputationGraph implements Serializable, Model {
 
     /**
      * Pretrain network with a single input and single output. DataSetIterators can only be used if the number of input
-     * and output arrays for the ComputationGraph are both 1.
-     * For networks with more than one input or output, use {@link #pretrain(MultiDataSetIterator)}
+     * arrays for the ComputationGraph is 1.
+     * For networks with more than one input use {@link #pretrain(MultiDataSetIterator)}
      */
     public void pretrain(DataSetIterator iter) {
-        if (numInputArrays != 1 || numOutputArrays != 1)
-            throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
-                    + " multiple inputs or outputs using a DataSetIterator");
+        if (numInputArrays != 1 ) {
+            throw new UnsupportedOperationException("Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
+        }
 
         pretrain(ComputationGraphUtil.toMultiDataSetIterator(iter));
     }
@@ -519,90 +521,125 @@ public class ComputationGraph implements Serializable, Model {
      */
     public void pretrain(MultiDataSetIterator iter) {
         if (!configuration.isPretrain()) return;
+        if (flattenedGradients == null) initGradientsView();
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
             if (!vertices[i].hasLayer()) continue;
-            if (vertices[i].getLayer() instanceof IOutputLayer) continue;  //Don't pretrain output layer
+            if (vertices[i].getLayer() instanceof IOutputLayer) continue;       //Don't pretrain output layer
+            if (!vertices[i].getLayer().isPretrainLayer() ) continue;           //Skip layers that aren't pretrainable
 
-            //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
-            // end up doing forward pass on layers we don't need to.
-            //However, we can start with the topological order, and prune out any layers we don't need to do
+            pretrainLayer(vertices[i].getVertexName(), iter);
+        }
+    }
 
-            LinkedList<Integer> partialTopoSort = new LinkedList<>();
-            Set<Integer> seenSoFar = new HashSet<>();
-            partialTopoSort.add(topologicalOrder[i]);
-            seenSoFar.add(topologicalOrder[i]);
-            for (int j = i - 1; j >= 0; j--) {
-                //Do we need to do forward pass on this GraphVertex?
-                //If it is input to any other layer we need, then yes. Otherwise: no
-                VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
-                boolean needed = false;
-                for (VertexIndices vi : outputsTo) {
-                    if (seenSoFar.contains(vi.getVertexIndex())) {
-                        needed = true;
-                        break;
-                    }
-                }
-                if (needed) {
-                    partialTopoSort.addFirst(topologicalOrder[j]);
-                    seenSoFar.add(topologicalOrder[j]);
+    /**
+     * Pretrain a specified layer with the given DataSetIterator
+     *
+     * @param layerName       Layer name
+     * @param dataSetIterator Data
+     */
+    public void pretrainLayer(String layerName, DataSetIterator dataSetIterator){
+        if (numInputArrays != 1 ) {
+            throw new UnsupportedOperationException("Cannot train ComputationGraph network with  multiple inputs using a DataSetIterator");
+        }
+
+        pretrainLayer(layerName, ComputationGraphUtil.toMultiDataSetIterator(dataSetIterator));
+    }
+
+    /**
+     * Pretrain a specified layer with the given MultiDataSetIterator
+     *
+     * @param layerName       Layer name
+     * @param iter Training data
+     */
+    public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
+        if (!configuration.isPretrain()) return;
+        if (flattenedGradients == null) initGradientsView();
+
+        if(!verticesMap.containsKey(layerName)){
+            throw new IllegalStateException("Invalid vertex name: " + layerName);
+        }
+        if(!verticesMap.get(layerName).hasLayer()){
+            //No op
+            return;
+        }
+
+        int layerIndex = verticesMap.get(layerName).getVertexIndex();
+
+        //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
+        // end up doing forward pass on layers we don't need to.
+        //However, we can start with the topological order, and prune out any layers we don't need to do
+
+        LinkedList<Integer> partialTopoSort = new LinkedList<>();
+        Set<Integer> seenSoFar = new HashSet<>();
+        partialTopoSort.add(topologicalOrder[layerIndex]);
+        seenSoFar.add(topologicalOrder[layerIndex]);
+        for (int j = layerIndex - 1; j >= 0; j--) {
+            //Do we need to do forward pass on this GraphVertex?
+            //If it is input to any other layer we need, then yes. Otherwise: no
+            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
+            boolean needed = false;
+            for (VertexIndices vi : outputsTo) {
+                if (seenSoFar.contains(vi.getVertexIndex())) {
+                    needed = true;
+                    break;
                 }
             }
-
-            int[] fwdPassOrder = new int[partialTopoSort.size()];
-            int k = 0;
-            for (Integer g : partialTopoSort) fwdPassOrder[k++] = g;
-
-            GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
-            Layer layer = gv.getLayer();
-            if (!(layer instanceof BasePretrainNetwork))
-                throw new IllegalStateException("Cannot pretrain network with layer that is not pretrainable");
-            log.info("Pretraining on layer \"{}\"", vertices[i].getVertexName());
-            BasePretrainNetwork<?> toPretrain = (BasePretrainNetwork<?>) layer;
-            if (listeners != null) toPretrain.setListeners(listeners);
-
-
-            while (iter.hasNext()) {
-                MultiDataSet multiDataSet = iter.next();
-
-                setInputs(multiDataSet.getFeatures());
-
-                for (int j = 0; j < fwdPassOrder.length - 1; j++) {
-                    GraphVertex current = vertices[fwdPassOrder[j]];
-                    if (current.isInputVertex()) {
-                        VertexIndices[] inputsTo = current.getOutputVertices();
-                        INDArray input = inputs[current.getVertexIndex()];
-
-                        for (VertexIndices v : inputsTo) {
-                            int vIdx = v.getVertexIndex();
-                            int vIdxInputNum = v.getVertexEdgeNumber();
-                            //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                            vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
-                        }
-
-                    } else {
-                        //Do forward pass:
-                        INDArray out = current.doForward(true);
-
-                        //Now, set the inputs for the next vertices:
-                        VertexIndices[] outputsTo = current.getOutputVertices();
-                        if (outputsTo != null) {
-                            for (VertexIndices v : outputsTo) {
-                                int vIdx = v.getVertexIndex();
-                                int inputNum = v.getVertexEdgeNumber();
-                                //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                                vertices[vIdx].setInput(inputNum, out);
-                            }
-                        }
-                    }
-                }
-                //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
-                toPretrain.fit(gv.getInputs()[0]);
-                toPretrain.conf().setPretrain(false);
+            if (needed) {
+                partialTopoSort.addFirst(topologicalOrder[j]);
+                seenSoFar.add(topologicalOrder[j]);
             }
+        }
 
+        int[] fwdPassOrder = new int[partialTopoSort.size()];
+        int k = 0;
+        for (Integer g : partialTopoSort) fwdPassOrder[k++] = g;
+
+        GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
+        Layer layer = gv.getLayer();
+
+        if(!iter.hasNext() && iter.resetSupported()){
             iter.reset();
+        }
+
+        while (iter.hasNext()) {
+            MultiDataSet multiDataSet = iter.next();
+
+            setInputs(multiDataSet.getFeatures());
+
+            for (int j = 0; j < fwdPassOrder.length - 1; j++) {
+                GraphVertex current = vertices[fwdPassOrder[j]];
+                if (current.isInputVertex()) {
+                    VertexIndices[] inputsTo = current.getOutputVertices();
+                    INDArray input = inputs[current.getVertexIndex()];
+
+                    for (VertexIndices v : inputsTo) {
+                        int vIdx = v.getVertexIndex();
+                        int vIdxInputNum = v.getVertexEdgeNumber();
+                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                        vertices[vIdx].setInput(vIdxInputNum, input.dup());  //TODO When to dup?
+                    }
+
+                } else {
+                    //Do forward pass:
+                    INDArray out = current.doForward(true);
+
+                    //Now, set the inputs for the next vertices:
+                    VertexIndices[] outputsTo = current.getOutputVertices();
+                    if (outputsTo != null) {
+                        for (VertexIndices v : outputsTo) {
+                            int vIdx = v.getVertexIndex();
+                            int inputNum = v.getVertexEdgeNumber();
+                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                            vertices[vIdx].setInput(inputNum, out);
+                        }
+                    }
+                }
+            }
+            //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
+            layer.fit(gv.getInputs()[0]);
+            layer.conf().setPretrain(false);
         }
     }
 
@@ -633,6 +670,7 @@ public class ComputationGraph implements Serializable, Model {
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
     public void fit(DataSetIterator iterator) {
+        if (flattenedGradients == null) initGradientsView();
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                     + " multiple inputs or outputs using a DataSetIterator");
@@ -709,6 +747,7 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
     public void fit(MultiDataSetIterator multi) {
+        if (flattenedGradients == null) initGradientsView();
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
@@ -770,13 +809,16 @@ public class ComputationGraph implements Serializable, Model {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+        if (flattenedGradients == null) initGradientsView();
+
         setInputs(inputs);
         setLabels(labels);
         setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
         update(TaskUtils.buildTask(inputs, labels));
 
         if (configuration.isPretrain()) {
-            throw new UnsupportedOperationException("Pretraining: Not yet implemented");
+            MultiDataSetIterator iter = new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels, featureMaskArrays, labelMaskArrays));
+            pretrain(iter);
         }
 
         if (configuration.isBackprop()) {
