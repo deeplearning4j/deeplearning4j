@@ -93,7 +93,7 @@ public class Clipboard {
 
         // removing aggregation from tracking table
         if (result != null)
-            clipboard.remove(result.getTaskId());
+            unpin(result.getTaskId());
 
         return result;
     }

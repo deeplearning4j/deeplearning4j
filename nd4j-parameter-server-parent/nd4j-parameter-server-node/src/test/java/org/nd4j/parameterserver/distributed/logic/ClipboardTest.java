@@ -112,6 +112,9 @@ public class ClipboardTest {
                 }
             }
 
+            assertEquals(0, clipboard.getNumberOfCompleteStacks());
+            assertEquals(0, clipboard.getNumberOfPinnedStacks());
+
             consumerPassed.set(true);
         });
 
