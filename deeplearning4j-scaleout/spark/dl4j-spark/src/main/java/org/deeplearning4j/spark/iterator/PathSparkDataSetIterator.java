@@ -130,7 +130,7 @@ public class PathSparkDataSetIterator implements DataSetIterator {
             ds = load(iter.next());
         }
 
-        totalOutcomes = ds.getLabels().size(1);
+        totalOutcomes = ds.getLabels() == null ? 0 : ds.getLabels().size(1);        //May be null for layerwise pretraining
         inputColumns = ds.getFeatureMatrix().size(1);
         batch = ds.numExamples();
 
