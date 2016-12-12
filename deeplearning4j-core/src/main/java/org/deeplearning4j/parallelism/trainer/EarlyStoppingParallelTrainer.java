@@ -97,6 +97,9 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     @Override
     public synchronized EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
+        if(wrapper==null) {
+            throw new IllegalStateException("Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
+        }
         if (esConfig.getScoreCalculator() == null)
             log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
 
@@ -183,8 +186,6 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     throw new RuntimeException(e2);
                 }
 
-                wrapper.shutdown();
-
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
@@ -196,6 +197,11 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 if (listener != null) {
                     listener.onCompletion(result);
                 }
+
+                // clean up
+                wrapper.shutdown();
+                this.wrapper = null;
+
                 return result;
             }
 
@@ -270,12 +276,14 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                         listener.onCompletion(result);
                     }
 
+                    // clean up
                     wrapper.shutdown();
+                    this.wrapper = null;
+
                     return result;
                 }
             }
             epochCount++;
-
         }
     }
 
@@ -329,7 +337,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 }
             }
             if (trainer.getTermination()) {
-                wrapper.shutdown();
+                // use built-in kill switch to stop fit operation
+                wrapper.stopFit();
             }
             System.out.println(latestScore);
 
