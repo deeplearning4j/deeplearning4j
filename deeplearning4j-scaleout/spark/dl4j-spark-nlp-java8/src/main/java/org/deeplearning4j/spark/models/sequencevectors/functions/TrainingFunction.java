@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -18,6 +19,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class TrainingFunction<T extends SequenceElement> implements VoidFunction<Sequence<T>> {
     protected Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
@@ -80,6 +82,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         */
         Sequence<ShallowSequenceElement> mergedSequence = new Sequence<>();
         for (T element: sequence.getElements()) {
+            // it's possible to get null here, i.e. if frequency for this element is below minWordFrequency threshold
             ShallowSequenceElement reduced = shallowVocabCache.tokenFor(element.getStorageId());
 
             if (reduced != null)
@@ -102,5 +105,11 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
          * All we want here, is uniform way to do training, that's matching both standalone and spark codebase.
          * So we need some neat method, that takes sequence as input, and returns **something** that's either used for aggregation, or for ParamServer message
          */
+        // FIXME: temporary hook
+        if (sequence.size() > 0)
+            sequenceLearningAlgorithm.learnSequence(mergedSequence, null, 25e-3);
+        else
+            log.warn("Skipping empty sequence...");
+
     }
 }
