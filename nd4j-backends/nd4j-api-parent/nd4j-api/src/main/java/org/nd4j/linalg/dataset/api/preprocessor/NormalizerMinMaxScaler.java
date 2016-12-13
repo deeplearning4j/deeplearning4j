@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MinMaxStats;
 import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerMinMaxScalerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -40,11 +41,11 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
     }
 
     public double getTargetMin() {
-        return ((MinMaxStrategy)strategy).getMinRange();
+        return ((MinMaxStrategy) strategy).getMinRange();
     }
 
     public double getTargetMax() {
-        return ((MinMaxStrategy)strategy).getMaxRange();
+        return ((MinMaxStrategy) strategy).getMaxRange();
     }
 
     public INDArray getMin() {
@@ -88,6 +89,7 @@ public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStat
      *
      * @param files the statistics to save
      * @throws IOException
+     * @deprecated use {@link NormalizerMinMaxScalerSerializer instead}
      */
     @Override
     public void save(File... files) throws IOException {
