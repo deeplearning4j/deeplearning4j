@@ -65,9 +65,7 @@ import scala.Tuple2;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Master class for spark
@@ -293,7 +291,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model. The listeners will be
+     * This method allows you to specify IterationListeners for this model.
      * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
      * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
@@ -301,6 +299,17 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         setListeners(null, listeners);
+    }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
+     *
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(@NonNull IterationListener... listeners){
+        setListeners(Arrays.asList(listeners));
     }
 
     /**
