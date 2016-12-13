@@ -15,7 +15,7 @@ abstract class AbstractNormalizer<S extends NormalizerStats> {
         this.strategy = strategy;
     }
 
-    abstract protected boolean isFit();
+    protected abstract boolean isFit();
 
     void assertIsFit() {
         if (!isFit()) {

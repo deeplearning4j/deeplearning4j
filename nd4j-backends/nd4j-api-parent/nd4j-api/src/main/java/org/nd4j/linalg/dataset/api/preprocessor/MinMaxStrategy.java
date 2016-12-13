@@ -37,7 +37,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats> {
      */
     @Override
     public void preProcess(INDArray array, MinMaxStats stats) {
-        if (array.rank() == 2) {
+        if (array.rank() <= 2) {
             array.subiRowVector(stats.getLower());
             array.diviRowVector(stats.getRange());
         }
@@ -68,7 +68,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats> {
         // Scale by target range
         array.divi(maxRange - minRange);
 
-        if (array.rank() == 2) {
+        if (array.rank() <= 2) {
             array.muliRowVector(stats.getRange());
             array.addiRowVector(stats.getLower());
         } else {

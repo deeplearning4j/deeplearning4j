@@ -23,7 +23,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     @Setter private List<S> labelStats;
     private boolean fitLabels = false;
 
-    AbstractMultiDataSetNormalizer(NormalizerStrategy<S> strategy) {
+    protected AbstractMultiDataSetNormalizer(NormalizerStrategy<S> strategy) {
         super(strategy);
     }
 
@@ -51,20 +51,20 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
         return featureStats != null;
     }
 
-    S getFeatureStats(int input) {
+    protected S getFeatureStats(int input) {
         return getFeatureStats().get(input);
     }
 
-    List<S> getFeatureStats() {
+    protected List<S> getFeatureStats() {
         assertIsFit();
         return featureStats;
     }
 
-    S getLabelStats(int output) {
+    protected S getLabelStats(int output) {
         return getLabelStats().get(output);
     }
 
-    List<S> getLabelStats() {
+    protected List<S> getLabelStats() {
         assertIsFit();
         return labelStats;
     }
@@ -145,7 +145,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
         }
     }
 
-    abstract protected S.Builder newBuilder();
+    protected abstract S.Builder newBuilder();
 
     /**
      * Pre process a MultiDataSet

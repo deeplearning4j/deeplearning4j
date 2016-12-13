@@ -32,8 +32,7 @@ public class MinMaxStats implements NormalizerStats {
     public MinMaxStats(@NonNull INDArray lower, @NonNull INDArray upper) {
         // Check for 0 differences and round up to epsilon
         INDArray diff = upper.sub(lower);
-        INDArray withEpsilon = Transforms.max(diff, Nd4j.EPS_THRESHOLD);
-        INDArray addedPadding = withEpsilon.sub(diff);
+        INDArray addedPadding = Transforms.max(diff, Nd4j.EPS_THRESHOLD).subi(diff);
         // If any entry in `addedPadding` is not 0, then we had to add something to prevent 0 difference, Add this same
         // value to the upper bounds to actually apply the padding, and log about it
         if (addedPadding.sumNumber().doubleValue() > 0) {

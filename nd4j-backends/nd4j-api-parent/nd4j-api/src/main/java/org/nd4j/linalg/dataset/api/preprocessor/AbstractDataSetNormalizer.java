@@ -20,7 +20,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     @Setter(AccessLevel.PROTECTED) private S labelStats;
     private boolean fitLabels = false;
 
-    AbstractDataSetNormalizer(NormalizerStrategy<S> strategy) {
+    protected AbstractDataSetNormalizer(NormalizerStrategy<S> strategy) {
         super(strategy);
     }
 
@@ -58,12 +58,12 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
         }
     }
 
-    S getFeatureStats() {
+    protected S getFeatureStats() {
         assertIsFit();
         return featureStats;
     }
 
-    S getLabelStats() {
+    protected S getLabelStats() {
         assertIsFit();
         return labelStats;
     }
@@ -98,7 +98,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
         iterator.reset();
     }
 
-    abstract protected S.Builder newBuilder();
+    protected abstract S.Builder newBuilder();
 
     /**
      * Pre process a dataset
@@ -153,7 +153,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels Labels array to revert the normalization on

@@ -25,7 +25,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
      */
     @Override
     public void preProcess(INDArray array, DistributionStats stats) {
-        if (array.rank() == 2) {
+        if (array.rank() <= 2) {
             array.subiRowVector(stats.getMean());
             array.diviRowVector(filteredStd(stats));
         }
@@ -46,7 +46,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
      */
     @Override
     public void revert(INDArray array, DistributionStats stats) {
-        if (array.rank() == 2) {
+        if (array.rank() <= 2) {
             array.muliRowVector(filteredStd(stats));
             array.addiRowVector(stats.getMean());
         } else {
