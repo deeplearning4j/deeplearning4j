@@ -52,7 +52,7 @@ If data is numeric and appropriately formatted then CSVRecordReader may be satis
 
 ## Schema Transformation Video
 
-A video tutorial of a simple DataVec transform along with code is available [here](http://www.youtube.com/watch?v=L5DtC8_4F-c)
+A video tutorial of a simple DataVec transform along with code is available [here](https://www.youtube.com/watch?v=MLEMw2NxjxE)
 
 ## Example Java Code
 
