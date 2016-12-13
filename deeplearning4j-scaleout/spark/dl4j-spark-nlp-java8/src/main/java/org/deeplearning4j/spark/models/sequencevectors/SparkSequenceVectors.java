@@ -127,7 +127,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
                 .build();
 
         // FIXME: probably we need to reconsider this approach
-        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast));
+        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast)).distinct();
 
         if (isAutoDiscoveryMode) {
             elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
