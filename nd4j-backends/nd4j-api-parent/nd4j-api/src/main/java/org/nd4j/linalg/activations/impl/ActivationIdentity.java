@@ -12,7 +12,7 @@ public class ActivationIdentity implements IActivation {
 
     @Override
     public INDArray computeActivation(INDArray in, boolean training) {
-        computeActivation(in);
+        return computeActivation(in);
     }
 
     private INDArray computeActivation(INDArray in){
@@ -37,23 +37,4 @@ public class ActivationIdentity implements IActivation {
         return "identity";
     }
 
-    @Override
-    public int getNumParams() {
-        return numParams;
-    }
-
-    @Override
-    public void setNumParams() {
-
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray paramView) {
-
-    }
-
-    @Override
-    public void setBackpropViewArray(INDArray in, INDArray params) {
-
-    }
 }

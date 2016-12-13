@@ -33,23 +33,4 @@ public class ActivationReLU implements IActivation{
         );
     }
 
-    @Override
-    public String toString() {
-        return "relu";
-    }
-
-    @Override
-    public int numParams() {
-        return 0;
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray paramView) {
-
-    }
-
-    @Override
-    public void setBackpropViewArray(INDArray in, INDArray params) {
-
-    }
 }

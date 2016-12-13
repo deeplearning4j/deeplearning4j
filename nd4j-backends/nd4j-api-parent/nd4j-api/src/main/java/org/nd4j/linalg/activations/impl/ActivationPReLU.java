@@ -20,13 +20,9 @@ public class ActivationPReLU implements IActivation {
     //otherwise it is just a single param per layer (note not per perceptron - though the layer could override that potentially)
     private INDArray alpha;
 
-    public ActivationPReLU(int np) {
-        setNumParams(np);
-    }
-
     @Override
     public INDArray computeActivation(INDArray in, boolean training) {
-        computeActivation(in);
+        return computeActivation(in);
     }
 
     private INDArray computeActivation(INDArray in){
@@ -51,29 +47,9 @@ public class ActivationPReLU implements IActivation {
         );
     }
 
-
     @Override
     public String toString() {
         return "prelu";
     }
 
-    @Override
-    public int numParams() {
-        return alpha.equals(null)? 1: alpha.length();
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray paramsView) {
-        if (!initCalled) {
-            //view from params
-            //randomly set alpha
-            initCalled = true; //alpha is valid
-        }
-        //cannot overwrite
-    }
-
-    @Override
-    public void setBackpropViewArray(INDArray in, INDArray params) {
-
-    }
 }

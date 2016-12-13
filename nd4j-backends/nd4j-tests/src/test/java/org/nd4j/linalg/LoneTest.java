@@ -4,14 +4,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.PReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -135,6 +141,7 @@ public class LoneTest extends BaseNd4jTest {
     @Test
     public void leakyRELU() {
         //FIXME: Make more generic to use neuralnetconfs
+        /*
         int sizeX = 4;
         int scaleX = 10;
         System.out.println("Here is a leaky vector..");
@@ -166,5 +173,35 @@ public class LoneTest extends BaseNd4jTest {
 
         //Test equality for ndarray elementwise
         //assertArrayEquals(..)
+        */
+
+        System.out.println("======================");
+        INDArray inA = Nd4j.randn(4,3);
+        INDArray softmaxDiag = inA.dup();
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(inA));
+        Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(inA,softmaxDiag));
+        System.out.println("==========Softmax vector ============");
+        System.out.println(inA);
+        System.out.println("===========Correct diagonal values===========");
+        System.out.println(softmaxDiag);
+
+        int classSize = inA.shape()[1];
+        int miniBatchSize = inA.shape()[0];
+
+        INDArray z = Nd4j.zeros(miniBatchSize,classSize,classSize);
+        INDArray i = Nd4j.eye(classSize);
+        INDArray out = z.dup();
+
+        //identity matrix extended to 3d
+        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(z,i,out,new int[] {1,2}));
+
+        //D_jS_j = S_i * (delta_ij - S_j)
+        Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(out,inA,z,new int[] {0,1}));//reusing z
+        System.out.println("======== 1 - p ==============");
+        System.out.println(z);
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(z,inA,out,new int[] {0,1}));//reusing z
+        System.out.println("========My derivative==============");
+        System.out.println(out);
+
     }
 }

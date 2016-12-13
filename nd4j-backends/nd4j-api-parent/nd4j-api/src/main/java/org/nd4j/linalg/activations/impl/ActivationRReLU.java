@@ -13,7 +13,7 @@ public class ActivationRReLU implements IActivation{
 
     private double l,u;
     INDArray alpha; //don't need to write to json, when streaming
-    //private long seed; //repeatability
+    //private long seed; //repeatability??
 
     public ActivationRReLU() {
         this.l = 1/8;
@@ -61,18 +61,4 @@ public class ActivationRReLU implements IActivation{
         return "rrelu";
     }
 
-    @Override
-    public int numParams() {
-        return 0;
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray paramView) {
-
-    }
-
-    @Override
-    public void setBackpropViewArray(INDArray in, INDArray params) {
-
-    }
 }

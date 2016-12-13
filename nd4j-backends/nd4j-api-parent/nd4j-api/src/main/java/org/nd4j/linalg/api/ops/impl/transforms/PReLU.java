@@ -16,13 +16,11 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class PReLU extends BaseTransformOp {
     /*
-    FIXME: It is better to modify leaky relu so it can take one alpha or an alpha per entry in first dimension (as broadcase)
-    or as a pairwisetransform
+    FIXME: It is better to modify leaky relu so it can take one alpha or an alpha per dimension or an alpha for every entry
      */
     private double u = 1/3.0;
     private double l = 1/8.0;
     private INDArray alphaA;
-    private float alpha = 0.5f;
     public PReLU() {
     }
 
@@ -69,25 +67,25 @@ public class PReLU extends BaseTransformOp {
     @Override
     public float op(float origin, float other) {
         //must fix
-        return origin < 0 ? (float) alpha * origin : origin;
+        return origin < 0 ? (float) 11/24.0f * origin : origin;
     }
 
     @Override
     public double op(double origin, double other) {
         //must fix
-        return origin < 0 ?  alpha * origin : origin;
+        return origin < 0 ?  11/24.0f * origin : origin;
     }
 
     @Override
     public double op(double origin) {
         //must fix
-        return origin < 0 ?  alpha * origin : origin;
+        return origin < 0 ?  11/24.0f * origin : origin;
     }
 
     @Override
     public float op(float origin) {
         //must fix
-        return origin < 0 ? (float)alpha * origin : origin;
+        return origin < 0 ? (float)11/24.0f * origin : origin;
     }
 
     @Override
@@ -115,9 +113,9 @@ public class PReLU extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LeakyReLU(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
+            return new LeakyReLU(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), 11/24.0f);
         else
-            return new LeakyReLU(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
+            return new LeakyReLU(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), 11/24.0f);
     }
 
     @Override
@@ -125,9 +123,9 @@ public class PReLU extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LeakyReLU(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
+            return new LeakyReLU(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), 11/24.0f);
         else
-            return new LeakyReLU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), alpha);
+            return new LeakyReLU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), 11/24.0f);
     }
 
     @Override

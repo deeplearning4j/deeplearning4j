@@ -13,6 +13,10 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ActivationSigmoid implements IActivation {
 
     @Override
+    public INDArray computeActivation(INDArray in, boolean training) {
+        return computeActivation(in);
+    }
+
     public INDArray computeActivation(INDArray in){
         return Nd4j.getExecutioner().execAndReturn(new Sigmoid(in));
     }
@@ -28,26 +32,6 @@ public class ActivationSigmoid implements IActivation {
                 computeActivation(in),
                 computeGradient(in)
         );
-    }
-
-    @Override
-    public String toString() {
-        return "sigmoid";
-    }
-
-    @Override
-    public int numParams() {
-        return 0;
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray paramView) {
-
-    }
-
-    @Override
-    public void setBackpropViewArray(INDArray in, INDArray params) {
-
     }
 
 }

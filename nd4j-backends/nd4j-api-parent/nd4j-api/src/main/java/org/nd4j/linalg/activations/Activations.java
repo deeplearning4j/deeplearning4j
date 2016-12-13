@@ -24,8 +24,8 @@ public class Activations {
                     return new ActivationSigmoid();
                 case identity:
                     return new ActivationIdentity();
-                case leakyrelu:
-                    return new ActivationLeakyReLU();
+                //case leakyrelu:
+                    //return new ActivationLeakyReLU();
                 case relu:
                     return new ActivationReLU();
                 default:
