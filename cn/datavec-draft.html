@@ -10,7 +10,7 @@ layout: cn-default
 
 <p><h2>简介视频</h2></p>
 <p>以下视频介绍了图像数据如何转换为向量。</p>
-<div class="video"><iframe height=498 width=510 src='http://player.youku.com/embed/XMTcwNTkyNDY0OA==' frameborder=0 'allowfullscreen'></iframe></div>
+<div class="video"><embed src='http://player.youku.com/player.php/sid/XMTcwNTkyNDY0OA==/v.swf' allowFullScreen='true' quality='high' width='480' height='400' align='middle' allowScriptAccess='always' type='application/x-shockwave-flash'></embed></div>
 <br />
 
 
@@ -24,7 +24,7 @@ layout: cn-default
   <li>内置数据转换及标准化工具</li>
   <li>请参阅DataVec的 <a href="http://deeplearning4j.org/datavecdoc/" target="_blank">Javadoc</a></li>
 </ul>
-<p>下文中有一个<a href="#tutorial">简短的教程</a>。</p>
+<p>下文中有一个简短的教程。</p>
 <br />
 
 <p><h2>应用举例</h2></p>
@@ -61,7 +61,7 @@ layout: cn-default
 <p>我们的<a href="quickstart#examples" target="_blank">示例</a>中包括一组DataVec示例。</p>
 <br />
 
-<p><h2>读取记录，对数据进行迭代</h2></p>
+<p><h2><a name="record">读取记录，对数据进行迭代</a></h2></p>
 <p>以下代码可将示例中的原始图像转换为DL4J和ND4J可以识别的格式：</p>
 <pre class="line-numbers"><code class="language-java">
 // 将RecordReader实例化。指定图像的高和宽。
