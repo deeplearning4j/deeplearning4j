@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
+import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cusolver.*;
 
 /**
@@ -71,8 +72,8 @@ public class JcublasLapack extends BaseLapack {
 
 	// synchronized on the solver
         synchronized (handle) {
-		long result = nativeOps.setSolverStream(handle, ctx.getOldStream());
-           	if (result == 0)
+        int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+           	if (result != 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
 		// transfer the INDArray into GPU memory
@@ -144,8 +145,8 @@ public class JcublasLapack extends BaseLapack {
 
 	// synchronized on the solver
         synchronized (handle) {
-		long result = nativeOps.setSolverStream(handle, ctx.getOldStream());
-           	if (result == 0)
+        int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+           	if (result != 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
 		// transfer the INDArray into GPU memory
@@ -237,8 +238,8 @@ public class JcublasLapack extends BaseLapack {
 
 	// synchronized on the solver
         synchronized (handle) {
-		long result = nativeOps.setSolverStream(handle, ctx.getOldStream());
-           	if (result == 0)
+        int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+           	if (result != 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
 		// transfer the INDArray into GPU memory
@@ -318,8 +319,8 @@ public class JcublasLapack extends BaseLapack {
 
 	// synchronized on the solver
         synchronized (handle) {
-		long result = nativeOps.setSolverStream(handle, ctx.getOldStream());
-           	if (result == 0)
+        int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+           	if (result != 0)
 	               	throw new IllegalStateException("solverSetStream failed");
 
 		// transfer the INDArray into GPU memory
