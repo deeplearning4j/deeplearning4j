@@ -38,8 +38,8 @@ public class ComputationGraphUtil {
         INDArray fMask = dataSet.getFeaturesMaskArray();
         INDArray lMask = dataSet.getLabelsMaskArray();
 
-        INDArray[] fNew = new INDArray[]{f};
-        INDArray[] lNew = new INDArray[]{l};
+        INDArray[] fNew = f == null ? null : new INDArray[]{f};
+        INDArray[] lNew = l == null ? null : new INDArray[]{l};
         INDArray[] fMaskNew = (fMask != null ? new INDArray[]{fMask} : null);
         INDArray[] lMaskNew = (lMask != null ? new INDArray[]{lMask} : null);
 
