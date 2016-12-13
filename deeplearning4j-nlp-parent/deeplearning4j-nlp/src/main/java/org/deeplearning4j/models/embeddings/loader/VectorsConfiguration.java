@@ -63,6 +63,7 @@ public class VectorsConfiguration implements Serializable {
 
     // paravec-specific option
     private boolean trainElementsVectors = true;
+    private boolean trainSequenceVectors = true;
     private boolean allowParallelTokenization = false;
     private boolean preciseWeightInit = false;
 
