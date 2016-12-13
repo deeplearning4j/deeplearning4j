@@ -2,12 +2,10 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DistributionStats;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerStandardizeSerializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,174 +18,31 @@ import java.util.List;
  *
  * @author Ede Meijer
  */
-@EqualsAndHashCode
-public class MultiNormalizerStandardize extends AbstractNormalizerStandardize implements MultiDataSetPreProcessor {
-    @Setter private List<DistributionStats> featureStats;
-    @Setter private List<DistributionStats> labelStats;
-    private boolean fitLabels = false;
-
-    public void fitLabel(boolean fitLabels) {
-        this.fitLabels = fitLabels;
-    }
-
-    public boolean isFitLabel() {
-        return this.fitLabels;
-    }
-
-    /**
-     * Fit the model with a MultiDataSet to calculate means and standard deviations with
-     *
-     * @param dataSet
-     */
-    public void fit(@NonNull MultiDataSet dataSet) {
-        List<DistributionStats.Builder> featureNormBuilders = new ArrayList<>();
-        List<DistributionStats.Builder> labelNormBuilders = new ArrayList<>();
-
-        fitPartial(dataSet, featureNormBuilders, labelNormBuilders);
-
-        featureStats = DistributionStats.Builder.buildList(featureNormBuilders);
-        if (fitLabels) {
-            labelStats = DistributionStats.Builder.buildList(labelNormBuilders);
-        }
-    }
-
-    /**
-     * Fit the model with a MultiDataSetIterator to calculate means and standard deviations with
-     *
-     * @param iterator
-     */
-    public void fit(@NonNull MultiDataSetIterator iterator) {
-        List<DistributionStats.Builder> featureNormBuilders = new ArrayList<>();
-        List<DistributionStats.Builder> labelNormBuilders = new ArrayList<>();
-
-        iterator.reset();
-        while (iterator.hasNext()) {
-            MultiDataSet next = iterator.next();
-            fitPartial(next, featureNormBuilders, labelNormBuilders);
-        }
-
-        featureStats = DistributionStats.Builder.buildList(featureNormBuilders);
-        if (fitLabels) {
-            labelStats = DistributionStats.Builder.buildList(labelNormBuilders);
-        }
-    }
-
-    private void fitPartial(
-        MultiDataSet dataSet,
-        List<DistributionStats.Builder> featureStatsBuilders,
-        List<DistributionStats.Builder> labelStatsBuilders
-    ) {
-        int numInputs = dataSet.getFeatures().length;
-        int numOutputs = dataSet.getLabels().length;
-
-        ensureStatsBuilders(featureStatsBuilders, numInputs);
-        ensureStatsBuilders(labelStatsBuilders, numOutputs);
-
-        for (int i = 0; i < numInputs; i++) {
-            featureStatsBuilders.get(i).add(dataSet.getFeatures(i), dataSet.getFeaturesMaskArray(i));
-        }
-
-        if (fitLabels) {
-            for (int i = 0; i < numOutputs; i++) {
-                labelStatsBuilders.get(i).add(dataSet.getLabels(i), dataSet.getLabelsMaskArray(i));
-            }
-        }
-    }
-
-    private void ensureStatsBuilders(List<DistributionStats.Builder> builders, int amount) {
-        if (builders.isEmpty()) {
-            for (int i = 0; i < amount; i++) {
-                builders.add(new DistributionStats.Builder());
-            }
-        }
+@EqualsAndHashCode(callSuper = true)
+public class MultiNormalizerStandardize extends AbstractMultiDataSetNormalizer<DistributionStats> {
+    public MultiNormalizerStandardize() {
+        super(new StandardizeStrategy());
     }
 
     @Override
-    public void preProcess(@NonNull MultiDataSet toPreProcess) {
-        assertIsFit();
-        int numFeatures = toPreProcess.getFeatures().length;
-        int numLabels = toPreProcess.getLabels().length;
-
-        for (int i = 0; i < numFeatures; i++) {
-            preProcess(toPreProcess.getFeatures(i), featureStats.get(i));
-        }
-        if (fitLabels) {
-            for (int i = 0; i < numLabels; i++) {
-                preProcess(toPreProcess.getLabels(i), labelStats.get(i));
-            }
-        }
-    }
-
-    /**
-     * Revert the data to what it was before transform
-     *
-     * @param data the dataset to revert back
-     */
-    public void revert(@NonNull MultiDataSet data) {
-        assertIsFit();
-
-        revertFeatures(data.getFeatures());
-        if (fitLabels) {
-            revertLabels(data.getLabels());
-        }
-    }
-
-    public void revertFeatures(@NonNull INDArray[] features) {
-        for (int i = 0; i < features.length; i ++) {
-            revertFeatures(features[i], i);
-        }
-    }
-
-    public void revertFeatures(@NonNull INDArray features, int input) {
-        revert(features, featureStats.get(input));
-    }
-
-    public void revertLabels(@NonNull INDArray[] labels) {
-        for (int i = 0; i < labels.length; i ++) {
-            revertLabels(labels[i], i);
-        }
-    }
-
-    public void revertLabels(@NonNull INDArray labels, int output) {
-        if (!fitLabels) {
-            return;
-        }
-        revert(labels, labelStats.get(output));
-    }
-
-    public int numInputs() {
-        assertIsFit();
-        return featureStats.size();
-    }
-
-    public int numOutputs() {
-        assertIsFit();
-        return labelStats.size();
+    protected NormalizerStats.Builder newBuilder() {
+        return new DistributionStats.Builder();
     }
 
     public INDArray getFeatureMean(int input) {
-        assertIsFit();
-        return featureStats.get(input).getMean();
+        return getFeatureStats(input).getMean();
     }
 
     public INDArray getLabelMean(int output) {
-        assertIsFit();
-        return labelStats.get(output).getMean();
+        return getLabelStats(output).getMean();
     }
 
     public INDArray getFeatureStd(int input) {
-        assertIsFit();
-        return featureStats.get(input).getStd();
+        return getFeatureStats(input).getStd();
     }
 
     public INDArray getLabelStd(int output) {
-        assertIsFit();
-        return labelStats.get(output).getStd();
-    }
-
-    @Override
-    protected boolean isFit() {
-        return featureStats != null;
+        return getLabelStats(output).getStd();
     }
 
     /**
@@ -197,9 +52,9 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
      * @param labelFiles   source files for labels, requires 2 files per output, alternating mean and stddev files
      */
     public void load(@NonNull List<File> featureFiles, @NonNull List<File> labelFiles) throws IOException {
-        featureStats = load(featureFiles);
-        if (fitLabels) {
-            labelStats = load(labelFiles);
+        setFeatureStats(load(featureFiles));
+        if (isFitLabel()) {
+            setLabelStats(load(labelFiles));
         }
     }
 
@@ -212,17 +67,16 @@ public class MultiNormalizerStandardize extends AbstractNormalizerStandardize im
     }
 
     /**
-     * @deprecated use {@link NormalizerSerializer} instead
-     *
-     * Save the current means and standard deviations to the file system
-     *
      * @param featureFiles target files for features, requires 2 files per input, alternating mean and stddev files
      * @param labelFiles   target files for labels, requires 2 files per output, alternating mean and stddev files
+     * @deprecated use {@link MultiNormalizerStandardizeSerializer} instead
+     * <p>
+     * Save the current means and standard deviations to the file system
      */
     public void save(@NonNull List<File> featureFiles, @NonNull List<File> labelFiles) throws IOException {
-        saveStats(featureStats, featureFiles);
-        if (fitLabels) {
-            saveStats(labelStats, labelFiles);
+        saveStats(getFeatureStats(), featureFiles);
+        if (isFitLabel()) {
+            saveStats(getLabelStats(), labelFiles);
         }
     }
 

@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Getter
 @EqualsAndHashCode
-public class DistributionStats {
+public class DistributionStats implements NormalizerStats {
     private static final Logger logger = LoggerFactory.getLogger(NormalizerStandardize.class);
 
     private final INDArray mean;
@@ -70,7 +70,7 @@ public class DistributionStats {
      * Builder class that can incrementally update a running mean and variance in order to create statistics for a
      * large set of data
      */
-    public static class Builder {
+    public static class Builder implements NormalizerStats.Builder<DistributionStats> {
         private int runningCount = 0;
         private INDArray runningMean;
         private INDArray runningVariance;
@@ -101,7 +101,7 @@ public class DistributionStats {
             // Using https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
             if (data == null) {
                 // Nothing to add. Either data is empty or completely masked. Just skip it, otherwise we will get
-                // division by 0 exceptions.
+                // null pointer exceptions.
                 return this;
             }
             INDArray mean = data.mean(0);
@@ -142,20 +142,6 @@ public class DistributionStats {
                 throw new RuntimeException("No data was added, statistics cannot be determined");
             }
             return new DistributionStats(runningMean.dup(), Transforms.sqrt(runningVariance, true));
-        }
-
-        /**
-         * Utility function for building a list of DistributionStat objects from a list of builders
-         *
-         * @param builders the builders
-         * @return the list of DistributionStat objects
-         */
-        public static List<DistributionStats> buildList(@NonNull List<Builder> builders) {
-            List<DistributionStats> result = new ArrayList<>(builders.size());
-            for (Builder builder : builders) {
-                result.add(builder.build());
-            }
-            return result;
         }
     }
 }

@@ -8,7 +8,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
+import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -18,25 +18,26 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Most of the normalizer functionality is shared with {@link MultiNormalizerStandardize}
- * and is covered in {@link NormalizerStandardizeTest}. This test suite just verifies if it deals properly with
+ * Most of the normalizer functionality is shared with {@link MultiNormalizerMinMaxScaler}
+ * and is covered in {@link NormalizerMinMaxScalerTest}. This test suite just verifies if it deals properly with
  * multiple inputs and multiple outputs
  *
  * @author Ede Meijer
  */
 @RunWith(Parameterized.class)
-public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
+public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
     private static final double TOLERANCE_PERC = 0.01; // 0.01% of correct value
     private static final int INPUT1_SCALE = 1, INPUT2_SCALE = 2, OUTPUT1_SCALE = 3, OUTPUT2_SCALE = 4;
 
-    private MultiNormalizerStandardize SUT;
+    private MultiNormalizerMinMaxScaler SUT;
     private MultiDataSet data;
-    private double meanNaturalNums;
-    private double stdNaturalNums;
+
+    private double naturalMin;
+    private double naturalMax;
 
     @Before
     public void setUp() {
-        SUT = new MultiNormalizerStandardize();
+        SUT = new MultiNormalizerMinMaxScaler();
         SUT.fitLabel(true);
 
         // Prepare test data
@@ -53,25 +54,25 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
             new INDArray[]{output1, output2}
         );
 
-        meanNaturalNums = (nSamples + 1) / 2.0;
-        stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
+        naturalMin = 1;
+        naturalMax = nSamples;
     }
 
-    public MultiNormalizerStandardizeTest(Nd4jBackend backend) {
+    public MultiNormalizerMinMaxScalerTest(Nd4jBackend backend) {
         super(backend);
     }
 
     @Test
     public void testMultipleInputsAndOutputsWithDataSet() {
         SUT.fit(data);
-        assertExpectedMeanStd();
+        assertExpectedMinMax();
     }
 
     @Test
     public void testMultipleInputsAndOutputsWithIterator() {
         MultiDataSetIterator iter = new TestMultiDataSetIterator(1, data);
         SUT.fit(iter);
-        assertExpectedMeanStd();
+        assertExpectedMinMax();
     }
 
     @Test
@@ -140,8 +141,8 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
         SUT.fit(iter);
 
-        // The label mean should be 2, as the second row with 4 is masked.
-        assertEquals(2f, SUT.getLabelMean(0).getFloat(0), 1e-6);
+        // The label min value should be 2, as the second row with 4 is masked.
+        assertEquals(2f, SUT.getLabelMin(0).getFloat(0), 1e-6);
     }
 
     private double getMaxRelativeDifference(MultiDataSet a, MultiDataSet b) {
@@ -158,18 +159,18 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         return max;
     }
 
-    private void assertExpectedMeanStd() {
-        assertSmallDifference(meanNaturalNums * INPUT1_SCALE, SUT.getFeatureMean(0).getDouble(0));
-        assertSmallDifference(stdNaturalNums * INPUT1_SCALE, SUT.getFeatureStd(0).getDouble(0));
+    private void assertExpectedMinMax() {
+        assertSmallDifference(naturalMin * INPUT1_SCALE, SUT.getMin(0).getDouble(0));
+        assertSmallDifference(naturalMax * INPUT1_SCALE, SUT.getMax(0).getDouble(0));
 
-        assertSmallDifference(meanNaturalNums * INPUT2_SCALE, SUT.getFeatureMean(1).getDouble(0));
-        assertSmallDifference(stdNaturalNums * INPUT2_SCALE, SUT.getFeatureStd(1).getDouble(0));
+        assertSmallDifference(naturalMin * INPUT2_SCALE, SUT.getMin(1).getDouble(0));
+        assertSmallDifference(naturalMax * INPUT2_SCALE, SUT.getMax(1).getDouble(0));
 
-        assertSmallDifference(meanNaturalNums * OUTPUT1_SCALE, SUT.getLabelMean(0).getDouble(0));
-        assertSmallDifference(stdNaturalNums * OUTPUT1_SCALE, SUT.getLabelStd(0).getDouble(0));
+        assertSmallDifference(naturalMin * OUTPUT1_SCALE, SUT.getLabelMin(0).getDouble(0));
+        assertSmallDifference(naturalMax * OUTPUT1_SCALE, SUT.getLabelMax(0).getDouble(0));
 
-        assertSmallDifference(meanNaturalNums * OUTPUT2_SCALE, SUT.getLabelMean(1).getDouble(0));
-        assertSmallDifference(stdNaturalNums * OUTPUT2_SCALE, SUT.getLabelStd(1).getDouble(0));
+        assertSmallDifference(naturalMin * OUTPUT2_SCALE, SUT.getLabelMin(1).getDouble(0));
+        assertSmallDifference(naturalMax * OUTPUT2_SCALE, SUT.getLabelMax(1).getDouble(0));
     }
 
     private void assertSmallDifference(double expected, double actual) {
@@ -177,6 +178,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         double deltaPerc = (delta / expected) * 100;
         assertTrue(deltaPerc < TOLERANCE_PERC);
     }
+
 
     @Override
     public char ordering() {

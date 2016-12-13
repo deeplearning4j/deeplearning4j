@@ -16,8 +16,7 @@ import java.io.IOException;
  */
 public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPreProcessor {
     /**
-     * Fit a dataset (only compute
-     * based on the statistics from this dataset0
+     * Fit a dataset (only compute based on the statistics from this dataset)
      * @param dataSet the dataset to compute on
      */
     void fit(DataSet dataSet);
