@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * @author raver119@gmail.com
@@ -21,4 +22,9 @@ public class ExportContainer<T extends SequenceElement> implements Serializable{
     private INDArray array;
 
     // TODO: implement B64 optional compression here?
+    @Override
+    public String toString() {
+        // TODO: we need proper string cleansing here
+        return element.getLabel() + " " + (Arrays.toString(array.data().asFloat()).replaceAll("(\\[\\],)"," "));
+    }
 }

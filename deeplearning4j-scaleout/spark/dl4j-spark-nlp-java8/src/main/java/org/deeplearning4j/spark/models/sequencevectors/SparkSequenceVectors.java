@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.models.sequencevectors;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
@@ -8,6 +9,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -20,8 +22,11 @@ import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
 import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.export.impl.HdfsModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.functions.*;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLearningAlgorithm;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 
@@ -40,7 +45,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY();
 
 
+    // FIXME: we probably do not need this at all
     protected Broadcast<VocabCache<T>> vocabCacheBroadcast;
+
     protected Broadcast<VocabCache<ShallowSequenceElement>> shallowVocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
 
@@ -48,10 +55,11 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
     protected boolean isAutoDiscoveryMode = true;
 
-    // TODO: fix this
-    protected SparkModelExporter<T> exporter = new HdfsModelExporter<T>("./tempfile.txt");
+    protected SparkModelExporter<T> exporter;
 
-    protected SparkSequenceVectors() {
+    protected Configuration paramServerConfiguration;
+
+    protected SparkSequenceVectors(VectorsConfiguration configuration) {
 
     }
 
@@ -120,7 +128,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         Counter<Long> finalCounter;
         long numberOfSequences = 0;
 
-        Configuration paramServerConfiguration = Configuration.builder()
+        if (paramServerConfiguration == null)
+            paramServerConfiguration = Configuration.builder()
                 .faultToleranceStrategy(FaultToleranceStrategy.NONE)
                 .numberOfShards(2)
                 .port(40123)
@@ -132,7 +141,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         if (isAutoDiscoveryMode) {
             elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
 
-            ExtraCountFunction<T> elementsCounter = new ExtraCountFunction<>(elementsFreqAccumExtra, false);
+            ExtraCountFunction<T> elementsCounter = new ExtraCountFunction<>(elementsFreqAccumExtra, configuration.isTrainSequenceVectors());
 
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
 
@@ -150,7 +159,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         } else {
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
-            CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, false);
+            CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, configuration.isTrainSequenceVectors());
 
             // count all sequence elements and their sum
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
@@ -176,7 +185,6 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         // build huffman tree, and update original RDD with huffman encoding info
         shallowVocabCache = buildShallowVocabCache(finalCounter);
-        // TODO: right at this place we should launch one more map, that will update original RDD with huffman encoding
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
 
         Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
@@ -189,12 +197,10 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
                 corpus.foreach(trainer);
 
 
-        // at this particular moment training should be pretty much done, and we're good to go for export
-
-
-
+        // we're transferring vectors to ExportContainer
         JavaRDD<ExportContainer<T>> exportRdd = vocabRDD.map(new DistributedFunction<T>(paramServerConfigurationBroadcast, configurationBroadcast, shallowVocabCacheBroadcast));
 
+        // at this particular moment training should be pretty much done, and we're good to go for export
         if (exporter != null)
             exporter.export(exportRdd);
 
@@ -231,5 +237,165 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             return elementsFreqAccumExtra.value();
         else
             return elementsFreqAccum.value();
+    }
+
+
+    public static class Builder<T extends SequenceElement> {
+        protected VectorsConfiguration configuration;
+        protected SparkModelExporter<T> modelExporter;
+        protected Configuration peersConfiguration;
+        protected int workers;
+        protected StorageLevel storageLevel;
+
+        public Builder() {
+            this(new VectorsConfiguration());
+        }
+
+        public Builder(@NonNull VectorsConfiguration configuration) {
+            this.configuration = configuration;
+        }
+
+        /**
+         *
+         * @param level
+         * @return
+         */
+        public Builder<T> setStorageLevel(StorageLevel level) {
+            storageLevel = level;
+            return this;
+        }
+
+        /**
+         *
+         * @param num
+         * @return
+         */
+        public Builder<T> minWordFrequency(int num) {
+            configuration.setMinWordFrequency(num);
+            return this;
+        }
+
+        /**
+         *
+         * @param num
+         * @return
+         */
+        public Builder<T> workers(int num){
+            this.workers = num;
+            return this;
+        }
+
+        /**
+         *
+         * @param lr
+         * @return
+         */
+        public Builder<T> setLearningRate(double lr) {
+            configuration.setLearningRate(lr);
+            return this;
+        }
+
+        /**
+         *
+         * @param configuration
+         * @return
+         */
+        public Builder<T> setParameterServerConfiguration(@NonNull Configuration configuration) {
+            peersConfiguration = configuration;
+            return this;
+        }
+
+        /**
+         *
+         * @param modelExporter
+         * @return
+         */
+        public Builder<T> setModelExporter(@NonNull SparkModelExporter<T> modelExporter) {
+            this.modelExporter = modelExporter;
+            return this;
+        }
+
+        /**
+         *
+         * @param num
+         * @return
+         */
+        public Builder<T> epochs(int num) {
+            configuration.setEpochs(num);
+            return this;
+        }
+
+        /**
+         *
+         * @param num
+         * @return
+         */
+        public Builder<T> iterations(int num) {
+            configuration.setIterations(num);
+            return this;
+        }
+
+        /**
+         *
+         * @param rate
+         * @return
+         */
+        public Builder<T> subsampling(double rate) {
+            configuration.setSampling(rate);
+            return this;
+        }
+
+        /**
+         *
+         * @param reallyUse
+         * @return
+         */
+        public Builder<T> useHierarchicSoftmax(boolean reallyUse) {
+            configuration.setUseHierarchicSoftmax(reallyUse);
+            return this;
+        }
+
+        /**
+         *
+         * @param samples
+         * @return
+         */
+        public Builder<T> negativeSampling(long samples) {
+            configuration.setNegative((double) samples);
+            return this;
+        }
+
+        /**
+         *
+         * @param ela
+         * @return
+         */
+        public Builder<T> setElementsLearningAlgorithm(@NonNull SparkElementsLearningAlgorithm ela) {
+            configuration.setElementsLearningAlgorithm(ela.getClass().getCanonicalName());
+            return this;
+        }
+
+        /**
+         *
+         * @param sla
+         * @return
+         */
+        public Builder<T> setSequenceLearningAlgorithm(@NonNull SparkSequenceLearningAlgorithm sla) {
+            configuration.setSequenceLearningAlgorithm(sla.getClass().getCanonicalName());
+            return this;
+        }
+
+
+        public SparkSequenceVectors<T> build() {
+            if (modelExporter == null)
+                throw new IllegalStateException("ModelExporter is undefined!");
+
+            SparkSequenceVectors seqVec = new SparkSequenceVectors(configuration);
+            seqVec.exporter = modelExporter;
+            seqVec.paramServerConfiguration = peersConfiguration;
+            seqVec.storageLevel = storageLevel;
+
+            return seqVec;
+        }
     }
 }

@@ -2,12 +2,12 @@ package org.deeplearning4j.spark.models.sequencevectors.learning.sequence;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLearningAlgorithm;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
-public abstract class BaseSparkSequenceLearningAlgorithm implements SequenceLearningAlgorithm<ShallowSequenceElement> {
+public abstract class BaseSparkSequenceLearningAlgorithm implements SparkSequenceLearningAlgorithm {
     protected transient VocabCache<ShallowSequenceElement> vocabCache;
     protected transient VectorsConfiguration vectorsConfiguration;
     protected transient ElementsLearningAlgorithm<ShallowSequenceElement> elementsLearningAlgorithm;
