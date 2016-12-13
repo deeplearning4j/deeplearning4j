@@ -16,23 +16,23 @@ import static org.deeplearning4j.nn.modelimport.keras.Model.importModel;
 import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialModel;
 
 /**
- * Created by davekale on 11/14/16.
+ * Unit tests for Keras model configuration import.
+ *
+ * TODO: Replace deprecated stuff and rename to something like KerasModelTest
+ * TODO: Move test resources to dl4j-test-resources
+ * TODO: Reorganize test resources
+ * TODO: Add more extensive tests including exotic Functional API architectures
+ *
+ * @author dave@skymind.io
  */
 public class ModelTest {
     private static Logger log = LoggerFactory.getLogger(ModelTest.class);
 
     @Test
-    public void SimpleModelImportTest() throws Exception {
-        String modelFn = "/Users/davekale/skymind/models/keras/mlp_model.h5";
-        MultiLayerNetwork model = importSequentialModel(modelFn);
-        System.out.println("DONE!");
-    }
-
-    @Test
     public void CnnModelImportTest() throws Exception {
         String modelPath = new ClassPathResource("keras/simple/cnn_tf_model.h5",
                 ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
-        MultiLayerNetwork model = (MultiLayerNetwork)importModel(modelPath);
+        MultiLayerNetwork model = importSequentialModel(modelPath);
         CnnModelTest(model);
     }
 
@@ -42,7 +42,7 @@ public class ModelTest {
                 ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
         String weightsPath = new ClassPathResource("keras/simple/cnn_tf_weights.h5",
                 ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
-        MultiLayerNetwork model = (MultiLayerNetwork)importModel(configPath, weightsPath);
+        MultiLayerNetwork model = importSequentialModel(configPath, weightsPath);
         CnnModelTest(model);
     }
 
@@ -58,13 +58,7 @@ public class ModelTest {
         INDArray outputTrue = Nd4j.readNumpy(outputPath, " ");
 
         // Make predictions
-        List<INDArray> activations = model.feedForward(input, false);
-        INDArray outputPredicted = activations.get(activations.size()-2);
-        /* TODO: fix the above once we better understand the proper way to get
-         * a prediction from the last layer (since model.output(*) gives the loss
-         * when the last layer is a LossLayer.
-         */
-//        INDArray outputPredicted = model.output(input, false);
+        INDArray outputPredicted = model.output(input, false);
 
         // Compare predictions to outputs
         assertEquals(outputTrue, outputPredicted);
