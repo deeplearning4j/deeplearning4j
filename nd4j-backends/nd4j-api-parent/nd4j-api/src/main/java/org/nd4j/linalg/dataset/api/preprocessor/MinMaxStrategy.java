@@ -46,7 +46,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats> {
         // both cases operations should be carried out in dimension 1
         else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getLower(), array, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, stats.getUpper(), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, stats.getRange(), array, 1));
         }
 
         // Scale by target range
@@ -72,7 +72,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats> {
             array.muliRowVector(stats.getRange());
             array.addiRowVector(stats.getLower());
         } else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, stats.getUpper(), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, stats.getRange(), array, 1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getLower(), array, 1));
         }
     }

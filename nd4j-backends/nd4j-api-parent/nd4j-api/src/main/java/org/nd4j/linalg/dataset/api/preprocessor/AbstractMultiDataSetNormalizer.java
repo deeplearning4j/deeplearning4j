@@ -120,8 +120,8 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
         List<S.Builder> featureStatsBuilders,
         List<S.Builder> labelStatsBuilders
     ) {
-        int numInputs = dataSet.getFeatures().length;
-        int numOutputs = dataSet.getLabels().length;
+        int numInputs = dataSet.numFeatureArrays();
+        int numOutputs = dataSet.numLabelsArrays();
 
         ensureStatsBuilders(featureStatsBuilders, numInputs);
         ensureStatsBuilders(labelStatsBuilders, numOutputs);
@@ -154,8 +154,8 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      */
     @Override
     public void preProcess(@NonNull MultiDataSet toPreProcess) {
-        int numFeatures = toPreProcess.getFeatures().length;
-        int numLabels = toPreProcess.getLabels().length;
+        int numFeatures = toPreProcess.numFeatureArrays();
+        int numLabels = toPreProcess.numLabelsArrays();
 
         for (int i = 0; i < numFeatures; i++) {
             strategy.preProcess(toPreProcess.getFeatures(i), getFeatureStats(i));
@@ -190,7 +190,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
 
     /**
      * Undo (revert) the normalization applied by this normalizer to a specific features array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param features features arrays to revert the normalization on
@@ -202,7 +202,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
 
     /**
      * Undo (revert) the normalization applied by this normalizer to the labels arrays.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels Labels arrays to revert the normalization on
@@ -215,7 +215,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
 
     /**
      * Undo (revert) the normalization applied by this normalizer to a specific labels array.
-     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param labels Labels arrays to revert the normalization on

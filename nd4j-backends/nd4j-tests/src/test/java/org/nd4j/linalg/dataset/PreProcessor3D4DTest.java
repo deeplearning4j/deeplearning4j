@@ -198,6 +198,23 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         assertEquals(data, dataCopy);
     }
 
+    @Test
+    public void test3dNinMaxScaling() {
+        INDArray values = Nd4j.linspace(-10, 10, 100).reshape(5, 2, 10);
+        DataSet data = new DataSet(values, values);
+
+        NormalizerMinMaxScaler SUT = new NormalizerMinMaxScaler();
+        SUT.fit(data);
+        SUT.preProcess(data);
+
+        // Data should now be in a 0-1 range
+        float min = data.getFeatures().minNumber().floatValue();
+        float max = data.getFeatures().maxNumber().floatValue();
+
+        assertEquals(0, min, Nd4j.EPS_THRESHOLD);
+        assertEquals(1, max, Nd4j.EPS_THRESHOLD);
+    }
+
     public class Construct3dDataSet {
 
          /*
