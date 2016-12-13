@@ -16,6 +16,9 @@ import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
+import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
+import org.deeplearning4j.spark.models.sequencevectors.export.impl.HdfsModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.functions.*;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
@@ -44,6 +47,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     protected transient boolean isEnvironmentReady = false;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
     protected boolean isAutoDiscoveryMode = true;
+
+    // TODO: fix this
+    protected SparkModelExporter<T> exporter = new HdfsModelExporter<T>("./tempfile.txt");
 
     protected SparkSequenceVectors() {
 
@@ -182,6 +188,12 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         // at this particular moment training should be pretty much done, and we're good to go for export
 
+
+
+        JavaRDD<ExportContainer<T>> exportRdd = null;
+
+        if (exporter != null)
+            exporter.export(exportRdd);
 
         // unpersist, if we've persisten corpus after all
         if (storageLevel != null)
