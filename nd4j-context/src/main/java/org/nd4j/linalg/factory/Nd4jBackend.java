@@ -68,7 +68,7 @@ public abstract class Nd4jBackend {
     public final static String DYNAMIC_LOAD_CLASSPATH = "ND4J_DYNAMIC_LOAD_CLASSPATH";
     public final static String DYNAMIC_LOAD_CLASSPATH_PROPERTY = "org.nd4j.backend.dynamicbackend";
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
-
+    private static boolean triedDynamicLoad = false;
 
 
     /**
@@ -208,17 +208,17 @@ public abstract class Nd4jBackend {
         //ones being dynamically discovered.
         //Note that we prioritize jvm properties first, followed by environment variables.
         String[] jarUris;
-        if(System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY)) {
+        if(System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
             jarUris = System.getProperties().getProperty(DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
         }
-        else if(System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH)) {
+        else if(System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH) && !triedDynamicLoad) {
             jarUris = System.getenv(DYNAMIC_LOAD_CLASSPATH).split(";");
         }
 
         else
             throw new NoAvailableBackendException("Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
 
-
+        triedDynamicLoad = true;
         //load all the discoverable uris and try to load the backend again
         for(String uri : jarUris) {
             loadLibrary(new File(uri));
