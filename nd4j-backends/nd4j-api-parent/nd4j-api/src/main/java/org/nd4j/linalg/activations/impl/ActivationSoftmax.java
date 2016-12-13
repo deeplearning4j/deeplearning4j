@@ -26,36 +26,23 @@ public class ActivationSoftmax implements IActivation{
 
     @Override
     public INDArray computeGradient(INDArray in) {
-        //libnd4j returns an array in on the same size with each element equals p*(1-p)
-        //needs to return an array with diagonal elements equal p*(1-p) and pi*pj elsewhere
-        //fix in libnd4j?
-        int classSize = in.shape()[1];
+        //libnd4j only returns diagonal elements, fix in libnd4j?
+        //derivative of softmax(in) shape = minibatchxclasses should give minibatch x classes x classes
         int miniBatchSize = in.shape()[0];
-        if (in.shape()[in.length()-1] == 2) {
-            return Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(in));
-        }
-        else {
-            //if (in.rank() == 2) {
-                INDArray z = Nd4j.zeros(miniBatchSize,classSize,classSize);
-                INDArray i = Nd4j.eye(classSize);
-                INDArray out = z.dup();
+        int classSize = in.shape()[1];
+        //if (in.rank() != 2) throw exception?
+        INDArray z = Nd4j.zeros(miniBatchSize,classSize,classSize);
+        INDArray i = Nd4j.eye(classSize);
+        INDArray out = z.dup();
 
-                //identity matrix extended to 3d
-                Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(z,i,out,new int[] {1,2}));
+        //identity matrix extended to 3d
+        Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(z,i,out,new int[] {1,2}));
 
-                //D_jS_j = S_i * (delta_ij - S_j)
-                Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(out,in,z,new int[] {0,1}));//reusing z
-                //System.out.println("======== 1 - p ==============");
-                //System.out.println(z);
-                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(z,in,out,new int[] {0,1}));//reusing z
-                //System.out.println("========My derivative==============");
-                //System.out.println(out);
-            //}
-            //else {
-                //throw exception??
-            //}
-                return out;
-        }
+        //D_jS_j = S_i * (delta_ij - S_j)
+        Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(out,in,z,new int[] {0,1}));//1-p or -p
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(z,in,out,new int[] {0,1}));//p*(1-p) or -pi*pj
+
+        return out;
     }
 
     @Override
