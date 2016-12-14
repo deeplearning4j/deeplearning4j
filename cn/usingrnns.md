@@ -1,12 +1,12 @@
 ---
-title: 通过DL4J使用递归网络
+title: 通过DL4J使用循环网络
 layout: cn-default
 redirect_from: /zh-usingrnns
 ---
 
-# DL4J中的递归网络
+# DL4J中的循环网络
 
-本页将简要介绍递归网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非递归神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[递归网络和LSTM教程](/lstm.html)，再学习本页内容。
+本页将简要介绍循环网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。本页并非循环神经网络（RNN）的基础教程，读者应对RNN及其用途有基本的了解，且熟悉相关术语。如果读者是首次接触RNN，请先阅读[循环网络和LSTM教程](/lstm.html)，再学习本页内容。
 
 **目录**
 
@@ -20,7 +20,7 @@ redirect_from: /zh-usingrnns
 * [示例](#examples)
 
 ## <a name="basics">基础内容：数据和网络配置</a>
-DL4J目前支持以下各类递归神经网络
+DL4J目前支持以下各类循环神经网络
 * GravesLSTM（长短期记忆）
 * BidirectionalGravesLSTM（双向长短期记忆）
 * BaseRecurrent
@@ -33,11 +33,11 @@ DL4J目前支持以下各类递归神经网络
 
 而RNN的数据则是时间序列。这些数据具备三个维度，增加了一个时间维度。因此，输入数据的形状为[numExamples,inputSize,timeSeriesLength]，而输出数据的形状为[numExamples,outputSize,timeSeriesLength]。就INDArray中的数据布局而言，位于(i,j,k)的值即是一批数据中第i例的第k个时间步的第j个值。数据布局如下图所示。
 
-![Data: Feed Forward vs. RNN](./img/rnn_data.png)
+![Data: Feed Forward vs. RNN](../img/rnn_data.png)
 
 #### RnnOutputLayer
 
-RnnOutputLayer是在许多递归网络系统（用于回归分析和分类任务）中使用的最终层。RnnOutputLayer可处理计分运算、基于给定损失函数的误差计算（预测与实际值对比）等。从功能上看，它与“标准”的OutputLayer类（用于前馈网络）十分相似；但RnnOutputLayer的输出（以及标签/目标）均为三维时间序列数据集。
+RnnOutputLayer是在许多循环网络系统（用于回归分析和分类任务）中使用的最终层。RnnOutputLayer可处理计分运算、基于给定损失函数的误差计算（预测与实际值对比）等。从功能上看，它与“标准”的OutputLayer类（用于前馈网络）十分相似；但RnnOutputLayer的输出（以及标签/目标）均为三维时间序列数据集。
 
 RnnOutputLayer配置与其他层采取相同的设计：例如，将MultiLayerNetwork的第三层设置为RnnOutputLayer，用于分类：
 
@@ -49,19 +49,19 @@ RnnOutputLayer配置与其他层采取相同的设计：例如，将MultiLayerNe
 ## <a name="trainingfeatures">RNN定型功能</a>
 
 ### <a name="tbptt">截断式沿时间反向传播</a>
-神经网络（包括RNN）定型的运算能力要求可能相当高。递归网络在处理较长序列时（即定型数据有许多时间步时）尤其如此。
+神经网络（包括RNN）定型的运算能力要求可能相当高。循环网络在处理较长序列时（即定型数据有许多时间步时）尤其如此。
 
-采用截断式沿时间反向传播算法（BPTT）可以降低递归网络中每项参数更新的复杂度。简而言之，此种算法可以让我们以同样的运算能力更快地定型神经网络（提高参数更新的频率）。我们建议在输入较长序列时（通常指超过几百个时间步）使用截断式BPTT算法。
+采用截断式沿时间反向传播算法（BPTT）可以降低循环网络中每项参数更新的复杂度。简而言之，此种算法可以让我们以同样的运算能力更快地定型神经网络（提高参数更新的频率）。我们建议在输入较长序列时（通常指超过几百个时间步）使用截断式BPTT算法。
 
-假设用长度为12个时间步的时间序列定型一个递归网络。我们需要进行12步的正向传递，计算误差（基于预测与实际值对比），再进行12个时间步的反向传递：
+假设用长度为12个时间步的时间序列定型一个循环网络。我们需要进行12步的正向传递，计算误差（基于预测与实际值对比），再进行12个时间步的反向传递：
 
-![Standard Backprop Training](./img/rnn_tbptt_1.png)
+![Standard Backprop Training](../img/rnn_tbptt_1.png)
 
 如上图所示，12个时间步的运算不会有问题。但试想输入的时间序列变为10,000个时间步，甚至更多。此时，若使用标准的沿时间反向传播算法，则每个参数每次更新都需要进行10,000次正向及反向传递。这种方法对运算能力的要求显然很高。
 
 在实际应用中，截断式BPTT可将正向和反向传递拆分为一系列较小时间段的正向／反向传递操作。正向／反向传递时间段的具体长度是用户可以自行设定的参数。例如，若将截断式BPTT的长度设定为4个时间步，则学习过程如下图所示：
 
-![Truncated BPTT](./img/rnn_tbptt_2.png)
+![Truncated BPTT](../img/rnn_tbptt_2.png)
 
 注意截断式BPTT和标准BPTT的总体复杂度大致相同－两者的正向／反向传递时间步数量相等。但是，采用该方法后，用原来1次参数更新的工作量可以完成3次更新。然而两种方法的运算量并不完全一致，因为每次参数更新会有少量额外运算量。
 
@@ -85,9 +85,9 @@ RnnOutputLayer配置与其他层采取相同的设计：例如，将MultiLayerNe
 
 DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩模让我们能支持诸如一对多、多对一数据情景下的定型，同时也能支持长度可变的时间序列（同一批次内）。
 
-假设我们用于定型递归网络的输入和输出数据并不会在每个时间步都出现。具体示例（单个样例）见下图。DL4J支持以下所有情景的网络定型。
+假设我们用于定型循环网络的输入和输出数据并不会在每个时间步都出现。具体示例（单个样例）见下图。DL4J支持以下所有情景的网络定型。
 
-![RNN Training Types](./img/rnn_masking_1.png)
+![RNN Training Types](../img/rnn_masking_1.png)
 
 如果没有掩模和填零操作，就只能支持多对多的情景（上图左一），即(a)所有样例长度相同且(b)样例在每一时间步均有输入和输出。
 
@@ -99,7 +99,7 @@ DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩�
 
 对单个样例而言，输入与输出的掩模数组如下：
 
-![RNN Training Types](./img/rnn_masking_2.png)
+![RNN Training Types](../img/rnn_masking_2.png)
 
 对于“不需要掩模”的情况，我们可以使用全部值为1的掩模数组，所得结果与不使用掩模数组相同。此外，RNN定型中使用的掩模数组可以是零个、一个或者两个，比如多对一的情景就有可能仅设置一个用于输出的掩模数组。
 
@@ -149,11 +149,11 @@ rnnTimeStep()方法的作用是提高正向传递（预测）的效率，一次�
 
 或者，我们可以使用rnnTimeStep方法。当然，在进行第一次预测时，我们仍需要使用全部100个小时的历史数据，进行完整的正向传递：
 
-![RNN Time Step](./img/rnn_timestep_1.png)
+![RNN Time Step](../img/rnn_timestep_1.png)
 
 首次调用rnnTimeStep时，唯一实际区别就是上一个时间步的激活情况／状态会被记录下来－图中以橙色表示。但是，第二次使用rnnTimeStep方法时，已存储的状态会被用于生成第二次预测：
 
-![RNN Time Step](./img/rnn_timestep_2.png)
+![RNN Time Step](../img/rnn_timestep_2.png)
 
 这里有几个重要的区别：
 
@@ -161,7 +161,7 @@ rnnTimeStep()方法的作用是提高正向传递（预测）的效率，一次�
 2.因此，正向传递只包括一个时间步（而不是几百个或更多）
 3.rnnTimeStep方法返回后，内部状态会自动更新。所以第103个时间步的预测方式与第102步相同。以此类推。
 
-但如果要开始对一个新的（完全分离的）时间序列进行预测，就必须（这很重要）用`MultiLayerNetwork.rnnClearPreviousState()`方法手动清除已存储的状态。该方法将会重置网络中所有递归层的内部状态。
+但如果要开始对一个新的（完全分离的）时间序列进行预测，就必须（这很重要）用`MultiLayerNetwork.rnnClearPreviousState()`方法手动清除已存储的状态。该方法将会重置网络中所有循环层的内部状态。
 
 如果需要存储或设置RNN的内部状态以用于预测，可以对每一层分别使用rnnGetPreviousState和rnnSetPreviousState方法。这适用于例如序列化（网络保存／加载）等情况，因为由rnnTimeStep方法产生的内部网络状态默认*不会*保存，必须另外保存和读取。注意这些获取/设置状态的方法返回和接受的是一张映射图，关键字为激活类型。例如，在LSTM模型中，必须同时存储输出激活情况和记忆单元状态。
 
@@ -175,7 +175,7 @@ rnnTimeStep可以同时用于任意数量的时间步，而不仅仅是一个时
 - 样例的数量在两次调用rnnTimeStep之间无法改变（换言之，如果第一次使用rnnTimeStep时的样例数量为3，那么此后每次调用时的样例都必须是3个）。重置内部状态后（使用rnnClearPreviousState()），下一次调用rnnTimeStep可选用任意数量的样例。
 - rnnTimeStep方法不改变参数；该方法仅在网络定型已经完成后使用。
 - rnnTimeStep方法适用于包含单个和堆叠／多个RNN层的网络，也适用于RNN与其他类型的层（例如卷积或稠密层）相结合的网络。
-- RnnOutputLayer类型的层没有任何递归连接，因此不存在内部状态。
+- RnnOutputLayer类型的层没有任何循环连接，因此不存在内部状态。
 
 ## <a name="data">导入时间序列数据</a>
 
@@ -281,13 +281,13 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 对齐模式相对容易理解。它们指定是在较短时间序列的起始还是结尾处填零。下图描述了这一过程，并标出掩模数组（如本页前文所述）：
 
-![Sequence Alignment](./img/rnn_seq_alignment.png)
+![Sequence Alignment](../img/rnn_seq_alignment.png)
 
 一对多情景（与前一例相仿，但输入仅有一个）可以用AlignmentMode.ALIGN_START来处理。
 
 注意，在定型数据包含非等长时间序列的情况下，各个样例的标签和输入会被分别对齐，随后会按需要对较短的时间序列进行填零。
 
-![Sequence Alignment](./img/rnn_seq_alignment_2.png)
+![Sequence Alignment](../img/rnn_seq_alignment_2.png)
 
 #### 替代方法：运用自定义DataSetIterator
 有些时候，我们可能需要进行不符合常规情景的数据导入。方法之一是运用自定义的[DataSetIterator](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/DataSetIterator.java)。DataSetIterator只是用于迭代DataSet对象的接口，这些对象封装了输入和目标INDArrays，以及输入和标签掩模数组（可选）。
@@ -302,8 +302,8 @@ RNN的数据导入比较复杂，因为可能使用的数据类型较多：一�
 
 ## <a name="examples">示例</a>
 
-DL4J目前提供下列[递归网络示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent)：
+DL4J目前提供下列[循环网络示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent)：
 
 * [字符建模示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)，可逐个字符地生成莎士比亚风格的散文
 * [初级视频帧分类示例](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/video/VideoClassificationExample.java)，导入视频文件（.mp4格式），对每一帧中的形状进行分类
-* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个递归神经网络将电影评论分为正面和负面两类。
+* [word2vec序列分类示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment)，使用预定型词向量和一个循环神经网络将电影评论分为正面和负面两类。
