@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.messages.InitializationMessage;
+import org.nd4j.parameterserver.distributed.messages.NegativeBatchMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.LocalTransport;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
@@ -46,7 +47,8 @@ public class VoidParameterServerTest {
     @Test
     public void testNodeRole1() throws Exception {
         final Configuration conf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
                 .multicastNetwork("224.0.1.1")
                 .shardAddresses(localIPs)
@@ -63,7 +65,8 @@ public class VoidParameterServerTest {
     @Test
     public void testNodeRole2() throws Exception {
         final Configuration conf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
                 .shardAddresses(badIPs)
                 .backupAddresses(localIPs)
@@ -81,7 +84,8 @@ public class VoidParameterServerTest {
     @Test
     public void testNodeRole3() throws Exception {
         final Configuration conf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
                 .shardAddresses(badIPs)
                 .backupAddresses(badIPs)
@@ -102,7 +106,8 @@ public class VoidParameterServerTest {
         final AtomicInteger passCnt = new AtomicInteger(0);
 
         final Configuration conf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
                 .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
@@ -146,23 +151,29 @@ public class VoidParameterServerTest {
 
 
         final Configuration clientConf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
                 .shardAddresses(badIPs)
                 .multicastNetwork("224.0.1.1")
+                .streamId(119)
                 .ttl(4)
                 .build();
 
         final Configuration shardConf = Configuration.builder()
-                .port(34567)
+                .unicastPort(34567)
+                .multicastPort(45678)
                 .numberOfShards(10)
-                .shardAddresses(Collections.singletonList("192.168.1.36"))
+                .streamId(119)
+                .shardAddresses(Collections.singletonList("192.168.1.35"))
                 .multicastNetwork("224.0.1.1")
                 .ttl(4)
                 .build();
 
         VoidParameterServer clientNode = new VoidParameterServer();
         clientNode.init(clientConf);
+        clientNode.getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
+
 
         assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
 
@@ -207,10 +218,7 @@ public class VoidParameterServerTest {
 
         log.info("MessageType: {}", message.getMessageType());
 
-        for (int x = 0; x< 100; x++) {
-            clientNode.getTransport().sendMessage(message);
-            Thread.sleep(500);
-        }
+        clientNode.getTransport().sendMessage(message);
 
         // at this point each and every shard should already have this message
         Thread.sleep(100);

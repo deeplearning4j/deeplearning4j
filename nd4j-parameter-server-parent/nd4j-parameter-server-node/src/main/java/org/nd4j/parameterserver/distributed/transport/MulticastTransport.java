@@ -41,9 +41,9 @@ public class MulticastTransport extends BaseTransport {
         this.configuration = configuration;
         this.nodeRole = role;
 
-        driver = MediaDriver.launchEmbedded();
-
         context = new Aeron.Context();
+
+        driver = MediaDriver.launchEmbedded();
 
         context.aeronDirectoryName(driver.aeronDirectoryName());
 
@@ -51,7 +51,7 @@ public class MulticastTransport extends BaseTransport {
 
         ip = localIp;
 
-        multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getPort();
+        multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getMulticastPort();
         if (configuration.getMulticastInterface() != null && !configuration.getMulticastInterface().isEmpty())
             multicastChannelUri =  multicastChannelUri + "|interface=" + configuration.getMulticastInterface();
 
@@ -64,8 +64,8 @@ public class MulticastTransport extends BaseTransport {
                 /*
                     In case of Shard, unicast address for communication is known in advance
                  */
-                unicastChannelUri = "aeron:udp?endpoint=" + localIp + ":" + configuration.getPort();
-                log.info("Shard unicast URI: {}", unicastChannelUri);
+                unicastChannelUri = "aeron:udp?endpoint=" + localIp + ":" + configuration.getUnicastPort();
+                log.info("Shard unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
 
                 // this channel will be used to receive batches from Clients
                 subscriptionForShards = aeron.addSubscription(unicastChannelUri, configuration.getStreamId());
@@ -92,10 +92,10 @@ public class MulticastTransport extends BaseTransport {
                 /*
                     In case of Client, unicast will be one of shards, picked up with random
                  */
-                unicastChannelUri = "aeron:udp?endpoint=" + ArrayUtil.getRandomElement(configuration.getShardAddresses()) + ":" + configuration.getPort();
-                unicastChannelUri = "aeron:udp?endpoint=192.168.1.36:" + (configuration.getPort());
+                unicastChannelUri = "aeron:udp?endpoint=" + ArrayUtil.getRandomElement(configuration.getShardAddresses()) + ":" + configuration.getUnicastPort();
+                unicastChannelUri = "aeron:udp?endpoint=192.168.1.35:" + (configuration.getUnicastPort()) ;
 
-                log.info("Client unicast URI: {}", unicastChannelUri);
+                log.info("Client unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
 
                 /*
                  this channel will be used to send batches to Shards, it's 1:1 channel to one of the Shards
@@ -113,8 +113,6 @@ public class MulticastTransport extends BaseTransport {
                 log.warn("Unknown role passed: {}", nodeRole);
                 throw new RuntimeException();
         }
-
-
     }
 
     /**
@@ -124,9 +122,20 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCommandToShard(VoidMessage message) {
-        long result = publicationForShards.offer(message.asUnsafeBuffer());
+        DirectBuffer buffer = message.asUnsafeBuffer();
 
-        log.info("offer result: {}", result);
+        long result = publicationForShards.offer(buffer);
+
+        if (result  < 0)
+            for (int i = 0; i < 5 && result < 0; i++) {
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception e) { }
+                result = publicationForShards.offer(buffer);
+            }
+
+        if (result < 0)
+            throw new RuntimeException("Unable to send message over the wire. Error code: " + result);
     }
 
     /**

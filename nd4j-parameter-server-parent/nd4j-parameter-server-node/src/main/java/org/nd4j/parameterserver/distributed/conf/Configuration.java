@@ -22,7 +22,8 @@ import java.util.List;
 @Data
 public class Configuration implements Serializable {
     private int streamId;
-    private int port;
+    private int unicastPort;
+    private int multicastPort;
     private int numberOfShards;
     private FaultToleranceStrategy faultToleranceStrategy;
     private List<String> shardAddresses;

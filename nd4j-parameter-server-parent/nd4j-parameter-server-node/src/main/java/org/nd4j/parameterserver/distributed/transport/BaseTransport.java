@@ -75,7 +75,6 @@ public abstract class BaseTransport implements Transport {
             case 4:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
-                log.info("Sending message to shards...");
                 sendCommandToShard(message);
                 break;
             // messages 10..19 inclusive are reserved for Shard->Clients commands
@@ -185,9 +184,9 @@ public abstract class BaseTransport implements Transport {
 
                         // setting up thread for shard->client communication listener
                         threadB = new Thread(() -> {
-                            log.info("Starting poller...");
                             while (runner.get())
                                 idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
+
                         });
 
                         // setting up thread for inter-shard communication listener
@@ -211,6 +210,7 @@ public abstract class BaseTransport implements Transport {
                     threadA.setDaemon(true);
                     threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                     threadA.start();
+
                 }
                 break;
             case SAME_THREAD: {
@@ -218,6 +218,8 @@ public abstract class BaseTransport implements Transport {
                     log.warn("SAME_THREAD model is used, performance will be dramatically reduced");
                 }
                 break;
+            default:
+                throw new IllegalStateException("Unknown thread model: ["+ threading.toString()+"]");
         }
     }
 
