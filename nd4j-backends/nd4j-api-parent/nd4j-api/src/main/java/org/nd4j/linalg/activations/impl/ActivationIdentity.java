@@ -1,9 +1,7 @@
 package org.nd4j.linalg.activations.impl;
 
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by susaneraly on 12/10/16.
@@ -11,30 +9,18 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ActivationIdentity implements IActivation {
 
     @Override
-    public INDArray computeActivation(INDArray in, boolean training) {
-        return computeActivation(in);
-    }
-
-    private INDArray computeActivation(INDArray in){
-        return in.dup();
+    public void setActivation(INDArray in, INDArray activation, boolean training) {
+        activation = in.dup();
     }
 
     @Override
-    public INDArray computeGradient(INDArray in) {
-        return Nd4j.ones(in.shape());
+    public void setGradient(INDArray in, INDArray gradient) {
+        gradient.muli(0).addi(1);
     }
 
     @Override
-    public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
-        return new Pair<INDArray, INDArray>(
-                computeActivation(in),
-                computeGradient(in)
-        );
+    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
+        setActivation(in,activation, true);
+        setGradient(in,gradient);
     }
-
-    @Override
-    public String toString() {
-        return "identity";
-    }
-
 }

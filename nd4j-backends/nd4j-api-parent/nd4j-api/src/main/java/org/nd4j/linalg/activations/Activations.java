@@ -24,10 +24,12 @@ public class Activations {
                     return new ActivationSigmoid();
                 case identity:
                     return new ActivationIdentity();
-                //case leakyrelu:
-                    //return new ActivationLeakyReLU();
+                case leakyrelu:
+                    return new ActivationLReLU();
                 case relu:
                     return new ActivationReLU();
+                case softmax:
+                    return new ActivationSoftmax();
                 default:
                     throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
             }

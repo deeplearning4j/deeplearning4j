@@ -7,25 +7,20 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by susaneraly on 12/10/16.
  */
-public class ActivationSoftmax implements IActivation{
+public class ActivationSoftmax implements IActivation {
 
     @Override
-    public INDArray computeActivation(INDArray in, boolean training) {
-        return computeActivation(in);
-    }
-
-    private INDArray computeActivation(INDArray in){
-        return Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
+    public void setActivation(INDArray in, INDArray activation, boolean training) {
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(in,activation));
     }
 
     @Override
-    public INDArray computeGradient(INDArray in) {
+    public void setGradient(INDArray in, INDArray gradient) {
         //libnd4j only returns diagonal elements, fix in libnd4j?
         //derivative of softmax(in) shape = minibatchxclasses should give minibatch x classes x classes
         int miniBatchSize = in.shape()[0];
@@ -42,20 +37,12 @@ public class ActivationSoftmax implements IActivation{
         Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(out,in,z,new int[] {0,1}));//1-p or -p
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(z,in,out,new int[] {0,1}));//p*(1-p) or -pi*pj
 
-        return out;
+        gradient = out;
     }
 
     @Override
-    public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
-        return new Pair<INDArray, INDArray>(
-                computeActivation(in),
-                computeGradient(in)
-        );
+    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
+        setActivation(in,activation, true);
+        setGradient(in,gradient);
     }
-
-    @Override
-    public String toString() {
-        return "softmax";
-    }
-
 }

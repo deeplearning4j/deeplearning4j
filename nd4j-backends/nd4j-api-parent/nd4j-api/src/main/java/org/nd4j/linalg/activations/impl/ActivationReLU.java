@@ -7,30 +7,24 @@ import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Created by susaneraly on 12/10/16.
+ * Created by susaneraly on 12/13/16.
  */
-public class ActivationReLU implements IActivation{
+public class ActivationReLU implements IActivation {
 
     @Override
-    public INDArray computeActivation(INDArray in, boolean training) {
-        return computeActivation(in);
-    }
-
-    private INDArray computeActivation(INDArray in){
-        return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in));
+    public void setActivation(INDArray in, INDArray activation, boolean training) {
+        Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in,activation));
     }
 
     @Override
-    public INDArray computeGradient(INDArray in) {
-        return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in).derivative());
+    public void setGradient(INDArray in, INDArray gradient) {
+        Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in,gradient).derivative());
     }
 
     @Override
-    public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
-        return new Pair<INDArray, INDArray>(
-                computeActivation(in,true),
-                computeGradient(in)
-        );
+    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
+        setActivation(in,activation, true);
+        setGradient(in,gradient);
     }
 
 }

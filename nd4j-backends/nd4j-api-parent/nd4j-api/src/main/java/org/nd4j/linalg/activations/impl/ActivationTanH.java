@@ -10,33 +10,21 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Created by susaneraly on 12/10/16.
  */
-public class ActivationTanH implements IActivation{
+public class ActivationTanH implements IActivation {
 
     @Override
-    public INDArray computeActivation(INDArray in, boolean training) {
-        return computeActivation(in);
-    }
-
-    public INDArray computeActivation(INDArray in){
-        return Nd4j.getExecutioner().execAndReturn(new Tanh(in));
+    public void setActivation(INDArray in, INDArray activation, boolean training) {
+        Nd4j.getExecutioner().execAndReturn(new Tanh(in,activation));
     }
 
     @Override
-    public INDArray computeGradient(INDArray in) {
-        return Nd4j.getExecutioner().execAndReturn(new TanhDerivative(in));
+    public void setGradient(INDArray in, INDArray gradient) {
+        Nd4j.getExecutioner().execAndReturn(new TanhDerivative(in,gradient));
     }
 
     @Override
-    public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
-        return new Pair<INDArray, INDArray>(
-                computeActivation(in),
-                computeGradient(in)
-        );
+    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
+        setActivation(in,activation, true);
+        setGradient(in,gradient);
     }
-
-    @Override
-    public String toString() {
-        return "tanh";
-    }
-
 }

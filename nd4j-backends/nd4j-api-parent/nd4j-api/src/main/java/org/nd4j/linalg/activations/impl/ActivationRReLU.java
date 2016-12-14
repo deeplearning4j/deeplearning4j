@@ -9,7 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Created by susaneraly on 12/10/16.
  */
-public class ActivationRReLU implements IActivation{
+public class ActivationRReLU implements IActivation {
 
     private double l,u;
     INDArray alpha; //don't need to write to json, when streaming
@@ -26,39 +26,30 @@ public class ActivationRReLU implements IActivation{
     }
 
     @Override
-    public INDArray computeActivation(INDArray in, boolean training) {
+    public void setActivation(INDArray in, INDArray activation, boolean training) {
         if (training) {
             this.alpha = Nd4j.rand(in.shape(), l, u, Nd4j.getRandom());
         }
         else {
             this.alpha = Nd4j.valueArrayOf(in.shape(),0.5*(l+u));
         }
-        return computeActivation(in);
+        setActivation(in,activation);
     }
 
-    private INDArray computeActivation(INDArray in){
-        return Nd4j.getExecutioner().execAndReturn(new PReLU(in, alpha));
+    private void setActivation(INDArray in,INDArray activation){
+        Nd4j.getExecutioner().execAndReturn(new PReLU(in, alpha, activation));
     }
 
     @Override
-    public INDArray computeGradient(INDArray in) {
+    public void setGradient(INDArray in, INDArray gradient) {
         //assert alpha is the same shape as in
-        return Nd4j.getExecutioner().execAndReturn(new PReLU(in,alpha).derivative());
+        Nd4j.getExecutioner().execAndReturn(new PReLU(in,alpha,gradient).derivative());
     }
 
     @Override
-    public Pair<INDArray, INDArray> computeGradientAndActivation(INDArray in) {
-        //assumption is this is training, since the gradient is also calculated
+    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
         this.alpha = Nd4j.rand(in.shape(), l, u, Nd4j.getRandom());
-        return new Pair<INDArray, INDArray>(
-                computeActivation(in),
-                computeGradient(in)
-        );
+        setActivation(in,activation);
+        setGradient(in,gradient);
     }
-
-    @Override
-    public String toString() {
-        return "rrelu";
-    }
-
 }

@@ -7,10 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.transforms.PReLU;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -203,5 +200,7 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println("========My derivative==============");
         System.out.println(out);
 
+        INDArray A = Nd4j.linspace(-5,5,10).reshape(5,2);
+        Nd4j.getExecutioner().execAndReturn(new RectifedLinear(A));
     }
 }
