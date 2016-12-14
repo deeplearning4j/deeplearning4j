@@ -171,7 +171,7 @@ public class KerasSequentialModel extends KerasModel {
             this.modelJson = modelJson;
         }
 
-        protected SequentialBuilder() {}
+        private SequentialBuilder() {}
 
         public SequentialBuilder modelJson(String modelJson) {
             this.modelJson = modelJson;

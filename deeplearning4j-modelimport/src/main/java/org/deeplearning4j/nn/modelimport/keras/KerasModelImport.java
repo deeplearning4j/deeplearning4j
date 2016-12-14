@@ -74,8 +74,7 @@ public class KerasModelImport {
         KerasModelImport archive = new KerasModelImport(modelHdf5Filename);
         if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
-        KerasModel kerasModel = new KerasModel.ModelBuilder()
-                                        .modelJson(archive.getModelJson())
+        KerasModel kerasModel = new KerasModel.ModelBuilder(archive.getModelJson())
                                         .trainingJson(archive.getTrainingJson())
                                         .weights(archive.getWeights())
                                         .train(false)
@@ -97,8 +96,7 @@ public class KerasModelImport {
         KerasModelImport archive = new KerasModelImport(modelHdf5Filename);
         if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Sequential (found " + archive.getModelClassName() + ")");
-        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder()
-                .modelJson(archive.getModelJson())
+        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder(archive.getModelJson())
                 .trainingJson(archive.getTrainingJson())
                 .weights(archive.getWeights())
                 .train(false)
@@ -122,8 +120,7 @@ public class KerasModelImport {
         KerasModelImport archive = new KerasModelImport(modelJsonFilename, weightsHdf5Filename);
         if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
-        KerasModel kerasModel = new KerasModel.ModelBuilder()
-                .modelJson(archive.getModelJson())
+        KerasModel kerasModel = new KerasModel.ModelBuilder(archive.getModelJson())
                 .weights(archive.getWeights())
                 .train(false)
                 .build();
@@ -146,8 +143,7 @@ public class KerasModelImport {
         KerasModelImport archive = new KerasModelImport(modelJsonFilename, weightsHdf5Filename);
         if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Sequential (found " + archive.getModelClassName() + ")");
-        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder()
-                .modelJson(archive.getModelJson())
+        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder(archive.getModelJson())
                 .trainingJson(archive.getTrainingJson())
                 .weights(archive.getWeights())
                 .train(false)
@@ -168,8 +164,7 @@ public class KerasModelImport {
     public static ComputationGraphConfiguration importKerasModelConfiguration(String modelJsonFilename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
-        KerasModel kerasModel = new KerasModel.ModelBuilder()
-                .modelJson(modelJson)
+        KerasModel kerasModel = new KerasModel.ModelBuilder(modelJson)
                 .train(false)
                 .build();
         return kerasModel.getComputationGraphConfiguration();
@@ -187,8 +182,7 @@ public class KerasModelImport {
     public static MultiLayerConfiguration importKerasSequentialConfiguration(String modelJsonFilename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
-        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder()
-                .modelJson(modelJson)
+        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder(modelJson)
                 .train(false)
                 .build();
         return kerasModel.getMultiLayerConfiguration();

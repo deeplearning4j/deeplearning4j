@@ -312,7 +312,7 @@ public class KerasModel {
             this.modelJson = modelJson;
         }
 
-        protected ModelBuilder() {}
+        private ModelBuilder() {}
 
         public ModelBuilder modelJson(String modelJson) {
             this.modelJson = modelJson;
