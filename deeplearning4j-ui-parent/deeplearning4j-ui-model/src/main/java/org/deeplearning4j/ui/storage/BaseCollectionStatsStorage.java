@@ -295,24 +295,6 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public abstract void putStaticInfo(Persistable staticInfo);
-//    {
-//        List<StatsStorageEvent> sses = checkStorageEvents(staticInfo);
-//        if(!sessionIDs.contains(staticInfo.getSessionID())){
-//            sessionIDs.add(staticInfo.getSessionID());
-//        }
-//        SessionTypeWorkerId id = new SessionTypeWorkerId(staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID());
-//
-//        this.staticInfo.put(id, staticInfo);
-//        db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
-//        StatsStorageEvent sse = null;
-//        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo,
-//                staticInfo.getSessionID(), staticInfo.getTypeID(), staticInfo.getWorkerID(), staticInfo.getTimeStamp());
-//        for (StatsStorageListener l : listeners) {
-//            l.notify(sse);
-//        }
-//
-//        notifyListeners(sses);
-//    }
 
     @Override
     public void putStaticInfo(Collection<? extends Persistable> staticInfo) {
@@ -323,21 +305,6 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public abstract void putUpdate(Persistable update);
-//    {
-//        List<StatsStorageEvent> sses = checkStorageEvents(update);
-//        Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getTypeID(), update.getWorkerID(), true);
-//        updateMap.put(update.getTimeStamp(), update);
-//        db.commit();    //For write ahead log: need to ensure that we persist all data to disk...
-//
-//        StatsStorageEvent sse = null;
-//        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate,
-//                update.getSessionID(), update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
-//        for (StatsStorageListener l : listeners) {
-//            l.notify(sse);
-//        }
-//
-//        notifyListeners(sses);
-//    }
 
     @Override
     public void putUpdate(Collection<? extends Persistable> updates) {
@@ -348,20 +315,6 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     @Override
     public abstract void putStorageMetaData(StorageMetaData storageMetaData);
-//    {
-//        List<StatsStorageEvent> sses = checkStorageEvents(storageMetaData);
-//        SessionTypeId id = new SessionTypeId(storageMetaData.getSessionID(), storageMetaData.getTypeID());
-//        this.storageMetaData.put(id, storageMetaData);
-//
-//        StatsStorageEvent sse = null;
-//        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
-//                storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
-//        for (StatsStorageListener l : listeners) {
-//            l.notify(sse);
-//        }
-//
-//        notifyListeners(sses);
-//    }
 
     @Override
     public void putStorageMetaData(Collection<? extends StorageMetaData> storageMetaData) {
@@ -395,37 +348,6 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         return new ArrayList<>(listeners);
     }
 
-
-//    @Data
-//    public static class Builder {
-//
-//        private File file;
-//        private boolean useWriteAheadLog = true;
-//
-//        public Builder() {
-//            this(null);
-//        }
-//
-//        public Builder(File file) {
-//            this.file = file;
-//        }
-//
-//        public Builder file(File file) {
-//            this.file = file;
-//            return this;
-//        }
-//
-//        public Builder useWriteAheadLog(boolean useWriteAheadLog) {
-//            this.useWriteAheadLog = useWriteAheadLog;
-//            return this;
-//        }
-//
-//        public BaseCollectionStatsStorage build() {
-//            return new BaseCollectionStatsStorage(this);
-//        }
-//
-//    }
-
     @Data
     public static class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
         private final String sessionID;
@@ -453,25 +375,6 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
         }
     }
 
-
-//    private synchronized int getIntForClass(Class<?> c){
-//        String str = c.getName();
-//        if(classToInteger.containsKey(str)){
-//            return classToInteger.get(str);
-//        }
-//        int idx = classCounter.getAndIncrement();
-//        classToInteger.put(str,idx);
-//        integerToClass.put(idx,str);
-//        db.commit();
-//        return idx;
-//    }
-//
-//    private synchronized String getClassForInt(int integer){
-//        String c = integerToClass.get(integer);
-//        if(c == null) throw new RuntimeException("Unknown class index: " + integer);    //Should never happen
-//        return c;
-//    }
-
     @AllArgsConstructor
     @Data
     public static class SessionTypeId implements Serializable, Comparable<SessionTypeId> {
@@ -490,99 +393,4 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
             return "(" + sessionID + "," + typeID + ")";
         }
     }
-
-//    //Simple serializer, based on MapDB's SerializerJava
-//    private static class SessionTypeWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {
-//        @Override
-//        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeWorkerId value) throws IOException {
-//            ObjectOutputStream out2 = new ObjectOutputStream(out);
-//            out2.writeObject(value);
-//            out2.flush();
-//        }
-//
-//        @Override
-//        public SessionTypeWorkerId deserialize(@NotNull DataInput2 in, int available) throws IOException {
-//            try {
-//                ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
-//                return (SessionTypeWorkerId) in2.readObject();
-//            } catch (ClassNotFoundException e) {
-//                throw new IOException(e);
-//            }
-//        }
-//
-//        @Override
-//        public int compare(SessionTypeWorkerId w1, SessionTypeWorkerId w2) {
-//            return w1.compareTo(w2);
-//        }
-//    }
-//
-//    //Simple serializer, based on MapDB's SerializerJava
-//    private static class SessionTypeIdSerializer implements Serializer<SessionTypeId> {
-//        @Override
-//        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeId value) throws IOException {
-//            ObjectOutputStream out2 = new ObjectOutputStream(out);
-//            out2.writeObject(value);
-//            out2.flush();
-//        }
-//
-//        @Override
-//        public SessionTypeId deserialize(@NotNull DataInput2 in, int available) throws IOException {
-//            try {
-//                ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
-//                return (SessionTypeId) in2.readObject();
-//            } catch (ClassNotFoundException e) {
-//                throw new IOException(e);
-//            }
-//        }
-//
-//        @Override
-//        public int compare(SessionTypeId w1, SessionTypeId w2) {
-//            return w1.compareTo(w2);
-//        }
-//    }
-//
-//    private class PersistableSerializer<T extends Persistable> implements Serializer<T> {
-//
-//        @Override
-//        public void serialize(@NotNull DataOutput2 out, @NotNull Persistable value) throws IOException {
-//            //Persistable values can't be decoded in isolation, i.e., without knowing the type
-//            //So, we'll first write an integer representing the class name, so we can decode it later...
-//            int classIdx = getIntForClass(value.getClass());
-//            out.writeInt(classIdx);
-//            value.encode(out);
-//        }
-//
-//        @Override
-//        public T deserialize(@NotNull DataInput2 input, int available) throws IOException {
-//            int classIdx = input.readInt();
-//            String className = getClassForInt(classIdx);
-//            Class<?> clazz;
-//            try {
-//                clazz = Class.forName(className);
-//            } catch (ClassNotFoundException e) {
-//                throw new RuntimeException(e);  //Shouldn't normally happen...
-//            }
-//            Persistable p;
-//            try {
-//                p = (Persistable) clazz.newInstance();
-//            } catch (InstantiationException | IllegalAccessException e) {
-//                throw new RuntimeException(e);
-//            }
-//            int remainingLength = available - 4;   //-4 for int class index
-//            byte[] temp = new byte[remainingLength];
-//            input.readFully(temp);
-//            p.decode(temp);
-//            return (T) p;
-//        }
-//
-//        @Override
-//        public int compare(Persistable p1, Persistable p2) {
-//            int c = p1.getSessionID().compareTo(p2.getSessionID());
-//            if (c != 0) return c;
-//            c = p1.getTypeID().compareTo(p2.getTypeID());
-//            if (c != 0) return c;
-//            return p1.getWorkerID().compareTo(p2.getWorkerID());
-//        }
-//    }
-
 }
