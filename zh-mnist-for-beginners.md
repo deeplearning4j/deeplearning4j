@@ -1,6 +1,6 @@
 ---
 title: MNIST基础教程
-layout: default
+layout: cn-default
 ---
 
 <header>
@@ -151,7 +151,7 @@ layout: default
       <a href="https://deeplearning4j.org/cn/zh-neuralnet-overview">深度神经网络简介</a>
       <a href="https://deeplearning4j.org/cn/zh-restrictedboltzmannmachine">受限玻尔兹曼机基础教程</a>
       <a href="http://deeplearning4j.org/cn/zh-eigenvector">本征向量、协方差、PCA和熵</a>
-      <a href=”http://deeplearning4j.org/cn/zh-lstm">LSTM和递归网络基础教程</a>
+      <a href="http://deeplearning4j.org/cn/zh-lstm">LSTM和循环网络基础教程</a>
       <a href="http://deeplearning4j.org/linear-regression">神经网络与线性回归</a>
       <a href="http://deeplearning4j.org/cn/zh-convolutionalnets">卷积网络</a>
     </li>
