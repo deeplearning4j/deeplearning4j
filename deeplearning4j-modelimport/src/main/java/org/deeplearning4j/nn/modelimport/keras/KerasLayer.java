@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -121,6 +122,10 @@ public class KerasLayer {
     public static final String KERAS_LOSS_KL_DIVERGENCE_2 = "kld";
     public static final String KERAS_LOSS_POISSON  = "poisson";
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
+    public static final String LAYER_FIELD_BORDER_MODE = "border_mode";
+    public static final String LAYER_BORDER_MODE_SAME = "same";
+    public static final String LAYER_BORDER_MODE_VALID = "valid";
+    public static final String LAYER_BORDER_MODE_FULL = "full";
 
     /* Logging. */
     private static Logger log = LoggerFactory.getLogger(KerasLayer.class);
@@ -743,10 +748,40 @@ public class KerasLayer {
         List<Integer> stride = (List<Integer>)layerConfig.get(LAYER_FIELD_SUBSAMPLE);
         int nb_row = (Integer)layerConfig.get(LAYER_FIELD_NB_ROW);
         int nb_col = (Integer)layerConfig.get(LAYER_FIELD_NB_COL);
+        String borderMode = (String)layerConfig.get(LAYER_FIELD_BORDER_MODE);
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder()
                 .stride(stride.get(0), stride.get(1))
                 .kernelSize(nb_row, nb_col)
                 .nOut((int)layerConfig.get(LAYER_FIELD_NB_FILTER));
+        switch (borderMode) {
+            /* Keras relies upon the Theano and TensorFlow border mode definitions
+             * and operations:
+             * - Theano: http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d
+             * - TensorFlow: https://www.tensorflow.org/api_docs/python/nn/convolution#conv2d
+             */
+            case LAYER_BORDER_MODE_SAME:
+                /* TensorFlow-only "same" mode is equivalent to DL4J Same mode. */
+                builder.convolutionMode(ConvolutionMode.Same);
+                break;
+            case LAYER_BORDER_MODE_VALID:
+                /* TensorFlow and Theano "valid" modes apply filter only
+                 * to complete patches within the image borders with no
+                 * padding. That is equivalent to DL4J Truncate mode
+                 * with no padding.
+                 */
+                builder.convolutionMode(ConvolutionMode.Truncate);
+                break;
+            case LAYER_BORDER_MODE_FULL:
+                /* Theano-only "full" mode zero pads the image so that
+                 * outputs = (inputs + filters + 1) / stride. This should
+                 * be equivalent to DL4J Truncate mode with padding
+                 * equal to filters-1.
+                 * TODO: verify this is correct.
+                 */
+                int[] padding = new int[]{nb_row-1, nb_col-1};
+                builder.convolutionMode(ConvolutionMode.Truncate).padding(padding);
+                break;
+        }
         finishLayerConfig(builder, layerConfig, train);
         return builder.build();
     }
@@ -781,6 +816,26 @@ public class KerasLayer {
             default:
                 throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + layerClassName);
         }
+        String borderMode = (String)layerConfig.get(LAYER_FIELD_BORDER_MODE);
+        switch (borderMode) {
+            /* See notes for "border_mode" in buildConvolutionLayer above. */
+            case LAYER_BORDER_MODE_SAME:
+                /* TensorFlow-only "same" mode is equivalent to DL4J Same mode. */
+                builder.convolutionMode(ConvolutionMode.Same);
+                break;
+            case LAYER_BORDER_MODE_VALID:
+                /* "valid" mode is equivalent to DL4J Truncate mode with no padding. */
+                builder.convolutionMode(ConvolutionMode.Truncate);
+                break;
+            case LAYER_BORDER_MODE_FULL:
+                /* Theano-only "full" mode should be equivalent to DL4J Truncate mode
+                 * with padding equal to filters-1.
+                 * TODO: verify this is correct.
+                 */
+                int[] padding = new int[]{pool.get(0)-1, pool.get(1)-1};
+                builder.convolutionMode(ConvolutionMode.Truncate).padding(padding);
+                break;
+        }
         finishLayerConfig(builder, layerConfig, train);
         return builder.build();
     }
@@ -800,7 +855,10 @@ public class KerasLayer {
         if (!layerConfig.get(LAYER_FIELD_ACTIVATION).equals(layerConfig.get(LAYER_FIELD_INNER_ACTIVATION)))
             throw new UnsupportedKerasConfigurationException("Specifying different activation for LSTM inner cells not supported.");
         if (!layerConfig.get(LAYER_FIELD_INIT).equals(layerConfig.get(LAYER_FIELD_INNER_INIT)))
-            log.warn("Specifying different initialization for inner cells not supported.");
+            if (train)
+                throw new UnsupportedKerasConfigurationException("Specifying different initialization for LSTM inner cells not supported.");
+            else
+                log.warn("Specifying different initialization for LSTM inner cells not supported.");
         if ((double)layerConfig.get(LAYER_FIELD_DROPOUT_U) > 0.0)
             throw new UnsupportedKerasConfigurationException("Dropout > 0 on LSTM recurrent connections not supported.");
 
@@ -818,7 +876,7 @@ public class KerasLayer {
                 if (train)
                     throw new UnsupportedKerasConfigurationException("Unsupported bias initialization: " + forgetBiasInit);
                 else {
-                    builder.forgetGateBiasInit(0.0);
+                    builder.forgetGateBiasInit(1.0);
                     log.warn("Unsupported bias initialization: " + forgetBiasInit + ". Using ONE instead");
                 }
                 break;
