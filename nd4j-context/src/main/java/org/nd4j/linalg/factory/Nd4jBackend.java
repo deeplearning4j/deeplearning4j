@@ -19,7 +19,9 @@
 
 package org.nd4j.linalg.factory;
 
+import java.io.File;
 import java.io.IOException;
+import java.security.PrivilegedActionException;
 import java.util.*;
 
 import org.nd4j.context.Nd4jContext;
@@ -31,16 +33,42 @@ import org.slf4j.LoggerFactory;
 /**
  * An ND4j backend.
  *
+ * A "backend" is also described here: http://nd4j.org/backend.html
+ *
+ * A backend also has 2  variables to be aware of.
+ * 1 is the environment variable, ND4J_DYNAMIC_LOAD_CLASSPATH
+ * This will define a uri path separated by ; where jars will be
+ * loaded from the path and dynamically loaded.
+ *
+ * The other is the system property:
+ * org.nd4j.backend.dynamicbackend
+ *
+ * This has the same use case but is for system properties.
+ * Of note here is that the system property takes loading precedence over
+ * the environment variable. If you want to just use the environment variable,
+ * don't define the system property.
+ *
+ * Both of these variables are for dynamically loading a backend relative to a path.
+ * The main idea here is for distributed environments like spark where
+ * you have multiple worker nodes with some having gpus and others not.
+ *
+ * When you define an environment variable on the server, you can
+ * have a hardware jar file load with respect to the node nd4j is installed on.
+ * The system property is mainly for flexibility and probably shouldn't be
+ * used in practice.
+ *
  * @author eronwright
+ * @author Adam Gibson
  *
  */
 public abstract class Nd4jBackend {
 
     public static final int BACKEND_PRIORITY_CPU =   0;
     public static final int BACKEND_PRIORITY_GPU = 100;
-
+    public final static String DYNAMIC_LOAD_CLASSPATH = "ND4J_DYNAMIC_LOAD_CLASSPATH";
+    public final static String DYNAMIC_LOAD_CLASSPATH_PROPERTY = "org.nd4j.backend.dynamicbackend";
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
-
+    private static boolean triedDynamicLoad = false;
 
 
     /**
@@ -175,9 +203,59 @@ public abstract class Nd4jBackend {
             return backend;
         }
 
-        throw new NoAvailableBackendException("Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
+        //need to dynamically load jars and recall, note that we do this right before the backend loads.
+        //An existing backend should take precedence over
+        //ones being dynamically discovered.
+        //Note that we prioritize jvm properties first, followed by environment variables.
+        String[] jarUris;
+        if(System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
+            jarUris = System.getProperties().getProperty(DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
+        }
+        else if(System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH) && !triedDynamicLoad) {
+            jarUris = System.getenv(DYNAMIC_LOAD_CLASSPATH).split(";");
+        }
+
+        else
+            throw new NoAvailableBackendException("Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
+
+        triedDynamicLoad = true;
+        //load all the discoverable uris and try to load the backend again
+        for(String uri : jarUris) {
+            loadLibrary(new File(uri));
+        }
+
+        return load();
+
     }
 
+
+    /**
+     * Adds the supplied Java Archive library to java.class.path. This is benign
+     * if the library is already loaded.
+     * @param jar the jar file to add
+     * @throws NoAvailableBackendException
+     */
+    public static synchronized void loadLibrary(File jar) throws NoAvailableBackendException {
+        try {
+            /*We are using reflection here to circumvent encapsulation; addURL is not public*/
+            java.net.URLClassLoader loader = (java.net.URLClassLoader) ClassLoader.getSystemClassLoader();
+            java.net.URL url = jar.toURI().toURL();
+            /*Disallow if already loaded*/
+            for (java.net.URL it : java.util.Arrays.asList(loader.getURLs())) {
+                if (it.equals(url)){
+                    return;
+                }
+            }
+            java.lang.reflect.Method method = java.net.URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{java.net.URL.class});
+            method.setAccessible(true); /*promote the method to public access*/
+            method.invoke(loader, new Object[]{url});
+        } catch (final java.lang.NoSuchMethodException |
+                java.lang.IllegalAccessException |
+                java.net.MalformedURLException |
+                java.lang.reflect.InvocationTargetException e) {
+            throw new NoAvailableBackendException(e);
+        }
+    }
 
     /**
      *
@@ -207,6 +285,24 @@ public abstract class Nd4jBackend {
     public static class NoAvailableBackendException extends Exception {
         public NoAvailableBackendException(String s) {
             super(s);
+        }
+
+        /**
+         * Constructs a new exception with the specified cause and a detail
+         * message of <tt>(cause==null ? null : cause.toString())</tt> (which
+         * typically contains the class and detail message of <tt>cause</tt>).
+         * This constructor is useful for exceptions that are little more than
+         * wrappers for other throwables (for example, {@link
+         * PrivilegedActionException}).
+         *
+         * @param cause the cause (which is saved for later retrieval by the
+         *              {@link #getCause()} method).  (A <tt>null</tt> value is
+         *              permitted, and indicates that the cause is nonexistent or
+         *              unknown.)
+         * @since 1.4
+         */
+        public NoAvailableBackendException(Throwable cause) {
+            super(cause);
         }
     }
 }
