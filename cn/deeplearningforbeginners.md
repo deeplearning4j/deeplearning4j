@@ -1,88 +1,88 @@
 ---
-title: Deep Learning for Beginners
-layout: default
+title: 深度学习入门指南
+layout: cn-default
 ---
 
-# How Do I Start Using Deep Learning?
+# 深度学习如何入门？
 
-Where you start depends on what you already know. 
+具体的入门方式取决于您已经掌握的知识。 
 
-The prerequisites for understanding and applying deep learning are linear algebra, calculus and statistics, as well as programming and machine learning. 
+要理解并应用深度学习，必须先掌握线性代数、微积分和统计学，还应当具备编程及机器学习的知识。 
 
-In the case of Deeplearning4j, you should know Java well and be comfortable with the IntelliJ IDE. 
+就Deeplearning4j而言，您应当熟悉Java语言，并且熟练掌握IDE工具IntelliJ。 
 
-Below you'll find a list of resources. The sections are roughly organized in the order they will be useful. 
+以下是相关学习资源的列表。本页中的段落大致按学习的顺序排列。 
 
-## Free Machine- and Deep-learning Courses Online
+## 免费的机器学习和深度学习网络课程
 
-* [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info) 
-* [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
-* [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
-* [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
+* [Coursera上的机器学习课程，Andrew Ng主讲](https://www.coursera.org/learn/machine-learning/home/info) 
+* [Coursera上的神经网络课程，Geoff Hinton主讲](http://class.coursera.org/neuralnets-2012-001/lecture) 
+* [MIT人工智能导论，Patrick Winston主讲](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)（供希望了解人工智能概况的用户参考。）
+* [斯坦福卷积神经网络课程，Andrej Karpathy主讲](http://cs231n.github.io)（供希望了解图像识别的用户参考。）
 
-## Math
+## 数学
 
-* [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
-* [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
-* [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
-* [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
-* [Math for Machine Learning](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
-* [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
-* [Probability Cheatsheet](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
-* [The best linear algebra books](https://begriffs.com/posts/2016-07-24-best-linear-algebra-books.html)
-* [Markov Chains, Explained](http://setosa.io/ev/markov-chains/)
-* [An Introduction to MCMC for Machine Learning](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf)
+* [Andrew Ng的六节线性代数复习课](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
+* [可汗学院的线性代数课程](https://www.khanacademy.org/math/linear-algebra)
+* [机器学习中的线性代数](https://www.youtube.com/watch?v=ZumgfOei0Ak)；Patrick van der Smagt主讲
+* [CMU的线性代数回顾](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
+* [《机器学习中的数学》](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
+* [《沉浸式线性代数教程》](http://immersivemath.com/ila/learnmore.html)
+* [《概率论速查手册》](https://static1.squarespace.com/static/54bf3241e4b0f0d81bf7ff36/t/55e9494fe4b011aed10e48e5/1441352015658/probability_cheatsheet.pdf)
+* [线性代数读物精选](https://begriffs.com/posts/2016-07-24-best-linear-algebra-books.html)
+* [马尔可夫链解析](http://setosa.io/ev/markov-chains/)
+* [《机器学习中的马尔可夫链蒙特卡洛算法导论》](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf)
 
-## Programming
+## 编程
 
-If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop. 
+如果您还未掌握如何编程，建议您不要从Java语言开始学习。Python和Ruby的反馈速度快，学习这两种语言更容易掌握编程的基本理念。 
 
-* [Learn Python the Hard Way](http://learnpythonthehardway.org/)
-* [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
-* [Intro to the Command Line](http://cli.learncodethehardway.org/book/)
-* [Additional command-line tutorial](http://www.learnenough.com/command-line)
-* [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
-* [Intro to Computer Science (CS50 @Harvard edX)](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
-* [A Gentle Introduction to Machine Fundamentals](https://marijnhaverbeke.nl/turtle/)
+* [《笨办法学Python》](http://learnpythonthehardway.org/)
+* [《Learn to Program (Ruby)》](https://pine.fm/LearnToProgram/)
+* [命令行入门教程](http://cli.learncodethehardway.org/book/)
+* [命令行补充教程](http://www.learnenough.com/command-line)
+* [Vim教程与基础知识](https://danielmiessler.com/study/vim/)（Vim是一种基于命令行的编辑器。）
+* [计算机科学导论（哈佛edX课程CS50）](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
+* [《计算机基本原理浅析》](https://marijnhaverbeke.nl/turtle/)
 
-If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
+如果您希望跳过Java语言，直接开始使用深度学习，我们推荐[Theano](http://deeplearning.net/)和建立在其基础上的各类Python框架，包括[Keras](https://github.com/fchollet/keras)和[Lasagne](https://github.com/Lasagne/Lasagne)。
 
 ## Java
 
-Once you have programming basics down, tackle Java, the world's most widely used programming language, and the language of Hadoop. 
+掌握了编程的基础知识后，下一个需要攻克的目标是Java语言——世界上使用最广泛的编程语言，Hadoop也是用Java编写开发的。 
 
-* [Java Resources](http://wiht.link/java-resources)
-* [Java Ranch: A Community for Java Beginners](http://javaranch.com/)
-* [Intro to Programming in Java @Princeton](http://introcs.cs.princeton.edu/java/home/)
-* [Head First Java](http://www.amazon.com/gp/product/0596009208)
-* [Java in a Nutshell](http://www.amazon.com/gp/product/1449370829)
+* [Java资源](http://wiht.link/java-resources)
+* [Java Ranch：Java语言初学者社区](http://javaranch.com/)
+* [普林斯顿Java语言编程导论](http://introcs.cs.princeton.edu/java/home/)
+* [《Head First Java》](http://www.amazon.com/gp/product/0596009208)
+* [《Java技术手册（Java in a Nutshell）》](http://www.amazon.com/gp/product/1449370829)
 
 ## Deeplearning4j
 
-With that under your belt, we recommend you approach Deeplearning4j through its [examples](https://github.com/deeplearning4j/dl4j-examples). 
+具备上述知识后，我们建议您通过[示例](https://github.com/deeplearning4j/dl4j-examples)来学习Deeplearning4j。 
 
-* [Quickstart](./quickstart.html)
+* [快速入门指南](./quickstart.html)
 
-Once you get those up and running, and you've understood the API, you're ready for a full install.
+完成指南中的设置步骤并理解这一API之后，您就可以进行完全安装了。
 
-* [Getting Started](./gettingstarted)
+* [完全安装指南](./gettingstarted)
 
-## Other Resources
+## 其他资源
 
-Most of what we know about deep learning is contained in academic papers.
+目前有关于深度学习的知识大都发表在学术论文中。
 
-We've linked to a number of them [here](./deeplearningpapers). 
+[此页](./deeplearningpapers)中列出了一些相关论文。 
 
-While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
+任何具体课程所教授的内容都是有限的，但互联网可以提供的知识是无限的。大部分数学和编程问题都可以通过谷歌搜索或搜索[Stackoverflow](http://stackoverflow.com)和[Math Stackexchange](https://math.stackexchange.com/)等网站来解决。
 
-## DL4J Beginner's Guides
+## DL4J入门指南
 
-* [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Regression & Neural Networks](./linear-regression)
-* [Word2vec: Extracting Relations From Raw Text With Neural Word Embeddings](./word2vec)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine)
-* [Recurrent Networks and Long Short-Term Memory Units](./lstm)
-* [Convolutional Networks for Image Processing](./convolutionalnets)
-* [Artificial Intelligence vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning)
-* [Comparing Open-Source Deep Learning Frameworks](./compare-dl4j-torch7-pylearn)
-* [Eigenvectors, PCA, Covariance and Entropy](/eigenvector)
+* [深度神经网络简介](./neuralnet-overview)
+* [回归分析与神经网络](./linear-regression)
+* [Word2vec：用神经词向量从原始文本中提取关系](./word2vec)
+* [受限玻尔兹曼机：构建深度置信网络的基本单元](./restrictedboltzmannmachine)
+* [循环网络与长短期记忆单元](./lstm)
+* [用于图像处理的卷积网络](./convolutionalnets)
+* [人工智能、机器学习与深度学习](./ai-machinelearning-deeplearning)
+* [开源深度学习框架比较](./compare-dl4j-torch7-pylearn)
+* [本征向量、协方差、PCA和熵](/eigenvector)
