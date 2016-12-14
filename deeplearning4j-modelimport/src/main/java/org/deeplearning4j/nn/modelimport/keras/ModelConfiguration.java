@@ -18,10 +18,9 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -34,9 +33,8 @@ import java.io.IOException;
  *             {@link org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel} instead.
  */
 @Deprecated
+@Slf4j
 public class ModelConfiguration {
-
-    private static Logger log = LoggerFactory.getLogger(ModelConfiguration.class);
 
     private ModelConfiguration() {}
 
@@ -50,7 +48,7 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfigFromFile(String modelJsonFilename)
-            throws IOException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialConfiguration(modelJsonFilename);
     }
 
@@ -64,7 +62,7 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfigFromFile(String modelJsonFilename)
-            throws IOException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelConfiguration(modelJsonFilename);
     }
 
@@ -78,8 +76,8 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfig(String modelJson)
-            throws IOException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel(modelJson);
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder(modelJson).build();
         return kerasModel.getMultiLayerConfiguration();
     }
 
@@ -93,8 +91,8 @@ public class ModelConfiguration {
      */
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfig(String modelJson)
-            throws IOException {
-        KerasModel kerasModel = new KerasModel(modelJson);
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasModel kerasModel = new KerasModel.ModelBuilder(modelJson).build();
         return kerasModel.getComputationGraphConfiguration();
     }
 }
