@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -14,6 +15,7 @@ import static org.junit.Assert.*;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class KerasLayerTest {
     public static final String ACTIVATION_KERAS = "linear";
     public static final String ACTIVATION_DL4J = "identity";
