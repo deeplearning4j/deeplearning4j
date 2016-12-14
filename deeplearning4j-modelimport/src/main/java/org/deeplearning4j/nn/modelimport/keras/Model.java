@@ -18,10 +18,9 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -33,8 +32,8 @@ import java.io.IOException;
  * @deprecated Use {@link KerasModelImport} instead.
  */
 @Deprecated
+@Slf4j
 public class Model {
-    private static Logger log = LoggerFactory.getLogger(Model.class);
 
     private Model() {}
 
@@ -48,7 +47,8 @@ public class Model {
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
-    public static org.deeplearning4j.nn.api.Model importModel(String modelHdf5Filename) throws IOException {
+    public static org.deeplearning4j.nn.api.Model importModel(String modelHdf5Filename)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename);
     }
 
@@ -65,7 +65,7 @@ public class Model {
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename);
     }
 
@@ -80,7 +80,8 @@ public class Model {
      * @deprecated Use {@link KerasModelImport#importKerasSequentialModelAndWeights} instead
      */
     @Deprecated
-    public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename) throws IOException {
+    public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Filename);
     }
 
@@ -95,7 +96,8 @@ public class Model {
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
-    public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename) throws IOException {
+    public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename);
     }
 
@@ -112,7 +114,7 @@ public class Model {
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(configJsonFilename, weightsHdf5Filename);
     }
 
@@ -129,7 +131,7 @@ public class Model {
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModel(String configJsonFilename, String weightsHdf5Filename)
-            throws IOException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename);
     }
 }

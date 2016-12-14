@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -42,6 +44,7 @@ import java.util.regex.Pattern;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class KerasModel {
     /* Model class name field. */
     public static final String MODEL_FIELD_CLASS_NAME = "class_name";
@@ -69,107 +72,148 @@ public class KerasModel {
     protected Map<String,Set<String>> outputToInput; // graph of output-to-input relationships
     protected int truncatedBPTT = DO_NOT_USE_TRUNCATED_BPTT;   // truncated BPTT value
     protected Map<String,Map<String,INDArray>> weights = null; // map from layer to parameter to weights
+    protected boolean train;                  // whether to build model in training mode
 
     /**
-     * Constructor for Model configuration JSON string.
+     * Constructor for (Functional API) Model from model configuration JSON string,
+     * training configuration JSON string, weights, and "training mode" boolean
+     * indicator. When built in training mode, certain unsupported configurations
+     * (e.g., unknown regularizers) will throw Exceptions. When train=false, these
+     * will generate warnings but will be otherwise ignored.
      *
-     * @param modelConfigJson       model configuration JSON string
+     * @param modelJson       model configuration JSON string
+     * @param trainingJson    training configuration JSON string
+     * @param weights         map from layer to parameter to weights
+     * @param train           whether to build model for training
      * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
      */
-    public KerasModel(String modelConfigJson) throws IOException {
-        Map<String,Object> classNameAndLayerLists = parseJsonString(modelConfigJson);
+    public KerasModel(String modelJson, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String,Object> classNameAndLayerLists = parseJsonString(modelJson);
         this.className = (String) checkAndGetModelField(classNameAndLayerLists, MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_MODEL))
             throw new InvalidKerasConfigurationException("Expected model class name Model (found " + this.className + ")");
+        this.train = train;
+
         Map<String,Object> layerLists = (Map<String,Object>) checkAndGetModelField(classNameAndLayerLists, MODEL_FIELD_CONFIG);
 
-        List<Object> layerConfigs = (List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_LAYERS);
-        helperPrepareLayers(layerConfigs);
+        /* Convert layer configuration objects into KerasLayers. */
+        helperPrepareLayers((List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_LAYERS));
 
+        /* Construct lists of input and output layer names. */
         this.inputLayerNames = new ArrayList();
         for (Object inputLayerNameObj : (List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_INPUT_LAYERS))
             this.inputLayerNames.add((String)((List<Object>)inputLayerNameObj).get(0));
         this.outputLayerNames = new ArrayList();
         for (Object outputLayerNameObj : (List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
             this.outputLayerNames.add((String)((List<Object>)outputLayerNameObj).get(0));
+
+        /* Construct graph. */
         helperPrepareGraph();
+
+        /* Import training configuration. */
+        if (trainingJson != null)
+            helperImportTrainingConfiguration(trainingJson);
+
+        /* Store weights map (even if null).
+         * TODO: should we copy these to prevent user from changing them?
+         */
+        this.weights = weights;
     }
 
     /**
-     * Constructor for Model configuration JSON string and map containing weights.
+     * Helper method called from constructor. Converts layer configuration
+     * JSON into KerasLayer objects.
      *
-     * @param modelConfigJson       model configuration JSON string
-     * @param weights               map from layer to parameter to weights
-     * @throws IOException
+     * @param layerConfigs      List of Keras layer configurations
      */
-    public KerasModel(String modelConfigJson, Map<String, Map<String,INDArray>> weights) throws IOException {
-        this(modelConfigJson);
-        copyWeightsToModel(weights);
+    protected void helperPrepareLayers(List<Object> layerConfigs)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this.layers = new HashMap<String, KerasLayer>();
+        this.layerNamesOrdered = new ArrayList<String>();
+        for (Object layerConfig : layerConfigs) {
+            KerasLayer layer = new KerasLayer((Map<String, Object>) layerConfig, this.train);
+            this.layerNamesOrdered.add(layer.getName());
+            this.layers.put(layer.getName(), layer);
+        }
     }
 
     /**
-     * Constructor for Model and training configuration JSON strings.
-     *
-     * @param modelConfigJson       model configuration JSON string
-     * @param trainingConfigJson    training configuration JSON string
-     * @throws IOException
+     * Helper method called from constructor. Builds input-to-output
+     * and output-to-input graphs based on inbound layer lists.
      */
-    public KerasModel(String modelConfigJson, String trainingConfigJson) throws IOException {
-        this(modelConfigJson);
-        importTrainingConfiguration(trainingConfigJson);
+    protected void helperPrepareGraph() {
+        this.outputToInput = new HashMap<String,Set<String>>();
+        this.inputToOutput = new HashMap<String,Set<String>>();
+        for (String childName : this.layerNamesOrdered) {
+            if (!outputToInput.containsKey(childName))
+                outputToInput.put(childName, new HashSet<String>());
+            for (String parentName : this.layers.get(childName).getInboundLayerNames()) {
+                outputToInput.get(childName).add(parentName);
+                if (!inputToOutput.containsKey(parentName))
+                    inputToOutput.put(parentName, new HashSet<String>());
+                inputToOutput.get(parentName).add(childName);
+            }
+            if (!inputToOutput.containsKey(childName))
+                inputToOutput.put(childName, new HashSet<String>());
+        }
     }
 
     /**
-     * Constructor for Model and training configuration JSON strings and map containing weights.
+     * Helper method called from constructor. Incorporate training configuration details into model.
+     * Includes loss function, optimization details, etc.
      *
-     * @param modelConfigJson       model configuration JSON string
-     * @param trainingConfigJson    training configuration JSON string
-     * @param weights               map from layer to parameter to weights
+     * @param trainingConfigJson        JSON containing Keras training configuration
      * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
      */
-    public KerasModel(String modelConfigJson, String trainingConfigJson, Map<String, Map<String,INDArray>> weights)
-            throws IOException {
-        this(modelConfigJson);
-        importTrainingConfiguration(trainingConfigJson);
-        copyWeightsToModel(weights);
-    }
-
-    protected KerasModel() {}
-
-    /**
-     * Incorporate training configuration details into model. Includes loss function,
-     * optimization details, etc.
-     *
-     * @param trainingConfigJson
-     * @throws IOException
-     */
-    public void importTrainingConfiguration(String trainingConfigJson) throws IOException {
+     protected void helperImportTrainingConfiguration(String trainingConfigJson)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String,Object> trainingConfig = parseJsonString(trainingConfigJson);
 
         /* Add loss layers for each loss function. */
-        Map<String,String> kerasLossMap = new HashMap<String,String>();
-        helperAddLossLayers(checkAndGetTrainingField(trainingConfig, TRAINING_CONFIG_FIELD_LOSS));
-
-        /* TODO: handle optimizer configuration. */
-        /* TODO: handle other configs (loss weights, sample weights). */
-    }
-
-    /**
-     * Copy weights into model.
-     *
-     * @param weights       weights stored in map from layer to parameter to weights
-     */
-    public void copyWeightsToModel(Map<String,Map<String,INDArray>> weights) {
-        this.weights = new HashMap<String,Map<String,INDArray>>();
-        for (String layerName : weights.keySet()) {
-            if (!this.layers.containsKey(layerName))
-                throw new InvalidKerasConfigurationException("Attempting to import weights for unknown layer " + layerName);
-            if (!this.weights.containsKey(layerName))
-                this.weights.put(layerName, new HashMap<String,INDArray>());
-            for (String paramName : weights.get(layerName).keySet())
-                this.weights.get(layerName).put(paramName, weights.get(layerName).get(paramName));
+        Map<String,KerasLayer> lossLayers = new HashMap<String,KerasLayer>();
+        Object kerasLossObj = checkAndGetTrainingField(trainingConfig, TRAINING_CONFIG_FIELD_LOSS);
+        if (kerasLossObj instanceof String) {
+            String kerasLoss = (String)kerasLossObj;
+            for (String outputLayerName : this.outputLayerNames)
+                lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", kerasLoss));
+            this.outputLayerNames.clear();
+        } else if (kerasLossObj instanceof Map) {
+            Map<String,Object> kerasLossMap = (Map<String,Object>)kerasLossObj;
+            for (String outputLayerName : kerasLossMap.keySet()) {
+                this.outputLayerNames.remove(outputLayerName);
+                Object kerasLoss = kerasLossMap.get(outputLayerName);
+                if (kerasLoss instanceof String)
+                    lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", (String)kerasLoss));
+                else
+                    throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
+            }
         }
+
+        /* Add loss layers to output layer list and layer graph. */
+        for (String outputLayerName : lossLayers.keySet()) {
+            KerasLayer lossLayer = lossLayers.get(outputLayerName);
+            this.layers.put(lossLayer.getName(), lossLayer);
+            String lossLayerName = lossLayer.getName();
+            outputLayerNames.add(lossLayerName);
+            this.layerNamesOrdered.add(lossLayerName);
+            if (!this.inputToOutput.containsKey(outputLayerName))
+                this.inputToOutput.put(outputLayerName, new HashSet<String>());
+            this.inputToOutput.get(outputLayerName).add(lossLayerName);
+            if (!this.outputToInput.containsKey(lossLayerName))
+                this.outputToInput.put(lossLayerName, new HashSet<String>());
+            this.outputToInput.get(lossLayerName).add(outputLayerName);
+        }
+
+        /* TODO: handle other configs (loss weights, sample weights). */
+        /* TODO: handle optimizer configuration. */
     }
+
+    protected KerasModel() {}
 
     /**
      * Configure a ComputationGraph from this Keras Model configuration.
@@ -233,101 +277,70 @@ public class KerasModel {
     }
 
     /**
-     * Build a ComputationGraph from this Keras Model configuration.
-     *
-     * @return          ComputationGraph
-     */
-    public ComputationGraph getComputationGraph() {
-        return getComputationGraph(true);
-    }
-
-    /**
      * Build a ComputationGraph from this Keras Model configuration and import weights.
      *
      * @return          ComputationGraph
      */
-    public ComputationGraph getComputationGraph(boolean importWeights) {
+    public ComputationGraph getComputationGraph()
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        return getComputationGraph(true);
+    }
+
+    /**
+     * Build a ComputationGraph from this Keras Model configuration and (optionally) import weights.
+     *
+     * @param importWeights         whether to import weights
+     * @return          ComputationGraph
+     */
+    public ComputationGraph getComputationGraph(boolean importWeights)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         ComputationGraph model = new ComputationGraph(getComputationGraphConfiguration());
+        model.init();
         if (importWeights)
-            copyWeightsToModel(model, this.weights, this.layers);
+            model = (ComputationGraph)copyWeightsToModel(model, this.weights, this.layers);
         return model;
     }
 
-    /**
-     * Helper method called from constructor. Converts layer configuration
-     * JSON into KerasLayer objects.
-     *
-     * @param layerConfigs     List of Keras layer configuration objects (nested maps).
-     */
-    protected void helperPrepareLayers(List<Object> layerConfigs) {
-        this.layers = new HashMap<String,KerasLayer>();
-        this.layerNamesOrdered = new ArrayList<String>();
-        for (Object layerConfig : layerConfigs) {
-            KerasLayer layer = new KerasLayer((Map<String,Object>)layerConfig);
-            this.layerNamesOrdered.add(layer.getName());
-            this.layers.put(layer.getName(), layer);
-        }
-    }
+    @Data
+    static class ModelBuilder implements Cloneable {
+        protected String modelJson;
+        protected String trainingJson = null;
+        protected Map<String,Map<String,INDArray>> weights = null;
+        protected boolean train = false;
 
-    /**
-     * Helper method called from constructor. Builds input-to-output
-     * and output-to-input graphs based on inbound layer lists.
-     */
-    protected void helperPrepareGraph() {
-        this.outputToInput = new HashMap<String,Set<String>>();
-        this.inputToOutput = new HashMap<String,Set<String>>();
-        for (String childName : this.layerNamesOrdered) {
-            if (!outputToInput.containsKey(childName))
-                outputToInput.put(childName, new HashSet<String>());
-            for (String parentName : this.layers.get(childName).getInboundLayerNames()) {
-                outputToInput.get(childName).add(parentName);
-                if (!inputToOutput.containsKey(parentName))
-                    inputToOutput.put(parentName, new HashSet<String>());
-                inputToOutput.get(parentName).add(childName);
-            }
-            if (!inputToOutput.containsKey(childName))
-                inputToOutput.put(childName, new HashSet<String>());
-        }
-    }
-
-    /**
-     * Helper method called from constructor. Process a Keras loss
-     * configuration object (from training configuration JSON)
-     * into one or more LossLayers.
-     *
-     * @param kerasLossObj      Keras loss configuration
-     */
-    protected void helperAddLossLayers(Object kerasLossObj) {
-        Map<String,KerasLayer> lossLayers = new HashMap<String,KerasLayer>();
-        if (kerasLossObj instanceof String) {
-            String kerasLoss = (String)kerasLossObj;
-            for (String outputLayerName : this.outputLayerNames)
-                lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", kerasLoss));
-            this.outputLayerNames.clear();
-        } else if (kerasLossObj instanceof Map) {
-            Map<String,Object> kerasLossMap = (Map<String,Object>)kerasLossObj;
-            for (String outputLayerName : kerasLossMap.keySet()) {
-                this.outputLayerNames.remove(outputLayerName);
-                Object kerasLoss = kerasLossMap.get(outputLayerName);
-                if (kerasLoss instanceof String)
-                    lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", (String)kerasLoss));
-                else
-                    throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
-            }
+        public ModelBuilder(String modelJson) {
+            this.modelJson = modelJson;
         }
 
-        for (String outputLayerName : lossLayers.keySet()) {
-            KerasLayer lossLayer = lossLayers.get(outputLayerName);
-            this.layers.put(lossLayer.getName(), lossLayer);
-            String lossLayerName = lossLayer.getName();
-            outputLayerNames.add(lossLayerName);
-            this.layerNamesOrdered.add(lossLayerName);
-            if (!this.inputToOutput.containsKey(outputLayerName))
-                this.inputToOutput.put(outputLayerName, new HashSet<String>());
-            this.inputToOutput.get(outputLayerName).add(lossLayerName);
-            if (!this.outputToInput.containsKey(lossLayerName))
-                this.outputToInput.put(lossLayerName, new HashSet<String>());
-            this.outputToInput.get(lossLayerName).add(outputLayerName);
+        protected ModelBuilder() {}
+
+        public ModelBuilder modelJson(String modelJson) {
+            this.modelJson = modelJson;
+            return this;
+        }
+
+        public ModelBuilder trainingJson(String trainingJson) {
+            this.trainingJson = trainingJson;
+            return this;
+        }
+
+        public ModelBuilder weights(Map<String,Map<String,INDArray>> weights) {
+            this.weights = weights;
+            return this;
+        }
+
+        public ModelBuilder train(boolean train) {
+            this.train = train;
+            return this;
+        }
+
+        public static ModelBuilder builder() {
+            return new ModelBuilder();
+        }
+
+        public KerasModel build()
+                throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            return new KerasModel(this.modelJson, this.trainingJson, this.weights, this.train);
         }
     }
 

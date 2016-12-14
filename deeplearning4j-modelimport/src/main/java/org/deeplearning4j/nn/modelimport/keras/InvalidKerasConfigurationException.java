@@ -27,7 +27,7 @@ package org.deeplearning4j.nn.modelimport.keras;
  *
  * @author dave@skymind.io
  */
-public class InvalidKerasConfigurationException extends RuntimeException {
+public class InvalidKerasConfigurationException extends Exception {
 
     public InvalidKerasConfigurationException(String message) { super(appendDocumentationURL(message)); }
 
