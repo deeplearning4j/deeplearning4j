@@ -60,12 +60,16 @@ public class VoidParameterServer {
     }
 
 
+    public void init(@NonNull Configuration configuration) {
+        init(configuration, new MulticastTransport());
+    }
+
     /**
      * This method starts ParameterServer instance
      *
      * PLEASE NOTE: This method is blocking for first caller only
      */
-    public void init(@NonNull Configuration configuration){
+    public void init(@NonNull Configuration configuration, Transport transport){
         /**
          * Basic plan here:
          *      start publishers/listeners/subscribers
@@ -90,7 +94,7 @@ public class VoidParameterServer {
 
 
                 // role-dependent additional initialization
-                transport = new MulticastTransport();
+                this.transport = transport;
 
                 // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
                 transport.init(configuration, nodeRole, pair.getSecond());
@@ -136,6 +140,8 @@ public class VoidParameterServer {
          */
         if (initLocker.get() && shutdownLocker.compareAndSet(false, true)) {
             // do shutdown
+            log.info("Shutting down transport...");
+            transport.shutdown();
         }
     }
 

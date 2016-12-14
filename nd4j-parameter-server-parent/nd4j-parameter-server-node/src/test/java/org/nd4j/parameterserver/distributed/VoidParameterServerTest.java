@@ -5,6 +5,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.transport.LocalTransport;
+import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
+import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +22,7 @@ import static org.junit.Assert.*;
 public class VoidParameterServerTest {
     private static List<String> localIPs;
     private static List<String> badIPs;
+    private static final Transport transport = new MulticastTransport();
 
     @Before
     public void setUp() throws Exception {
@@ -39,13 +43,16 @@ public class VoidParameterServerTest {
         final Configuration conf = Configuration.builder()
                 .port(34567)
                 .numberOfShards(10)
+                .multicastNetwork("224.0.1.1")
                 .shardAddresses(localIPs)
+                .ttl(4)
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf);
+        node.init(conf, transport);
 
         assertEquals(NodeRole.SHARD, node.getNodeRole());
+        node.shutdown();
     }
 
     @Test
@@ -55,12 +62,15 @@ public class VoidParameterServerTest {
                 .numberOfShards(10)
                 .shardAddresses(badIPs)
                 .backupAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf);
+        node.init(conf, transport);
 
         assertEquals(NodeRole.BACKUP, node.getNodeRole());
+        node.shutdown();
     }
 
     @Test
@@ -70,12 +80,15 @@ public class VoidParameterServerTest {
                 .numberOfShards(10)
                 .shardAddresses(badIPs)
                 .backupAddresses(badIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf);
+        node.init(conf, transport);
 
         assertEquals(NodeRole.CLIENT, node.getNodeRole());
+        node.shutdown();
     }
 
     @Test
@@ -86,6 +99,8 @@ public class VoidParameterServerTest {
                 .port(34567)
                 .numberOfShards(10)
                 .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
                 .build();
 
         Thread[] threads = new Thread[10];
@@ -94,7 +109,7 @@ public class VoidParameterServerTest {
                 @Override
                 public void run() {
                     VoidParameterServer node = new VoidParameterServer();
-                    node.init(conf);
+                    node.init(conf, transport);
 
                     if (node.getNodeRole() != NodeRole.SHARD)
                         failCnt.incrementAndGet();

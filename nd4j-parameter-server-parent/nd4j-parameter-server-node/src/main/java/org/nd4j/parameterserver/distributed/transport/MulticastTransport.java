@@ -41,9 +41,11 @@ public class MulticastTransport extends BaseTransport {
         this.configuration = configuration;
         this.nodeRole = role;
 
+        driver = MediaDriver.launchEmbedded();
+
         context = new Aeron.Context();
 
-        driver = MediaDriver.launch();
+        context.aeronDirectoryName(driver.aeronDirectoryName());
 
         aeron = Aeron.connect(context);
 
@@ -57,6 +59,7 @@ public class MulticastTransport extends BaseTransport {
 
 
         switch (nodeRole) {
+            case BACKUP:
             case SHARD:
                 /*
                     In case of Shard, unicast address for communication is known in advance

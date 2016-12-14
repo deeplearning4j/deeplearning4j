@@ -31,7 +31,7 @@ public class Configuration implements Serializable {
     // This two values are optional, and have effect only for MulticastTransport
     private String multicastNetwork;
     private String multicastInterface;
-    private int ttl;
+    private int ttl = 4;
 
     public void setStreamId(int streamId) {
         if (streamId < 1 )

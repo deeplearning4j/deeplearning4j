@@ -8,6 +8,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingIdleStrategy;
@@ -224,6 +225,20 @@ public abstract class BaseTransport implements Transport {
     public void shutdown() {
         // Since Aeron's poll isn't blocking, all we need is just special flag
         runner.set(false);
+        try {
+            threadA.join();
+
+            if (threadB!=null)
+                threadB.join();
+        } catch (Exception e) {
+            //
+        }
+        CloseHelper.quietClose(driver);
+        try {
+            Thread.sleep(500);
+        } catch (Exception e) {
+
+        }
     }
 
     /**
