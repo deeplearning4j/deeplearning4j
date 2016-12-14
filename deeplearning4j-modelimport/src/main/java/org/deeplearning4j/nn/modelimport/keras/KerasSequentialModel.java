@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.Data;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -38,13 +39,26 @@ import java.util.Map;
  */
 public class KerasSequentialModel extends KerasModel {
 
-    public KerasSequentialModel(String modelConfigJson) throws IOException, InvalidKerasConfigurationException {
-        Map<String,Object> classNameAndLayers = parseJsonString(modelConfigJson);
+    /**
+     * Constructor for Sequential model and training configuration JSON strings and map containing weights.
+     *
+     * @param modelJson       model configuration JSON string
+     * @param trainingJson    training configuration JSON string
+     * @param weights         map from layer to parameter to weights
+     * @throws IOException
+     */
+    public KerasSequentialModel(String modelJson, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String,Object> classNameAndLayers = parseJsonString(modelJson);
         this.className = (String) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL + " (found " + this.className + ")");
+        this.train = train;
 
+        /* Convert layer configuration objects into KerasLayers. */
         helperPrepareLayers((List<Object>) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CONFIG));
+
+        /* Add placeholder input layer and update lists of input and output layers. */
         int[] inputShape = this.layers.get(this.layerNamesOrdered.get(0)).getInputShape();
         KerasLayer inputLayer = KerasLayer.createInputLayer("input1", inputShape);
         this.layers.put(inputLayer.getName(), inputLayer);
@@ -52,6 +66,7 @@ public class KerasSequentialModel extends KerasModel {
         this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layerNamesOrdered.get(this.layerNamesOrdered.size()-1)));
         this.layerNamesOrdered.add(0, inputLayer.getName());
 
+        /* Update each layer's inbound layer list to include (only) previous layer. */
         String prevLayerName = null;
         for (String layerName : this.layerNamesOrdered) {
             if (prevLayerName != null)
@@ -59,47 +74,20 @@ public class KerasSequentialModel extends KerasModel {
             prevLayerName = layerName;
         }
 
+        /* Construct graph. */
         helperPrepareGraph();
+
+        /* Import training configuration. */
+        if (trainingJson != null)
+            helperImportTrainingConfiguration(trainingJson);
+
+        /* Store weights map (even if null).
+         * TODO: should we copy these to prevent user from changing them?
+         */
+        this.weights = weights;
     }
 
-    /**
-     * Constructor for Sequential model configuration JSON string and map containing weights.
-     *
-     * @param modelConfigJson       model configuration JSON string
-     * @param weights               map from layer to parameter to weights
-     * @throws IOException
-     */
-    public KerasSequentialModel(String modelConfigJson, Map<String, Map<String,INDArray>> weights) throws IOException, InvalidKerasConfigurationException {
-        this(modelConfigJson);
-        copyWeightsToModel(weights);
-    }
-
-    /**
-     * Constructor for Sequential model and training configuration JSON strings.
-     *
-     * @param modelConfigJson       model configuration JSON string
-     * @param trainingConfigJson    training configuration JSON string
-     * @throws IOException
-     */
-    public KerasSequentialModel(String modelConfigJson, String trainingConfigJson) throws IOException, InvalidKerasConfigurationException {
-        this(modelConfigJson);
-        importTrainingConfiguration(trainingConfigJson);
-    }
-
-    /**
-     * Constructor for Sequential model and training configuration JSON strings and map containing weights.
-     *
-     * @param modelConfigJson       model configuration JSON string
-     * @param trainingConfigJson    training configuration JSON string
-     * @param weights               map from layer to parameter to weights
-     * @throws IOException
-     */
-    public KerasSequentialModel(String modelConfigJson, String trainingConfigJson, Map<String, Map<String,INDArray>> weights)
-            throws IOException, InvalidKerasConfigurationException {
-        this(modelConfigJson);
-        importTrainingConfiguration(trainingConfigJson);
-        copyWeightsToModel(weights);
-    }
+    protected KerasSequentialModel() {}
 
     /**
      * Configure a MultiLayerConfiguration from this Keras Sequential model configuration.
@@ -152,7 +140,8 @@ public class KerasSequentialModel extends KerasModel {
      *
      * @return          MultiLayerNetwork
      */
-    public MultiLayerNetwork getMultiLayerNetwork() {
+    public MultiLayerNetwork getMultiLayerNetwork()
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         MultiLayerNetwork model = getMultiLayerNetwork(true);
         return model;
     }
@@ -162,11 +151,55 @@ public class KerasSequentialModel extends KerasModel {
      *
      * @return          MultiLayerNetwork
      */
-    public MultiLayerNetwork getMultiLayerNetwork(boolean importWeights) {
+    public MultiLayerNetwork getMultiLayerNetwork(boolean importWeights)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         MultiLayerNetwork model = new MultiLayerNetwork(getMultiLayerConfiguration());
         model.init();
         if (importWeights)
             model = (MultiLayerNetwork)copyWeightsToModel(model, this.weights, this.layers);
         return model;
+    }
+
+    @Data
+    static class SequentialBuilder implements Cloneable {
+        protected String modelJson;
+        protected String trainingJson = null;
+        protected Map<String,Map<String,INDArray>> weights = null;
+        protected boolean train = false;
+
+        public SequentialBuilder(String modelJson) {
+            this.modelJson = modelJson;
+        }
+
+        protected SequentialBuilder() {}
+
+        public SequentialBuilder modelJson(String modelJson) {
+            this.modelJson = modelJson;
+            return this;
+        }
+
+        public SequentialBuilder trainingJson(String trainingJson) {
+            this.trainingJson = trainingJson;
+            return this;
+        }
+
+        public SequentialBuilder weights(Map<String,Map<String,INDArray>> weights) {
+            this.weights = weights;
+            return this;
+        }
+
+        public SequentialBuilder train(boolean train) {
+            this.train = train;
+            return this;
+        }
+
+        public static SequentialBuilder builder() {
+            return new SequentialBuilder();
+        }
+
+        public KerasSequentialModel build()
+                throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            return new KerasSequentialModel(this.modelJson, this.trainingJson, this.weights, this.train);
+        }
     }
 }

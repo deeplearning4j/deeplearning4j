@@ -28,7 +28,7 @@ package org.deeplearning4j.nn.modelimport.keras;
  *
  * @author dave@skymind.io
  */
-public class UnsupportedKerasConfigurationException extends RuntimeException {
+public class UnsupportedKerasConfigurationException extends Exception {
 
     public UnsupportedKerasConfigurationException(String message) { super(appendDocumentationURL(message)); }
 
