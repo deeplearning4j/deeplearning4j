@@ -45,6 +45,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     public final static String WEIGHT_KEY = "W";
     public final static String BIAS_KEY = "b";
+    public final static String ACTIVATION_PARAM_KEY = "P";
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
@@ -52,7 +53,8 @@ public class DefaultParamInitializer implements ParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        return nIn*nOut + nOut;     //weights + bias
+        //FIXME: depends on util, needs calculation
+        return nIn*nOut + nOut + layerConf.getActivationFn().getNumParams();     //weights + bias + params in activation function
     }
 
     @Override
@@ -73,10 +75,14 @@ public class DefaultParamInitializer implements ParamInitializer {
         int nWeightParams = nIn*nOut;
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
-
+        if (conf.getLayer().getActivationFn().getNumParams() > 0) {
+            INDArray activationParamView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams + nOut, length));
+        }
 
         params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParams));
         params.put(BIAS_KEY,createBias(conf, biasView, initializeParams));
+        if
+        params.put(ACTIVATION_PARAM_KEY,createActivationParams(conf,activationParamView,initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
