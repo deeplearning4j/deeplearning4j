@@ -1,18 +1,13 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
-import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.deeplearning4j.nn.modelimport.keras.Model.importModel;
 import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialModel;
 
 /**
@@ -25,8 +20,8 @@ import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialMode
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class ModelTest {
-    private static Logger log = LoggerFactory.getLogger(ModelTest.class);
 
     @Test
     public void CnnModelImportTest() throws Exception {

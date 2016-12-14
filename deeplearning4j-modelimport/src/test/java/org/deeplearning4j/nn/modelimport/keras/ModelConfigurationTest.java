@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -13,6 +14,7 @@ import org.nd4j.linalg.io.ClassPathResource;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class ModelConfigurationTest {
 
     @Test
