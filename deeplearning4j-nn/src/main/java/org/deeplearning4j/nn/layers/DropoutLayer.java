@@ -20,12 +20,12 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         return 0;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         return 0;
     }
 
@@ -80,6 +80,11 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     @Override
     public Layer transpose(){
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
     }
 
 
