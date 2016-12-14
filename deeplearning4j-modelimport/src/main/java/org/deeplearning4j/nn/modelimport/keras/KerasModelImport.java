@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.bytedeco.javacpp.hdf5.*;
+import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_CLASS_NAME_MODEL;
 import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_CLASS_NAME_SEQUENTIAL;
 import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_FIELD_CLASS_NAME;
 
@@ -72,7 +73,7 @@ public class KerasModelImport {
     public static ComputationGraph importKerasModelAndWeights(String modelHdf5Filename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasModelImport archive = new KerasModelImport(modelHdf5Filename);
-        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
+        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_MODEL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
         KerasModel kerasModel = new KerasModel.ModelBuilder(archive.getModelJson())
                                         .trainingJson(archive.getTrainingJson())

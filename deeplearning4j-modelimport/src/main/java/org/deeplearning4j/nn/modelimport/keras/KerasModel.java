@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -265,14 +266,14 @@ public class KerasModel {
          * - greater than zero if found recurrent layer and truncation length was set
          * - equal to zero if found recurrent layer but no truncation length set (e.g., the
          *   model was built with Theano backend and used scan symbolic loop instead of
-         *   unrolling the RNN for a fixed number of steps.
-         *
-         * TODO: should we not throw an error for truncatedBPTT==0?
+         *   unrolling the RNN for a fixed number of steps).
          */
-        if (this.truncatedBPTT == 0)
-            throw new UnsupportedKerasConfigurationException("Cannot import recurrent models without fixed length sequence input.");
+        if (this.truncatedBPTT <= 0)
+            graphBuilder.backpropType(BackpropType.Standard);
         else if (this.truncatedBPTT > 0)
-            graphBuilder.tBPTTForwardLength(truncatedBPTT).tBPTTBackwardLength(truncatedBPTT);
+            graphBuilder.backpropType(BackpropType.TruncatedBPTT)
+                    .tBPTTForwardLength(truncatedBPTT)
+                    .tBPTTBackwardLength(truncatedBPTT);
         return graphBuilder.build();
     }
 
