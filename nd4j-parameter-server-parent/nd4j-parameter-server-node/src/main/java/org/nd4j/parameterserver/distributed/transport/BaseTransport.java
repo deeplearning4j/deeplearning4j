@@ -19,6 +19,7 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -74,6 +75,7 @@ public abstract class BaseTransport implements Transport {
             case 4:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
+                log.info("Sending message to shards...");
                 sendCommandToShard(message);
                 break;
             // messages 10..19 inclusive are reserved for Shard->Clients commands
@@ -106,7 +108,7 @@ public abstract class BaseTransport implements Transport {
         /**
          * All incoming messages here are supposed to be unicast messages.
          */
-        // TODO: to be implemented
+        log.info("shardMessageHandler message request incoming...");
     }
 
     /**
@@ -123,7 +125,7 @@ public abstract class BaseTransport implements Transport {
          */
 
         // TODO: to be implemented
-
+        log.info("internalMessageHandler message request incoming");
     }
 
     /**
@@ -138,6 +140,7 @@ public abstract class BaseTransport implements Transport {
          *  All incoming messages here are supposed to be "just messages", only unicast communication
          */
         // TODO: to be implemented
+        log.info("clientMessageHandler message request incoming");
     }
 
 
@@ -182,6 +185,7 @@ public abstract class BaseTransport implements Transport {
 
                         // setting up thread for shard->client communication listener
                         threadB = new Thread(() -> {
+                            log.info("Starting poller...");
                             while (runner.get())
                                 idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
                         });
@@ -249,6 +253,7 @@ public abstract class BaseTransport implements Transport {
     @Override
     public void receiveMessage(VoidMessage message) {
         try {
+            log.info("Message received, saving...");
             messages.put(message);
         } catch (Exception e) {
             // do nothing
@@ -264,7 +269,7 @@ public abstract class BaseTransport implements Transport {
     public VoidMessage takeMessage() {
         if (threadingModel != ThreadingModel.SAME_THREAD) {
             try {
-                return messages.take();
+                return messages.poll(2, TimeUnit.SECONDS);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

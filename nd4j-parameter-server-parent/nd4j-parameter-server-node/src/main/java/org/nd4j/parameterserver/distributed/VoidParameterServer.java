@@ -60,6 +60,10 @@ public class VoidParameterServer {
     }
 
 
+    protected Transport getTransport() {
+        return transport;
+    }
+
     public void init(@NonNull Configuration configuration) {
         init(configuration, new MulticastTransport());
     }
@@ -120,10 +124,11 @@ public class VoidParameterServer {
                 return Pair.create(NodeRole.SHARD, ip);
         }
 
-        for (String ip: localIPs) {
-            if (configuration.getBackupAddresses().contains(ip))
-                return Pair.create(NodeRole.BACKUP, ip);
-        }
+        if (configuration.getBackupAddresses() != null)
+            for (String ip: localIPs)
+                if (configuration.getBackupAddresses().contains(ip))
+                    return Pair.create(NodeRole.BACKUP, ip);
+
 
         // local IP from pair is used for shard only, so we don't care
         return Pair.create(result, "127.0.0.1");
