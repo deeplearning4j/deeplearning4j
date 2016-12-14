@@ -223,6 +223,7 @@ public class VoidParameterServerTest {
         // at this point each and every shard should already have this message
         Thread.sleep(100);
 
+        // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
             VoidMessage incMessage = shards[t].getTransport().takeMessage();
             assertNotEquals(null, incMessage);

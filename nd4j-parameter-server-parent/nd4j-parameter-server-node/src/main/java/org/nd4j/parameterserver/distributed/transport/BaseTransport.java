@@ -16,6 +16,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -107,7 +108,12 @@ public abstract class BaseTransport implements Transport {
         /**
          * All incoming messages here are supposed to be unicast messages.
          */
+        // TODO: implement fragmentation handler here PROBABLY. Or forbid messages > MTU?
         log.info("shardMessageHandler message request incoming...");
+        byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+        VoidMessage message = VoidMessage.fromBytes(data);
+        messages.add(message);
     }
 
     /**
@@ -234,7 +240,7 @@ public abstract class BaseTransport implements Transport {
         try {
             threadA.join();
 
-            if (threadB!=null)
+            if (threadB != null)
                 threadB.join();
         } catch (Exception e) {
             //
