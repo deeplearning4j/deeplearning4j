@@ -143,6 +143,11 @@ public class VoidParameterServerTest {
         assertEquals(threads.length, passCnt.get());
     }
 
+    /**
+     * This is very important test, it covers basic messages handling over network
+     *
+     * @throws Exception
+     */
     @Test
     public void testNodeInitialization2() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
@@ -154,21 +159,34 @@ public class VoidParameterServerTest {
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
-                .shardAddresses(badIPs)
+                .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
                 .streamId(119)
+                .forcedRole(NodeRole.CLIENT)
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf = Configuration.builder()
+        final Configuration shardConf1 = Configuration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
                 .streamId(119)
-                .shardAddresses(Collections.singletonList("192.168.1.35"))
+                .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
                 .ttl(4)
                 .build();
+
+        final Configuration shardConf2 = Configuration.builder()
+                .unicastPort(34569) // we'll never get anything on this port
+                .multicastPort(45678)
+                .numberOfShards(10)
+                .streamId(119)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
+                .build();
+
+
 
         VoidParameterServer clientNode = new VoidParameterServer();
         clientNode.init(clientConf);
@@ -178,7 +196,9 @@ public class VoidParameterServerTest {
         assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
 
 
-        Thread[] threads = new Thread[1];
+        Thread[] threads = new Thread[2];
+        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2};
+
         VoidParameterServer[] shards = new VoidParameterServer[threads.length];
         for (int t = 0; t < threads.length; t++) {
             final int x = t;
@@ -186,7 +206,7 @@ public class VoidParameterServerTest {
 
 
                 shards[x] = new VoidParameterServer();
-                shards[x].init(shardConf);
+                shards[x].init(configurations[x]);
 
                 shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
 
@@ -226,9 +246,16 @@ public class VoidParameterServerTest {
         // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
             VoidMessage incMessage = shards[t].getTransport().takeMessage();
-            assertNotEquals(null, incMessage);
-            assertEquals(message.getMessageType(), incMessage.getMessageType());
+            assertNotEquals("Failed for shard " + t,null, incMessage);
+            assertEquals("Failed for shard " + t, message.getMessageType(), incMessage.getMessageType());
         }
+
+        /*
+            at this moment we're 100% sure that:
+                1) Client was able to send message to one of shards
+                2) Selected Shard successfully received message from Client
+                3) Shard retransmits message to all shards
+        */
 
 
         for (int t = 0; t < threads.length; t++) {

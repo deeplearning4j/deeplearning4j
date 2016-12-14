@@ -112,8 +112,12 @@ public abstract class BaseTransport implements Transport {
         log.info("shardMessageHandler message request incoming...");
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
-        VoidMessage message = VoidMessage.fromBytes(data);
-        messages.add(message);
+
+       // VoidMessage message = VoidMessage.fromBytes(data);
+     //   messages.add(message);
+
+        // and send it away to other Shards
+        publicationForShards.offer(buffer, offset, length);
     }
 
     /**
@@ -128,9 +132,13 @@ public abstract class BaseTransport implements Transport {
         /**
          * All incoming internal messages are either op commands, or aggregation messages that are tied to commands
          */
-
-        // TODO: to be implemented
         log.info("internalMessageHandler message request incoming");
+
+        byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+        VoidMessage message = VoidMessage.fromBytes(data);
+
+        messages.add(message);
     }
 
     /**

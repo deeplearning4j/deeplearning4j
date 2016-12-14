@@ -92,16 +92,24 @@ public class VoidParameterServer {
             if (initLocker.compareAndSet(false, true)) {
                 this.configuration = configuration;
 
-                // first we need to check, if our current IP matches designated shards or backup
-                Pair<NodeRole, String> pair = getRole(configuration, getLocalAddresses());
-                nodeRole = pair.getFirst();
-
-
-                // role-dependent additional initialization
                 this.transport = transport;
 
+                // first we need to check, if our current IP matches designated shards or backup
+                if (configuration.getForcedRole() == null || configuration.getForcedRole() == NodeRole.NONE) {
+                    Pair<NodeRole, String> pair = getRole(configuration, getLocalAddresses());
+                    nodeRole = pair.getFirst();
+
+                    this.transport.init(configuration, nodeRole, pair.getSecond());
+
+                } else {
+
+                    nodeRole = configuration.getForcedRole();
+                    this.transport.init(configuration, nodeRole, "127.0.0.1");
+                }
+
+
                 // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
-                transport.init(configuration, nodeRole, pair.getSecond());
+
 
 
                 initFinished.set(true);

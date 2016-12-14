@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
+import org.nd4j.parameterserver.distributed.enums.NodeRole;
 
 import java.io.Serializable;
 import java.util.List;
@@ -33,6 +34,7 @@ public class Configuration implements Serializable {
     private String multicastNetwork;
     private String multicastInterface;
     private int ttl = 4;
+    protected NodeRole forcedRole;
 
     public void setStreamId(int streamId) {
         if (streamId < 1 )

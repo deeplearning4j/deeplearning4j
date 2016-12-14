@@ -49,7 +49,7 @@ public class MulticastTransport extends BaseTransport {
 
         aeron = Aeron.connect(context);
 
-        ip = localIp;
+        ip = "192.168.1.36";//localIp;
 
         multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getMulticastPort();
         if (configuration.getMulticastInterface() != null && !configuration.getMulticastInterface().isEmpty())
@@ -64,7 +64,7 @@ public class MulticastTransport extends BaseTransport {
                 /*
                     In case of Shard, unicast address for communication is known in advance
                  */
-                unicastChannelUri = "aeron:udp?endpoint=" + localIp + ":" + configuration.getUnicastPort();
+                unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + configuration.getUnicastPort();
                 log.info("Shard unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
 
                 // this channel will be used to receive batches from Clients
@@ -93,7 +93,7 @@ public class MulticastTransport extends BaseTransport {
                     In case of Client, unicast will be one of shards, picked up with random
                  */
                 unicastChannelUri = "aeron:udp?endpoint=" + ArrayUtil.getRandomElement(configuration.getShardAddresses()) + ":" + configuration.getUnicastPort();
-                unicastChannelUri = "aeron:udp?endpoint=192.168.1.35:" + (configuration.getUnicastPort()) ;
+                unicastChannelUri = "aeron:udp?endpoint=" + ip  + ":" + (configuration.getUnicastPort()) ;
 
                 log.info("Client unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
 
