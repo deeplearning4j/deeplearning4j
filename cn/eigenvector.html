@@ -23,7 +23,7 @@ redirect_from: /zh-eigenvector
 <p>我们先简要介绍矩阵的用途以及矩阵和其他数字的关系，随后再来定义矩阵与本征向量之间的关系。</p>
 <p>矩阵是很有用的，因为它们可以做加法或乘法运算。如果将向量 <em>v</em> 与矩阵 <em>A</em> 相乘，得到另一向量 <em>b</em>，则可以认为矩阵对输入向量进行了线性变换。</p>
 <p><em>Av = b</em></p>
-<p>这一运算将向量<em>v</em><a href="https://en.wikipedia.org/wiki/Linear_map" target="_blank">映射</a>至另一向量<em>b</em>。</p>
+<p>这一运算将向量 <em>v </em><a href="https://en.wikipedia.org/wiki/Linear_map" target="_blank">映射</a>至另一向量<em>b</em>。</p>
 <p>我们举一个实际的例子来说明。（如需了解这种称为点积的矩阵乘法，请点击<a href="https://math.stackexchange.com/a/24469" target="_blank">此处</a>。）</p><br />
 <img class="img-responsive center-block" src="../img/eigen_matrix.png" alt="shadowed image"><br />
 <p>于是<em>A</em>将<em>v</em>变换为<em>b</em>。在下图中，可以看到矩阵将较短、较低的线段<em>v</em>映射为较长、较高的线段<em>b</em>。</p><br />
@@ -34,7 +34,7 @@ redirect_from: /zh-eigenvector
 <p>而矩阵将它们全部投射到下图所示的新空间内，所有输出向量b都位于这个空间内：</p>
 <br /><img class="img-responsive center-block" src="../img/space_2.png" alt="shadowed image"><br />
 <p>下图将这两个空间并置：</p>
-<br /><img class="img-responsive center-block" src="../img/two_spaces.png" alt="shadowed image"><br /><em>（供图：William Gould, Stata Blog）</em><br />
+<br /><img class="img-responsive center-block" src="../img/two_spaces.png" alt="shadowed image"><br /><div align="center"><em>（供图：William Gould, Stata Blog）</em></div><br /><br />
 <p>下图则用动画说明矩阵将一个空间变换为另一个空间的作用：</p>
 <div align="center"><img style="-webkit-user-select: none;" src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif"></div><br />
 <p>图中的蓝色线段是本征向量。</p>
@@ -88,7 +88,7 @@ redirect_from: /zh-eigenvector
 <p>如果两个变量同时增减（直线指向右上方），它们的协方差为正；如果一个变量增加时，另一个变量减少，则两者间的协方差为负（直线指向右下方）。</p><br /><img class="img-responsive center-block" src="../img/covariances.png" alt="shadowed image"><br /><div align="center"><em>（供图：Vincent Spruyt）</em></div><br />
 <p>注意，若两个变量中有一个完全不变，且图像在对角方向上无运动，则不存在协方差。协方差回答的问题是：两个变量是否共同变化？如果一个变量变化时，另一变量维持不变，那么答案就是否定的。</p>
 <p>此外，如下面的公式所示，协方差与方差之间的差别其实很小。</p>
-<br /><img class="img-responsive center-block" src="../img/covariance.png" alt="shadowed image"><br /><p align="center">对比</p><br /><img class="img-responsive center-block" src="../img/variance.png" alt="shadowed image"><br /><p>计算协方差的妙处是，对于难以从直观上判断变量关系的高维度空间，可以通过协方差的正负以及存在与否来判断两个变量之间的互动方式。（<em>相关系数</em>是标准化的协方差，范围在-1和1之间。）</p>
+<br /><img class="img-responsive center-block" src="../img/covariance.png" alt="shadowed image"><br /><p align="center"><strong>对比<</strong>/p><br /><img class="img-responsive center-block" src="../img/variance.png" alt="shadowed image"><br /><p>计算协方差的妙处是，对于难以从直观上判断变量关系的高维度空间，可以通过协方差的正负以及存在与否来判断两个变量之间的互动方式。（<em>相关系数</em>是标准化的协方差，范围在-1和1之间。）</p>
 <p>总而言之，协方差矩阵界定了数据的形状。协方差表示对角方向上数据沿本征向量的离散程度，而x轴和y轴方向上的离散度则由方差表示。</p>
 <p>因果性在统计学中的名声不好，所以下面这段话仅供参考：</p>
 <p>虽然这种说法不完全准确，但可以将上文荷兰篮球队员例子中的每个要素视为一种原因因素，第一主成分是年龄，第二主成分可能是性别，第三则是国籍（包含不同国家医疗保健体系的差别），每一个成分都在各自的维度内与身高相关。每项因素对于身高有不同程度的作用。可以将协方差理解为揭示潜在原因的迹象。</p><br />
