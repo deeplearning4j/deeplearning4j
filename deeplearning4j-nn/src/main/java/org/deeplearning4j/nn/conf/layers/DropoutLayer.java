@@ -89,4 +89,6 @@ public class DropoutLayer extends FeedForwardLayer {
             return new DropoutLayer(this);
         }
     }
+
+
 }
