@@ -14,12 +14,13 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
+ * @author Ede Meijer
  */
 @Slf4j
 @RunWith(Parameterized.class)
-public class ScalarBooleanTests extends BaseNd4jTest {
+public class TransformsTest extends BaseNd4jTest {
 
-    public ScalarBooleanTests(Nd4jBackend backend) {
+    public TransformsTest(Nd4jBackend backend) {
         super(backend);
     }
 
@@ -98,6 +99,7 @@ public class ScalarBooleanTests extends BaseNd4jTest {
     @Test
     public void testScalarMinMax1() {
         INDArray x = Nd4j.create(new double[]{1, 3, 5, 7});
+        INDArray xCopy = x.dup();
         INDArray exp1 = Nd4j.create(new double[]{1, 3, 5, 7});
         INDArray exp2 = Nd4j.create(new double[]{1e-5, 1e-5, 1e-5, 1e-5});
 
@@ -106,6 +108,48 @@ public class ScalarBooleanTests extends BaseNd4jTest {
 
         assertEquals(exp1, z1);
         assertEquals(exp2, z2);
+        // Assert that x was not modified
+        assertEquals(x, xCopy);
+
+        INDArray exp3 = Nd4j.create(new double[]{10, 10, 10, 10});
+        Transforms.max(x, 10, false);
+        assertEquals(x, exp3);
+
+        Transforms.min(x, Nd4j.EPS_THRESHOLD, false);
+        assertEquals(x, exp2);
+    }
+
+    @Test
+    public void testArrayMinMax() {
+        INDArray x = Nd4j.create(new double[]{1, 3, 5, 7});
+        INDArray y = Nd4j.create(new double[]{2, 2, 6, 6});
+        INDArray xCopy = x.dup();
+        INDArray yCopy = y.dup();
+        INDArray expMax = Nd4j.create(new double[]{2, 3, 6, 7});
+        INDArray expMin = Nd4j.create(new double[]{1, 2, 5, 6});
+
+        INDArray z1 = Transforms.max(x, y, true);
+        INDArray z2 = Transforms.min(x, y, true);
+
+        assertEquals(expMax, z1);
+        assertEquals(expMin, z2);
+        // Assert that x was not modified
+        assertEquals(xCopy, x);
+
+        Transforms.max(x, y, false);
+        // Assert that x was modified
+        assertEquals(expMax, x);
+        // Assert that y was not modified
+        assertEquals(yCopy, y);
+
+        // Reset the modified x
+        x = xCopy.dup();
+
+        Transforms.min(x, y, false);
+        // Assert that X was modified
+        assertEquals(expMin, x);
+        // Assert that y was not modified
+        assertEquals(yCopy, y);
     }
 
     @Override

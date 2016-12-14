@@ -27,20 +27,8 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
-import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.NDArrayUtil;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 
 /**
  * Functional interface for the different op classes
@@ -444,7 +432,7 @@ public class Transforms {
     }
 
     /**
-     * Stabilize to be within a range of k
+     * Maximum function with a scalar
      *
      * @param ndArray tbe ndarray
      * @param k
@@ -456,7 +444,7 @@ public class Transforms {
     }
 
     /**
-     * Stabilize to be within a range of k
+     * Maximum function with a scalar
      *
      * @param ndArray tbe ndarray
      * @param k
@@ -467,7 +455,33 @@ public class Transforms {
     }
 
     /**
-     * Stabilize to be within a range of k
+     * Element wise maximum function between 2 INDArrays
+     *
+     * @param first
+     * @param second
+     * @param dup
+     * @return
+     */
+    public static INDArray max(INDArray first, INDArray second, boolean dup) {
+        if (dup){
+            first = first.dup();
+        }
+        return exec(new Max(second, first, first, first.length()));
+    }
+
+    /**
+     * Element wise maximum function between 2 INDArrays
+     *
+     * @param first
+     * @param second
+     * @return
+     */
+    public static INDArray max(INDArray first, INDArray second) {
+        return max(first, second, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Minimum function with a scalar
      *
      * @param ndArray tbe ndarray
      * @param k
@@ -479,7 +493,7 @@ public class Transforms {
     }
 
     /**
-     * Stabilize to be within a range of k
+     * Maximum function with a scalar
      *
      * @param ndArray tbe ndarray
      * @param k
@@ -487,6 +501,32 @@ public class Transforms {
      */
     public static INDArray min(INDArray ndArray, double k) {
         return min(ndArray, k, Nd4j.copyOnOps);
+    }
+
+    /**
+     * Element wise minimum function between 2 INDArrays
+     *
+     * @param first
+     * @param second
+     * @param dup
+     * @return
+     */
+    public static INDArray min(INDArray first, INDArray second, boolean dup) {
+        if (dup){
+            first = first.dup();
+        }
+        return exec(new Min(second, first, first, first.length()));
+    }
+
+    /**
+     * Element wise minimum function between 2 INDArrays
+     *
+     * @param first
+     * @param second
+     * @return
+     */
+    public static INDArray min(INDArray first, INDArray second) {
+        return min(first, second, Nd4j.copyOnOps);
     }
 
 

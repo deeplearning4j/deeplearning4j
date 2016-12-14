@@ -1,18 +1,25 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.NonNull;
-import org.nd4j.linalg.dataset.DistributionStats;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerMinMaxScalerSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerStandardizeSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerMinMaxScalerSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Utility class for saving and restoring various (multi) data set normalizers in single binary files.
  * Currently only supports {@link NormalizerStandardize} and {@link MultiNormalizerStandardize}
  *
  * @author Ede Meijer
+ * @deprecated use the implementation specific utilities instead:
+ * - {@link NormalizerStandardizeSerializer}
+ * - {@link NormalizerMinMaxScalerSerializer}
+ * - {@link MultiNormalizerStandardizeSerializer}
+ * - {@link MultiNormalizerMinMaxScalerSerializer}
  */
 public class NormalizerSerializer {
     /**
@@ -21,11 +28,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param file       the destination file
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull NormalizerStandardize normalizer, @NonNull File file) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            write(normalizer, out);
-        }
+        NormalizerStandardizeSerializer.write(normalizer, file);
     }
 
     /**
@@ -34,11 +40,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param path       the destination file path
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull NormalizerStandardize normalizer, @NonNull String path) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(path))) {
-            write(normalizer, out);
-        }
+        NormalizerStandardizeSerializer.write(normalizer, path);
     }
 
     /**
@@ -47,20 +52,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param stream     the output stream to write to
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
-        try (DataOutputStream dos = new DataOutputStream(stream)) {
-            dos.writeBoolean(normalizer.isFitLabel());
-
-            Nd4j.write(normalizer.getMean(), dos);
-            Nd4j.write(normalizer.getStd(), dos);
-
-            if (normalizer.isFitLabel()) {
-                Nd4j.write(normalizer.getLabelMean(), dos);
-                Nd4j.write(normalizer.getLabelStd(), dos);
-            }
-            dos.flush();
-        }
+        NormalizerStandardizeSerializer.write(normalizer, stream);
     }
 
     /**
@@ -69,22 +64,10 @@ public class NormalizerSerializer {
      * @param file the file to restore from
      * @return the restored NormalizerStandardize
      * @throws IOException
+     * @deprecated
      */
     public static NormalizerStandardize restoreNormalizerStandardize(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
-            boolean fitLabels = dis.readBoolean();
-
-            NormalizerStandardize result = new NormalizerStandardize(Nd4j.read(dis), Nd4j.read(dis));
-            result.fitLabel(fitLabels);
-            if (fitLabels) {
-                result.setLabelStats(Nd4j.read(dis), Nd4j.read(dis));
-            }
-
-            return result;
-        }
+        return NormalizerStandardizeSerializer.restore(file);
     }
 
     /**
@@ -93,11 +76,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param file       the destination file
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull File file) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            write(normalizer, out);
-        }
+        MultiNormalizerStandardizeSerializer.write(normalizer, file);
     }
 
     /**
@@ -106,11 +88,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param path       the destination file path
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull String path) throws IOException {
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(path))) {
-            write(normalizer, out);
-        }
+        MultiNormalizerStandardizeSerializer.write(normalizer, path);
     }
 
     /**
@@ -119,25 +100,10 @@ public class NormalizerSerializer {
      * @param normalizer the normalizer
      * @param stream     the output stream to write to
      * @throws IOException
+     * @deprecated
      */
     public static void write(@NonNull MultiNormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {
-        try (DataOutputStream dos = new DataOutputStream(stream)) {
-            dos.writeBoolean(normalizer.isFitLabel());
-            dos.writeInt(normalizer.numInputs());
-            dos.writeInt(normalizer.isFitLabel() ? normalizer.numOutputs() : -1);
-
-            for (int i = 0; i < normalizer.numInputs(); i++) {
-                Nd4j.write(normalizer.getFeatureMean(i), dos);
-                Nd4j.write(normalizer.getFeatureStd(i), dos);
-            }
-            if (normalizer.isFitLabel()) {
-                for (int i = 0; i < normalizer.numOutputs(); i++) {
-                    Nd4j.write(normalizer.getLabelMean(i), dos);
-                    Nd4j.write(normalizer.getLabelStd(i), dos);
-                }
-            }
-            dos.flush();
-        }
+        MultiNormalizerStandardizeSerializer.write(normalizer, stream);
     }
 
     /**
@@ -146,34 +112,9 @@ public class NormalizerSerializer {
      * @param file the file to restore from
      * @return the restored MultiNormalizerStandardize
      * @throws IOException
+     * @deprecated
      */
     public static MultiNormalizerStandardize restoreMultiNormalizerStandardize(@NonNull File file) throws IOException {
-        try (
-            FileInputStream fis = new FileInputStream(file);
-            DataInputStream dis = new DataInputStream(fis)
-        ) {
-            boolean fitLabels = dis.readBoolean();
-            int numInputs = dis.readInt();
-            int numOutputs = dis.readInt();
-
-            MultiNormalizerStandardize result = new MultiNormalizerStandardize();
-            result.fitLabel(fitLabels);
-
-            List<DistributionStats> featureStats = new ArrayList<>();
-            for (int i = 0; i < numInputs; i++) {
-                featureStats.add(new DistributionStats(Nd4j.read(dis), Nd4j.read(dis)));
-            }
-            result.setFeatureStats(featureStats);
-
-            if (fitLabels) {
-                List<DistributionStats> labelStats = new ArrayList<>();
-                for (int i = 0; i < numOutputs; i++) {
-                    labelStats.add(new DistributionStats(Nd4j.read(dis), Nd4j.read(dis)));
-                }
-                result.setLabelStats(labelStats);
-            }
-
-            return result;
-        }
+        return MultiNormalizerStandardizeSerializer.restore(file);
     }
 }

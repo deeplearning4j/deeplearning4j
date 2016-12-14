@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -20,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by susaneraly on 7/15/16.
@@ -173,6 +172,47 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         INDArray imageUno = transformedVals.slice(0);
         assertEquals(imageUno.slice(0),imageUno.slice(1));
         assertEquals(imageUno.slice(0),imageUno.slice(2));
+    }
+
+    @Test
+    public void test3dRevertStandardize() {
+        test3dRevert(new NormalizerStandardize());
+    }
+
+    @Test
+    public void test3dRevertNormalize() {
+        test3dRevert(new NormalizerMinMaxScaler());
+    }
+
+    private void test3dRevert(DataNormalization SUT)  {
+        INDArray features = Nd4j.rand(new int[]{5, 2, 10}, 12345);
+        DataSet data = new DataSet(features, Nd4j.zeros(5, 1, 10));
+        DataSet dataCopy = data.copy();
+
+        SUT.fit(data);
+
+        SUT.preProcess(data);
+        assertNotEquals(data, dataCopy);
+
+        SUT.revert(data);
+        assertEquals(data, dataCopy);
+    }
+
+    @Test
+    public void test3dNinMaxScaling() {
+        INDArray values = Nd4j.linspace(-10, 10, 100).reshape(5, 2, 10);
+        DataSet data = new DataSet(values, values);
+
+        NormalizerMinMaxScaler SUT = new NormalizerMinMaxScaler();
+        SUT.fit(data);
+        SUT.preProcess(data);
+
+        // Data should now be in a 0-1 range
+        float min = data.getFeatures().minNumber().floatValue();
+        float max = data.getFeatures().maxNumber().floatValue();
+
+        assertEquals(0, min, Nd4j.EPS_THRESHOLD);
+        assertEquals(1, max, Nd4j.EPS_THRESHOLD);
     }
 
     public class Construct3dDataSet {
