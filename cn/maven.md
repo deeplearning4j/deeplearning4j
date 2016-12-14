@@ -1,49 +1,48 @@
 ---
-title: Maven for Python Programmers
+title: 面向Python程序员的Maven简介
 layout: default
 ---
 
-# Maven for Python Programmers
+# 面向Python程序员的Maven简介
 
-[Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers. While there is no Python tool that matches Maven feature for feature, it is analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder, or [Distutils](http://docs.activestate.com/activepython/3.2/diveintopython3/html/packaging.html). 
+[Maven](https://en.wikipedia.org/wiki/Apache_Maven)是Java程序员最常用的自动化构建工具。Python没有功能同Maven完全一致的工具，但可以认为Maven大致相当于[pip](https://en.wikipedia.org/wiki/Pip_(package_manager))这样的包管理系统，或者PyBuilder、[Distutils](http://docs.activestate.com/activepython/3.2/diveintopython3/html/packaging.html)。 
 
-It is also the single most convenient way to get up and running with Deeplearning4j, which offers a [Scala API](http://nd4j.org/scala.html) whose syntax will strike many Python programmers as eerily familiar, while offering them powerful concurrent features. 
+Maven也是安装运行Deeplearning4j最简便的方式，它所提供的[Scala API](http://nd4j.org/scala.html)有着会让不少Python程序员感到似曾相识的语法，同时也具备各种强大的功能。 
 
-As a build automation tool, Maven compiles source to byte code and links object files to executables, library files etc. Its deliverable is a JAR file, created from Java source, as well as resources for deployment. 
+作为一种自动化构建工具，Maven把源代码编译为字节码，将目标文件链接生成可执行文件、库文件等。Maven的交付物是一个JAR文件，用Java源代码以及程序部署所需的资源创建。 
 
-(A [JAR](https://en.wikipedia.org/wiki/JAR_%28file_format%29) is a *Java ARchive*, a package file format that aggregates many Java class files, associated metadata and resources such as text and images. It's a compressed file format that helps Java runtimes  deploy a set of classes and their resources.) 
+([JAR](https://en.wikipedia.org/wiki/JAR_%28file_format%29)文件即*Java归档文件*，英语为*Java ARchive*，是一种软件包文件格式，用于聚合大量的Java类文件、相关的元数据以及文本和图像等资源。JAR是一种压缩文件格式，帮助Java运行时部署一组类和与之相关的资源。） 
 
-Maven dynamically downloads Java libraries and Maven plug-ins from Maven Central Repository which are specified in an XML file that stores a Project Object Model, which you'll find in the file POM.xml. 
+Maven会从它的中央仓库动态下载所需的Java库和Maven插件，这些库和插件由存储项目对象模型（Project Object Model）的XML文件（即POM.xml）指定。 
 
 ![Alt text](./img/maven_schema.png)
 
-To quote *Maven: The Complete Reference*: 
+*《Maven权威指南》*中提到： 
 
-		Running mvn install from the command line will process resources, compile source, execute unit tests, create a JAR and install the JAR in a local repository for reuse in other projects. 
+		从命令行运行mvn install，将处理资源文件，编译源代码，运行单元测试，创建一个JAR，然后把这个JAR安装到本地仓库，以供其他项目重复使用。 
 
-Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
+与Deeplearning4j一样，Maven遵循约定优于配置的原则，这也就是说，Maven会为项目提供一系列默认值，在运行时程序员无需为每个新项目指定所有的参数。 
 
-If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [in our Getting Started page](https://deeplearning4j.org/quickstart)). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
+如果同时安装了IntelliJ和Maven，IntelliJ允许用户在IDE中创建新项目时选用Maven，并且有向导帮助您进行设置（我们的[快速入门指南](https://deeplearning4j.org/cn/zh-quickstart)中有更为详细的介绍）。如此一来，构建工作就可以全部在IntelliJ当中完成。 
 
-Alternatively, you can use Maven from your project's root directory in the command prompt to freshly install it:
+或者也可以用下列命令在项目的根目录下使用Maven，对项目执行干净构建：
 
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 		
-The above command instructs maven to clean any directories of compiled files before running install. This makes sure that the build is a clean build from scratch.
+上述命令让Maven在运行安装之前清除所有已编译文件目录，确保对项目进行从零开始的干净构建。
 
 
-Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
+目前已有数本关于Apache Maven的书籍可供参考，可以在支持这一开源项目的Sonatype公司的网站上找到。 
 
-### Troubleshooting Maven
+### Maven疑难解答
 
-* Older versions of Maven, such as 3.0.4, are likely to throw exceptions like a NoSuchMethodError. This can be fixed by upgrading to the latest version of Maven. 
-* After you install Maven, you may receive a message like this: *'mvn is not recognised as an internal or external command, operable program or batch file.'* That means you need Maven in your [PATH variable](https://www.java.com/en/download/help/path.xml), which you can change like any other environmental variable. 
-* As the DL4J code base grows, installing from source requires more memory. If you encounter a Permgen error during the DL4J build, you may need to add more heap space. To do that, you'll need to find and alter your hidden .bash_profile file, which adds environmental variables to bash. To see those variables, enter *env* in the command line. To add more heap space, enter this command in your console:
+* 3.0.4等较早的Maven版本可能会产生NoSuchMethodError等异常情况。解决办法是将Maven升级到最新版本。 
+* 在安装Maven之后，您还有可能收到如下信息：*`mvn is not recognised as an internal or external command, operable program or batch file.`* （无法识别mvn为任何内部或外部命令、可执行文件或批处理文件。）这说明需要在[PATH变量](https://www.java.com/en/download/help/path.xml)中添加Maven，修改方法和其他环境变量一样。 
+* 随着DL4J代码数量的增加，使用源进行安装将需要更多内存。如果在DL4J构建过程中发生Permgen错误，则需要添加更多堆空间，方法是找到并更改隐藏的`.bash_profile`文件。这一文件在bash中添加环境变量。要了解具体有哪些变量，请在命令行中输入*env*。要添加更多堆空间，请在控制台输入下列命令：
       echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
 
-### Further reading:
+### 扩展阅读：
 
-* [Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)
-* [Maven: The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)
-* [Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)
-
+* [Maven by Example（Maven实例教程）](https://books.sonatype.com/mvnex-book/reference/public-book.html)
+* [Maven: The Complete Reference（Maven权威指南）](https://books.sonatype.com/mvnref-book/reference/public-book.html)
+* [Developing with Eclipse and Maven（用Eclipse和Maven进行开发）](https://books.sonatype.com/m2eclipse-book/reference/)
