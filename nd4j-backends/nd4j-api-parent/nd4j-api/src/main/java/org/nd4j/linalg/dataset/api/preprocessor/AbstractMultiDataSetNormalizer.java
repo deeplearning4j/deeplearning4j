@@ -115,11 +115,8 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
         return result;
     }
 
-    private void fitPartial(
-        MultiDataSet dataSet,
-        List<S.Builder> featureStatsBuilders,
-        List<S.Builder> labelStatsBuilders
-    ) {
+    private void fitPartial(MultiDataSet dataSet, List<S.Builder> featureStatsBuilders,
+                            List<S.Builder> labelStatsBuilders) {
         int numInputs = dataSet.numFeatureArrays();
         int numOutputs = dataSet.numLabelsArrays();
 
@@ -194,7 +191,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      * Can also be used to undo normalization for network output arrays, in the case of regression.
      *
      * @param features features arrays to revert the normalization on
-     * @param input the index of the array to revert
+     * @param input    the index of the array to revert
      */
     public void revertFeatures(@NonNull INDArray features, int input) {
         strategy.revert(features, getFeatureStats(input));
