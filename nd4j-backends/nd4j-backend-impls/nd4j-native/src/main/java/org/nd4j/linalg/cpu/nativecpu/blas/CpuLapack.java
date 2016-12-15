@@ -47,7 +47,7 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void dgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
 	DoubleBuffer superb = DoubleBuffer.allocate( M<N?M:N ) ;
-	int status = org.bytedeco.javacpp.openblas.LAPACKE_dgesvd(
+	int status = LAPACKE_dgesvd(
 		getColumnOrder(A),
 		jobu, jobvt, 
 		M, N, 
