@@ -67,7 +67,18 @@ public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
 
     @Override
     public void putUpdate(Persistable update) {
+        List<StatsStorageEvent> sses = checkStorageEvents(update);
+        Map<Long, Persistable> updateMap = getUpdateMap(update.getSessionID(), update.getTypeID(), update.getWorkerID(), true);
+        updateMap.put(update.getTimeStamp(), update);
 
+        StatsStorageEvent sse = null;
+        if (listeners.size() > 0) sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate,
+                update.getSessionID(), update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
+        for (StatsStorageListener l : listeners) {
+            l.notify(sse);
+        }
+
+        notifyListeners(sses);
     }
 
     @Override
