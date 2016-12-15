@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.transport;
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -24,7 +25,7 @@ public interface Transport {
      * @param role
      * @param localIp
      */
-    void init(Configuration configuration, NodeRole role, String localIp);
+    void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp);
 
 
     /**
@@ -33,6 +34,12 @@ public interface Transport {
      * @param message
      */
     void sendMessage(VoidMessage message);
+
+    /**
+     *
+     * @param message
+     */
+    void sendMessageToAllShards(VoidMessage message);
 
     /**
      * This method accepts message from network

@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.distributed.transport;
 
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -17,7 +18,7 @@ public class LocalTransport implements Transport {
      * @param localIp
      */
     @Override
-    public void init(Configuration configuration, NodeRole role, String localIp) {
+    public void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp) {
 
     }
 
@@ -28,6 +29,14 @@ public class LocalTransport implements Transport {
      */
     @Override
     public void sendMessage(VoidMessage message) {
+
+    }
+
+    /**
+     * @param message
+     */
+    @Override
+    public void sendMessageToAllShards(VoidMessage message) {
 
     }
 

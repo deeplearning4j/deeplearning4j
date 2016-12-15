@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.messages;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author raver119@gmail.com
  */
 @Data
+@NoArgsConstructor
 public class ShareSolidMessage extends BaseVoidMessage {
     /**
      * The only use of this message is negTable sharing.

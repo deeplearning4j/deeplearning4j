@@ -13,6 +13,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -31,7 +32,7 @@ public class MulticastTransport extends BaseTransport {
     }
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull NodeRole role, @NonNull String localIp) {
+    public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp) {
         if (configuration.getTtl() < 1)
             throw new ND4JIllegalStateException("For MulticastTransport you should have TTL >= 1, it won't work otherwise");
 
@@ -40,6 +41,7 @@ public class MulticastTransport extends BaseTransport {
 
         this.configuration = configuration;
         this.nodeRole = role;
+        this.clipboard = clipboard;
 
         context = new Aeron.Context();
 
@@ -133,6 +135,8 @@ public class MulticastTransport extends BaseTransport {
                 } catch (Exception e) { }
                 result = publicationForShards.offer(buffer);
             }
+
+            // TODO: handle retransmit & backpressure separately
 
         if (result < 0)
             throw new RuntimeException("Unable to send message over the wire. Error code: " + result);

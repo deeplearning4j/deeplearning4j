@@ -8,10 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.messages.AssignMessage;
-import org.nd4j.parameterserver.distributed.messages.InitializationMessage;
-import org.nd4j.parameterserver.distributed.messages.ShareSolidMessage;
-import org.nd4j.parameterserver.distributed.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -145,7 +142,8 @@ public class VoidParameterServerTest {
     }
 
     /**
-     * This is very important test, it covers basic messages handling over network
+     * This is very important test, it covers basic messages handling over network.
+     * Here we have 1 client, 1 connected Shard + 2 shards available over multicast UDP
      *
      * @throws Exception
      */
@@ -155,11 +153,13 @@ public class VoidParameterServerTest {
         final AtomicInteger passCnt = new AtomicInteger(0);
         final AtomicInteger startCnt = new AtomicInteger(0);
 
+        INDArray exp = Nd4j.create(new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00});
+
 
         final Configuration clientConf = Configuration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
-                .numberOfShards(10)
+                .numberOfShards(3)
                 .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
                 .streamId(119)
@@ -170,7 +170,7 @@ public class VoidParameterServerTest {
         final Configuration shardConf1 = Configuration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
-                .numberOfShards(10)
+                .numberOfShards(3)
                 .streamId(119)
                 .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
@@ -180,7 +180,17 @@ public class VoidParameterServerTest {
         final Configuration shardConf2 = Configuration.builder()
                 .unicastPort(34569) // we'll never get anything on this port
                 .multicastPort(45678)
-                .numberOfShards(10)
+                .numberOfShards(3)
+                .streamId(119)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
+                .build();
+
+        final Configuration shardConf3 = Configuration.builder()
+                .unicastPort(34570) // we'll never get anything on this port
+                .multicastPort(45678)
+                .numberOfShards(3)
                 .streamId(119)
                 .shardAddresses(localIPs)
                 .multicastNetwork("224.0.1.1")
@@ -190,6 +200,7 @@ public class VoidParameterServerTest {
 
 
         VoidParameterServer clientNode = new VoidParameterServer(false);
+        clientNode.setShardIndex((short) 0);
         clientNode.init(clientConf);
         clientNode.getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
 
@@ -197,8 +208,8 @@ public class VoidParameterServerTest {
         assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
 
 
-        Thread[] threads = new Thread[2];
-        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2};
+        Thread[] threads = new Thread[3];
+        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2, shardConf3};
 
         VoidParameterServer[] shards = new VoidParameterServer[threads.length];
         for (int t = 0; t < threads.length; t++) {
@@ -207,6 +218,7 @@ public class VoidParameterServerTest {
 
 
                 shards[x] = new VoidParameterServer(false);
+                shards[x].setShardIndex((short) x);
                 shards[x].init(configurations[x]);
 
                 shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
@@ -266,7 +278,7 @@ public class VoidParameterServerTest {
         */
 
         for (int t = 0; t < threads.length; t++) {
-            VoidMessage incMessage = shards[t].getTransport().peekMessage();
+            VoidMessage incMessage = shards[t].getTransport().takeMessage();
             assertNotEquals("Failed for shard " + t,null, incMessage);
             shards[t].handleMessage(message);
 
@@ -304,8 +316,47 @@ public class VoidParameterServerTest {
         }
 
 
-        // and now we'll request for aggregated vector
+        // and now we'll request for aggregated vector for row 1
+        clientNode.getVector(1);
+        VoidMessage vecm = shards[0].getTransport().takeMessage();
 
+        assertEquals(7, vecm.getMessageType());
+
+        VectorRequestMessage vrm = (VectorRequestMessage) vecm;
+
+        assertEquals(1, vrm.getRowIndex());
+
+        shards[0].handleMessage(vecm);
+
+        Thread.sleep(100);
+
+        // at this moment all 3 shards should already have distributed message
+        for (int t = 0; t < threads.length; t++) {
+            VoidMessage dm = shards[t].getTransport().takeMessage();
+
+            assertEquals(20, dm.getMessageType());
+
+            shards[t].handleMessage(dm);
+        }
+
+        // at this moment we should have messages propagated across all shards
+        Thread.sleep(100);
+
+        for (int t = threads.length - 1; t >= 0; t--) {
+            VoidMessage msg;
+            while ((msg = shards[t].getTransport().takeMessage()) != null) {
+                shards[t].handleMessage(msg);
+            }
+        }
+
+        // and at this moment, Shard_0 should contain aggregated vector for us
+        assertEquals(true, shards[0].clipboard.isReady(1L));
+
+        INDArray jointVector = shards[0].clipboard.nextCandidate().getAccumulatedResult();
+
+        log.info("Joint vector: {}", jointVector);
+
+        assertEquals(exp, jointVector);
 
         for (int t = 0; t < threads.length; t++) {
             threads[t].join();

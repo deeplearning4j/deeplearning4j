@@ -83,7 +83,7 @@ public abstract class BaseAggregation implements VoidAggregation, Serializable {
     @Override
     public int getMessageType() {
         // joint aggregation messageType for all aggregations
-        return 20;
+        return 21;
     }
 
     @Override

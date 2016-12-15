@@ -16,8 +16,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
+import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +62,7 @@ public abstract class BaseTransport implements Transport {
     protected Thread threadA;
     protected Thread threadB;
 
-
+    protected Clipboard clipboard;
 
     // TODO: make this configurable?
     protected IdleStrategy idler = new SleepingIdleStrategy(50000);
@@ -75,6 +79,8 @@ public abstract class BaseTransport implements Transport {
             case 3:
             case 4:
             case 5:
+            case 6:
+            case 7:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
                 sendCommandToShard(message);
@@ -114,8 +120,15 @@ public abstract class BaseTransport implements Transport {
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
-        // and send it away to other Shards
-        publicationForShards.offer(buffer, offset, length);
+        VoidMessage message = VoidMessage.fromBytes(data);
+        if (message.getMessageType() == 7) {
+            // if that's vector request message - it's special case, we don't send it to other shards yet
+            log.info("Shortcut for vector request");
+            messages.add(message);
+        } else {
+            // and send it away to other Shards
+            publicationForShards.offer(buffer, offset, length);
+        }
     }
 
     /**
@@ -155,6 +168,14 @@ public abstract class BaseTransport implements Transport {
 
 
     /**
+     * @param message
+     */
+    @Override
+    public void sendMessageToAllShards(VoidMessage message) {
+        publicationForShards.offer(message.asUnsafeBuffer());
+    }
+
+    /**
      * This method starts transport mechanisms.
      *
      * PLEASE NOTE: init() method should be called prior to launch() call
@@ -188,6 +209,7 @@ public abstract class BaseTransport implements Transport {
                     * We definitely might use less conditional code here, BUT i'll keep it as is,
                     * only because we want code to be obvious for people
                     */
+                    final AtomicBoolean localRunner = new AtomicBoolean(false);
                     if (nodeRole == NodeRole.NONE) {
                         throw new ND4JIllegalStateException("No role is set for current node!");
                     } else if (nodeRole == NodeRole.SHARD || nodeRole == NodeRole.BACKUP || nodeRole == NodeRole.MASTER) {
@@ -202,6 +224,7 @@ public abstract class BaseTransport implements Transport {
 
                         // setting up thread for inter-shard communication listener
                         threadA = new Thread(() -> {
+                            localRunner.set(true);
                             while (runner.get())
                                 idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
                         });
@@ -212,6 +235,7 @@ public abstract class BaseTransport implements Transport {
                     } else {
                         // setting up thread for shard->client communication listener
                         threadA = new Thread(() -> {
+                            localRunner.set(true);
                             while (runner.get())
                                 idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
                         });
@@ -222,6 +246,10 @@ public abstract class BaseTransport implements Transport {
                     threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                     threadA.start();
 
+                    while (!localRunner.get())
+                        try {
+                            Thread.sleep(50);
+                        } catch (Exception e) { }
                 }
                 break;
             case SAME_THREAD: {
@@ -322,7 +350,7 @@ public abstract class BaseTransport implements Transport {
         return messages.peek();
     }
 
-    public abstract void init(@NonNull Configuration configuration, @NonNull NodeRole role, @NonNull String localIp);
+    public abstract void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp);
 
     /**
      * This command is possible to issue only from Client, but Client might be Shard or Backup at the same time

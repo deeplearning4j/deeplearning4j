@@ -98,6 +98,18 @@ public class Clipboard {
         return result;
     }
 
+    public boolean isReady(Long taskId) {
+        VoidAggregation aggregation = clipboard.get(taskId);
+        if (aggregation == null)
+            return false;
+
+        return aggregation.getMissingChunks() == 0;
+    }
+
+    public boolean isTracking(Long taskId) {
+        return clipboard.containsKey(taskId);
+    }
+
     public int getNumberOfPinnedStacks() {
         return trackingCounter.get();
     }
