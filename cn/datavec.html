@@ -74,7 +74,7 @@ recordReader.initialize(new FileSplit(new File(labeledPath)));
 <p>RecordReader是DataVec中的一个类，可以帮助将字节式输入转换为记录式的数据，亦即一组数值固定并以独特索引ID加以标识的元素。向量化是将数据转换为记录的过程。记录本身是一个向量，每个元素是一项特征。</p>
 <p><a href="https://github.com/deeplearning4j/DataVec/blob/a64389c08396bb39626201beeabb7c4d5f9288f9/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java" target="_blank">ImageRecordReader</a>是RecordReader的子类，用于自动载入28 x 28像素的图像。所以LFW数据集的图像会被缩放为28像素 x 28像素的大小。你可以改变输入ImageRecordReader的参数，将尺寸改为自定义图像的大小，但务必要调整超参数<code>nIn</code>，使之等于图像高与宽的乘积。</p>
 <p>上一例中还包括一些其他的参数：<code>true</code>指示加载器为记录追加一个标签，<code>labels</code>是一组用于验证神经网络模型结果的监督值（目标值）。以下是DataVec中所有预设的RecordReader扩展（显示方式是在IntelliJ中右击<code>RecordReader</code>，点击下拉菜单中的<code>Go To</code>，再选择<code>Implementations</code>）：</p><br />
-<img class="img-responsive center-block" src="../img/recordreader_extensions.png" alt="shadowed image">
+<img class="img-responsive center-block" src="../img/recordreader_extensions.png" alt="deeplearning4j">
 <br />
 <p>DataSetIterator是用于遍历列表元素的一个Deeplearning4J类。迭代器按顺序访问数据列表中的每个项目，同时通过指向当前的元素来记录进度，在遍历过程中每前进一步就自动指向下一个元素。</p>
 <pre class="line-numbers"><code class="language-java">

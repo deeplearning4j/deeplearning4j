@@ -25,24 +25,24 @@ redirect_from: /zh-eigenvector
 <p><em>Av = b</em></p>
 <p>这一运算将向量 <em>v </em><a href="https://en.wikipedia.org/wiki/Linear_map" target="_blank">映射</a>至另一向量<em>b</em>。</p>
 <p>我们举一个实际的例子来说明。（如需了解这种称为点积的矩阵乘法，请点击<a href="https://math.stackexchange.com/a/24469" target="_blank">此处</a>。）</p><br />
-<img class="img-responsive center-block" src="../img/eigen_matrix.png" alt="shadowed image"><br />
+<img class="img-responsive center-block" src="../img/eigen_matrix.png" alt="deeplearning4j"><br />
 <p>于是<em>A</em>将<em>v</em>变换为<em>b</em>。在下图中，可以看到矩阵将较短、较低的线段<em>v</em>映射为较长、较高的线段<em>b</em>。</p><br />
-<img class="img-responsive center-block" src="../img/two_vectors.png" alt="shadowed image"><br />
+<img class="img-responsive center-block" src="../img/two_vectors.png" alt="deeplearning4j"><br />
 <p>你可以不断将正向量输入矩阵A，而每个向量都会被投射至一个向右上方伸展出去的新空间。</p>
 <p>想象所有输入向量<em>v</em>都位于这样一个普通网格空间内：</p><br />
-<img class="img-responsive center-block" src="../img/space_1.png" alt="shadowed image"><br />
+<img class="img-responsive center-block" src="../img/space_1.png" alt="deeplearning4j"><br />
 <p>而矩阵将它们全部投射到下图所示的新空间内，所有输出向量b都位于这个空间内：</p>
-<br /><img class="img-responsive center-block" src="../img/space_2.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/space_2.png" alt="deeplearning4j"><br />
 <p>下图将这两个空间并置：</p>
-<br /><img class="img-responsive center-block" src="../img/two_spaces.png" alt="shadowed image"><br /><div align="center"><em>（供图：William Gould, Stata Blog）</em></div><br /><br />
+<br /><img class="img-responsive center-block" src="../img/two_spaces.png" alt="deeplearning4j"><br /><div align="center"><em>（供图：William Gould, Stata Blog）</em></div><br /><br />
 <p>下图则用动画说明矩阵将一个空间变换为另一个空间的作用：</p>
 <div align="center"><img style="-webkit-user-select: none;" src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif"></div><br />
 <p>图中的蓝色线段是本征向量。</p>
 <p>可以把矩阵想象成一阵风，这股不可见的力产生了可见的变化效果。而风必定会吹向一个特定的方向。本征向量指出了矩阵这股“风”的方向。</p>
-<br /><img class="img-responsive center-block" src="../img/mona_lisa_eigenvector.png" alt="shadowed image"><br /><div align="center"><em>（供图：维基百科）</em></div><br />
+<br /><img class="img-responsive center-block" src="../img/mona_lisa_eigenvector.png" alt="deeplearning4j"><br /><div align="center"><em>（供图：维基百科）</em></div><br />
 <p>那么一个空间内所有受到矩阵影响的向量中，哪些才是本征向量呢？本征向量是不会改变方向的那个向量；也就是说，本征向量已经指向其它所有向量受矩阵推动而变换的方向。本征向量就像是风向标，可以叫本征向标。</p>
 <p>因此本征向量的定义是，同矩阵相乘时仿佛只是与一个标量系数相乘的向量。在下面的等式中，A为矩阵，x为向量，λ为标量系数，比如5、37或者π。</p>
-<br /><img class="img-responsive center-block" src="../img/lambda_eigen.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/lambda_eigen.png" alt="deeplearning4j"><br />
 <p>可以说本征向量是线性变换过程将输入向量拉伸或压缩时所遵循的轴线。本征向量是代表矩阵变换作用的线，也就是“线性变换”一词中所谓的“线”。</p>
 <p>注意此处所说的轴线和线条不止一条。就好像一个德国人可能会有一辆买菜用的大众车，一辆出差用的奔驰，还有一辆兜风用的保时捷（每辆车都有特定的用途），方形矩阵有多少个维度，就有多少个本征向量；也就是说，一个2 x 2的矩阵有两个本征向量，3 x 3的矩阵有三个，而n x n的矩阵有n个，每个本征向量都代表了一个维度内的变换作用方向。</p>
 <p>由于本征向量提取出了矩阵对输入向量进行变换时的轴线，所以可以用来分解矩阵；即<a href="http://mathworld.wolfram.com/MatrixDiagonalization.html" target="_blank">把矩阵沿着本征向量进行对角化</a>。因为本征向量代表了一个矩阵的特性，它们的作用与深度神经网络所采用的自动编码器相同。</p>
@@ -64,16 +64,16 @@ redirect_from: /zh-eigenvector
 <p>PCA是用于分析图像等高维度数据的模式的工具。在机器学习应用中，PCA有时被用来对输入神经网络的数据进行预处理。PCA通过将数据中心化、旋转、缩放来进行维度的优先排序（可以去除一些差异性较低的维度），改善神经网络的收敛速度以及整体结果质量。</p>
 <p>介绍PCA之前，我们首先需要对一些基本的统计学概念进行定义，包括 <em>均值、标准差、方差</em> 和 <em>协方差</em>，以便在下文的说明中使用。这些概念的公式彼此紧密相关。</p>
 <p><em>均值</em>就是数据集X中所有 <em>x</em>的平均值，计算方法是将所有数据点之和除以数据点的数量 <em>n</em>。</p>
-<br /><img class="img-responsive center-block" src="../img/mean.png" alt="shadowed image"><br /><p><em>标准差</em>听上去不简单，但实际上就是数据点与均值之间距离的平方的平均数的算术平方根。在下图的公式中，根号内的分子为每个数据点与均值之差的平方之和，而分母则是数据点的数量（减去一），两者相除得到平均距离。</p><br /><img class="img-responsive center-block" src="../img/standard_deviation.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/mean.png" alt="deeplearning4j"><br /><p><em>标准差</em>听上去不简单，但实际上就是数据点与均值之间距离的平方的平均数的算术平方根。在下图的公式中，根号内的分子为每个数据点与均值之差的平方之和，而分母则是数据点的数量（减去一），两者相除得到平均距离。</p><br /><img class="img-responsive center-block" src="../img/standard_deviation.png" alt="deeplearning4j"><br />
 <p>方差是衡量数据离散度的指标。以一支<a href="https://www.theguardian.com/world/2015/apr/08/scientists-try-to-answer-why-dutch-people-are-so-tall">荷兰篮球队的球员</a>为例，如果测量他们的身高，得到的结果不会有太大差异。所有人的身高都超过一米八。</p>
 <p>但如果把这些荷兰篮球运动员和一个班的幼儿园学生混在一起，那么整个群体的身高数据就会出现很大的差异。方差是数据的离散度，或者说数据之间差异的大小。</p>
 <p>方差就是标准差的平方，通常写作<em>s^2</em>。</p>
-<br /><img class="img-responsive center-block" src="../img/variance.png" alt="shadowed image"><br /><p>在计算方差和标准差时都会取数据点与均值之差的平方，目的是使差变为正值，避免高于平均数和低于平均数的值相互抵消。</p>
+<br /><img class="img-responsive center-block" src="../img/variance.png" alt="deeplearning4j"><br /><p>在计算方差和标准差时都会取数据点与均值之差的平方，目的是使差变为正值，避免高于平均数和低于平均数的值相互抵消。</p>
 <p>假设以前文例子中每个人的年龄（x 轴）和身高（y 轴）为坐标绘图（将均值定为零），得到呈椭圆形的散点图。</p>
-<br /><img class="img-responsive center-block" src="../img/scatterplot.png" alt="shadowed image"><br /><p>PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归类似。</p>
+<br /><img class="img-responsive center-block" src="../img/scatterplot.png" alt="deeplearning4j"><br /><p>PCA就是尝试画出贯穿这些数据点的解释性直线，与线性回归类似。</p>
 <p>每条直线代表一个“主成分”，或者说自变量与应变量之间的一种关系。主成分的数量与数据集的维度数相同，而PCA的作用是对主成分进行优先排序</p>
 <p>第一主成分是将散点图二等分的直线，可以解释最多的差异；也就是说，这条直线沿着数据集最长的维度伸展。（这也恰好是误差最少的一条直线，如红线所示……）在下图中，第一主成分沿“长棍面包”的长轴将其切开。</p>
-<br /><img class="img-responsive center-block" src="../img/scatterplot_line.png" alt="shadowed image"><br /><p>第二主成分垂直于第一主成分穿过数据集，与第一主成分产生的误差点拟合。上图中只有两个主成分，但如果有第三个维度，那么第三个主成分则会与前两个成分的误差点拟合，以此类推。</p>
+<br /><img class="img-responsive center-block" src="../img/scatterplot_line.png" alt="deeplearning4j"><br /><p>第二主成分垂直于第一主成分穿过数据集，与第一主成分产生的误差点拟合。上图中只有两个主成分，但如果有第三个维度，那么第三个主成分则会与前两个成分的误差点拟合，以此类推。</p>
 <br />
 
 <p><h2><a name="covariance">协方差矩阵</a></h2></p>
@@ -84,18 +84,18 @@ redirect_from: /zh-eigenvector
 <p>矩阵用于进行线性变换时，本征向量跟踪矩阵对输入数据施加作用力的方向；而当矩阵的元素是数据的方差和协方差时，其本征向量反映了数据被施加的作用力。前一种矩阵施加作用力，后者则反映这种力。</p>
 <p><em>本征值</em> 就是本征向量所附的系数，表示轴线的幅值。此处本征值是数据协方差的度量。将本征向量按本征值由高到低排列，即得到主成分重要性的顺序。</p>
 <p>对于2 x 2的矩阵而言，协方差矩阵可能如下所示：</p>
-<br /><img class="img-responsive center-block" src="../img/covariance_matrix.png" alt="shadowed image"><br /><p>左上角和右下角的数字分别代表x与y两个变量的方差，而左下角与右上角的相同数字则代表x与y之间的协方差。由于这样的结构特点，此类矩阵被称为对称矩阵。可以看到协方差是正数，因为靠近PCA分段顶部的图像指向右上方。</p>
-<p>如果两个变量同时增减（直线指向右上方），它们的协方差为正；如果一个变量增加时，另一个变量减少，则两者间的协方差为负（直线指向右下方）。</p><br /><img class="img-responsive center-block" src="../img/covariances.png" alt="shadowed image"><br /><div align="center"><em>（供图：Vincent Spruyt）</em></div><br />
+<br /><img class="img-responsive center-block" src="../img/covariance_matrix.png" alt="deeplearning4j"><br /><p>左上角和右下角的数字分别代表x与y两个变量的方差，而左下角与右上角的相同数字则代表x与y之间的协方差。由于这样的结构特点，此类矩阵被称为对称矩阵。可以看到协方差是正数，因为靠近PCA分段顶部的图像指向右上方。</p>
+<p>如果两个变量同时增减（直线指向右上方），它们的协方差为正；如果一个变量增加时，另一个变量减少，则两者间的协方差为负（直线指向右下方）。</p><br /><img class="img-responsive center-block" src="../img/covariances.png" alt="deeplearning4j"><br /><div align="center"><em>（供图：Vincent Spruyt）</em></div><br />
 <p>注意，若两个变量中有一个完全不变，且图像在对角方向上无运动，则不存在协方差。协方差回答的问题是：两个变量是否共同变化？如果一个变量变化时，另一变量维持不变，那么答案就是否定的。</p>
 <p>此外，如下面的公式所示，协方差与方差之间的差别其实很小。</p>
-<br /><img class="img-responsive center-block" src="../img/covariance.png" alt="shadowed image"><br /><p align="center"><strong>对比<</strong>/p><br /><img class="img-responsive center-block" src="../img/variance.png" alt="shadowed image"><br /><p>计算协方差的妙处是，对于难以从直观上判断变量关系的高维度空间，可以通过协方差的正负以及存在与否来判断两个变量之间的互动方式。（<em>相关系数</em>是标准化的协方差，范围在-1和1之间。）</p>
+<br /><img class="img-responsive center-block" src="../img/covariance.png" alt="deeplearning4j"><br /><p align="center"><strong>对比<</strong>/p><br /><img class="img-responsive center-block" src="../img/variance.png" alt="deeplearning4j"><br /><p>计算协方差的妙处是，对于难以从直观上判断变量关系的高维度空间，可以通过协方差的正负以及存在与否来判断两个变量之间的互动方式。（<em>相关系数</em>是标准化的协方差，范围在-1和1之间。）</p>
 <p>总而言之，协方差矩阵界定了数据的形状。协方差表示对角方向上数据沿本征向量的离散程度，而x轴和y轴方向上的离散度则由方差表示。</p>
 <p>因果性在统计学中的名声不好，所以下面这段话仅供参考：</p>
 <p>虽然这种说法不完全准确，但可以将上文荷兰篮球队员例子中的每个要素视为一种原因因素，第一主成分是年龄，第二主成分可能是性别，第三则是国籍（包含不同国家医疗保健体系的差别），每一个成分都在各自的维度内与身高相关。每项因素对于身高有不同程度的作用。可以将协方差理解为揭示潜在原因的迹象。</p><br />
 
 <p><h3><a name="change">基变换</a></h3></p>
 <p>由于协方差矩阵的本征向量都是相互正交的，所以可以用于将原来由x轴与y轴定位的数据改为由主成分所表示的轴线定位。你可以将数据集的<a href="https://en.wikipedia.org/wiki/Change_of_basis" target="_blank">坐标系进行变换</a>，变为由方差最大的轴线所界定的新空间。</p>
-<p>上图所示的x轴与y轴称为矩阵的基；也就是说，它们为矩阵的点赋予x、y坐标。但是矩阵可以沿其他轴线重塑；例如，可以将矩阵的本征向量作为基础，赋予同个矩阵一组新坐标。矩阵和向量都是独立存在的，并不受限于x－y等坐标系的坐标数值。</p><br /><img class="img-responsive center-block" src="../img/basis_change.png" alt="shadowed image"><br /><p>上图显示了同一个向量v在两个坐标系中的不同位置，x－y坐标系为黑色实线，新坐标系的两轴为红色虚线。在第一个坐标系中，v = (1,1)，而在第二个坐标系中，v = (1,0)，但v自身并未改变。向量和矩阵因而可以同括号内的数字分离开来。</p>
+<p>上图所示的x轴与y轴称为矩阵的基；也就是说，它们为矩阵的点赋予x、y坐标。但是矩阵可以沿其他轴线重塑；例如，可以将矩阵的本征向量作为基础，赋予同个矩阵一组新坐标。矩阵和向量都是独立存在的，并不受限于x－y等坐标系的坐标数值。</p><br /><img class="img-responsive center-block" src="../img/basis_change.png" alt="deeplearning4j"><br /><p>上图显示了同一个向量v在两个坐标系中的不同位置，x－y坐标系为黑色实线，新坐标系的两轴为红色虚线。在第一个坐标系中，v = (1,1)，而在第二个坐标系中，v = (1,0)，但v自身并未改变。向量和矩阵因而可以同括号内的数字分离开来。</p>
 <p>这具有深远而近乎哲学性的意义，其中之一是，自然的坐标系并不存在，而n维空间中的数学对象有着多种描述方式。（基变换也可以让矩阵更容易操控。）</p>
 <p>向量的基变换与数字的进制变换大致相似；即数量九在十进制下表示为9，而在二进制下表示为1001，在三进制下表示为100（三进制数字即1，2，10，11，12，20，21，22，100 &lt;– 这是九）。同样的数量，不同的符号；同样的向量，不同的坐标。</p><br />
 
