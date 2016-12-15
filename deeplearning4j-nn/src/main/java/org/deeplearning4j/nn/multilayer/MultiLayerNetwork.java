@@ -155,73 +155,92 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     /**
-     * This unsupervised learning method runs
-     * contrastive divergence on each RBM layer in the network.
+     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
+     * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
+     * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
      *
-     * @param iter the input to iterate on
-     *             The typical tip is that the higher k is the closer to the model
-     *             you will be approximating due to more sampling. K = 1
-     *             usually gives very good results and is the default in quite a few situations.
+     * @param iter Training data
      */
     public void pretrain(DataSetIterator iter) {
         if(flattenedGradients == null) initGradientsView();
         if (!layerWiseConfigurations.isPretrain())
             return;
 
-        INDArray layerInput;
-        Layer layer;
-
         for (int i = 0; i < getnLayers(); i++) {
-            layer = layers[i];
-            layer.conf().setPretrain(true);
-            if (i == 0 && layer.isPretrainLayer()) {
-                log.info("Starting unsupervised training on layer " + (i + 1));
-                while (iter.hasNext()) {
-                    DataSet next = iter.next();
-                    if(getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                        INDArray features = next.getFeatureMatrix();
-                        layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(features, features.size(0));
-                    }
-                    else
-                        layerInput = next.getFeatureMatrix();
-                    setInput(layerInput);
-                      /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
-                    if (this.getInput() == null || this.getLayers() == null)
-                        initializeLayers(layerInput);
-                    layer.fit(layerInput);
-                }
+            pretrainLayer(i, iter);
+        }
+    }
 
-            } else if(layer.isPretrainLayer()){
-                if(!iter.hasNext() && iter.resetSupported()){
-                    iter.reset();
-                }
-                log.info("Starting unsupervised training on layer " + (i + 1));
-                while (iter.hasNext()) {
-                    DataSet next = iter.next();
-                    input = next.getFeatureMatrix();
-                    layerInput = next.getFeatureMatrix();
-                    for (int j = 1; j <= i; j++) {
-                        layerInput = activationFromPrevLayer(j - 1, layerInput, true);
-                    }
-                    layer.fit(layerInput);
-                }
-            }
-            // Turn off pretrain after it is complete
-            layer.conf().setPretrain(false);
+    /**
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
+     *
+     * @param layerIdx Index of the layer to train (0 to numLayers-1)
+     * @param iter Training data
+     */
+    public void pretrainLayer(int layerIdx, DataSetIterator iter){
+        if(flattenedGradients == null) initGradientsView();
+        if (!layerWiseConfigurations.isPretrain())
+            return;
+        if(layerIdx >= layers.length){
+            throw new IllegalArgumentException("Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
+        }
+
+        Layer layer = layers[layerIdx];
+        if(!layer.isPretrainLayer()) return;
+
+        if(!iter.hasNext() && iter.resetSupported()){
             iter.reset();
         }
+
+        log.info("Starting unsupervised training on layer " + layerIdx);
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
+            input = next.getFeatureMatrix();
+            pretrainLayer(layerIdx, input);
+        }
+    }
+
+    /**
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
+     *
+     * @param layerIdx Index of the layer to train (0 to numLayers-1)
+     * @param features Training data array
+     */
+    public void pretrainLayer(int layerIdx, INDArray features){
+        if(flattenedGradients == null) initGradientsView();
+        if (!layerWiseConfigurations.isPretrain())
+            return;
+        if(layerIdx >= layers.length){
+            throw new IllegalArgumentException("Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
+        }
+
+        INDArray layerInput = features;
+        if(layerIdx == 0 && getLayerWiseConfigurations().getInputPreProcess(0) != null){
+            layerInput = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, input.size(0));
+        }
+
+        Layer layer = layers[layerIdx];
+        if(!layer.isPretrainLayer()) return;
+        layer.conf().setPretrain(true);
+
+        //Do forward pass to the layer to be pretrained
+        for (int j = 0; j < layerIdx; j++) {
+            layerInput = activationFromPrevLayer(j, layerInput, true);
+        }
+        layer.fit(layerInput);
+
+        // Turn off pretrain after it is complete
+        layer.conf().setPretrain(false);
     }
 
 
     /**
-     * This unsupervised learning method runs
-     * contrastive divergence on each RBM layer in the network.
-     *
-     * @param input the input to iterate on
-     *              The typical tip is that the higher k is the closer to the model
-     *              you will be approximating due to more sampling. K = 1
-     *              usually gives very good results and is the default in quite a few situations.
+     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}
      */
+    @Deprecated
     public void pretrain(INDArray input) {
         if (!layerWiseConfigurations.isPretrain())
             return;

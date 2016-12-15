@@ -25,6 +25,9 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -38,6 +41,7 @@ import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGDataSet;
 import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGMultiDataSet;
+import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -56,9 +60,7 @@ import scala.Tuple2;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -278,12 +280,8 @@ public class SparkComputationGraph implements Serializable {
 
     /**
      * This method allows you to specify IterationListeners for this model.
-     * <p>
-     * PLEASE NOTE:
-     * 1. These iteration listeners should be configured to use remote UiServer
-     * 2. Remote UiServer should be accessible via network from Spark master node.
      *
-     * @param listeners
+     * @param listeners Iteration listeners
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         this.listeners.clear();
@@ -291,14 +289,49 @@ public class SparkComputationGraph implements Serializable {
         if (trainingMaster != null) trainingMaster.setListeners(this.listeners);
     }
 
-    protected void invokeListeners(ComputationGraph network, int iteration) {
-        for (IterationListener listener : listeners) {
-            try {
-                listener.iterationDone(network, iteration);
-            } catch (Exception e) {
-                log.error("Exception caught at IterationListener invocation" + e.getMessage());
-                e.printStackTrace();
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
+     *
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(@NonNull IterationListener... listeners) {
+        setListeners(Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
+        //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
+        StatsStorageRouterProvider routerProvider = null;
+        if(listeners != null ){
+            for(IterationListener l : listeners){
+                if(l instanceof RoutingIterationListener){
+                    RoutingIterationListener rl = (RoutingIterationListener)l;
+                    if(rl.getStorageRouter() == null){
+                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)){
+                        //Spark would throw a (probably cryptic) serialization exception later anyway...
+                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
+                    }
+
+                    //Need to give workers a router provider...
+                    if(routerProvider == null){
+                        routerProvider = new VanillaStatsStorageRouterProvider();
+                    }
+                }
             }
+        }
+        this.listeners.clear();
+        if(listeners != null) {
+            this.listeners.addAll(listeners);
+            if (trainingMaster != null) trainingMaster.setListeners(statsStorage, this.listeners);
         }
     }
 
