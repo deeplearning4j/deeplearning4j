@@ -51,16 +51,17 @@ public class ParallelWrapper implements AutoCloseable {
         this.model = model;
         this.workers = workers;
         this.prefetchSize = prefetchSize;
-
+        boolean mds = false;
         if (this.model instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) this.model).getUpdater();
         } else if (this.model instanceof ComputationGraph) {
+            mds = true;
             ((ComputationGraph) this.model).getUpdater();
         }
 
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
-            zoo[cnt] = new Trainer(cnt, model);
+            zoo[cnt] = new Trainer(cnt, model, mds);
             zoo[cnt].start();
         }
     }
@@ -92,6 +93,7 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
+
                 zoo[cnt] = new Trainer(cnt, model, true);
                 zoo[cnt].start();
             }
@@ -124,7 +126,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers || !iterator.hasNext()) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                     try {
                         zoo[cnt].waitTillRunning();
                     } catch (Exception e) {
@@ -193,7 +195,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     } else throw new RuntimeException("MultiDataSet might be used only with ComputationGraph model");
 
-                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
+                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }
@@ -249,7 +251,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers || !iterator.hasNext()) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt ++) {
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                     try {
                         zoo[cnt].waitTillRunning();
                     } catch (Exception e) {
@@ -344,7 +346,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     }
 
-                    if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
+                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
                             zoo[cnt].updateModel(model);
                         }
@@ -407,9 +409,9 @@ public class ParallelWrapper implements AutoCloseable {
 
         /**
          * This method enables/disables updaters averaging.
-         *
+         * <p>
          * Default value: TRUE
-         *
+         * <p>
          * PLEASE NOTE: This method is suitable for debugging purposes mostly. So don't change default value, unless you're sure why you need it.
          *
          * @param reallyAverage
@@ -424,7 +426,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          * Size of prefetch buffer that will be used for background data prefetching.
          * Usually it's better to keep this value equal to the number of workers.
-         *
+         * <p>
          * Default value: 2
          *
          * @param size 0 to disable prefetching, any positive number
@@ -441,7 +443,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         /**
          * If set to true, legacy averaging method is used. This might be used as fallback on multi-gpu systems without P2P access available.
-         *
+         * <p>
          * Default value: false
          *
          * @param reallyUse
@@ -512,7 +514,7 @@ public class ParallelWrapper implements AutoCloseable {
                 this.replicatedModel = ((ComputationGraph) model).clone();
 
                 if (threadId != 0)
-                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
+                    ((ComputationGraph) this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             }
         }
 
@@ -549,7 +551,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     updater.setStateViewArray((MultiLayerNetwork) replicatedModel, viewD, false);
                 }
-            } else if (replicatedModel instanceof  ComputationGraph) {
+            } else if (replicatedModel instanceof ComputationGraph) {
                 replicatedModel.setParams(model.params().dup());
 
                 ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
@@ -570,7 +572,7 @@ public class ParallelWrapper implements AutoCloseable {
                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
 
-        public boolean isRunning(){
+        public boolean isRunning() {
             // if Trainer thread got exception during training - rethrow it here
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
