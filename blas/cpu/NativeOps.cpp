@@ -1137,7 +1137,7 @@ void NativeOps::execScalarFloat(
         int *xShapeInfo,
         float *result,
         int *resultShapeInfo,
-        double scalar,
+        float scalar,
         float *extraParams,
         int *xIndexes,
         int *resultIndexes) {
