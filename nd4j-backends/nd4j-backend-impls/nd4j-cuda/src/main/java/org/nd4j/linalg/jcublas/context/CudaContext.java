@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.nativeblas.NativeOps;
@@ -29,11 +30,13 @@ public class CudaContext {
     private cudaStream_t oldStream;
 
     private cudaStream_t cublasStream;
+    private cudaStream_t solverStream;
 
     private cudaStream_t specialStream;
 
     //private cudaEvent_t oldEvent;
     private cublasHandle_t handle;
+    private cusolverDnHandle_t solverHandle;
     private CublasPointer resultPointer;
     private AtomicBoolean oldStreamReturned = new AtomicBoolean(false);
     private AtomicBoolean handleReturned = new AtomicBoolean(false);
@@ -108,6 +111,11 @@ public class CudaContext {
     }
 
 
+public void syncSolverStream() {
+        if (solverStream != null) {
+            nativeOps.streamSynchronize(solverStream);
+        } else throw new IllegalStateException("cuBLAS stream isnt set");
+    }
     /**
      * Associates
      * the handle on this context

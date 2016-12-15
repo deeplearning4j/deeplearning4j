@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 import static org.bytedeco.javacpp.cublas.*;
+import static org.bytedeco.javacpp.cusolver.*;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
@@ -38,6 +40,7 @@ public class BasicContextPool implements ContextPool {
     protected volatile Map<Integer, CUcontext> cuPool = new ConcurrentHashMap<>();
 
     protected volatile Map<Integer, cublasHandle_t> cublasPool = new ConcurrentHashMap<>();
+    protected volatile Map<Integer, cusolverDnHandle_t> solverPool = new ConcurrentHashMap<>();
 
     protected volatile Map<Long, CudaContext> contextsPool = new ConcurrentHashMap<>();
 
@@ -108,11 +111,26 @@ public class BasicContextPool implements ContextPool {
                         context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
+
+                        logger.debug("Creating new cuSolver handle for device [{}]...", deviceId);
+
+                        cudaStream_t solverStream = createNewStream(deviceId).getOldStream();
+
+                        cusolverDnHandle_t solverhandle = createNewSolverHandle(solverStream);
+                        context.setSolverHandle(solverhandle);
+                        context.setSolverStream(solverStream);
+
+                        solverPool.put(deviceId, solverhandle);
+
                     } else {
                         // just pick handle out there
                         logger.debug("Reusing blas here...");
                         cublasHandle_t handle = cublasPool.get(deviceId);
                         context.setHandle(handle);
+
+                        logger.debug("Reusing solver here...");
+                        cusolverDnHandle_t solverHandle = solverPool.get(deviceId);
+                        context.setSolverHandle(solverHandle);
 
                         // TODO: actually we don't need this anymore
 //                        cudaStream_t cublasStream = new cudaStream_t();
@@ -181,6 +199,22 @@ public class BasicContextPool implements ContextPool {
         return createNewCublasHandle();
     }
 
+    protected cusolverDnHandle_t createNewSolverHandle() {
+        cusolverDnContext pointer = new cusolverDnContext();
+        int result = cusolverDnCreate(pointer);
+        if (result != 0) {
+            throw new IllegalStateException("Can't create new cuBLAS handle! cusolverDn errorCode: [" + result + "] from cusolverDnCreate()");
+        }
+
+        cusolverDnHandle_t handle = new cusolverDnHandle_t(pointer);
+
+        return handle;
+    }
+
+    protected cusolverDnHandle_t createNewSolverHandle(cudaStream_t stream) {
+        return createNewSolverHandle();
+    }
+
     protected CUcontext createNewContext(Integer deviceId) {
         /*
         logger.debug("Creating new CUcontext...");
@@ -221,6 +255,8 @@ public class BasicContextPool implements ContextPool {
         contextsForDevices.clear();
         contextsPool.clear();
         cublasPool.clear();
+
+	solverPool.clear();
 
         acquireContextForDevice(deviceId);
         */
