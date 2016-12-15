@@ -8,9 +8,7 @@ import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.util.UIDProvider;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,7 +26,9 @@ public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
         String str = UUID.randomUUID().toString();
         uid = str.substring(0,Math.min(str.length(),8));
 
-        
+        sessionIDs = Collections.synchronizedSet(new HashSet<String>());
+        storageMetaData = new ConcurrentHashMap<>();
+        staticInfo = new ConcurrentHashMap<>();
     }
 
 
