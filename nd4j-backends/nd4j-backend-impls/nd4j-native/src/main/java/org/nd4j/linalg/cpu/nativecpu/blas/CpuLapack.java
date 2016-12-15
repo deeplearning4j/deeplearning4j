@@ -20,13 +20,13 @@ public class CpuLapack extends BaseLapack {
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-	int status = org.bytedeco.javacpp.openblas.LAPACKE_sgetrf(
+	int status = LAPACKE_sgetrf(
 			getColumnOrder(A), M, N, A.data().asNioFloat(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
     @Override
     public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
-	int status = org.bytedeco.javacpp.openblas.LAPACKE_dgetrf(
+	int status = LAPACKE_dgetrf(
 			getColumnOrder(A), M, N, A.data().asNioDouble(), getLda(A), IPIV.data().asNioInt() ) ;
     }
 
@@ -34,7 +34,7 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void sgesvd( byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT, INDArray INFO ) {
 	FloatBuffer superb = FloatBuffer.allocate( M<N?M:N ) ;
-	int status = org.bytedeco.javacpp.openblas.LAPACKE_sgesvd(
+	int status = LAPACKE_sgesvd(
 		getColumnOrder(A),
 		jobu, jobvt, 
 		M, N, 
