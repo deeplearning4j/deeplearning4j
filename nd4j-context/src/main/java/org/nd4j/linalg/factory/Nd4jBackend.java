@@ -59,17 +59,43 @@ import org.slf4j.LoggerFactory;
  *
  * @author eronwright
  * @author Adam Gibson
+ * @author saudet
  *
  */
 public abstract class Nd4jBackend {
 
-    public static final int BACKEND_PRIORITY_CPU =   0;
-    public static final int BACKEND_PRIORITY_GPU = 100;
+    public static final int BACKEND_PRIORITY_CPU;
+    public static final int BACKEND_PRIORITY_GPU;
     public final static String DYNAMIC_LOAD_CLASSPATH = "ND4J_DYNAMIC_LOAD_CLASSPATH";
     public final static String DYNAMIC_LOAD_CLASSPATH_PROPERTY = "org.nd4j.backend.dynamicbackend";
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
     private static boolean triedDynamicLoad = false;
 
+    static {
+        int n = 0;
+        String s = System.getenv("BACKEND_PRIORITY_CPU");
+        if (s != null && s.length() > 0) {
+            try {
+                n = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        BACKEND_PRIORITY_CPU = n;
+    }
+
+    static {
+        int n = 100;
+        String s = System.getenv("BACKEND_PRIORITY_GPU");
+        if (s != null && s.length() > 0) {
+            try {
+                n = Integer.parseInt(s);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        BACKEND_PRIORITY_GPU = n;
+    }
 
     /**
      * Returns true if the
@@ -147,8 +173,15 @@ public abstract class Nd4jBackend {
         });
 
         for(Nd4jBackend backend: backends) {
-            if(!backend.isAvailable()) {
-                log.trace("Skipped [{}] backend (unavailable)", backend.getClass().getSimpleName());
+            boolean available = false;
+            String error = null;
+            try {
+                available = backend.isAvailable();
+            } catch (Exception e) {
+                error = e.getMessage();
+            }
+            if(!available) {
+                log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
                 continue;
             }
 
@@ -158,7 +191,7 @@ public abstract class Nd4jBackend {
                 e.printStackTrace();
             }
 
-            log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());
+            log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
             return backend;
         }
 
@@ -187,8 +220,15 @@ public abstract class Nd4jBackend {
 
 
         for(Nd4jBackend backend: reflectionBackends) {
-            if(!backend.isAvailable()) {
-                log.trace("Skipped [{}] backend (unavailable)", backend.getClass().getSimpleName());
+            boolean available = false;
+            String error = null;
+            try {
+                available = backend.isAvailable();
+            } catch (Exception e) {
+                error = e.getMessage();
+            }
+            if(!available) {
+                log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
                 continue;
             }
 
