@@ -77,7 +77,7 @@ public class ModelConfiguration {
     @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfig(String modelJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.SequentialBuilder(modelJson).build();
+        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJson(modelJson).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }
 
@@ -92,7 +92,7 @@ public class ModelConfiguration {
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfig(String modelJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder(modelJson).build();
+        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJson(modelJson).buildSequential();
         return kerasModel.getComputationGraphConfiguration();
     }
 }
