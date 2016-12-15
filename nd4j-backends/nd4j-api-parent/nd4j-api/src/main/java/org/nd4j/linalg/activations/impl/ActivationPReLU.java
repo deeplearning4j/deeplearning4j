@@ -1,8 +1,7 @@
 package org.nd4j.linalg.activations.impl;
 
-import org.nd4j.linalg.activations.IActivationLearnable;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.transforms.PReLU;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -11,7 +10,7 @@ import java.util.List;
 /**
  * Created by susaneraly on 12/10/16.
  */
-public class ActivationPReLU implements IActivationLearnable {
+public class ActivationPReLU implements IActivation {
 
     private static final int NUM_PARAMS = 1;
     private static final boolean [] SHARE_ALL = {false};
