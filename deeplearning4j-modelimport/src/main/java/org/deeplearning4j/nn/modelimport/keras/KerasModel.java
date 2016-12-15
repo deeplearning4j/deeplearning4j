@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -76,13 +77,26 @@ public class KerasModel {
     protected boolean train;                  // whether to build model in training mode
 
     /**
-     * Constructor for (Functional API) Model from model configuration JSON string,
-     * training configuration JSON string, weights, and "training mode" boolean
-     * indicator. When built in training mode, certain unsupported configurations
+     * (Recommended) Builder-pattern constructor for (Functional API) Model.
+     *
+     * @param modelBuilder    builder object
+     * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasModel(ModelBuilder modelBuilder) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.trainingJson, modelBuilder.weights, modelBuilder.train);
+    }
+
+    /**
+     * (Not recommended) Constructor for (Functional API) Model from model configuration
+     * (JSON or YAML), training configuration (JSON), weights, and "training mode"
+     * boolean indicator. When built in training mode, certain unsupported configurations
      * (e.g., unknown regularizers) will throw Exceptions. When train=false, these
      * will generate warnings but will be otherwise ignored.
      *
      * @param modelJson       model configuration JSON string
+     * @param modelYaml       model configuration YAML string
      * @param trainingJson    training configuration JSON string
      * @param weights         map from layer to parameter to weights
      * @param train           whether to build model for training
@@ -90,9 +104,16 @@ public class KerasModel {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasModel(String modelJson, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
+    public KerasModel(String modelJson, String modelYaml, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String,Object> classNameAndLayerLists = parseJsonString(modelJson);
+        Map<String,Object> classNameAndLayerLists;
+        if (modelJson != null)
+            classNameAndLayerLists = parseJsonString(modelJson);
+        else if (modelYaml != null)
+            classNameAndLayerLists = parseYamlString(modelYaml);
+        else
+            throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
+
         this.className = (String) checkAndGetModelField(classNameAndLayerLists, MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_MODEL))
             throw new InvalidKerasConfigurationException("Expected model class name Model (found " + this.className + ")");
@@ -305,18 +326,22 @@ public class KerasModel {
     @Data
     static class ModelBuilder implements Cloneable {
         protected String modelJson;
+        protected String modelYaml;
         protected String trainingJson = null;
         protected Map<String,Map<String,INDArray>> weights = null;
         protected boolean train = false;
 
-        public ModelBuilder(String modelJson) {
-            this.modelJson = modelJson;
-        }
-
-        private ModelBuilder() {}
+        public ModelBuilder() {}
 
         public ModelBuilder modelJson(String modelJson) {
             this.modelJson = modelJson;
+            this.modelYaml = null;
+            return this;
+        }
+
+        public ModelBuilder modelYaml(String modelYaml) {
+            this.modelYaml = modelYaml;
+            this.modelJson = null;
             return this;
         }
 
@@ -339,9 +364,14 @@ public class KerasModel {
             return new ModelBuilder();
         }
 
-        public KerasModel build()
+        public KerasModel buildModel()
                 throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-            return new KerasModel(this.modelJson, this.trainingJson, this.weights, this.train);
+            return new KerasModel(this);
+        }
+
+        public KerasSequentialModel buildSequential()
+                throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            return new KerasSequentialModel(this);
         }
     }
 
@@ -446,6 +476,19 @@ public class KerasModel {
      */
     protected static Map<String,Object> parseJsonString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
+        TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
+        return mapper.readValue(json, typeRef);
+    }
+
+    /**
+     * Convenience function for parsing JSON strings.
+     *
+     * @param json    String containing valid JSON
+     * @return        Nested (key,value) map of arbitrary depth
+     * @throws IOException
+     */
+    protected static Map<String,Object> parseYamlString(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
     }

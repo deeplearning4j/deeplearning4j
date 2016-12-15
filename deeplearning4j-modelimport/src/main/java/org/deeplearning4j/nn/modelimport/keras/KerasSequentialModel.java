@@ -40,16 +40,41 @@ import java.util.Map;
 public class KerasSequentialModel extends KerasModel {
 
     /**
-     * Constructor for Sequential model and training configuration JSON strings and map containing weights.
+     * (Recommended) Builder-pattern constructor for Sequential model.
+     *
+     * @param modelBuilder    builder object
+     * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasSequentialModel(ModelBuilder modelBuilder) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.trainingJson, modelBuilder.weights, modelBuilder.train);
+    }
+
+    /**
+     * (Not recommended) Constructor for Sequential model from model configuration
+     * (JSON or YAML), training configuration (JSON), weights, and "training mode"
+     * boolean indicator. When built in training mode, certain unsupported configurations
+     * (e.g., unknown regularizers) will throw Exceptions. When train=false, these
+     * will generate warnings but will be otherwise ignored.
      *
      * @param modelJson       model configuration JSON string
+     * @param modelYaml       model configuration YAML string
      * @param trainingJson    training configuration JSON string
      * @param weights         map from layer to parameter to weights
      * @throws IOException
      */
-    public KerasSequentialModel(String modelJson, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
+    public KerasSequentialModel(String modelJson, String modelYaml, String trainingJson, Map<String,
+                                Map<String,INDArray>> weights, boolean train)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String,Object> classNameAndLayers = parseJsonString(modelJson);
+        Map<String,Object> classNameAndLayers;
+        if (modelJson != null)
+            classNameAndLayers = parseJsonString(modelJson);
+        else if (modelYaml != null)
+            classNameAndLayers = parseYamlString(modelYaml);
+        else
+            throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
+
         this.className = (String) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL + " (found " + this.className + ")");
@@ -158,48 +183,5 @@ public class KerasSequentialModel extends KerasModel {
         if (importWeights)
             model = (MultiLayerNetwork)copyWeightsToModel(model, this.weights, this.layers);
         return model;
-    }
-
-    @Data
-    static class SequentialBuilder implements Cloneable {
-        protected String modelJson;
-        protected String trainingJson = null;
-        protected Map<String,Map<String,INDArray>> weights = null;
-        protected boolean train = false;
-
-        public SequentialBuilder(String modelJson) {
-            this.modelJson = modelJson;
-        }
-
-        private SequentialBuilder() {}
-
-        public SequentialBuilder modelJson(String modelJson) {
-            this.modelJson = modelJson;
-            return this;
-        }
-
-        public SequentialBuilder trainingJson(String trainingJson) {
-            this.trainingJson = trainingJson;
-            return this;
-        }
-
-        public SequentialBuilder weights(Map<String,Map<String,INDArray>> weights) {
-            this.weights = weights;
-            return this;
-        }
-
-        public SequentialBuilder train(boolean train) {
-            this.train = train;
-            return this;
-        }
-
-        public static SequentialBuilder builder() {
-            return new SequentialBuilder();
-        }
-
-        public KerasSequentialModel build()
-                throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-            return new KerasSequentialModel(this.modelJson, this.trainingJson, this.weights, this.train);
-        }
     }
 }
