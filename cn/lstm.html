@@ -26,21 +26,21 @@ redirect_from: /zh-lstm
 <p><h2><a name="feedforward">前馈网络回顾</a></h2></p>
 <p>要理解循环网络，首先需要了解<a href="restrictedboltzmannmachine">前馈网络</a>的基础知识。这两种网络的名字都来自于它们通过一系列网络节点数学运算来传递信息的方式。前馈网络将信息径直向前递送（从不返回已经过的节点），而循环网络则将信息循环传递。</p>
 <p>在前馈网络中，样例输入网络后被转换为一项输出；在进行有监督学习时，输出为一个标签。也就是说，前馈网络将原始数据映射到类别，识别出信号的模式，例如一张输入图像应当给予“猫”还是“大象”的标签。</p>
-<br /><img class="img-responsive center-block" src="../img/feedforward_rumelhart.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/feedforward_rumelhart.png" alt="deeplearning4j"><br />
 <p>我们用带有标签的图像定型一个前馈网络，直到网络在猜测图像类别时的错误达到最少。将参数，即权重定型后，网络就可以对从未见过的数据进行分类。已定型的前馈网络可以接受任何随机的图片组合，而输入的第一张照片并不会影响网络对第二张照片的分类。看到一张猫的照片不会导致网络预期下一张照片是大象。</p>
 <p>这是因为网络并没有时间顺序的概念，它所考虑的唯一输入是当前所接受的样例。前馈网络仿佛患有短期失忆症；它们只有早先被定型时的记忆。</p>
 <br />
 
 <p><h2><a name="recurrent">循环网络</a></h2></p>
 <p>循环网络与前馈网络不同，其输入不仅包括当前所见的输入样例，还包括网络在上一个时刻所感知到信息。以下是[由Elman提出的<a href="https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html" target="_blank">早期循环网络]的示意图</a>，图中最下行的 <em>BTSXPE</em> 代表当前的输入样例，而 <em>CONTEXT UNIT</em> 则表示前一时刻的输出。</p>
-<br /><img class="img-responsive center-block" src="../img/srn_elman.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/srn_elman.png" alt="deeplearning4j"><br />
 <p>循环网络在第 <code>t-1</code> 个时间步的判定会影响其在随后第t个时间步的判定。所以循环网络有来自当下和不久之前的两种输入，此二者的结合决定了网络对于新数据如何反应，与人类日常生活中的情形颇为相似。</p>
 <p>循环网络与前馈网络的区别便在于这种不断将自身上一刻输出当作输入的反馈循环。人们常说循环网络是有记忆的。[<a href="#2">参考 #2</a>]为神经网络添加记忆的目的在于：序列本身即带有信息，而循环网络能利用这种信息完成前馈网络无法完成的任务。</p>
 <p>这些顺序信息保存在循环网络隐藏状态中，不断向前层层传递，跨越许多个时间步，影响每一个新样例的处理。</p>
 <p>人类记忆会在体内不断进行不可见的循环，对我们的行为产生影响而不显现出完整样貌，而信息也同样会在循环网络的隐藏状态中循环。英语中有许多描述记忆反馈循环的说法。例如，我们会说“一个人被往日所为之事纠缠”，这其实就是在讲过去的输出对当前造成了影响。法国人称之为“<em>Le passé qui ne passe pas</em>”，即 “过去之事不曾过去”。</p>
 <p>让我们用数学语言来描述将记忆向前传递的过程：</p>
 <p><br />
-  <img class="img-responsive center-block" src="../img/recurrent_equation.png" alt="shadowed image"><br />
+  <img class="img-responsive center-block" src="../img/recurrent_equation.png" alt="deeplearning4j"><br />
 </p>
 <p>第 t 个时间步的隐藏状态是 <code>h_t</code>。它是同一时间步的输入 <code>x_t</code> 的函数，由一个权重矩阵W（和我们在前馈网络中使用的一样）修正，加上前一时间步的隐藏状态 <code>h_t-1</code> 乘以它自己的隐藏状态－隐藏状态矩阵的 <code>U</code>（或称过渡矩阵，与马尔可夫链近似）。权重矩阵是决定赋予当前输入及过去隐藏状态多少重要性的筛选器。它们所产生的误差将会通过反向传播返回，用于调整权重，直到误差不能再降低为止。</p>
 <p>权重输入与隐藏状态之和用函数 <code>φ</code> 进行挤压－可能是逻辑S形函数（sigmoid函数）或双曲正切函数，视具体情况而定－这是将很大或很小的值压缩至一个逻辑空间内的标准工具，同时也用于产生反向传播所能接受的<a href="glossary.html#gradient">梯度</a>。</p>
@@ -69,7 +69,7 @@ redirect_from: /zh-lstm
 <p>由于深度神经网络的层和时间步通过乘法彼此联系，导数有可能消失或膨胀。</p>
 <p>梯度膨胀时，每个权重就仿佛是一只谚语中提到的蝴蝶，所有的蝴蝶一齐扇动翅膀，就会在遥远的地方引发一场飓风。这些权重的梯度增大至饱和，亦即它们的重要性被设得过高。但梯度膨胀的问题相对比较容易解决，因为可以将其截断或挤压。而消失的梯度则有可能变得过小，以至于计算机无法处理，网络无法学习－这个问题更难解决。</p>
 <p>反复应用sigmoid函数的结果如下图所示。数据曲线越来越平缓，直至在较长的距离上无法检测到斜度。梯度在经过许多个层后消失的情况与此相似。</p>
-<br /><img class="img-responsive center-block" src="../img/sigmoid_vanishing_gradient.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/sigmoid_vanishing_gradient.png" alt="deeplearning4j"><br />
 <br>
 <p><h2><a name="long">长短期记忆单元（LSTM）</a></h2></p>
 <p>九十年代中期，德国学者Sepp Hochreiter和Juergen Schmidhuber提出了循环网络的一种变体，带有所谓长短期记忆单元，或称LSTM，可以解决梯度消失的问题。</p>
@@ -77,19 +77,19 @@ redirect_from: /zh-lstm
 <p>LSTM将信息存放在循环网络正常信息流之外的门控单元中。这些单元可以存储、写入或读取信息，就像计算机内存中的数据一样。单元通过门的开关判定存储哪些信息，以及何时允许读取、写入或清除信息。但与计算机中的数字式存储器不同的是，这些门是模拟的，包含输出范围全部在0～１之间的sigmoid函数的逐元素相乘操作。相比数字式存储，模拟值的优点是可微分，因此适合反向传播。</p>
 <p>这些门依据接收到的信号而开关，而且与神经网络的节点类似，它们会用自有的权重集对信息进行筛选，根据其强度和导入内容决定是否允许信息通过。这些权重就像调制输入和隐藏状态的权重一样，会通过循环网络的学习过程进行调整。也就是说，记忆单元会通过猜测、误差反向传播、用梯度下降调整权重的迭代过程学习何时允许数据进入、离开或被删除。</p>
 <p>下图显示了数据在记忆单元中如何流动，以及单元中的门如何控制数据流动。</p>
-<br /><img class="img-responsive center-block" src="../img/gers_lstm.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/gers_lstm.png" alt="deeplearning4j"><br />
 <p>上图中的内容很多，如果读者刚开始学习LSTM，别急着向下阅读－请先花一些时间思考一下这张图。只要几分钟，你就会明白其中的秘密。</p>
 <p>首先，最底部的三个箭头表示信息从多个点流入记忆单元。当前输入与过去的单元状态不只被送入记忆单元本身，同时也进入单元的三个门，而这些门将决定如何处理输入。</p>
 <p>图中的黑点即是门，分别决定何时允许新输入进入，何时清除当前的单元状态，以及/或何时让单元状态对当前时间步的网络输出产生影响。<code>S_c</code> 是记忆单元的当前状态，而 <cod>g_y_in</cod> 是当前的输入。记住，每个门都可开可关，而且门在每个时间步都会重新组合开关状态。记忆单元在每个时间步都可以决定是否遗忘其状态，是否允许写入，是否允许读取，相应的信息流如图所示。</p>
 <p>图中较大的黑体字母即是每项操作的结果。</p>
 <p>下面是另一张图，将简单循环网络（左）与LSTM单元（右）进行对比。蓝线可忽略；图例有助理解。</p>
-<br /><img class="img-responsive center-block" src="../img/greff_lstm_diagram.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/greff_lstm_diagram.png" alt="deeplearning4j"><br />
 <p>应当注意的是，LSTM的记忆单元在输入转换中给予加法和乘法不同的角色。两张图中央的<strong>加号</strong>其实就是LSTM的秘密。虽然看起来异常简单，这一基本的改变能帮助LSTM在必须进行深度反向传播时维持恒定的误差。LSTM确定后续单元状态的方式并非将当前状态与新输入相乘，而是将两者相加，这正是LSTM的特别之处。（当然，遗忘门依旧使用乘法。）</p>
 <p>不同的权重集对输入信息进行筛选，决定是否输入、输出或遗忘。遗忘门的形式是一个线性恒等函数，因为如果门打开，则记忆单元的当前状态就只会与1相乘，正向传播一个时间步。</p>
 <p>此外，讲到简单的窍门，将每个LSTM单元遗忘门的<a href="http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf" target="_blank">偏差设定为1</a>，经证明可以<a href="http://www.felixgers.de/papers/phd.pdf" target="_blank">提升网络表现</a>。（<em>但Sutskever建议将偏差设定5。</em>）</p>
 <p>你可能会问，如果LSTM的目的是将远距离事件与最终的输出联系起来，那为什么需要有遗忘门？因为有时候遗忘是件好事。以分析一个文本语料库为例，在到达文档的末尾时，你可能会认为下一个文档与这个文档肯定没有任何联系，所以记忆单元在开始吸收下一个文档的第一项元素前应当先归零。</p>
 <p>在下图中可以看到门的运作方式，其中横线代表关闭的门，而空心小圆圈则代表打开的门。在隐藏层下方水平一行的横线和圆圈就是遗忘门。</p>
-<br /><img class="img-responsive center-block" src="../img/gates_lstm.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/gates_lstm.png" alt="deeplearning4j"><br />
 <p>应当注意的是，前馈网络只能将一个输入映射至一个输出，而循环网络则可以像上图那样将一个输入映射至多个输出（从一张图像到标题中的许多词），也可以进行多对多（翻译）或多对一（语音分类）的映射。</p><br>
 
 <p><h2><a name="capturing">涵盖多种时间尺度和远距离依赖</a></h2></p>
@@ -101,7 +101,7 @@ redirect_from: /zh-lstm
 
 <p><h3>门控循环单元（GRU）</h3></p>
 <p>门控循环单元（GRU）本质上就是一个没有输出门的LSTM，因此它在每个时间步都会将记忆单元中的所有内容写入整体网络。</p>
-<br /><img class="img-responsive center-block" src="../img/lstm_gru.png" alt="shadowed image"><br />
+<br /><img class="img-responsive center-block" src="../img/lstm_gru.png" alt="deeplearning4j"><br />
 <br>
 <br>
 <p><h2><a name="code">代码示例</a></h2></p>
