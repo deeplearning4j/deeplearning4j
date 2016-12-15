@@ -188,7 +188,7 @@ public class VoidParameterServerTest {
 
 
 
-        VoidParameterServer clientNode = new VoidParameterServer();
+        VoidParameterServer clientNode = new VoidParameterServer(false);
         clientNode.init(clientConf);
         clientNode.getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
 
@@ -205,7 +205,7 @@ public class VoidParameterServerTest {
             threads[t] = new Thread(() -> {
 
 
-                shards[x] = new VoidParameterServer();
+                shards[x] = new VoidParameterServer(false);
                 shards[x].init(configurations[x]);
 
                 shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
@@ -245,7 +245,7 @@ public class VoidParameterServerTest {
 
         // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
-            VoidMessage incMessage = shards[t].getTransport().takeMessage();
+            VoidMessage incMessage = shards[t].getTransport().peekMessage();
             assertNotEquals("Failed for shard " + t,null, incMessage);
             assertEquals("Failed for shard " + t, message.getMessageType(), incMessage.getMessageType());
         }
@@ -255,7 +255,19 @@ public class VoidParameterServerTest {
                 1) Client was able to send message to one of shards
                 2) Selected Shard successfully received message from Client
                 3) Shard retransmits message to all shards
+
+            Now, we're passing this message to VoidParameterServer manually, and check for execution result
         */
+
+        for (int t = 0; t < threads.length; t++) {
+            VoidMessage incMessage = shards[t].getTransport().peekMessage();
+            assertNotEquals("Failed for shard " + t,null, incMessage);
+            shards[t].handleMessage(message);
+
+            /**
+             * Now we're checking how data storage was initialized
+             */
+        }
 
 
         for (int t = 0; t < threads.length; t++) {

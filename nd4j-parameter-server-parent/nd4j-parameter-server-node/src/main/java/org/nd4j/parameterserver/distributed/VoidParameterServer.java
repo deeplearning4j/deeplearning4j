@@ -12,6 +12,8 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Connector;
 import org.nd4j.parameterserver.distributed.logic.Shard;
+import org.nd4j.parameterserver.distributed.messages.InitializationMessage;
+import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -48,11 +50,33 @@ public class VoidParameterServer {
 
     protected transient Transport transport;
 
+    protected transient AtomicBoolean manualMode = new AtomicBoolean(false);
+    protected transient AtomicBoolean runner = new AtomicBoolean(false);
+
+    protected transient Thread processingThread;
 
     protected Connector connector;
 
+
+    ////////////////////// SeqVec part
+
+    protected INDArray syn0;
+    protected INDArray syn1;
+    protected INDArray syn1Neg;
+
+    protected INDArray expTable;
+    protected INDArray negTable;
+
+    ////////////////////// end of SeqVec part
+
+
     protected VoidParameterServer() {
         nodeRole = NodeRole.NONE;
+    }
+
+    protected VoidParameterServer(boolean manualMode) {
+        this();
+        this.manualMode.set(manualMode);
     }
 
     public static VoidParameterServer getInstance() {
@@ -110,11 +134,34 @@ public class VoidParameterServer {
 
                 // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
 
-
+                // we launch message processing if we're not in debug mode
+                if (!manualMode.get()) {
+                    processingThread = new Thread(() -> {
+                        runner.set(true);
+                        while (runner.get())
+                            handleMessage(transport.takeMessage());
+                    });
+                    processingThread.setDaemon(true);
+                    processingThread.setName("VoidParameterServer messages handling thread");
+                    processingThread.start();
+                }
 
                 initFinished.set(true);
             }
         }
+
+        // TODO: uncomment this line on later stages
+        //transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+    }
+
+    /**
+     * This method is available for debug purposes only
+     *
+     * @param mode
+     */
+    protected VoidParameterServer toggleManualMode(boolean mode) {
+        manualMode.set(mode);
+        return this;
     }
 
     /**
@@ -189,6 +236,32 @@ public class VoidParameterServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    // TODO: remove @NonNull check here
+    protected void handleMessage(@NonNull VoidMessage message) {
+        if (message == null)
+            return;
+
+        switch (message.getMessageType()) {
+            // initialization message
+            case 4: {
+                    initializeSeqVec((InitializationMessage) message);
+                }
+                break;
+            default:
+                log.info("Unknown messageType [{}] being passed in...", message.getMessageType());
+        }
+    }
+
+    /**
+     * This method handles Shard initialization
+     *
+     * @param message
+     */
+    protected void initializeSeqVec(@NonNull InitializationMessage message) {
+
     }
 
     /**

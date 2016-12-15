@@ -303,6 +303,18 @@ public abstract class BaseTransport implements Transport {
         }
     }
 
+    /**
+     * This method peeks 1 message from "incoming messages" queue, returning null if queue is empty
+     *
+     * PLEASE NOTE: This method is suitable for debug purposes only
+     *
+     * @return
+     */
+    @Override
+    public VoidMessage peekMessage() {
+        return messages.peek();
+    }
+
     public abstract void init(@NonNull Configuration configuration, @NonNull NodeRole role, @NonNull String localIp);
 
     /**
