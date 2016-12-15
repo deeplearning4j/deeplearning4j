@@ -4,18 +4,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.messages.AssignMessage;
 import org.nd4j.parameterserver.distributed.messages.InitializationMessage;
-import org.nd4j.parameterserver.distributed.messages.NegativeBatchMessage;
+import org.nd4j.parameterserver.distributed.messages.ShareSolidMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.transport.LocalTransport;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -224,7 +225,10 @@ public class VoidParameterServerTest {
 
         // we block until all threads are really started before sending commands
         while (startCnt.get() < threads.length)
-            Thread.sleep(100);
+            Thread.sleep(500);
+
+        // give additional time to start handlers
+        Thread.sleep(1000);
 
         // now we'll send commands from Client, and we'll check how these messages will be handled
         InitializationMessage message = InitializationMessage.builder()
@@ -241,7 +245,6 @@ public class VoidParameterServerTest {
         clientNode.getTransport().sendMessage(message);
 
         // at this point each and every shard should already have this message
-        Thread.sleep(500);
 
         // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
@@ -279,6 +282,29 @@ public class VoidParameterServerTest {
             assertNotEquals(null, shards[t].getSyn0());
             assertNotEquals(null, shards[t].getSyn1Neg());
         }
+
+
+        // now we'll check passing for negTable, but please note - we're not sending it right now
+        INDArray negTable = Nd4j.create(100000).assign(12.0f);
+        ShareSolidMessage negMessage = new ShareSolidMessage(negTable);
+
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].handleMessage(negMessage);
+
+            assertNotEquals(null, shards[t].getNegTable());
+            assertEquals(negTable, shards[t].getNegTable());
+        }
+
+
+        // now we assign each row to something
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].handleMessage(new AssignMessage(1, (double) t));
+
+            assertEquals(Nd4j.create(message.getColumnsPerShard()).assign((double) t), shards[t].getSyn0().getRow(1));
+        }
+
+
+        // and now we'll request for aggregated vector
 
 
         for (int t = 0; t < threads.length; t++) {

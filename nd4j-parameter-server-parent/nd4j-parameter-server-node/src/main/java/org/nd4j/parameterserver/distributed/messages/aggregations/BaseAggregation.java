@@ -3,6 +3,8 @@ package org.nd4j.parameterserver.distributed.messages.aggregations;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,6 +24,7 @@ public abstract class BaseAggregation implements VoidAggregation, Serializable {
     protected int numberOfElements;
     protected short shardIndex;
     protected Long taskId;
+
 
     protected INDArray payload;
 
@@ -75,5 +78,21 @@ public abstract class BaseAggregation implements VoidAggregation, Serializable {
     @Override
     public int getMissingChunks() {
         return aggregationWidth - chunksCounter.get();
+    }
+
+    @Override
+    public int getMessageType() {
+        // joint aggregation messageType for all aggregations
+        return 20;
+    }
+
+    @Override
+    public byte[] asBytes() {
+        return SerializationUtils.serialize(this);
+    }
+
+    @Override
+    public UnsafeBuffer asUnsafeBuffer() {
+        return new UnsafeBuffer(asBytes());
     }
 }

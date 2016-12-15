@@ -14,7 +14,9 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Connector;
 import org.nd4j.parameterserver.distributed.logic.Shard;
+import org.nd4j.parameterserver.distributed.messages.AssignMessage;
 import org.nd4j.parameterserver.distributed.messages.InitializationMessage;
+import org.nd4j.parameterserver.distributed.messages.ShareSolidMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
@@ -283,6 +285,21 @@ public class VoidParameterServer {
             // initialization message
             case 4: {
                     initializeSeqVec((InitializationMessage) message);
+                }
+                break;
+            // share solid, propagates array among all Shard/Backup nodes
+            case 5: {
+                    negTable = ((ShareSolidMessage) message).getPayload();
+                }
+                break;
+            // assign
+            case 6: {
+                    AssignMessage assign = (AssignMessage) message;
+                    if (assign.getIndex() >= 0) {
+                        syn0.getRow(assign.getIndex()).assign(assign.getValue());
+                    } else {
+                        syn0.assign(assign.getValue());
+                    }
                 }
                 break;
             default:

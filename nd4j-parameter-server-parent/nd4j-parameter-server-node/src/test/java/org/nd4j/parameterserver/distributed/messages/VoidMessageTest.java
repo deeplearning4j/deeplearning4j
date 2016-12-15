@@ -22,19 +22,17 @@ public class VoidMessageTest {
 
     @Test
     public void testSerDe1() throws Exception {
-        NegativeBatchMessage message = new NegativeBatchMessage();
-        message.setW1(new int[]{10, 20, 30, 40});
-        message.setW2(new int[]{15, 25, 35, 45});
+        SkipGramMessage message = new SkipGramMessage(10, 12, new int[]{10, 20, 30, 40}, new byte[]{(byte)0, (byte) 0, (byte) 1, (byte) 0});
 
         byte[] bytes = message.asBytes();
 
-        NegativeBatchMessage restored = (NegativeBatchMessage) VoidMessage.fromBytes(bytes);
+        SkipGramMessage restored = (SkipGramMessage) VoidMessage.fromBytes(bytes);
 
         assertNotEquals(null, restored);
 
         assertEquals(message, restored);
-        assertArrayEquals(message.getW1(), restored.getW1());
-        assertArrayEquals(message.getW2(), restored.getW2());
+        assertArrayEquals(message.getPoints(), restored.getPoints());
+        assertArrayEquals(message.getCodes(), restored.getCodes());
     }
 
 }
