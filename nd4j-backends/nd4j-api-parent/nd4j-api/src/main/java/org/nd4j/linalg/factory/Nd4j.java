@@ -99,6 +99,7 @@ public class Nd4j {
     public final static String CONVOLUTION_OPS = "convops";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
+    public final static String NATIVE_OPS = "native.ops";
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";

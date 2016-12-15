@@ -11,15 +11,16 @@
 
     <properties>
         <cuda.version>8.0</cuda.version>
+        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <build>
-                <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
+        <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
         <testResources>
             <testResource>
                 <directory>${project.basedir}/../../nd4j-tests/src/test/resources</directory>
             </testResource>
-                </testResources>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -47,7 +48,22 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp.parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/nativeblas/Nd4jCudaPresets.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.bytedeco</groupId>
@@ -61,13 +77,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <compilerOptions>
-                        <compilerOption>
-                            -std=c++11
-                        </compilerOption>
-                    </compilerOptions>
-                    <copyLibs>true</copyLibs>
-                    <properties>${javacpp.platform.properties}</properties>
+                    <properties>${javacpp.platform}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>
@@ -92,21 +102,33 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>process-classes</id>
+                        <id>javacpp.parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCudaPresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javacpp.compiler</id>
                         <phase>process-classes</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <skip>${process-classes.skip}</skip>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
-                            </classOrPackageNames>
+                            <skip>${javacpp.compiler.skip}</skip>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCuda</classOrPackageName>
                             <copyLibs>true</copyLibs>
-
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
