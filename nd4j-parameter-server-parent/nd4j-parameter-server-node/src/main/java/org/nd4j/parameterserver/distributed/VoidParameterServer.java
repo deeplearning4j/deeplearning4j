@@ -3,11 +3,13 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Connector;
@@ -57,6 +59,8 @@ public class VoidParameterServer {
 
     protected Connector connector;
 
+    protected short shardIndex;
+
 
     ////////////////////// SeqVec part
 
@@ -66,6 +70,8 @@ public class VoidParameterServer {
 
     protected INDArray expTable;
     protected INDArray negTable;
+
+    protected static double MAX_EXP = 6;
 
     ////////////////////// end of SeqVec part
 
@@ -83,9 +89,38 @@ public class VoidParameterServer {
         return INSTANCE;
     }
 
+    /**
+     * This method returns shardIndex value.
+     * If current node is Shard - it reutrns it's value
+     * If current node is client - it returns Shard index of paired Shard
+     * @return
+     */
+    public short getShardIndex() {
+        return shardIndex;
+    }
 
     protected Transport getTransport() {
         return transport;
+    }
+
+    protected INDArray getSyn0() {
+        return syn0;
+    }
+
+    protected INDArray getSyn1() {
+        return syn1;
+    }
+
+    protected INDArray getSyn1Neg() {
+        return syn1Neg;
+    }
+
+    protected INDArray getExpTable() {
+        return expTable;
+    }
+
+    protected INDArray getNegTable() {
+        return negTable;
     }
 
     public void init(@NonNull Configuration configuration) {
@@ -135,7 +170,7 @@ public class VoidParameterServer {
                 // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
 
                 // we launch message processing if we're not in debug mode
-                if (!manualMode.get()) {
+                if (manualMode.get()) {
                     processingThread = new Thread(() -> {
                         runner.set(true);
                         while (runner.get())
@@ -260,8 +295,37 @@ public class VoidParameterServer {
      *
      * @param message
      */
+    // TODO: right now we support only columnar splits over tables
     protected void initializeSeqVec(@NonNull InitializationMessage message) {
+        // protection check, we definitely don't want double spending here
+        if (syn0 == null) {
+            // we initialize only syn0/syn1/syn1neg and expTable
+            // negTable will be initalized at driver level and will be shared via message
+            Nd4j.getRandom().setSeed(message.getSeed() * (getShardIndex() + 1));
 
+            int[] shardShape = new int[]{message.getNumWords(), message.getColumnsPerShard()};
+
+            syn0 = Nd4j.rand(shardShape, 'c').subi(0.5).divi(message.getVectorLength());
+
+            if (message.isUseHs())
+                syn1 = Nd4j.create(shardShape, 'c');
+
+            if (message.isUseNeg())
+                syn1Neg = Nd4j.create(shardShape, 'c');
+
+            // we handle full exp table here
+            expTable = initExpTable(100000);
+        }
+    }
+
+    protected INDArray initExpTable(int tableWidth) {
+        double[] expTable = new double[tableWidth];
+        for (int i = 0; i < expTable.length; i++) {
+            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
+            expTable[i]  = tmp / (tmp + 1.0);
+        }
+
+        return Nd4j.create(expTable);
     }
 
     /**

@@ -49,6 +49,13 @@ public interface Transport {
     VoidMessage takeMessage();
 
     /**
+     * This method puts message into processing queue
+     *
+     * @param message
+     */
+    void putMessage(VoidMessage message);
+
+    /**
      * This method peeks 1 message from "incoming messages" queue, returning null if queue is empty
      *
      * PLEASE NOTE: This method is suitable for debug purposes only

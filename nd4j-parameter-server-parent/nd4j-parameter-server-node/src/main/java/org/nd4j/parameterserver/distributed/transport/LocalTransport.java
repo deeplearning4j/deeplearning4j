@@ -52,6 +52,28 @@ public class LocalTransport implements Transport {
     }
 
     /**
+     * This method puts message into processing queue
+     *
+     * @param message
+     */
+    @Override
+    public void putMessage(VoidMessage message) {
+
+    }
+
+    /**
+     * This method peeks 1 message from "incoming messages" queue, returning null if queue is empty
+     * <p>
+     * PLEASE NOTE: This method is suitable for debug purposes only
+     *
+     * @return
+     */
+    @Override
+    public VoidMessage peekMessage() {
+        return null;
+    }
+
+    /**
      * This method starts transport mechanisms.
      * <p>
      * PLEASE NOTE: init() method should be called prior to launch() call

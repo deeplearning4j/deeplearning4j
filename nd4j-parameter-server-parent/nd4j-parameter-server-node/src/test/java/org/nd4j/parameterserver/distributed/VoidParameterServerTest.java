@@ -241,13 +241,16 @@ public class VoidParameterServerTest {
         clientNode.getTransport().sendMessage(message);
 
         // at this point each and every shard should already have this message
-        Thread.sleep(100);
+        Thread.sleep(500);
 
         // now we check message queue within Shards
         for (int t = 0; t < threads.length; t++) {
-            VoidMessage incMessage = shards[t].getTransport().peekMessage();
+            VoidMessage incMessage = shards[t].getTransport().takeMessage();
             assertNotEquals("Failed for shard " + t,null, incMessage);
             assertEquals("Failed for shard " + t, message.getMessageType(), incMessage.getMessageType());
+
+            // we should put message back to corresponding
+            shards[t].getTransport().putMessage(incMessage);
         }
 
         /*
@@ -267,6 +270,14 @@ public class VoidParameterServerTest {
             /**
              * Now we're checking how data storage was initialized
              */
+
+            assertEquals(null, shards[t].getNegTable());
+            assertEquals(null, shards[t].getSyn1());
+
+
+            assertNotEquals(null, shards[t].getExpTable());
+            assertNotEquals(null, shards[t].getSyn0());
+            assertNotEquals(null, shards[t].getSyn1Neg());
         }
 
 

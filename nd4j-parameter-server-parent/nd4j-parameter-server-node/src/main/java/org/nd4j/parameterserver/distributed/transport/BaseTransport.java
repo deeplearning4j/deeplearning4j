@@ -113,9 +113,6 @@ public abstract class BaseTransport implements Transport {
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
-       // VoidMessage message = VoidMessage.fromBytes(data);
-     //   messages.add(message);
-
         // and send it away to other Shards
         publicationForShards.offer(buffer, offset, length);
     }
@@ -136,9 +133,8 @@ public abstract class BaseTransport implements Transport {
 
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
-        VoidMessage message = VoidMessage.fromBytes(data);
 
-        messages.add(message);
+        messages.add(VoidMessage.fromBytes(data));
     }
 
     /**
@@ -301,6 +297,16 @@ public abstract class BaseTransport implements Transport {
 
             return messages.poll();
         }
+    }
+
+    /**
+     * This method puts message into processing queue
+     *
+     * @param message
+     */
+    @Override
+    public void putMessage(@NonNull VoidMessage message) {
+        messages.add(message);
     }
 
     /**

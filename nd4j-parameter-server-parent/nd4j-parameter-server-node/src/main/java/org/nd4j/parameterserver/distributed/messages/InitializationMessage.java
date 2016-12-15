@@ -22,5 +22,11 @@ public class InitializationMessage extends BaseVoidMessage {
 
     public InitializationMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
         super(4);
+        this.vectorLength = vectorLength;
+        this.numWords = numWords;
+        this.seed = seed;
+        this.useHs = useHs;
+        this.useNeg = useNeg;
+        this.columnsPerShard = columnsPerShard;
     }
 }
