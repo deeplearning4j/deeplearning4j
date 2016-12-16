@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -10,6 +11,9 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -17,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
@@ -76,6 +81,22 @@ public class ModelSerializerTest {
         FileOutputStream fos = new FileOutputStream(tempFile);
 
         ModelSerializer.writeModel(net, fos, true);
+
+
+        // checking adding of DataNormalization to the model file
+
+        NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+
+        ModelSerializer.addNormalizerToModel(tempFile, scaler);
+
+        NormalizerMinMaxScaler restoredScaler = (NormalizerMinMaxScaler) ModelSerializer.restoreNormalizerFromFile(tempFile);
+
+        assertNotEquals(null, scaler.getMax());
+        assertEquals(scaler.getMax(), restoredScaler.getMax());
+        assertEquals(scaler.getMin(), restoredScaler.getMin());
+
 
         FileInputStream fis = new FileInputStream(tempFile);
 
