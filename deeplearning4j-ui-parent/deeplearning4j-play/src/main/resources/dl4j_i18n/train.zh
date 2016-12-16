@@ -1,0 +1,7 @@
+train.pagetitle=DL4J Training UI
+train.nav.overview=概述
+train.nav.model=模型
+train.nav.system=系统
+train.nav.language=语言
+train.session.label=Session
+train.session.worker.label=Worker
