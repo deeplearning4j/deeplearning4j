@@ -5171,8 +5171,9 @@ public class Nd4j {
             throw new IllegalStateException("Unknown order being passed in [" + order +"]");
 
         for (int idx: indexes){
-            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1])
+            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1]) {
                 throw new IllegalStateException("Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+            }
         }
 
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);

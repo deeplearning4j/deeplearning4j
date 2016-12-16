@@ -16,6 +16,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -90,44 +94,65 @@ public class NormalizerTests extends BaseNd4jTest {
                 new NormalizerMinMaxScaler(),
                 new NormalizerStandardize()};
 
+        DataNormalization[] normalizersByRow = new DataNormalization[]{
+                new NormalizerMinMaxScaler(),
+                new NormalizerStandardize()};
+
 
         for(int i=0; i<normalizers.length; i++ ){
 
             //First: check that normalization is the same with/without masking arrays
             DataNormalization norm = normalizers[i];
             DataNormalization normNoMask = normalizersNoMask[i];
+            DataNormalization normByRow = normalizersByRow[i];
 
             System.out.println(norm.getClass());
 
 
             INDArray arr = Nd4j.rand('c', new int[]{2, 3, 5}).muli(100).addi(100);
             arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3, 5)).assign(0);
+            INDArray arrCopy = arr.dup();
 
             INDArray arrPt1 = arr.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
             INDArray arrPt2 = arr.get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3)).dup();
 
 
             INDArray mask = Nd4j.create(new double[][]{
-                    {1, 1},
-                    {1, 1},
-                    {1, 1},
-                    {1, 0},
-                    {1, 0}});
+                    {1, 1, 1, 1, 1},
+                    {1, 1, 1, 0, 0}});
 
             DataSet ds = new DataSet(arr, null, mask, null);
+            DataSet dsCopy1 = new DataSet(arr.dup(), null, mask, null);
+            DataSet dsCopy2 = new DataSet(arr.dup(), null, mask, null);
             norm.fit(ds);
 
-            DataSet ds1 = new DataSet(arrPt1, null);
-            DataSet ds2 = new DataSet(arrPt2, null);
-            normNoMask.fit(ds1);
-            normNoMask.fit(ds2);
+            //Check that values aren't modified by fit op
+            assertEquals(arrCopy, arr);
+
+            List<DataSet> toFitTimeSeries1Ex = new ArrayList<>();
+            toFitTimeSeries1Ex.add(new DataSet(arrPt1, arrPt1));
+            toFitTimeSeries1Ex.add(new DataSet(arrPt2, arrPt2));
+            normNoMask.fit(new TestDataSetIterator(toFitTimeSeries1Ex,1));
+
+            List<DataSet> toFitRows = new ArrayList<>();
+            for( int j=0; j<5; j++ ){
+                INDArray row = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
+                assertTrue(row.isRowVector());
+                toFitRows.add(new DataSet(row, row));
+            }
+            for( int j=0; j<3; j++ ){
+                INDArray row = arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
+                assertTrue(row.isRowVector());
+                toFitRows.add(new DataSet(row, row));
+            }
+            normByRow.fit(new TestDataSetIterator(toFitRows,1));
 
             norm.transform(ds);
-            normNoMask.transform(ds1);
-            normNoMask.transform(ds2);
+            normNoMask.transform(dsCopy1);
+            normByRow.transform(dsCopy2);
 
-            assertEquals(ds1.getFeatureMatrix(), ds.getFeatureMatrix().get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all()));
-            assertEquals(ds2.getFeatureMatrix(), ds.getFeatureMatrix().get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3)));
+            assertEquals(ds, dsCopy1);
+            assertEquals(ds, dsCopy2);
 
             //Second: ensure values post masking are 0.0
 

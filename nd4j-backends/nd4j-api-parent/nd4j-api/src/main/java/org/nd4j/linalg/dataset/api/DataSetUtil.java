@@ -2,7 +2,10 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
 
 /**
  * Created by susaneraly on 9/20/16.
@@ -38,75 +41,59 @@ public class DataSetUtil {
         return tailor3d2d(data, mask);
     }
 
-    public static INDArray tailor3d2d(@NonNull INDArray data, INDArray mask) {
-        /*
-         * A 2d dataset has dimensions sample x features
-         * Processing a 3d dataset poses additional complexities
-         * A 3d dataset is a timeseries with dimensions sample x features x timesteps
-         * A 3d dataset can also have a mask associated with it in which case samples are of varying time steps
-         *      (
-         *        Each sample has a mask associated with it. The length of the mask is the number of time steps in the longest sample.
-         *        Therefore the mask array is of dimension sample x timesteps.
-         *        The same mask is applied to all features of a given sample.
-         *      )
-         * tailor3d2d takes in a 3d dataset with masks and returns a 2d array of size:
-         *      along zero dimension: number_of_samples, dataset.getFeatures().size(0)  x number of time steps in longest sample, dataset.getFeatures.size(2)
-         *      along first dimension: number of features, dataset.getFeatures().size(1)
-         * Values which should be masked are wiped out and replaced by zeros
-         */
-        int instances = data.size(0);
-        int features = data.size(1);
-        int timesteps = data.size(2);
-
-        boolean hasMasks = mask != null;
-        INDArray in2d = Nd4j.create(features, timesteps * instances);
-
-        int tads = data.tensorssAlongDimension(2, 0);
-        // the number of tads are the number of features
-        for (int i = 0; i < tads; i++) {
-            INDArray thisTAD = data.tensorAlongDimension(i, 2, 0);
-            //mask is samples x timesteps
-            if (hasMasks)
-                //if there are masks they are multiplied with the mask array to wipe out the values associated with it
-                thisTAD.muli(mask);
-            //Each row is now values for a given feature across all time steps, across all samples
-            in2d.putRow(i, Nd4j.toFlattened('c', thisTAD));
-        }
-        //Must transpose to return a matrix compatible with 2d viz samples x features
-        in2d = in2d.transpose();
-        /*
-        The mask doesn't just exist in the context of differing time steps
-        But they can also be used to ignore certain output features.
-        */
-        //flatten mask
-        if (hasMasks) {
-            /*
-                now each row is a single timestep for some sample
-             */
-            INDArray columnMask = Nd4j.toFlattened('c', mask).transpose();
-            int actualSamples = columnMask.sumNumber().intValue();
-            if (actualSamples == 0) {
-                // All samples are masked, so we can only return null to represent an empty data set
-                return null;
+    public static INDArray tailor3d2d(@NonNull INDArray data, INDArray mask){
+        //Check mask shapes:
+        if (mask != null) {
+            if(data.size(0) != mask.size(0) || data.size(2) != mask.size(1)){
+                throw new IllegalArgumentException("Invalid mask array/data combination: got data with shape [minibatch, vectorSize, timeSeriesLength] = "
+                        + Arrays.toString(data.shape()) + "; got mask with shape [minibatch,timeSeriesLength] = " + Arrays.toString(mask.shape())
+                        + "; minibatch and timeSeriesLength dimensions must match");
             }
-
-            INDArray in2dMask = Nd4j.create(actualSamples, features);
-            int i = 0;
-            //definitely a faster way to do this as you can skip the rest of the timesteps after the first zero in the mask
-            //use a boolean mask??
-            for (int j = 0; j < instances; j++) {
-                for (int k = 0; k < timesteps; k++) {
-                    if (columnMask.getInt(j * timesteps + k, 0) != 0) {
-                        in2dMask.putRow(i, in2d.getRow(j * timesteps + k));
-                        i++;
-                    } else {
-                        continue;
-                    }
-                }
-            }
-            return in2dMask;
         }
-        return in2d;
+
+
+        if(data.ordering() != 'f' || data.isView() || !Shape.strideDescendingCAscendingF(data)){
+            data = data.dup('f');
+        }
+        //F order: strides are like [1, miniBatch, minibatch*size] - i.e., each time step array is contiguous in memory
+        //This can be reshaped to 2d with a no-copy op
+        //Same approach as RnnToFeedForwardPreProcessor in DL4J
+        //I.e., we're effectively stacking time steps for all examples
+
+        int[] shape = data.shape();
+        if (shape[0] == 1) return data.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
+        if (shape[2] == 1) return data.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
+        INDArray permuted = data.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
+        INDArray as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+
+        if(mask == null){
+            return as2d;
+        }
+
+        //With stride 1 along the examples (dimension 0), we are concatenating time series - same as the
+        if(mask.ordering() != 'f' || mask.isView() || !Shape.strideDescendingCAscendingF(mask)){
+            mask = mask.dup('f');
+        }
+
+        INDArray mask1d = mask.reshape('f',new int[]{mask.length(),1});
+
+        //Assume masks are 0s and 1s: then sum == number of elements
+        int numElements = mask.sumNumber().intValue();
+        if(numElements == mask.length()){
+            return as2d;    //All are 1s
+        }
+
+        int[] rowsToPull = new int[numElements];
+        float[] floatMask1d = mask1d.data().asFloat();
+        int currCount = 0;
+        for( int i=0; i<floatMask1d.length; i++ ){
+            if(floatMask1d[i] != 0.0f){
+                rowsToPull[currCount++] = i;
+            }
+        }
+
+        INDArray subset = Nd4j.pullRows(as2d, 1, rowsToPull);       //Tensor along dimension 1 == rows
+        return subset;
     }
 
     public static INDArray tailor4d2d(DataSet dataset, boolean areFeatures) {
