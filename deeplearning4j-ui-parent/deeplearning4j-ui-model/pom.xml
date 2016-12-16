@@ -62,6 +62,14 @@
             <version>${mapdb.version}</version>
         </dependency>
 
+        <!-- SQLite - Used only for Java-7 Compatible StatsListener Storage -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>${sqlite.version}</version>
+        </dependency>
+
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
