@@ -67,8 +67,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             int deviceId = AtomicAllocator.getInstance().getDeviceId();
             ensureDeviceCacheHolder(deviceId, shape);
 
-        //    log.info("Trying to malloc for deviceId: {}", deviceId);
-
             CacheHolder cache = deviceCache.get(deviceId).get(shape);
             if (cache != null) {
                 Pointer pointer = cache.poll();
@@ -76,8 +74,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     cacheDeviceHit.incrementAndGet();
 
                     deviceCachedAmount.get(deviceId).addAndGet(-1 * reqMemory);
-
-//                    log.info("Serving from cache {} bytes, deviceId: {}, threadId: {}, pointer: {}", reqMemory, deviceId, Thread.currentThread().getId(), pointer.address());
 
                     PointersPair pair = new PointersPair();
                     pair.setDevicePointer(pointer);
@@ -118,7 +114,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             }
 
             ensureDeviceCacheHolder(deviceId, shape);
-//            log.info("Saving point: deviceId: {}; address: {};", deviceId, point.getPointers().getDevicePointer().address());
 
             CacheHolder cache = deviceCache.get(deviceId).get(shape);
 

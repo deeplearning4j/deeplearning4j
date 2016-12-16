@@ -10,6 +10,8 @@ import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.Serializable;
+
 /**
  * {@link NormalizerStrategy} implementation that will normalize and denormalize data arrays to a given range, based on
  * statistics of the upper and lower bounds of the population
@@ -17,9 +19,13 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Ede Meijer
  */
 @Getter
-class MinMaxStrategy implements NormalizerStrategy<MinMaxStats> {
-    private final double minRange;
-    private final double maxRange;
+class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
+    private double minRange;
+    private double maxRange;
+
+    protected MinMaxStrategy() {
+
+    }
 
     /**
      * @param minRange the target range lower bound

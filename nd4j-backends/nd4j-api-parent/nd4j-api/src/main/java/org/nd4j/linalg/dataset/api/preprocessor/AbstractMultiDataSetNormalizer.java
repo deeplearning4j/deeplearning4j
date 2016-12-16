@@ -9,6 +9,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,10 +19,14 @@ import java.util.List;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer<S> implements MultiDataSetPreProcessor {
+abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer<S> implements MultiDataSetPreProcessor, Serializable {
     @Setter private List<S> featureStats;
     @Setter private List<S> labelStats;
     private boolean fitLabels = false;
+
+    protected AbstractMultiDataSetNormalizer() {
+        super();
+    }
 
     protected AbstractMultiDataSetNormalizer(NormalizerStrategy<S> strategy) {
         super(strategy);

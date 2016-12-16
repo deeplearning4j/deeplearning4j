@@ -4650,7 +4650,7 @@ public class Nd4j {
     protected static void checkShapeValues(int[] shape) {
         for (int e = 0; e < shape.length; e++) {
             if (shape[e] < 1)
-                throw new ND4JIllegalStateException("Requested INDArray shape " + Arrays.toString(shape) + " contains values < 1, which is impossible to have");
+                throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape) + " contains dimension size values < 1 (all dimensions must be 1 or more)");
         }
     }
 
