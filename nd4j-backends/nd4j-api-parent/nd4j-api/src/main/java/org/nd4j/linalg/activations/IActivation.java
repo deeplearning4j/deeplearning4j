@@ -11,6 +11,12 @@ import java.util.List;
  */
 public interface IActivation extends Serializable {
 
+    /**
+     *
+     * @param in
+     * @param activation
+     * @param training
+     */
     void setActivation(INDArray in, INDArray activation, boolean training);
 
     void setGradient(INDArray in, INDArray gradient);
