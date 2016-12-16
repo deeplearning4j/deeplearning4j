@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.ops.transforms;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
@@ -49,15 +50,15 @@ public class Transforms {
      * @return the cosine similarities between the 2 arrays
      *
      */
-    public static double cosineSim(INDArray d1, INDArray d2) {
+    public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
         return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult().doubleValue();
     }
 
-    public static double manhattanDistance(INDArray d1, INDArray d2){
+    public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2){
         return d1.distance1(d2);
     }
 
-    public static double euclideanDistance(INDArray d1, INDArray d2){
+    public static double euclideanDistance(@NonNull INDArray d1, @NonNull INDArray d2){
         return d1.distance2(d2);
     }
 
