@@ -1,4 +1,4 @@
-package org.nd4j.linalg.dataset;
+package org.nd4j.linalg.dataset.api.preprocessor.stats;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Statistics about the normal distribution of values in data (means and standard deviations).

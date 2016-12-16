@@ -12,6 +12,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
@@ -171,6 +172,30 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
         myNormalizer.revert(sampleDataSet);
         assertFalse (Double.isNaN(sampleDataSet.getFeatures().min(0,1).getDouble(0)));
         assertEquals(sampleDataSet.getFeatures().sumNumber().doubleValue(),100*nFeatures*nSamples,0.00001);
+    }
+
+    @Test
+    public void testMasking(){
+        //Idea: values post masking should  be 0.0
+
+        INDArray arr = Nd4j.rand('c', new int[]{2,3,5}).muli(100).addi(100);
+        arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(4,6)).assign(0);
+
+        INDArray mask = Nd4j.create(new double[][]{
+                {1,1},
+                {1,1},
+                {1,1},
+                {1,0},
+                {1,0}});
+
+        NormalizerMinMaxScaler norm = new NormalizerMinMaxScaler();
+        DataSet ds = new DataSet(arr, null, mask, null);
+        norm.fit(ds);
+
+        norm.transform(ds);
+
+        //Masked steps should be 0 after normalization
+        assertEquals(Nd4j.zeros(3,2), arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(4,6)));
     }
 
     @Override

@@ -13,17 +13,19 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Created by susaneraly on 11/13/16.
  */
 @RunWith(Parameterized.class)
-public class NormalizerSimpleTest extends BaseNd4jTest {
+public class NormalizerTests extends BaseNd4jTest {
 
-    public NormalizerSimpleTest(Nd4jBackend backend) {
+    public NormalizerTests(Nd4jBackend backend) {
         super(backend);
     }
 
@@ -74,6 +76,65 @@ public class NormalizerSimpleTest extends BaseNd4jTest {
         }
 
         return Transforms.abs(transformB.div(transformA).rsub(1)).maxNumber().floatValue();
+    }
+
+
+    @Test
+    public void testMasking(){
+
+        DataNormalization[] normalizers = new DataNormalization[]{
+                new NormalizerMinMaxScaler(),
+                new NormalizerStandardize()};
+
+        DataNormalization[] normalizersNoMask = new DataNormalization[]{
+                new NormalizerMinMaxScaler(),
+                new NormalizerStandardize()};
+
+
+        for(int i=0; i<normalizers.length; i++ ){
+
+            //First: check that normalization is the same with/without masking arrays
+            DataNormalization norm = normalizers[i];
+            DataNormalization normNoMask = normalizersNoMask[i];
+
+            System.out.println(norm.getClass());
+
+
+            INDArray arr = Nd4j.rand('c', new int[]{2, 3, 5}).muli(100).addi(100);
+            arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3, 5)).assign(0);
+
+            INDArray arrPt1 = arr.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray arrPt2 = arr.get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3)).dup();
+
+
+            INDArray mask = Nd4j.create(new double[][]{
+                    {1, 1},
+                    {1, 1},
+                    {1, 1},
+                    {1, 0},
+                    {1, 0}});
+
+            DataSet ds = new DataSet(arr, null, mask, null);
+            norm.fit(ds);
+
+            DataSet ds1 = new DataSet(arrPt1, null);
+            DataSet ds2 = new DataSet(arrPt2, null);
+            normNoMask.fit(ds1);
+            normNoMask.fit(ds2);
+
+            norm.transform(ds);
+            normNoMask.transform(ds1);
+            normNoMask.transform(ds2);
+
+            assertEquals(ds1.getFeatureMatrix(), ds.getFeatureMatrix().get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all()));
+            assertEquals(ds2.getFeatureMatrix(), ds.getFeatureMatrix().get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3)));
+
+            //Second: ensure values post masking are 0.0
+
+
+            //Masked steps should be 0 after normalization
+//            assertEquals(Nd4j.zeros(3, 2), arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3, 5)));
+        }
     }
 
     @Override

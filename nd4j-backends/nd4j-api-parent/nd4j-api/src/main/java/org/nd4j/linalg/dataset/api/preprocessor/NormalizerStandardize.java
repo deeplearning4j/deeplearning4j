@@ -3,8 +3,8 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DistributionStats;
-import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 
 import java.io.File;
@@ -24,12 +24,8 @@ public class NormalizerStandardize extends AbstractDataSetNormalizer<Distributio
         fitLabel(false);
     }
 
-    public NormalizerStandardize(
-        @NonNull INDArray featureMean,
-        @NonNull INDArray featureStd,
-        @NonNull INDArray labelMean,
-        @NonNull INDArray labelStd
-    ) {
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd, @NonNull INDArray labelMean,
+                                 @NonNull INDArray labelStd) {
         this();
         setFeatureStats(new DistributionStats(featureMean, featureStd));
         setLabelStats(new DistributionStats(labelMean, labelStd));
