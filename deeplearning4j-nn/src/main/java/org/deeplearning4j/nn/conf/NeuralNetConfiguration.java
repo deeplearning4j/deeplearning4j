@@ -19,7 +19,9 @@
 package org.deeplearning4j.nn.conf;
 
 import com.google.common.collect.Sets;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -33,6 +35,9 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activations;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -79,6 +84,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
 
     protected Layer layer;
+    @Deprecated
     protected double leakyreluAlpha;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
@@ -473,6 +479,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public Object[] getExtraArgs() {
         if(layer == null || layer.getActivationFunction() == null) return new Object[0];
+        //Eraly: none of the below should be required anymore
         switch( layer.getActivationFunction()) {
             case "leakyrelu" :
                 return new Object[] {leakyreluAlpha};
@@ -485,7 +492,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     @Data
     public static class Builder implements Cloneable {
+        @Deprecated
         protected String activationFunction = "sigmoid";
+        protected IActivation activationFn = new ActivationSigmoid();
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = null;
@@ -677,11 +686,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
          */
+        @Deprecated
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
             return this;
         }
 
+        public Builder activation(IActivation activationFunction) {
+            this.activationFn = activationFunction;
+            return this;
+        }
+
+        public Builder activation(Activations.Activation activation) {
+            return activation(activation.getActivationFunction());
+        }
+
+        @Deprecated
         public Builder leakyreluAlpha(double leakyreluAlpha) {
             this.leakyreluAlpha = leakyreluAlpha;
             return this;
@@ -1066,6 +1086,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
                 if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+                if (layer.getActivationFn() == null) layer.setActivationFn(activationFn);
                 if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
                 if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
