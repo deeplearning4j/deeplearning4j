@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -678,12 +679,25 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
         this.resetWeights(true);
 
+        AtomicInteger cntHs = new AtomicInteger(0);
+        AtomicInteger cntNg = new AtomicInteger(0);
+
         if (srcTable.syn0.rows() > this.syn0.rows())
             throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
+        log.info("syn0 rows: {}", srcTable.syn0.rows());
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
-            this.syn0.putRow(x, srcTable.syn0.getRow(x).dup());
-            this.syn1.putRow(x, srcTable.syn1.getRow(x).dup());
+            this.syn0.putRow(x, srcTable.syn0.getRow(x));
+
+            if (this.syn1 != null && srcTable.syn1 != null)
+                this.syn1.putRow(x, srcTable.syn1.getRow(x));
+            else
+                if (cntHs.incrementAndGet() == 1) log.info("Skipping syn1 merge");
+
+            if (this.syn1Neg != null && srcTable.syn1Neg != null) {
+                this.syn1Neg.putRow(x, srcTable.syn1Neg.getRow(x));
+            } else
+                if (cntNg.incrementAndGet() == 1) log.info("Skipping syn1Neg merge");
         }
     }
 }
