@@ -61,10 +61,15 @@ public class DataSetUtil {
         //I.e., we're effectively stacking time steps for all examples
 
         int[] shape = data.shape();
-        if (shape[0] == 1) return data.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
-        if (shape[2] == 1) return data.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
-        INDArray permuted = data.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
-        INDArray as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        INDArray as2d;
+        if (shape[0] == 1){
+            as2d = data.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1){
+            as2d = data.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
+        } else {
+            INDArray permuted = data.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
+            as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
 
         if(mask == null){
             return as2d;
@@ -81,6 +86,9 @@ public class DataSetUtil {
         int numElements = mask.sumNumber().intValue();
         if(numElements == mask.length()){
             return as2d;    //All are 1s
+        }
+        if(numElements == 0){
+            return null;
         }
 
         int[] rowsToPull = new int[numElements];
@@ -116,9 +124,37 @@ public class DataSetUtil {
         return in2d.transposei();
     }
 
-    public static void setMaskedValuesToZero(INDArray array, INDArray maskArray){
-        if(maskArray == null) return;
+    public static void setMaskedValuesToZero(INDArray data, INDArray mask){
+        if(mask == null || data.rank() != 3) return;
+        INDArray dataOrig = data;
 
+        boolean wasDuped = false;
+        if(data.ordering() != 'f' || data.isView() || !Shape.strideDescendingCAscendingF(data)){
+            data = data.dup('f');
+            wasDuped = true;
+        }
 
+        int[] shape = data.shape();
+        INDArray as2d;
+        if (shape[0] == 1){
+            as2d = data.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1){
+            as2d = data.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
+        } else {
+            INDArray permuted = data.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
+            as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+
+        //With stride 1 along the examples (dimension 0), we are concatenating time series - same as the
+        if(mask.ordering() != 'f' || mask.isView() || !Shape.strideDescendingCAscendingF(mask)){
+            mask = mask.dup('f');
+        }
+
+        INDArray mask1d = mask.reshape('f',new int[]{mask.length(),1});
+        as2d.muliColumnVector(mask1d);
+
+        if(wasDuped){
+            dataOrig.assign(data);
+        }
     }
 }
