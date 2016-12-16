@@ -1,32 +1,32 @@
 ---
-title: Questions to Ask When Applying Deep Learning
-layout: default
+title: 深度学习应用中需要思考的问题
+layout: cn-default
 ---
 
-# Questions to Ask When Applying Deep Learning
+# 深度学习应用中需要思考的问题
 
-We can't answer these questions for you, because the responses will be specific to the problem you seek to solve. But we hope this will serve as a useful checklist to clarify how you initially approach your choice of algorithms and tools: 
+对于下列问题，我们无法给出统一的回答，因为答案取决于您想要解决的具体问题。但是，我们希望本页中列出的各项因素能引导您在初期系统地思考如何选择算法和工具： 
 
-* **Is my problem supervised or unsupervised? If supervised, is it a classification or regression problem?** Supervised learning has a teacher. That teacher takes the form of a training set that establishes correlations between two types of data, your input and your output. You may want to apply labels to images, for example. In this classification problem, your input is raw pixels, and your output is the name of whatever's in the picture. In a regression example, you might teach a neural net how to predict continuous values such as housing price based on an input like square-footage. Unsupervised learning, on the other hand, can help you detect similarities and anomalies simply by analyzing unlabeled data. Unsupervised learning has no teacher; it can be applied to use cases such as image search and fraud detection.
-* **If supervised, how many labels am I dealing with?** The more labels you need to apply accurately, the more computationally intensive your problem will be. ImageNet has a training set with about 1000 classes; the Iris dataset has just 3. 
-* **What's my batch size?** A batch is a bundle of examples, or instances from your dataset, such as a group of images. In training, all the instances of a batch are passed through the net, and the error resulting from the net's guesses is averaged from all instances in the batch and then used to update the weights of the model. Larger batches mean you wait longer between each update, or learning step. Small batches mean the net learns less about the underlying dataset with each batch. Batch sizes of 1000 can work well on some problems, if you have a lot of data and you're looking for a smart default to start with. 
-* **How many features am I dealing with?** The more features you have, the more memory you'll need. With images, the features of the first layer equal the number of pixels in the image. So MNIST's 28*28 pixel images have 784 features. In medical diagnostics, you may be looking at 14 megapixels. 
-* **Another way to ask that same question is: What is my architecture?** [Resnet](http://arxiv.org/abs/1512.03385), the Microsoft Research net that won the most recent ImageNet competition, had 150 layers. All other things being equal, the more layers you add, the more features you have to deal with, the more memory you need. A dense layer in a multilayer perceptron (MLP) is a lot more feature intensive than a convolutional layer. People use convolutional nets with subsampling precisely because they get to aggressively prune the features they're computing. 
-* **How am I going to tune my neural net?** Tuning neural nets is still something of a dark art for a lot of people. There are a couple of ways to go about it. You can tune empirically, looking at the f1 score of your net and then adjusting the hyperparameters. You can tune with some degree of automation using tools like [hyperparameter optimization](https://github.com/deeplearning4j/Arbiter). And finally, you can rely on heuristics like [a GUI](./visualization.html), which will show you exactly how quickly your error is decreasing, and what your activation distribution looks like. 
-* **How much data will be sufficient to train my model? How do I go about finding that data?** 
-* **Hardware: Will I be using GPUs, CPUs or both? Am I going to rely on a single-system GPU or a distributed system?** A lot of research is being conducted on 1-4 GPUs. Enterprise solutions usually require more and have to work with large CPU clusters as well. 
-* **What's my data pipeline? How do I plan to extract, transform and load the data (ETL)? Is it in an Oracle DB? Is it on a Hadoop cluster? Is it local or in the cloud?** 
-* **How will I featurize that data?** Even though deep learning extracts features automatically, you can lighten the computational load and speed training with different forms of feature engineering, especially when the features are sparse. 
-* **What kind of non-linearity, loss function and weight initialization will I use?** The non-linearity is the activation function tied to each layer of your deep net. It might be sigmoid, rectified linear, or something else. Specific non-linearities often go hand in hand with specific loss functions. 
-* **What is the simplest architecture I can use for this problem?** Not everyone is willing or able to apply Resnet to image classification. 
-* **Where will my net be trained and where will the model be deployed? What does it need to integrate with?** Most people don't think about these questions until they have a working prototype, at which point they find themselves forced to rewrite their net with more scalable tools. You should be asking whether you'll eventually need to use Spark, AWS or Hadoop, among other platforms. 
+* **我要解决的是有监督学习问题，还是无监督问题？如果是有监督学习，那么是分类问题还是回归分析问题？**有监督学习是有“老师”的。这位“老师”就是一个确定输入和输出数据之间关联的定型数据集。例如，您可能需要标记图像。在这种分类问题中，输入是原始像素，而输出则是图片中的事物的名称。而在回归问题中，您可能需要教授神经网络如何预测连续值，例如根据住房面积这样的输入数据来判断房子的价格。无监督学习则能通过分析未标记的数据来检测相似性或异常状况。无监督学习没有“老师”；具体应用包括图像搜索和欺诈检测等。
+* **如果是有监督学习，需要处理的标签数量有多少？**需要准确标记的标签数量越多，问题的计算强度也就越大。ImageNet的定型数据集约有1000个类别；而鸢尾花数据库则只有3个类别。 
+* **每个批次应当包含多少数据？**一个批次指的是数据集中的一组样例或实例，比如一组图像。在定型过程中，一个批次的实例全部输入神经网络，网络对这些实例进行预测，然后依据所有预测误差的平均值来更新模型的权重。批次越大，两次更新之间的等待时间（或称学习步骤）就越长。批次较小意味着网络从每个批次中学到的与问题数据集相关的信息较少。如果您有大量数据，一开始不妨将批次大小设定为1000，对于一些问题可以取得较好的学习效果。 
+* **需要处理的特征数量有多少？**特征数量越多，需要的内存也越大。就图像而言，第一层的特征数量等于图像所包含的像素数。所以MNIST数据集中的28 x 28像素的图像有784个特征。医疗诊断中的图像则可能有14兆像素。 
+* **同样的问题，另一种表述是：应当选择哪种网络架构？**微软研究院开发的[Resnet](http://arxiv.org/abs/1512.03385)网络在最近的ImageNet大赛中获得冠军，该网络有150个层。在其他条件相同的情况下，层数越多，需要处理的特征越多，所需要的内存也就越大。多层感知器（MLP）中的一个稠密层的特征密集度要远高于一个卷积层。人们之所以使用包含二次抽样层的卷积网络，正是因为这样可以大刀阔斧地“修剪”需要运算的特征。 
+* **要用怎样的方法来调试神经网络？**许多人可能还对神经网络调试感到有些云里雾里。具体的操作方式有以下几种。可以根据实践经验来调试：观察网络的F1值，然后调整超参数。您也可以用[超参数优化](https://github.com/deeplearning4j/Arbiter)工具来实现一定程度的自动化调试。最后，您还可以采用启发式的方法，比如用一个[GUI](./visualization.html)来明确显示误差下降的速度以及激活分布的状况。 
+* **模型定型需要多少数据？怎样找到这些数据？** 
+* **硬件：使用GPU、CPU还是两者并用？用单一GPU系统还是分布式系统？**目前许多研究是用1～4个GPU的系统开展的。企业级解决方案通常需要更多资源，因此还必须使用大型CPU集群。 
+* **要使用哪种数据加工管道？如何进行数据的提取、转换和加载（ETL）？数据是在Oracle数据库中吗？还是在Hadoop集群上? 数据是在本地还是云端？** 
+* **如何提取数据中的特征？**虽然深度学习可以自动提取特征，但您可以用不同形式的特征工程来减轻计算负荷，加快定型速度，尤其是在特征比较稀疏的情况下。 
+* **应使用何种非线性函数、损失函数和权重初始化方式？**非线性函数是与深度神经网络中每个层相对应的激活函数，可能是sigmoid函数、修正线性单元或其他函数。每种非线性函数通常与特定的损失函数搭配。 
+* **解决这个问题的最简架构是什么？**并非所有人都愿意或有能力用Resnet来进行图像分类。 
+* **网络在哪里进行定型？模型要部署到哪里？需要与哪种平台集成？**大多数人直到完成一个的原型时才开始思考这些问题，此时他们往往得用可扩展性更强的工具来重写自己的网络。您应当提前考虑最终需要使用的是Spark、AWS、Hadoop，还是别的平台。 
 
-Java developers using Deeplearning4j are welcome to join our [Gitter live chat](https://gitter.im/deeplearning4j/deeplearning4j), where our community helps answer these questions case by case. 
+欢迎使用Deeplearning4j的Java开发者加入我们的[Gitter线上交流群](https://gitter.im/deeplearning4j/deeplearning4j)，社区中的成员会根据具体情况来帮助您回答上述问题。 
 
-## <a name="beginner">Other Beginner's Guides</a>
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector.html)
+## <a name="beginner">其他基础教程</a>
+* [受限玻尔兹曼机](./restrictedboltzmannmachine.html)
+* [本征向量、协方差、PCA和熵](./eigenvector.html)
 * [Word2vec](./word2vec.html)
-* [Neural Networks](./neuralnet-overview.html)
-* [Neural Networks and Regression](./linear-regression.html)
-* [Convolutional Networks](./convolutionalnets.html)
+* [神经网络](./neuralnet-overview.html)
+* [神经网络与回归分析](./linear-regression.html)
+* [卷积网络](./convolutionalnets.html)
