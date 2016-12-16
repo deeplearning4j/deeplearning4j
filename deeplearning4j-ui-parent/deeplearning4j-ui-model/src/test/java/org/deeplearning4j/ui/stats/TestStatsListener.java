@@ -26,43 +26,52 @@ public class TestStatsListener {
     @Test
     public void testListenerBasic(){
 
-        DataSet ds = new IrisDataSetIterator(150,150).next();
+        for(boolean useJ7 : new boolean[]{false,true}) {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .list()
-                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .list()
+                    .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true)
-                .build();
+                    .pretrain(false).backprop(true)
+                    .build();
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
 
-        StatsStorage ss = new MapDBStatsStorage();  //in-memory
+            StatsStorage ss = new MapDBStatsStorage();  //in-memory
 
-        net.setListeners(new StatsListener(ss));
+            if(useJ7){
+                net.setListeners(new J7StatsListener(ss));
+            } else {
+                net.setListeners(new StatsListener(ss));
+            }
 
-        for( int i=0; i<3; i++ ){
-            net.fit(ds);
-        }
 
-        List<String> sids = ss.listSessionIDs();
-        assertEquals(1, sids.size());
-        String sessionID = ss.listSessionIDs().get(0);
-        assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
-        String typeID = ss.listTypeIDsForSession(sessionID).get(0);
-        assertEquals(1, ss.listWorkerIDsForSession(sessionID).size());
-        String  workerID = ss.listWorkerIDsForSession(sessionID).get(0);
+            for (int i = 0; i < 3; i++) {
+                net.fit(ds);
+            }
 
-        Persistable staticInfo = ss.getStaticInfo(sessionID, typeID, workerID);
-        assertNotNull(staticInfo);
-        System.out.println(staticInfo);
+            List<String> sids = ss.listSessionIDs();
+            assertEquals(1, sids.size());
+            String sessionID = ss.listSessionIDs().get(0);
+            assertEquals(1, ss.listTypeIDsForSession(sessionID).size());
+            String typeID = ss.listTypeIDsForSession(sessionID).get(0);
+            assertEquals(1, ss.listWorkerIDsForSession(sessionID).size());
+            String workerID = ss.listWorkerIDsForSession(sessionID).get(0);
 
-        List<Persistable> updates = ss.getAllUpdatesAfter(sessionID, typeID, workerID, 0);
-        assertEquals(3, updates.size());
-        for(Persistable p : updates){
-            System.out.println(p);
+            Persistable staticInfo = ss.getStaticInfo(sessionID, typeID, workerID);
+            assertNotNull(staticInfo);
+            System.out.println(staticInfo);
+
+            List<Persistable> updates = ss.getAllUpdatesAfter(sessionID, typeID, workerID, 0);
+            assertEquals(3, updates.size());
+            for (Persistable p : updates) {
+                System.out.println(p);
+            }
+
         }
 
     }
