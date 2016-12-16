@@ -10,7 +10,9 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
- * Abstract base class for normalizers that act upon {@link DataSet} instances or iterators
+ * Abstract base class for normalizers
+ * that act upon {@link DataSet} instances
+ * or iterators
  *
  * @author Ede Meijer
  */

@@ -96,6 +96,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+
+
     @Test
     public void testSerialization() throws Exception {
         Nd4j.getRandom().setSeed(12345);
