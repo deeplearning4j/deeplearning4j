@@ -279,6 +279,7 @@ public class ModelSerializer {
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "multiLayer");
+        tmpFile.deleteOnExit();
         Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
         return restoreMultiLayerNetwork(tmpFile, loadUpdater);
     }
@@ -342,6 +343,7 @@ public class ModelSerializer {
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater) throws IOException {
         File tmpFile = File.createTempFile("restore", "compGraph");
+        tmpFile.deleteOnExit();
         Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
         return restoreComputationGraph(tmpFile, loadUpdater);
     }
