@@ -319,6 +319,17 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners    Listeners to set
      */
+    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+        setListeners(statsStorage, Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
