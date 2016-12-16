@@ -32,6 +32,7 @@ import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.slf4j.Logger;
@@ -685,7 +686,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         if (srcTable.syn0.rows() > this.syn0.rows())
             throw new IllegalStateException("You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
-        log.info("syn0 rows: {}", srcTable.syn0.rows());
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
             this.syn0.putRow(x, srcTable.syn0.getRow(x));
 
@@ -698,6 +698,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 this.syn1Neg.putRow(x, srcTable.syn1Neg.getRow(x));
             } else
                 if (cntNg.incrementAndGet() == 1) log.info("Skipping syn1Neg merge");
+
+            if (cntHs.get() > 0 && cntNg.get() > 0)
+                throw new ND4JIllegalStateException("srcTable has no syn1/syn1neg");
         }
     }
 }
