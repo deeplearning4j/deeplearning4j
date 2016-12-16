@@ -160,6 +160,12 @@ public class NormalizerTests extends BaseNd4jTest {
             INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
+
+            for( int j=0; j<2; j++ ){
+                System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()));
+                System.out.println();
+            }
+
             assertEquals(zeros, shouldBe0_1);
             assertEquals(zeros, shouldBe0_2);
             assertEquals(zeros, shouldBe0_3);

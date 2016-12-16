@@ -109,8 +109,8 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void preProcess(@NonNull DataSet toPreProcess) {
-        transform(toPreProcess.getFeatures());
-        transformLabel(toPreProcess.getLabels());
+        transform(toPreProcess.getFeatures(), toPreProcess.getFeaturesMaskArray());
+        transformLabel(toPreProcess.getLabels(), toPreProcess.getLabelsMaskArray());
     }
 
     /**
