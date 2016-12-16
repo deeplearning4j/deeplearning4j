@@ -701,14 +701,13 @@ public class ParagraphVectorsTest {
         Word2Vec wordVectors = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .batchSize(250)
-                .iterations(3)
-                .epochs(1)
+                .iterations(1)
+                .epochs(3)
                 .learningRate(0.025)
                 .layerSize(150)
                 .minLearningRate(0.001)
-                .elementsLearningAlgorithm(new CBOW<VocabWord>())
-                .useHierarchicSoftmax(false)
-                .negativeSample(10)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .useHierarchicSoftmax(true)
                 .windowSize(5)
                 .iterate(iter)
                 .tokenizerFactory(t)
@@ -742,9 +741,8 @@ public class ParagraphVectorsTest {
                 .epochs(1)
                 .layerSize(150)
                 .tokenizerFactory(t)
-                .sequenceLearningAlgorithm(new DM<VocabWord>())
-                .useHierarchicSoftmax(false)
-                .negativeSample(10)
+                .sequenceLearningAlgorithm(new DBOW<VocabWord>())
+                .useHierarchicSoftmax(true)
                 .trainWordVectors(false)
                 .useExistingWordVectors(wordVectors)
                 .build();
@@ -811,7 +809,7 @@ public class ParagraphVectorsTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals("Zhealth", topPrediction);
+        assertEquals("Zfinance", topPrediction);
     }
 
     /*
