@@ -45,7 +45,6 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     public final static String WEIGHT_KEY = "W";
     public final static String BIAS_KEY = "b";
-    public final static String ACTIVATION_PARAM_KEY = "P";
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
@@ -53,8 +52,8 @@ public class DefaultParamInitializer implements ParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        //FIXME: depends on util, needs calculation
-        return nIn*nOut + nOut + layerConf.getActivationFn().getNumParams();     //weights + bias + params in activation function
+        int [] activationShape = new int [] {1,nOut};
+        return (nIn * nOut) + nOut + ActivationParamsHelper.expandedNumParams(conf, activationShape);     //weights + bias + params in activation function
     }
 
     @Override
@@ -69,22 +68,33 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-
         int nWeightParams = nIn*nOut;
+        int [] activationShape = new int [] {1,nOut};
+
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
-        if (conf.getLayer().getActivationFn().getNumParams() > 0) {
-            INDArray activationParamView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams + nOut, length));
-        }
-
+        int indexR = nWeightParams+nOut;
         params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParams));
         params.put(BIAS_KEY,createBias(conf, biasView, initializeParams));
-        if
-        params.put(ACTIVATION_PARAM_KEY,createActivationParams(conf,activationParamView,initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
+
+        if (ActivationParamsHelper.hasParams(conf)) {
+            for (int i=0; i<ActivationParamsHelper.numParams(conf);i++) {
+                int currentParamL = ActivationParamsHelper.lengthParamI(i,conf,activationShape);
+                INDArray intiVal = ActivationParamsHelper.initParam(conf,i,activationShape);
+
+                INDArray currentParamView = paramsView.get(NDArrayIndex.point(0),NDArrayIndex.interval(indexR,indexR+currentParamL));
+                //default order is f?
+                Nd4j.toFlattened('f',)
+
+
+            }
+
+        }
 
         return params;
     }
