@@ -10,7 +10,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-public interface StatsStorageRouter extends Serializable {
+public interface StatsStorageRouter  {
 
 
     /**

@@ -175,6 +175,11 @@
             <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.27</version>
+        </dependency>
     </dependencies>
 
 
