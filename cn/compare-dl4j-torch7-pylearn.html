@@ -75,7 +75,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-success">利</span> 有很多已预定型的模型！ <br />
 <span class="label label-danger">弊</span> Lua <br />
 <span class="label label-danger">弊</span> 通常需要自己编写定型代码（即插即用相对较少） <br />
-<span class="label label-danger">弊</span> 不适合递归神经网络 <br />
+<span class="label label-danger">弊</span> 不适合循环神经网络 <br />
 <br />
 
 <p><h2><a name="caffe">Caffe</a></h2></p>
@@ -88,12 +88,12 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-success">利</span> 定型模型而无需编写任何代码 <br />
 <span class="label label-success">利</span> Python界面相当有用 <br />
 <span class="label label-danger">弊</span> 需要用C++ / CUDA编写新的GPU层 <br />
-<span class="label label-danger">弊</span> 不适合递归网络 <br />
+<span class="label label-danger">弊</span> 不适合循环网络 <br />
 <span class="label label-danger">弊</span> 用于大型网络（GoogLeNet、ResNet）时过于繁琐 <br />
 <br />
 
 <p><h2><a name="cntk">CNTK</a></h2></p>
-<p><a href="https://github.com/Microsoft/CNTK" target="_blank"><strong>CNTK</strong></a>是微软的开源深度学习框架。CNTK的全称是&ldquo;计算网络工具包。&rdquo;此学习库包括前馈DNN、卷积网络和递归网络。CNTK提供基于C++代码的Python API。虽然CNTK遵循一个<a href="https://github.com/Microsoft/CNTK/blob/master/LICENSE.md" target="_blank">比较宽松的许可协议</a>，却并未采用ASF 2.0、BSD或MIT等一些较为传统的许可协议。</p>
+<p><a href="https://github.com/Microsoft/CNTK" target="_blank"><strong>CNTK</strong></a>是微软的开源深度学习框架。CNTK的全称是&ldquo;计算网络工具包。&rdquo;此学习库包括前馈DNN、卷积网络和循环网络。CNTK提供基于C++代码的Python API。虽然CNTK遵循一个<a href="https://github.com/Microsoft/CNTK/blob/master/LICENSE.md" target="_blank">比较宽松的许可协议</a>，却并未采用ASF 2.0、BSD或MIT等一些较为传统的许可协议。</p>
 <br />
 
 <p><h2><a name="dsstne">DSSTNE</a></h2></p>
@@ -145,8 +145,8 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <ul>
   <li><a href="neuralnet-overview">深度神经网络简介</a></li>
   <li><a href="convolutionalnets">卷积网络教程</a></li>
-  <li><a href="lstm">LSTM和递归网络教程</a></li>
-  <li><a href="usingrnns">通过DL4J使用递归网络</a></li>
+  <li><a href="lstm">LSTM和循环网络教程</a></li>
+  <li><a href="usingrnns">通过DL4J使用循环网络</a></li>
   <li><a href="deepbeliefnetwork">MNIST中的深度置信网络</a></li>
   <li><a href="image-data-pipeline">用Canova定制数据加工管道</a></li>
   <li><a href="restrictedboltzmannmachine">受限玻尔兹曼机</a></li>
