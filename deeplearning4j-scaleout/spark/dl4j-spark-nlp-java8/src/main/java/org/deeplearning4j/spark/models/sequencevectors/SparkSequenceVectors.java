@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Generic SkipGram/CBOW implementation for dl4j-spark-nlp
+ * Generic SequenceVectors implementation for dl4j-spark-nlp
  *
  * @author raver119@gmail.com
  */
@@ -59,8 +59,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
     protected Configuration paramServerConfiguration;
 
-    protected SparkSequenceVectors(VectorsConfiguration configuration) {
-
+    protected SparkSequenceVectors(@NonNull VectorsConfiguration configuration) {
+        this.configuration = configuration;
     }
 
     protected VocabCache<ShallowSequenceElement> getShallowVocabCache() {
@@ -132,7 +132,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             paramServerConfiguration = Configuration.builder()
                 .faultToleranceStrategy(FaultToleranceStrategy.NONE)
                 .numberOfShards(2)
-                .port(40123)
+                .unicastPort(40123)
+                .multicastPort(40124)
                 .build();
 
         // FIXME: probably we need to reconsider this approach
