@@ -15,7 +15,7 @@ interface NormalizerStrategy<S extends NormalizerStats> {
      * @param array the data to normalize
      * @param stats statistics of the data population
      */
-    void preProcess(INDArray array, S stats);
+    void preProcess(INDArray array, INDArray maskArray, S stats);
 
     /**
      * Denormalize a data array
@@ -23,5 +23,5 @@ interface NormalizerStrategy<S extends NormalizerStats> {
      * @param array the data to denormalize
      * @param stats statistics of the data population
      */
-    void revert(INDArray array, S stats);
+    void revert(INDArray array, INDArray maskArray, S stats);
 }

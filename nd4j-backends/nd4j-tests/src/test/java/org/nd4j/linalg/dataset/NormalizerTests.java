@@ -103,7 +103,7 @@ public class NormalizerTests extends BaseNd4jTest {
 
             //First: check that normalization is the same with/without masking arrays
             DataNormalization norm = normalizers[i];
-            DataNormalization normNoMask = normalizersNoMask[i];
+            DataNormalization normFitSubset = normalizersNoMask[i];
             DataNormalization normByRow = normalizersByRow[i];
 
             System.out.println(norm.getClass());
@@ -132,7 +132,7 @@ public class NormalizerTests extends BaseNd4jTest {
             List<DataSet> toFitTimeSeries1Ex = new ArrayList<>();
             toFitTimeSeries1Ex.add(new DataSet(arrPt1, arrPt1));
             toFitTimeSeries1Ex.add(new DataSet(arrPt2, arrPt2));
-            normNoMask.fit(new TestDataSetIterator(toFitTimeSeries1Ex,1));
+            normFitSubset.fit(new TestDataSetIterator(toFitTimeSeries1Ex,1));
 
             List<DataSet> toFitRows = new ArrayList<>();
             for( int j=0; j<5; j++ ){
@@ -148,17 +148,35 @@ public class NormalizerTests extends BaseNd4jTest {
             normByRow.fit(new TestDataSetIterator(toFitRows,1));
 
             norm.transform(ds);
-            normNoMask.transform(dsCopy1);
+            normFitSubset.transform(dsCopy1);
             normByRow.transform(dsCopy2);
 
             assertEquals(ds, dsCopy1);
             assertEquals(ds, dsCopy2);
 
-            //Second: ensure values post masking are 0.0
+            //Second: ensure time steps post normalization (and post revert) are 0.0
+            INDArray shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            INDArray shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            INDArray shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+
+            INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
+            assertEquals(zeros, shouldBe0_1);
+            assertEquals(zeros, shouldBe0_2);
+            assertEquals(zeros, shouldBe0_3);
+
+            //Check same thing after reverting:
+            norm.revert(ds);
+            normFitSubset.revert(dsCopy1);
+            normByRow.revert(dsCopy2);
+            shouldBe0_1 = ds.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            shouldBe0_2 = dsCopy1.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+            shouldBe0_3 = dsCopy2.getFeatureMatrix().get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+
+            assertEquals(zeros, shouldBe0_1);
+            assertEquals(zeros, shouldBe0_2);
+            assertEquals(zeros, shouldBe0_3);
 
 
-            //Masked steps should be 0 after normalization
-//            assertEquals(Nd4j.zeros(3, 2), arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3, 5)));
         }
     }
 

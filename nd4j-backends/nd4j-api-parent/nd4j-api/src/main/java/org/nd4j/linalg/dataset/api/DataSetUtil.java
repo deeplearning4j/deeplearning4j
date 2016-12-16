@@ -115,4 +115,10 @@ public class DataSetUtil {
         }
         return in2d.transposei();
     }
+
+    public static void setMaskedValuesToZero(INDArray array, INDArray maskArray){
+        if(maskArray == null) return;
+
+
+    }
 }

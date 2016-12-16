@@ -126,11 +126,16 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     /**
      * Transform the given INDArray
      *
-     * @param theFeatures
+     * @param features
      */
     @Override
-    public void transform(INDArray theFeatures) {
-        strategy.preProcess(theFeatures, getFeatureStats());
+    public void transform(INDArray features) {
+        transform(features, null);
+    }
+
+    @Override
+    public void transform(INDArray features, INDArray featuresMask){
+        strategy.preProcess(features, featuresMask, getFeatureStats());
     }
 
     /**
@@ -138,19 +143,25 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void transformLabel(INDArray label) {
+        transformLabel(label, null);
+    }
+
+    @Override
+    public void transformLabel(INDArray label, INDArray labelsMask){
         if (isFitLabel()) {
-            strategy.preProcess(label, getLabelStats());
+            strategy.preProcess(label, labelsMask, getLabelStats());
         }
     }
 
-    /**
-     * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
-     *
-     * @param features Features to revert the normalization on
-     */
     @Override
     public void revertFeatures(INDArray features) {
-        strategy.revert(features, getFeatureStats());
+        revertFeatures(features, null);
+    }
+
+
+    @Override
+    public void revertFeatures(INDArray features, INDArray featuresMask) {
+        strategy.revert(features, featuresMask, getFeatureStats());
     }
 
     /**
@@ -162,8 +173,13 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void revertLabels(INDArray labels) {
+        revertLabels(labels, null);
+    }
+
+    @Override
+    public void revertLabels(INDArray labels, INDArray labelsMask){
         if (isFitLabel()) {
-            strategy.revert(labels, getLabelStats());
+            strategy.revert(labels, labelsMask, getLabelStats());
         }
     }
 

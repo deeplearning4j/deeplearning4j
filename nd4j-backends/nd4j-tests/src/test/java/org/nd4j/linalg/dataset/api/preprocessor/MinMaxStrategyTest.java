@@ -32,10 +32,10 @@ public class MinMaxStrategyTest extends BaseNd4jTest {
         INDArray input = Nd4j.create(new float[]{3, 3});
         INDArray inputCopy = input.dup();
 
-        SUT.preProcess(input, stats);
+        SUT.preProcess(input, null, stats);
         assertEquals(Nd4j.create(new float[]{0.5f, 0f}), input);
 
-        SUT.revert(input, stats);
+        SUT.revert(input, null, stats);
         assertEquals(inputCopy, input);
     }
 
