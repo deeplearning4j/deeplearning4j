@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.lang3.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -13,13 +14,16 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -33,6 +37,7 @@ public class ModelSerializer {
 
     public static final String OLD_UPDATER_BIN = "updater.bin";
     public static final String UPDATER_BIN = "updaterState.bin";
+    public static final String NORMALIZER_BIN = "normalizer.bin";
 
     private ModelSerializer() {
     }
@@ -543,4 +548,59 @@ public class ModelSerializer {
             return task;
         }
     }
+
+    /**
+     * This method appends normalizer to a given persisted model.
+     *
+     * PLEASE NOTE: File should be model file saved earlier with ModelSerializer
+     *
+     * @param f
+     * @param normalizer
+     * @param overwrite
+     */
+    public static void addNormalizerToModel(File f, DataNormalization normalizer) {
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        Path path = Paths.get(f.getAbsolutePath());
+        URI uri = URI.create("jar:" + path.toUri());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+            Path nf = fs.getPath(NORMALIZER_BIN);
+
+            OutputStream stream = Files.newOutputStream(nf, StandardOpenOption.CREATE, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            org.apache.commons.lang3.SerializationUtils.serialize(normalizer, stream);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * This method restores normalizer from a given persisted model file
+     *
+     * PLEASE NOTE: File should be model file saved earlier with ModelSerializer with addNormalizerToModel being called
+     *
+     * @param f
+     * @return
+     */
+    public static DataNormalization restoreNormalizerFromFile(File file) {
+        try (ZipFile zipFile = new ZipFile(file)) {
+            ZipEntry norm = zipFile.getEntry(NORMALIZER_BIN);
+
+            // checking for file existence
+            if (norm == null)
+                return null;
+
+            InputStream stream = zipFile.getInputStream(norm);
+            ObjectInputStream ois = new ObjectInputStream(stream);
+
+            try {
+                DataNormalization normalizer = (DataNormalization) ois.readObject();
+                return normalizer;
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
