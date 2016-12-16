@@ -549,7 +549,6 @@ namespace simdOps {
 	};
 
 
-
 	template<typename T>
 	class SigmoidDerivative {
 	public:
@@ -560,6 +559,28 @@ namespace simdOps {
 			return nd4j::math::nd4j_sigmoidderivative<T>(d1);
 		}
 	};
+
+    template<typename T>
+    class HardSigmoid {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return nd4j::math::nd4j_min<T>((T) 1.0, nd4j::math::nd4j_max<T>((T) 0.0f, ((T) 0.2f) * d1 + (T) 0.5f));
+        }
+    };
+
+    template<typename T>
+    class HardSigmoidDerivative {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return d1 < (T) -2.5f || d1 > (T) 2.5f ? (T) 0.0f : (T) 0.2f;
+        }
+    };
 
 
 	/**

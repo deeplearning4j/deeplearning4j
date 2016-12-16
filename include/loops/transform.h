@@ -82,7 +82,9 @@
         (47,simdOps::StabilizeFP16) ,\
         (48,simdOps::Histogram), \
         (49,simdOps::Cube), \
-        (50,simdOps::CubeDerivative)
+        (50,simdOps::CubeDerivative) , \
+        (51,simdOps::HardSigmoid), \
+        (52,simdOps::HardSigmoidDerivative)
 
 
 namespace functions {
