@@ -52,8 +52,7 @@ public class DefaultParamInitializer implements ParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        int [] activationShape = new int [] {1,nOut};
-        return (nIn * nOut) + nOut + ActivationParamsHelper.expandedNumParams(conf, activationShape);     //weights + bias + params in activation function
+        return nIn*nOut + nOut;     //weights + bias
     }
 
     @Override
@@ -68,33 +67,18 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        int nWeightParams = nIn*nOut;
-        int [] activationShape = new int [] {1,nOut};
 
+        int nWeightParams = nIn*nOut;
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
-        int indexR = nWeightParams+nOut;
+
+
         params.put(WEIGHT_KEY,createWeightMatrix(conf, weightView, initializeParams));
         params.put(BIAS_KEY,createBias(conf, biasView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
-
-        if (ActivationParamsHelper.hasParams(conf)) {
-            for (int i=0; i<ActivationParamsHelper.numParams(conf);i++) {
-                int currentParamL = ActivationParamsHelper.lengthParamI(i,conf,activationShape);
-                INDArray intiVal = ActivationParamsHelper.initParam(conf,i,activationShape);
-
-                INDArray currentParamView = paramsView.get(NDArrayIndex.point(0),NDArrayIndex.interval(indexR,indexR+currentParamL));
-                //default order is f?
-                Nd4j.toFlattened('f',)
-
-
-            }
-
-        }
 
         return params;
     }
