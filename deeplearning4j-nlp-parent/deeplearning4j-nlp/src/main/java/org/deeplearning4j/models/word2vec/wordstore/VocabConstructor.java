@@ -114,7 +114,6 @@ public class VocabConstructor<T extends SequenceElement> {
         /*
             Now, when we have transferred vocab, we should roll over iterator, and  gather labels, if any
          */
-
         log.info("Vocab size before labels: " + cache.numWords());
 
         if (fetchLabels) {
@@ -126,22 +125,23 @@ public class VocabConstructor<T extends SequenceElement> {
                     Sequence<T> sequence = iterator.nextSequence();
                     seqCount.incrementAndGet();
 
-                    for (T label: sequence.getSequenceLabels()) {
-                        if (!cache.containsWord(label.getLabel())) {
-                            label.markAsLabel(true);
-                            label.setSpecial(true);
+                    if (sequence.getSequenceLabels() != null)
+                        for (T label: sequence.getSequenceLabels()) {
+                            if (!cache.containsWord(label.getLabel())) {
+                                label.markAsLabel(true);
+                                label.setSpecial(true);
 
-                            label.setIndex(cache.numWords());
+                                label.setIndex(cache.numWords());
 
-                            cache.addToken(label);
-                            cache.addWordToIndex(label.getIndex(), label.getLabel());
+                                cache.addToken(label);
+                                cache.addWordToIndex(label.getIndex(), label.getLabel());
 
-                            // backward compatibility code
-                            cache.putVocabWord(label.getLabel());
+                                // backward compatibility code
+                                cache.putVocabWord(label.getLabel());
 
-                            log.info("Adding label ["+label.getLabel()+"]: " + cache.wordFor(label.getLabel()));
-                        } else log.info("Label ["+label.getLabel()+"] already exists: " + cache.wordFor(label.getLabel()));
-                    }
+                              //  log.info("Adding label ["+label.getLabel()+"]: " + cache.wordFor(label.getLabel()));
+                            } // else log.info("Label ["+label.getLabel()+"] already exists: " + cache.wordFor(label.getLabel()));
+                        }
                 }
             }
         }
