@@ -19,9 +19,7 @@
 package org.deeplearning4j.nn.conf;
 
 import com.google.common.collect.Sets;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -37,7 +35,7 @@ import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activations;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -689,6 +687,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         @Deprecated
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
+            switch(activationFunction) {
+                case "tanh":
+                    this.activationFn = new ActivationTanH();
+                case "sigmoid":
+                    this.activationFn = new ActivationSigmoid();
+                case "identity":
+                    this.activationFn = new ActivationIdentity();
+                case "leakyrelu":
+                    this.activationFn = new ActivationLReLU();
+                case "relu":
+                    this.activationFn = new ActivationReLU();
+                case "softmax":
+                    this.activationFn = new ActivationSoftmax();
+                case "rrelu":
+                    this.activationFn = new ActivationRReLU();
+            }
             return this;
         }
 
