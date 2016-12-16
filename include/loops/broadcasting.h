@@ -117,7 +117,7 @@ template<typename OpType>
             __syncthreads();
 
 
-            if(tadEWS > 0 && zEWS > 0) {
+            if(tadEWS > 0 && zEWS > 0 && dimensionLength == 1) {
             	if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
                 	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     	rR[i] = OpType::op(rX[i], y[i]);
@@ -133,8 +133,17 @@ template<typename OpType>
                 int zCoord[MAX_RANK];
 
                 for (Nd4jIndex i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    shape::ind2subC(tadRank,tadShape, i, xCoord);
-                    shape::ind2subC(zRank,zShape, i, zCoord);
+
+                    if (shape::order(tadOnlyShapeInfo) == 'c')
+                        shape::ind2sub(tadRank,tadShape, i, xCoord);
+                    else
+                        shape::ind2subC(tadRank,tadShape, i, xCoord);
+
+                    if (shape::order(tadOnlyShapeInfoZ) == 'c')
+                        shape::ind2sub(zRank,zShape, i, zCoord);
+                    else
+                        shape::ind2subC(zRank,zShape, i, zCoord);
+
                     Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     Nd4jIndex zOffset = shape::getOffset(tadOffsetForBlockZ, zShape, zStride, zCoord, zRank);
                     result[zOffset] = OpType::op(x[xOffset], y[i * yStride]);
@@ -216,7 +225,7 @@ template<typename OpType>
                         int offsetZ = tadOffsetZ[i];
 
 
-						if (tadEWS > 0 && yStride > 0 && zEWS > 0) {
+						if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
 
 
 							T *oRes = result + offsetZ;
@@ -248,8 +257,16 @@ template<typename OpType>
 // all this stuff already happens within thread
 							for (int f = 0; f < tadLength; f++) {
 
-                                shape::ind2subC(tadRank,xShape, f, xCoord);
-                                shape::ind2subC(zRank,zShape, f, zCoord);
+                                if (shape::order(tadShapeShapeInfo) == 'c')
+                                    shape::ind2sub(tadRank,xShape, f, xCoord);
+                                else
+                                    shape::ind2subC(tadRank,xShape, f, xCoord);
+
+                                if (shape::order(tadShapeInfoZ) == 'c')
+                                    shape::ind2sub(zRank,zShape, f, zCoord);
+                                else
+                                    shape::ind2subC(zRank,zShape, f, zCoord);
+
                                 Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
                                 Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
                                 result[zOffset] = OpType::op(x[xOffset], y[f * yStride]);
