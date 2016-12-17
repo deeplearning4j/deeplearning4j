@@ -1,12 +1,13 @@
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import scala.Tuple2;
 
 /**
- * Created by Alex on 17/12/2016.
+ * Simple conversion function for SparkComputationGraph
+ *
+ * @author Alex Black
  */
 public class ArrayPairToPair <K> implements PairFunction<Tuple2<K,INDArray[]>,K,INDArray> {
     @Override
