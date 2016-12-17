@@ -678,8 +678,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
 
-
-        log.info("x shape: {}; x TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()));
+        log.info("Broascast dimension: {}", Arrays.toString(dimension));
+        log.info("x shape: {}; x TAD: {}; comp TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()), Arrays.toString(op.x().tensorAlongDimension(0, dimension).shapeInfoDataBuffer().asInt()));
         log.info("z shape: {}; z TAD: {}", Arrays.toString(op.z().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
         log.info("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
         log.info("-------------");
