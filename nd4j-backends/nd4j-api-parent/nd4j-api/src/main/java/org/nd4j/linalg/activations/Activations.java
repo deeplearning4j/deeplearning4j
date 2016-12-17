@@ -13,6 +13,7 @@ public class Activations {
         identity,
         leakyrelu,
         relu,
+        rrelu,
         softmax,
         softsign;
 
@@ -30,6 +31,8 @@ public class Activations {
                     return new ActivationReLU();
                 case softmax:
                     return new ActivationSoftmax();
+                case rrelu:
+                    return new ActivationRReLU();
                 default:
                     throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
             }

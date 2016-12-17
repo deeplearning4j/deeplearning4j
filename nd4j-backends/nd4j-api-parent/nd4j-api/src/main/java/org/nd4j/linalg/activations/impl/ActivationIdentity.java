@@ -1,9 +1,8 @@
 package org.nd4j.linalg.activations.impl;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.List;
 
 /**
  * Created by susaneraly on 12/10/16.
@@ -11,19 +10,24 @@ import java.util.List;
 public class ActivationIdentity implements IActivation {
 
     @Override
-    public void setActivation(INDArray in, INDArray activation, boolean training) {
-        activation = in.dup();
+    public INDArray getActivation(INDArray in, boolean training) {
+        //no op
+        return in;
     }
 
     @Override
-    public void setGradient(INDArray in, INDArray gradient) {
-        gradient.muli(0).addi(1);
+    public INDArray getGradient(INDArray in) {
+        in.muli(0).addi(1);
+        return in;
     }
 
     @Override
-    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
-        setActivation(in,activation, true);
-        setGradient(in,gradient);
+    public Pair<INDArray, INDArray> getActivationAndGradient(INDArray in) {
+        INDArray activation = in.dup();
+        INDArray gradient = in.dup();
+        getActivation(activation, true);
+        getGradient(gradient);
+        return new Pair<INDArray, INDArray>(activation,gradient);
     }
 
 }

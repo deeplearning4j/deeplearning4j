@@ -3,13 +3,8 @@ package org.nd4j.linalg.activations.impl;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.List;
 
 /**
  * Created by susaneraly on 12/10/16.
@@ -17,12 +12,13 @@ import java.util.List;
 public class ActivationSoftmax implements IActivation {
 
     @Override
-    public void setActivation(INDArray in, INDArray activation, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new SoftMax(in,activation));
+    public INDArray getActivation(INDArray in, boolean training) {
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
+        return in;
     }
 
     @Override
-    public void setGradient(INDArray in, INDArray gradient) {
+    public INDArray getGradient(INDArray in) {
         /*
         //libnd4j only returns diagonal elements, fix in libnd4j?
         //derivative of softmax(in) shape = minibatchxclasses should give minibatch x classes x classes
@@ -43,13 +39,17 @@ public class ActivationSoftmax implements IActivation {
         gradient = out;
         */
         //use loss fn utils and push this for next release
-        Nd4j.getExecutioner().execAndReturn(new SoftMax(in,gradient).derivative());
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(in).derivative());
+        return in;
     }
 
     @Override
-    public void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient) {
-        setActivation(in,activation, true);
-        setGradient(in,gradient);
+    public Pair<INDArray, INDArray> getActivationAndGradient(INDArray in) {
+        INDArray activation = in.dup();
+        INDArray gradient = in.dup();
+        getActivation(activation, true);
+        getGradient(gradient);
+        return new Pair<INDArray, INDArray>(activation,gradient);
     }
 
 }

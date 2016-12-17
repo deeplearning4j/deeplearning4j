@@ -1,9 +1,9 @@
 package org.nd4j.linalg.activations;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Interface for implementing custom activation functions
@@ -12,30 +12,26 @@ import java.util.List;
 public interface IActivation extends Serializable {
 
     /**
-     * Carry out activation function on "in" and write in place to "activation".
-     * "in" and "activation" will be of the same shape
+     * Carry out activation function on "in"
+     * Best practice: Overwrite "in", transform in place and return "in"
      * Can support separate behaviour during test
      * @param in
-     * @param activation
      * @param training
+     * @return tranformed activation
      */
-    void setActivation(INDArray in, INDArray activation, boolean training);
+    INDArray getActivation(INDArray in, boolean training);
 
     /**
      * Value of the partial derivative of the activation function at "in" with respect to the input (linear transformation with weights and biases, sometimes referred to as the preout)
-     * Write in place to "gradient"
-     * "in" and "gradient" will be of the same shape
+     * Best practice: Overwrite "in" with the gradient and return "in"
      * @param in
-     * @param gradient
      */
-    void setGradient(INDArray in, INDArray gradient);
+    INDArray getGradient(INDArray in);
 
     /**
-     * Do setActivation and setGradient in one go
-     * @param in
-     * @param activation
-     * @param gradient
+     * return activation and gradient with respect to input "in"
+     * @param in, input to activation node
      */
-    void setActivationAndGradient(INDArray in, INDArray activation, INDArray gradient);
+    Pair<INDArray, INDArray> getActivationAndGradient(INDArray in);
 
 }
