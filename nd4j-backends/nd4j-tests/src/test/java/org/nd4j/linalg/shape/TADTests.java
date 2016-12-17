@@ -130,7 +130,8 @@ public class TADTests extends BaseNd4jTest {
             log.info("linear: {}", Arrays.toString(tensor.dup(tensor.ordering()).data().asFloat()));
         }
 
-        INDArray bc02 = Nd4j.linspace(1, 12, 12).reshape(array.ordering(), new int[]{3,4});
+        INDArray bc02 = Nd4j.linspace(1, 12, 12).reshape('c', new int[]{3,4}).dup('c');
+        log.info("bc: {}", Arrays.toString(bc02.data().asFloat()));
 
         Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), shape));
     }
