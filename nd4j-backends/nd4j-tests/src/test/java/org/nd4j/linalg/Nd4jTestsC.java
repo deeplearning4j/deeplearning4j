@@ -3359,7 +3359,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testBroadcast3d2d(){
-        char[] orders = {'f', 'c'};
+        char[] orders = {'c', 'f'};
 
         for( char orderArr : orders){
             for(char orderbc : orders ){

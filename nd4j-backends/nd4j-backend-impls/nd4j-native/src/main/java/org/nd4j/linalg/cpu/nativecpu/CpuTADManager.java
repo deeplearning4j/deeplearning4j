@@ -78,7 +78,9 @@ public class CpuTADManager implements TADManager {
 
                 nativeOps.tadOnlyShapeInfo((IntPointer)xShapeInfo, (IntPointer)dimensionPointer, dimension.length, (IntPointer)targetPointer, (IntPointer)offsetsPointer);
 
-                Pair<DataBuffer, DataBuffer> pair = new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
+
+
+                Pair<DataBuffer, DataBuffer> pair = new Pair<DataBuffer, DataBuffer>(array.tensorAlongDimension(0, dimension).shapeInfoDataBuffer(), offsetsBuffer);
                 if (counter.get() < MAX_ENTRIES) {
                     counter.incrementAndGet();
                     cache.put(descriptor, pair);
