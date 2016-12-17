@@ -215,17 +215,11 @@ template<typename OpType>
 
                 int zEWS = shape::elementWiseStride(tadShapeInfoZ);
 
-                printf("tadLength: %i; Y length: %i\n", tadLength, shape::length(yShapeInfo));
-                printf("Y ");
-                shape::printShapeInfoLinear(yShapeInfo);
-                fflush(stdout);
-
-
 				int tadsPerThread = tads / TAD_THRESHOLD;
 				int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				_threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-//#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
 					for (int i = 0; i < tads; i++) {
 						int offset = tadOffsets[i];
                         int offsetZ = tadOffsetZ[i];
