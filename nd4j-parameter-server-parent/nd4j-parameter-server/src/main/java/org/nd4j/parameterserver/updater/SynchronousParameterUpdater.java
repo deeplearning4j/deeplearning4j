@@ -58,6 +58,24 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
         this.workers = workers;
     }
 
+    /**
+     * Initialize this updater
+     * with a custom update storage
+     *
+     * @param updateStorage the update storage to use
+     */
+    public SynchronousParameterUpdater(UpdateStorage updateStorage, int workers) {
+        super(updateStorage);
+        this.workers = workers;
+    }
+
+    /**
+     * Initializes this updater
+     * with {@link org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage}
+     */
+    public SynchronousParameterUpdater(int workers) {
+        this.workers = workers;
+    }
 
 
     /**

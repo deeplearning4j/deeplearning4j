@@ -28,6 +28,10 @@ import org.nd4j.parameterserver.model.MasterConnectionInfo;
 import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.model.SubscriberState;
+import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.SoftSyncParameterUpdater;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
+import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.util.CheckSocket;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -86,6 +90,8 @@ public class ParameterServerSubscriber {
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
+    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1)
+    private int updatesPerEpoch;
 
     public enum UpdateType {
         HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC
@@ -222,8 +228,16 @@ public class ParameterServerSubscriber {
 
 
         if (master) {
+            ParameterServerUpdater updater = null;
             //instantiate with shape instead of just length
-            callback = new ParameterServerListener(Ints.toArray(shape));
+            switch(updateType) {
+                case HOGWILD: break;
+                case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),updatesPerEpoch); break;
+                case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
+                case TIME_DELAYED: break;
+                default: throw new IllegalStateException("Illegal type of updater");
+            }
+            callback = new ParameterServerListener(Ints.toArray(shape),updater);
             parameterServerListener = (ParameterServerListener) callback;
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
