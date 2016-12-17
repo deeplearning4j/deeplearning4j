@@ -9,6 +9,8 @@ import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -36,7 +38,9 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private int[] encoderLayerSizes;
     private int[] decoderLayerSizes;
     private ReconstructionDistribution outputDistribution;
+    @Deprecated
     private String pzxActivationFunction;
+    private IActivation pzxActivationFn;
     private int numSamples;
 
     private VariationalAutoencoder(Builder builder){
@@ -45,6 +49,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         this.decoderLayerSizes = builder.decoderLayerSizes;
         this.outputDistribution = builder.outputDistribution;
         this.pzxActivationFunction = builder.pzxActivationFunction;
+        this.pzxActivationFn = builder.pzxActivationFn;
         this.numSamples = builder.numSamples;
     }
 
@@ -99,7 +104,9 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         private int[] encoderLayerSizes = new int[]{100};
         private int[] decoderLayerSizes = new int[]{100};
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
+        @Deprecated
         private String pzxActivationFunction = "identity";
+        private IActivation pzxActivationFn = new ActivationIdentity();
         private int numSamples = 1;
 
         /**
@@ -153,7 +160,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
-        public Builder lossFunction(String outputActivationFn, LossFunctions.LossFunction lossFunction){
+        public Builder lossFunction(IActivation outputActivationFn, LossFunctions.LossFunction lossFunction){
             return lossFunction(outputActivationFn, lossFunction.getILossFunction());
         }
 
@@ -167,7 +174,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
-        public Builder lossFunction(String outputActivationFn, ILossFunction lossFunction){
+        public Builder lossFunction(IActivation outputActivationFn, ILossFunction lossFunction){
             return reconstructionDistribution(new LossFunctionWrapper(outputActivationFn, lossFunction));
         }
 
@@ -179,9 +186,31 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param activationFunction    Activation function for p(z|x)
          * @return
          */
-        public Builder pzxActivationFunction(String activationFunction){
-            this.pzxActivationFunction = activationFunction;
+        public Builder pzxActivationFunction(IActivation activationFunction){
+            this.pzxActivationFn = activationFunction;
             return this;
+        }
+
+        public Builder pzxActivationFunction(String activationFn) {
+
+            switch(activationFn) {
+                case "tanh":
+                    this.pzxActivationFn = new ActivationTanH();
+                case "sigmoid":
+                    this.pzxActivationFn = new ActivationSigmoid();
+                case "identity":
+                    this.pzxActivationFn = new ActivationIdentity();
+                case "leakyrelu":
+                    this.pzxActivationFn = new ActivationLReLU();
+                case "relu":
+                    this.pzxActivationFn = new ActivationReLU();
+                case "softmax":
+                    this.pzxActivationFn = new ActivationSoftmax();
+                case "rrelu":
+                    this.pzxActivationFn = new ActivationRReLU();
+            }
+            return this;
+
         }
 
         /**
