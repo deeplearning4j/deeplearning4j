@@ -126,6 +126,59 @@ public class DerivativeTests extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testHardSigmoidDerivative(){
+        assertTrue(Nd4j.getOpFactory().createTransform("hardsigmoid", Nd4j.ones(1)).derivative() instanceof HardSigmoidDerivative);
+
+        /*
+        f(x) = min(1, max(0, 0.2*x + 0.5))
+        or equivalently: clip 0.2*x+0.5 to range 0 to 1
+        where clipping bounds are -2.5 and 2.5
+
+        Hard sigmoid derivative:
+        f'(x) =
+        0 if x < -2.5 or x > 2.5
+        0.2 otherwise
+         */
+
+        double[] expHSOut = new double[300];
+        double[] expDerivOut = new double[300];
+        INDArray xArr = Nd4j.linspace(-3,3,300);
+        for (int i = 0; i < xArr.length(); i++) {
+            double x = xArr.getDouble(i);
+            double hs = 0.2 * x + 0.5;
+            if(hs < 0) hs = 0;
+            if(hs > 1) hs = 1;
+            expHSOut[i] = hs;
+
+            double hsDeriv;
+            if( x < -2.5 || x > 2.5 ) hsDeriv = 0;
+            else hsDeriv = 0.2;
+
+            expDerivOut[i] = hsDeriv;
+        }
+
+        INDArray z = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()));
+        INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("hardsigmoid", xArr.dup()).derivative());
+
+        System.out.println(xArr);
+        System.out.println(z);
+        System.out.println(zPrime);
+
+        for (int i = 0; i < expHSOut.length; i++) {
+            double relErrorHS = Math.abs(expHSOut[i] - z.getDouble(i)) / (Math.abs(expHSOut[i]) + Math.abs(z.getDouble(i)));
+            if(!(expHSOut[i] == 0 && z.getDouble(i) == 0)) {
+                assertTrue(relErrorHS < REL_ERROR_TOLERANCE);
+            }
+            double relErrorDeriv = Math.abs(expDerivOut[i] - zPrime.getDouble(i)) / (Math.abs(expDerivOut[i]) + Math.abs(zPrime.getDouble(i)));
+            if(!(expDerivOut[i] == 0 && zPrime.getDouble(i) == 0)) {
+                assertTrue(relErrorDeriv < REL_ERROR_TOLERANCE);
+            }
+        }
+
+    }
+
     @Test
     public void testSoftMaxDerivative() {
         assertTrue(Nd4j.getOpFactory().createTransform("softmax", Nd4j.ones(1)).derivative() instanceof SoftMaxDerivative);
