@@ -162,7 +162,8 @@ public class LSTMHelpers {
 
             INDArray inputActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0,hiddenLayerSize));
             if (forBackprop) toReturn.iz[time] = inputActivations.dup('f');
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
+            //Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
+            conf.getLayer().getActivationFn().getActivation(inputActivations,training);
             if (forBackprop) toReturn.ia[time] = inputActivations;
 
             INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(hiddenLayerSize,2*hiddenLayerSize));
@@ -198,7 +199,8 @@ public class LSTMHelpers {
             if (forBackprop) toReturn.oa[time] = outputGateActivations;
 
             //LSTM unit outputs:
-            INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
+            //INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
+            INDArray currMemoryCellActivation = conf.getLayer().getActivationFn().getActivation(currentMemoryCellState.dup('f'),training);
             INDArray currHiddenUnitActivations;
             if(forBackprop){
                 currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
@@ -326,7 +328,8 @@ public class LSTMHelpers {
             deltao.muli(sigmaoPrimeOfZo);
 
             //Memory cell error:
-            INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
+            //INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
+            INDArray sigmahPrimeOfS = conf.getLayer().getActivationFn().getGradient(currMemCellState.dup('f'));
             l1BLAS.axpy(nablaCellState.length(), 1.0, ao.muli(nablaOut).muli(sigmahPrimeOfS), nablaCellState);
             INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
@@ -360,7 +363,8 @@ public class LSTMHelpers {
             //Network input delta:
             INDArray zi = fwdPass.iz[time];
             INDArray deltai = deltaiNext;
-            Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi, null, deltai).derivative());
+            //Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi, null, deltai).derivative());
+            deltai = conf.getLayer().getActivationFn().getGradient(zi.dup());
             deltai.muli(ag);
             deltai.muli(nablaCellState);
             //Shape: [m,n^L]

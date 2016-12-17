@@ -55,7 +55,7 @@ public class LayerBuilderTest {
 
         checkSerialization(layer);
 
-        assertEquals(act, layer.getActivationFunction());
+        assertEquals(act, layer.getActivationFn().toString());
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
         assertEquals(dropOut, layer.getDropOut(), DELTA);
