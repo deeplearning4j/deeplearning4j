@@ -678,7 +678,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
 
-//        log.info("z TAD: {}", Arrays.toString(tadBuffersZ.getFirst().asInt()));
+
+        log.info("x shape: {}; x TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()));
+        log.info("z shape: {}; z TAD: {}", Arrays.toString(op.z().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
+        log.info("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
+        log.info("-------------");
 
         PointerPointer dummy = new PointerPointer(
                 hostTadShapeInfo,
