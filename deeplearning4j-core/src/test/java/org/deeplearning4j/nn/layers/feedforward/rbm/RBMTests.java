@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.DataSet;
@@ -237,7 +238,8 @@ public class RBMTests {
         dist.reseedRandomGenerator(42);
         INDArray vSample = dist.sample(vprob.shape());
 
-        double expectedScore = LossFunctions.LossFunction.MSE.getILossFunction().computeScore(input, vSample, "sigmoid", null, false);
+        //double expectedScore = LossFunctions.LossFunction.MSE.getILossFunction().computeScore(input, vSample, "sigmoid", null, false);
+        double expectedScore = LossFunctions.LossFunction.MSE.getILossFunction().computeScore(input, vSample, new ActivationSigmoid(), null, false);
 
         assertEquals(expectedScore, pair.getSecond(), 1e-8);
     }
