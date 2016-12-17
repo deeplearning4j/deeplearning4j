@@ -3488,10 +3488,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
                 //Broadcast on dimensions 1,3
                 INDArray bc13 = Nd4j.create(new double[][]{
-                        {1,1,1,1,1},
-                        {0,1,1,1,1},
-                        {1,0,0,1,1},
-                        {1,1,1,0,0}}).dup(orderbc);
+                        {1,1,1,1,1,1},
+                        {0,1,1,1,1,1},
+                        {1,0,0,1,1,1},
+                        {1,1,1,0,0,1}}).dup(orderbc);
 
                 INDArray result13 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result13,bc13,result13, 1, 3));
@@ -3507,6 +3507,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray bc23 = Nd4j.create(new double[][]{
                         {1,1,1,1,1,1},
                         {1,0,0,1,1,1},
+                        {1,1,1,0,0,0},
+                        {1,1,1,0,0,0},
                         {1,1,1,0,0,0}}).dup(orderbc);
 
                 INDArray result23 = arrOrig.dup(orderArr);
@@ -3518,6 +3520,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                         assertEquals(bc23, subset);
                     }
                 }
+
             }
         }
     }

@@ -9,6 +9,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -76,6 +77,76 @@ public class TADTests extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testNavigation1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 945, 945).reshape('c', new int[]{3, 5, 7, 9});
+
+        int numTensors = array.tensorssAlongDimension(1,2);
+        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, 1, 2).shapeInfoDataBuffer().asInt()));
+        for (int t = 0; t < 2; t++) {
+            INDArray tensor = array.tensorAlongDimension(t, 1, 2);
+
+            log.info("Tensor {}:\n{}", t, Arrays.toString(tensor.dup().data().asFloat()));
+        }
+
+        INDArray bc02 = Nd4j.create(5,7);
+
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), 1, 2));
+    }
+
+    @Test
+    public void testNavigation2() throws Exception {
+        INDArray array = Nd4j.linspace(1, 945, 945).reshape('c', new int[]{3, 5, 7, 9}).dup('f');
+
+        int []shape = new int[]{1, 3};
+
+        int numTensors = array.tensorssAlongDimension(shape);
+        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, shape).shapeInfoDataBuffer().asInt()));
+        for (int t = 0; t < 2; t++) {
+            INDArray tensor = array.tensorAlongDimension(t, shape);
+
+            log.info("Tensor {}:\n{}", t, tensor);
+            log.info("Tensor linear {}", Arrays.toString(tensor.dup(tensor.ordering()).data().asFloat()));
+        }
+
+        INDArray bc02 = Nd4j.create(shape[0],shape[1]);
+
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), shape));
+    }
+
+    @Test
+    public void testNavigation3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 60, 60).reshape('c', new int[]{3, 4, 5}).dup('f');
+
+        int []shape = new int[]{0, 1};
+
+        int numTensors = array.tensorssAlongDimension(shape);
+        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, shape).shapeInfoDataBuffer().asInt()));
+        for (int t = 0; t < 2; t++) {
+            INDArray tensor = array.tensorAlongDimension(t, shape);
+
+            log.info("Tensor {}:\n{}", t, tensor);
+            log.info("linear: {}", Arrays.toString(tensor.dup(tensor.ordering()).data().asFloat()));
+        }
+
+        INDArray bc02 = Nd4j.linspace(1, 12, 12).reshape(array.ordering(), new int[]{3,4});
+
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), shape));
+    }
+
+    @Test
+    public void testNavigation4() throws Exception {
+        INDArray arrOrig = Nd4j.ones(3,4,5,6).dup('c');
+        INDArray bc13 = Nd4j.create(new double[][]{
+                {1,1,1,1,1},
+                {0,1,1,1,1},
+                {1,0,0,1,1},
+                {1,1,1,0,0}}).dup('c');
+
+        INDArray result13 = arrOrig.dup('c');
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(result13,bc13,result13, 1, 3));
+    }
 
     @Override
     public char ordering() {
