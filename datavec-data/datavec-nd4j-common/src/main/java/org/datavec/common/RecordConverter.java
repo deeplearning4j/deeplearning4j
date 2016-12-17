@@ -16,11 +16,11 @@
 
 package org.datavec.common;
 
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -117,10 +117,42 @@ public class RecordConverter {
      * @return the matrix for the records
      */
     public static List<List<Writable>> toRecords(DataSet dataSet) {
+        if (isClassificationDataSet(dataSet)) {
+            return getClassificationWritableMatrix(dataSet);
+        } else {
+            return getRegressionWritableMatrix(dataSet);
+        }
+    }
+
+    private static boolean isClassificationDataSet(DataSet dataSet) {
+        INDArray labels = dataSet.getLabels();
+
+        return labels.sum(0, 1).getInt(0) == dataSet.numExamples() && labels.shape()[1] > 1;
+    }
+
+    private static List<List<Writable>> getClassificationWritableMatrix(DataSet dataSet) {
         List<List<Writable>> writableMatrix = new ArrayList<>();
-        for(int i = 0; i < dataSet.numExamples(); i++) {
+
+        for (int i = 0; i < dataSet.numExamples(); i++) {
             List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i));
             writables.add(new IntWritable(Nd4j.argMax(dataSet.getLabels().getRow(i), 1).getInt(0)));
+
+            writableMatrix.add(writables);
+        }
+
+        return writableMatrix;
+    }
+
+    private static List<List<Writable>> getRegressionWritableMatrix(DataSet dataSet) {
+        List<List<Writable>> writableMatrix = new ArrayList<>();
+
+        for(int i = 0; i < dataSet.numExamples(); i++) {
+            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i));
+            INDArray labelRow = dataSet.getLabels().getRow(i);
+
+            for(int j = 0; j < labelRow.shape()[1]; j++) {
+                writables.add(new DoubleWritable(labelRow.getDouble(j)));
+            }
 
             writableMatrix.add(writables);
         }

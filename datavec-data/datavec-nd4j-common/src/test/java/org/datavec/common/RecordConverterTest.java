@@ -1,6 +1,7 @@
 package org.datavec.common;
 
 import com.google.common.collect.Lists;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -15,7 +16,7 @@ import static org.junit.Assert.assertEquals;
 
 public class RecordConverterTest {
     @Test
-    public void toRecord_PassInClassificationDataSet_ExpectNDArrayAndIntWritables() {
+    public void toRecords_PassInClassificationDataSet_ExpectNDArrayAndIntWritables() {
         INDArray feature1 = Nd4j.create(new double[] { 4, -5.7, 10, -0.1 });
         INDArray feature2 = Nd4j.create(new double[] { 11, .7, -1.3, 4});
         INDArray label1 = Nd4j.create(new double[] { 0, 0, 1, 0 });
@@ -27,6 +28,25 @@ public class RecordConverterTest {
         assertEquals(2, writableList.size());
         testClassificationWritables(feature1, 2, writableList.get(0));
         testClassificationWritables(feature2, 1, writableList.get(1));
+    }
+
+    @Test
+    public void toRecords_PassInRegressionDataSet_ExpectNDArrayAndDoubleWritables() {
+        INDArray feature = Nd4j.create(new double[] { 4, -5.7, 10, -0.1 });
+        INDArray label = Nd4j.create(new double[] { .5, 2, 3, .5 });
+        DataSet dataSet = new DataSet(feature, label);
+
+        List<List<Writable>> writableList = RecordConverter.toRecords(dataSet);
+        List<Writable> results = writableList.get(0);
+        NDArrayWritable ndArrayWritable = (NDArrayWritable) results.get(0);
+
+        assertEquals(1, writableList.size());
+        assertEquals(5, results.size());
+        assertEquals(feature, ndArrayWritable.get());
+        for(int i = 0; i < label.shape()[1]; i++) {
+            DoubleWritable doubleWritable = (DoubleWritable) results.get(i + 1);
+            assertEquals(label.getDouble(i), doubleWritable.get(), 0);
+        }
     }
 
     private void testClassificationWritables(INDArray expectedFeatureVector, int expectLabelIndex, List<Writable> writables) {
