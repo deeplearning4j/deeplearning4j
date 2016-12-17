@@ -34,6 +34,7 @@ import java.util.*;
 
 /**
  * Function to feed-forward examples, and get the network output (for example, class probabilities).
+ * A key value is used to keey track of which output corresponds to which input.
  *
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
@@ -86,8 +87,13 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
             Tuple2<K,INDArray> t2 = iterator.next();
             if(firstShape == null){
                 firstShape = t2._2().shape();
-            } else if(!sizesDiffer && !Arrays.equals(firstShape, t2._2().shape())){
-                sizesDiffer = true;
+            } else if(!sizesDiffer){
+                for( int i=1; i<firstShape.length; i++ ) {
+                    if (firstShape[i] != featuresList.get(tupleCount - 1).size(i)) {
+                        sizesDiffer = true;
+                        break;
+                    }
+                }
             }
             featuresList.add(t2._2());
             keyList.add(t2._1());
@@ -102,20 +108,19 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
         List<Tuple2<K,INDArray>> output = new ArrayList<>(tupleCount);
         int currentArrayIndex = 0;
 
-        int processedSoFar = 0;
-        while(processedSoFar < featuresList.size()) {
+        while(currentArrayIndex < featuresList.size()) {
             int firstIdx = currentArrayIndex;
-            int lastIdx = currentArrayIndex;
+            int nextIdx = currentArrayIndex;
             int examplesInBatch = 0;
             List<INDArray> toMerge = new ArrayList<>();
             firstShape = null;
-            while (lastIdx < featuresList.size() && examplesInBatch < batchSize) {
+            while (nextIdx < featuresList.size() && examplesInBatch < batchSize) {
                 if(firstShape == null){
-                    firstShape = featuresList.get(lastIdx).shape();
+                    firstShape = featuresList.get(nextIdx).shape();
                 } else if(sizesDiffer){
                     boolean breakWhile = false;
                     for( int i=1; i<firstShape.length; i++ ){
-                        if(firstShape[i] != featuresList.get(lastIdx).size(i)){
+                        if(firstShape[i] != featuresList.get(nextIdx).size(i)){
                             //Next example has a different size. So: don't add it to the current batch, just process what we have
                             breakWhile = true;
                             break;
@@ -125,7 +130,8 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
                         break;
                     }
                 }
-                INDArray f = featuresList.get(lastIdx++);
+
+                INDArray f = featuresList.get(nextIdx++);
                 toMerge.add(f);
                 examplesInBatch += f.size(0);
             }
@@ -134,7 +140,7 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
             INDArray out = network.output(batchFeatures, false);
 
             examplesInBatch = 0;
-            for(int i=firstIdx; i<=lastIdx; i++ ){
+            for(int i=firstIdx; i<nextIdx; i++ ){
                 int numExamples = origSizeList.get(i);
                 INDArray outputSubset = getSubset(examplesInBatch, examplesInBatch+numExamples, out);
                 examplesInBatch += numExamples;
@@ -142,7 +148,7 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
                 output.add(new Tuple2<>(keyList.get(i), outputSubset));
             }
 
-            currentArrayIndex += (lastIdx - firstIdx + 1);
+            currentArrayIndex += (nextIdx - firstIdx);
         }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -154,11 +160,11 @@ public class FeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterat
     private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from){
         switch(from.rank()){
             case 2:
-                return from.get(NDArrayIndex.interval(exampleEnd, exampleEnd), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all());
             case 3:
-                return from.get(NDArrayIndex.interval(exampleEnd, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
-                return from.get(NDArrayIndex.interval(exampleEnd, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             default:
                 throw new RuntimeException("Invalid rank: " + from.rank());
         }
