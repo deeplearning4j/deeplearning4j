@@ -44,12 +44,14 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -502,6 +504,18 @@ public class SparkDl4jMultiLayer implements Serializable {
     public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
                 includeRegularizationTerms, batchSize));
+    }
+
+    /**
+     * Feed-forward the specified data, with the given keys. i.e., get the network output/predictions for the specified data
+     *
+     * @param featuresData Features data to feed through the network
+     * @param batchSize    Batch size to use when doing feed forward operations
+     * @param <K>          Type of data for key - may be anything
+     * @return             Network output given the input, by key
+     */
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K,INDArray> featuresData, int batchSize){
+        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()), batchSize));
     }
 
     /**
