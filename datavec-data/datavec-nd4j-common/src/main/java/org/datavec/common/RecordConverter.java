@@ -16,9 +16,12 @@
 
 package org.datavec.common;
 
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -107,4 +110,21 @@ public class RecordConverter {
         return writables;
     }
 
+
+    /**
+     * Convert a DataSet to a matrix
+     * @param dataSet the DataSet to convert
+     * @return the matrix for the records
+     */
+    public static List<List<Writable>> toRecords(DataSet dataSet) {
+        List<List<Writable>> writableMatrix = new ArrayList<>();
+        for(int i = 0; i < dataSet.numExamples(); i++) {
+            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i));
+            writables.add(new IntWritable(Nd4j.argMax(dataSet.getLabels().getRow(i), 1).getInt(0)));
+
+            writableMatrix.add(writables);
+        }
+
+        return writableMatrix;
+    }
 }
