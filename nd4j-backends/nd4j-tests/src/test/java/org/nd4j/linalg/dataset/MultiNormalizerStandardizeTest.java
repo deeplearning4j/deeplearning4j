@@ -82,7 +82,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         SUT.preProcess(transformed);
 
         INDArray reverted = transformed.getFeatures(0).dup();
-        SUT.revertFeatures(reverted, 0);
+        SUT.revertFeatures(reverted, null, 0);
 
         assertNotEquals(reverted, transformed.getFeatures(0));
 
@@ -98,7 +98,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         SUT.preProcess(transformed);
 
         INDArray reverted = transformed.getLabels(0).dup();
-        SUT.revertLabels(reverted, 0);
+        SUT.revertLabels(reverted, null, 0);
 
         assertNotEquals(reverted, transformed.getLabels(0));
 

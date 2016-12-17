@@ -6,7 +6,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.dataset.MinMaxStats;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -42,7 +43,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
      * @param stats statistics of the data population
      */
     @Override
-    public void preProcess(INDArray array, MinMaxStats stats) {
+    public void preProcess(INDArray array, INDArray maskArray, MinMaxStats stats) {
         if (array.rank() <= 2) {
             array.subiRowVector(stats.getLower());
             array.diviRowVector(stats.getRange());
@@ -59,6 +60,10 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
         array.muli(maxRange - minRange);
         // Add target range minimum values
         array.addi(minRange);
+
+        if(maskArray != null){
+            DataSetUtil.setMaskedValuesToZero(array, maskArray);
+        }
     }
 
     /**
@@ -68,7 +73,7 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
      * @param stats statistics of the data population
      */
     @Override
-    public void revert(INDArray array, MinMaxStats stats) {
+    public void revert(INDArray array, INDArray maskArray, MinMaxStats stats) {
         // Subtract target range minimum value
         array.subi(minRange);
         // Scale by target range
@@ -80,6 +85,10 @@ class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
         } else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, stats.getRange(), array, 1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getLower(), array, 1));
+        }
+
+        if(maskArray != null){
+            DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
     }
 }

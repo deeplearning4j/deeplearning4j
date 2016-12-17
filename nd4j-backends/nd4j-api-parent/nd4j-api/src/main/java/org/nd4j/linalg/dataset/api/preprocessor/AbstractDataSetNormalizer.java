@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -109,8 +109,8 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void preProcess(@NonNull DataSet toPreProcess) {
-        transform(toPreProcess.getFeatures());
-        transformLabel(toPreProcess.getLabels());
+        transform(toPreProcess.getFeatures(), toPreProcess.getFeaturesMaskArray());
+        transformLabel(toPreProcess.getLabels(), toPreProcess.getLabelsMaskArray());
     }
 
     /**
@@ -126,11 +126,16 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
     /**
      * Transform the given INDArray
      *
-     * @param theFeatures
+     * @param features
      */
     @Override
-    public void transform(INDArray theFeatures) {
-        strategy.preProcess(theFeatures, getFeatureStats());
+    public void transform(INDArray features) {
+        transform(features, null);
+    }
+
+    @Override
+    public void transform(INDArray features, INDArray featuresMask){
+        strategy.preProcess(features, featuresMask, getFeatureStats());
     }
 
     /**
@@ -138,19 +143,25 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void transformLabel(INDArray label) {
+        transformLabel(label, null);
+    }
+
+    @Override
+    public void transformLabel(INDArray label, INDArray labelsMask){
         if (isFitLabel()) {
-            strategy.preProcess(label, getLabelStats());
+            strategy.preProcess(label, labelsMask, getLabelStats());
         }
     }
 
-    /**
-     * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
-     *
-     * @param features Features to revert the normalization on
-     */
     @Override
     public void revertFeatures(INDArray features) {
-        strategy.revert(features, getFeatureStats());
+        revertFeatures(features, null);
+    }
+
+
+    @Override
+    public void revertFeatures(INDArray features, INDArray featuresMask) {
+        strategy.revert(features, featuresMask, getFeatureStats());
     }
 
     /**
@@ -162,8 +173,13 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void revertLabels(INDArray labels) {
+        revertLabels(labels, null);
+    }
+
+    @Override
+    public void revertLabels(INDArray labels, INDArray labelsMask){
         if (isFitLabel()) {
-            strategy.revert(labels, getLabelStats());
+            strategy.revert(labels, labelsMask, getLabelStats());
         }
     }
 
@@ -174,7 +190,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void revert(DataSet data) {
-        revertFeatures(data.getFeatures());
-        revertLabels(data.getLabels());
+        revertFeatures(data.getFeatures(),  data.getFeaturesMaskArray());
+        revertLabels(data.getLabels(), data.getLabelsMaskArray());
     }
 }

@@ -4,7 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -160,11 +160,11 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
         int numLabels = toPreProcess.numLabelsArrays();
 
         for (int i = 0; i < numFeatures; i++) {
-            strategy.preProcess(toPreProcess.getFeatures(i), getFeatureStats(i));
+            strategy.preProcess(toPreProcess.getFeatures(i), toPreProcess.getFeaturesMaskArray(i), getFeatureStats(i));
         }
         if (isFitLabel()) {
             for (int i = 0; i < numLabels; i++) {
-                strategy.preProcess(toPreProcess.getLabels(i), getLabelStats(i));
+                strategy.preProcess(toPreProcess.getLabels(i), toPreProcess.getLabelsMaskArray(i), getLabelStats(i));
             }
         }
     }
@@ -175,8 +175,8 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      * @param data the dataset to revert back
      */
     public void revert(@NonNull MultiDataSet data) {
-        revertFeatures(data.getFeatures());
-        revertLabels(data.getLabels());
+        revertFeatures(data.getFeatures(), data.getFeaturesMaskArrays());
+        revertLabels(data.getLabels(), data.getLabelsMaskArrays());
     }
 
     /**
@@ -184,9 +184,10 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      *
      * @param features Features to revert the normalization on
      */
-    public void revertFeatures(@NonNull INDArray[] features) {
+    public void revertFeatures(@NonNull INDArray[] features, INDArray[] maskArrays) {
         for (int i = 0; i < features.length; i++) {
-            revertFeatures(features[i], i);
+            INDArray mask = (maskArrays == null ? null : maskArrays[i]);
+            revertFeatures(features[i], mask, i);
         }
     }
 
@@ -198,8 +199,8 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      * @param features features arrays to revert the normalization on
      * @param input    the index of the array to revert
      */
-    public void revertFeatures(@NonNull INDArray features, int input) {
-        strategy.revert(features, getFeatureStats(input));
+    public void revertFeatures(@NonNull INDArray features, INDArray mask, int input) {
+        strategy.revert(features, mask, getFeatureStats(input));
     }
 
     /**
@@ -209,9 +210,10 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      *
      * @param labels Labels arrays to revert the normalization on
      */
-    public void revertLabels(@NonNull INDArray[] labels) {
+    public void revertLabels(@NonNull INDArray[] labels, INDArray[] labelsMask) {
         for (int i = 0; i < labels.length; i++) {
-            revertLabels(labels[i], i);
+            INDArray mask = (labelsMask == null ? null : labelsMask[i]);
+            revertLabels(labels[i], mask, i);
         }
     }
 
@@ -223,9 +225,9 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      * @param labels Labels arrays to revert the normalization on
      * @param output the index of the array to revert
      */
-    public void revertLabels(@NonNull INDArray labels, int output) {
+    public void revertLabels(@NonNull INDArray labels, INDArray mask, int output) {
         if (isFitLabel()) {
-            strategy.revert(labels, getLabelStats(output));
+            strategy.revert(labels, mask, getLabelStats(output));
         }
     }
 

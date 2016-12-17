@@ -5,7 +5,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.dataset.DistributionStats;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -24,7 +25,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
      * @param stats statistics of the data population
      */
     @Override
-    public void preProcess(INDArray array, DistributionStats stats) {
+    public void preProcess(INDArray array, INDArray maskArray, DistributionStats stats) {
         if (array.rank() <= 2) {
             array.subiRowVector(stats.getMean());
             array.diviRowVector(filteredStd(stats));
@@ -36,6 +37,10 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
             Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getMean(), array, 1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, filteredStd(stats), array, 1));
         }
+
+        if(maskArray != null){
+            DataSetUtil.setMaskedValuesToZero(array, maskArray);
+        }
     }
 
     /**
@@ -45,13 +50,17 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
      * @param stats statistics of the data population
      */
     @Override
-    public void revert(INDArray array, DistributionStats stats) {
+    public void revert(INDArray array, INDArray maskArray, DistributionStats stats) {
         if (array.rank() <= 2) {
             array.muliRowVector(filteredStd(stats));
             array.addiRowVector(stats.getMean());
         } else {
             Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, filteredStd(stats), array, 1));
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getMean(), array, 1));
+        }
+
+        if(maskArray != null){
+            DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
     }
 
