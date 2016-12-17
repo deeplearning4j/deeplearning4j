@@ -1,7 +1,6 @@
 package org.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,6 +14,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -137,12 +137,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
     @Test
     public void testBruteForce4d() {
-
-        //generate samples with this scale
-        INDArray samples = Nd4j.create(new double[] {11.1,2.1,10,99,7.156,9}).reshape(1,6);
-        //generate channels with this scale
-        INDArray channels = Nd4j.create(new double[] {1.1,2,5,4}).reshape(1,4);
-        construct4dDataSet imageDataSet = new construct4dDataSet(samples,channels,10,15);
+        Construct4dDataSet imageDataSet = new Construct4dDataSet(10,5,10,15);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(imageDataSet.sampleDataSet);
@@ -163,15 +158,6 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
         DataSet copyDataSet = imageDataSet.sampleDataSet.copy();
         myNormalizer.transform(copyDataSet);
-        //all the channels should have the same value now -> since they are multiples of each other
-        //across images (x-k1)/k2 and (3x-k1)/k2
-        //difference is 3x/k2 - k1/k2 - x/k2 + k1/k2 = 2x/k2; k2 is the stdDev
-
-        //checks to see if all values are the same
-        INDArray transformedVals = copyDataSet.getFeatures();
-        INDArray imageUno = transformedVals.slice(0);
-        assertEquals(imageUno.slice(0),imageUno.slice(1));
-        assertEquals(imageUno.slice(0),imageUno.slice(2));
     }
 
     @Test
@@ -185,7 +171,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
     }
 
     private void test3dRevert(DataNormalization SUT)  {
-        INDArray features = Nd4j.rand(new int[]{5, 2, 10}, 12345);
+        INDArray features = Nd4j.rand(new int[]{5, 2, 10}, 12345).muli(2).addi(1);
         DataSet data = new DataSet(features, Nd4j.zeros(5, 1, 10));
         DataSet dataCopy = data.copy();
 
@@ -195,7 +181,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         assertNotEquals(data, dataCopy);
 
         SUT.revert(data);
-        assertEquals(data, dataCopy);
+        assertEquals(dataCopy.getFeatures(), data.getFeatures());
+        assertEquals(dataCopy.getLabels(), data.getLabels());
     }
 
     @Test
@@ -276,62 +263,30 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
     }
 
-    public class construct4dDataSet{
-        /*
-            //this is an image - #of images x channels x size x size
-            //number of channels is hardcoded as 3
-            //the three channels are multiples of each other based on INDArray channels
-            //the samples are also multiples of each other based in INDArray samples
-        */
+    public class Construct4dDataSet {
 
         DataSet sampleDataSet;
-        INDArray samples,channels;
-        int height, width;
         INDArray expectedMean, expectedStd, expectedMin, expectedMax;
         INDArray expectedLabelMean, expectedLabelStd, expectedLabelMin, expectedLabelMax;
 
-        public construct4dDataSet(INDArray samples, INDArray channels, int height, int width) {
+        public Construct4dDataSet(int nExamples, int nChannels, int height, int width) {
 
-            this.samples = samples;
-            this.channels = channels;
-            this.height = height;
-            this.width = width;
+            INDArray allImages = Nd4j.rand(new int[]{nExamples, nChannels, height, width});
+            allImages.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).muli(100).addi(200);
+            allImages.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()).muli(0.001).subi(10);
 
-            INDArray oneChannel = Nd4j.linspace(1,height*width,height*width).reshape(height,width);
-            INDArray imageOne = Nd4j.ones(channels.size(1),height,width);
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(imageOne,oneChannel,imageOne,1,2));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(imageOne,channels,imageOne,0));
-
-            INDArray allImages = Nd4j.ones(samples.size(1),channels.size(1),height,width);
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(allImages,imageOne,allImages,1,2,3));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(allImages,samples,allImages,0));
-
-            INDArray labels = Nd4j.linspace(1,samples.size(1),samples.size(1)).reshape(samples.size(1),1);
+            INDArray labels = Nd4j.linspace(1,nChannels,nChannels).reshape(nChannels,1);
             sampleDataSet = new DataSet(allImages,labels);
 
-            double templateMean = (height*width+1)/2.0;
-            templateMean *= samples.sumNumber().floatValue()/samples.size(1);
-            expectedMean = channels.mul(templateMean);
-
-            INDArray calcStd = oneChannel.reshape(1,height*width);
-            INDArray tempStd = Nd4j.ones(samples.size(1),height*width);
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(tempStd,calcStd,tempStd,1));
-            tempStd = tempStd.mulColumnVector(samples.transpose()).reshape(1,samples.size(1)*height*width);
-            log.info("tempStd: {}", tempStd);
-            log.info("tempStd shape: {}", Arrays.toString(tempStd.shapeInfoDataBuffer().asInt()));
-            float templateStd = tempStd.std(1).getFloat(0,0);
-            log.info("templateStd: {}", templateStd);
-            log.info("templateMean: {}", templateMean);
-
-            expectedStd = channels.mul(templateStd);
+            expectedMean = allImages.mean(0,2,3);
+            expectedStd = allImages.std(0,2,3);
 
             expectedLabelMean = labels.mean(0);
             expectedLabelStd = labels.std(0);
 
-            expectedMin = channels.mul(samples.min(1));
-            expectedMax = channels.mul(samples.max(1)).mul(height*width);
+            expectedMin = allImages.min(0,2,3);
+            expectedMax = allImages.max(0,2,3);
         }
-
     }
 
     @Override

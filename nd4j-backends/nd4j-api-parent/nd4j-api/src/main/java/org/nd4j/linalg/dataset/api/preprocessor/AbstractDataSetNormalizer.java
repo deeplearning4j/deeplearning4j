@@ -190,7 +190,7 @@ abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends Abst
      */
     @Override
     public void revert(DataSet data) {
-        revertFeatures(data.getFeatures());
-        revertLabels(data.getLabels());
+        revertFeatures(data.getFeatures(),  data.getFeaturesMaskArray());
+        revertLabels(data.getLabels(), data.getLabelsMaskArray());
     }
 }
