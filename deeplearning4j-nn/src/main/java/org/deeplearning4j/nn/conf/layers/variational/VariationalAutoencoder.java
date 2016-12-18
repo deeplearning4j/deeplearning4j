@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,8 +39,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     private int[] encoderLayerSizes;
     private int[] decoderLayerSizes;
     private ReconstructionDistribution outputDistribution;
-    @Deprecated
-    private String pzxActivationFunction;
     private IActivation pzxActivationFn;
     private int numSamples;
 
@@ -48,7 +47,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         this.encoderLayerSizes = builder.encoderLayerSizes;
         this.decoderLayerSizes = builder.decoderLayerSizes;
         this.outputDistribution = builder.outputDistribution;
-        this.pzxActivationFunction = builder.pzxActivationFunction;
         this.pzxActivationFn = builder.pzxActivationFn;
         this.numSamples = builder.numSamples;
     }
@@ -104,8 +102,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         private int[] encoderLayerSizes = new int[]{100};
         private int[] decoderLayerSizes = new int[]{100};
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution("tanh");
-        @Deprecated
-        private String pzxActivationFunction = "identity";
         private IActivation pzxActivationFn = new ActivationIdentity();
         private int numSamples = 1;
 
@@ -184,43 +180,21 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * bounded in range [0,infinity).
          *
          * @param activationFunction    Activation function for p(z|x)
-         * @return
          */
         public Builder pzxActivationFn(IActivation activationFunction){
             this.pzxActivationFn = activationFunction;
             return this;
         }
 
-        public Builder pzxActivationFunction(String activationFn) {
-            this.pzxActivationFunction = activationFn;
-            switch(activationFn) {
-                case "tanh":
-                    this.pzxActivationFn = new ActivationTanH();
-                    break;
-                case "sigmoid":
-                    this.pzxActivationFn = new ActivationSigmoid();
-                    break;
-                case "identity":
-                    this.pzxActivationFn = new ActivationIdentity();
-                    break;
-                case "leakyrelu":
-                    this.pzxActivationFn = new ActivationLReLU();
-                    break;
-                case "relu":
-                    this.pzxActivationFn = new ActivationReLU();
-                    break;
-                case "softmax":
-                    this.pzxActivationFn = new ActivationSoftmax();
-                    break;
-                case "softsign":
-                    this.pzxActivationFn = new ActivationSoftSign();
-                    break;
-                case "rrelu":
-                    this.pzxActivationFn = new ActivationRReLU();
-                    break;
-            }
-            return this;
-
+        /**
+         * Activation function for the input to P(z|data).<br>
+         * Care should be taken with this, as some activation functions (relu, etc) are not suitable due to being
+         * bounded in range [0,infinity).
+         *
+         * @param activationFunction    Activation function for p(z|x)
+         */
+        public Builder pzxActivationFunction(String activationFunction) {
+            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
         }
 
         /**
