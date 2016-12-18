@@ -11,6 +11,7 @@
 
     <properties>
         <openblas.version>0.2.19</openblas.version>
+        <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
     <dependencies>
@@ -128,6 +129,24 @@
                 </configuration>
             </plugin>
             <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp.parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/nativeblas/Nd4jCpuPresets.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
@@ -139,13 +158,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <copyLibs>true</copyLibs>
-                    <compilerOptions>
-                        <compilerOption>
-                            -std=c++11
-                        </compilerOption>
-                    </compilerOptions>
-                    <properties>${javacpp.platform.properties}</properties>
+                    <properties>${javacpp.platform}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>
@@ -167,16 +180,26 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>process-classes</id>
+                        <id>javacpp.parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javacpp.compiler</id>
                         <phase>process-classes</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <skip>${process-classes.skip}</skip>
-                            <classOrPackageNames>
-                                <classOrPackageName>org.nd4j.nativeblas.NativeOps</classOrPackageName>
-                            </classOrPackageNames>
+                            <skip>${javacpp.compiler.skip}</skip>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
                         </configuration>
                     </execution>
@@ -218,5 +241,35 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>mingw</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <properties>${javacpp.platform}-mingw</properties>
+                            <compilerOptions>
+                                <compilerOption>-static-libgcc</compilerOption>
+                                <compilerOption>-static-libstdc++</compilerOption>
+                                <compilerOption>-Wl,-Bstatic</compilerOption>
+                                <compilerOption>-lstdc++</compilerOption>
+                                <compilerOption>-lgcc</compilerOption>
+                                <compilerOption>-lgcc_eh</compilerOption>
+                                <compilerOption>-lpthread</compilerOption>
+                                <compilerOption>-Wl,-Bdynamic</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

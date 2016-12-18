@@ -84,8 +84,6 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
         if (location == AllocationStatus.HOST  && reqMemory < MAX_SINGLE_ALLOCATION) {
-            if (allocRequests.incrementAndGet() % 100000 == 0)
-                printCacheStats();
 
             CacheHolder cache = zeroCache.get(shape);
             if (cache != null ) {
@@ -197,6 +195,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
         return cacheRatio;
     }
 
+    @Deprecated
     public void printCacheStats() {
         log.debug("Cached host amount: " + zeroCachedAmount.get());
         log.debug("Cached device amount: " + deviceCachedAmount.get(0).get());

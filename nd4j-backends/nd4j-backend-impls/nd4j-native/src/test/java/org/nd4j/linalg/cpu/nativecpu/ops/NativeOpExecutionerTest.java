@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -680,5 +681,42 @@ public class NativeOpExecutionerTest {
         System.out.println("After:");
         System.out.println("arr: " + arr);
         System.out.println("ones: " + ones);
+    }
+
+    @Test
+    public void testBroadcastMultiDim() throws Exception {
+        //Broadcast 1d: OK
+        INDArray arr2d = Nd4j.ones(2,3);
+        INDArray toBCRow = Nd4j.create(new double[]{1,0,0});
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(arr2d, toBCRow, arr2d, 1));
+        INDArray exp2d = Nd4j.create(
+                new double[][]{
+                        {1,0,0},
+                        {1,0,0}});
+
+        assertEquals(exp2d, arr2d);
+
+
+        //Broadcast 2d on 3d:
+        INDArray arr3d = Nd4j.ones(2,3,5);
+        INDArray bc2d = Nd4j.create(new double[][]{
+                {1,1,1,1,1},
+                {1,1,1,0,0}});
+        bc2d.get(NDArrayIndex.point(1), NDArrayIndex.interval(3,5)).assign(0);
+
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(arr3d, bc2d, arr3d, 0, 2));
+
+        INDArray exp3d = Nd4j.ones(2,3,5);
+        exp3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(3,5)).assign(0);
+
+        for( int i=0; i<2; i++ ){
+            System.out.println("Arr - " + i);
+            System.out.println(arr3d.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()));
+            System.out.println("Exp - " + i);
+            System.out.println(exp3d.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()));
+            System.out.println();
+        }
+
+        assertEquals(exp3d, arr3d);
     }
 }

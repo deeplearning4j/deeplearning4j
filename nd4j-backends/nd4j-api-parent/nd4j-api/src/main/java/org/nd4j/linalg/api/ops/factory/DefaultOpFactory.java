@@ -240,6 +240,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Floor(x, y);
             case "hardtanh":
                 return new HardTanh(x, y);
+            case "hardsigmoid":
+                return new HardSigmoid(x, y);
             case "identity":
                 return new Identity(x, y);
             case "log":
@@ -311,6 +313,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Floor(x);
             case "hardtanh":
                 return new HardTanh(x);
+            case "hardsigmoid":
+                return new HardSigmoid(x);
             case "identity":
                 return new Identity(x);
             case "leakyrelu":
@@ -401,6 +405,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Floor(x, z);
             case "hardtanh":
                 return new HardTanh(x, z);
+            case "hardsigmoid":
+                return new HardSigmoid(x, z);
             case "identity":
                 return new Identity(x, z);
             case "leakyrelu":

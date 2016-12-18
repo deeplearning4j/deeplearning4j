@@ -148,6 +148,9 @@ public class AeronNDArrayResponder implements AutoCloseable {
                                                         NDArrayHolder callback,
                                                         int streamId) {
 
+        if(callback == null)
+            throw new IllegalArgumentException("NDArrayHolder must be specified");
+
         final AtomicBoolean running = new AtomicBoolean(true);
 
 
@@ -187,6 +190,9 @@ public class AeronNDArrayResponder implements AutoCloseable {
                                                         int port,
                                                         NDArrayHolder callback,
                                                         int streamId) {
+        if(callback == null)
+            throw new IllegalArgumentException("NDArrayHolder must be specified");
+
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

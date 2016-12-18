@@ -100,8 +100,18 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
+    public void transform(INDArray features, INDArray featuresMask) {
+        transform(features);
+    }
+
+    @Override
     public void transformLabel(INDArray label){
         //No op
+    }
+
+    @Override
+    public void transformLabel(INDArray labels, INDArray labelsMask) {
+        transformLabel(labels);
     }
 
     @Override
@@ -121,8 +131,18 @@ public class ImagePreProcessingScaler implements DataNormalization {
     }
 
     @Override
+    public void revertFeatures(INDArray features, INDArray featuresMask) {
+        revertFeatures(features);
+    }
+
+    @Override
     public void revertLabels(INDArray labels) {
         //No op
+    }
+
+    @Override
+    public void revertLabels(INDArray labels, INDArray labelsMask) {
+        revertLabels(labels);
     }
 
     @Override

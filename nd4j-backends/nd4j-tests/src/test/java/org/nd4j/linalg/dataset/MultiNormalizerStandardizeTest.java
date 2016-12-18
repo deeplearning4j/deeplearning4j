@@ -6,7 +6,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
@@ -19,11 +18,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Ede Meijer
- *
- * Most of the normalizer functionality is shared with {@link org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize}
- * and is covered in {@link MultiNormalizerStandardizeTest}. This test suite just verifies if it deals properly with
+ * Most of the normalizer functionality is shared with {@link MultiNormalizerStandardize}
+ * and is covered in {@link NormalizerStandardizeTest}. This test suite just verifies if it deals properly with
  * multiple inputs and multiple outputs
+ *
+ * @author Ede Meijer
  */
 @RunWith(Parameterized.class)
 public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
@@ -83,7 +82,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         SUT.preProcess(transformed);
 
         INDArray reverted = transformed.getFeatures(0).dup();
-        SUT.revertFeatures(reverted, 0);
+        SUT.revertFeatures(reverted, null, 0);
 
         assertNotEquals(reverted, transformed.getFeatures(0));
 
@@ -99,7 +98,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         SUT.preProcess(transformed);
 
         INDArray reverted = transformed.getLabels(0).dup();
-        SUT.revertLabels(reverted, 0);
+        SUT.revertLabels(reverted, null, 0);
 
         assertNotEquals(reverted, transformed.getLabels(0));
 
@@ -141,7 +140,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
 
         SUT.fit(iter);
 
-        // The label mean should be 2, as the second row with 3 is masked.
+        // The label mean should be 2, as the second row with 4 is masked.
         assertEquals(2f, SUT.getLabelMean(0).getFloat(0), 1e-6);
     }
 

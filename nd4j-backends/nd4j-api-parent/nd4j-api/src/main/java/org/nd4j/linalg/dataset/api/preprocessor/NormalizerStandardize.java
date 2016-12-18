@@ -3,191 +3,57 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DistributionStats;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 
 import java.io.File;
 import java.io.IOException;
 
 /**
- * Created by susaneraly, EdeMeijer
+ * Created by susaneraly, Ede Meijer
  * variance and mean
  * Pre processor for DataSet that normalizes feature values (and optionally label values) to have 0 mean and a standard
  * deviation of 1
  */
-@EqualsAndHashCode
-public class NormalizerStandardize extends AbstractNormalizerStandardize implements DataNormalization {
-    private DistributionStats featureStats;
-    private DistributionStats labelStats;
-    private boolean fitLabels = false;
+@EqualsAndHashCode(callSuper = true)
+public class NormalizerStandardize extends AbstractDataSetNormalizer<DistributionStats> {
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd) {
+        this();
+        setFeatureStats(new DistributionStats(featureMean, featureStd));
+        fitLabel(false);
+    }
+
+    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd, @NonNull INDArray labelMean,
+                                 @NonNull INDArray labelStd) {
+        this();
+        setFeatureStats(new DistributionStats(featureMean, featureStd));
+        setLabelStats(new DistributionStats(labelMean, labelStd));
+        fitLabel(true);
+    }
 
     public NormalizerStandardize() {
-    }
-
-    public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd) {
-        this.featureStats = new DistributionStats(featureMean, featureStd);
-        this.fitLabels = false;
-    }
-
-    public NormalizerStandardize(
-        @NonNull INDArray featureMean,
-        @NonNull INDArray featureStd,
-        @NonNull INDArray labelMean,
-        @NonNull INDArray labelStd
-    ) {
-        this.featureStats = new DistributionStats(featureMean, featureStd);
-        this.labelStats = new DistributionStats(labelMean, labelStd);
-        this.fitLabels = true;
+        super(new StandardizeStrategy());
     }
 
     public void setLabelStats(@NonNull INDArray labelMean, @NonNull INDArray labelStd) {
-        this.labelStats = new DistributionStats(labelMean, labelStd);
-    }
-
-    /**
-     * Flag to specify if the labels/outputs in the dataset should be also normalized
-     * default value is false
-     *
-     * @param fitLabels
-     */
-    @Override
-    public void fitLabel(boolean fitLabels) {
-        this.fitLabels = fitLabels;
-    }
-
-
-    @Override
-    public boolean isFitLabel() {
-        return this.fitLabels;
-    }
-
-    /**
-     * Fit the given model with dataset
-     * to calculate mean and std dev with
-     *
-     * @param dataSet
-     */
-    @Override
-    public void fit(@NonNull DataSet dataSet) {
-        featureStats = new DistributionStats.Builder().addFeatures(dataSet).build();
-        if (fitLabels) {
-            labelStats = new DistributionStats.Builder().addLabels(dataSet).build();
-        }
-    }
-
-    /**
-     * Fit the given model with a given iterator
-     * to calculate mean and std dev with
-     *
-     * @param iterator
-     */
-    public void fit(@NonNull DataSetIterator iterator) {
-        DistributionStats.Builder featureNormBuilder = new DistributionStats.Builder();
-        DistributionStats.Builder labelNormBuilder = new DistributionStats.Builder();
-
-        iterator.reset();
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
-            featureNormBuilder.addFeatures(next);
-            if (fitLabels) {
-                labelNormBuilder.addLabels(next);
-            }
-        }
-        featureStats = featureNormBuilder.build();
-        if (fitLabels) {
-            labelStats = labelNormBuilder.build();
-        }
-        iterator.reset();
-    }
-
-    @Override
-    public void preProcess(@NonNull DataSet toPreProcess) {
-        assertIsFit();
-        this.preProcess(toPreProcess.getFeatures(), featureStats);
-        if (fitLabels) {
-            this.preProcess(toPreProcess.getLabels(), labelStats);
-        }
-    }
-
-    /**
-     * Transform the given dataset
-     *
-     * @param toPreProcess
-     */
-    @Override
-    public void transform(DataSet toPreProcess) {
-        this.preProcess(toPreProcess);
-    }
-
-    /**
-     * Transform the given INDArray
-     *
-     * @param theFeatures
-     */
-    @Override
-    public void transform(INDArray theFeatures) {
-        this.transform(theFeatures, true);
-    }
-
-    @Override
-    public void transformLabel(INDArray label) {
-        transform(label, false);
-    }
-
-    private void transform(INDArray theArray, boolean isFeatures) {
-        this.preProcess(theArray, isFeatures ? featureStats : labelStats);
-    }
-
-    /**
-     * Revert the data to what it was before transform
-     *
-     * @param data the dataset to revert back
-     */
-    @Override
-    public void revert(DataSet data) {
-        assertIsFit();
-        revert(data.getFeatures(), featureStats);
-        if (fitLabels) {
-            revert(data.getLabels(), labelStats);
-        }
-    }
-
-    @Override
-    public void revertFeatures(INDArray features) {
-        revert(features, featureStats);
-    }
-
-    @Override
-    public void revertLabels(INDArray labels) {
-        if (!fitLabels) return;
-        revert(labels, labelStats);
+        setLabelStats(new DistributionStats(labelMean, labelStd));
     }
 
     public INDArray getMean() {
-        assertIsFit();
-        return featureStats.getMean();
+        return getFeatureStats().getMean();
     }
 
     public INDArray getLabelMean() {
-        assertIsFit();
-        return labelStats.getMean();
+        return getLabelStats().getMean();
     }
 
     public INDArray getStd() {
-        assertIsFit();
-        return featureStats.getStd();
+        return getFeatureStats().getStd();
     }
 
     public INDArray getLabelStd() {
-        assertIsFit();
-        return labelStats.getStd();
-    }
-
-
-    @Override
-    protected boolean isFit() {
-        return featureStats != null;
+        return getLabelStats().getStd();
     }
 
     /**
@@ -197,24 +63,28 @@ public class NormalizerStandardize extends AbstractNormalizerStandardize impleme
      */
     @Override
     public void load(File... files) throws IOException {
-        featureStats = DistributionStats.load(files[0], files[1]);
-        if (fitLabels) {
-            labelStats = DistributionStats.load(files[2], files[3]);
+        setFeatureStats(DistributionStats.load(files[0], files[1]));
+        if (isFitLabel()) {
+            setLabelStats(DistributionStats.load(files[2], files[3]));
         }
     }
 
     /**
-     * @deprecated use {@link NormalizerSerializer} instead
-     *
-     * Save the current means and standard deviations to the file system
-     *
      * @param files the files to save to. Needs 4 files if normalizing labels, otherwise 2.
+     * @deprecated use {@link NormalizerStandardizeSerializer} instead
+     * <p>
+     * Save the current means and standard deviations to the file system
      */
     @Override
     public void save(File... files) throws IOException {
-        featureStats.save(files[0], files[1]);
-        if (fitLabels) {
-            labelStats.save(files[2], files[3]);
+        getFeatureStats().save(files[0], files[1]);
+        if (isFitLabel()) {
+            getLabelStats().save(files[2], files[3]);
         }
+    }
+
+    @Override
+    protected NormalizerStats.Builder newBuilder() {
+        return new DistributionStats.Builder();
     }
 }
