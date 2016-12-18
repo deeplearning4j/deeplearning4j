@@ -186,13 +186,13 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param activationFunction    Activation function for p(z|x)
          * @return
          */
-        public Builder pzxActivationFunction(IActivation activationFunction){
+        public Builder pzxActivationFn(IActivation activationFunction){
             this.pzxActivationFn = activationFunction;
             return this;
         }
 
         public Builder pzxActivationFunction(String activationFn) {
-
+            this.pzxActivationFunction = activationFn;
             switch(activationFn) {
                 case "tanh":
                     this.pzxActivationFn = new ActivationTanH();
