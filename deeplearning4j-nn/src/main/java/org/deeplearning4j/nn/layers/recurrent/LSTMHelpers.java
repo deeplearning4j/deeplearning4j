@@ -110,8 +110,7 @@ public class LSTMHelpers {
         }
 
         //Allocate arrays for activations:
-//        boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        boolean sigmoidGates = false;
+        boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = conf.getLayer().getActivationFn();
         INDArray outputActivations = null;
 
@@ -306,8 +305,7 @@ public class LSTMHelpers {
         INDArray rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
         INDArray rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
 
-//        boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        boolean sigmoidGates = false;
+        boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = conf.getLayer().getActivationFn();
 
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
