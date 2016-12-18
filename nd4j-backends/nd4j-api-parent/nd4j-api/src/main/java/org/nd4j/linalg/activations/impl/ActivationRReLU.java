@@ -1,18 +1,35 @@
 package org.nd4j.linalg.activations.impl;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
- * Created by susaneraly on 12/10/16.
+ * f(x) = max(0,x) + alpha * min(0, x)
+ *
+ *  alpha is drawn from uniform(l,u) during training and is set to l+u/2 during test
+ *  l and u default to 1/8 and 1/3 respectively
+ *
+ *  <a href="http://arxiv.org/abs/1505.00853">
+ *  Empirical Evaluation of Rectified Activations in Convolutional Network</a>
  */
+@EqualsAndHashCode
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter
 public class ActivationRReLU extends BaseActivationFunction {
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
 
     public static final double DEFAULT_L = 1.0 / 8;
     public static final double DEFAULT_U = 1.0 / 3;
@@ -51,7 +68,7 @@ public class ActivationRReLU extends BaseActivationFunction {
     public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
 
         INDArray dLdz = Nd4j.ones(in.shape());
-        BooleanIndexing.replaceWhere(dLdz, alpha, Conditions.greaterThanOrEqual(0.0));
+        BooleanIndexing.replaceWhere(dLdz, alpha, Conditions.lessThanOrEqual(0.0));
         dLdz.muli(epsilon);
 
         return new Pair<>(dLdz, null);

@@ -1,14 +1,32 @@
 package org.nd4j.linalg.activations;
 
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
 /**
  * Interface for implementing custom activation functions
- * @author Susan Eraly
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonSubTypes(value={
+        @JsonSubTypes.Type(value = ActivationCube.class, name = "Cube"),
+        @JsonSubTypes.Type(value = ActivationELU.class, name = "ELU"),
+        @JsonSubTypes.Type(value = ActivationHardSigmoid.class, name = "HardSigmoid"),
+        @JsonSubTypes.Type(value = ActivationHardTanH.class, name = "HardTanh"),
+        @JsonSubTypes.Type(value = ActivationIdentity.class, name = "Identity"),
+        @JsonSubTypes.Type(value = ActivationLReLU.class, name = "LReLU"),
+        @JsonSubTypes.Type(value = ActivationReLU.class, name = "ReLU"),
+        @JsonSubTypes.Type(value = ActivationRReLU.class, name = "RReLU"),
+        @JsonSubTypes.Type(value = ActivationSigmoid.class, name = "Sigmoid"),
+        @JsonSubTypes.Type(value = ActivationSoftmax.class, name = "Softmax"),
+        @JsonSubTypes.Type(value = ActivationSoftPlus.class, name = "SoftPlus"),
+        @JsonSubTypes.Type(value = ActivationSoftSign.class, name = "SoftSign"),
+        @JsonSubTypes.Type(value = ActivationTanH.class, name = "TanH")
+})
 public interface IActivation extends Serializable {
 
     /**
