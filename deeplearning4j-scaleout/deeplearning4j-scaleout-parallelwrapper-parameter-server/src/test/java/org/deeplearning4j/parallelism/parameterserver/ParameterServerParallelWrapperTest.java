@@ -11,7 +11,6 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -30,13 +29,13 @@ public class ParameterServerParallelWrapperTest {
         int outputNum = 10;
 
         // for GPU you usually want to have higher batchSize
-        int batchSize = 128;
+        int batchSize = 100;
         int nEpochs = 10;
         int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,60000);
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
 
         log.info("Build model....");
@@ -84,10 +83,13 @@ public class ParameterServerParallelWrapperTest {
         model.init();
 
         ParameterServerParallelWrapper parameterServerParallelWrapper = ParameterServerParallelWrapper
-                .builder().model(model).multiLayerNetwork(model).numEpochs(5)
-                .preFetchSize(10).build();
+                .builder().model(model).multiLayerNetwork(model).numEpochs(10).numWorkers(Runtime.getRuntime().availableProcessors())
+                .statusServerPort(33000)
+                .preFetchSize(1).build();
         parameterServerParallelWrapper.fit(mnistTrain);
         parameterServerParallelWrapper.close();
+
+        Thread.sleep(30000);
 
 
 

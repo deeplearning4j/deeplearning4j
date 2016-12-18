@@ -55,6 +55,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
     private String[] parameterServerArgs;
     private int numUpdatesPerEpoch;
     private int numEpochs;
+    private int statusServerPort = 33000;
     public void fit(DataSetIterator source) {
         if(!init)
             init(source);
@@ -158,7 +159,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
         mediaDriverContext = new MediaDriver.Context();
         mediaDriver = MediaDriver.launchEmbedded(mediaDriverContext);
-        parameterServerNode = new ParameterServerNode(mediaDriver);
+        parameterServerNode = new ParameterServerNode(mediaDriver,statusServerPort,numWorkers);
         running = new AtomicBoolean(true);
         if(parameterServerArgs == null)
             parameterServerArgs = new String[] {
@@ -168,7 +169,8 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
                     "-h","localhost",
                     "-id","11",
                     "-md", mediaDriver.aeronDirectoryName(),
-                    "-sp", "33000",
+                    "-sh", "localhost",
+                    "-sp", String.valueOf(statusServerPort),
                     "-u",String.valueOf(numUpdatesPerEpoch)
             };
 
@@ -179,6 +181,24 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
 
         //pass through args for the parameter server subscriber
         parameterServerNode.runMain(parameterServerArgs);
+
+        while(!parameterServerNode.subscriberLaunched()) {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+
+        log.info("Parameter server started");
 
         parameterServerClient = new Trainer[numWorkers];
         executorService = Executors.newFixedThreadPool(numWorkers);
@@ -195,9 +215,9 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
             }
             parameterServerClient[i] = new Trainer(ParameterServerClient.builder()
                     .aeron(parameterServerNode.getAeron())
-                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber().getResponder().connectionUrl())
-                    .ndarraySendUrl(parameterServerNode.getSubscriber().getSubscriber().connectionUrl())
-                    .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(9000)
+                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
+                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
+                    .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(statusServerPort)
                     .subscriberPort(40625 + i)
                     .subscriberStream(12 + i).build(),running,linkedBlockingQueue,model);
             final int j = i;
@@ -261,7 +281,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
         if(mediaDriver != null)
             CloseHelper.close(mediaDriver);
         if(parameterServerNode != null)
-            parameterServerNode.stop();
+            parameterServerNode.close();
     }
 
 
@@ -285,6 +305,7 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
                         //get the new parameters from the server
                         INDArray newParams = parameterServerClient.getArray();
                         model.setParams(newParams);
+                        log.info("Set new params");
                     }
                     else
                         log.debug("Continuing training");
@@ -294,29 +315,25 @@ public class ParameterServerParallelWrapper implements AutoCloseable {
                         DataSet dataSet = (DataSet) next;
                         if(model instanceof ComputationGraph) {
                             ComputationGraph computationGraph = (ComputationGraph) model;
-                            computationGraph.init();
-                            computationGraph.setListeners(new ScoreIterationListener(1));
                             computationGraph.fit(dataSet);
                         }
                         else {
                             MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork) model;
-                            multiLayerNetwork.init();
-                            multiLayerNetwork.setListeners(new ScoreIterationListener(1));
                             log.info("Calling fit on multi layer network");
                             multiLayerNetwork.fit(dataSet);
 
                         }
 
+                        log.info("About to send params in");
                         //send the updated params
                         parameterServerClient.pushNDArray(model.params());
+                        log.info("Sent params");
 
                     }
                     else {
                         MultiDataSet dataSet = (MultiDataSet) next;
                         if(model instanceof ComputationGraph) {
                             ComputationGraph computationGraph = (ComputationGraph) model;
-                            computationGraph.init();
-                            computationGraph.setListeners(new ScoreIterationListener(1));
                             computationGraph.fit(dataSet);
                         }
                         else {
