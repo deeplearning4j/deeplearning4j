@@ -22,18 +22,23 @@ public interface IActivation extends Serializable {
     INDArray getActivation(INDArray in, boolean training);
 
     /**
-     * Value of the partial derivative of the activation function at "in" with respect to the input (linear transformation with weights and biases, sometimes referred to as the preout)
-     * Best practice: Overwrite "in" with the gradient and return "in"
-     * @param in
+     * Backpropagate the errors through the activation function, given input z and epsilon dL/da.<br>
+     * Returns 2 INDArrays:<br>
+     * (a) The gradient dL/dz, calculated from dL/da, and<br>
+     * (b) The parameter gradients dL/dw, where w is the weights in the activation function. For activation functions
+     *     with no gradients, this will be null.
+     *
+     * @param in      Input, before applying the activation function (z, or 'preOut')
+     * @param epsilon Gradient to be backpropagated: dL/da, where L is the loss function
+     * @return        dL/dz and dL/dw, for weights w (null if activatino function has no weights)
      */
-    INDArray getGradient(INDArray in);
+    Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon);
 
-    /**
-     * return activation and gradient with respect to input "in"
-     * @param in, input to activation node
-     */
-    Pair<INDArray, INDArray> getActivationAndGradient(INDArray in);
 
-    String toString();
+    int numParams(int inputSize);
+
+    void setParametersViewArray(INDArray viewArray);
+
+    INDArray getParametersViewArray();
 
 }

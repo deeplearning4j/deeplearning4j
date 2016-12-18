@@ -1,13 +1,14 @@
 package org.nd4j.linalg.activations.impl;
 
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Created by susaneraly on 12/10/16.
  */
-public class ActivationIdentity implements IActivation {
+public class ActivationIdentity extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
