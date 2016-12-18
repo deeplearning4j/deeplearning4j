@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -47,9 +48,10 @@ public class LossMSLE implements ILossFunction {
         this.weights = weights;
     }
 
-    public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr;
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
         scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)), false);
         scoreArr = scoreArr.muli(scoreArr).divi(labels.size(1));
 
@@ -86,10 +88,12 @@ public class LossMSLE implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray gradients;
-        if ("softmax".equals(activationFn)) {
+        //if ("softmax".equals(activationFn)) {
+        if (activationFn instanceof ActivationSoftmax) {
             INDArray p1 = output.add(1.0);
             INDArray dlda = p1.rdiv(2.0 / labels.size(1));
             INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
@@ -102,7 +106,8 @@ public class LossMSLE implements ILossFunction {
             gradients = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray p1 = output.addi(1.0);
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
             gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
             INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
             gradients.muli(logRatio);
@@ -121,7 +126,7 @@ public class LossMSLE implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
         //Yes - will implement in round two. Just want to get done now.
 

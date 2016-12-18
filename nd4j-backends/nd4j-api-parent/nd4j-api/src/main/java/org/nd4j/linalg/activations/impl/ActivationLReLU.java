@@ -41,4 +41,9 @@ public class ActivationLReLU implements IActivation {
         getGradient(gradient);
         return new Pair<INDArray, INDArray>(activation,gradient);
     }
+
+    @Override
+    public String toString() {
+        return "leakyrelu";
+    }
 }

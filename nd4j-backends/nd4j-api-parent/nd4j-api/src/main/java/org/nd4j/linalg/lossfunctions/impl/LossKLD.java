@@ -4,6 +4,7 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -18,8 +19,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @EqualsAndHashCode
 public class LossKLD implements ILossFunction {
 
-    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+    private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         // Clip output and labels to be between Nd4j.EPS_THREsHOLD and 1, i.e. a valid non-zero probability
         output = Transforms.min(Transforms.max(output, Nd4j.EPS_THRESHOLD, false), 1, false);
@@ -55,14 +57,17 @@ public class LossKLD implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
         INDArray grad;
-        if ("softmax".equals(activationFn)) {
+        //if ("softmax".equals(activationFn)) {
+        if (activationFn instanceof ActivationSoftmax) {
             INDArray dlda = labels.div(output).negi();
             grad = LossUtil.dLdZsoftmaxi(dlda, output);
         } else {
             INDArray dlda = output.rdivi(labels).negi();
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
             grad = dlda.muli(sigmaPrimeZ);
         }
 
@@ -74,7 +79,7 @@ public class LossKLD implements ILossFunction {
     }
 
     @Override
-    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
         return new Pair<>(

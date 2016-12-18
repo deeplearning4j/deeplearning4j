@@ -41,8 +41,6 @@ public interface ILossFunction extends Serializable {
      * @param average      Whether the score should be averaged (divided by number of rows in labels/preOutput) or not   @return Loss function value
      */
     double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average);
-    @Deprecated
-    double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average);
 
     /**
      * Compute the score (loss function value) for each example individually.
@@ -53,8 +51,6 @@ public interface ILossFunction extends Serializable {
      * @param mask         @return Loss function value for each example; column vector
      */
     INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask);
-    @Deprecated
-    INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask);
 
     /**
      * Compute the gradient of the loss function with respect to the inputs: dL/dOutput
@@ -66,8 +62,6 @@ public interface ILossFunction extends Serializable {
      * @return Gradient dL/dPreOut
      */
     INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask);
-    @Deprecated
-    INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask);
 
     /**
      * Compute both the score (loss function value) and gradient. This is equivalent to calling {@link #computeScore(INDArray, INDArray, IActivation, INDArray, boolean)}
@@ -81,8 +75,6 @@ public interface ILossFunction extends Serializable {
      * @return The score (loss function value) and gradient
      */
     //TODO: do we want to use the apache commons pair here?
-    Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average);
-    @Deprecated
-    Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average);
+    Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average);
 
 }

@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,15 +52,17 @@ public class LossMCXENT implements ILossFunction {
         this.weights = weights;
     }
 
-    private INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr;
-        if ("softmax".equals(activationFn)) {
+        //if ("softmax".equals(activationFn)) {
+        if (activationFn instanceof ActivationSoftmax) {
             //Use LogSoftMax op to avoid numerical issues when calculating score
             INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
             scoreArr = logsoftmax.muli(labels);
 
         } else {
-            INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+            //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+            INDArray output = activationFn.getActivation(preOutput.dup(),true);
             scoreArr = Transforms.log(output, false).muli(labels);
         }
 
@@ -99,7 +102,8 @@ public class LossMCXENT implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray grad;
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         if ("softmax".equals(activationFn)) {
             //Weighted loss function
@@ -114,7 +118,8 @@ public class LossMCXENT implements ILossFunction {
                 grad = output.subi(labels);
             }
         } else {
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
             grad = sigmaPrimeZ.muli(labels);
             grad.divi(output).muli(-1);
 
@@ -137,7 +142,7 @@ public class LossMCXENT implements ILossFunction {
     }
 
     @Override
-    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
         return new Pair<>(

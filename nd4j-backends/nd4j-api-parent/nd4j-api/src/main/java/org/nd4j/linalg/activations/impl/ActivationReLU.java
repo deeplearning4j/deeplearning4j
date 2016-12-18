@@ -32,4 +32,9 @@ public class ActivationReLU implements IActivation {
         return new Pair<INDArray, INDArray>(activation,gradient);
     }
 
+    @Override
+    public String toString() {
+        return "relu";
+    }
+
 }

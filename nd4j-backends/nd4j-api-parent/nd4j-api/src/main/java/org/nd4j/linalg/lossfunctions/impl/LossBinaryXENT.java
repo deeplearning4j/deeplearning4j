@@ -121,7 +121,8 @@ public class LossBinaryXENT implements ILossFunction {
             // for sanity sake, we'll call activation(preoutput) = a and activation'(preoutput) = a'
             // XE = label * log(a) + (1-label) * log(1-a)
             // d XE/d preoutput = a' * (label - a) / (a * (1-a))
-            grad = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            //grad = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+            grad = activationFn.getGradient(preOutput.dup());
             INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
             INDArray numerator = output.sub(labels);
             grad.muli(numerator).divi(denominator);
@@ -143,7 +144,7 @@ public class LossBinaryXENT implements ILossFunction {
     }
 
     @Override
-    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
         return new Pair<>(

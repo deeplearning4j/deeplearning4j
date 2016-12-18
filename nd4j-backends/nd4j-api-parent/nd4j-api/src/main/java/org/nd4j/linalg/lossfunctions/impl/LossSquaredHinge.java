@@ -15,11 +15,12 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 @EqualsAndHashCode
 public class LossSquaredHinge implements ILossFunction {
 
-    public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
-        INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray scoreArr = output.muli(labels); //y*yhat
         scoreArr.rsubi(1.0); //1 - y*yhat
@@ -48,7 +49,8 @@ public class LossSquaredHinge implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+        //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+        INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
         /*
         gradient is 0 if yhaty is >= 1
         else gradient is gradient of the loss function = (1-yhaty) wrt preOutput = -y*derivative_of_yhat wrt preout
@@ -75,9 +77,8 @@ public class LossSquaredHinge implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
-        //Yes - will implement in round two. Just want to get done now.
 
         return new Pair<>(
                 computeScore(labels, preOutput, activationFn, mask, average),

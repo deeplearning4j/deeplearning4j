@@ -13,11 +13,12 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 @EqualsAndHashCode
 public class LossCosineProximity implements ILossFunction {
 
-    public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         /*
          mean of -(y.dot(yhat)/||y||*||yhat||)
          */
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray postOutput = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray yhatmag = postOutput.norm2(1);
         INDArray ymag = labels.norm2(1);
@@ -50,8 +51,12 @@ public class LossCosineProximity implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
-        INDArray yhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        //INDArray yhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray yhat = activationFn.getActivation(preOutput.dup(),true);
+
+        //INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
+        INDArray postOutDer = activationFn.getGradient(preOutput.dup());
+
         /*
 
         */
@@ -79,7 +84,7 @@ public class LossCosineProximity implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, INDArray activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
         //Yes - will implement in round two. Just want to get done now.
 

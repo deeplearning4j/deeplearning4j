@@ -34,4 +34,6 @@ public interface IActivation extends Serializable {
      */
     Pair<INDArray, INDArray> getActivationAndGradient(INDArray in);
 
+    String toString();
+
 }
