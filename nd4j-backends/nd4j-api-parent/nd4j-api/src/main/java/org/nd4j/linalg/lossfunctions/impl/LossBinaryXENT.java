@@ -105,7 +105,7 @@ public class LossBinaryXENT implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray grad;
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        INDArray output = activationFn.getGradient(preOutput.dup());
+        INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         //if ("softmax".equals(activationFn)) {
         if (activationFn instanceof ActivationSoftmax) {

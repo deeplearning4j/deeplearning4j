@@ -105,7 +105,7 @@ public class LossMCXENT implements ILossFunction {
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
-        if ("softmax".equals(activationFn)) {
+        if (activationFn instanceof ActivationSoftmax) {
             //Weighted loss function
             if (weights != null) {
                 if (weights.length() != output.size(1)) {
