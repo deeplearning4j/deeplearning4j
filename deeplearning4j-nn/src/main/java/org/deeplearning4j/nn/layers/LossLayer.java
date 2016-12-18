@@ -187,7 +187,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         INDArray z = input;
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
         //    conf.getLayer().getActivationFunction(), z.dup(), conf.getExtraArgs() ));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(z.dup(),true);
+        INDArray ret = conf.getLayer().getActivationFn().getActivation(z.dup(),training);
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);
