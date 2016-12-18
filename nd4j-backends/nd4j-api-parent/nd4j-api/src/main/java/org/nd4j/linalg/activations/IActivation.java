@@ -12,8 +12,8 @@ import java.io.Serializable;
 public interface IActivation extends Serializable {
 
     /**
-     * Carry out activation function on "in"
-     * Best practice: Overwrite "in", transform in place and return "in"
+     * Carry out activation function on the input array (usually known as 'preOut' or 'z')
+     * Implementations must overwrite "in", transform in place and return "in"
      * Can support separate behaviour during test
      * @param in
      * @param training
