@@ -33,7 +33,7 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.Activations;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -473,21 +473,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
 
-
-
-    public Object[] getExtraArgs() {
-        if(layer == null || layer.getActivationFunction() == null) return new Object[0];
-        //Eraly: none of the below should be required anymore
-        switch( layer.getActivationFunction()) {
-            case "leakyrelu" :
-                return new Object[] {leakyreluAlpha};
-            case "relu" :
-                return new Object[] { 0 };
-            default:
-                return new Object [] {};
-        }
-    }
-
     @Data
     public static class Builder implements Cloneable {
         @Deprecated
@@ -721,7 +706,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder activation(Activations.Activation activation) {
+        public Builder activation(Activation activation) {
             return activation(activation.getActivationFunction());
         }
 
@@ -1109,7 +1094,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
-                if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
                 if (layer.getActivationFn() == null) layer.setActivationFn(activationFn);
                 if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
                 if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
@@ -1119,7 +1103,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))
                     layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-//                if(layer instanceof Convolution)
                 if(layer instanceof ConvolutionLayer){
                     ConvolutionLayer cl = (ConvolutionLayer)layer;
                     if(cl.getConvolutionMode() == null){

@@ -99,9 +99,10 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void computeGradientAndScore() {
+        /*
         //Forward pass through the encoder and mean for P(Z|X)
         VAEFwdHelper fwd = doForward(true, true);
-        String afn = conf().getLayer().getActivationFunction();
+//        String afn = conf().getLayer().getActivationFunction();
         //ERALY
         IActivation afnI = conf().getLayer().getActivationFn();
 
@@ -403,6 +404,9 @@ public class VariationalAutoencoder implements Layer {
         g.put(VariationalAutoencoderParamInitializer.PXZ_B, gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_B));
 
         this.gradient = gradient;
+        */
+
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -616,6 +620,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        /*
         if (!zeroedPretrainParamGradients) {
             for (Map.Entry<String, INDArray> entry : gradientViews.entrySet()) {
                 if (isPretrainParam(entry.getKey())) {
@@ -685,6 +690,8 @@ public class VariationalAutoencoder implements Layer {
         }
 
         return new Pair<>(gradient, epsilon);
+        */
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -946,7 +953,7 @@ public class VariationalAutoencoder implements Layer {
                     + "a LossFunction (via LossFunctionWrapper) instead of a ReconstructionDistribution: ILossFunction "
                     + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability");
         }
-
+        /*
         //Forward pass through the encoder and mean for P(Z|X)
         setInput(data);
         VAEFwdHelper fwd = doForward(true, true);
@@ -1017,6 +1024,8 @@ public class VariationalAutoencoder implements Layer {
 
         setInput(null);
         return sumReconstructionNegLogProbability.divi(-numSamples);
+        */
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1055,7 +1064,7 @@ public class VariationalAutoencoder implements Layer {
         int nDecoderLayers = decoderLayerSizes.length;
         INDArray currentActivations = latentSpaceValues;
         //ERALY
-        String afn = conf().getLayer().getActivationFunction();
+//        String afn = conf().getLayer().getActivationFunction();
         IActivation afnI = conf().getLayer().getActivationFn();
 
         for (int i = 0; i < nDecoderLayers; i++) {
