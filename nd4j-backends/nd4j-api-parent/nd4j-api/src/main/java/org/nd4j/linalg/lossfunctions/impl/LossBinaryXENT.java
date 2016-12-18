@@ -103,39 +103,7 @@ public class LossBinaryXENT implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-//        INDArray grad;
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
-
-        //if ("softmax".equals(activationFn)) {
-//        if (activationFn instanceof ActivationSoftmax) {
-//            if (weights != null) {
-//                INDArray temp = labels.mulRowVector(weights);
-//                INDArray col = temp.sum(1);
-//                grad = output.mulColumnVector(col).sub(temp);
-//            } else {
-//                grad = output.subi(labels);
-//            }
-//        } else {
-//            // So, the derivative of XE(preoutput, label, activation) wrt preoutput is
-//            // for sanity sake, we'll call activation(preoutput) = a and activation'(preoutput) = a'
-//            // XE = label * log(a) + (1-label) * log(1-a)
-//            // d XE/d preoutput = a' * (label - a) / (a * (1-a))
-//            //grad = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-////            grad = activationFn.getGradient(preOutput.dup());
-////            grad = activationFn.backprop()
-//            INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)
-//            INDArray numerator = output.sub(labels);
-//            grad.muli(numerator).divi(denominator);
-//
-//            //Weighted loss function
-//            if (weights != null) {
-//                if (weights.length() != output.size(1)) {
-//                    throw new IllegalStateException("Weights vector (length " + weights.length() + ") does not match output.size(1)=" + output.size(1));
-//                }
-//                grad.muliRowVector(weights);
-//            }
-//        }
 
         INDArray numerator = output.sub(labels);
         INDArray denominator = output.mul(output.rsub(1)); // output * (1-output)

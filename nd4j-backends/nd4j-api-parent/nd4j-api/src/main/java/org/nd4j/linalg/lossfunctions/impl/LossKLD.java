@@ -4,11 +4,9 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -62,18 +60,6 @@ public class LossKLD implements ILossFunction {
 
         INDArray dLda = labels.div(output).negi();
         INDArray grad = activationFn.backprop(preOutput, dLda).getFirst();      //TODO activation functions with params
-
-//        INDArray grad;
-//        //if ("softmax".equals(activationFn)) {
-//        if (activationFn instanceof ActivationSoftmax) {
-//            INDArray dlda = labels.div(output).negi();
-//            grad = LossUtil.dLdZsoftmaxi(dlda, output);
-//        } else {
-//            INDArray dlda = output.rdivi(labels).negi();
-//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-//            grad = dlda.muli(sigmaPrimeZ);
-//        }
 
         if (mask != null) {
             grad.muliColumnVector(mask);

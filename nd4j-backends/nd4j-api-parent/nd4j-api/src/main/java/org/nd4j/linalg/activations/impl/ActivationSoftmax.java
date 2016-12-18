@@ -43,7 +43,12 @@ public class ActivationSoftmax extends BaseActivationFunction {
 //        Nd4j.getExecutioner().execAndReturn(new SoftMax(in).derivative());
 //        return in;
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
+
+        INDArray x = out.mul(epsilon).sum(1);
+        INDArray dLdz = out.mul(epsilon.subColumnVector(x));
+
+        return new Pair<>(dLdz, null);
     }
 
     @Override

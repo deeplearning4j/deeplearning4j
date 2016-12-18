@@ -4,7 +4,6 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 
 /**
@@ -50,18 +49,8 @@ public class LossCosineProximity implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-
-        //INDArray yhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray yhat = activationFn.getActivation(preOutput.dup(),true);
-
-        //INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn,preOutput.dup()).derivative());
-        INDArray postOutDer = activationFn.getGradient(preOutput.dup());
-
-        /*
-
-        */
         INDArray yL2norm = labels.norm2(1);
-        INDArray yL2normSq = yL2norm.mul(yL2norm);
 
         INDArray yhatL2norm = yhat.norm2(1);
         INDArray yhatL2normSq = yhatL2norm.mul(yhatL2norm);
@@ -69,12 +58,14 @@ public class LossCosineProximity implements ILossFunction {
         //Note: This is not really the L1 norm since I am not taking abs values
         INDArray yhatDotyL1norm = labels.mul(yhat).sum(1);
 
-        INDArray gradients = labels.mulColumnVector(yhatL2normSq);
-        gradients.subi(yhat.mulColumnVector(yhatDotyL1norm));
-        gradients.diviColumnVector(yL2norm);
-        gradients.diviColumnVector(yhatL2norm.mul(yhatL2normSq));
-        gradients.muli(postOutDer);
-        gradients.muli(-1);
+        INDArray dLda = labels.mulColumnVector(yhatL2normSq);
+        dLda.subi(yhat.mulColumnVector(yhatDotyL1norm));
+        dLda.diviColumnVector(yL2norm);
+        dLda.diviColumnVector(yhatL2norm.mul(yhatL2normSq));
+        dLda.muli(-1);
+
+        //dL/dz
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();      //TODO loss functions with params
 
         if(mask != null){
             gradients.muliColumnVector(mask);
@@ -86,7 +77,6 @@ public class LossCosineProximity implements ILossFunction {
     @Override
     public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
-        //Yes - will implement in round two. Just want to get done now.
 
         return new Pair<>(
                 computeScore(labels, preOutput, activationFn, mask, average),

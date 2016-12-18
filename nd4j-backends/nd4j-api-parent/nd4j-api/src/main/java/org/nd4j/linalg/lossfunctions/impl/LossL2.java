@@ -4,11 +4,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -51,10 +48,8 @@ public class LossL2 implements ILossFunction {
     }
 
     protected INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        INDArray scoreArr;
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
-        scoreArr = output.rsubi(labels);
+        INDArray scoreArr = output.rsubi(labels);
         scoreArr = scoreArr.muli(scoreArr);
 
         //Weighted loss function
@@ -95,26 +90,12 @@ public class LossL2 implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray dLda = output.subi(labels).muli(2);
+
+        if (weights != null) {
+            dLda.muliRowVector(weights);
+        }
+
         INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO handle activation function parameter gradients
-
-//        if (activationFn instanceof ActivationSoftmax) {
-//            INDArray dlda = output.sub(labels).muli(2);
-//            if (weights != null) {
-//                dlda.muliRowVector(weights);
-//            }
-//            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
-//        } else {
-//
-//
-//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-//            gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
-//
-//            if (weights != null) {
-//                gradients.muliRowVector(weights);
-//            }
-//        }
-
 
         //Loss function with masking
         if (mask != null) {

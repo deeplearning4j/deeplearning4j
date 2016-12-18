@@ -123,10 +123,6 @@ public class LossMCXENT implements ILossFunction {
             INDArray dLda = output.rdivi(labels).negi();
             grad = activationFn.backprop(preOutput, dLda).getFirst();       //TODO activation function with weights
 
-//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-//            grad = sigmaPrimeZ.muli(labels);
-//            grad.divi(output).muli(-1);
-
             //Weighted loss function
             if (weights != null) {
                 if (weights.length() != output.size(1)) {
@@ -135,7 +131,6 @@ public class LossMCXENT implements ILossFunction {
                 grad.muliRowVector(weights);
             }
         }
-
 
         //Loss function with masking
         if (mask != null) {

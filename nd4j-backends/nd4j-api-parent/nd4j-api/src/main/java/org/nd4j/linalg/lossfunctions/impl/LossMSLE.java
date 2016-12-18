@@ -4,11 +4,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -91,33 +88,6 @@ public class LossMSLE implements ILossFunction {
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
-//        INDArray gradients;
-        //if ("softmax".equals(activationFn)) {
-//        if (activationFn instanceof ActivationSoftmax) {
-//            INDArray p1 = output.add(1.0);
-//            INDArray dlda = p1.rdiv(2.0 / labels.size(1));
-//            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
-//            dlda.muli(logRatio);
-//
-//            if (weights != null) {
-//                dlda.muliRowVector(weights);
-//            }
-//
-//            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
-//        } else {
-//            INDArray p1 = output.addi(1.0);
-//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-//            gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
-//            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
-//            gradients.muli(logRatio);
-//
-//            //Weighted loss function
-//            if (weights != null) {
-//                gradients.muliRowVector(weights);
-//            }
-//        }
-
         INDArray p1 = output.add(1.0);
         INDArray dlda = p1.rdiv(2.0 / labels.size(1));
         INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
@@ -129,8 +99,6 @@ public class LossMSLE implements ILossFunction {
 
         //dL/dz
         INDArray gradients = activationFn.backprop(preOutput, dlda).getFirst(); //TODO activation functions with weights
-
-
 
         if (mask != null) {
             gradients.muliColumnVector(mask);

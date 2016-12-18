@@ -4,12 +4,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -89,7 +87,6 @@ public class LossL1 implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray outSubLabels = output.sub(labels);
@@ -101,17 +98,6 @@ public class LossL1 implements ILossFunction {
 
         //dL/dz
         INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();  //TODO activation function param gradients
-
-
-//        INDArray gradients;
-//        //if ("softmax".equals(activationFn)) {
-//        if (activationFn instanceof ActivationSoftmax) {
-//            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
-//        } else {
-//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-//            gradients = dlda.muli(sigmaPrimeZ);
-//        }
 
         if (mask != null) {
             gradients.muliColumnVector(mask);

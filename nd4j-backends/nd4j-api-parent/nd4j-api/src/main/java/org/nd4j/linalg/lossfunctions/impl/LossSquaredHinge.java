@@ -4,7 +4,6 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -49,13 +48,6 @@ public class LossSquaredHinge implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-        INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-        /*
-        gradient is 0 if yhaty is >= 1
-        else gradient is gradient of the loss function = (1-yhaty) wrt preOutput = -y*derivative_of_yhat wrt preout
-        */
-
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         INDArray bitMaskRowCol = scoreArr.dup();
@@ -65,9 +57,10 @@ public class LossSquaredHinge implements ILossFunction {
         BooleanIndexing.replaceWhere(bitMaskRowCol, 0.0, Conditions.lessThan(0.0));
         BooleanIndexing.replaceWhere(bitMaskRowCol, 1.0, Conditions.greaterThan(0.0));
 
-        INDArray gradients = scoreArr.muli(2);
-        gradients.muli(labels.neg());
-        gradients.muli(bitMaskRowCol).muli(sigmaPrimeZ);
+        INDArray dLda = scoreArr.muli(2).muli(labels.neg());
+        dLda.muli(bitMaskRowCol);
+
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();     //TODO activation functions with params
 
         if (mask != null) {
             gradients.muliColumnVector(mask);
