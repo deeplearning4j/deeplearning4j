@@ -1,22 +1,22 @@
 ---
-title: Import a Keras Model to Deeplearning4j 
-layout: default
+title: 将Keras模型导入Deeplearning4j 
+layout: cn-default
 ---
 
-# Keras for Production: Importing Python Models to Deeplearning4j
+# Keras的生产应用：将Python模型导入Deeplearning4j
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
-The code for this tutorial is available on [Github](https://gist.github.com/tomthetrainer/f6e073444286e5d97d976bd77292a064).
+本教程的代码可以在[Github](https://gist.github.com/tomthetrainer/f6e073444286e5d97d976bd77292a064)上找到。
 
-[Keras](keras.io) is one of the most widely used open-source deep-learning tools for Python. With an API inspired by Torch, it provides a layer of abstraction on top of Theano and TensorFlow to make them easier to use. Keras allows users to import models from most major deep-learning frameworks, including Theano, TensorFlow, Caffe and Torch. And from Keras, it's possible to import those same models into Deeplearning4j. 
+[Keras](keras.io)是目前使用最广泛的为Python编写的开源深度学习工具之一。Keras有一套受Torch启发的API，在Theano和TensorFlow的基础上再提供一个抽象层，让此二者更易于使用。Keras允许用户导入来自Theano、TensorFlow、Caffe和Torch等最先进的深度学习框架的模型。而同样的模型可以从Keras导入到Deeplearning4j中。 
 
-That's important chiefly because different frameworks solve different problems, and different programming languages dominate various phases of the deep learning workflow. While Python dominates the stage of data exploration and prototyping, it is not always the best suited for deployment to production. Deeplearning4j integrates closely with other open-source libraries common to the big data stack, such as Hadoop, Spark, Kafka, ElasticSearch, Hive and Pig. 
+这一点很重要，因为不同的学习框架擅长解决不同的问题，而深度学习工作流的各个阶段也都由不同的编程语言所主导。Python虽然主导了数据探索和原型开发阶段，却并不一定最适合生产部署。Deeplearning4j与Hadoop、Spark、Kafka、ElasticSearch、Hive和Pig等大数据技术栈中常见的开源库高度集成。 
 
-It is also certified on Cloudera's CDH and Hortonworks's HDP distributions of the Hadoop ecosystem. For deep-learning practitioners seeking to take their neural-net models and put them to work in the the production stack of large organizations, model import from Keras to Deeplearning4j may help. 
+Deeplearning4j也获得了两种Hadoop生态系统发行版——Cloudera CDH和Hortonworks HDP的认证。导入Keras模型的功能让Deeplearning4j可以帮助深度学习用户将自己的神经网络模型转移到大型企业生产栈中运行。 
 
-Not every architecture supported by other deep learning frameworks is currently supported, but we're working to expand the number of nets that can be imported from Keras to DL4J. 
+目前我们还不能支持其他深度学习框架提供的所有网络架构，但我们正在不断增加可以从Keras导入到DL4J的网络类型。 
 
-Python programmers seeking to interface directly with Deeplearning4j may be interested in [ScalNet, its Scala API](https://github.com/deeplearning4j/scalnet).
+Python程序员如果希望直接与Deeplearning4j对接，可以考虑使用[它的Scala API：ScalNet](https://github.com/deeplearning4j/scalnet)。
 
-For more information, please see this page on [model import](https://deeplearning4j.org/model-import-keras).
+更多详情请参阅[模型导入指南](https://deeplearning4j.org/model-import-keras)。
