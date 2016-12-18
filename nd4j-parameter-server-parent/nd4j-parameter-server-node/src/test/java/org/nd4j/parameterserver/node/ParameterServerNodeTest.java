@@ -2,16 +2,11 @@ package org.nd4j.parameterserver.node;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.agrona.CloseHelper;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.client.ParameterServerClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +46,7 @@ public class ParameterServerNodeTest {
                 "-u",String.valueOf(Runtime.getRuntime().availableProcessors())
         });
 
-        while(!parameterServerNode.getSubscriber().subscriberLaunched()) {
+        while(!parameterServerNode.subscriberLaunched()) {
             Thread.sleep(10000);
         }
 
@@ -67,8 +62,8 @@ public class ParameterServerNodeTest {
             clients[i] = ParameterServerClient.builder()
                     .aeron(aeron).masterStatusHost(host)
                     .masterStatusPort(9000).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
-                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber().getResponder().connectionUrl())
-                    .ndarraySendUrl(parameterServerNode.getSubscriber().getSubscriber().connectionUrl())
+                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
+                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
                     .build();
         }
 
@@ -103,7 +98,7 @@ public class ParameterServerNodeTest {
 
         Thread.sleep(60000);
 
-        parameterServerNode.stop();
+        parameterServerNode.close();
 
 
     }
