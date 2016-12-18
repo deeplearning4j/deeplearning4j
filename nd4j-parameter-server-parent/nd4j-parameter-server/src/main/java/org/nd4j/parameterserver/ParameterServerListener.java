@@ -53,6 +53,7 @@ public class ParameterServerListener implements NDArrayCallback {
     public ParameterServerListener(int[] shape,ParameterServerUpdater updater) {
         this.updater = updater;
         this.shape = shape;
+
     }
 
     /**

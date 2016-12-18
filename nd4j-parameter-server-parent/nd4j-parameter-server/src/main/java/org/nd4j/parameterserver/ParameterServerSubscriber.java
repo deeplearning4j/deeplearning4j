@@ -22,6 +22,7 @@ import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.aeron.ipc.response.AeronNDArrayResponder;
+import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.model.MasterConnectionInfo;
@@ -194,6 +195,7 @@ public class ParameterServerSubscriber {
         try {
             jcmdr.parse(args);
         } catch (ParameterException e) {
+            e.printStackTrace();
             //User provides invalid input -> print the usage info
             jcmdr.usage();
             try {
@@ -206,6 +208,8 @@ public class ParameterServerSubscriber {
 
         //ensure that the update type is configured from the command line args
         updateType = UpdateType.valueOf(updateTypeString.toUpperCase());
+
+
 
 
         if (publishMasterUrl == null && !master)
@@ -250,7 +254,7 @@ public class ParameterServerSubscriber {
             //instantiate with shape instead of just length
             switch(updateType) {
                 case HOGWILD: break;
-                case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),updatesPerEpoch); break;
+                case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),new InMemoryNDArrayHolder(Ints.toArray(shape)),updatesPerEpoch); break;
                 case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
                 case TIME_DELAYED: break;
                 case CUSTOM:

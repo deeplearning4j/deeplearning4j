@@ -47,7 +47,8 @@ public class ParameterServerNodeTest {
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
                 "-sp", "9000",
-                "-sh","localhost"
+                "-sh","localhost",
+                "-u",String.valueOf(Runtime.getRuntime().availableProcessors())
         });
 
         while(!parameterServerNode.getSubscriber().subscriberLaunched()) {
