@@ -108,7 +108,7 @@ public class LSTMHelpers {
         }
 
         //Allocate arrays for activations:
-        boolean sigmoidGates = false;   //"sigmoid".equals(gateActivationFn);       //TEMP FOR TESTING
+        boolean sigmoidGates = "sigmoid".equals(gateActivationFn);
         INDArray outputActivations = null;
 
         FwdPassReturn toReturn = new FwdPassReturn();
@@ -301,6 +301,7 @@ public class LSTMHelpers {
         INDArray rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
         INDArray rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
 
+        boolean sigmoidGates = "sigmoid".equals(gateActivationFn);
 
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             int time = iTimeIndex;
@@ -338,7 +339,7 @@ public class LSTMHelpers {
             INDArray sigmahOfS = fwdPass.memCellActivations[time];
             INDArray ao = fwdPass.oa[time];
             INDArray sigmaoPrimeOfZo;
-            if(false && "sigmoid".equals(gateActivationFn)){
+            if(sigmoidGates){
                 sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ao.dup('f')));    //Equivalent to sigmoid deriv on zo
             } else {
                 sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.oz[time]).derivative());
@@ -366,7 +367,7 @@ public class LSTMHelpers {
             INDArray deltaf = null;
             if (iTimeIndex > 0) {
                 deltaf = deltafNext;
-                if( false && "sigmoid".equals(gateActivationFn)) {
+                if( sigmoidGates ) {
                     Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
                 } else {
                     Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.fz[time], deltaf).derivative());
@@ -380,8 +381,7 @@ public class LSTMHelpers {
             INDArray ag = fwdPass.ga[time];
             INDArray ai = fwdPass.ia[time];
             INDArray deltag = deltagNext;
-//            Nd4j.getExecutioner().exec(new TimesOneMinus(ag,deltag));   //Equivalent to sigmoid deriv on zg
-            if(false && "sigmoid".equals(gateActivationFn)){
+            if( sigmoidGates ){
                 Nd4j.getExecutioner().exec(new TimesOneMinus(ag,deltag));   //Equivalent to sigmoid deriv on zg
             } else {
                 Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.gz[time], deltag).derivative());
