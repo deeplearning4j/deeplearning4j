@@ -33,6 +33,8 @@ public class Activations {
                     return new ActivationSoftmax();
                 case rrelu:
                     return new ActivationRReLU();
+                case softsign:
+                    return new ActivationSoftSign();
                 default:
                     throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
             }
