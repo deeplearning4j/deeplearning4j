@@ -48,16 +48,20 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**Calculate the l2 regularization term<br>
      * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
      * Note that this does not divide by mini-batch size
+     * @param backpropOnlyParams If true: calculate L2 based on backprop params only. If false: calculate
+     *                           based on all params (including pretrain params, if any)
      * @return the l2 regularization term for this layer.
      */
-    double calcL2();
+    double calcL2(boolean backpropOnlyParams);
 
     /**Calculate the l1 regularization term<br>
      * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
      * Note that this does not divide by mini-batch size
+     * @param backpropOnlyParams If true: calculate L1 based on backprop params only. If false: calculate
+     *                           based on all params (including pretrain params, if any)
      * @return the l1 regularization term for this layer.
      */
-    double calcL1();
+    double calcL1(boolean backpropOnlyParams);
 
     /**
      * Returns the layer type
@@ -266,4 +270,10 @@ public interface Layer extends Serializable,Cloneable,Model {
 
     INDArray getMaskArray();
 
+    /**
+     * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
+     *
+     * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
+     */
+    boolean isPretrainLayer();
 }

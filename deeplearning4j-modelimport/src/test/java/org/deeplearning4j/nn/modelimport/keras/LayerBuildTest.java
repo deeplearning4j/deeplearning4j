@@ -18,26 +18,26 @@ import static org.junit.Assert.*;
  * @author davekale
  */
 public class LayerBuildTest {
-    String activation = "identity";
-    String name = "test_layer";
-    WeightInit init = WeightInit.UNIFORM;
-    double l1 = 0.01;
-    double l2 = 0.02;
-    double dropout = 0.3;
-    int[] kernelSize = new int[]{1, 2};
-    int[] stride = new int[]{3, 4};
-    SubsamplingLayer.PoolingType poolType = SubsamplingLayer.PoolingType.MAX;
-    double forgetBiasDouble = 1.0;
-    String forgetBiasStr = "one";
-    int nOut = 13;
+    private String activation = "identity";
+    private String name = "test_layer";
+    private WeightInit init = WeightInit.UNIFORM;
+    private double l1 = 0.01;
+    private double l2 = 0.02;
+    private double dropout = 0.3;
+    private int[] kernelSize = new int[]{1, 2};
+    private int[] stride = new int[]{3, 4};
+    private SubsamplingLayer.PoolingType poolType = SubsamplingLayer.PoolingType.MAX;
+    private double forgetBiasDouble = 1.0;
+    private String forgetBiasStr = "one";
+    private int nOut = 13;
 
     @Test
     public void testBuildDenseLayer() throws Exception {
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String,Object> config = new HashMap<>();
         config.put("activation", "linear"); // keras linear -> dl4j identity
         config.put("name", name);
         config.put("init", "uniform");
-        Map<String,Object> W_reg = new HashMap<String,Object>();
+        Map<String,Object> W_reg = new HashMap<>();
         W_reg.put("l1", l1);
         W_reg.put("l2", l2);
         config.put("W_regularizer", W_reg);
@@ -56,7 +56,7 @@ public class LayerBuildTest {
 
     @Test
     public void testBuildConvolutionLayer() throws Exception {
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String,Object> config = new HashMap<>();
         config.put("activation", "linear"); // keras linear -> dl4j identity
         config.put("name", name);
         config.put("init", "uniform");
@@ -87,7 +87,7 @@ public class LayerBuildTest {
 
     @Test
     public void testBuildSubsamplingLayer() throws Exception {
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String,Object> config = new HashMap<>();
         config.put("name", name);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(kernelSize[0]);
@@ -108,7 +108,7 @@ public class LayerBuildTest {
 
     @Test
     public void testBuildGravesLstmLayer() throws Exception {
-        Map<String,Object> config = new HashMap<String,Object>();
+        Map<String,Object> config = new HashMap<>();
         config.put("activation", "linear"); // keras linear -> dl4j identity
         config.put("inner_activation", "linear"); // keras linear -> dl4j identity
         config.put("name", name);

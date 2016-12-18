@@ -44,6 +44,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -62,6 +63,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -171,7 +175,6 @@ public class MultiLayerTest {
         INDArray output = network.output(test.getFeatureMatrix());
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
-
     }
 
     @Test
@@ -865,5 +868,43 @@ public class MultiLayerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(rbm);
         network.init();
         return network;
+    }
+
+
+    @Test
+    public void testIterationCountAndPresistence() throws IOException {
+        Nd4j.getRandom().setSeed(123);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1)
+                .seed(123)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(3).nOut(3).build())
+                .backprop(true).pretrain(false).build();
+
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+        DataSetIterator iter = new IrisDataSetIterator(50, 150);
+
+        assertEquals(0, network.getLayerWiseConfigurations().getIterationCount());
+        network.fit(iter);
+        assertEquals(3, network.getLayerWiseConfigurations().getIterationCount());
+        iter.reset();
+        network.fit(iter);
+        assertEquals(6, network.getLayerWiseConfigurations().getIterationCount());
+        iter.reset();
+        network.fit(iter.next());
+        assertEquals(7, network.getLayerWiseConfigurations().getIterationCount());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ModelSerializer.writeModel(network, baos, true);
+        byte[] asBytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
+        MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        assertEquals(7, net.getLayerWiseConfigurations().getIterationCount());
     }
 }

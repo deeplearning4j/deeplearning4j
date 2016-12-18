@@ -17,6 +17,10 @@ public class FwdPassReturn {
     public INDArray[] fa;
     public INDArray[] oa;
     public INDArray[] ga;
+    //Gate pre-outs: only needed if not using sigmoid. For sigmoid: sigmaPrime(z) = sigmoid(z) * (1-sigmoid(z)) -> use activations
+    public INDArray[] fz;
+    public INDArray[] oz;
+    public INDArray[] gz;
     //Last 2: needed for rnnTimeStep only
     public INDArray lastAct;
     public INDArray lastMemCell;

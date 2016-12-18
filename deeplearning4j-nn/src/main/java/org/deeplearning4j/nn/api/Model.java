@@ -204,6 +204,14 @@ public interface Model {
     Map<String,INDArray> paramTable();
 
     /**
+     * Table of parameters by key, for backprop
+     * For many models (dense layers, etc) - all parameters are backprop parameters
+     * @param backpropParamsOnly If true, return backprop params only. If false: return all params (equivalent to
+     *                           paramsTable())
+     */
+    Map<String,INDArray> paramTable(boolean backpropParamsOnly);
+
+    /**
      * Setter for the param table
      * @param paramTable
      */
@@ -221,6 +229,4 @@ public interface Model {
      * Clear input
      */
     void clear();
-
-
 }

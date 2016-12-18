@@ -155,93 +155,119 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     /**
-     * This unsupervised learning method runs
-     * contrastive divergence on each RBM layer in the network.
+     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
+     * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
+     * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
      *
-     * @param iter the input to iterate on
-     *             The typical tip is that the higher k is the closer to the model
-     *             you will be approximating due to more sampling. K = 1
-     *             usually gives very good results and is the default in quite a few situations.
+     * @param iter Training data
      */
     public void pretrain(DataSetIterator iter) {
+        if(flattenedGradients == null) initGradientsView();
         if (!layerWiseConfigurations.isPretrain())
             return;
 
-        INDArray layerInput;
-        Layer layer;
-
         for (int i = 0; i < getnLayers(); i++) {
-            layer = layers[i];
-            layer.conf().setPretrain(true);
-            if (i == 0 && layer instanceof BasePretrainNetwork) {
-                while (iter.hasNext()) {
-                    DataSet next = iter.next();
-                    if(getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                        INDArray features = next.getFeatureMatrix();
-                        layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(features, features.size(0));
-                    }
-                    else
-                        layerInput = next.getFeatureMatrix();
-                    setInput(layerInput);
-                      /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
-                    if (this.getInput() == null || this.getLayers() == null)
-                        initializeLayers(layerInput);
-                    layer.fit(layerInput);
-                    log.info("Training on layer " + (i + 1) + " with " + input().size(0) + " examples");
-                }
+            pretrainLayer(i, iter);
+        }
+    }
 
-            } else {
-                while (iter.hasNext()) {
-                    DataSet next = iter.next();
-                    input = next.getFeatureMatrix();
-                    layerInput = next.getFeatureMatrix();
-                    for (int j = 1; j <= i; j++)
-                        layerInput = activationFromPrevLayer(j - 1, layerInput,true);
-                    log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
-                    if (layer instanceof BasePretrainNetwork)
-                        layer.fit(layerInput);
-                }
-            }
-            // Turn off pretrain after it is complete
-            layer.conf().setPretrain(false);
+    /**
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
+     *
+     * @param layerIdx Index of the layer to train (0 to numLayers-1)
+     * @param iter Training data
+     */
+    public void pretrainLayer(int layerIdx, DataSetIterator iter){
+        if(flattenedGradients == null) initGradientsView();
+        if (!layerWiseConfigurations.isPretrain())
+            return;
+        if(layerIdx >= layers.length){
+            throw new IllegalArgumentException("Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
+        }
+
+        Layer layer = layers[layerIdx];
+        if(!layer.isPretrainLayer()) return;
+
+        if(!iter.hasNext() && iter.resetSupported()){
             iter.reset();
         }
+
+        log.info("Starting unsupervised training on layer " + layerIdx);
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
+            input = next.getFeatureMatrix();
+            pretrainLayer(layerIdx, input);
+        }
+    }
+
+    /**
+     * Perform layerwise unsupervised training on a single pre-trainable layer in the network (VAEs, RBMs, Autoencoders, etc)<br>
+     * If the specified layer index (0 to numLayers - 1) is not a pretrainable layer, this is a no-op.
+     *
+     * @param layerIdx Index of the layer to train (0 to numLayers-1)
+     * @param features Training data array
+     */
+    public void pretrainLayer(int layerIdx, INDArray features){
+        if(flattenedGradients == null) initGradientsView();
+        if (!layerWiseConfigurations.isPretrain())
+            return;
+        if(layerIdx >= layers.length){
+            throw new IllegalArgumentException("Cannot pretrain layer: layerIdx (" + layerIdx + ") >= numLayers (" + layers.length + ")");
+        }
+
+        INDArray layerInput = features;
+        if(layerIdx == 0 && getLayerWiseConfigurations().getInputPreProcess(0) != null){
+            layerInput = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, input.size(0));
+        }
+
+        Layer layer = layers[layerIdx];
+        if(!layer.isPretrainLayer()) return;
+        layer.conf().setPretrain(true);
+
+        //Do forward pass to the layer to be pretrained
+        for (int j = 0; j < layerIdx; j++) {
+            layerInput = activationFromPrevLayer(j, layerInput, true);
+        }
+        layer.fit(layerInput);
+
+        // Turn off pretrain after it is complete
+        layer.conf().setPretrain(false);
     }
 
 
     /**
-     * This unsupervised learning method runs
-     * contrastive divergence on each RBM layer in the network.
-     *
-     * @param input the input to iterate on
-     *              The typical tip is that the higher k is the closer to the model
-     *              you will be approximating due to more sampling. K = 1
-     *              usually gives very good results and is the default in quite a few situations.
+     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}
      */
+    @Deprecated
     public void pretrain(INDArray input) {
-
         if (!layerWiseConfigurations.isPretrain())
             return;
+        if(flattenedGradients == null) initGradientsView();
+
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
 
         int miniBatchSize = input.size(0);
         INDArray layerInput = null;
         Layer layer;
-        for (int i = 0; i < getnLayers() - 1; i++) {
-            layer = getLayers()[i];
-            if (i == 0)
-                if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,miniBatchSize);
-                else
+        int nPretrainLayers = getnLayers();
+        if(getLayer(getnLayers()-1) instanceof IOutputLayer) nPretrainLayers--;
+        for (int i = 0; i < nPretrainLayers; i++) {
+            layer = getLayer(i);
+            if (i == 0) {
+                if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, miniBatchSize);
+                } else {
                     layerInput = input;
-            else
-                layerInput = activationFromPrevLayer(i - 1, layerInput,true);
-            log.info("Training on layer " + (i + 1) + " with " + layerInput.size(0) + " examples");
+                }
+            } else {
+                layerInput = activationFromPrevLayer(i - 1, layerInput, true);
+            }
             layer.conf().setPretrain(true);
             layer.fit(layerInput);
             layer.conf().setPretrain(false);
         }
-
     }
 
 
@@ -294,10 +320,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
         //Get all parameters from all layers
         Map<String,INDArray> allParams = new LinkedHashMap<>();
         for( int i=0; i<layers.length; i++ ){
-            Map<String,INDArray> paramMap = layers[i].paramTable();
+            Map<String,INDArray> paramMap = layers[i].paramTable(backpropParamsOnly);
             for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
                 String newKey = i + "_" + entry.getKey();
                 allParams.put(newKey, entry.getValue());
@@ -931,11 +961,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int numParams() {
-        if (isInitCalled()) 
+        if (isInitCalled())
             return numParams(false);
-        else 
+        else
             log.info("Model is not initialized. Initialize net with init()");
-            return 0;
+        return 0;
     }
 
     @Override
@@ -1229,7 +1259,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             INDArray featuresMaskSubset = null;
             INDArray labelsMaskSubset = null;
             if(featuresMaskArray != null){
-                 featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+                featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
             }
             if(labelsMaskArray != null){
                 labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
@@ -1789,7 +1819,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
             ol.setInput(olInput);     //Feedforward doesn't include output layer for efficiency
             ol.setLabels(data.getLabels());
-            ol.computeScore(calcL1(),calcL2(), training);
+            ol.computeScore(calcL1(true),calcL2(true), training);
             this.score = ol.score();
         } else {
             log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1826,8 +1856,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if( getOutputLayer() instanceof IOutputLayer ){
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             ol.setLabels(data.getLabels());
-            double l1 = (addRegularizationTerms ? calcL1() : 0.0);
-            double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+            double l1 = (addRegularizationTerms ? calcL1(true) : 0.0);
+            double l2 = (addRegularizationTerms ? calcL2(true) : 0.0);
             out = ol.computeScoreForExamples(l1,l2);
         } else {
             throw new UnsupportedOperationException("Cannot calculate score with respect to labels without an OutputLayer");
@@ -1897,7 +1927,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (!(getOutputLayer() instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
         }
-        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(), calcL2(), true);
+        score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
 
         //Listeners
         if (trainingListeners.size() > 0) {
@@ -2076,7 +2106,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      *
      * @return
      */
-    public Layer[] getLayers() {
+    public synchronized Layer[] getLayers() {
         return layers;
     }
 
@@ -2106,6 +2136,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public INDArray getMaskArray(){
         return mask;
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
     }
 
     //==========
@@ -2183,19 +2218,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         double l2 = 0.0;
         for( int i=0; i<layers.length; i++ ){
-            l2 += layers[i].calcL2();
+            l2 += layers[i].calcL2(backpropParamsOnly);
         }
         return l2;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         double l1 = 0.0;
         for( int i=0; i<layers.length; i++ ){
-            l1 += layers[i].calcL1();
+            l1 += layers[i].calcL1(backpropParamsOnly);
         }
         return l1;
     }

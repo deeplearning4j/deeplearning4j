@@ -94,7 +94,8 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         NetBroadcastTuple tuple = broadcast.getValue();
         if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
 
-        MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration());
+        //Don't want to have shared configuration object: each may update its iteration count (for LR schedule etc) individually
+        MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration().clone());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters().unsafeDuplication(), false);
 
@@ -121,7 +122,8 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         NetBroadcastTuple tuple = broadcast.getValue();
         if (configuration.isCollectTrainingStats()) stats.logBroadcastGetValueEnd();
 
-        ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration());
+        //Don't want to have shared configuration object: each may update its iteration count (for LR schedule etc) individually
+        ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration().clone());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
         net.init(tuple.getParameters().unsafeDuplication(), false);
 

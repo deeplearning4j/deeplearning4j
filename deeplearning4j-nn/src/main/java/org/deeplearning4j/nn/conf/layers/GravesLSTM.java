@@ -40,10 +40,12 @@ import java.util.Map;
 public class GravesLSTM extends BaseRecurrentLayer {
 
     private double forgetGateBiasInit;
+    private String gateActivationFn = "sigmoid";
 
     private GravesLSTM(Builder builder) {
     	super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
+        this.gateActivationFn = builder.gateActivationFn;
     }
 
     @Override
@@ -113,12 +115,24 @@ public class GravesLSTM extends BaseRecurrentLayer {
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
         private double forgetGateBiasInit = 1.0;
+        private String gateActivationFn = "sigmoid";
 
         /** Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit){
             this.forgetGateBiasInit = biasInit;
+            return this;
+        }
+
+        /**
+         * Activation function for the LSTM gates.
+         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         *
+         * @param gateActivationFn Activation function for the LSTM gates
+         */
+        public Builder gateActivationFunction(String gateActivationFn){
+            this.gateActivationFn = gateActivationFn;
             return this;
         }
 
