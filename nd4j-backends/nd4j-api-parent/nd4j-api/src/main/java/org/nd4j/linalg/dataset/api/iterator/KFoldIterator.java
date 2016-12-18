@@ -183,7 +183,9 @@ public class KFoldIterator implements DataSetIterator {
 
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
         if (right<totalExamples()) {
-            kMinusOneFoldList.add((DataSet) singleFold.getRange(0,left));
+            if(left > 0){
+                kMinusOneFoldList.add((DataSet) singleFold.getRange(0,left));
+            }
             kMinusOneFoldList.add((DataSet) singleFold.getRange(right,totalExamples()));
             train = DataSet.merge(kMinusOneFoldList);
         }

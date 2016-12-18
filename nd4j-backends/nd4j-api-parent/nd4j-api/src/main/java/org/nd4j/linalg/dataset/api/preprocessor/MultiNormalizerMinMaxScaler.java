@@ -1,8 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.MinMaxStats;
-import org.nd4j.linalg.dataset.NormalizerStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 
 /**
  * Pre processor for MultiDataSet that normalizes feature values (and optionally label values) to lie between a minimum

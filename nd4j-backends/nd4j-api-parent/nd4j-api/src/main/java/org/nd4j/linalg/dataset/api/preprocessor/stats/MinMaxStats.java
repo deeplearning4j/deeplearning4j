@@ -1,4 +1,4 @@
-package org.nd4j.linalg.dataset;
+package org.nd4j.linalg.dataset.api.preprocessor.stats;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

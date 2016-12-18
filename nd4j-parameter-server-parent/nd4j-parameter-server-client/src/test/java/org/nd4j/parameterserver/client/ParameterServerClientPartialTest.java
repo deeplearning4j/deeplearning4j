@@ -52,7 +52,9 @@ public class ParameterServerClientPartialTest {
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
                 "-sp", "20000",
-                "-s","2,2"
+                "-s","2,2",
+                "-u",String.valueOf(1)
+
         });
 
         assertTrue(masterNode.isMaster());
@@ -70,7 +72,9 @@ public class ParameterServerClientPartialTest {
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "21000"
+                "-sp", "21000",
+                "-u",String.valueOf(1)
+
         });
 
         assertFalse(slaveNode.isMaster());

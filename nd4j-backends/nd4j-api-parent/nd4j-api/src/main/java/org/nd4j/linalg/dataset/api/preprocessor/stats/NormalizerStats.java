@@ -1,6 +1,8 @@
-package org.nd4j.linalg.dataset;
+package org.nd4j.linalg.dataset.api.preprocessor.stats;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.io.Serializable;
 
 /**
  * Interface for certain statistics about a population of data.
@@ -9,7 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Ede Meijer
  */
-public interface NormalizerStats {
+public interface NormalizerStats extends Serializable {
     interface Builder<S extends NormalizerStats> {
         Builder<S> addFeatures(org.nd4j.linalg.dataset.api.DataSet dataSet);
 

@@ -131,6 +131,7 @@ public abstract class NativeOps extends Pointer {
 
 
 
+
     /**
      *
      * @param opNum

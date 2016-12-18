@@ -45,9 +45,21 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
     void transform(INDArray features);
 
     /**
+     * Transform the features, with an optional mask array
+     * @param features the features to pre process
+     * @param featuresMask the mask array to pre process
+     */
+    void transform(INDArray features, INDArray featuresMask);
+
+    /**
      * Transform the labels. If {@link #isFitLabel()} == false, this is a no-op
      */
     void transformLabel(INDArray labels);
+
+    /**
+     * Transform the labels. If {@link #isFitLabel()} == false, this is a no-op
+     */
+    void transformLabel(INDArray labels, INDArray labelsMask);
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance (arrays are modified in-place)
@@ -64,6 +76,14 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
     void revertFeatures(INDArray features);
 
     /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
+     *
+     * @param features    Features to revert the normalization on
+     * @param featuresMask
+     */
+    void revertFeatures(INDArray features, INDArray featuresMask);
+
+    /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
      * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
      * Can also be used to undo normalization for network output arrays, in the case of regression.
@@ -71,6 +91,16 @@ public interface DataNormalization extends org.nd4j.linalg.dataset.api.DataSetPr
      * @param labels    Labels array to revert the normalization on
      */
     void revertLabels(INDArray labels);
+
+    /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
+     * If labels normalization is disabled (i.e., {@link #isFitLabels()} == false) then this is a no-op.
+     * Can also be used to undo normalization for network output arrays, in the case of regression.
+     *
+     * @param labels    Labels array to revert the normalization on
+     * @param labelsMask Labels mask array (may be null)
+     */
+    void revertLabels(INDArray labels, INDArray labelsMask);
 
     /**
      * Flag to specify if the labels/outputs in the dataset should be also normalized. Default value is usually false.

@@ -40,7 +40,8 @@ public class ParameterServerClientTest {
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "33000"
+                "-sp", "33000",
+                "-u",String.valueOf(1)
         });
 
         assertTrue(masterNode.isMaster());
@@ -52,13 +53,13 @@ public class ParameterServerClientTest {
         slaveNode = new ParameterServerSubscriber(mediaDriver);
         slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
-                "-l",String.valueOf(parameterLength),
                 "-p","40426",
                 "-h","localhost",
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "31000"
+                "-sp", "31000",
+                "-u",String.valueOf(1)
         });
 
         assertFalse(slaveNode.isMaster());

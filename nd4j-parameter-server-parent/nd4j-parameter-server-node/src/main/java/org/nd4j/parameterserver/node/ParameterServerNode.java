@@ -28,9 +28,27 @@ public class ParameterServerNode {
     private ParameterServerSubscriber subscriber;
     private MediaDriver mediaDriver;
     private Aeron aeron;
+    private int statusPort;
 
-    public ParameterServerNode(MediaDriver mediaDriver) {
+    /**
+     *
+     * @param mediaDriver the media driver to sue for communication
+     * @param statusPort the port for the server status
+     */
+    public ParameterServerNode(MediaDriver mediaDriver,int statusPort) {
         this.mediaDriver = mediaDriver;
+        this.statusPort = statusPort;
+
+    }
+
+
+    /**
+     * Pass in the media driver used for communication
+     * and a defualt status port of 9000
+     * @param mediaDriver
+     */
+    public ParameterServerNode(MediaDriver mediaDriver) {
+        this(mediaDriver,9000);
     }
 
     /**
@@ -40,7 +58,7 @@ public class ParameterServerNode {
      * @param args the arguments for the {@link ParameterServerSubscriber}
      */
     public void runMain(String[] args) {
-        server = StatusServer.startServer(new InMemoryStatusStorage(),9000);
+        server = StatusServer.startServer(new InMemoryStatusStorage(),statusPort);
         if(mediaDriver == null)
             mediaDriver = MediaDriver.launchEmbedded();
         log.info("Started media driver with aeron directory " + mediaDriver.aeronDirectoryName());
