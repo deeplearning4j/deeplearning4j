@@ -151,19 +151,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray delta;
-        //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = conf.getLayer().getActivationFn();
-
-        //if("identity".equals(afn)){
-//        if(afn instanceof ActivationIdentity){
-//            delta = epsilon;    //avoid doing .muli with 1s
-//        } else {
-//            INDArray sigmaPrimeZ = preOutput(true);
-//            //Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-//            //        afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
-//            sigmaPrimeZ = afn.getGradient(sigmaPrimeZ);
-//            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
-//        }
 
         delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
 
@@ -317,10 +305,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray z = preOutput(training);
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = conf.getLayer().getActivationFn();
-        //if("identity".equals(afn)){
-        if(afn instanceof ActivationIdentity){
-            return z;
-        }
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             INDArray ret = helper.activate(z, conf.getLayer().getActivationFn());
@@ -329,8 +313,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
         }
 
-        //INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, z));
-        INDArray activation = afn.getActivation(z,training);
+        INDArray activation = afn.getActivation(z, training);
         return activation;
     }
 
