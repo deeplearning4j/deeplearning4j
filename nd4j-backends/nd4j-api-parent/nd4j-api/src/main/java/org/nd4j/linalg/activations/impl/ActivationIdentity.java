@@ -17,18 +17,8 @@ public class ActivationIdentity extends BaseActivationFunction {
     }
 
     @Override
-    public INDArray getGradient(INDArray in) {
-        in.muli(0).addi(1);
-        return in;
-    }
-
-    @Override
-    public Pair<INDArray, INDArray> getActivationAndGradient(INDArray in) {
-        INDArray activation = in.dup();
-        INDArray gradient = in.dup();
-        getActivation(activation, true);
-        getGradient(gradient);
-        return new Pair<INDArray, INDArray>(activation,gradient);
+    public Pair<INDArray,INDArray> backprop(INDArray in, INDArray epsilon) {
+        return new Pair<>(epsilon, null);
     }
 
     @Override
