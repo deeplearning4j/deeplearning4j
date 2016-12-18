@@ -1588,10 +1588,16 @@ namespace shape {
             }
 
 
+
             for(int i = originalDimensionLength - 1; i >= 0; i--) {
                 permuteDims[dimIdx++] = originalDimension[i];
             }
 
+/*
+            for (int i = 0; i < originalDimensionLength; i++) {
+                permuteDims[i] = originalDimension[i];
+            }
+*/
 
             //permute dimensions for tad
             return permuteDims;
@@ -1801,16 +1807,7 @@ namespace shape {
             int *theShape = shape::shapeOf(shapeInfo);
             int *theStride = shape::stride(shapeInfo);
             int rank = this->originalDimensionLength <= 1 ? 2 : originalDimensionLength;
-#ifdef __CUDACC__
-            int *ret;
-            if (ptrManager != nullptr) {
-                ret = (int *) ((UnifiedSharedMemory *) ptrManager)->getSharedReductionBuffer();
-            }
-            ret = new int[shape::shapeInfoLength(rank)];
-
-#else
             int *ret = new int[shape::shapeInfoLength(rank)];
-#endif
 
 
             //set the rank

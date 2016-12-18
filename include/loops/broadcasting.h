@@ -158,10 +158,10 @@ template<typename OpType>
 				int *xShapeInfo,
 				T *y,
 				int *yShapeInfo,
-				T *result,
+				T *result, int *resultShapeInfo,
 				int *dimension,
 				int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
-                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, dimension, dimensionLength, tadShapeInfo, tadOffset, tadShapeInfoZ, tadOffsetZ), BROADCAST_OPS);
+                                DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset, tadShapeInfoZ, tadOffsetZ), BROADCAST_OPS);
 			}
 
 			/**
@@ -181,6 +181,7 @@ template<typename OpType>
 							 T *y,
 							 int *yShapeInfo,
 							 T *result,
+                             int *resultShapeInfo,
 							 int *dimension,
 							 int dimensionLength, int *tadShapeInfo, int *tadOffset, int *tadShapeInfoZ, int *tadOffsetZ) {
 
@@ -214,7 +215,6 @@ template<typename OpType>
 
                 int zEWS = shape::elementWiseStride(tadShapeInfoZ);
 
-
 				int tadsPerThread = tads / TAD_THRESHOLD;
 				int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 				_threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -245,31 +245,44 @@ template<typename OpType>
 						} else {
 							int *zShape = shape::shapeOf(tadShapeInfoZ);
 							int *zStride = shape::stride(tadShapeInfoZ);
+                            int zRank = shape::rank(tadShapeInfoZ);
+
 							int *xShape = shape::shapeOf(tadShapeShapeInfo);
 							int *xStride = shape::stride(tadShapeShapeInfo);
-							int zRank = shape::rank(tadShapeInfoZ);
-							int tadRank = shape::rank(tadShapeShapeInfo);
+                            int xRank = shape::rank(tadShapeShapeInfo);
+
+                            int *yShape = shape::shapeOf(yShapeInfo);
+                            int *yStride = shape::stride(yShapeInfo);
+                            int yRank = shape::rank(yShapeInfo);
 
                             int xCoord[MAX_RANK];
+                            int yCoord[MAX_RANK];
                             int zCoord[MAX_RANK];
+
 
 // TODO: cover this codebranch with tests
 // all this stuff already happens within thread
 							for (int f = 0; f < tadLength; f++) {
 
-                                if (shape::order(tadShapeShapeInfo) == 'c')
-                                    shape::ind2sub(tadRank,xShape, f, xCoord);
-                                else
-                                    shape::ind2subC(tadRank,xShape, f, xCoord);
+                                // FIXME: after we revert TAD logic, X/Z ind2sub/ind2subC should be swapped
+                                if (shape::order(tadShapeShapeInfo) == 'c') {
+                                    shape::ind2sub(xRank, xShape, f, xCoord);
+                                    shape::ind2subC(yRank, yShape, f, yCoord);
+                                } else {
+                                    shape::ind2subC(xRank, xShape, f, xCoord);
+                                    shape::ind2sub(yRank, yShape, f, yCoord);
+                                }
 
                                 if (shape::order(tadShapeInfoZ) == 'c')
                                     shape::ind2sub(zRank,zShape, f, zCoord);
                                 else
                                     shape::ind2subC(zRank,zShape, f, zCoord);
 
-                                Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, tadRank);
+                                Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
                                 Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
-                                result[zOffset] = OpType::op(x[xOffset], y[f * yStride]);
+                                Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+
+                                result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
 							}
 						}
 					}

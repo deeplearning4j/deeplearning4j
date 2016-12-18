@@ -107,7 +107,7 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
             xShapeInfo,
             y,
             yShapeInfo,
-            result,
+            result, resultShape,
             dimension,
             dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
@@ -687,7 +687,7 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
-	NativeOpExcutioner<float>::execBroadcast(opNum,x,xShapeInfo,y,yShapeInfo,result,dimension,dimensionLength,
+	NativeOpExcutioner<float>::execBroadcast(opNum,x,xShapeInfo,y,yShapeInfo,result, resultShapeInfo, dimension,dimensionLength,
                                                            tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
