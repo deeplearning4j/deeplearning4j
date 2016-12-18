@@ -91,7 +91,7 @@ public class ParameterServerSubscriber {
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
-    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1)
+    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1,required = true)
     private int updatesPerEpoch;
 
 
