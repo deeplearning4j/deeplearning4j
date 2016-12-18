@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -13,7 +15,9 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -22,14 +26,30 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Routines for importing saved Keras model configurations.
+ * Routines for importing
+ * saved Keras model configurations.
  *
  * @author davekale
  */
+@Slf4j
 public class ModelConfiguration {
-    private static Logger log = LoggerFactory.getLogger(Model.class);
 
     private ModelConfiguration() {}
+
+    /**
+     * Imports a Keras Sequential model configuration saved using call to model.to_json().
+     *
+     * @param inputStream    The input stream to parse for json
+     * @return                      DL4J MultiLayerConfiguration
+     * @throws IOException
+     */
+    public static MultiLayerConfiguration importSequentialModelConfigFromInputStream(InputStream inputStream)
+            throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        IOUtils.copy(inputStream,byteArrayOutputStream);
+        String configJson = new String(byteArrayOutputStream.toByteArray());
+        return importSequentialModelConfig(configJson);
+    }
 
     /**
      * Imports a Keras Sequential model configuration saved using call to model.to_json().
@@ -42,6 +62,22 @@ public class ModelConfiguration {
             throws IOException {
         String configJson = new String(Files.readAllBytes(Paths.get(configJsonFilename)));
         return importSequentialModelConfig(configJson);
+    }
+
+
+    /**
+     * Imports a Keras Functional API model configuration saved using call to model.to_json().
+     *
+     * @param inputStream    Path to text file storing Keras configuration as valid JSON.
+     * @return                      DL4J ComputationGraphConfiguration
+     * @throws IOException
+     */
+    public static ComputationGraphConfiguration importFunctionalApiConfigFromInputStream(InputStream inputStream)
+            throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        IOUtils.copy(inputStream,byteArrayOutputStream);
+        String configJson = new String(byteArrayOutputStream.toByteArray());
+        return importFunctionalApiConfig(configJson);
     }
 
     /**
