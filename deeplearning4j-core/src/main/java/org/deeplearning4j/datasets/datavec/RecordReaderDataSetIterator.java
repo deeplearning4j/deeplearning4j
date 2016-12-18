@@ -218,10 +218,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return new DataSet(writable.get(),writable.get());
         }
         if(currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
-            if(!regression)
-                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),numPossibleLabels);
-            else
-                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+            if(!regression) {
+                label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()), numPossibleLabels);
+            } else {
+                if(currList.get(1) instanceof NDArrayWritable){
+                    label = ((NDArrayWritable) currList.get(1)).get();
+                } else {
+                    label = Nd4j.scalar(currList.get(1).toDouble());
+                }
+            }
             NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
             featureVector = ndArrayWritable.get();
             return new DataSet(featureVector,label);
@@ -233,7 +238,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             if (!(current instanceof  NDArrayWritable) && current.toString().isEmpty())
                 continue;
 
-            if (regression && j >= labelIndex && j <= labelIndexTo) {
+            if(regression && j == labelIndex && j == labelIndexTo && current instanceof NDArrayWritable ){
+                //Case: NDArrayWritable for the labels
+                label = ((NDArrayWritable) current).get();
+            } else if (regression && j >= labelIndex && j <= labelIndexTo) {
                 //This is the multi-label regression case
                 if (label == null) label = Nd4j.create(1, (labelIndexTo - labelIndex + 1));
                 label.putScalar(labelCount++, current.toDouble());
