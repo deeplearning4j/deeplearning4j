@@ -49,6 +49,7 @@ public class StatusServer {
      * @return the started server
      */
     public static Server startServer(StatusStorage statusStorage,int statusServerPort) {
+        log.info("Starting server on port " + statusServerPort);
         RoutingDsl dsl = new RoutingDsl();
         dsl.GET("/ids/").routeTo(new F.Function0<Result>() {
 

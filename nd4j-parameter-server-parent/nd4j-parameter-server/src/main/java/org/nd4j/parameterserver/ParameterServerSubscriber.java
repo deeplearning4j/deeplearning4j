@@ -47,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -307,15 +308,21 @@ public class ParameterServerSubscriber {
         //Only schedule this if a remote server is available.
         if (CheckSocket.remotePortTaken(statusServerHost, statusServerPort, 10000)) {
             scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
+            final AtomicInteger failCount = new AtomicInteger(0);
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
+                    //
+                    if(failCount.get() >= 3)
+                        return;
                     SubscriberState subscriberState = asState();
                     JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
                     String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId);
                     HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json").body(jsonObject).asString();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    failCount.incrementAndGet();
+                    if(failCount.get() >= 3) {
+                        log.warn("Failed to send update, shutting down likely?",e);
+                    }
                 }
             }, 0, heartbeatMs, TimeUnit.MILLISECONDS);
 
