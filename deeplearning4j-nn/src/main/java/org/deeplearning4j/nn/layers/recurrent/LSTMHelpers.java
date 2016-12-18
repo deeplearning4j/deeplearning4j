@@ -328,7 +328,7 @@ public class LSTMHelpers {
             deltao.muli(sigmaoPrimeOfZo);
 
             //Memory cell error:
-            INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
+            INDArray sigmahPrimeOfS = null; //Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup('f')).derivative());//	shape: [m,n^L]
             //Eraly:INDArray sigmahPrimeOfS = conf.getLayer().getActivationFn().getGradient(currMemCellState.dup('f'));
             l1BLAS.axpy(nablaCellState.length(), 1.0, ao.muli(nablaOut).muli(sigmahPrimeOfS), nablaCellState);
             INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
@@ -364,7 +364,7 @@ public class LSTMHelpers {
             INDArray zi = fwdPass.iz[time];
             INDArray deltai = deltaiNext;
             //ERALY:Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi, null, deltai).derivative());
-            deltai = conf.getLayer().getActivationFn().getGradient(deltai.muli(0).addi(zi)); //Ugly hack to not override shape info
+            deltai = null;  //conf.getLayer().getActivationFn().getGradient(deltai.muli(0).addi(zi)); //Ugly hack to not override shape info
             deltai.muli(ag);
             deltai.muli(nablaCellState);
             //Shape: [m,n^L]

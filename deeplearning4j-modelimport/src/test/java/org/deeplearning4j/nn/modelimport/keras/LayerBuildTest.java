@@ -45,7 +45,7 @@ public class LayerBuildTest {
         config.put("output_dim", nOut);
 
         DenseLayer layer = buildDenseLayer(config);
-        assertEquals(activation, layer.getActivationFunction());
+        assertEquals(activation, layer.getActivationFn().toString().toLowerCase());
         assertEquals(name, layer.getLayerName());
         assertEquals(init, layer.getWeightInit());
         assertEquals(l1, layer.getL1(), 0.0);
@@ -74,7 +74,7 @@ public class LayerBuildTest {
         config.put("nb_filter", nOut);
 
         ConvolutionLayer layer = buildConvolutionLayer(config);
-        assertEquals(activation, layer.getActivationFunction());
+        assertEquals(activation, layer.getActivationFn().toString().toLowerCase());
         assertEquals(name, layer.getLayerName());
         assertEquals(init, layer.getWeightInit());
         assertEquals(l1, layer.getL1(), 0.0);
@@ -124,7 +124,7 @@ public class LayerBuildTest {
         config.put("output_dim", nOut);
 
         GravesLSTM layer = buildGravesLstmLayer(config);
-        assertEquals(activation, layer.getActivationFunction());
+        assertEquals(activation, layer.getActivationFn().toString().toLowerCase());
         assertEquals(name, layer.getLayerName());
         assertEquals(init, layer.getWeightInit());
         assertEquals(l1, layer.getL1(), 0.0);

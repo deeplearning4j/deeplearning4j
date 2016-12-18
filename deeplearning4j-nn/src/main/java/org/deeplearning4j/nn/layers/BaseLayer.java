@@ -123,8 +123,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray derivativeActivation(INDArray input) {
         //INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
-        INDArray deriv = conf().getLayer().getActivationFn().getGradient(input);
-        return deriv;
+//        INDArray deriv = conf().getLayer().getActivationFn().getGradient(input);
+//        return deriv;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -144,8 +145,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true);   //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
-        INDArray delta = epsilon.muli(activationDerivative);
+//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
+//        INDArray delta = epsilon.muli(activationDerivative);
+        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst();  //TODO handle activation function params
 
         if(maskArray != null){
             delta.muliColumnVector(maskArray);

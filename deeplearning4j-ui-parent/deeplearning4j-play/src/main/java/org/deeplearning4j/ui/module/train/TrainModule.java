@@ -824,7 +824,7 @@ public class TrainModule implements UIModule {
                         FeedForwardLayer ffl = (FeedForwardLayer) layer;
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNIn"), String.valueOf(ffl.getNIn())});
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
-                        activationFn = layer.getActivationFunction();
+                        activationFn = layer.getActivationFn().toString();
                     }
                     int nParams = layer.initializer().numParams(nnc);
                     layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"), String.valueOf(nParams)});

@@ -155,15 +155,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         IActivation afn = conf.getLayer().getActivationFn();
 
         //if("identity".equals(afn)){
-        if(afn instanceof ActivationIdentity){
-            delta = epsilon;    //avoid doing .muli with 1s
-        } else {
-            INDArray sigmaPrimeZ = preOutput(true);
-            //Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-            //        afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
-            sigmaPrimeZ = afn.getGradient(sigmaPrimeZ);
-            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
-        }
+//        if(afn instanceof ActivationIdentity){
+//            delta = epsilon;    //avoid doing .muli with 1s
+//        } else {
+//            INDArray sigmaPrimeZ = preOutput(true);
+//            //Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+//            //        afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
+//            sigmaPrimeZ = afn.getGradient(sigmaPrimeZ);
+//            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
+//        }
+
+        delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
