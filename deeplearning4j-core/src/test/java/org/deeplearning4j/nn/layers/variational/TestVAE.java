@@ -338,7 +338,7 @@ public class TestVAE {
                                 .nIn(inOutSize).nOut(3)
                                 .encoderLayerSizes(5)
                                 .decoderLayerSizes(6)
-                                .pzxActivationFunction(new ActivationTanH())
+                                .pzxActivationFunction("tanh")
                                 .reconstructionDistribution(reconstructionDistributions[i])
                                 .activation(new ActivationTanH())
                                 .updater(Updater.SGD)
