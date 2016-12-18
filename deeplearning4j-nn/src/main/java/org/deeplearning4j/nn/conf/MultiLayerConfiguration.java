@@ -67,6 +67,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
 
+    //Counter for the number of parameter updates so far
+    // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
+    // for Spark and model serialization
+    protected int iterationCount = 0;
+
     /**
      *
      * @return  JSON representation of NN configuration

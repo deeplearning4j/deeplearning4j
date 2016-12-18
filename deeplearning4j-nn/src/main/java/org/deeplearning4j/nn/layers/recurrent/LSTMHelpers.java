@@ -44,7 +44,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 public class LSTMHelpers {
 
-    public static final String SIGMOID = "sigmoid";
+//    public static final String SIGMOID = "sigmoid";
 
     private LSTMHelpers() {
     }
@@ -55,6 +55,7 @@ public class LSTMHelpers {
      */
     static public FwdPassReturn activateHelper( final Layer layer,
                                                 final NeuralNetConfiguration conf,
+                                                final String gateActivationFn,        //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
                                                 final INDArray input,
                                                 final INDArray recurrentWeights,      //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                                                 final INDArray originalInputWeights,  //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
@@ -65,6 +66,7 @@ public class LSTMHelpers {
                                                 boolean forBackprop,
                                                 boolean forwards,
                                                 final String inputWeightKey) {
+
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
         if(input == null || input.length() == 0) throw new IllegalArgumentException("Invalid input: not set or 0 length");
@@ -106,6 +108,7 @@ public class LSTMHelpers {
         }
 
         //Allocate arrays for activations:
+        boolean sigmoidGates = "sigmoid".equals(gateActivationFn);
         INDArray outputActivations = null;
 
         FwdPassReturn toReturn = new FwdPassReturn();
@@ -118,6 +121,11 @@ public class LSTMHelpers {
             toReturn.fa = new INDArray[timeSeriesLength];
             toReturn.oa = new INDArray[timeSeriesLength];
             toReturn.ga = new INDArray[timeSeriesLength];
+            if(!sigmoidGates){
+                toReturn.fz = new INDArray[timeSeriesLength];
+                toReturn.oz = new INDArray[timeSeriesLength];
+                toReturn.gz = new INDArray[timeSeriesLength];
+            }
         } else {
             outputActivations = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength},'f');   //F order to keep time steps together
             toReturn.fwdPassOutput = outputActivations;
@@ -169,14 +177,20 @@ public class LSTMHelpers {
             INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
             l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, forgetGateActivations));
+            if(forBackprop && !sigmoidGates){
+                toReturn.fz[time] = forgetGateActivations.dup('f');     //Forget gate pre-out (z)
+            }
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(gateActivationFn, forgetGateActivations));
             if (forBackprop) toReturn.fa[time] = forgetGateActivations;
 
 
             INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(3*hiddenLayerSize,4*hiddenLayerSize));
             INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
             l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, inputModGateActivations));
+            if(forBackprop && !sigmoidGates){
+                toReturn.gz[time] = inputModGateActivations.dup('f');   //Input modulation gate pre-out (z)
+            }
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(gateActivationFn, inputModGateActivations));
             if (forBackprop) toReturn.ga[time] = inputModGateActivations;
 
             //Memory cell state
@@ -194,7 +208,10 @@ public class LSTMHelpers {
             INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
             INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
             l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(SIGMOID, outputGateActivations));
+            if(forBackprop && !sigmoidGates){
+                toReturn.oz[time] = outputGateActivations.dup('f');     //Output gate activations
+            }
+            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(gateActivationFn, outputGateActivations));
             if (forBackprop) toReturn.oa[time] = outputGateActivations;
 
             //LSTM unit outputs:
@@ -225,6 +242,7 @@ public class LSTMHelpers {
     }
 
     static public Pair<Gradient, INDArray> backpropGradientHelper(final NeuralNetConfiguration conf,
+                                                                  final String gateActivationFn,
                                                                   final INDArray input,
                                                                   final INDArray recurrentWeights,      //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                                                                   final INDArray inputWeights,  //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
@@ -283,6 +301,7 @@ public class LSTMHelpers {
         INDArray rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
         INDArray rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
 
+        boolean sigmoidGates = "sigmoid".equals(gateActivationFn);
 
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             int time = iTimeIndex;
@@ -319,7 +338,13 @@ public class LSTMHelpers {
             //Output gate deltas:
             INDArray sigmahOfS = fwdPass.memCellActivations[time];
             INDArray ao = fwdPass.oa[time];
-            INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ao.dup('f')));    //Equivalent to sigmoid deriv on zo
+            INDArray sigmaoPrimeOfZo;
+            if(sigmoidGates){
+                sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ao.dup('f')));    //Equivalent to sigmoid deriv on zo
+            } else {
+                sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.oz[time]).derivative());
+            }
+
             //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
             INDArray deltao = deltaoNext;
             Nd4j.getExecutioner().exec(new MulOp(nablaOut,sigmahOfS,deltao));
@@ -342,7 +367,11 @@ public class LSTMHelpers {
             INDArray deltaf = null;
             if (iTimeIndex > 0) {
                 deltaf = deltafNext;
-                Nd4j.getExecutioner().exec(new TimesOneMinus(af,deltaf));
+                if( sigmoidGates ) {
+                    Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
+                } else {
+                    Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.fz[time], deltaf).derivative());
+                }
                 deltaf.muli(nablaCellState);
                 deltaf.muli(prevMemCellState);
             }
@@ -352,7 +381,11 @@ public class LSTMHelpers {
             INDArray ag = fwdPass.ga[time];
             INDArray ai = fwdPass.ia[time];
             INDArray deltag = deltagNext;
-            Nd4j.getExecutioner().exec(new TimesOneMinus(ag,deltag));   //Equivalent to sigmoid deriv on zg
+            if( sigmoidGates ){
+                Nd4j.getExecutioner().exec(new TimesOneMinus(ag,deltag));   //Equivalent to sigmoid deriv on zg
+            } else {
+                Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform(gateActivationFn, fwdPass.gz[time], deltag).derivative());
+            }
             deltag.muli(ai);
             deltag.muli(nablaCellState);
             //Shape: [m,n^L]

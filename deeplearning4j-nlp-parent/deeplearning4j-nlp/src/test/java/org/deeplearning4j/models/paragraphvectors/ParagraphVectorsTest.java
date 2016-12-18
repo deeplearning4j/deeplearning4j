@@ -684,7 +684,6 @@ public class ParagraphVectorsTest {
         there's no need in this test within travis, use it manually only for problems detection
     */
     @Test
-    @Ignore
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
 
 
@@ -702,17 +701,21 @@ public class ParagraphVectorsTest {
         Word2Vec wordVectors = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .batchSize(250)
-                .iterations(3)
-                .epochs(1)
+                .iterations(1)
+                .epochs(3)
                 .learningRate(0.025)
                 .layerSize(150)
                 .minLearningRate(0.001)
+                .elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .useHierarchicSoftmax(true)
                 .windowSize(5)
                 .iterate(iter)
                 .tokenizerFactory(t)
                 .build();
 
         wordVectors.fit();
+
+        VocabWord day_A = wordVectors.getVocab().tokenFor("day");
 
         INDArray vector_day1 = wordVectors.getWordVectorMatrix("day").dup();
 
@@ -734,16 +737,21 @@ public class ParagraphVectorsTest {
                 .iterate(labelAwareIterator)
                 .learningRate(0.025)
                 .minLearningRate(0.001)
-                .iterations(1)
-                .epochs(10)
+                .iterations(5)
+                .epochs(1)
                 .layerSize(150)
                 .tokenizerFactory(t)
-                .trainWordVectors(true)
+                .sequenceLearningAlgorithm(new DBOW<VocabWord>())
+                .useHierarchicSoftmax(true)
+                .trainWordVectors(false)
                 .useExistingWordVectors(wordVectors)
                 .build();
 
         paragraphVectors.fit();
 
+        VocabWord day_B = paragraphVectors.getVocab().tokenFor("day");
+
+        assertEquals(day_A.getIndex(), day_B.getIndex());
 
         /*
         double similarityD = wordVectors.similarity("day", "night");
@@ -753,14 +761,14 @@ public class ParagraphVectorsTest {
 
         INDArray vector_day2 = paragraphVectors.getWordVectorMatrix("day").dup();
         double crossDay = arraysSimilarity(vector_day1, vector_day2);
-/*
+
         log.info("Day1: " + vector_day1);
         log.info("Day2: " + vector_day2);
         log.info("Cross-Day similarity: " + crossDay);
         log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(vector_day1, vector_day2));
 
         assertTrue(crossDay > 0.9d);
-*/
+
         /**
          *
          * Here we're checking cross-vocabulary equality
@@ -801,7 +809,7 @@ public class ParagraphVectorsTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals("Zhealth", topPrediction);
+        assertEquals("Zfinance", topPrediction);
     }
 
     /*

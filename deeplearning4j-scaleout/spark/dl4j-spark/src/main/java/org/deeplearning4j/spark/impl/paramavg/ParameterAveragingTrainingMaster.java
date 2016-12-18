@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import org.deeplearning4j.api.storage.*;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -828,7 +830,18 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
 
-        iterationCount++;
+        if(params != null) {
+            //Params may be null for edge case (empty RDD)
+            if (network != null) {
+                MultiLayerConfiguration conf = network.getNetwork().getLayerWiseConfigurations();
+                int numUpdates = network.getNetwork().conf().getNumIterations() * averagingFrequency;
+                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+            } else {
+                ComputationGraphConfiguration conf = graph.getNetwork().getConfiguration();
+                int numUpdates = graph.getNetwork().conf().getNumIterations() * averagingFrequency;
+                conf.setIterationCount(conf.getIterationCount() + numUpdates);
+            }
+        }
     }
 
 
