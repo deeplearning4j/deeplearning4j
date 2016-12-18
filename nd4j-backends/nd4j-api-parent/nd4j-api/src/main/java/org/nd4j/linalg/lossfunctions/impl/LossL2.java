@@ -50,7 +50,7 @@ public class LossL2 implements ILossFunction {
         this.weights = weights;
     }
 
-    public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+    protected INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr;
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
@@ -94,22 +94,26 @@ public class LossL2 implements ILossFunction {
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
-        INDArray gradients;
-        if (activationFn instanceof ActivationSoftmax) {
-            INDArray dlda = output.sub(labels).muli(2);
-            if (weights != null) {
-                dlda.muliRowVector(weights);
-            }
-            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
-        } else {
-            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-            gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
+        INDArray dLda = output.subi(labels).muli(2);
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst(); //TODO handle activation function parameter gradients
 
-            if (weights != null) {
-                gradients.muliRowVector(weights);
-            }
-        }
+//        if (activationFn instanceof ActivationSoftmax) {
+//            INDArray dlda = output.sub(labels).muli(2);
+//            if (weights != null) {
+//                dlda.muliRowVector(weights);
+//            }
+//            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
+//        } else {
+//
+//
+//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
+//            gradients = output.subi(labels).muli(2).muli(sigmaPrimeZ);
+//
+//            if (weights != null) {
+//                gradients.muliRowVector(weights);
+//            }
+//        }
 
 
         //Loss function with masking

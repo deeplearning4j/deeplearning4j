@@ -119,9 +119,13 @@ public class LossMCXENT implements ILossFunction {
             }
         } else {
             //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-            grad = sigmaPrimeZ.muli(labels);
-            grad.divi(output).muli(-1);
+
+            INDArray dLda = output.rdivi(labels).negi();
+            grad = activationFn.backprop(preOutput, dLda).getFirst();       //TODO activation function with weights
+
+//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
+//            grad = sigmaPrimeZ.muli(labels);
+//            grad.divi(output).muli(-1);
 
             //Weighted loss function
             if (weights != null) {

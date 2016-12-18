@@ -93,24 +93,24 @@ public class LossMAPE implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray actSubPredicted = labels.sub(output);
-        INDArray dlda = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
+        INDArray dLda = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
         INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
-        dlda.divi(absLabels).muli(-100.0 / labels.size(1));
+        dLda.divi(absLabels).muli(-100.0 / labels.size(1));
 
         //Weighted loss function
         if (weights != null) {
-            dlda.muliRowVector(weights);
+            dLda.muliRowVector(weights);
         }
 
-        INDArray gradient;
-        //if ("softmax".equals(activationFn)) {
-        if (activationFn instanceof ActivationSoftmax) {
-            gradient = LossUtil.dLdZsoftmaxi(dlda, output);
-        } else {
-            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-            gradient = dlda.muli(sigmaPrimeZ);
-        }
+        INDArray gradient = activationFn.backprop(preOutput, dLda).getFirst();      //TODO activation functions with params
+//        //if ("softmax".equals(activationFn)) {
+//        if (activationFn instanceof ActivationSoftmax) {
+//            gradient = LossUtil.dLdZsoftmaxi(dlda, output);
+//        } else {
+//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
+//            gradient = dlda.muli(sigmaPrimeZ);
+//        }
 
         if (mask != null) {
             gradient.muliColumnVector(mask);

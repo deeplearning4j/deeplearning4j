@@ -59,17 +59,21 @@ public class LossKLD implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
-        INDArray grad;
-        //if ("softmax".equals(activationFn)) {
-        if (activationFn instanceof ActivationSoftmax) {
-            INDArray dlda = labels.div(output).negi();
-            grad = LossUtil.dLdZsoftmaxi(dlda, output);
-        } else {
-            INDArray dlda = output.rdivi(labels).negi();
-            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-            grad = dlda.muli(sigmaPrimeZ);
-        }
+
+        INDArray dLda = labels.div(output).negi();
+        INDArray grad = activationFn.backprop(preOutput, dLda).getFirst();      //TODO activation functions with params
+
+//        INDArray grad;
+//        //if ("softmax".equals(activationFn)) {
+//        if (activationFn instanceof ActivationSoftmax) {
+//            INDArray dlda = labels.div(output).negi();
+//            grad = LossUtil.dLdZsoftmaxi(dlda, output);
+//        } else {
+//            INDArray dlda = output.rdivi(labels).negi();
+//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
+//            grad = dlda.muli(sigmaPrimeZ);
+//        }
 
         if (mask != null) {
             grad.muliColumnVector(mask);

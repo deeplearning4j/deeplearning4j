@@ -91,32 +91,46 @@ public class LossMSLE implements ILossFunction {
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(),true);
 
-        INDArray gradients;
+//        INDArray gradients;
         //if ("softmax".equals(activationFn)) {
-        if (activationFn instanceof ActivationSoftmax) {
-            INDArray p1 = output.add(1.0);
-            INDArray dlda = p1.rdiv(2.0 / labels.size(1));
-            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
-            dlda.muli(logRatio);
+//        if (activationFn instanceof ActivationSoftmax) {
+//            INDArray p1 = output.add(1.0);
+//            INDArray dlda = p1.rdiv(2.0 / labels.size(1));
+//            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
+//            dlda.muli(logRatio);
+//
+//            if (weights != null) {
+//                dlda.muliRowVector(weights);
+//            }
+//
+//            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
+//        } else {
+//            INDArray p1 = output.addi(1.0);
+//            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
+//            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
+//            gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
+//            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
+//            gradients.muli(logRatio);
+//
+//            //Weighted loss function
+//            if (weights != null) {
+//                gradients.muliRowVector(weights);
+//            }
+//        }
 
-            if (weights != null) {
-                dlda.muliRowVector(weights);
-            }
+        INDArray p1 = output.add(1.0);
+        INDArray dlda = p1.rdiv(2.0 / labels.size(1));
+        INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
+        dlda.muli(logRatio);
 
-            gradients = LossUtil.dLdZsoftmaxi(dlda, output);
-        } else {
-            INDArray p1 = output.addi(1.0);
-            //INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-            INDArray sigmaPrimeZ = activationFn.getGradient(preOutput.dup());
-            gradients = sigmaPrimeZ.divi(p1).muli(2.0 / labels.size(1));
-            INDArray logRatio = Transforms.log(p1.divi(labels.add(1.0)), false);
-            gradients.muli(logRatio);
-
-            //Weighted loss function
-            if (weights != null) {
-                gradients.muliRowVector(weights);
-            }
+        if (weights != null) {
+            dlda.muliRowVector(weights);
         }
+
+        //dL/dz
+        INDArray gradients = activationFn.backprop(preOutput, dlda).getFirst(); //TODO activation functions with weights
+
+
 
         if (mask != null) {
             gradients.muliColumnVector(mask);
