@@ -147,8 +147,6 @@ public class HostPortPublisher implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        if(aeron != null)
-            CloseHelper.quietClose(aeron);
         if(publication != null)
             CloseHelper.quietClose(publication);
     }

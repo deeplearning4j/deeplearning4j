@@ -38,7 +38,7 @@ public class NDArrayFragmentHandler implements FragmentHandler {
      * @param header representing the meta data for the data.
      */
     @Override
-    public   void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    public   synchronized  void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         ByteBuffer byteBuffer = buffer.byteBuffer();
         boolean byteArrayInput = false;
         if(byteBuffer == null) {
