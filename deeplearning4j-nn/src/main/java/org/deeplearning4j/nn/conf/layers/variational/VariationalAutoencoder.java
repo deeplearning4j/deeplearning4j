@@ -196,18 +196,25 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             switch(activationFn) {
                 case "tanh":
                     this.pzxActivationFn = new ActivationTanH();
+                    break;
                 case "sigmoid":
                     this.pzxActivationFn = new ActivationSigmoid();
+                    break;
                 case "identity":
                     this.pzxActivationFn = new ActivationIdentity();
+                    break;
                 case "leakyrelu":
                     this.pzxActivationFn = new ActivationLReLU();
+                    break;
                 case "relu":
                     this.pzxActivationFn = new ActivationReLU();
+                    break;
                 case "softmax":
                     this.pzxActivationFn = new ActivationSoftmax();
+                    break;
                 case "rrelu":
                     this.pzxActivationFn = new ActivationRReLU();
+                    break;
             }
             return this;
 

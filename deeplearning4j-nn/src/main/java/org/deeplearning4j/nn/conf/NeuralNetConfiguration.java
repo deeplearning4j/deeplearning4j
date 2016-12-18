@@ -690,18 +690,25 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             switch(activationFunction) {
                 case "tanh":
                     this.activationFn = new ActivationTanH();
+                    break;
                 case "sigmoid":
                     this.activationFn = new ActivationSigmoid();
+                    break;
                 case "identity":
                     this.activationFn = new ActivationIdentity();
+                    break;
                 case "leakyrelu":
                     this.activationFn = new ActivationLReLU();
+                    break;
                 case "relu":
                     this.activationFn = new ActivationReLU();
+                    break;
                 case "softmax":
                     this.activationFn = new ActivationSoftmax();
+                    break;
                 case "rrelu":
                     this.activationFn = new ActivationRReLU();
+                    break;
             }
             return this;
         }

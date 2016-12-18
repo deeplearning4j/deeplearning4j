@@ -23,6 +23,7 @@ import lombok.Getter;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.nd4j.linalg.activations.Activations;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
@@ -261,6 +262,29 @@ public abstract class Layer implements Serializable, Cloneable {
         @Deprecated
         public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
+            switch(activationFunction) {
+                case "tanh":
+                    this.activationFn = new ActivationTanH();
+                    break;
+                case "sigmoid":
+                    this.activationFn = new ActivationSigmoid();
+                    break;
+                case "identity":
+                    this.activationFn = new ActivationIdentity();
+                    break;
+                case "leakyrelu":
+                    this.activationFn = new ActivationLReLU();
+                    break;
+                case "relu":
+                    this.activationFn = new ActivationReLU();
+                    break;
+                case "softmax":
+                    this.activationFn = new ActivationSoftmax();
+                    break;
+                case "rrelu":
+                    this.activationFn = new ActivationRReLU();
+                    break;
+            }
             return (T) this;
         }
 
