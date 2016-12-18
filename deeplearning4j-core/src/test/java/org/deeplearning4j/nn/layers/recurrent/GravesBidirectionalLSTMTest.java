@@ -169,6 +169,7 @@ public class GravesBidirectionalLSTMTest {
 		final INDArray fwdPassFalse = LSTMHelpers.activateHelper(
 				lstm,
 				lstm.conf(),
+				"sigmoid",
 				lstm.input(),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -178,6 +179,7 @@ public class GravesBidirectionalLSTMTest {
 		final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(
 				lstm,
 				lstm.conf(),
+				"sigmoid",
 				lstm.input(),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
