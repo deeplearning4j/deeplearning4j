@@ -8,11 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.HardTanh;
 import org.nd4j.linalg.api.ops.impl.transforms.HardTanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
-import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  *        ⎧  1, if x >  1
@@ -24,8 +20,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 @Getter
 public class ActivationHardTanH extends BaseActivationFunction{
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
         Nd4j.getExecutioner().execAndReturn(new HardTanh(in));

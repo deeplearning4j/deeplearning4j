@@ -24,7 +24,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 public class ActivationLReLU extends BaseActivationFunction {
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
-
     private double alpha;
 
     public ActivationLReLU() {

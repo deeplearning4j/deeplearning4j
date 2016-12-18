@@ -1,5 +1,6 @@
 package org.nd4j.linalg.activations.impl;
 
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
@@ -26,6 +27,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
  */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties({"alpha"})
 @Getter
 public class ActivationRReLU extends BaseActivationFunction {
     @JsonSerialize(using = RowVectorSerializer.class)
