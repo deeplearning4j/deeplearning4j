@@ -60,7 +60,7 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @Data
 @Parameters(separators = ",")
-public class ParameterServerSubscriber {
+public class ParameterServerSubscriber implements AutoCloseable {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
 
@@ -131,6 +131,7 @@ public class ParameterServerSubscriber {
         Preconditions.checkNotNull(mediaDriver);
         this.mediaDriver = mediaDriver;
     }
+
 
 
     /**
@@ -332,20 +333,23 @@ public class ParameterServerSubscriber {
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (subscriber != null)
-                CloseHelper.quietClose(subscriber);
-            if (responder != null)
-                CloseHelper.quietClose(responder);
-            if (aeron != null)
-                CloseHelper.quietClose(aeron);
-            if (scheduledExecutorService != null)
-                scheduledExecutorService.shutdown();
+            close();
 
         }));
 
         //set the server for the status of the master and slave nodes
     }
 
+
+    @Override
+    public void close() {
+        if (subscriber != null)
+            CloseHelper.quietClose(subscriber);
+        if (responder != null)
+            CloseHelper.quietClose(responder);
+        if (scheduledExecutorService != null)
+            scheduledExecutorService.shutdown();
+    }
 
 
 

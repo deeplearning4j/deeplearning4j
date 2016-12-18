@@ -23,12 +23,15 @@ import play.server.Server;
 @Slf4j
 @NoArgsConstructor
 @Data
-public class ParameterServerNode {
+public class ParameterServerNode implements AutoCloseable {
     private Server server;
-    private ParameterServerSubscriber subscriber;
+    private ParameterServerSubscriber[] subscriber;
     private MediaDriver mediaDriver;
     private Aeron aeron;
     private int statusPort;
+    private int numWorkers;
+
+
 
     /**
      *
@@ -36,8 +39,20 @@ public class ParameterServerNode {
      * @param statusPort the port for the server status
      */
     public ParameterServerNode(MediaDriver mediaDriver,int statusPort) {
+        this(mediaDriver,statusPort,Runtime.getRuntime().availableProcessors());
+
+    }
+
+    /**
+     *
+     * @param mediaDriver the media driver to sue for communication
+     * @param statusPort the port for the server status
+     */
+    public ParameterServerNode(MediaDriver mediaDriver,int statusPort,int numWorkers) {
         this.mediaDriver = mediaDriver;
         this.statusPort = statusPort;
+        this.numWorkers = numWorkers;
+        subscriber = new ParameterServerSubscriber[numWorkers];
 
     }
 
@@ -62,24 +77,45 @@ public class ParameterServerNode {
         if(mediaDriver == null)
             mediaDriver = MediaDriver.launchEmbedded();
         log.info("Started media driver with aeron directory " + mediaDriver.aeronDirectoryName());
-        subscriber = new ParameterServerSubscriber(mediaDriver);
-        //ensure reuse of aeron wherever possible
-        if(aeron == null)
-            aeron = Aeron.connect(getContext(mediaDriver));
+        for(int i = 0; i < numWorkers; i++) {
+            subscriber[i] = new ParameterServerSubscriber(mediaDriver);
+            //ensure reuse of aeron wherever possible
+            if(aeron == null)
+                aeron = Aeron.connect(getContext(mediaDriver));
+            subscriber[i].setAeron(aeron);
+            subscriber[i].run(args);
+        }
 
-        subscriber.setAeron(aeron);
-
-
-
-
-        subscriber.run(args);
     }
+
+    /**
+     * Returns true if all susbcribers in the
+     * subscriber pool have been launched
+     * @return
+     */
+    public boolean subscriberLaunched() {
+        boolean launched = true;
+        for(int i = 0; i < numWorkers; i++) {
+            launched = launched && subscriber[i].subscriberLaunched();
+        }
+
+        return launched;
+    }
+
 
     /**
      * Stop the server
      * @throws Exception
      */
-    public void stop() throws Exception {
+    @Override
+    public void close() throws Exception {
+        if(subscriber != null) {
+            for(int i = 0; i < subscriber.length; i++) {
+                if(subscriber[i] != null) {
+                    subscriber[i].close();
+                }
+            }
+        }
         if(server != null)
             server.stop();
         if(mediaDriver != null)
