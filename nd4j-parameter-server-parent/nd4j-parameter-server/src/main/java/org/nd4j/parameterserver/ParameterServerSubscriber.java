@@ -35,6 +35,7 @@ import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.util.CheckSocket;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +80,8 @@ public class ParameterServerSubscriber {
     private int statusServerPort = 9000;
     @Parameter(names = {"-sh", "--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
     private String statusServerHost = "localhost";
-    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
-    private String updateTypeString;
+    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.", arity = 1)
+    private String updateTypeString = UpdateType.SYNC.toString().toLowerCase();
 
     private UpdateType updateType = UpdateType.SYNC;
 
@@ -93,9 +94,20 @@ public class ParameterServerSubscriber {
     @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1)
     private int updatesPerEpoch;
 
+
+    /**
+     * Specify a custom class as a jvm arg.
+     * Note that this class must be a fully qualified classname
+     */
+    public final static String CUSTOM_UPDATE_TYPE = "org.nd4j.parameterserver.updatetype";
+    /**
+     * Update types are for
+     * instantiating various kinds of update types
+     */
     public enum UpdateType {
-        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC
+        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC,CUSTOM
     }
+
 
 
     private MediaDriver mediaDriver;
@@ -191,6 +203,11 @@ public class ParameterServerSubscriber {
             System.exit(1);
         }
 
+
+        //ensure that the update type is configured from the command line args
+        updateType = UpdateType.valueOf(updateTypeString.toUpperCase());
+
+
         if (publishMasterUrl == null && !master)
             throw new IllegalStateException("Please specify a master url or set master to true");
 
@@ -228,6 +245,7 @@ public class ParameterServerSubscriber {
 
 
         if (master) {
+
             ParameterServerUpdater updater = null;
             //instantiate with shape instead of just length
             switch(updateType) {
@@ -235,6 +253,13 @@ public class ParameterServerSubscriber {
                 case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),updatesPerEpoch); break;
                 case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
                 case TIME_DELAYED: break;
+                case CUSTOM:
+                    try {
+                        updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE)).newInstance();
+                    }catch(Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    break;
                 default: throw new IllegalStateException("Illegal type of updater");
             }
             callback = new ParameterServerListener(Ints.toArray(shape),updater);
@@ -308,9 +333,12 @@ public class ParameterServerSubscriber {
         }));
 
         //set the server for the status of the master and slave nodes
-
-
     }
+
+
+
+
+
 
     //get a context
     public Aeron.Context getContext() {
