@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -18,8 +19,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ParallelWrapper implements AutoCloseable {
-    private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
     private int workers = 2;
     private int prefetchSize = 2;
@@ -161,7 +160,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        logger.info("Averaged score: " + score);
+                        log.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof ComputationGraph) {
@@ -207,7 +206,7 @@ public class ParallelWrapper implements AutoCloseable {
         if(!wasAveraged)
             throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        log.debug("Iterations passed: {}", iterationsCounter.get());
         iterationsCounter.set(0);
     }
 
@@ -232,9 +231,7 @@ public class ParallelWrapper implements AutoCloseable {
         } else iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
-        int whiles = 0;
         while (iterator.hasNext()) {
-            whiles++;
             DataSet dataSet = iterator.next();
 
             /*
@@ -285,7 +282,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        logger.info("Averaged score: " + score);
+                        log.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof MultiLayerNetwork) {
@@ -358,7 +355,7 @@ public class ParallelWrapper implements AutoCloseable {
         if(!wasAveraged)
             throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        log.debug("Iterations passed: {}", iterationsCounter.get());
         iterationsCounter.set(0);
     }
 
