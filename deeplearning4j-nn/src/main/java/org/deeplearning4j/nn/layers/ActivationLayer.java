@@ -92,7 +92,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
             in = input;
         }
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
-        return conf().getLayer().getActivationFn().getActivation(in,true);
+        return conf().getLayer().getActivationFn().getActivation(in,training);
 
     }
 
