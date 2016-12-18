@@ -267,6 +267,7 @@
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
         <module>deeplearning4j-modelimport</module>
+        <module>deeplearning4j-keras</module>
     </modules>
 
     <licenses>
