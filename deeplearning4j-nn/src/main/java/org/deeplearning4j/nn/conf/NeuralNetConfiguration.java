@@ -694,6 +694,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case "sigmoid":
                     this.activationFn = new ActivationSigmoid();
                     break;
+                case "softsign":
+                    this.activationFn = new ActivationSoftSign();
+                    break;
                 case "identity":
                     this.activationFn = new ActivationIdentity();
                     break;

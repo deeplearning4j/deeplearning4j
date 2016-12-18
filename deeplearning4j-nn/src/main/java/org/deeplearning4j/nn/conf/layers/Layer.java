@@ -281,6 +281,9 @@ public abstract class Layer implements Serializable, Cloneable {
                 case "softmax":
                     this.activationFn = new ActivationSoftmax();
                     break;
+                case "softsign":
+                    this.activationFn = new ActivationSoftSign();
+                    break;
                 case "rrelu":
                     this.activationFn = new ActivationRReLU();
                     break;

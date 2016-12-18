@@ -212,6 +212,9 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
                 case "softmax":
                     this.pzxActivationFn = new ActivationSoftmax();
                     break;
+                case "softsign":
+                    this.pzxActivationFn = new ActivationSoftSign();
+                    break;
                 case "rrelu":
                     this.pzxActivationFn = new ActivationRReLU();
                     break;
