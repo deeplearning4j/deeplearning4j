@@ -196,7 +196,7 @@ redirect_from: /zh-neuralnet-overview
 * [本征向量、PCA、协方差和熵](eigenvector)
 * [深度学习和神经网络词汇表](glossary)
 * [卷积网络教程](convolutionalnets)
-* [递归网络和LSTM](lstm)
+* [循环网络和LSTM](lstm)
 * [Word2vec和自然语言处理](word2vec)
 * [Deeplearning4j快速入门](quickstart)
 * [神经网络解密](https://www.youtube.com/watch?v=bxe2T-V8XRs)（全系列共七个视频）
