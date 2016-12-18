@@ -45,6 +45,7 @@ public class GravesLSTM extends BaseRecurrentLayer {
     private GravesLSTM(Builder builder) {
     	super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
+        this.gateActivationFn = builder.gateActivationFn;
     }
 
     @Override
