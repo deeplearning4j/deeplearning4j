@@ -3373,10 +3373,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                         {1,1,0,0}}).dup(orderbc);
 
                 INDArray result01 = arrOrig.dup(orderArr);
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(result01,bc01,result01, 0, 1));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc01,result01, 0, 1));
 
                 for( int i=0; i<5; i++ ){
-                    INDArray subset = result01.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
+                    INDArray subset = result01.tensorAlongDimension(i, 0,1);;//result01.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
                     assertEquals(bc01, subset);
                 }
 
@@ -3387,10 +3387,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                         {1,1,1,0,0}}).dup(orderbc);
 
                 INDArray result02 = arrOrig.dup(orderArr);
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(result02,bc02,result02, 0, 2));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc02,result02, 0, 2));
 
                 for( int i=0; i<4; i++ ){
-                    INDArray subset = result02.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all());
+                    INDArray subset = result02.tensorAlongDimension(i, 0,2); //result02.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all());
                     assertEquals(bc02, subset);
                 }
 
@@ -3402,10 +3402,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                         {1,1,1,0,0}}).dup(orderbc);
 
                 INDArray result12 = arrOrig.dup(orderArr);
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(result12,bc12,result12, 1, 2));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc12,result12, 1, 2));
 
                 for( int i=0; i<3; i++ ){
-                    INDArray subset = result12.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
+                    INDArray subset = result12.tensorAlongDimension(i, 1,2);//result12.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
                     assertEquals("Failed for subset " + i,bc12, subset);
                 }
             }

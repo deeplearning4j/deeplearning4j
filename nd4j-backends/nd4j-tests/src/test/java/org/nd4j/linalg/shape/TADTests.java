@@ -1,6 +1,8 @@
 package org.nd4j.linalg.shape;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.commons.math3.util.Pair;
@@ -15,6 +17,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
@@ -57,6 +61,8 @@ public class TADTests extends BaseNd4jTest {
                     log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
                     log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
                     System.out.println();
+
+                    assertEquals(true, compareShapes(tadShape_N, tadShape_J));
                 }
             }
         }
@@ -73,84 +79,39 @@ public class TADTests extends BaseNd4jTest {
                 log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
                 log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
                 System.out.println();
+
+                assertEquals(true, compareShapes(tadShape_N, tadShape_J));
             }
         }
-    }
-
-
-    @Test
-    public void testNavigation1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 945, 945).reshape('c', new int[]{3, 5, 7, 9});
-
-        int numTensors = array.tensorssAlongDimension(1,2);
-        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, 1, 2).shapeInfoDataBuffer().asInt()));
-        for (int t = 0; t < 2; t++) {
-            INDArray tensor = array.tensorAlongDimension(t, 1, 2);
-
-            log.info("Tensor {}:\n{}", t, Arrays.toString(tensor.dup().data().asFloat()));
-        }
-
-        INDArray bc02 = Nd4j.create(5,7);
-
-        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), 1, 2));
-    }
-
-    @Test
-    public void testNavigation2() throws Exception {
-        INDArray array = Nd4j.linspace(1, 945, 945).reshape('c', new int[]{3, 5, 7, 9}).dup('f');
-
-        int []shape = new int[]{1, 3};
-
-        int numTensors = array.tensorssAlongDimension(shape);
-        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, shape).shapeInfoDataBuffer().asInt()));
-        for (int t = 0; t < 2; t++) {
-            INDArray tensor = array.tensorAlongDimension(t, shape);
-
-            log.info("Tensor {}:\n{}", t, tensor);
-            log.info("Tensor linear {}", Arrays.toString(tensor.dup(tensor.ordering()).data().asFloat()));
-        }
-
-        INDArray bc02 = Nd4j.create(shape[0],shape[1]);
-
-        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), shape));
-    }
-
-    @Test
-    public void testNavigation3() throws Exception {
-        INDArray array = Nd4j.linspace(1, 60, 60).reshape('c', new int[]{3, 4, 5}).dup('f');
-
-        int []shape = new int[]{0, 1};
-
-        int numTensors = array.tensorssAlongDimension(shape);
-        log.info("tensor shapeInfo: {}", Arrays.toString(array.tensorAlongDimension(0, shape).shapeInfoDataBuffer().asInt()));
-        for (int t = 0; t < 2; t++) {
-            INDArray tensor = array.tensorAlongDimension(t, shape);
-
-            log.info("Tensor {}:\n{}", t, tensor);
-            log.info("linear: {}", Arrays.toString(tensor.dup(tensor.ordering()).data().asFloat()));
-        }
-
-        INDArray bc02 = Nd4j.linspace(1, 12, 12).reshape('c', new int[]{3,4}).dup('c');
-        log.info("bc: {}", Arrays.toString(bc02.data().asFloat()));
-
-        Nd4j.getExecutioner().exec(new BroadcastMulOp(array, bc02, array.dup(array.ordering()), shape));
-    }
-
-    @Test
-    public void testNavigation4() throws Exception {
-        INDArray arrOrig = Nd4j.ones(3,4,5,6).dup('c');
-        INDArray bc13 = Nd4j.create(new double[][]{
-                {1,1,1,1,1},
-                {0,1,1,1,1},
-                {1,0,0,1,1},
-                {1,1,1,0,0}}).dup('c');
-
-        INDArray result13 = arrOrig.dup('c');
-        Nd4j.getExecutioner().exec(new BroadcastMulOp(result13,bc13,result13, 1, 3));
     }
 
     @Override
     public char ordering() {
         return 'c';
+    }
+
+    /**
+     * this method compares rank, shape and stride for two given shapeBuffers
+     * @param shapeA
+     * @param shapeB
+     * @return
+     */
+    protected boolean compareShapes(@NonNull DataBuffer shapeA, @NonNull DataBuffer shapeB) {
+        if (shapeA.dataType() != DataBuffer.Type.INT)
+            throw new IllegalStateException("ShapeBuffer should have dataType of INT");
+
+        if (shapeA.dataType() != shapeB.dataType())
+            return false;
+
+        int rank = shapeA.getInt(0);
+        if (rank != shapeB.getInt(0))
+            return false;
+
+        for (int e = 1; e <= rank * 2; e++) {
+            if (shapeA.getInt(e) != shapeB.getInt(e))
+                return false;
+        }
+
+        return true;
     }
 }
