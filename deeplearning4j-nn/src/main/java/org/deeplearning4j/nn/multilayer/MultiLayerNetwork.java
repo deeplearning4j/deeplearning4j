@@ -961,11 +961,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public int numParams() {
-        if (isInitCalled()) 
+        if (isInitCalled())
             return numParams(false);
-        else 
+        else
             log.info("Model is not initialized. Initialize net with init()");
-            return 0;
+        return 0;
     }
 
     @Override
@@ -1259,7 +1259,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             INDArray featuresMaskSubset = null;
             INDArray labelsMaskSubset = null;
             if(featuresMaskArray != null){
-                 featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
+                featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
             }
             if(labelsMaskArray != null){
                 labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(), NDArrayIndex.interval(startTimeIdx,endTimeIdx));
