@@ -15,6 +15,7 @@
  */
 package org.datavec.image.loader;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteOrder;
 import org.apache.commons.io.IOUtils;
@@ -27,6 +28,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.indexer.UShortIndexer;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
@@ -134,6 +136,10 @@ public class NativeImageLoader extends BaseImageLoader {
         return asMatrix(is).ravel();
     }
 
+    public INDArray asRowVector(BufferedImage image) throws IOException {
+        return asMatrix(image).ravel();
+    }
+
     public INDArray asRowVector(Mat image) throws IOException {
         return asMatrix(image).ravel();
     }
@@ -191,6 +197,14 @@ public class NativeImageLoader extends BaseImageLoader {
             pixDestroy(pix);
         }
         return asMatrix(image);
+    }
+
+    public INDArray asMatrix(BufferedImage image) throws IOException {
+        Java2DFrameConverter c = new Java2DFrameConverter();
+        if (converter == null) {
+            converter = new OpenCVFrameConverter.ToMat();
+        }
+        return asMatrix(converter.convert(c.convert(image)));
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
