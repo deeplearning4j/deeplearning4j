@@ -91,6 +91,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
+                "sigmoid",  //TODO
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -110,6 +111,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
+                "sigmoid",  //TODO
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
@@ -194,6 +196,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         final FwdPassReturn forwardsEval = LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                "sigmoid",  //TODO
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -204,6 +207,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                "sigmoid", //TODO
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
@@ -239,6 +243,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         return LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                "sigmoid",  //TODO
                 this.input,
                 getParam(recurrentKey),
                 getParam(inputKey),
