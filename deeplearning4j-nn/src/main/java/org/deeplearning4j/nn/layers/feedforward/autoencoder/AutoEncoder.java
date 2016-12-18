@@ -95,6 +95,11 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
+    public boolean isPretrainLayer() {
+        return true;
+    }
+
+    @Override
     public INDArray activate(boolean training) {
         return decode(encode(input, training));
     }

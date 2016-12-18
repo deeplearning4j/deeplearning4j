@@ -50,7 +50,7 @@ import java.util.Map;
  * @author Alex Black
  * @author Benjamin Joseph
  */
-public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
+public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM> {
 
     public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
         super(conf);
@@ -91,6 +91,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
+                this.layerConf().getGateActivationFn(),
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -110,6 +111,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(
                 this.conf,
+                this.layerConf().getGateActivationFn(),
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
@@ -194,6 +196,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         final FwdPassReturn forwardsEval = LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                this.layerConf().getGateActivationFn(),
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -204,6 +207,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                this.layerConf().getGateActivationFn(),
                 this.input,
                 getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
@@ -239,6 +243,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
         return LSTMHelpers.activateHelper(
                 this,
                 this.conf,
+                this.layerConf().getGateActivationFn(),
                 this.input,
                 getParam(recurrentKey),
                 getParam(inputKey),
@@ -268,34 +273,42 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
     }
 
     @Override
-    public double calcL2() {
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
+    public double calcL2(boolean backpropParamsOnly) {
         if (!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0) return 0.0;
-        double l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
-        double sumSquaredWeights = l2Norm*l2Norm;
 
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm*l2Norm;
+        double l2Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l2 = conf.getL2ByParam(entry.getKey());
+            if(l2 > 0) {
+                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
+                l2Sum += 0.5 * l2 * norm2 * norm2;
+            }
+        }
 
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm*l2Norm;
-
-        l2Norm = getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm2Number().doubleValue();
-        sumSquaredWeights += l2Norm * l2Norm;
-
-        return 0.5 * conf.getLayer().getL2() * sumSquaredWeights;
+        return l2Sum;
     }
 
 
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         if (!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0) return 0.0;
-        double l1 = getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue()
-                + getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS).norm1Number().doubleValue();
 
-        return conf.getLayer().getL1() * l1;
+        double l1Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l1 = conf.getL1ByParam(entry.getKey());
+            if(l1 > 0) {
+                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
+                l1Sum += l1 * norm1;
+            }
+        }
+
+        return l1Sum;
     }
 
     @Override
