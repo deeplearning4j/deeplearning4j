@@ -264,39 +264,26 @@ template<typename OpType>
 // all this stuff already happens within thread
 							for (int f = 0; f < tadLength; f++) {
 
+                                // FIXME: after we revert TAD logic, X/Z ind2sub/ind2subC should be swapped
                                 if (shape::order(tadShapeShapeInfo) == 'c') {
-                                    shape::ind2subC(xRank, xShape, f, xCoord);
+                                    shape::ind2sub(xRank, xShape, f, xCoord);
                                     shape::ind2subC(yRank, yShape, f, yCoord);
                                 } else {
-                                    shape::ind2sub(xRank, xShape, f, xCoord);
+                                    shape::ind2subC(xRank, xShape, f, xCoord);
                                     shape::ind2sub(yRank, yShape, f, yCoord);
                                 }
 
                                 if (shape::order(tadShapeInfoZ) == 'c')
-                                    shape::ind2subC(zRank,zShape, f, zCoord);
-                                else
                                     shape::ind2sub(zRank,zShape, f, zCoord);
-
-                                //if (shape::order(yShapeInfo) == 'c')
-
-                                //else
-
-
+                                else
+                                    shape::ind2subC(zRank,zShape, f, zCoord);
 
                                 Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
                                 Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
                                 Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
-                                if (i < 2) {
-                                    printf("%f, ",x[xOffset]);
-                                }
-
                                 result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
 							}
-
-                            if (i < 2) {
-                                printf("\n");
-                            }
 						}
 					}
 
