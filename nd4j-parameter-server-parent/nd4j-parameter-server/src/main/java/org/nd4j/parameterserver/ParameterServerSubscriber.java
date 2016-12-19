@@ -251,25 +251,28 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
 
         if (master) {
+            if(this.callback == null) {
+                ParameterServerUpdater updater = null;
+                //instantiate with shape instead of just length
+                switch(updateType) {
+                    case HOGWILD: break;
+                    case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),new InMemoryNDArrayHolder(Ints.toArray(shape)),updatesPerEpoch); break;
+                    case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
+                    case TIME_DELAYED: break;
+                    case CUSTOM:
+                        try {
+                            updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE)).newInstance();
+                        }catch(Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                        break;
+                    default: throw new IllegalStateException("Illegal type of updater");
+                }
 
-            ParameterServerUpdater updater = null;
-            //instantiate with shape instead of just length
-            switch(updateType) {
-                case HOGWILD: break;
-                case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),new InMemoryNDArrayHolder(Ints.toArray(shape)),updatesPerEpoch); break;
-                case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
-                case TIME_DELAYED: break;
-                case CUSTOM:
-                    try {
-                        updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE)).newInstance();
-                    }catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    break;
-                default: throw new IllegalStateException("Illegal type of updater");
+                callback = new ParameterServerListener(Ints.toArray(shape),updater);
+                parameterServerListener = (ParameterServerListener) callback;
+
             }
-            callback = new ParameterServerListener(Ints.toArray(shape),updater);
-            parameterServerListener = (ParameterServerListener) callback;
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
             responder = AeronNDArrayResponder.startSubscriber(
