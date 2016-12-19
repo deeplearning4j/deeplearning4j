@@ -89,7 +89,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 	 */
 	private void iterations() {
 		int iterationCount = 0;
-		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) ||
+		while ((clusteringStrategy.getTerminationCondition() != null && !clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory)) ||
 				iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
 			currentIteration++;
 			removePoints();

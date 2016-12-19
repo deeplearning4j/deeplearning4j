@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -22,13 +24,17 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @Data
 public class ExponentialReconstructionDistribution implements ReconstructionDistribution {
 
-    private final String activationFn;
+    private final IActivation activationFn;
 
     public ExponentialReconstructionDistribution() {
         this("identity");
     }
 
     public ExponentialReconstructionDistribution(String activationFn) {
+        this(Activation.fromString(activationFn).getActivationFunction());
+    }
+
+    public ExponentialReconstructionDistribution(IActivation activationFn){
         this.activationFn = activationFn;
     }
 
@@ -43,9 +49,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         //logp(x) = log(lambda) - lambda * x = gamma - lambda * x
 
         INDArray gamma = preOutDistributionParams.dup();
-        if (!"identity".equals(activationFn)) {
-            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
-        }
+        activationFn.getActivation(gamma, false);
 
         INDArray lambda = Transforms.exp(gamma, true);
         double negLogProbSum = -lambda.muli(x).rsubi(gamma).sumNumber().doubleValue();
@@ -61,9 +65,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
     public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
 
         INDArray gamma = preOutDistributionParams.dup();
-        if (!"identity".equals(activationFn)) {
-            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
-        }
+        activationFn.getActivation(gamma, false);
 
         INDArray lambda = Transforms.exp(gamma, true);
         return lambda.muli(x).rsubi(gamma).sum(1).negi();
@@ -75,30 +77,18 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         //logp(x) = log(lambda) - lambda * x = gamma - lambda * x
         //dlogp(x)/dgamma = 1 - lambda * x      (or negative of this for d(-logp(x))/dgamma
 
-
-        INDArray gamma = preOutDistributionParams.dup();
-        if (!"identity".equals(activationFn)) {
-            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
-        }
+        INDArray gamma = activationFn.getActivation(preOutDistributionParams.dup(), true);
 
         INDArray lambda = Transforms.exp(gamma, true);
-        INDArray grad = x.mul(lambda).subi(1.0);
+        INDArray dLdx = x.mul(lambda).subi(1.0);
 
-        if (!"identity".equals(activationFn)) {
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
-                    Nd4j.getOpFactory().createTransform(activationFn, preOutDistributionParams.dup()).derivative());
-            grad.muli(sigmaPrimeZ);
-        }
-
-        return grad;
+        //dL/dz
+        return activationFn.backprop(preOutDistributionParams.dup(), dLdx).getFirst();
     }
 
     @Override
     public INDArray generateRandom(INDArray preOutDistributionParams) {
-        INDArray gamma = preOutDistributionParams.dup();
-        if (!"identity".equals(activationFn)) {
-            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
-        }
+        INDArray gamma = activationFn.getActivation(preOutDistributionParams.dup(), false);
 
         INDArray lambda = Transforms.exp(gamma, true);
 
@@ -115,10 +105,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         //Input: gamma = log(lambda)    ->  lambda = exp(gamma)
         //Mean for exponential distribution: 1/lambda
 
-        INDArray gamma = preOutDistributionParams.dup();
-        if (!"identity".equals(activationFn)) {
-            gamma = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, gamma));
-        }
+        INDArray gamma = activationFn.getActivation(preOutDistributionParams.dup(), false);
 
         INDArray lambda = Transforms.exp(gamma, true);
         return lambda.rdivi(1.0);   //mean = 1.0 / lambda
