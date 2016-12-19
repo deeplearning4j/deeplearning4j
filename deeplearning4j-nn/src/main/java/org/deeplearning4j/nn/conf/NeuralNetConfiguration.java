@@ -370,7 +370,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         //Register concrete subtypes for JSON serialization
 
         List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
-        List<String> classNames = new ArrayList<>(4);
+        List<String> classNames = new ArrayList<>(6);
         for(Class<?> c : classes) classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
@@ -475,8 +475,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     @Data
     public static class Builder implements Cloneable {
-        @Deprecated
-        protected String activationFunction = "sigmoid";
         protected IActivation activationFn = new ActivationSigmoid();
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
@@ -671,41 +669,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         @Deprecated
         public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            switch(activationFunction) {
-                case "tanh":
-                    this.activationFn = new ActivationTanH();
-                    break;
-                case "sigmoid":
-                    this.activationFn = new ActivationSigmoid();
-                    break;
-                case "softsign":
-                    this.activationFn = new ActivationSoftSign();
-                    break;
-                case "identity":
-                    this.activationFn = new ActivationIdentity();
-                    break;
-                case "leakyrelu":
-                    this.activationFn = new ActivationLReLU();
-                    break;
-                case "relu":
-                    this.activationFn = new ActivationReLU();
-                    break;
-                case "softmax":
-                    this.activationFn = new ActivationSoftmax();
-                    break;
-                case "rrelu":
-                    this.activationFn = new ActivationRReLU();
-                    break;
-            }
-            return this;
+            return activation(Activation.fromString(activationFunction).getActivationFunction());
         }
 
+        /**Activation function / neuron non-linearity
+         * @see #activation(Activation)
+         */
         public Builder activation(IActivation activationFunction) {
             this.activationFn = activationFunction;
             return this;
         }
 
+        /**Activation function / neuron non-linearity
+         */
         public Builder activation(Activation activation) {
             return activation(activation.getActivationFunction());
         }
