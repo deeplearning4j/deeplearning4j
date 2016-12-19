@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -197,7 +198,7 @@ public class TestVAE {
                 .list()
                 .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
                         .nIn(10).nOut(5).encoderLayerSizes(12,13).decoderLayerSizes(14,15).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).activation("tanh").build())
+                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6).activation(new ActivationTanH()).build())
                 .pretrain(true).backprop(true)
                 .build();
 
@@ -262,7 +263,8 @@ public class TestVAE {
                         .reconstructionDistribution(new ExponentialReconstructionDistribution("tanh"))
                         .nIn(11).nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
                 .layer(4, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                        .lossFunction("tanh", LossFunctions.LossFunction.MSE)
+                        //.lossFunction("tanh", LossFunctions.LossFunction.MSE)
+                        .lossFunction(new ActivationTanH(), LossFunctions.LossFunction.MSE)
                         .nIn(11).nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
                 .layer(5, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
                         .reconstructionDistribution(new CompositeReconstructionDistribution.Builder()
@@ -271,7 +273,7 @@ public class TestVAE {
                                 .addDistribution(5, new BernoulliReconstructionDistribution())
                                 .build())
                         .nIn(15).nOut(16).encoderLayerSizes(17).decoderLayerSizes(18).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(18).nOut(19).activation("tanh").build())
+                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(18).nOut(19).activation(new ActivationTanH()).build())
                 .pretrain(true).backprop(true)
                 .build();
 
@@ -338,7 +340,7 @@ public class TestVAE {
                                 .decoderLayerSizes(6)
                                 .pzxActivationFunction("tanh")
                                 .reconstructionDistribution(reconstructionDistributions[i])
-                                .activation("tanh")
+                                .activation(new ActivationTanH())
                                 .updater(Updater.SGD)
                                 .build())
                         .pretrain(true).backprop(false)
