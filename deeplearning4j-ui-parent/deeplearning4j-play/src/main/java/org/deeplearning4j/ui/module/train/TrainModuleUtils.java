@@ -189,7 +189,7 @@ public class TrainModuleUtils {
             latentInfo.put("Input Size", String.valueOf(inputSize));
             latentInfo.put("Layer Size", String.valueOf(outputSize));
             latentInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize * 2));
-            latentInfo.put("Activation Function", va.getPzxActivationFunction());
+            latentInfo.put("Activation Function", va.getPzxActivationFn().toString());
             layerInfo.add(latentInfo);
 
 
