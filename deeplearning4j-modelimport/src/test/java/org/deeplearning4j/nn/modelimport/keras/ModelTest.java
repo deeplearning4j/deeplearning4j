@@ -7,8 +7,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.FileInputStream;
+
 import static org.junit.Assert.*;
 import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialModel;
+import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialModelInputStream;
 
 /**
  * Unit tests for Keras model configuration import.
@@ -22,6 +25,15 @@ import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialMode
  */
 @Slf4j
 public class ModelTest {
+
+    @Test
+    public void CnnModelImportInputStreamTest() throws Exception {
+        String modelPath = new ClassPathResource("keras/simple/cnn_tf_model.h5",
+                ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
+        FileInputStream inputStream = new FileInputStream(modelPath);
+        MultiLayerNetwork model = importSequentialModelInputStream(inputStream);
+        CnnModelTest(model);
+    }
 
     @Test
     public void CnnModelImportTest() throws Exception {

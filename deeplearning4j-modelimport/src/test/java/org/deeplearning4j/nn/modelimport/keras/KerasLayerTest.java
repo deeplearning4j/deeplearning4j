@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -32,6 +33,8 @@ public class KerasLayerTest {
     public static final double LSTM_FORGET_BIAS_DOUBLE = 1.0;
     public static final String LSTM_FORGET_BIAS_STR = "one";
     public static final int N_OUT = 13;
+    public static final String BORDER_MODE_VALID = "valid";
+    public static final int[] VALID_PADDING = new int[]{0, 0};
 
     @Test
     public void testBuildActivationLayer() throws Exception {
@@ -107,6 +110,7 @@ public class KerasLayerTest {
         subsampleList.add(STRIDE[1]);
         config.put(LAYER_FIELD_SUBSAMPLE, subsampleList);
         config.put(LAYER_FIELD_NB_FILTER, N_OUT);
+        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         ConvolutionLayer layer = (ConvolutionLayer) new KerasLayer(layerConfig).getDl4jLayer();
@@ -119,6 +123,8 @@ public class KerasLayerTest {
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());
         assertEquals(N_OUT, layer.getNOut());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertArrayEquals(VALID_PADDING, layer.getPadding());
     }
 
     @Test
@@ -135,6 +141,7 @@ public class KerasLayerTest {
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
         config.put(LAYER_FIELD_STRIDES, subsampleList);
+        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         SubsamplingLayer layer = (SubsamplingLayer) new KerasLayer(layerConfig).getDl4jLayer();
@@ -142,6 +149,8 @@ public class KerasLayerTest {
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());
         assertEquals(POOLING_TYPE, layer.getPoolingType());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertArrayEquals(VALID_PADDING, layer.getPadding());
     }
 
     @Test
