@@ -18,6 +18,9 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
@@ -136,48 +139,63 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     public static ComputationGraphConfiguration fromJson(String json) {
         //As per MultiLayerConfiguration.fromJson()
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
+        ComputationGraphConfiguration conf;
         try {
-            return mapper.readValue(json, ComputationGraphConfiguration.class);
-        } catch (IOException e) {
-            //No op - try again after adding new subtypes
-        }
-
-        //Try: programmatically registering JSON subtypes for GraphVertex classes. This allows users to add custom GraphVertex
-        // implementations without needing to manually register subtypes
-        //First: get all registered subtypes
-        AnnotatedClass ac = AnnotatedClass.construct(GraphVertex.class, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
-        for (NamedType nt : types) {
-            registeredSubtypes.add(nt.getType());
-        }
-
-        //Second: get all subtypes of GraphVertex using reflection
-        Reflections reflections = new Reflections();
-        Set<Class<? extends GraphVertex>> subTypes = reflections.getSubTypesOf(GraphVertex.class);
-
-        //Third: register all subtypes that are not already registered
-        List<NamedType> toRegister = new ArrayList<>();
-        for (Class<? extends GraphVertex> c : subTypes) {
-            if (!registeredSubtypes.contains(c)) {
-                String name;
-                if (ClassUtils.isInnerClass(c)) {
-                    Class<?> c2 = c.getDeclaringClass();
-                    name = c2.getSimpleName() + "$" + c.getSimpleName();
-                } else {
-                    name = c.getSimpleName();
-                }
-                toRegister.add(new NamedType(c, name));
-            }
-        }
-        mapper = NeuralNetConfiguration.reinitMapperWithSubtypes(toRegister);
-
-
-        try {
-            return mapper.readValue(json, ComputationGraphConfiguration.class);
+            conf = mapper.readValue(json, ComputationGraphConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        //To maintain backward compatibility after activation function refactoring (configs generated with v0.7.1 or earlier)
+        // Previously: enumeration used for activation functions. Now: use classes
+        int layerCount = 0;
+        Map<String,GraphVertex> vertexMap = conf.getVertices();
+        JsonNode vertices = null;
+        for(Map.Entry<String,GraphVertex> entry : vertexMap.entrySet()){
+            if(!(entry.getValue() instanceof LayerVertex)){
+                continue;
+            }
+
+            LayerVertex lv = (LayerVertex)entry.getValue();
+            if(lv.getLayerConf() != null && lv.getLayerConf().getLayer() != null){
+                Layer layer = lv.getLayerConf().getLayer();
+
+                if(layer.getActivationFn() == null){
+                    String layerName = layer.getLayerName();
+
+                    try{
+                        if(vertices == null){
+                            JsonNode jsonNode = mapper.readTree(json);
+                            vertices = jsonNode.get("vertices");
+                        }
+
+                        JsonNode vertexNode = vertices.get(layerName);
+                        JsonNode layerVertexNode = vertexNode.get("LayerVertex");
+                        if(layerVertexNode == null || !layerVertexNode.has("layerConf") || !layerVertexNode.get("layerConf").has("layer")){
+                            continue;
+                        }
+                        JsonNode layerWrapperNode = layerVertexNode.get("layerConf").get("layer");
+
+                        if(layerWrapperNode == null || layerWrapperNode.size() != 1){
+                            continue;
+                        }
+
+                        JsonNode layerNode = layerWrapperNode.elements().next();
+                        JsonNode activationFunction = layerNode.get("activationFunction");      //Should only have 1 element: "dense", "output", etc
+
+                        if(activationFunction != null){
+                            IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
+                            layer.setActivationFn(ia);
+                        }
+
+                    } catch (IOException e ){
+                        log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",e);
+                    }
+                }
+            }
+        }
+
+        return conf;
     }
 
     @Override

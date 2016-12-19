@@ -10,6 +10,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -84,7 +86,7 @@ public class RegressionTest071 {
         assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer)conf.getConf(0).getLayer();
-        assertEquals("leakyrelu", l0.getActivationFn().toString());
+        assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
@@ -99,7 +101,7 @@ public class RegressionTest071 {
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
         OutputLayer l1 = (OutputLayer)conf.getConf(1).getLayer();
-        assertEquals("identity", l1.getActivationFn().toString());
+        assertTrue(l1.getActivationFn() instanceof ActivationIdentity);
         assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
