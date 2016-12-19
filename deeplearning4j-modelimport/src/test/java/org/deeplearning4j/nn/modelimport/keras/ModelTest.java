@@ -26,7 +26,7 @@ import static org.deeplearning4j.nn.modelimport.keras.Model.importSequentialMode
 @Slf4j
 public class ModelTest {
 
-    @Test
+    @Test(expected=UnsupportedOperationException.class)
     public void CnnModelImportInputStreamTest() throws Exception {
         String modelPath = new ClassPathResource("keras/simple/cnn_tf_model.h5",
                 ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
