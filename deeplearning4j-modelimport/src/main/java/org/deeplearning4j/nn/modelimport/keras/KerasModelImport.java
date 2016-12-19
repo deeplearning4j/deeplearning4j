@@ -40,6 +40,8 @@ import java.lang.Exception;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.bytedeco.javacpp.hdf5.*;
 import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_CLASS_NAME_MODEL;
@@ -441,8 +443,16 @@ public class KerasModelImport {
                          * For example, the weight matrix in the first Dense layer will be named "dense_1_W."
                          */
                         String[] tokens = objName.split("_");
-                        String layerName = StringUtils.join(Arrays.copyOfRange(tokens, 0, tokens.length-1), "_");
-                        String paramName = tokens[tokens.length-1];
+                        String layerName = StringUtils.join(Arrays.copyOfRange(tokens, 0, 2), "_");
+                        String paramName = StringUtils.join(Arrays.copyOfRange(tokens, 2, tokens.length), "_");
+                        /* TensorFlow backend often appends ":" followed by one
+                         * or more digits to parameter names, but this is not
+                         * reflected in the model config. We must strip it off.
+                         */
+                        Pattern p = Pattern.compile(":\\d+$");
+                        Matcher m = p.matcher(paramName);
+                        if (m.find())
+                            paramName = m.replaceFirst("");
                         if (!weightsMap.containsKey(layerName))
                             weightsMap.put(layerName, new HashMap<String, INDArray>());
                         weightsMap.get(layerName).put(paramName, weights);

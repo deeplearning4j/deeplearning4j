@@ -29,8 +29,14 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
@@ -64,6 +70,27 @@ public class KerasModel {
 
     /* Default setting for truncated BPTT. */
     public static final int DO_NOT_USE_TRUNCATED_BPTT = -123456789;
+
+    /* Keras layer parameter names. */
+    public static final String PARAM_NAME_GAMMA = "gamma";
+    public static final String PARAM_NAME_BETA = "beta";
+    public static final String PARAM_NAME_RUNNING_MEAN = "running_mean";
+    public static final String PARAM_NAME_RUNNING_STD = "running_std";
+    public static final String PARAM_NAME_W = "W";
+    public static final String PARAM_NAME_U = "U";
+    public static final String PARAM_NAME_B = "b";
+    public static final String PARAM_NAME_W_C = "W_c";
+    public static final String PARAM_NAME_W_F = "W_f";
+    public static final String PARAM_NAME_W_I = "W_i";
+    public static final String PARAM_NAME_W_O = "W_o";
+    public static final String PARAM_NAME_U_C = "U_c";
+    public static final String PARAM_NAME_U_F = "U_f";
+    public static final String PARAM_NAME_U_I = "U_i";
+    public static final String PARAM_NAME_U_O = "U_o";
+    public static final String PARAM_NAME_B_C = "b_c";
+    public static final String PARAM_NAME_B_F = "b_f";
+    public static final String PARAM_NAME_B_I = "b_i";
+    public static final String PARAM_NAME_B_O = "b_o";
 
     protected String className;               // Keras model class name
     protected List<String> layerNamesOrdered; // ordered list of layer names
@@ -503,6 +530,8 @@ public class KerasModel {
      * @param kerasLayers       Map from layerName to layerConfig
      * @return                  DL4J Model interface
      * @throws InvalidKerasConfigurationException
+     *
+     * TODO: try to refactor this -- it's really messy with a lot of one-off "If layer type is X, do Y" logic.
      */
     protected static org.deeplearning4j.nn.api.Model copyWeightsToModel(org.deeplearning4j.nn.api.Model model,
                                                                         Map<String, Map<String, INDArray>> weights,
@@ -519,41 +548,168 @@ public class KerasModel {
             else
                 layer = ((ComputationGraph)model).getLayer(layerName);
             for (String kerasParamName : weights.get(layerName).keySet()) {
-                String paramName = null;
-                /* TensorFlow backend often appends ":" followed by one
-                 * or more digits to parameter names, but this is not
-                 * reflected in the model config. We must strip it off.
-                 */
-                Pattern p = Pattern.compile(":\\d+$");
-                Matcher m = p.matcher(kerasParamName);
-                if (m.find())
-                    paramName = m.replaceFirst("");
-                else
-                    paramName = kerasParamName;
-                INDArray W = weights.get(layerName).get(kerasParamName);
-                if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer && paramName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
-                    /* Theano and TensorFlow backends store convolutional weights
-                     * with a different dimensional ordering than DL4J so we need
-                     * to permute them to match.
-                     *
-                     * DL4J: (# outputs, # channels, # rows, # cols)
-                     */
-
-                    switch (kerasLayer.getDimOrder()) {
-                        case TENSORFLOW:
-                            /* TensorFlow convolutional weights: # rows, # cols, # channels, # outputs */
-                            W = W.permute(3, 2, 0, 1);
-                            break;
-                        case THEANO:
-                            /* Theano convolutional weights: # channels, # rows, # cols, # outputs */
-                            W = W.permute(3, 0, 1, 2);
-                        case UNKNOWN:
-                            throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
+                String paramName = mapParameterName(kerasParamName);
+                INDArray paramValue = weights.get(layerName).get(kerasParamName);
+                if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) {
+                    if (paramName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
+                        /* Theano and TensorFlow backends store convolutional weights
+                         * with a different dimensional ordering than DL4J so we need
+                         * to permute them to match.
+                         *
+                         * DL4J: (# outputs, # channels, # rows, # cols)
+                         */
+                        switch (kerasLayer.getDimOrder()) {
+                            case TENSORFLOW:
+                                /* TensorFlow convolutional weights: # rows, # cols, # channels, # outputs */
+                                paramValue = paramValue.permute(3, 2, 0, 1);
+                                break;
+                            case THEANO:
+                                /* Theano convolutional weights: # channels, # rows, # cols, # outputs */
+                                paramValue = paramValue.permute(3, 0, 1, 2);
+                                break;
+                            case NONE:
+                                break;
+                            case UNKNOWN:
+                                throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
+                        }
                     }
+                    layer.setParam(paramName, paramValue);
+                } else if (layer instanceof org.deeplearning4j.nn.layers.recurrent.GravesLSTM) {
+                    /* Keras stores LSTM parameters in distinct arrays (e.g., the recurrent weights
+                     * are stored in four matrices: U_c, U_f, U_i, U_o) while DL4J stores them
+                     * concatenated into one matrix (e.g., U = [ U_c U_f U_o U_i ]). Thus we have
+                     * to map the Keras weight matrix to its corresponding DL4J weight submatrix.
+                     */
+                    if (kerasParamName.startsWith(PARAM_NAME_W)) {
+                        INDArray W = layer.getParam(paramName);
+                        int nIn = ((BaseRecurrentLayer)layer.conf().getLayer()).getNIn();
+                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
+                        switch (kerasParamName) {
+                            case PARAM_NAME_W_C:
+                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                                          NDArrayIndex.interval(0, nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_W_F:
+                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                                          NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_W_O:
+                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_W_I:
+                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                break;
+                        }
+                        int a = 1;
+                    } else if (kerasParamName.startsWith(PARAM_NAME_U)) {
+                        INDArray U = layer.getParam(paramName);
+                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
+                        switch (kerasParamName) {
+                            case PARAM_NAME_U_C:
+                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(0, nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_U_F:
+                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_U_O:
+                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_U_I:
+                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                break;
+                        }
+                        /* DL4J has three additional columns in its recurrent weights matrix that don't appear
+                         * in Keras LSTMs. These are for peephole connections. Since Keras doesn't use them,
+                         * we zero them out.
+                         */
+                        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                  NDArrayIndex.interval(4*nOut, 4*nOut+3)}, Nd4j.zeros(nOut, 3));
+                    } else if (kerasParamName.startsWith(PARAM_NAME_B)) {
+                        INDArray b = layer.getParam(paramName);
+                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
+                        switch (kerasParamName) {
+                            case PARAM_NAME_B_C:
+                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(0, nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_B_F:
+                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_B_O:
+                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                break;
+                            case PARAM_NAME_B_I:
+                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                break;
+                        }
+                        int a = 1;
+                    }
+                } else {
+                    layer.setParam(paramName, paramValue);
                 }
-                layer.setParam(paramName, W);
             }
         }
         return model;
+    }
+
+    /**
+     * Helper function to map (typical) Keras layer parameter names to
+     * (typical) DL4J parameter names. This could be brittle.
+     *
+     * @param kerasParamName        Keras parameter name
+     * @return                      DL4J parameter name
+     *
+     * TODO: should this be moved into KerasLayer?
+     */
+    private static String mapParameterName(String kerasParamName) {
+        String paramName = null;
+        switch (kerasParamName) {
+            case PARAM_NAME_GAMMA:
+                paramName = BatchNormalizationParamInitializer.GAMMA;
+                break;
+            case PARAM_NAME_BETA:
+                paramName = BatchNormalizationParamInitializer.BETA;
+                break;
+            case PARAM_NAME_RUNNING_MEAN:
+                paramName = BatchNormalizationParamInitializer.GLOBAL_MEAN;
+                break;
+            case PARAM_NAME_RUNNING_STD:
+                paramName = BatchNormalizationParamInitializer.GLOBAL_VAR;
+                break;
+            case PARAM_NAME_W:
+                paramName = DefaultParamInitializer.WEIGHT_KEY;
+                break;
+            case PARAM_NAME_B:
+                paramName = DefaultParamInitializer.BIAS_KEY;
+                break;
+            case PARAM_NAME_W_C:
+            case PARAM_NAME_W_F:
+            case PARAM_NAME_W_I:
+            case PARAM_NAME_W_O:
+                paramName = GravesLSTMParamInitializer.INPUT_WEIGHT_KEY;
+                break;
+            case PARAM_NAME_U_C:
+            case PARAM_NAME_U_F:
+            case PARAM_NAME_U_I:
+            case PARAM_NAME_U_O:
+                paramName = GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY;
+                break;
+            case PARAM_NAME_B_C:
+            case PARAM_NAME_B_F:
+            case PARAM_NAME_B_I:
+            case PARAM_NAME_B_O:
+                paramName = GravesLSTMParamInitializer.BIAS_KEY;
+                break;
+        }
+        return paramName;
     }
 }
