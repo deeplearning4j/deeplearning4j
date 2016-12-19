@@ -14,6 +14,7 @@ import org.nd4j.linalg.io.ClassPathResource;
  *
  * @author dave@skymind.io
  */
+
 @Slf4j
 public class ModelConfigurationTest {
 

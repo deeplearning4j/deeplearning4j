@@ -37,13 +37,11 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
-import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesFunction;
-import org.deeplearning4j.spark.impl.graph.scoring.ScoreExamplesWithKeyFunction;
-import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGDataSet;
-import org.deeplearning4j.spark.impl.graph.scoring.ScoreFlatMapFunctionCGMultiDataSet;
+import org.deeplearning4j.spark.impl.graph.scoring.*;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -307,6 +305,17 @@ public class SparkComputationGraph implements Serializable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners    Listeners to set
      */
+    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+        setListeners(statsStorage, Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
@@ -490,6 +499,36 @@ public class SparkComputationGraph implements Serializable {
      */
     public <K> JavaPairRDD<K, Double> scoreExamplesMultiDataSet(JavaPairRDD<K, MultiDataSet> data, boolean includeRegularizationTerms) {
         return scoreExamplesMultiDataSet(data, includeRegularizationTerms, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Feed-forward the specified data, with the given keys. i.e., get the network output/predictions for the specified data
+     *
+     * @param featuresData Features data to feed through the network
+     * @param batchSize    Batch size to use when doing feed forward operations
+     * @param <K>          Type of data for key - may be anything
+     * @return             Network output given the input, by key
+     */
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithKeySingle(JavaPairRDD<K,INDArray> featuresData, int batchSize){
+        if(network.getNumInputArrays() != 1 || network.getNumOutputArrays() != 1){
+            throw new IllegalStateException("Cannot use this method with computation graphs with more than 1 input or output "
+            + "( has: " + network.getNumInputArrays() + " inputs, " + network.getNumOutputArrays() + " outputs");
+        }
+        PairToArrayPair<K> p = new PairToArrayPair<K>();
+        JavaPairRDD<K,INDArray[]> rdd = featuresData.mapToPair(p);
+        return feedForwardWithKey(rdd, batchSize).mapToPair(new ArrayPairToPair<K>());
+    }
+
+    /**
+     * Feed-forward the specified data, with the given keys. i.e., get the network output/predictions for the specified data
+     *
+     * @param featuresData Features data to feed through the network
+     * @param batchSize    Batch size to use when doing feed forward operations
+     * @param <K>          Type of data for key - may be anything
+     * @return             Network output given the input, by key
+     */
+    public <K> JavaPairRDD<K, INDArray[]> feedForwardWithKey(JavaPairRDD<K,INDArray[]> featuresData, int batchSize){
+        return featuresData.mapPartitionsToPair(new GraphFeedForwardWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()), batchSize));
     }
 
     private void update(int mr, long mg) {

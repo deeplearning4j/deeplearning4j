@@ -1,8 +1,7 @@
 package org.deeplearning4j.api.storage;
 
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
 
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
@@ -11,7 +10,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
-public interface StatsStorageRouter {
+public interface StatsStorageRouter  {
 
 
     /**

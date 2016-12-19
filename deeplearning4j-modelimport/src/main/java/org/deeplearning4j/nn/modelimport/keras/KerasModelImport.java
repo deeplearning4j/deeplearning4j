@@ -19,8 +19,10 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
+//import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -34,6 +36,8 @@ import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.Exception;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -53,12 +57,68 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_FIELD_CLA
  */
 @Slf4j
 public class KerasModelImport {
+//    static {
+//        try {
+//            Loader.load();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+
     private String modelJson;      // model configuration JSON string
     private String trainingJson;   // training configuration JSON string
     private String modelClassName; // Keras model class name
     private Map<String,Map<String,INDArray>> weights; // map from layer to parameter to weights
 
+    /**
+     * Load Keras (Functional API) Model saved using model.save_model(...).
+     *
+     * @param modelHdf5Stream      InputStream containing HDF5 archive storing Keras Model
+     * @return                     ComputationGraph
+     * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     * @see ComputationGraph
+     */
+    public static ComputationGraph importKerasModelAndWeights(InputStream modelHdf5Stream)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasModelImport archive = new KerasModelImport(modelHdf5Stream);
+        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_MODEL))
+            throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
+        KerasModel kerasModel = new KerasModel.ModelBuilder()
+                .modelJson(archive.getModelJson())
+                .trainingJson(archive.getTrainingJson())
+                .weights(archive.getWeights())
+                .train(false)
+                .buildModel();
+        ComputationGraph model = kerasModel.getComputationGraph();
+        return model;
+    }
 
+    /**
+     * Load Keras Sequential model saved using model.save_model(...).
+     *
+     * @param modelHdf5Stream      InputStream containing HDF5 archive storing Keras Sequential model
+     * @return                     ComputationGraph
+     * @throws IOException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     * @see ComputationGraph
+     */
+    public static MultiLayerNetwork importKerasSequentialModelAndWeights(InputStream modelHdf5Stream)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasModelImport archive = new KerasModelImport(modelHdf5Stream);
+        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_MODEL))
+            throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
+        KerasSequentialModel kerasModel = new KerasModel.ModelBuilder()
+                .modelJson(archive.getModelJson())
+                .trainingJson(archive.getTrainingJson())
+                .weights(archive.getWeights())
+                .train(false)
+                .buildSequential();
+        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
+        return model;
+    }
 
     /**
      * Load Keras (Functional API) Model saved using model.save_model(...).
@@ -196,21 +256,47 @@ public class KerasModelImport {
     }
 
     /**
+     * Constructor from HDF5 model archive stored in InputStream.
+     *
+     * @param modelHdf5Stream     InputStream containing HDF5 archive of Keras model
+     * @throws IOException
+     */
+    public KerasModelImport(InputStream modelHdf5Stream)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        /* Read InputStream and open HDF5 model archive. */
+        byte[] bytes = IOUtils.toByteArray(modelHdf5Stream);
+        BytePointer bytePointer = new BytePointer(bytes);
+        hdf5.H5File file = new hdf5.H5File(bytePointer,H5F_ACC_RDONLY);
+
+        /* Read model and training configurations from top-level attributes. */
+        this.modelJson = readJsonStringFromHdf5Attribute(file, "model_config");
+        this.modelClassName = getModelClassName(this.modelJson);
+        this.trainingJson = readJsonStringFromHdf5Attribute(file, "training_config");
+
+        /* Read weights from "/weights" group. */
+        this.weights = readWeightsFromHdf5(file, "/model_weights");
+        file.close();
+    }
+
+    /**
      * Constructor from HDF5 model archive.
      *
      * @param modelHdf5Filename     path to HDF5 archive storing Keras model
      * @throws IOException
      */
-    public KerasModelImport(String modelHdf5Filename) throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        /* Read model and training configurations from top-level attributes. */
+    public KerasModelImport(String modelHdf5Filename)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        /* Open HDF5 archive model file. */
         hdf5.H5File file = new hdf5.H5File(modelHdf5Filename, H5F_ACC_RDONLY);
+
+        /* Read model and training configurations from top-level attributes. */
         this.modelJson = readJsonStringFromHdf5Attribute(file, "model_config");
         this.modelClassName = getModelClassName(this.modelJson);
         this.trainingJson = readJsonStringFromHdf5Attribute(file, "training_config");
-        file.close();
 
         /* Read weights from "/weights" group. */
-        this.weights = readWeightsFromHdf5(modelHdf5Filename, "/model_weights");
+        this.weights = readWeightsFromHdf5(file, "/model_weights");
+        file.close();
     }
 
     /**
@@ -227,8 +313,12 @@ public class KerasModelImport {
         this.modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
         this.modelClassName = getModelClassName(this.modelJson);
 
+        /* Open HDF5 archive weights file. */
+        hdf5.H5File file = new hdf5.H5File(weightsHdf5Filename, H5F_ACC_RDONLY);
+
         /* Read weights from root ("/") group. */
-        this.weights = readWeightsFromHdf5(weightsHdf5Filename, "/");
+        this.weights = readWeightsFromHdf5(file, "/");
+        file.close();
     }
 
     /**
@@ -271,13 +361,12 @@ public class KerasModelImport {
      * Read Keras model weights from specified HDF5 file and Group into a map
      * from layer to parameter to weights (INDArray).
      *
-     * @param weightsHdf5Filename    name of HDF5 weights archive file
+     * @param file                   open HDF5 archive file
      * @param weightsGroupName       name of root HDF5 Group storing all Keras weights for single model
      * @return              nested Map from layer names to parameter names to INDArrays
      */
-    private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(String weightsHdf5Filename, String weightsGroupName)
+    private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(hdf5.H5File file, String weightsGroupName)
             throws UnsupportedKerasConfigurationException {
-        hdf5.H5File file = new hdf5.H5File(weightsHdf5Filename, H5F_ACC_RDONLY);
         hdf5.Group weightsGroup = file.asCommonFG().openGroup(weightsGroupName);
 
         Map<String,Map<String,INDArray>> weightsMap = new HashMap<String,Map<String,INDArray>>();
