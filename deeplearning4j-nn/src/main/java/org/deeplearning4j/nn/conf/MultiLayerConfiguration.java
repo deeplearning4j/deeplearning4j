@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
@@ -133,6 +135,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         // Previously: enumeration used for loss functions. Now: use classes
         // IN the past, could have only been an OutputLayer or RnnOutputLayer using these enums
         int layerCount = 0;
+        JsonNode confs = null;
         for(NeuralNetConfiguration nnc : conf.getConfs()){
             Layer l = nnc.getLayer();
             if(l instanceof BaseOutputLayer && ((BaseOutputLayer)l).getLossFn() == null){
@@ -142,7 +145,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 BaseOutputLayer ol = (BaseOutputLayer)l;
                 try{
                     JsonNode jsonNode = mapper.readTree(json);
-                    JsonNode confs = jsonNode.get("confs");
+                    if(confs == null) {
+                        confs = jsonNode.get("confs");
+                    }
                     if(confs instanceof ArrayNode){
                         ArrayNode layerConfs = (ArrayNode)confs;
                         JsonNode outputLayerNNCNode = layerConfs.get(layerCount);
@@ -192,6 +197,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                 }
                             }
                         }
+
                     } else {
                         log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON: layer 'confs' field is not an ArrayNode (is: {})",
                                 (confs != null ? confs.getClass() : null));
@@ -201,6 +207,39 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     break;
                 }
             }
+
+            //Also, pre 0.7.2: activation functions were Strings ("activationFunction" field), not classes ("activationFn")
+            //Try to load the old format if necessary, and create the appropriate IActivation instance
+            if(l.getActivationFn() == null){
+                try {
+                    JsonNode jsonNode = mapper.readTree(json);
+                    if(confs == null) {
+                        confs = jsonNode.get("confs");
+                    }
+                    if (confs instanceof ArrayNode) {
+                        ArrayNode layerConfs = (ArrayNode)confs;
+                        JsonNode outputLayerNNCNode = layerConfs.get(layerCount);
+                        if(outputLayerNNCNode == null) return conf; //Should never happen...
+                        JsonNode layerWrapperNode = outputLayerNNCNode.get("layer");
+
+                        if(layerWrapperNode == null || layerWrapperNode.size() != 1){
+                            continue;
+                        }
+
+                        JsonNode layerNode = layerWrapperNode.elements().next();
+                        JsonNode activationFunction = layerNode.get("activationFunction");      //Should only have 1 element: "dense", "output", etc
+
+                        if(activationFunction != null){
+                            IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
+                            l.setActivationFn(ia);
+                        }
+                    }
+
+                } catch (IOException e){
+                    log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",e);
+                }
+            }
+
             layerCount++;
         }
         return conf;

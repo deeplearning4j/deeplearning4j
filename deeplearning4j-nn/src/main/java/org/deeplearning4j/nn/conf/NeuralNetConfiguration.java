@@ -33,6 +33,9 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -79,6 +82,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
 
     protected Layer layer;
+    @Deprecated
     protected double leakyreluAlpha;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
@@ -153,9 +157,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             setLayerParamLR(variable);
         }
     }
-    
+
     public void clearVariables(){
-    	variables.clear();
+        variables.clear();
     }
 
     public void setLayerParamLR(String variable){
@@ -237,7 +241,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             for(int i = 0; i < layerwise.size(); i++) {
                 if(layerwise.get(i) == null){
                     throw new IllegalStateException("Invalid configuration: layer number " + i + " not specified. Expect layer "
-                        + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                            + "numbers to be 0 to " + (layerwise.size()-1) + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
                 if(layerwise.get(i).getLayer() == null) throw new IllegalStateException("Cannot construct network: Layer config for" +
                         "layer with index " + i + " is not defined)");
@@ -365,8 +369,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static synchronized void registerSubtypes(ObjectMapper mapper){
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
-        List<String> classNames = new ArrayList<>(4);
+        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
+        List<String> classNames = new ArrayList<>(6);
         for(Class<?> c : classes) classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
@@ -379,7 +383,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 subtypesClassCache = Collections.emptySet();
             } else {
 
-                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, ReconstructionDistribution.class);
+                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class, IActivation.class, ReconstructionDistribution.class);
                 List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
                 Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -469,23 +473,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
 
-
-
-    public Object[] getExtraArgs() {
-        if(layer == null || layer.getActivationFunction() == null) return new Object[0];
-        switch( layer.getActivationFunction()) {
-            case "leakyrelu" :
-                return new Object[] {leakyreluAlpha};
-            case "relu" :
-                return new Object[] { 0 };
-            default:
-                return new Object [] {};
-        }
-    }
-
     @Data
     public static class Builder implements Cloneable {
-        protected String activationFunction = "sigmoid";
+        protected IActivation activationFn = new ActivationSigmoid();
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = null;
@@ -677,11 +667,26 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
          */
+        @Deprecated
         public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
+            return activation(Activation.fromString(activationFunction).getActivationFunction());
+        }
+
+        /**Activation function / neuron non-linearity
+         * @see #activation(Activation)
+         */
+        public Builder activation(IActivation activationFunction) {
+            this.activationFn = activationFunction;
             return this;
         }
 
+        /**Activation function / neuron non-linearity
+         */
+        public Builder activation(Activation activation) {
+            return activation(activation.getActivationFunction());
+        }
+
+        @Deprecated
         public Builder leakyreluAlpha(double leakyreluAlpha) {
             this.leakyreluAlpha = leakyreluAlpha;
             return this;
@@ -693,7 +698,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
-            }
+        }
 
         /**
          * Constant for bias initialization. Default: 0.0
@@ -970,7 +975,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 case Poly:
                     if (Double.isNaN(lrPolicyPower))
                         throw new IllegalStateException("Layer \"" + layerName + "\" learning rate policy power (lrPolicyPower) must be set to use " + learningRatePolicy);
-                        break;
+                    break;
                 case Step:
                 case Sigmoid:
                     if (Double.isNaN(lrPolicySteps))
@@ -1008,9 +1013,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                         layer.setL2(l2);
                 } else if (!useRegularization &&
                         ((!Double.isNaN(l1) && l1 > 0.0) ||
-                        (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
-                        (!Double.isNaN(l2) && l2 > 0.0) ||
-                        (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
+                                (!Double.isNaN(layer.getL1()) && layer.getL1() > 0.0) ||
+                                (!Double.isNaN(l2) && l2 > 0.0) ||
+                                (!Double.isNaN(layer.getL2()) && layer.getL2() > 0.0)))
                     log.warn( "Layer \"" + layerName + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
                 if (Double.isNaN(l2) && Double.isNaN(layer.getL2()))
                     layer.setL2(0.0);
@@ -1065,7 +1070,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (layer.getLearningRateSchedule() == null) layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getL1())) layer.setL1(l1);
                 if (Double.isNaN(layer.getL2())) layer.setL2(l2);
-                if (layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+                if (layer.getActivationFn() == null) layer.setActivationFn(activationFn);
                 if (layer.getWeightInit() == null) layer.setWeightInit(weightInit);
                 if (Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
                 if (Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
@@ -1074,7 +1079,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 if (layer.getGradientNormalization() == null) layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))
                     layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-//                if(layer instanceof Convolution)
                 if(layer instanceof ConvolutionLayer){
                     ConvolutionLayer cl = (ConvolutionLayer)layer;
                     if(cl.getConvolutionMode() == null){
