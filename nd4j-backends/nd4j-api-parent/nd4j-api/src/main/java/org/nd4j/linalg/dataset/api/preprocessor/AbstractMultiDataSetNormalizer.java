@@ -189,6 +189,15 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      *
      * @param features Features to revert the normalization on
      */
+    public void revertFeatures(@NonNull INDArray[] features) {
+        revertFeatures(features, null);
+    }
+
+    /**
+     * Undo (revert) the normalization applied by this normalizer to the features arrays
+     *
+     * @param features Features to revert the normalization on
+     */
     public void revertFeatures(@NonNull INDArray[] features, INDArray[] maskArrays) {
         for (int i = 0; i < features.length; i++) {
             INDArray mask = (maskArrays == null ? null : maskArrays[i]);
@@ -206,6 +215,17 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
      */
     public void revertFeatures(@NonNull INDArray features, INDArray mask, int input) {
         strategy.revert(features, mask, getFeatureStats(input));
+    }
+
+    /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
+     * Can also be used to undo normalization for network output arrays, in the case of regression.
+     *
+     * @param labels Labels array to revert the normalization on
+     */
+    public void revertLabels(INDArray[] labels) {
+        revertLabels(labels, null);
     }
 
     /**

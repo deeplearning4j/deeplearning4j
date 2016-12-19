@@ -49,9 +49,27 @@ public interface MultiDataNormalization extends MultiDataSetPreProcessor {
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
      *
+     * @param features    Features to revert the normalization on
+     * @param featuresMask
+     */
+    void revertFeatures(INDArray[] features, INDArray[] featuresMask);
+
+    /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified features array
+     *
      * @param features Features to revert the normalization on
      */
     void revertFeatures(INDArray[] features);
+
+    /**
+     * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
+     * If labels normalization is disabled (i.e., {@link #isFitLabel()} == false) then this is a no-op.
+     * Can also be used to undo normalization for network output arrays, in the case of regression.
+     *
+     * @param labels    Labels array to revert the normalization on
+     * @param labelsMask Labels mask array (may be null)
+     */
+    void revertLabels(INDArray[] labels, INDArray[] labelsMask);
 
     /**
      * Undo (revert) the normalization applied by this DataNormalization instance to the specified labels array.
