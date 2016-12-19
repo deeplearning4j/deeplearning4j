@@ -1,5 +1,8 @@
 package org.deeplearning4j.ui.play;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
@@ -76,6 +79,10 @@ public class PlayUIServer extends UIServer {
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private Thread uiEventRoutingThread;
+    @Parameter(names={"-r","-enableRemote"}
+            , description = "Whether to enable remote or not", arity = 1)
+    private boolean enableRemote;
+
 
     private int port;
 
@@ -175,6 +182,29 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
+    }
+
+
+    public  void runMain(String[] args) {
+        JCommander jcmdr = new JCommander(this);
+
+        try {
+            jcmdr.parse(args);
+        } catch(ParameterException e) {
+            //User provides invalid input -> print the usage info
+            jcmdr.usage();
+            try{ Thread.sleep(500); } catch(Exception e2){ }
+            System.exit(1);
+        }
+
+        PlayUIServer server = new PlayUIServer();
+        if(enableRemote)
+            server.enableRemoteListener();
+    }
+
+
+    public static void main(String[] args) {
+        new PlayUIServer().runMain(args);
     }
 
     private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses){
