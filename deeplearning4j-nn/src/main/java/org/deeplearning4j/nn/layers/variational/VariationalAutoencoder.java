@@ -308,7 +308,13 @@ public class VariationalAutoencoder implements Layer {
 
                 INDArray currentDelta;
                 if(numSamples > 1){
-                    currentDelta = afn.backprop(fwd.encoderPreOuts[i], epsilon).getFirst();
+                    //Re-use sigma-prime values for the encoder - these don't change based on multiple samples,
+                    // only the errors do
+                    if(l == 0){
+                        //Not the most elegent implementation (with the ND4j.ones()), but it works...
+                        encoderActivationDerivs[i] = afn.backprop(fwd.encoderPreOuts[i], Nd4j.ones(fwd.encoderPreOuts[i].shape())).getFirst();
+                    }
+                    currentDelta = epsilon.muli(encoderActivationDerivs[i]);
                 } else {
                     currentDelta = afn.backprop(preOut, epsilon).getFirst();
                 }
