@@ -22,14 +22,20 @@ import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.aeron.ipc.response.AeronNDArrayResponder;
+import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.model.MasterConnectionInfo;
 import org.nd4j.parameterserver.model.ServerState;
 import org.nd4j.parameterserver.model.SlaveConnectionInfo;
 import org.nd4j.parameterserver.model.SubscriberState;
+import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.SoftSyncParameterUpdater;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
+import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.util.CheckSocket;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -52,7 +59,7 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @Data
 @Parameters(separators = ",")
-public class ParameterServerSubscriber {
+public class ParameterServerSubscriber implements AutoCloseable {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
 
@@ -74,8 +81,8 @@ public class ParameterServerSubscriber {
     private int statusServerPort = 9000;
     @Parameter(names = {"-sh", "--statusserverhost"}, description = "The status host, defaults to localhost.", arity = 1)
     private String statusServerHost = "localhost";
-    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to synchronous", arity = 1)
-    private String updateTypeString;
+    @Parameter(names = {"-up", "--update"}, description = "The update type for this parameter server. Defaults to sync. You can specify custom and use a jvm argument -Dorg.nd4j.parameterserver.updatetype=your.fully.qualified.class if you want to use a custom class. This must be able to be instantiated from an empty constructor though.", arity = 1)
+    private String updateTypeString = UpdateType.SYNC.toString().toLowerCase();
 
     private UpdateType updateType = UpdateType.SYNC;
 
@@ -85,10 +92,23 @@ public class ParameterServerSubscriber {
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
+    @Parameter(names = {"-u", "--updatesPerEpoch"}, description = "The number of updates per epoch", arity = 1,required = true)
+    private int updatesPerEpoch;
 
+
+    /**
+     * Specify a custom class as a jvm arg.
+     * Note that this class must be a fully qualified classname
+     */
+    public final static String CUSTOM_UPDATE_TYPE = "org.nd4j.parameterserver.updatetype";
+    /**
+     * Update types are for
+     * instantiating various kinds of update types
+     */
     public enum UpdateType {
-        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC
+        HOGWILD, SYNC, TIME_DELAYED, SOFTSYNC,CUSTOM
     }
+
 
 
     private MediaDriver mediaDriver;
@@ -110,6 +130,7 @@ public class ParameterServerSubscriber {
         Preconditions.checkNotNull(mediaDriver);
         this.mediaDriver = mediaDriver;
     }
+
 
 
     /**
@@ -175,6 +196,7 @@ public class ParameterServerSubscriber {
         try {
             jcmdr.parse(args);
         } catch (ParameterException e) {
+            e.printStackTrace();
             //User provides invalid input -> print the usage info
             jcmdr.usage();
             try {
@@ -183,6 +205,13 @@ public class ParameterServerSubscriber {
             }
             System.exit(1);
         }
+
+
+        //ensure that the update type is configured from the command line args
+        updateType = UpdateType.valueOf(updateTypeString.toUpperCase());
+
+
+
 
         if (publishMasterUrl == null && !master)
             throw new IllegalStateException("Please specify a master url or set master to true");
@@ -221,8 +250,24 @@ public class ParameterServerSubscriber {
 
 
         if (master) {
+
+            ParameterServerUpdater updater = null;
             //instantiate with shape instead of just length
-            callback = new ParameterServerListener(Ints.toArray(shape));
+            switch(updateType) {
+                case HOGWILD: break;
+                case SYNC: updater = new SynchronousParameterUpdater(new InMemoryUpdateStorage(),new InMemoryNDArrayHolder(Ints.toArray(shape)),updatesPerEpoch); break;
+                case SOFTSYNC:  updater = new SoftSyncParameterUpdater(); break;
+                case TIME_DELAYED: break;
+                case CUSTOM:
+                    try {
+                        updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE)).newInstance();
+                    }catch(Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                default: throw new IllegalStateException("Illegal type of updater");
+            }
+            callback = new ParameterServerListener(Ints.toArray(shape),updater);
             parameterServerListener = (ParameterServerListener) callback;
             //start an extra daemon for responding to get queries
             ParameterServerListener cast = (ParameterServerListener) callback;
@@ -263,15 +308,21 @@ public class ParameterServerSubscriber {
         //Only schedule this if a remote server is available.
         if (CheckSocket.remotePortTaken(statusServerHost, statusServerPort, 10000)) {
             scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
+            final AtomicInteger failCount = new AtomicInteger(0);
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
+                    //
+                    if(failCount.get() >= 3)
+                        return;
                     SubscriberState subscriberState = asState();
                     JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
                     String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort, streamId);
                     HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json").body(jsonObject).asString();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    failCount.incrementAndGet();
+                    if(failCount.get() >= 3) {
+                        log.warn("Failed to send update, shutting down likely?",e);
+                    }
                 }
             }, 0, heartbeatMs, TimeUnit.MILLISECONDS);
 
@@ -281,21 +332,27 @@ public class ParameterServerSubscriber {
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (subscriber != null)
-                CloseHelper.quietClose(subscriber);
-            if (responder != null)
-                CloseHelper.quietClose(responder);
-            if (aeron != null)
-                CloseHelper.quietClose(aeron);
-            if (scheduledExecutorService != null)
-                scheduledExecutorService.shutdown();
+            close();
 
         }));
 
         //set the server for the status of the master and slave nodes
-
-
     }
+
+
+    @Override
+    public void close() {
+        if (subscriber != null)
+            CloseHelper.quietClose(subscriber);
+        if (responder != null)
+            CloseHelper.quietClose(responder);
+        if (scheduledExecutorService != null)
+            scheduledExecutorService.shutdown();
+    }
+
+
+
+
 
     //get a context
     public Aeron.Context getContext() {

@@ -2,16 +2,11 @@ package org.nd4j.parameterserver.node;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.agrona.CloseHelper;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.client.ParameterServerClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,25 +27,28 @@ public class ParameterServerNodeTest {
     private static Aeron aeron;
     private static ParameterServerNode parameterServerNode;
     private static int parameterLength = 4;
+    private static int masterStatusPort = 40323 + new java.util.Random().nextInt(15999);
+    private static int statusPort = masterStatusPort - 1299;
 
     @BeforeClass
     public static void before() throws Exception {
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
         System.setProperty("play.server.dir","/tmp");
         aeron = Aeron.connect(getContext());
-        parameterServerNode = new ParameterServerNode(mediaDriver);
+        parameterServerNode = new ParameterServerNode(mediaDriver,statusPort);
         parameterServerNode.runMain(new String[] {
                 "-m","true",
                 "-s","1," + String.valueOf(parameterLength),
-                "-p","40323",
+                "-p",String.valueOf(masterStatusPort),
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "9000",
-                "-sh","localhost"
+                "-sp", String.valueOf(statusPort),
+                "-sh","localhost",
+                "-u",String.valueOf(Runtime.getRuntime().availableProcessors())
         });
 
-        while(!parameterServerNode.getSubscriber().subscriberLaunched()) {
+        while(!parameterServerNode.subscriberLaunched()) {
             Thread.sleep(10000);
         }
 
@@ -65,9 +63,9 @@ public class ParameterServerNodeTest {
         for(int i = 0; i < numCores; i++) {
             clients[i] = ParameterServerClient.builder()
                     .aeron(aeron).masterStatusHost(host)
-                    .masterStatusPort(9000).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
-                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber().getResponder().connectionUrl())
-                    .ndarraySendUrl(parameterServerNode.getSubscriber().getSubscriber().connectionUrl())
+                    .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
+                    .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
+                    .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
                     .build();
         }
 
@@ -102,7 +100,7 @@ public class ParameterServerNodeTest {
 
         Thread.sleep(60000);
 
-        parameterServerNode.stop();
+        parameterServerNode.close();
 
 
     }

@@ -25,13 +25,23 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testGetPointRowVector(){
+    public void testGetPointRowVector() {
         INDArray arr = Nd4j.linspace(1,1000,1000);
 
         INDArray arr2 = arr.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,100));
 
         assertEquals(100, arr2.length());   //Returning: length 0
         assertEquals(arr2, Nd4j.linspace(1, 100, 100));
+    }
+
+
+    @Test
+    public void testPutRowIndexing() {
+        INDArray arr = Nd4j.create(1,10);
+        INDArray row = Nd4j.create(1,10);
+
+//        arr.putRow(0, row);   //OK
+        arr.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all()}, row);   //Exception
     }
 
     @Test

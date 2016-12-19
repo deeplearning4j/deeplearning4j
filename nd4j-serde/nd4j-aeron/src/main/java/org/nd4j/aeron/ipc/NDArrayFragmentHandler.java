@@ -38,7 +38,7 @@ public class NDArrayFragmentHandler implements FragmentHandler {
      * @param header representing the meta data for the data.
      */
     @Override
-    public   void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    public     void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
         ByteBuffer byteBuffer = buffer.byteBuffer();
         boolean byteArrayInput = false;
         if(byteBuffer == null) {
@@ -56,7 +56,10 @@ public class NDArrayFragmentHandler implements FragmentHandler {
             byteBuffer.order(ByteOrder.nativeOrder());
         }
 
-        NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
+        int messageTypeIndex = byteBuffer.getInt();
+        if(messageTypeIndex >= NDArrayMessage.MessageType.values().length)
+            throw new IllegalStateException("Illegal index on message type. Likely corrupt message. Please check the serialization of the bytebuffer. Input was bytebuffer: " + byteArrayInput);
+        NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[messageTypeIndex];
 
         if(messageType == NDArrayMessage.MessageType.CHUNKED) {
             NDArrayMessageChunk chunk = NDArrayMessageChunk.fromBuffer(byteBuffer,messageType);

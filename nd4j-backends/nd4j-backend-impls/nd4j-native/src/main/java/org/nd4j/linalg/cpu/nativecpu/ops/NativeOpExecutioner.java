@@ -2,6 +2,7 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -35,7 +36,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-
+@Slf4j
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
@@ -676,7 +677,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
-
+/*
+        log.info("Broascast dimension: {}", Arrays.toString(dimension));
+        log.info("x shape: {}; x TAD: {}; comp TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()), Arrays.toString(op.x().tensorAlongDimension(0, dimension).shapeInfoDataBuffer().asInt()));
+        log.info("z shape: {}; z TAD: {}", Arrays.toString(op.z().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
+        log.info("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
+        log.info("-------------");
+*/
         PointerPointer dummy = new PointerPointer(
                 hostTadShapeInfo,
                 hostTadOffsets,

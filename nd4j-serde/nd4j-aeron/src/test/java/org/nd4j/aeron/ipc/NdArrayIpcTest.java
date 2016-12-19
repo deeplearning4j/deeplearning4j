@@ -31,7 +31,7 @@ public class NdArrayIpcTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
-    private String channel = "aeron:udp?endpoint=localhost:40132";
+    private String channel = "aeron:udp?endpoint=localhost:" + (40132 + new java.util.Random().nextInt(3000));
     private int streamId = 10;
     private  int length = (int) 1e7;
 
@@ -70,7 +70,8 @@ public class NdArrayIpcTest {
                          */
                         @Override
                         public void onNDArrayMessage(NDArrayMessage message) {
-
+                            System.out.println("Callback invoked for subscriber on ndarray ipc test");
+                            running.set(false);
                         }
 
                         @Override
@@ -80,6 +81,7 @@ public class NdArrayIpcTest {
 
                         @Override
                         public void onNDArray(INDArray arr) {
+                            System.out.println("Callback invoked for subscriber on ndarray ipc test");
                             running.set(false);
                         }
                     }).build();
@@ -94,7 +96,9 @@ public class NdArrayIpcTest {
 
             });
 
+            t.setDaemon(true);
             t.start();
+
 
             subscribers[i] = subscriber;
         }
@@ -120,12 +124,13 @@ public class NdArrayIpcTest {
 
         }
 
-        Thread.sleep(100000);
+
+        Thread.sleep(30000);
 
         for(int i = 0; i < numSubscribers; i++)
             CloseHelper.close(subscribers[i]);
-        CloseHelper.close(aeron);
         CloseHelper.close(publisher);
+        CloseHelper.close(aeron);
         assertFalse(running.get());
     }
 
@@ -151,7 +156,8 @@ public class NdArrayIpcTest {
                      */
                     @Override
                     public void onNDArrayMessage(NDArrayMessage message) {
-
+                        System.out.println(arr);
+                        running.set(false);
                     }
 
                     @Override
@@ -161,8 +167,7 @@ public class NdArrayIpcTest {
 
                     @Override
                     public void onNDArray(INDArray arr) {
-                        System.out.println(arr);
-                        running.set(false);
+
                     }
                 }).build();
 
@@ -209,12 +214,7 @@ public class NdArrayIpcTest {
 
     private Aeron.Context getContext() {
         if(ctx == null) ctx = new Aeron.Context().publicationConnectionTimeout(1000)
-                .availableImageHandler(new AvailableImageHandler() {
-                    @Override
-                    public void onAvailableImage(Image image) {
-                        System.out.println(image);
-                    }
-                })
+                .availableImageHandler(image -> System.out.println(image))
                 .unavailableImageHandler(AeronUtil::printUnavailableImage)
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .keepAliveInterval(1000)

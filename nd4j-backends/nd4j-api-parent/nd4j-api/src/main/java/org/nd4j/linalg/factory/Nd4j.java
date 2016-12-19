@@ -99,6 +99,7 @@ public class Nd4j {
     public final static String CONVOLUTION_OPS = "convops";
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
+    public final static String NATIVE_OPS = "native.ops";
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";
@@ -4649,7 +4650,7 @@ public class Nd4j {
     protected static void checkShapeValues(int[] shape) {
         for (int e = 0; e < shape.length; e++) {
             if (shape[e] < 1)
-                throw new ND4JIllegalStateException("Requested INDArray shape " + Arrays.toString(shape) + " contains values < 1, which is impossible to have");
+                throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape) + " contains dimension size values < 1 (all dimensions must be 1 or more)");
         }
     }
 
@@ -5170,8 +5171,9 @@ public class Nd4j {
             throw new IllegalStateException("Unknown order being passed in [" + order +"]");
 
         for (int idx: indexes){
-            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1])
+            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1]) {
                 throw new IllegalStateException("Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+            }
         }
 
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);

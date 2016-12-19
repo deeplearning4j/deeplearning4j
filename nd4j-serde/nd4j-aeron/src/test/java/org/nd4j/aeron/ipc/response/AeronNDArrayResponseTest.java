@@ -53,11 +53,13 @@ public class AeronNDArrayResponseTest {
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
                 .errorHandler(e -> log.error(e.toString(), e));
 
+        int baseSubscriberPort = 40123 + new java.util.Random().nextInt(1000);
+
         Aeron aeron = Aeron.connect(ctx);
         AeronNDArrayResponder responder = AeronNDArrayResponder.startSubscriber(
                 aeron,
                 host,
-                40124,
+                baseSubscriberPort + 1,
                 new NDArrayHolder() {
                             /**
                              * Set the ndarray
@@ -114,7 +116,7 @@ public class AeronNDArrayResponseTest {
         AeronNDArraySubscriber subscriber = AeronNDArraySubscriber.startSubscriber(
                 aeron,
                 host,
-                40123,
+                baseSubscriberPort,
                 new NDArrayCallback() {
                     /**
                      * A listener for ndarray message
@@ -123,6 +125,7 @@ public class AeronNDArrayResponseTest {
                      */
                     @Override
                     public void onNDArrayMessage(NDArrayMessage message) {
+                        count.incrementAndGet();
 
                     }
 
@@ -141,9 +144,9 @@ public class AeronNDArrayResponseTest {
         int expectedResponses = 10;
         HostPortPublisher publisher = HostPortPublisher
                 .builder().aeron(aeron)
-                .uriToSend(host + ":40123:" + streamId)
+                .uriToSend(host + String.format(":%d:",baseSubscriberPort) + streamId)
                 .channel(AeronUtil
-                        .aeronChannel(host,40124))
+                        .aeronChannel(host,baseSubscriberPort + 1))
                 .streamId(responderStreamId).build();
 
 

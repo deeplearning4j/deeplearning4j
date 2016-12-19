@@ -45,18 +45,22 @@ public class ParameterServerClientPartialTest {
         aeron = Aeron.connect(getContext());
         masterNode = new ParameterServerSubscriber(mediaDriver);
         masterNode.setAeron(aeron);
+        int masterPort = 40223 + new java.util.Random().nextInt(13000);
+        int masterStatusPort = masterPort - 2000;
         masterNode.run(new String[] {
                 "-m","true",
-                "-p","40223",
+                "-p",String.valueOf(masterPort),
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "20000",
-                "-s","2,2"
+                "-sp", String.valueOf(masterStatusPort),
+                "-s","2,2",
+                "-u",String.valueOf(1)
+
         });
 
         assertTrue(masterNode.isMaster());
-        assertEquals(40223,masterNode.getPort());
+        assertEquals(masterPort,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
         assertEquals(12,masterNode.getResponder().getStreamId());
@@ -64,17 +68,21 @@ public class ParameterServerClientPartialTest {
 
         slaveNode = new ParameterServerSubscriber(mediaDriver);
         slaveNode.setAeron(aeron);
+        int slavePort = masterPort + 100;
+        int slaveStatusPort = slavePort - 2000;
         slaveNode.run(new String[] {
-                "-p","40226",
+                "-p",String.valueOf(slavePort),
                 "-h","localhost",
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "21000"
+                "-sp",String.valueOf(slaveStatusPort),
+                "-u",String.valueOf(1)
+
         });
 
         assertFalse(slaveNode.isMaster());
-        assertEquals(40226,slaveNode.getPort());
+        assertEquals(slavePort,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
 
@@ -92,12 +100,6 @@ public class ParameterServerClientPartialTest {
         log.info("Launched media driver");
     }
 
-
-    @AfterClass
-    public static void after() {
-        CloseHelper.quietClose(aeron);
-        CloseHelper.quietClose(mediaDriver);
-    }
 
     @Test
     public void testServer() throws Exception {

@@ -29,11 +29,32 @@ public class ParameterServerListener implements NDArrayCallback {
     /**
      * Shape of the ndarray
      * @param shape the shape of the array
+     * @param updatesPerEpoch  the number of updates per epoch
+     *                         for synchronization
      */
-    public ParameterServerListener(int[] shape) {
-        updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(shape),Runtime.getRuntime().availableProcessors());
+    public ParameterServerListener(int[] shape,int updatesPerEpoch) {
+        updater = new SynchronousParameterUpdater(new NoUpdateStorage(),new InMemoryNDArrayHolder(shape),updatesPerEpoch);
     }
 
+    /**
+     * Shape of the ndarray
+     * @param shape the shape of the array
+     */
+    public ParameterServerListener(int[] shape) {
+        this(shape,Runtime.getRuntime().availableProcessors());
+    }
+
+
+    /**
+     *
+     * @param shape the shape of the array
+     * @param updater the updater to use for this server
+     */
+    public ParameterServerListener(int[] shape,ParameterServerUpdater updater) {
+        this.updater = updater;
+        this.shape = shape;
+
+    }
 
     /**
      * A listener for ndarray message
@@ -54,7 +75,7 @@ public class ParameterServerListener implements NDArrayCallback {
      */
     @Override
     public synchronized  void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-       updater.partialUpdate(arr,updater.ndArrayHolder().get(),idx,dimensions);
+        updater.partialUpdate(arr,updater.ndArrayHolder().get(),idx,dimensions);
     }
 
     /**
