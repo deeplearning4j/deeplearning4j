@@ -30,6 +30,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -149,16 +151,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray delta;
-        String afn = conf.getLayer().getActivationFunction();
+        IActivation afn = conf.getLayer().getActivationFn();
 
-        if("identity".equals(afn)){
-            delta = epsilon;    //avoid doing .muli with 1s
-        } else {
-            INDArray sigmaPrimeZ = preOutput(true);
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                    afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
-            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
-        }
+        delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
@@ -308,19 +303,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
-        String afn = conf.getLayer().getActivationFunction();
-        if("identity".equals(afn)){
-            return z;
-        }
+        //String afn = conf.getLayer().getActivationFunction();
+        IActivation afn = conf.getLayer().getActivationFn();
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
-            INDArray ret = helper.activate(z, conf.getLayer().getActivationFunction());
+            INDArray ret = helper.activate(z, conf.getLayer().getActivationFn());
             if (ret != null) {
                 return ret;
             }
         }
 
-        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, z));
+        INDArray activation = afn.getActivation(z, training);
         return activation;
     }
 

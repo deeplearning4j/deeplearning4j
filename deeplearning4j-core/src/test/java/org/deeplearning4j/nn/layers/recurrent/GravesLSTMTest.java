@@ -250,7 +250,7 @@ public class GravesLSTMTest {
 			MultiLayerNetwork net = new MultiLayerNetwork(conf);
 			net.init();
 
-			assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM)net.getLayer(0).conf().getLayer()).getGateActivationFn());
+			assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM)net.getLayer(0).conf().getLayer()).getGateActivationFn().toString());
 
 			INDArray in = Nd4j.rand(new int[]{3,2,5});
 			INDArray labels = Nd4j.rand(new int[]{3,2,5});
