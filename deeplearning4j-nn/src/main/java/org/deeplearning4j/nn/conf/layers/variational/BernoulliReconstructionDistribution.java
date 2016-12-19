@@ -2,17 +2,16 @@ package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
-import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.util.Arrays;
 
 /**
  * Bernoulli reconstruction distribution for variational autoencoder.<br>
@@ -26,7 +25,7 @@ import java.util.Arrays;
 @Slf4j @Data
 public class BernoulliReconstructionDistribution implements ReconstructionDistribution {
 
-    private final String activationFn;
+    private final IActivation activationFn;
 
     /**
      * Create a BernoulliReconstructionDistribution with the default Sigmoid activation function
@@ -38,11 +37,18 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     /**
      * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
      */
-    public BernoulliReconstructionDistribution(String activationFn){
+    public BernoulliReconstructionDistribution(String activationFn) {
+        this(Activation.fromString(activationFn).getActivationFunction());
+    }
+
+    /**
+     * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
+     */
+    public BernoulliReconstructionDistribution(IActivation activationFn){
         this.activationFn = activationFn;
-        if(!"sigmoid".equals(activationFn)){
+        if(!(activationFn instanceof ActivationSigmoid) && !(activationFn instanceof ActivationHardSigmoid)){
             log.warn("Using BernoulliRecontructionDistribution with activation function \"" + activationFn + "\"."
-                    + " Using sigmoid is recommended to bound probabilities in range 0 to 1");
+                    + " Using sigmoid/hard sigmoid is recommended to bound probabilities in range 0 to 1");
         }
     }
 
@@ -71,9 +77,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
     private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams){
         INDArray output = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
-        }
+        activationFn.getActivation(output, false);
 
         INDArray logOutput = Transforms.log(output, true);
         INDArray log1SubOut = Transforms.log(output.rsubi(1.0), false);
@@ -89,20 +93,13 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     @Override
     public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
         INDArray output = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
-        }
+        activationFn.getActivation(output, true);
 
         INDArray diff = x.sub(output);
         INDArray outOneMinusOut = output.rsub(1.0).muli(output);
 
         INDArray grad = diff.divi(outOneMinusOut);
-
-        if(!"identity".equals(activationFn)){
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
-                    Nd4j.getOpFactory().createTransform(activationFn, preOutDistributionParams.dup()).derivative());
-            grad.muli(sigmaPrimeZ);
-        }
+        grad = activationFn.backprop(preOutDistributionParams.dup(), grad).getFirst();
 
         //Issue: if output == 0 or output == 1, then (assuming sigmoid output or similar)
         //sigmaPrime == 0, sigmaPrime * (x-out) / (out*(1-out)) == 0 * (x-out) / 0 -> 0/0 -> NaN. But taking limit, we want
@@ -114,9 +111,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     @Override
     public INDArray generateRandom(INDArray preOutDistributionParams) {
         INDArray p = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
-        }
+        activationFn.getActivation(p, false);
 
         INDArray rand = Nd4j.rand(p.shape());
         //Can simply randomly sample by looking where values are < p...
@@ -134,9 +129,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         //Obviously we can't produce exactly the mean value - bernoulli should produce only {0,1} values
         //but returning the actual mean value is more useful
         INDArray p = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            p = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, p));
-        }
+        activationFn.getActivation(p, false);
 
         return p;
     }
