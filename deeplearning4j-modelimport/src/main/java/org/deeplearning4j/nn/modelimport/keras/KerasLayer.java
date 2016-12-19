@@ -49,6 +49,7 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
     public static final String LAYER_CLASS_NAME_REPEATVECTOR = "RepeatVector";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
+    public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
 
     /* Keras layer configurations. */
     public static final String LAYER_FIELD_CONFIG = "config";
@@ -65,6 +66,22 @@ public class KerasLayer {
     public static final String LAYER_FIELD_DROPOUT_W = "dropout_W";
     public static final String LAYER_FIELD_BATCH_INPUT_SHAPE = "batch_input_shape";
     public static final String LAYER_FIELD_INBOUND_NODES = "inbound_nodes";
+    public static final String LAYER_FIELD_BORDER_MODE = "border_mode";
+    public static final String LAYER_FIELD_GAMMA_REGULARIZER = "gamma_regularizer";
+    public static final String LAYER_FIELD_BETA_REGULARIZER = "beta_regularizer";
+    public static final String LAYER_FIELD_MODE = "mode";
+    public static final String LAYER_FIELD_AXIS = "axis";
+    public static final String LAYER_FIELD_EPSILON = "epsilon";
+    public static final String LAYER_FIELD_MOMENTUM = "momentum";
+
+    /* Keras convolution border modes. */
+    public static final String LAYER_BORDER_MODE_SAME = "same";
+    public static final String LAYER_BORDER_MODE_VALID = "valid";
+    public static final String LAYER_BORDER_MODE_FULL = "full";
+
+    /* Keras batch norm modes. */
+    public static final int LAYER_BATCHNORM_MODE_1 = 1;
+    public static final int LAYER_BATCHNORM_MODE_2 = 2;
 
     /* Keras weight regularizers. */
     public static final String LAYER_FIELD_W_REGULARIZER = "W_regularizer";
@@ -124,10 +141,6 @@ public class KerasLayer {
     public static final String KERAS_LOSS_KL_DIVERGENCE_2 = "kld";
     public static final String KERAS_LOSS_POISSON  = "poisson";
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
-    public static final String LAYER_FIELD_BORDER_MODE = "border_mode";
-    public static final String LAYER_BORDER_MODE_SAME = "same";
-    public static final String LAYER_BORDER_MODE_VALID = "valid";
-    public static final String LAYER_BORDER_MODE_FULL = "full";
 
     /* Logging. */
     private static Logger log = LoggerFactory.getLogger(KerasLayer.class);
@@ -136,13 +149,13 @@ public class KerasLayer {
      * in tensors with different dimension orders.
      */
     public enum DimOrder {
-        THEANO, TENSORFLOW, UNKNOWN;
+        NONE, THEANO, TENSORFLOW, UNKNOWN;
     }
 
     private Map<String,Object> layerConfig;       // Keras layer configuration
     private String className;                     // Keras layer class name
     private String layerName;                     // Keras layer name
-    private DimOrder dimOrder = DimOrder.UNKNOWN; // Keras layer backend dimension order
+    private DimOrder dimOrder = DimOrder.NONE; // Keras layer backend dimension order
     private int[] inputShape;                     // Keras layer input shape
     private List<String> inboundLayerNames = new ArrayList<>(); // List of inbound layers
     private Layer dl4jLayer;                      // Resulting DL4J layer
@@ -429,6 +442,9 @@ public class KerasLayer {
             /* TODO: Add support for 1D, 3D pooling layerNamesOrdered? */
                 layer = buildSubsamplingLayer(layerConfig, train);
                 break;
+            case LAYER_CLASS_NAME_BATCHNORMALIZATION:
+                layer = buildBatchNormalizationLayer(layerConfig, train);
+                break;
             case LAYER_CLASS_NAME_LOSS:
                 layer = buildLossLayer(layerConfig, train);
                 break;
@@ -586,7 +602,7 @@ public class KerasLayer {
      * @return                  Dimension order
      */
     private DimOrder getDimOrderFromConfig(Map<String,Object> layerConfig) {
-        DimOrder dimOrder = DimOrder.UNKNOWN;
+        DimOrder dimOrder = DimOrder.NONE;
         if (layerConfig.containsKey(LAYER_FIELD_DIM_ORDERING)) {
             String dimOrderStr = (String)layerConfig.get(LAYER_FIELD_DIM_ORDERING);
             switch(dimOrderStr) {
@@ -901,6 +917,45 @@ public class KerasLayer {
                 break;
         }
         layerConfig.put(LAYER_FIELD_DROPOUT, (double)layerConfig.get(LAYER_FIELD_DROPOUT_W));
+        finishLayerConfig(builder, layerConfig, train);
+        return builder.build();
+    }
+
+    /**
+     * Build DL4J BatchNormalization layer from a Keras LSTM configuration.
+     *
+     * @param layerConfig      map containing Keras LSTM layer properties
+     * @param train            whether to build layer in training mode
+     * @return                 DL4J GravesLSTM configuration
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedOperationException
+     * @see BatchNormalization
+     */
+    private static BatchNormalization buildBatchNormalizationLayer(Map<String,Object> layerConfig, boolean train)
+            throws UnsupportedKerasConfigurationException {
+        if (train)
+            if (layerConfig.get(LAYER_FIELD_GAMMA_REGULARIZER) != null)
+                throw new UnsupportedKerasConfigurationException("Regularization for BatchNormalization gamma parameter not supported");
+        else
+            log.warn("Regularization for BatchNormalization gamma parameter not supported...ignoring.");
+        if (train)
+            if (layerConfig.get(LAYER_FIELD_BETA_REGULARIZER) != null)
+                throw new UnsupportedKerasConfigurationException("Regularization for BatchNormalization beta parameter not supported");
+            else
+                log.warn("Regularization for BatchNormalization beta parameter not supported...ignoring.");
+        int batchNormMode = (int)layerConfig.get(LAYER_FIELD_MODE);
+        switch(batchNormMode) {
+            case LAYER_BATCHNORM_MODE_1:
+                throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode " + LAYER_BATCHNORM_MODE_1 + " (sample-wise) not supported");
+            case LAYER_BATCHNORM_MODE_2:
+                throw new UnsupportedKerasConfigurationException("Keras BatchNormalization (per-batch statistics during testing) " + LAYER_BATCHNORM_MODE_2 + " not supported");
+        }
+        int axis = (int)layerConfig.get(LAYER_FIELD_AXIS);
+        log.warn("Ignoring BatchNormalization " + LAYER_FIELD_AXIS + "=" + axis + " config. DL4J BatchNormalization defaults to the \"channels\" axis");
+        BatchNormalization.Builder builder = new BatchNormalization.Builder();
+        builder.eps((double)layerConfig.get(LAYER_FIELD_EPSILON))
+                .momentum((double)layerConfig.get(LAYER_FIELD_MOMENTUM));
+
         finishLayerConfig(builder, layerConfig, train);
         return builder.build();
     }
