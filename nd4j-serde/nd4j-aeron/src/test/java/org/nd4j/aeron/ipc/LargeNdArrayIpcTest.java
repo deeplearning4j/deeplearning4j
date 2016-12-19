@@ -28,7 +28,7 @@ import static org.junit.Assert.assertFalse;
 public class LargeNdArrayIpcTest {
     private MediaDriver mediaDriver;
     private Aeron.Context ctx;
-    private String channel = "aeron:udp?endpoint=localhost:40123";
+    private String channel = "aeron:udp?endpoint=localhost:" + (40123 + new java.util.Random().nextInt(130));
     private int streamId = 10;
     private  int length = (int) 1e7;
 
@@ -76,19 +76,19 @@ public class LargeNdArrayIpcTest {
                                                   */
                                                  @Override
                                                  public void onNDArrayMessage(NDArrayMessage message) {
+                                                     running.set(false);
+                                                 }
+
+                                                 @Override
+                                                 public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
 
                                                  }
 
                                                  @Override
-                        public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
-
-                        }
-
-                        @Override
-                        public void onNDArray(INDArray arr) {
-                            running.set(false);
-                        }
-                    }).build();
+                                                 public void onNDArray(INDArray arr) {
+                                                     running.set(false);
+                                                 }
+                                             }).build();
 
 
             Thread t = new Thread(() -> {
