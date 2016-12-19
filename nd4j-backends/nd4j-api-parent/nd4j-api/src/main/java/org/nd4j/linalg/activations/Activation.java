@@ -9,14 +9,19 @@ import java.util.Map;
  * Created by susaneraly on 12/8/16.
  */
 public enum Activation {
-    TANH,
-    SIGMOID,
+    CUBE,
+    ELU,
+    HARDSIGMOID,
+    HARDTANH,
     IDENTITY,
     LEAKYRELU,
     RELU,
     RRELU,
+    SIGMOID,
     SOFTMAX,
-    SOFTSIGN;
+    SOFTPLUS,
+    SOFTSIGN,
+    TANH;
 
     private static final Map<String,Activation> nameMap = initNameMap();
 
@@ -30,29 +35,39 @@ public enum Activation {
 
     public IActivation getActivationFunction() {
         switch(this) {
-            case TANH:
-                return new ActivationTanH();
-            case SIGMOID:
-                return new ActivationSigmoid();
+            case CUBE:
+                return new ActivationCube();
+            case ELU:
+                return new ActivationELU();
+            case HARDSIGMOID:
+                return new ActivationHardSigmoid();
+            case HARDTANH:
+                return new ActivationHardTanH();
             case IDENTITY:
                 return new ActivationIdentity();
             case LEAKYRELU:
                 return new ActivationLReLU();
             case RELU:
                 return new ActivationReLU();
-            case SOFTMAX:
-                return new ActivationSoftmax();
             case RRELU:
                 return new ActivationRReLU();
+            case SIGMOID:
+                return new ActivationSigmoid();
+            case SOFTMAX:
+                return new ActivationSoftmax();
+            case SOFTPLUS:
+                return new ActivationSoftPlus();
             case SOFTSIGN:
                 return new ActivationSoftSign();
+            case TANH:
+                return new ActivationTanH();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }
     }
 
     public static Activation fromString(String name){
-        Activation a = nameMap.get(name);
+        Activation a = nameMap.get(name.toLowerCase());
         if(a == null){
             throw new RuntimeException("Unknown activation function: " + name);
         }
