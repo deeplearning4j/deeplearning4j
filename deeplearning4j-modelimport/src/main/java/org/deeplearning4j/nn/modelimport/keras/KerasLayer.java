@@ -89,8 +89,10 @@ public class KerasLayer {
     /* Keras and DL4J activation types. */
     public static final String LAYER_FIELD_ACTIVATION = "activation";
     public static final String LAYER_FIELD_INNER_ACTIVATION = "inner_activation";
-    public static final String ACTIVATION_LINEAR = "linear";
+    public static final String KERAS_ACTIVATION_LINEAR = "linear";
     public static final String DL4J_ACTIVATION_IDENTITY = "identity";
+    public static final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";
+    public static final String DL4J_ACTIVATION_HARDSIGMOID = "hardsigmoid";
 
     /* Keras LSTM forget gate bias initializations. */
     public static final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init";
@@ -450,9 +452,27 @@ public class KerasLayer {
      * @return                  String containing DL4J activation function name
      */
     public static String mapActivation(String kerasActivation) {
-        if (kerasActivation.equals(ACTIVATION_LINEAR))
-            return DL4J_ACTIVATION_IDENTITY;
-        return kerasActivation;
+        /* Keras and DL4J use the same name for most activations:
+         * - softmax
+         * - softplus
+         * - softsign
+         * - relu
+         * - tanh
+         * - sigmoid
+         */
+        String dl4jActivation = null;
+        switch (kerasActivation) {
+            case KERAS_ACTIVATION_LINEAR:
+                dl4jActivation = DL4J_ACTIVATION_IDENTITY;
+                break;
+            case KERAS_ACTIVATION_HARD_SIGMOID:
+                dl4jActivation = DL4J_ACTIVATION_HARDSIGMOID;
+                break;
+            default:
+                dl4jActivation = kerasActivation;
+                break;
+        }
+        return dl4jActivation;
     }
 
     /**
@@ -852,8 +872,6 @@ public class KerasLayer {
      */
     private static GravesLSTM buildGravesLstmLayer(Map<String,Object> layerConfig, boolean train)
             throws UnsupportedKerasConfigurationException {
-        if (!layerConfig.get(LAYER_FIELD_ACTIVATION).equals(layerConfig.get(LAYER_FIELD_INNER_ACTIVATION)))
-            throw new UnsupportedKerasConfigurationException("Specifying different activation for LSTM inner cells not supported.");
         if (!layerConfig.get(LAYER_FIELD_INIT).equals(layerConfig.get(LAYER_FIELD_INNER_INIT)))
             if (train)
                 throw new UnsupportedKerasConfigurationException("Specifying different initialization for LSTM inner cells not supported.");
@@ -864,6 +882,7 @@ public class KerasLayer {
 
         GravesLSTM.Builder builder = new GravesLSTM.Builder();
         builder.nOut((int)layerConfig.get(LAYER_FIELD_OUTPUT_DIM));
+        builder.gateActivationFunction(mapActivation((String)layerConfig.get(LAYER_FIELD_INNER_ACTIVATION)));
         String forgetBiasInit = (String)layerConfig.get(LAYER_FIELD_FORGET_BIAS_INIT);
         switch (forgetBiasInit) {
             case LSTM_FORGET_BIAS_INIT_ZERO:
