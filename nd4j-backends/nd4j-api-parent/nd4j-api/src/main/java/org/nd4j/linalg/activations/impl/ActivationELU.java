@@ -77,6 +77,7 @@ public class ActivationELU extends BaseActivationFunction {
 
         else {
             INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new ELU(in).derivative());
+            dLdz.muli(epsilon);
             return new Pair<>(dLdz, null);
         }
     }
