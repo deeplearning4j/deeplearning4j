@@ -85,4 +85,9 @@ public abstract class UIServer {
      */
     public abstract boolean isRemoteListenerEnabled();
 
+    /**
+     * Stop/shut down the UI server.
+     */
+    public abstract void stop();
+
 }

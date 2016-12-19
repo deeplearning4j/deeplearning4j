@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -162,7 +163,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta,
-            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, String afn,
+            int[] kernel, int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                                                      AlgoMode mode, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -324,7 +325,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
     }
 
     @Override
-    public INDArray activate(INDArray z, String afn) {
+    public INDArray activate(INDArray z, IActivation afn) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner)Nd4j.getExecutioner()).flushQueue();
 
@@ -335,7 +336,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         Pointer dstData = allocator.getPointer(z, context);
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
-        switch (afn) {
+        switch (afn.toString()) {
             case "identity":
                 break;
             case "sigmoid":

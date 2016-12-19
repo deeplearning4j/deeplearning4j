@@ -89,7 +89,7 @@ function renderScoreVsIterChart(data) {
             var bestFitLine = EMACalc(scoresArr, 10);
             var bestFitData = [];
             for (var i = 0; i < bestFitLine.length; i++) {
-                bestFitData.push([i+1, bestFitLine[i]]);
+                bestFitData.push([scoresIter[i], bestFitLine[i]]);
             }
             plotData.push({data: bestFitData, label: "summary"});
         }
@@ -335,7 +335,6 @@ function renderStdevChart(data) {
 
             var pairs = [];
             for (var j = 0; j < r.length; j++) {
-                // pairs.push([iter[j], r[j]]);
                 pairs.push([iter[j], Math.log10(r[j])]);
             }
             toPlot.push({data: pairs, label: keys[i]});
