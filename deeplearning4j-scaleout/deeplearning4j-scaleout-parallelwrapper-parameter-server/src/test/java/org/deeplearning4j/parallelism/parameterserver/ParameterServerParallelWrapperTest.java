@@ -85,7 +85,7 @@ public class ParameterServerParallelWrapperTest {
         ParameterServerParallelWrapper parameterServerParallelWrapper = ParameterServerParallelWrapper
                 .builder().model(model).multiLayerNetwork(model).numEpochs(10).numWorkers(Runtime.getRuntime().availableProcessors())
                 .statusServerPort(33000)
-                .preFetchSize(1).build();
+                .preFetchSize(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
         parameterServerParallelWrapper.close();
 
