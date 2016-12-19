@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 @Slf4j
 public class KerasLayerTest {
     public static final String ACTIVATION_KERAS = "linear";
+    public static final String INNER_ACTIVATION_KERAS = "hard_sigmoid";
     public static final String ACTIVATION_DL4J = "identity";
     public static final String LAYER_NAME = "test_layer";
     public static final String INIT_KERAS = "glorot_normal";
@@ -159,7 +160,7 @@ public class KerasLayerTest {
         layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_LSTM);
         Map<String,Object> config = new HashMap<String,Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_INNER_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
