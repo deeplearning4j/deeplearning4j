@@ -272,7 +272,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        CloseHelper.close(subscription);
+        CloseHelper.quietClose(subscription);
     }
 }
 

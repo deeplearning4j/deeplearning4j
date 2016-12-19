@@ -51,12 +51,15 @@ public class NDArrayFragmentHandler implements FragmentHandler {
 
 
         //only applicable for direct buffers where we don't wrap the array
-        else   if(!byteArrayInput) {
+        if(!byteArrayInput) {
             byteBuffer.position(offset);
             byteBuffer.order(ByteOrder.nativeOrder());
         }
 
-        NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[byteBuffer.getInt()];
+        int messageTypeIndex = byteBuffer.getInt();
+        if(messageTypeIndex >= NDArrayMessage.MessageType.values().length)
+            throw new IllegalStateException("Illegal index on message type. Likely corrupt message. Please check the serialization of the bytebuffer. Input was bytebuffer: " + byteArrayInput);
+        NDArrayMessage.MessageType messageType = NDArrayMessage.MessageType.values()[messageTypeIndex];
 
         if(messageType == NDArrayMessage.MessageType.CHUNKED) {
             NDArrayMessageChunk chunk = NDArrayMessageChunk.fromBuffer(byteBuffer,messageType);

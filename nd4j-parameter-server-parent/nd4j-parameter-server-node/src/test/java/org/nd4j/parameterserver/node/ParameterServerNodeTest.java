@@ -27,21 +27,23 @@ public class ParameterServerNodeTest {
     private static Aeron aeron;
     private static ParameterServerNode parameterServerNode;
     private static int parameterLength = 4;
+    private static int masterStatusPort = 40323 + new java.util.Random().nextInt(15999);
+    private static int statusPort = masterStatusPort - 1299;
 
     @BeforeClass
     public static void before() throws Exception {
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
         System.setProperty("play.server.dir","/tmp");
         aeron = Aeron.connect(getContext());
-        parameterServerNode = new ParameterServerNode(mediaDriver);
+        parameterServerNode = new ParameterServerNode(mediaDriver,statusPort);
         parameterServerNode.runMain(new String[] {
                 "-m","true",
                 "-s","1," + String.valueOf(parameterLength),
-                "-p","40323",
+                "-p",String.valueOf(masterStatusPort),
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
-                "-sp", "9000",
+                "-sp", String.valueOf(statusPort),
                 "-sh","localhost",
                 "-u",String.valueOf(Runtime.getRuntime().availableProcessors())
         });
@@ -61,7 +63,7 @@ public class ParameterServerNodeTest {
         for(int i = 0; i < numCores; i++) {
             clients[i] = ParameterServerClient.builder()
                     .aeron(aeron).masterStatusHost(host)
-                    .masterStatusPort(9000).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
+                    .masterStatusPort(statusPort).subscriberHost(host).subscriberPort(40325 + i).subscriberStream(10 + i)
                     .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[i].getResponder().connectionUrl())
                     .ndarraySendUrl(parameterServerNode.getSubscriber()[i].getSubscriber().connectionUrl())
                     .build();

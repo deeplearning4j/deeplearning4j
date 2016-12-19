@@ -33,10 +33,11 @@ public class ParameterServerClientTest {
         aeron = Aeron.connect(getContext());
         masterNode = new ParameterServerSubscriber(mediaDriver);
         masterNode.setAeron(aeron);
+        int masterPort = 40323 + new java.util.Random().nextInt(3000);
         masterNode.run(new String[] {
                 "-m","true",
                 "-s","1," + String.valueOf(parameterLength),
-                "-p","40323",
+                "-p",String.valueOf(masterPort),
                 "-h","localhost",
                 "-id","11",
                 "-md", mediaDriver.aeronDirectoryName(),
@@ -45,7 +46,7 @@ public class ParameterServerClientTest {
         });
 
         assertTrue(masterNode.isMaster());
-        assertEquals(40323,masterNode.getPort());
+        assertEquals(masterPort,masterNode.getPort());
         assertEquals("localhost",masterNode.getHost());
         assertEquals(11,masterNode.getStreamId());
         assertEquals(12,masterNode.getResponder().getStreamId());
@@ -53,7 +54,7 @@ public class ParameterServerClientTest {
         slaveNode = new ParameterServerSubscriber(mediaDriver);
         slaveNode.setAeron(aeron);
         slaveNode.run(new String[] {
-                "-p","40426",
+                "-p",String.valueOf(masterPort + 100),
                 "-h","localhost",
                 "-id","10",
                 "-pm",masterNode.getSubscriber().connectionUrl(),
@@ -63,7 +64,7 @@ public class ParameterServerClientTest {
         });
 
         assertFalse(slaveNode.isMaster());
-        assertEquals(40426,slaveNode.getPort());
+        assertEquals(masterPort + 100,slaveNode.getPort());
         assertEquals("localhost",slaveNode.getHost());
         assertEquals(10,slaveNode.getStreamId());
 
@@ -85,15 +86,16 @@ public class ParameterServerClientTest {
 
     @Test
     public void testServer() throws Exception {
+        int subscriberPort = 40625 + new java.util.Random().nextInt(100);
         ParameterServerClient client = ParameterServerClient
                 .builder()
                 .aeron(aeron)
                 .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
                 .ndarraySendUrl(slaveNode.getSubscriber().connectionUrl())
                 .subscriberHost("localhost")
-                .subscriberPort(40625)
+                .subscriberPort(subscriberPort)
                 .subscriberStream(12).build();
-        assertEquals("localhost:40625:12",client.connectionUrl());
+        assertEquals(String.format("localhost:%d:12",subscriberPort),client.connectionUrl());
         //flow 1:
         /**
          * Client (40125:12): sends array to listener on slave(40126:10)
@@ -111,11 +113,6 @@ public class ParameterServerClientTest {
         assertEquals(Nd4j.ones(1000),arr);
     }
 
-    @AfterClass
-    public static void after() {
-        if(mediaDriver != null)
-            CloseHelper.quietClose(mediaDriver);
-    }
 
 
 
@@ -123,10 +120,10 @@ public class ParameterServerClientTest {
 
     private static  Aeron.Context getContext() {
         return new Aeron.Context().publicationConnectionTimeout(-1)
-                    .availableImageHandler(AeronUtil::printAvailableImage)
-                    .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                    .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
-                    .errorHandler(e -> log.error(e.toString(), e));
+                .availableImageHandler(AeronUtil::printAvailableImage)
+                .unavailableImageHandler(AeronUtil::printUnavailableImage)
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                .errorHandler(e -> log.error(e.toString(), e));
     }
 
 
