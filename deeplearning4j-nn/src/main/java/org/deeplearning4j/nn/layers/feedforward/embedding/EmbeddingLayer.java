@@ -48,8 +48,10 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        INDArray delta = epsilon.muli(activationDerivative);
+        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
+//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
+//        INDArray delta = epsilon.muli(activationDerivative);
+        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst();  //TODO handle activation function params
 
         if(maskArray != null){
             delta.muliColumnVector(maskArray);
@@ -108,7 +110,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     public INDArray activate(boolean training){
         INDArray rows = preOutput(training);
 
-        INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
+        //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
+        INDArray ret = conf.getLayer().getActivationFn().getActivation(rows,training);
         if(maskArray != null){
             ret.muliColumnVector(maskArray);
         }

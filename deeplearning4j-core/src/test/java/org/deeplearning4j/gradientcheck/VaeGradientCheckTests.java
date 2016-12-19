@@ -14,6 +14,8 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -223,8 +225,8 @@ public class VaeGradientCheckTests {
                         .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build(),
                 new ExponentialReconstructionDistribution("identity"),
                 new ExponentialReconstructionDistribution("tanh"),
-                new LossFunctionWrapper("tanh",new LossMSE()),
-                new LossFunctionWrapper("identity",new LossMAE())
+                new LossFunctionWrapper(new ActivationTanH(),new LossMSE()),
+                new LossFunctionWrapper(new ActivationIdentity(),new LossMAE())
         };
 
         Nd4j.getRandom().setSeed(12345);
