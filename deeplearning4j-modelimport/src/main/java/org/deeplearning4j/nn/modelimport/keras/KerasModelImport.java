@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
-//import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
 import org.deeplearning4j.berkeley.StringUtils;
@@ -36,8 +35,7 @@ import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.Exception;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -60,6 +58,7 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_FIELD_CLA
 public class KerasModelImport {
     static {
         try {
+            /* This is necessary for the call to the BytePointer constructor below. */
             Loader.load(hdf5.class);
         } catch (Exception e) {
             e.printStackTrace();
@@ -261,22 +260,30 @@ public class KerasModelImport {
      *
      * @param modelHdf5Stream     InputStream containing HDF5 archive of Keras model
      * @throws IOException
+     *
+     * TODO: Currently, this constructor does not work. It does not appear to be
+     * possible to open an HDF5 archive from raw bytes.
      */
     public KerasModelImport(InputStream modelHdf5Stream)
-            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        /* Read InputStream and open HDF5 model archive. */
-        byte[] bytes = IOUtils.toByteArray(modelHdf5Stream);
-        BytePointer bytePointer = new BytePointer(bytes);
-        hdf5.H5File file = new hdf5.H5File(bytePointer,H5F_ACC_RDONLY);
+            throws UnsupportedOperationException, IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+            log.warn("Importing a Keras model from an InputStream pointing to contents of an HDF5 archive currently not supported.");
+            throw new UnsupportedOperationException("Importing a Keras model from an InputStream currently not supported "
+            + "because it is not possible to load an HDF5 file from a memory buffer using the HDF5 C++ API. "
+            + "See: http://stackoverflow.com/questions/18449972/how-can-i-open-hdf5-file-from-memory-buffer-using-hdf5-c-api");
 
-        /* Read model and training configurations from top-level attributes. */
-        this.modelJson = readJsonStringFromHdf5Attribute(file, "model_config");
-        this.modelClassName = getModelClassName(this.modelJson);
-        this.trainingJson = readJsonStringFromHdf5Attribute(file, "training_config");
-
-        /* Read weights from "/weights" group. */
-        this.weights = readWeightsFromHdf5(file, "/model_weights");
-        file.close();
+        /* One very hacky workaround would be to write the InputStream out to
+         * a temporary file and then use the "from filename" constructor to
+         * import from that file, as follows:
+         *
+         * File tempFile = File.createTempFile("temporary_model_archive",".h5");
+         * tempFile.deleteOnExit();
+         * tempFile.canWrite();
+         * FileOutputStream tempOutputStream = new FileOutputStream(tempFile);
+         * IOUtils.copy(modelHdf5Stream, tempOutputStream);
+         * tempOutputStream.close();
+         * String tempFilename = tempFile.getAbsolutePath();
+         * super(tempFilename);
+         */
     }
 
     /**
