@@ -1,6 +1,6 @@
 {
  "class_name": "Sequential", 
- "keras_version": "1.1.0", 
+ "keras_version": "1.1.2", 
  "config": [
   {
    "class_name": "Convolution2D", 
