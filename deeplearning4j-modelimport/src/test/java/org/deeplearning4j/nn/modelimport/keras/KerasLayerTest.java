@@ -47,7 +47,7 @@ public class KerasLayerTest {
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         ActivationLayer layer = (ActivationLayer)new KerasLayer(layerConfig).getDl4jLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFunction());
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
     }
 
@@ -82,7 +82,7 @@ public class KerasLayerTest {
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         DenseLayer layer = (DenseLayer) new KerasLayer(layerConfig).getDl4jLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFunction());
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
@@ -115,7 +115,7 @@ public class KerasLayerTest {
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         ConvolutionLayer layer = (ConvolutionLayer) new KerasLayer(layerConfig).getDl4jLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFunction());
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
@@ -175,7 +175,7 @@ public class KerasLayerTest {
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
         GravesLSTM layer = (GravesLSTM) new KerasLayer(layerConfig).getDl4jLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFunction());
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
