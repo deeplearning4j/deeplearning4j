@@ -18,20 +18,23 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -63,7 +66,7 @@ import java.util.Map;
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
-    protected String activationFunction;
+    protected IActivation activationFn;
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
@@ -93,7 +96,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
-        this.activationFunction = builder.activationFunction;
+        this.activationFn = builder.activationFn;
         this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
         this.dist = builder.dist;
@@ -210,7 +213,9 @@ public abstract class Layer implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
-        protected String activationFunction = null;
+//        @Deprecated
+//        protected String activationFunction = null;
+        protected IActivation activationFn = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
@@ -249,9 +254,18 @@ public abstract class Layer implements Serializable, Cloneable {
          * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
          * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
          */
+        @Deprecated
         public T activation(String activationFunction) {
-            this.activationFunction = activationFunction;
+            return activation(Activation.fromString(activationFunction));
+        }
+
+        public T activation(IActivation activationFunction) {
+            this.activationFn = activationFunction;
             return (T) this;
+        }
+
+        public T activation(Activation activation) {
+            return activation(activation.getActivationFunction());
         }
 
         /**

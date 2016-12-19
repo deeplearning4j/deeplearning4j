@@ -58,6 +58,7 @@ public class TestPlayUI {
             Thread.sleep(100);
         }
 
+//        uiServer.stop();
 
         Thread.sleep(100000);
     }

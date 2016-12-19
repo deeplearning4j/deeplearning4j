@@ -16,6 +16,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -61,7 +62,7 @@ public class VariationalAutoencoder implements Layer {
     protected int[] encoderLayerSizes;
     protected int[] decoderLayerSizes;
     protected ReconstructionDistribution reconstructionDistribution;
-    protected String pzxActivationFn;
+    protected IActivation pzxActivationFn;
     protected int numSamples;
 
     protected boolean zeroedPretrainParamGradients = false;
@@ -72,7 +73,7 @@ public class VariationalAutoencoder implements Layer {
         this.encoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getEncoderLayerSizes();
         this.decoderLayerSizes = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getDecoderLayerSizes();
         this.reconstructionDistribution = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getOutputDistribution();
-        this.pzxActivationFn = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getPzxActivationFunction();
+        this.pzxActivationFn = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getPzxActivationFn();
         this.numSamples = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer()).getNumSamples();
     }
 
@@ -96,7 +97,7 @@ public class VariationalAutoencoder implements Layer {
     public void computeGradientAndScore() {
         //Forward pass through the encoder and mean for P(Z|X)
         VAEFwdHelper fwd = doForward(true, true);
-        String afn = conf().getLayer().getActivationFunction();
+        IActivation afn = conf().getLayer().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
         INDArray pzxLogStd2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
@@ -106,10 +107,9 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray meanZ = fwd.pzxMeanPreOut.dup();
         INDArray logStdev2Z = pzxLogStd2Pre.dup();
-        if (!"identity".equals(pzxActivationFn)) {
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, meanZ));
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, logStdev2Z));
-        }
+        pzxActivationFn.getActivation(meanZ, true);
+        pzxActivationFn.getActivation(logStdev2Z, true);
+
 
         INDArray pzxSigmaSquared = Transforms.exp(logStdev2Z, true);
         INDArray pzxSigma = Transforms.sqrt(pzxSigmaSquared, true);
@@ -143,7 +143,7 @@ public class VariationalAutoencoder implements Layer {
 
                 current = current.mmul(weights).addiRowVector(bias);
                 decoderPreOut[i] = current.dup();
-                Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, current));
+                afn.getActivation(current, true);
                 decoderActivations[i] = current;
             }
 
@@ -211,10 +211,7 @@ public class VariationalAutoencoder implements Layer {
                 String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
                 String bKey = "d" + i + BIAS_KEY_SUFFIX;
 
-                INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createTransform(afn, decoderPreOut[i]).derivative());
-
-                INDArray currentDelta = epsilon.muli(sigmaPrimeZ);
+                INDArray currentDelta = afn.backprop(decoderPreOut[i], epsilon).getFirst(); //TODO activation functions with params
 
                 INDArray weights = params.get(wKey);
                 INDArray dLdW = gradientViews.get(wKey);
@@ -256,11 +253,9 @@ public class VariationalAutoencoder implements Layer {
                     .addi(pzxSigmaSquared).subi(1).muli(0.5);
 
 
-            INDArray dLdPreMu = dLdmu.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                    pzxActivationFn, fwd.getPzxMeanPreOut().dup()).derivative()));
+            INDArray dLdPreMu = pzxActivationFn.backprop(fwd.getPzxMeanPreOut().dup(), dLdmu).getFirst();
 
-            INDArray dLdPreLogSigma2 = dLdLogSigma2.mul(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                    pzxActivationFn, pzxLogStd2Pre.dup()).derivative()));
+            INDArray dLdPreLogSigma2 = pzxActivationFn.backprop(pzxLogStd2Pre.dup(), dLdLogSigma2).getFirst();
 
             //Weight gradients for weights feeding into p(z|x)
             INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length - 1];
@@ -270,20 +265,21 @@ public class VariationalAutoencoder implements Layer {
             Nd4j.gemm(lastEncoderActivation, dLdPreLogSigma2, dLdZXLogStdev2W, true, false, scaleFactor, gemmCConstant);
 
             //Bias gradients for p(z|x)
-            INDArray sigmaPrimePreMu = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                    pzxActivationFn, fwd.getPzxMeanPreOut().dup()).derivative());
             INDArray dLdZXMeanb = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B);
             INDArray dLdZXLogStdev2b = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B);
             //If we were maximizing the equation in Kinga and Welling, this would be a .sub(meanZ). Here: we are minimizing the negative instead
             if(l == 0){
-                dLdZXMeanb.assign(dLdz.add(meanZ).mul(sigmaPrimePreMu).sum(0));
+                dLdZXMeanb.assign(pzxActivationFn.backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst().sum(0));
+
                 dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
                 if(numSamples > 1){
                     dLdZXMeanb.muli(scaleFactor);
                     dLdZXLogStdev2b.muli(scaleFactor);
                 }
             } else {
-                blasL1.axpy(dLdZXMeanb.length(), scaleFactor, dLdz.add(meanZ).mul(sigmaPrimePreMu).sum(0), dLdZXMeanb);
+                blasL1.axpy(dLdZXMeanb.length(), scaleFactor,
+                        pzxActivationFn.backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst().sum(0), dLdZXMeanb);
+
                 blasL1.axpy(dLdZXLogStdev2b.length(), scaleFactor, dLdPreLogSigma2.sum(0), dLdZXLogStdev2b);
             }
 
@@ -310,21 +306,18 @@ public class VariationalAutoencoder implements Layer {
 
                 INDArray preOut = fwd.encoderPreOuts[i];
 
-                INDArray activationDerivative;
+                INDArray currentDelta;
                 if(numSamples > 1){
                     //Re-use sigma-prime values for the encoder - these don't change based on multiple samples,
                     // only the errors do
                     if(l == 0){
-                        encoderActivationDerivs[i] = Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createTransform(afn, fwd.encoderPreOuts[i]).derivative());
+                        //Not the most elegent implementation (with the ND4j.ones()), but it works...
+                        encoderActivationDerivs[i] = afn.backprop(fwd.encoderPreOuts[i], Nd4j.ones(fwd.encoderPreOuts[i].shape())).getFirst();
                     }
-                    activationDerivative = encoderActivationDerivs[i];
+                    currentDelta = epsilon.muli(encoderActivationDerivs[i]);
                 } else {
-                    activationDerivative = Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
+                    currentDelta = afn.backprop(preOut, epsilon).getFirst();
                 }
-
-                INDArray currentDelta = epsilon.muli(activationDerivative);
 
                 INDArray actInput;
                 if (i == 0) {
@@ -504,7 +497,7 @@ public class VariationalAutoencoder implements Layer {
         Map<String,INDArray> map = new LinkedHashMap<>();
         for(Map.Entry<String,INDArray> e : params.entrySet()){
             if (!backpropParamsOnly || !isPretrainParam(e.getKey())) {
-                    map.put(e.getKey(), e.getValue());
+                map.put(e.getKey(), e.getValue());
             }
         }
         return map;
@@ -598,10 +591,7 @@ public class VariationalAutoencoder implements Layer {
         Gradient gradient = new DefaultGradient();
 
         VAEFwdHelper fwd = doForward(true, true);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(
-                Nd4j.getOpFactory().createTransform(pzxActivationFn, fwd.pzxMeanPreOut).derivative());
-
-        INDArray currentDelta = activationDerivative.muli(epsilon);
+        INDArray currentDelta = pzxActivationFn.backprop(fwd.pzxMeanPreOut, epsilon).getFirst();
 
         //Finally, calculate mean value:
         INDArray meanW = params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W);
@@ -618,7 +608,7 @@ public class VariationalAutoencoder implements Layer {
 
         int nEncoderLayers = encoderLayerSizes.length;
 
-        String afn = conf().getLayer().getActivationFunction();
+        IActivation afn = conf().getLayer().getActivationFn();
         for (int i = nEncoderLayers - 1; i >= 0; i--) {
             String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "e" + i + BIAS_KEY_SUFFIX;
@@ -629,10 +619,8 @@ public class VariationalAutoencoder implements Layer {
             INDArray dLdB = gradientViews.get(bKey);
 
             INDArray preOut = fwd.encoderPreOuts[i];
-            activationDerivative = Nd4j.getExecutioner().execAndReturn(
-                    Nd4j.getOpFactory().createTransform(afn, preOut).derivative());
 
-            currentDelta = epsilon.muli(activationDerivative);
+            currentDelta = afn.backprop(preOut, epsilon).getFirst();
 
             INDArray actInput;
             if (i == 0) {
@@ -715,7 +703,7 @@ public class VariationalAutoencoder implements Layer {
             if (forBackprop) {
                 encoderPreOuts[i] = current.dup();
             }
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), current));
+            conf.getLayer().getActivationFn().getActivation(current, training);
             encoderActivations[i] = current;
         }
 
@@ -742,10 +730,8 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray activate(boolean training) {
         INDArray output = preOutput(training);  //Mean values for p(z|x)
+        pzxActivationFn.getActivation(output, training);
 
-        if (!"identity".equals(pzxActivationFn)) {
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, output));
-        }
         return output;
     }
 
@@ -912,7 +898,7 @@ public class VariationalAutoencoder implements Layer {
         //Forward pass through the encoder and mean for P(Z|X)
         setInput(data);
         VAEFwdHelper fwd = doForward(true, true);
-        String afn = conf().getLayer().getActivationFunction();
+        IActivation afn = conf().getLayer().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
         INDArray pzxLogStd2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
@@ -920,10 +906,8 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray meanZ = fwd.pzxMeanPreOut;
         INDArray logStdev2Z = fwd.encoderActivations[fwd.encoderActivations.length - 1].mmul(pzxLogStd2W).addiRowVector(pzxLogStd2b);
-        if (!"identity".equals(pzxActivationFn)) {
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, meanZ));
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(pzxActivationFn, logStdev2Z));
-        }
+        pzxActivationFn.getActivation(meanZ, false);
+        pzxActivationFn.getActivation(logStdev2Z, false);
 
         INDArray pzxSigma = Transforms.exp(logStdev2Z, false);
         Transforms.sqrt(pzxSigma, false);
@@ -954,7 +938,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray currentActivations = z;
             for (int j = 0; j < nDecoderLayers; j++) {
                 currentActivations = currentActivations.mmul(decoderWeights[j]).addiRowVector(decoderBiases[j]);
-                Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, currentActivations));
+                afn.getActivation(currentActivations, false);
             }
 
             //And calculate reconstruction distribution preOut
@@ -1006,7 +990,7 @@ public class VariationalAutoencoder implements Layer {
 
         int nDecoderLayers = decoderLayerSizes.length;
         INDArray currentActivations = latentSpaceValues;
-        String afn = conf().getLayer().getActivationFunction();
+        IActivation afn = conf().getLayer().getActivationFn();
 
         for (int i = 0; i < nDecoderLayers; i++) {
             String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
@@ -1014,7 +998,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray w = params.get(wKey);
             INDArray b = params.get(bKey);
             currentActivations = currentActivations.mmul(w).addiRowVector(b);
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, currentActivations));
+            afn.getActivation(currentActivations, false);
         }
 
         INDArray pxzw = params.get(VariationalAutoencoderParamInitializer.PXZ_W);
