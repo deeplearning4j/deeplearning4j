@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 //import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -57,13 +58,13 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_FIELD_CLA
  */
 @Slf4j
 public class KerasModelImport {
-//    static {
-//        try {
-//            Loader.load();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
+    static {
+        try {
+            Loader.load(hdf5.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private String modelJson;      // model configuration JSON string
     private String trainingJson;   // training configuration JSON string
