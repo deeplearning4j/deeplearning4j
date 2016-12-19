@@ -266,8 +266,8 @@ public class KerasModelImport {
      */
     public KerasModelImport(InputStream modelHdf5Stream)
             throws UnsupportedOperationException, IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-            log.warn("Importing a Keras model from an InputStream pointing to contents of an HDF5 archive currently not supported.");
-            throw new UnsupportedOperationException("Importing a Keras model from an InputStream currently not supported "
+        log.warn("Importing a Keras model from an InputStream pointing to contents of an HDF5 archive currently not supported.");
+        throw new UnsupportedOperationException("Importing a Keras model from an InputStream currently not supported "
             + "because it is not possible to load an HDF5 file from a memory buffer using the HDF5 C++ API. "
             + "See: http://stackoverflow.com/questions/18449972/how-can-i-open-hdf5-file-from-memory-buffer-using-hdf5-c-api");
 
