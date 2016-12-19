@@ -18,6 +18,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -169,7 +170,7 @@ public class GravesBidirectionalLSTMTest {
 		final INDArray fwdPassFalse = LSTMHelpers.activateHelper(
 				lstm,
 				lstm.conf(),
-				"sigmoid",
+				new ActivationSigmoid(),
 				lstm.input(),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -179,7 +180,7 @@ public class GravesBidirectionalLSTMTest {
 		final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(
 				lstm,
 				lstm.conf(),
-				"sigmoid",
+				new ActivationSigmoid(),
 				lstm.input(),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
 				lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
@@ -559,7 +560,7 @@ public class GravesBidirectionalLSTMTest {
 			MultiLayerNetwork net = new MultiLayerNetwork(conf);
 			net.init();
 
-			assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM)net.getLayer(0).conf().getLayer()).getGateActivationFn());
+			assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM)net.getLayer(0).conf().getLayer()).getGateActivationFn().toString());
 
 			INDArray in = Nd4j.rand(new int[]{3,2,5});
 			INDArray labels = Nd4j.rand(new int[]{3,2,5});

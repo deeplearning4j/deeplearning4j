@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.nn.layers.custom.testlayers;
+package org.deeplearning4j.nn.layers.custom.testclasses;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;

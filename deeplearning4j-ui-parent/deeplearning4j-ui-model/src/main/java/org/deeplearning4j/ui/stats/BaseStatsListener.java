@@ -24,6 +24,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -50,7 +51,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     private String sessionID;
     private String workerID;
 
-    private List<GarbageCollectorMXBean> gcBeans;
+    private transient List<GarbageCollectorMXBean> gcBeans;
     private Map<String, Pair<Long, Long>> gcStatsAtLastReport;
 
     private Map<String, INDArray> activationsMap;
@@ -59,7 +60,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     //NOTE: may have multiple models, due to multiple pretrain layers all using the same StatsListener
     private List<ModelInfo> modelInfos = new ArrayList<>();
 
-    private static class ModelInfo {
+    private static class ModelInfo implements Serializable {
         private final Model model;
         private long initTime;
         private long lastReportTime = -1;
