@@ -14,7 +14,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * where shift = max_i(x_i)
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationSoftmax extends BaseActivationFunction {
 

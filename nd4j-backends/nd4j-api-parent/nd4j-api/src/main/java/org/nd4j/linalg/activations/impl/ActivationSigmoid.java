@@ -14,7 +14,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * f(x) = 1 / (1 + exp(-x))
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationSigmoid extends BaseActivationFunction {
 

@@ -26,13 +26,9 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
  *  Empirical Evaluation of Rectified Activations in Convolutional Network</a>
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"alpha"})
 @Getter
 public class ActivationRReLU extends BaseActivationFunction {
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
-
     public static final double DEFAULT_L = 1.0 / 8;
     public static final double DEFAULT_U = 1.0 / 3;
 

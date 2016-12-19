@@ -23,12 +23,8 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
  *  alpha defaults to 1, if not specified
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationELU extends BaseActivationFunction {
-
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
     private double alpha;
 
     public ActivationELU() {

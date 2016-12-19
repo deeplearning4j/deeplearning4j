@@ -14,7 +14,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  *  f(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationTanH extends BaseActivationFunction {
 

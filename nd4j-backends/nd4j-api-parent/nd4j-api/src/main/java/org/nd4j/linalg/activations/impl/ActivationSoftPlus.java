@@ -13,7 +13,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * f(x) = log(1+e^x)
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationSoftPlus extends BaseActivationFunction {
 

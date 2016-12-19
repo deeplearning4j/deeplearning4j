@@ -13,7 +13,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * f(x) = x^3
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationCube extends BaseActivationFunction {
 

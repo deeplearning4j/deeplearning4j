@@ -3,7 +3,9 @@ package org.nd4j.linalg.activations;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by Alex on 18/12/2016.
+ * Base IActivation for activation functions without parameters
+ *
+ * @author Alex Black
  */
 public abstract class BaseActivationFunction implements IActivation {
 
@@ -13,7 +15,7 @@ public abstract class BaseActivationFunction implements IActivation {
     }
 
     @Override
-    public void setParametersViewArray(INDArray viewArray){
+    public void setParametersViewArray(INDArray viewArray, boolean initialize){
         //No op
     }
 
@@ -22,4 +24,13 @@ public abstract class BaseActivationFunction implements IActivation {
         return null;
     }
 
+    @Override
+    public void setGradientViewArray(INDArray viewArray){
+        //No op
+    }
+
+    @Override
+    public INDArray getGradientViewArray(){
+        return null;
+    }
 }

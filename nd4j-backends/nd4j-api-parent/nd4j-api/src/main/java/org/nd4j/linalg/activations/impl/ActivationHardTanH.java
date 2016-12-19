@@ -16,7 +16,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
           ⎩  x, otherwise
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationHardTanH extends BaseActivationFunction{
 

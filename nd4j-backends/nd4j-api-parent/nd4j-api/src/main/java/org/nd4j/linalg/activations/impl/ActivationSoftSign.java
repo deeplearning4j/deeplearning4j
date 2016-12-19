@@ -14,7 +14,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * f_i(x) = x_i / (1+|x_i|)
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationSoftSign extends BaseActivationFunction {
 

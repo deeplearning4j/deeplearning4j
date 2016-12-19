@@ -55,8 +55,12 @@ public interface IActivation extends Serializable {
 
     int numParams(int inputSize);
 
-    void setParametersViewArray(INDArray viewArray);
+    void setParametersViewArray(INDArray viewArray, boolean initialize);
 
     INDArray getParametersViewArray();
+
+    void setGradientViewArray(INDArray viewArray);
+
+    INDArray getGradientViewArray();
 
 }

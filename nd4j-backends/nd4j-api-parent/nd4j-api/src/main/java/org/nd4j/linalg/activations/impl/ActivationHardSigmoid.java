@@ -15,7 +15,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  * f(x) = min(1, max(0, 0.2*x + 0.5))
  */
 @EqualsAndHashCode
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class ActivationHardSigmoid extends BaseActivationFunction {
 
