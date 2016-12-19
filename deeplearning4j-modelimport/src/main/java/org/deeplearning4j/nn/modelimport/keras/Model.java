@@ -19,9 +19,6 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.hdf5;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
@@ -46,8 +43,8 @@ public class Model {
     /**
      * Load Keras model saved using model.save_model(...).
      *
-     * @param  modelHdf5Stream input stream storing Keras Sequential model
-     * @return                   DL4J MultiLayerNetwork
+     * @param  modelHdf5Stream      input stream storing Keras Sequential model
+     * @return                      DL4J MultiLayerNetwork
      * @see    MultiLayerNetwork
      * @throws UnsupportedKerasConfigurationException
      * @throws IOException
