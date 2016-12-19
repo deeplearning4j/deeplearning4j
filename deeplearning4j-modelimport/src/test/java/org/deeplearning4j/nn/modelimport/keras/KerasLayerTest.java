@@ -36,6 +36,9 @@ public class KerasLayerTest {
     public static final int N_OUT = 13;
     public static final String BORDER_MODE_VALID = "valid";
     public static final int[] VALID_PADDING = new int[]{0, 0};
+    public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
+    public static final double EPSILON = 1E-5;
+    public static final double MOMENTUM = 0.99;
 
     @Test
     public void testBuildActivationLayer() throws Exception {
@@ -183,5 +186,25 @@ public class KerasLayerTest {
         assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
         assertEquals(LSTM_FORGET_BIAS_DOUBLE, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
+    }
+
+    @Test
+    public void testBuildBatchNormalizationLayer() throws Exception {
+        Map<String,Object> layerConfig = new HashMap<String,Object>();
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_BATCHNORMALIZATION);
+        Map<String,Object> config = new HashMap<String,Object>();
+        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(LAYER_FIELD_EPSILON, EPSILON);
+        config.put(LAYER_FIELD_MOMENTUM, MOMENTUM);
+        config.put(LAYER_FIELD_GAMMA_REGULARIZER, null);
+        config.put(LAYER_FIELD_BETA_REGULARIZER, null);
+        config.put(LAYER_FIELD_MODE, 0);
+        config.put(LAYER_FIELD_AXIS, 3);
+        layerConfig.put(LAYER_FIELD_CONFIG, config);
+
+        BatchNormalization layer = (BatchNormalization) new KerasLayer(layerConfig).getDl4jLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(EPSILON, layer.getEps(), 0.0);
+        assertEquals(MOMENTUM, layer.getMomentum(), 0.0);
     }
 }
