@@ -1,6 +1,6 @@
 {
  "class_name": "Sequential", 
- "keras_version": "1.1.0", 
+ "keras_version": "1.1.2", 
  "config": [
   {
    "class_name": "Dense", 
@@ -18,7 +18,7 @@
     "b_regularizer": null, 
     "W_regularizer": {
      "l2": 0.10000000149011612, 
-     "name": "WeightRegularizer", 
+     "name": "L1L2Regularizer", 
      "l1": 0.0
     }, 
     "activation": "linear", 
@@ -42,6 +42,19 @@
     "p": 0.2, 
     "trainable": true, 
     "name": "dropout_1"
+   }
+  }, 
+  {
+   "class_name": "BatchNormalization", 
+   "config": {
+    "gamma_regularizer": null, 
+    "name": "batchnormalization_1", 
+    "epsilon": 0.001, 
+    "trainable": true, 
+    "mode": 0, 
+    "beta_regularizer": null, 
+    "momentum": 0.99, 
+    "axis": -1
    }
   }, 
   {

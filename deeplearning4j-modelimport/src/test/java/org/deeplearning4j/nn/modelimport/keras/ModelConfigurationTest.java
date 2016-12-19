@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -63,6 +65,9 @@ public class ModelConfigurationTest {
         ClassPathResource resource = new ClassPathResource("keras/simple/lstm_fixed_config.json",
                 ModelConfigurationTest.class.getClassLoader());
         String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        MultiLayerConfiguration config = ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+        int a = 1;
     }
 }

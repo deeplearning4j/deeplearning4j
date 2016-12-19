@@ -70,4 +70,11 @@ public class ModelTest {
         // Compare predictions to outputs
         assertEquals(outputTrue, outputPredicted);
     }
+
+    @Test
+    public void LstmModelImportTest() throws Exception {
+        String modelPath = new ClassPathResource("keras/simple/lstm_tf_model.h5",
+                ModelConfigurationTest.class.getClassLoader()).getFile().getAbsolutePath();
+        MultiLayerNetwork model = importSequentialModel(modelPath);
+    }
 }
