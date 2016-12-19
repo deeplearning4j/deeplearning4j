@@ -1,7 +1,7 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -28,7 +28,7 @@ public class LossMSE extends LossL2 {
     }
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
 
         double score = super.computeScore(labels, preOutput, activationFn, mask, average);
         score /= (labels.size(1));
@@ -36,13 +36,13 @@ public class LossMSE extends LossL2 {
     }
 
     @Override
-    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = super.computeScoreArray(labels, preOutput, activationFn, mask);
         return scoreArr.divi(labels.size(1));
     }
 
     @Override
-    public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray gradients = super.computeGradient(labels, preOutput, activationFn, mask);
         return gradients.divi(labels.size(1));
     }

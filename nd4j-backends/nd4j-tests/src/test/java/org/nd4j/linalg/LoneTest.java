@@ -4,12 +4,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -128,4 +134,16 @@ public class LoneTest extends BaseNd4jTest {
         assertTrue(fullDataSetCopy.getFeaturesMaskArray() != null);
 
     }
+
+    @Test
+    public void testRelu() {
+        INDArray aA = Nd4j.linspace(-3,4,8).reshape(2,4);
+        INDArray aD = Nd4j.linspace(-3,4,8).reshape(2,4);
+        INDArray b = Nd4j.getExecutioner().execAndReturn(new Tanh(aA));
+        //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
+        System.out.println(aA);
+        System.out.println(aD);
+        System.out.println(b);
+    }
+
 }
