@@ -1,10 +1,9 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -19,9 +18,13 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,8 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-@Slf4j
 public class ParallelWrapper implements AutoCloseable {
+    private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
     private int workers = 2;
     private int prefetchSize = 2;
@@ -45,6 +48,7 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean averageUpdaters = true;
     private boolean legacyAveraging = false;
     private boolean wasAveraged = false;
+    private AtomicBoolean stopFit = new AtomicBoolean(false);
 
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
@@ -86,7 +90,13 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
+    /**
+    * Will stop a fit operation from continuing to iterate.
+    */
+    public void stopFit() { stopFit.set(true); }
+
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
+        stopFit.set(false);
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -108,7 +118,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
 
-        while (iterator.hasNext()) {
+        while (iterator.hasNext() && !stopFit.get()) {
             MultiDataSet dataSet = iterator.next();
 
             /*
@@ -160,25 +170,30 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        log.info("Averaged score: " + score);
+                        logger.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray(state);
@@ -204,10 +219,11 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        log.debug("Iterations passed: {}", iterationsCounter.get());
-        iterationsCounter.set(0);
+        logger.debug("Iterations passed: {}", iterationsCounter.get());
+//        iterationsCounter.set(0);
     }
 
     /**
@@ -216,6 +232,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        stopFit.set(false);
         if (zoo == null) {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
@@ -231,13 +248,16 @@ public class ParallelWrapper implements AutoCloseable {
         } else iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
-        while (iterator.hasNext()) {
+        int whiles = 0;
+        while (iterator.hasNext() && !stopFit.get()) {
+            whiles++;
             DataSet dataSet = iterator.next();
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
+            if(zoo == null) throw new IllegalStateException("ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
             zoo[pos].feedDataSet(dataSet);
 
             /*
@@ -282,25 +302,30 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        log.info("Averaged score: " + score);
+                        logger.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof MultiLayerNetwork) {
                         if (averageUpdaters) {
                             Updater updater = ((MultiLayerNetwork) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((MultiLayerNetwork) zoo[cnt].getModel()).getUpdater().getStateViewArray().dup());
+                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray().dup());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray((MultiLayerNetwork) model, state, false);
@@ -309,25 +334,27 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
-                        for(IterationListener listener : ((MultiLayerNetwork) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
                     } else if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                            int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
                                 if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
                                     List<INDArray> updaters = new ArrayList<>();
                                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        updaters.add(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                                 } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        state.addi(((ComputationGraph) zoo[cnt].getModel()).getUpdater().getStateViewArray());
+                                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                                        state.addi(workerModel.getUpdater().getStateViewArray());
+                                        batchSize += workerModel.batchSize();
                                     }
                                     state.divi(cnt);
                                     updater.setStateViewArray(state);
@@ -336,9 +363,6 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((ComputationGraph) model).setScore(score);
-                        for(IterationListener listener : ((ComputationGraph) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
                     }
 
                     if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
@@ -353,10 +377,11 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        log.debug("Iterations passed: {}", iterationsCounter.get());
-        iterationsCounter.set(0);
+        logger.debug("Iterations passed: {}", iterationsCounter.get());
+//        iterationsCounter.set(0);
     }
 
     public static class Builder<T extends Model> {
@@ -488,6 +513,7 @@ public class ParallelWrapper implements AutoCloseable {
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
         private volatile boolean useMDS = false;
+        private final String uuid = UUID.randomUUID().toString();
 
 
         public Trainer(int threadId, Model model, boolean useMDS) {
@@ -502,14 +528,10 @@ public class ParallelWrapper implements AutoCloseable {
 
             this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
+                this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
-//                if (threadId != 0)
-//                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             } else if (model instanceof ComputationGraph) {
                 this.replicatedModel = ((ComputationGraph) model).clone();
-
-                if (threadId != 0)
-                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             }
         }
 
@@ -589,10 +611,40 @@ public class ParallelWrapper implements AutoCloseable {
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     ((MultiLayerNetwork) replicatedModel).init();
+                    Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                    for(IterationListener listener : oldListeners) {
+                        if(listener instanceof RoutingIterationListener) {
+                            RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
+                            routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                            routingListener.setWorkerID(uuid);
+                            replicatedListeners.add(routingListener);
+                        } else {
+                            replicatedListeners.add(listener);
+                        }
+                    }
+
+                    ((MultiLayerNetwork)this.replicatedModel).setListeners(replicatedListeners);
                 } else if (originalModel instanceof ComputationGraph) {
                     this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
 
                     ((ComputationGraph) this.replicatedModel).init();
+                    Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                    for(IterationListener listener : oldListeners) {
+                        if(listener instanceof RoutingIterationListener) {
+                            RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
+                            routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                            routingIterationListener.setWorkerID(uuid);
+                            replicatedListeners.add(routingIterationListener);
+                        } else {
+                            replicatedListeners.add(listener);
+                        }
+                    }
+
+                    ((ComputationGraph)this.replicatedModel).setListeners(replicatedListeners);
                 }
 
                 if (!useMDS) {
