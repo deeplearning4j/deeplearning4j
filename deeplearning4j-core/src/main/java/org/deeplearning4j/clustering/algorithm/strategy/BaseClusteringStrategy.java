@@ -22,7 +22,9 @@ import org.deeplearning4j.clustering.algorithm.condition.ClusteringAlgorithmCond
 import org.deeplearning4j.clustering.algorithm.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.algorithm.condition.FixedIterationCountCondition;
 
-public abstract class BaseClusteringStrategy implements ClusteringStrategy {
+import java.io.Serializable;
+
+public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
 
 	protected ClusteringStrategyType type;
 	protected Integer initialClusterCount;
@@ -32,6 +34,10 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy {
 	protected String	distanceFunction;
 
 	protected boolean allowEmptyClusters;
+
+	protected BaseClusteringStrategy() {
+		// no-op for serialization only
+	}
 
 	protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
 			boolean allowEmptyClusters) {

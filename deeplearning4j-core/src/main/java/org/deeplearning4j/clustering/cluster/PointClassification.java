@@ -18,11 +18,17 @@
 
 package org.deeplearning4j.clustering.cluster;
 
-public class PointClassification {
+import java.io.Serializable;
+
+public class PointClassification implements Serializable {
 
 	private Cluster	cluster;
 	private double	distanceFromCenter;
 	private boolean	newLocation;
+
+	protected PointClassification() {
+		// no-op for serialization only
+	}
 
 	public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
 		super();
