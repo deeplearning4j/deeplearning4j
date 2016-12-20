@@ -1,38 +1,16 @@
 package org.deeplearning4j.ui.stats;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.ui.stats.api.*;
-import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
+import org.deeplearning4j.ui.stats.api.StatsInitializationConfiguration;
+import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
+import org.deeplearning4j.ui.stats.api.StatsReport;
+import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
-import org.deeplearning4j.util.UIDProvider;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
-
-import java.io.InputStream;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Constructor;
-import java.util.*;
 
 /**
  * StatsListener: a general purpose listener for collecting and reporting system and model information.
@@ -70,6 +48,10 @@ public class StatsListener extends BaseStatsListener {
     public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig, StatsUpdateConfiguration updateConfig,
                              String sessionID, String workerID) {
         super(router, initConfig, updateConfig, sessionID, workerID);
+    }
+
+    public StatsListener clone() {
+        return new StatsListener(this.getStorageRouter(), this.getInitConfig(), this.getUpdateConfig(), "", "");
     }
 
     @Override
