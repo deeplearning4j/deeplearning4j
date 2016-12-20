@@ -182,4 +182,6 @@ We will add examples [here](https://github.com/deeplearning4j/dl4j-examples/)
 
 A video demonstrating the import of a Keras model is available
 
-<iframe width="560" height="315" src="http://www.youtube.com/watch?v=bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+
+
