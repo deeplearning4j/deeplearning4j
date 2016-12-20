@@ -100,11 +100,6 @@ public class ParameterServerClientPartialTest {
         log.info("Launched media driver");
     }
 
-    @AfterClass
-    public static void after() {
-        CloseHelper.quietClose(aeron);
-        CloseHelper.quietClose(mediaDriver);
-    }
 
     @Test
     public void testServer() throws Exception {
