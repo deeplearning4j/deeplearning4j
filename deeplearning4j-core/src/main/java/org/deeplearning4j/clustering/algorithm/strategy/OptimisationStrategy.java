@@ -31,6 +31,10 @@ public class OptimisationStrategy extends BaseClusteringStrategy {
 	private ClusteringOptimization	clusteringOptimisation;
 	private ClusteringAlgorithmCondition clusteringOptimisationApplicationCondition;
 
+	protected OptimisationStrategy() {
+		super();
+	}
+
 	protected OptimisationStrategy(int initialClusterCount, String distanceFunction) {
 		super(ClusteringStrategyType.OPTIMIZATION, initialClusterCount, distanceFunction, false);
 	}

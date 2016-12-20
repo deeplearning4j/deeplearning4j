@@ -22,11 +22,16 @@ import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.LessThan;
 
-public class ConvergenceCondition implements ClusteringAlgorithmCondition {
+import java.io.Serializable;
+
+public class ConvergenceCondition implements ClusteringAlgorithmCondition, Serializable {
 
 	private Condition	convergenceCondition;
 	private double		pointsDistributionChangeRate;
-	
+
+	protected ConvergenceCondition() {
+
+	}
 	
 	protected ConvergenceCondition(Condition varianceVariationCondition, double pointsDistributionChangeRate) {
 		super();
