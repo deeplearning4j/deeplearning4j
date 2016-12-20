@@ -1,10 +1,9 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
-import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -12,8 +11,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -624,12 +621,11 @@ public class ParallelWrapper implements AutoCloseable {
                     Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
                     for(IterationListener listener : oldListeners) {
-                        if(listener instanceof StatsListener) {
-                            StatsListener statsListener = ((StatsListener) listener).clone();
-                            statsListener.setSessionID(((StatsListener) listener).getSessionID());
-                            statsListener.setWorkerID(uuid);
-                            statsListener.setUpdateConfig(new DefaultStatsUpdateConfiguration.Builder().build());
-                            replicatedListeners.add(statsListener);
+                        if(listener instanceof RoutingIterationListener) {
+                            RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
+                            routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                            routingListener.setWorkerID(uuid);
+                            replicatedListeners.add(routingListener);
                         }
                     }
 
@@ -642,12 +638,11 @@ public class ParallelWrapper implements AutoCloseable {
                     Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
                     for(IterationListener listener : oldListeners) {
-                        if(listener instanceof StatsListener) {
-                            StatsListener statsListener = ((StatsListener) listener).clone();
-                            statsListener.setSessionID(((StatsListener) listener).getSessionID());
-                            statsListener.setWorkerID(uuid);
-                            statsListener.setUpdateConfig(new DefaultStatsUpdateConfiguration.Builder().build());
-                            replicatedListeners.add(statsListener);
+                        if(listener instanceof RoutingIterationListener) {
+                            RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
+                            routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                            routingIterationListener.setWorkerID(uuid);
+                            replicatedListeners.add(routingIterationListener);
                         }
                     }
 
