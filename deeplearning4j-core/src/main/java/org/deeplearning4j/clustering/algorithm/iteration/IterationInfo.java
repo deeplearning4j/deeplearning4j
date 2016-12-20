@@ -20,13 +20,18 @@ package org.deeplearning4j.clustering.algorithm.iteration;
 
 import org.deeplearning4j.clustering.cluster.info.ClusterSetInfo;
 
-public class IterationInfo {
+import java.io.Serializable;
+
+public class IterationInfo implements Serializable {
 
 	private int							index;
 	private ClusterSetInfo				clusterSetInfo;
 	private boolean						strategyApplied;
 	
-	
+	protected IterationInfo() {
+		// no-op for serialization only
+	}
+
 	public IterationInfo(int index) {
 		super();
 		this.index = index;
