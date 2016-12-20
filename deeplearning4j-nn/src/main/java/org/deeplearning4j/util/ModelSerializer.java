@@ -597,7 +597,7 @@ public class ModelSerializer {
                     if (entry.getName().equalsIgnoreCase(NORMALIZER_BIN))
                         continue;;
 
-                    log.info("Copying: {}", entry.getName());
+                    log.debug("Copying: {}", entry.getName());
 
                     InputStream is = zipFile.getInputStream(entry);
 
