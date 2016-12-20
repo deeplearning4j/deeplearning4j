@@ -29,6 +29,8 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.slf4j.Logger;
@@ -83,6 +85,65 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         this.iterator = (train != null ? train : trainMulti);
         this.listener = listener;
         this.model = model;
+
+        // adjust UI listeners
+        AveragingIterationListener trainerListener = new AveragingIterationListener(this);
+        if (model instanceof MultiLayerNetwork) {
+            Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
+            Collection<IterationListener> newListeners = new LinkedList<>();
+
+            for(IterationListener listen : listeners) {
+                if (listen instanceof StatsListener) {
+                    ((StatsListener) listen).setUpdateConfig(
+                        new DefaultStatsUpdateConfiguration.Builder()
+                            .collectHistogramsActivations(false)
+                            .collectHistogramsUpdates(false)
+                            .collectMeanUpdates(false)
+                            .collectStdevUpdates(false)
+                            .collectMeanActivations(false)
+                            .collectStdevActivations(false)
+                            .collectMeanMagnitudesUpdates(false)
+                            .build()
+                    );
+                    ((StatsListener) listen).setWorkerID("primary-model");
+                }
+                newListeners.add(listen);
+            }
+            newListeners.add(trainerListener);
+            ((MultiLayerNetwork) model).setListeners(newListeners);
+
+        } else if (model instanceof ComputationGraph) {
+            Collection<IterationListener> listeners = ((ComputationGraph) model).getListeners();
+            Collection<IterationListener> newListeners = new LinkedList<>();
+
+            for(IterationListener listen : listeners) {
+                if (listen instanceof StatsListener) {
+                    StatsListener oldStats = (StatsListener) listener;
+                    StatsListener newStats = new StatsListener(
+                        oldStats.getStorageRouter(),
+                        oldStats.getInitConfig(),
+                        new DefaultStatsUpdateConfiguration.Builder()
+                            .collectHistogramsActivations(false)
+                            .collectHistogramsUpdates(false)
+                            .collectMeanUpdates(false)
+                            .collectStdevUpdates(false)
+                            .collectMeanActivations(false)
+                            .collectStdevActivations(false)
+                            .collectMeanMagnitudesUpdates(false)
+                            .build(),
+                        oldStats.getSessionID(),
+                        "primary-model"
+                    );
+                    newListeners.add(newStats);
+                } else {
+                    newListeners.add(listen);
+                }
+            }
+
+            newListeners.add(trainerListener);
+            ((ComputationGraph) model).setListeners(newListeners);
+        }
+
         this.wrapper = new ParallelWrapper.Builder<T>(model)
             .workers(workers).prefetchBuffer(prefetchBuffer)
             .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
@@ -96,6 +157,9 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     @Override
     public synchronized EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
+        if(wrapper==null) {
+            throw new IllegalStateException("Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
+        }
         if (esConfig.getScoreCalculator() == null)
             log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
 
@@ -119,19 +183,6 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
         // append the iteration listener
         int epochCount = 0;
-        AveragingIterationListener trainerListener = new AveragingIterationListener(this);
-
-        if (model instanceof MultiLayerNetwork) {
-            Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
-            List<IterationListener> newListeners = new LinkedList<>(listeners);
-            newListeners.add(trainerListener);
-            ((MultiLayerNetwork) model).setListeners(newListeners);
-        } else if (model instanceof ComputationGraph) {
-            Collection<IterationListener> listeners = ((ComputationGraph) model).getListeners();
-            List<IterationListener> newListeners = new LinkedList<>(listeners);
-            newListeners.add(trainerListener);
-            ((ComputationGraph) model).setListeners(newListeners);
-        }
 
         // iterate through epochs
         while (true) {
@@ -182,8 +233,6 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     throw new RuntimeException(e2);
                 }
 
-                wrapper.shutdown();
-
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
                         EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         terminationReason.toString(),
@@ -195,6 +244,11 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 if (listener != null) {
                     listener.onCompletion(result);
                 }
+
+                // clean up
+                wrapper.shutdown();
+                this.wrapper = null;
+
                 return result;
             }
 
@@ -246,6 +300,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     if (c.terminate(epochCount, score)) {
                         epochTerminate = true;
                         termReason = c;
+                        wrapper.stopFit();
                         break;
                     }
                 }
@@ -269,12 +324,14 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                         listener.onCompletion(result);
                     }
 
+                    // clean up
                     wrapper.shutdown();
+                    this.wrapper = null;
+
                     return result;
                 }
             }
             epochCount++;
-
         }
     }
 
@@ -328,7 +385,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 }
             }
             if (trainer.getTermination()) {
-                wrapper.shutdown();
+                // use built-in kill switch to stop fit operation
+                wrapper.stopFit();
             }
             System.out.println(latestScore);
 

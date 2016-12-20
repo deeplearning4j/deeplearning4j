@@ -242,6 +242,11 @@ public class TrainModule implements UIModule {
             dataThisSession.put("initTime", initTime == Long.MAX_VALUE ? "" : initTime);
             dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
 
+            // add hashmap of workers
+            if(workerCount > 0) {
+                dataThisSession.put("workers", workerIDs);
+            }
+
             //Model info: type, # layers, # params...
             if (staticInfo != null && staticInfo.size() > 0) {
                 StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);

@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -39,7 +38,6 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -85,6 +83,7 @@ public class ComputationGraph implements Serializable, Model {
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
+    protected int manualBatchSize = Integer.MAX_VALUE;
     @Setter
     private boolean initDone = false;
 
@@ -141,6 +140,13 @@ public class ComputationGraph implements Serializable, Model {
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
 
     /**
      * Returns the number of layers in the ComputationGraph
@@ -1678,9 +1684,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
-    public int batchSize() {
-        return inputs[0].size(0);
-    }
+    public int batchSize() { return manualBatchSize==Integer.MAX_VALUE ? inputs[0].size(0) : batchSize(); }
 
     @Override
     public NeuralNetConfiguration conf() {
