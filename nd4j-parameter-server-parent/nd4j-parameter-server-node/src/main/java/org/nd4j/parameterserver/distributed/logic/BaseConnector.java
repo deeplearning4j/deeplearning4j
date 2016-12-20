@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public abstract class BaseConnector implements Connector {
 
     protected NodeRole nodeRole;
