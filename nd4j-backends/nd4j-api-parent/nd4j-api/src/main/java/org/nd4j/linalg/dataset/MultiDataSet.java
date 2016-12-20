@@ -8,16 +8,14 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**Implementation of {@link org.nd4j.linalg.dataset.api.MultiDataSet}
  * @author Alex Black
  */
 public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
-
+    private static final INDArray EMPTY_MASK_ARRAY_PLACEHOLDER = Nd4j.create(new float[]{-1});
+    
     private INDArray[] features;
     private INDArray[] labels;
     private INDArray[] featuresMaskArrays;
@@ -197,34 +195,26 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         int numFMArr = (featuresMaskArrays == null ? 0 : featuresMaskArrays.length);
         int numLMArr = (labelsMaskArrays == null ? 0 : labelsMaskArrays.length);
 
-        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(to))){
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(to))) {
             dos.writeInt(numFArr);
             dos.writeInt(numLArr);
             dos.writeInt(numFMArr);
             dos.writeInt(numLMArr);
 
-            if(features != null && features.length > 0){
-                for( INDArray f : features){
-                    Nd4j.write(f, dos);
-                }
-            }
+            saveINDArrays(features, dos, false);
+            saveINDArrays(labels, dos, false);
+            saveINDArrays(featuresMaskArrays, dos, true);
+            saveINDArrays(labelsMaskArrays, dos, true);
+        }
+    }
 
-            if(labels != null && labels.length > 0){
-                for( INDArray l : labels ){
-                    Nd4j.write(l, dos);
+    private void saveINDArrays(INDArray[] arrays, DataOutputStream dos, boolean isMask) throws IOException {
+        if (arrays != null && arrays.length > 0) {
+            for (INDArray fm : arrays) {
+                if (isMask && fm == null) {
+                    fm = EMPTY_MASK_ARRAY_PLACEHOLDER;
                 }
-            }
-
-            if(featuresMaskArrays != null && featuresMaskArrays.length > 0){
-                for(INDArray fm : featuresMaskArrays){
-                    Nd4j.write(fm, dos);
-                }
-            }
-
-            if(labelsMaskArrays != null && labelsMaskArrays.length > 0){
-                for( INDArray lm : labelsMaskArrays ){
-                    Nd4j.write(lm, dos);
-                }
+                Nd4j.write(fm, dos);
             }
         }
     }
@@ -236,49 +226,29 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     @Override
     public void load(InputStream from) throws IOException {
-
-        try(DataInputStream dis = new DataInputStream(from)){
+        try (DataInputStream dis = new DataInputStream(from)) {
             int numFArr = dis.readInt();
             int numLArr = dis.readInt();
             int numFMArr = dis.readInt();
             int numLMArr = dis.readInt();
 
-            if(numFArr > 0){
-                features = new INDArray[numFArr];
-                for( int i=0; i<numFArr; i++ ){
-                    features[i] = Nd4j.read(dis);
-                }
-            } else {
-                features = null;
-            }
+            features = loadINDArrays(numFArr, dis, false);
+            labels = loadINDArrays(numLArr, dis, false);
+            featuresMaskArrays = loadINDArrays(numFMArr, dis, true);
+            labelsMaskArrays = loadINDArrays(numLMArr, dis, true);
+        }
+    }
 
-            if(numLArr > 0){
-                labels = new INDArray[numLArr];
-                for( int i=0; i<numLArr; i++ ){
-                    labels[i] = Nd4j.read(dis);
-                }
-            } else {
-                labels = null;
-            }
-
-            if(numFMArr > 0){
-                featuresMaskArrays = new INDArray[numFMArr];
-                for( int i=0; i<numFMArr; i++ ){
-                    featuresMaskArrays[i] = Nd4j.read(dis);
-                }
-            } else {
-                featuresMaskArrays = null;
-            }
-
-            if(numLMArr > 0){
-                labelsMaskArrays = new INDArray[numLMArr];
-                for( int i=0; i<numLMArr; i++ ){
-                    labelsMaskArrays[i] = Nd4j.read(dis);
-                }
-            } else {
-                labelsMaskArrays = null;
+    private INDArray[] loadINDArrays(int numArrays, DataInputStream dis, boolean isMask) throws IOException {
+        INDArray[] result = null;
+        if (numArrays > 0) {
+            result = new INDArray[numArrays];
+            for (int i = 0; i < numArrays; i++) {
+                INDArray arr = Nd4j.read(dis);
+                result[i] = isMask && arr.equals(EMPTY_MASK_ARRAY_PLACEHOLDER) ? null : arr;
             }
         }
+        return result;
     }
 
     @Override
@@ -616,12 +586,14 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         return bothNullOrEqual(labelsMaskArrays, m.labelsMaskArrays);
     }
 
-    private boolean bothNullOrEqual(INDArray[] first, INDArray[] second){
-        if(first == null && second == null) return true;
-        if(first == null || second == null) return false;   //One but not both null
-        if(first.length != second.length) return false;
-        for( int i=0; i<first.length; i++ ){
-            if(!first[i].equals(second[i])) return false;
+    private boolean bothNullOrEqual(INDArray[] first, INDArray[] second) {
+        if (first == null && second == null) return true;
+        if (first == null || second == null) return false;   //One but not both null
+        if (first.length != second.length) return false;
+        for (int i = 0; i < first.length; i++) {
+            if (!Objects.equals(first[i], second[i])) {
+                return false;
+            }
         }
         return true;
     }
