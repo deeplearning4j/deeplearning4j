@@ -334,9 +334,6 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
-                        for(IterationListener listener : ((MultiLayerNetwork) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
                     } else if (model instanceof ComputationGraph) {
                         if (averageUpdaters) {
                             ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
@@ -366,9 +363,6 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((ComputationGraph) model).setScore(score);
-                        for(IterationListener listener : ((ComputationGraph) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
                     }
 
                     if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
