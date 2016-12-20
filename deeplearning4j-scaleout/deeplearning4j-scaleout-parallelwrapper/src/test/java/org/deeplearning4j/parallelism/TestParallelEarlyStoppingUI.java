@@ -1,4 +1,4 @@
-package org.deeplearning4j.ui.parallelism;
+package org.deeplearning4j.parallelism;
 
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -16,8 +16,6 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.parallelism.trainer.EarlyStoppingParallelTrainer;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
@@ -27,7 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.*;
 
 
-public class TestParallelEarlyStopping {
+public class TestParallelEarlyStoppingUI {
 
     @Test
     public void testParallelStatsListenerCompatibility(){
@@ -42,7 +40,6 @@ public class TestParallelEarlyStopping {
             .pretrain(false).backprop(true)
             .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
 
         // it's important that the UI can report results from parallel training
         // there's potential for StatsListener to fail if certain properties aren't set in the model
@@ -53,7 +50,7 @@ public class TestParallelEarlyStopping {
         DataSetIterator irisIter = new IrisDataSetIterator(50,600);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-            .epochTerminationConditions(new MaxEpochsTerminationCondition(200))
+            .epochTerminationConditions(new MaxEpochsTerminationCondition(500))
             .scoreCalculator(new DataSetLossCalculator(irisIter,true))
             .evaluateEveryNEpochs(2)
             .modelSaver(saver)
@@ -64,6 +61,6 @@ public class TestParallelEarlyStopping {
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
 
-        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition,result.getTerminationReason());
+        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
     }
 }
