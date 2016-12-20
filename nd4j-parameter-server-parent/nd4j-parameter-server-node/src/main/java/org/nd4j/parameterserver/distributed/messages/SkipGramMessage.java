@@ -30,6 +30,9 @@ public class SkipGramMessage extends BaseVoidMessage {
         this.codes = codes;
     }
 
+    /**
+     * This method does actual training for SkipGram algorithm
+     */
     @Override
     public void processMessage() {
         // TODO: to be implemented

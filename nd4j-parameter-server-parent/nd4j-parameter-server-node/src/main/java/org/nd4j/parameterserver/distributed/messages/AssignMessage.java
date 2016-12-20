@@ -17,9 +17,9 @@ public class AssignMessage extends BaseVoidMessage {
      */
     private int index;
     private double value;
-    private String key;
+    private Integer key;
 
-    public AssignMessage(@NonNull String key, int index, double value) {
+    public AssignMessage(@NonNull Integer key, int index, double value) {
         super(6);
         this.index = index;
         this.value = value;
@@ -27,7 +27,8 @@ public class AssignMessage extends BaseVoidMessage {
     }
 
     /**
-     * This method assigns
+     * This method assigns specific value to either specific row, or whole array.
+     * Array is identified by key
      */
     @Override
     public void processMessage() {
@@ -38,6 +39,5 @@ public class AssignMessage extends BaseVoidMessage {
             else
                 array.getRow(index).assign(value);
         }
-
     }
 }

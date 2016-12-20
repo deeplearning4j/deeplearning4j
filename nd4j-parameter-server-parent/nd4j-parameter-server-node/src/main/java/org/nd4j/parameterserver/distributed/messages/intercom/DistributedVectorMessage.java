@@ -1,22 +1,28 @@
 package org.nd4j.parameterserver.distributed.messages.intercom;
 
 import lombok.Data;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 
 /**
  * @author raver119@gmail.com
  */
 @Data
+@Slf4j
 public class DistributedVectorMessage extends BaseVoidMessage{
     protected int rowIndex;
+    protected int key;
 
     public DistributedVectorMessage() {
         messageType = 20;
     }
 
-    public DistributedVectorMessage(int rowIndex){
+    public DistributedVectorMessage(@NonNull Integer key, int rowIndex){
         this();
         this.rowIndex = rowIndex;
+        this.key = key;
     }
 
     /**
@@ -24,6 +30,9 @@ public class DistributedVectorMessage extends BaseVoidMessage{
      */
     @Override
     public void processMessage() {
-        // TODO: to be implemented
+        log.info("Got distributed request for rowIndex: {}", rowIndex);
+
+        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) configuration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
+        transport.sendMessageToAllShards(aggregation);
     }
 }

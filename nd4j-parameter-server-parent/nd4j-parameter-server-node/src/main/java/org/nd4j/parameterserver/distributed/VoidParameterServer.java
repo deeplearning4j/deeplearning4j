@@ -288,27 +288,7 @@ public class VoidParameterServer {
 
         /*
         switch (message.getMessageType()) {
-            // initialization message
-            case 4: {
-                    initializeSeqVec((InitializationMessage) message);
-                }
-                break;
-            // share solid, propagates array among all Shard/Backup nodes
-            case 5: {
-              //      negTable = ((ShareSolidMessage) message).getPayload();
-                }
-                break;
-            // assign
-            case 6: {
-                    AssignMessage assign = (AssignMessage) message;
-                    if (assign.getIndex() >= 0) {
-               //         syn0.getRow(assign.getIndex()).assign(assign.getValue());
-                    } else {
-               //         syn0.assign(assign.getValue());
-                    }
-                }
-                break;
-            // joint vector request for specific
+
             case 7: {
                     //
                 }

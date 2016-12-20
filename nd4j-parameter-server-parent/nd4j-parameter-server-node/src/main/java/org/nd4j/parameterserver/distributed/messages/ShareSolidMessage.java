@@ -17,11 +17,11 @@ public class ShareSolidMessage extends BaseVoidMessage {
      * The only use of this message is negTable sharing.
      */
 
-    private String key;
+    private Integer key;
     private INDArray payload;
     private boolean overwrite;
 
-    public ShareSolidMessage(@NonNull String key, @NonNull INDArray array, boolean overwrite) {
+    public ShareSolidMessage(@NonNull Integer key, @NonNull INDArray array, boolean overwrite) {
         super(5);
         this.payload = array;
         this.key = key;

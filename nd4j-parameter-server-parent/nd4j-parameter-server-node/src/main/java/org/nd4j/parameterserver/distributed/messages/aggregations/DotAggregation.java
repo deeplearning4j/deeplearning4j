@@ -34,6 +34,7 @@ public class DotAggregation extends BaseAggregation{
      */
     @Override
     public void processMessage() {
-        // TODO: to be implemented
+        // we just pin this message, because it's tracked anyway
+        clipboard.pin(this);
     }
 }
