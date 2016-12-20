@@ -26,7 +26,7 @@ There are DataVec examples in our examples repo on github.
 [here](https://github.com/deeplearning4j/dl4j-examples) .
 
 A descriptive summary of many of the examples is 
-[here](https://github.com/deeplearning4j/examples-tour.md)
+[here](https://github.com/deeplearning4j/examples-tour)
 
 ## Github Repo
 
@@ -115,7 +115,7 @@ There are DeepLearning4J examples in our examples repo on github.
 [here](https://github.com/deeplearning4j/dl4j-examples) 
 
 A descriptive summary of many of the examples is 
-[here](https://github.com/deeplearning4j/examples-tour.md)
+[here](https://github.com/deeplearning4j/examples-tour)
 
 ## DeepLearning4J frequently used classes
 
