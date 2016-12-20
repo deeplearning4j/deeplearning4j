@@ -23,6 +23,10 @@ import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 public class FixedClusterCountStrategy extends BaseClusteringStrategy {
 	public static int	defaultIterationCount	= 100;
 
+	protected FixedClusterCountStrategy() {
+		super();
+	}
+
 	protected FixedClusterCountStrategy(Integer initialClusterCount, String distanceFunction, boolean allowEmptyClusters) {
 		super(ClusteringStrategyType.FIXED_CLUSTER_COUNT, initialClusterCount, distanceFunction, allowEmptyClusters);
 	}
