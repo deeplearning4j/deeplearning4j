@@ -125,7 +125,7 @@ public class TestParallelEarlyStopping {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
-        DataSetIterator irisIter = new IrisDataSetIterator(50,1200);
+        DataSetIterator irisIter = new IrisDataSetIterator(10,150);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
@@ -143,7 +143,7 @@ public class TestParallelEarlyStopping {
         String expDetails = new MaxScoreIterationTerminationCondition(10).toString();
         assertEquals(expDetails, result.getTerminationDetails());
 
-        assertEquals(0, result.getBestModelEpoch());
+        assertTrue(result.getBestModelEpoch() <= 0);
         assertNotNull(result.getBestModel());
     }
 }
