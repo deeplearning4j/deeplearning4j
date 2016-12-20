@@ -2,8 +2,8 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -13,11 +13,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @EqualsAndHashCode
 public class LossPoisson implements ILossFunction {
 
-    public INDArray scoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         /*
          mean of (yhat - y * log(yhat))
          */
-        INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        //INDArray postOutput = Nd4j.utioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
+        INDArray postOutput = activationFn.getActivation(preOutput.dup(),true);
 
         INDArray scoreArr = Transforms.log(postOutput);
         scoreArr.muli(labels);
@@ -28,7 +29,7 @@ public class LossPoisson implements ILossFunction {
     }
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         double score = scoreArr.sumNumber().doubleValue();
@@ -39,23 +40,18 @@ public class LossPoisson implements ILossFunction {
     }
 
     @Override
-    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
+    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
         return scoreArr.sum(1);
     }
 
     @Override
-    public INDArray computeGradient(INDArray labels, INDArray preOutput, String activationFn, INDArray mask) {
-        INDArray postOutDer = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()).derivative());
-        /*
-        gradient of loss function wrt yhat = (1 - y/yhat)
-        */
-        INDArray yDivyhat = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-        yDivyhat = labels.div(yDivyhat);
+    public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        INDArray yHat = activationFn.getActivation(preOutput.dup(),true);
+        INDArray yDivyhat = labels.div(yHat);
+        INDArray dLda = yDivyhat.rsubi(1);
 
-        INDArray gradients = yDivyhat.muli(-1);
-        gradients.addi(1);
-        gradients.muli(postOutDer);
+        INDArray gradients = activationFn.backprop(preOutput, dLda).getFirst();     //TODO activation functions with params
 
         if (mask != null) {
             gradients.muliColumnVector(mask);
@@ -65,7 +61,7 @@ public class LossPoisson implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, String activationFn, INDArray mask, boolean average) {
+    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
         //Yes - will implement in round two. Just want to get done now.
 

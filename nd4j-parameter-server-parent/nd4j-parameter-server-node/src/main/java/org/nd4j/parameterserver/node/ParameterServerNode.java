@@ -7,10 +7,16 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.nd4j.aeron.ipc.AeronUtil;
+import org.nd4j.aeron.ipc.NDArrayCallback;
+import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.status.play.InMemoryStatusStorage;
 import org.nd4j.parameterserver.status.play.StatusServer;
 import play.server.Server;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Integrated node for running
@@ -77,16 +83,55 @@ public class ParameterServerNode implements AutoCloseable {
         if(mediaDriver == null)
             mediaDriver = MediaDriver.launchEmbedded();
         log.info("Started media driver with aeron directory " + mediaDriver.aeronDirectoryName());
+        //cache a reference to the first listener.
+        //The reason we do this is to share an updater and listener across *all* subscribers
+        //This will create a shared pool of subscribers all updating the same "server".
+        //This will simulate a shared pool but allow an accumulative effect of anything
+        //like averaging we try.
+        NDArrayCallback parameterServerListener = null;
+        ParameterServerListener cast = null;
         for(int i = 0; i < numWorkers; i++) {
             subscriber[i] = new ParameterServerSubscriber(mediaDriver);
             //ensure reuse of aeron wherever possible
             if(aeron == null)
                 aeron = Aeron.connect(getContext(mediaDriver));
             subscriber[i].setAeron(aeron);
-            subscriber[i].run(args);
+            List<String> multiArgs = new ArrayList<>(Arrays.asList(args));
+            if(multiArgs.contains("-id")) {
+                int streamIdIdx = multiArgs.indexOf("-id") + 1;
+                int streamId = Integer.parseInt(multiArgs.get(streamIdIdx)) + i;
+                multiArgs.set(streamIdIdx,String.valueOf(streamId)) ;
+            }
+            else if(multiArgs.contains("--streamId")) {
+                int streamIdIdx = multiArgs.indexOf("--streamId") + 1;
+                int streamId = Integer.parseInt(multiArgs.get(streamIdIdx)) + i;
+                multiArgs.set(streamIdIdx,String.valueOf(streamId)) ;
+            }
+
+
+            if(i == 0) {
+                subscriber[i].run(multiArgs.toArray(new String[args.length]));
+                parameterServerListener = subscriber[i].getCallback();
+                cast = subscriber[i].getParameterServerListener();
+            }
+            else {
+                //note that we set both the callback AND the listener here
+                subscriber[i].setCallback(parameterServerListener);
+                subscriber[i].setParameterServerListener(cast);
+                //now run the callback initialized with this callback instead
+                //in the run method it will use this reference instead of creating it
+                //itself
+                subscriber[i].run(multiArgs.toArray(new String[args.length]));
+            }
+
+
         }
 
     }
+
+
+
+
 
     /**
      * Returns true if all susbcribers in the

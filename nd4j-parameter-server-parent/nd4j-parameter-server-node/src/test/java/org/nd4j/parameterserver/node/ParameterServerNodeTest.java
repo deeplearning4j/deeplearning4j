@@ -92,7 +92,7 @@ public class ParameterServerNodeTest {
         Thread.sleep(10000);
 
         for(int i = 0; i < 1; i++) {
-            assertEquals(Nd4j.valueArrayOf(1,parameterLength,numCores),clients[i].getArray());
+            assertEquals(Nd4j.valueArrayOf(1,parameterLength,4),clients[i].getArray());
             Thread.sleep(1000);
         }
 
