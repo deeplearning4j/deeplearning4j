@@ -47,7 +47,7 @@ public class TestParallelEarlyStoppingUI {
         net.setListeners(new StatsListener(statsStorage));
         uiServer.attach(statsStorage);
 
-        DataSetIterator irisIter = new IrisDataSetIterator(50,600);
+        DataSetIterator irisIter = new IrisDataSetIterator(50,500);
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
             .epochTerminationConditions(new MaxEpochsTerminationCondition(500))
@@ -56,7 +56,7 @@ public class TestParallelEarlyStoppingUI {
             .modelSaver(saver)
             .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingParallelTrainer<>(esConf,net,irisIter,null,2,6,1);
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingParallelTrainer<>(esConf,net,irisIter,null,3,6,2);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
