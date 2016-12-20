@@ -75,7 +75,7 @@ public class IteratorDataSetIterator implements DataSetIterator {
             //Set columns etc for later use
             DataSet temp = list.get(0);
             inputColumns = temp.getFeatureMatrix().size(1);
-            totalOutcomes = temp.getLabels().size(1);
+            totalOutcomes = temp.getLabels() == null ? 0 : temp.getLabels().size(1);    //May be null for layerwise pretraining
         }
 
         DataSet out;

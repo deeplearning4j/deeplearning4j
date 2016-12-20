@@ -47,12 +47,12 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
         return 0;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
         return 0;
     }
 
@@ -66,8 +66,10 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
-        INDArray delta = epsilon.muli(activationDerivative);
+        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
+//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(input);
+//        INDArray delta = epsilon.muli(activationDerivative);
+        INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst();  //TODO handle activation function params
 
         if(maskArray != null){
             delta.muliColumnVector(maskArray);
@@ -90,13 +92,19 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
         } else {
             in = input;
         }
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
+        //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
+        return conf().getLayer().getActivationFn().getActivation(in,training);
 
     }
 
     @Override
     public Layer transpose(){
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
     }
 
 

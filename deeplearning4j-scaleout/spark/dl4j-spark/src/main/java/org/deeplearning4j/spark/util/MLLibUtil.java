@@ -240,6 +240,7 @@ public class MLLibUtil {
      * @param numPossibleLabels the number of possible labels
      * @return
      */
+    @Deprecated
     public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc,JavaRDD<LabeledPoint> data,int numPossibleLabels) {
         List<DataSet> list  = fromLabeledPoint(data.collect(), numPossibleLabels);
         return sc.parallelize(list);
@@ -247,10 +248,10 @@ public class MLLibUtil {
 
     /**
      * Convert rdd labeled points to a rdd dataset with continuous features
-     * @param sc The java spark context used for creating the new rdd
      * @param data the java rdd labeled points ready to convert
      * @return a JavaRDD<Dataset> with a continuous label
      */
+    @Deprecated
     public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data) {
         List<LabeledPoint> labeledPoints = data.collect();
         List<DataSet> dataSets = new ArrayList<>();
@@ -272,6 +273,7 @@ public class MLLibUtil {
      * @param data the dataset to convert
      * @return an rdd of labeled point
      */
+    @Deprecated
     public static JavaRDD<LabeledPoint> fromDataSet(JavaSparkContext sc,JavaRDD<DataSet> data) {
         List<LabeledPoint> list  = toLabeledPoint(data.collect());
         return sc.parallelize(list);
@@ -304,6 +306,89 @@ public class MLLibUtil {
 
         double label = Nd4j.getBlasWrapper().iamax(point.getLabels());
         return new LabeledPoint(label,features);
+    }
+
+    /**
+     * Converts a continuous JavaRDD LabeledPoint to a JavaRDD DataSet.
+     * @param data JavaRDD LabeledPoint
+     * @return JavaRdd DataSet
+     */
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaRDD<LabeledPoint> data) {
+        return fromContinuousLabeledPoint(data, false);
+    }
+
+    /**
+     * Converts a continuous JavaRDD LabeledPoint to a JavaRDD DataSet.
+     * @param data JavaRdd LabeledPoint
+     * @param preCache boolean pre-cache rdd before operation
+     * @return
+     */
+    public static JavaRDD<DataSet> fromContinuousLabeledPoint(JavaRDD<LabeledPoint> data, boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return convertToDataset(lp);
+            }
+        });
+    }
+
+    /**
+     * Converts JavaRDD labeled points to JavaRDD datasets.
+     * @param data JavaRDD LabeledPoints
+     * @param numPossibleLabels number of possible labels
+     * @return
+     */
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels) {
+        return fromLabeledPoint(data, numPossibleLabels, false);
+    }
+
+    /**
+     * Converts JavaRDD labeled points to JavaRDD DataSets.
+     * @param data JavaRDD LabeledPoints
+     * @param numPossibleLabels number of possible labels
+     * @param preCache boolean pre-cache rdd before operation
+     * @return
+     */
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels, boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<LabeledPoint, DataSet>() {
+            @Override
+            public DataSet call(LabeledPoint lp) {
+                return fromLabeledPoint(lp, numPossibleLabels);
+            }
+        });
+    }
+
+    /**
+     * Convert an rdd of data set in to labeled point. 
+     * @param data the dataset to convert
+     * @return an rdd of labeled point
+     */
+    public static JavaRDD<LabeledPoint> fromDataSet(JavaRDD<DataSet> data) {
+        return fromDataSet(data, false);
+    }
+
+    /**
+     * Convert an rdd of data set in to labeled point.
+     * @param data the dataset to convert
+     * @param preCache boolean pre-cache rdd before operation
+     * @return an rdd of labeled point
+     */
+    public static JavaRDD<LabeledPoint> fromDataSet(JavaRDD<DataSet> data, boolean preCache) {
+        if (preCache && !data.getStorageLevel().useMemory()) {
+            data.cache();
+        }
+        return data.map(new Function<DataSet, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(DataSet dataSet) {
+                return toLabeledPoint(dataSet);
+            }
+        });
     }
 
 

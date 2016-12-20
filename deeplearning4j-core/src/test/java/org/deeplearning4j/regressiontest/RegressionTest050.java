@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -47,7 +48,7 @@ public class RegressionTest050 {
         assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer)conf.getConf(0).getLayer();
-        assertEquals("relu", l0.getActivationFunction());
+        assertEquals("relu", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.XAVIER, l0.getWeightInit());
@@ -56,7 +57,7 @@ public class RegressionTest050 {
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
 
         OutputLayer l1 = (OutputLayer)conf.getConf(1).getLayer();
-        assertEquals("softmax", l1.getActivationFunction());
+        assertEquals("softmax", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
@@ -86,7 +87,7 @@ public class RegressionTest050 {
         assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer)conf.getConf(0).getLayer();
-        assertEquals("leakyrelu", l0.getActivationFunction());
+        assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
@@ -99,7 +100,7 @@ public class RegressionTest050 {
         assertEquals(0.2, l0.getL2(), 1e-6);
 
         OutputLayer l1 = (OutputLayer)conf.getConf(1).getLayer();
-        assertEquals("identity", l1.getActivationFunction());
+        assertEquals("identity", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
@@ -133,7 +134,7 @@ public class RegressionTest050 {
         assertFalse(conf.isPretrain());
 
         ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
-        assertEquals("tanh", l0.getActivationFunction());
+        assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
@@ -153,7 +154,7 @@ public class RegressionTest050 {
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate);        //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         OutputLayer l2 = (OutputLayer)conf.getConf(2).getLayer();
-        assertEquals("sigmoid", l1.getActivationFunction());
+        assertEquals("sigmoid", l1.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood);   //TODO
         assertEquals(26*26*3, l2.getNIn());
