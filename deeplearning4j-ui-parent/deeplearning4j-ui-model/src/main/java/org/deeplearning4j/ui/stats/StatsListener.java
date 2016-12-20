@@ -50,6 +50,10 @@ public class StatsListener extends BaseStatsListener {
         super(router, initConfig, updateConfig, sessionID, workerID);
     }
 
+    public StatsListener clone() {
+        return new StatsListener(this.getStorageRouter(), this.getInitConfig(), this.getUpdateConfig(), "", "");
+    }
+
     @Override
     public StatsInitializationReport getNewInitializationReport() {
         return new SbeStatsInitializationReport();

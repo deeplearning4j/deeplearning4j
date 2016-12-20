@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -11,6 +12,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -22,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,10 +60,10 @@ public class ParallelWrapper implements AutoCloseable {
 
         if (this.model instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) this.model).getUpdater();
-            ((MultiLayerNetwork) this.model).setParallelism(true);
+            ((MultiLayerNetwork) this.model).setBatchSize(0);
         } else if (this.model instanceof ComputationGraph) {
             ((ComputationGraph) this.model).getUpdater();
-            ((ComputationGraph) this.model).setParallelism(true);
+            ((ComputationGraph) this.model).setBatchSize(0);
         }
 
         zoo = new Trainer[workers];
@@ -526,6 +531,7 @@ public class ParallelWrapper implements AutoCloseable {
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
         private volatile boolean useMDS = false;
+        private final String uuid = UUID.randomUUID().toString().split("-")[0];
 
 
         public Trainer(int threadId, Model model, boolean useMDS) {
@@ -540,14 +546,10 @@ public class ParallelWrapper implements AutoCloseable {
 
             this.originalModel = model;
             if (model instanceof MultiLayerNetwork) {
+                this.replicatedModel = ((MultiLayerNetwork) model).clone();
 
-//                if (threadId != 0)
-//                    ((MultiLayerNetwork)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             } else if (model instanceof ComputationGraph) {
                 this.replicatedModel = ((ComputationGraph) model).clone();
-
-                if (threadId != 0)
-                    ((ComputationGraph)this.replicatedModel).setListeners(new ArrayList<IterationListener>());
             }
         }
 
@@ -627,10 +629,38 @@ public class ParallelWrapper implements AutoCloseable {
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     ((MultiLayerNetwork) replicatedModel).init();
+                    Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                    for(IterationListener listener : oldListeners) {
+                        if(listener instanceof StatsListener) {
+                            StatsListener statsListener = ((StatsListener) listener).clone();
+                            statsListener.setSessionID(((StatsListener) listener).getSessionID());
+                            statsListener.setWorkerID(uuid);
+                            statsListener.setUpdateConfig(new DefaultStatsUpdateConfiguration.Builder().build());
+                            replicatedListeners.add(statsListener);
+                        }
+                    }
+
+                    ((MultiLayerNetwork)this.replicatedModel).setListeners(replicatedListeners);
                 } else if (originalModel instanceof ComputationGraph) {
                     this.replicatedModel = new ComputationGraph(((ComputationGraph) originalModel).getConfiguration().clone());
 
                     ((ComputationGraph) this.replicatedModel).init();
+                    Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
+                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+                    for(IterationListener listener : oldListeners) {
+                        if(listener instanceof StatsListener) {
+                            StatsListener statsListener = ((StatsListener) listener).clone();
+                            statsListener.setSessionID(((StatsListener) listener).getSessionID());
+                            statsListener.setWorkerID(uuid);
+                            statsListener.setUpdateConfig(new DefaultStatsUpdateConfiguration.Builder().build());
+                            replicatedListeners.add(statsListener);
+                        }
+                    }
+
+                    ((ComputationGraph)this.replicatedModel).setListeners(replicatedListeners);
                 }
 
                 if (!useMDS) {

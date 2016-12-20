@@ -83,8 +83,7 @@ public class ComputationGraph implements Serializable, Model {
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
-    protected boolean isParallel = false;
-    protected int manualBatchSize;
+    protected int manualBatchSize = Integer.MAX_VALUE;
     @Setter
     private boolean initDone = false;
 
@@ -143,33 +142,11 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-    * Is this model being used for a parallel operation?
-    */
-    public boolean isParallel() { return isParallel; }
-
-    /**
-     * Specify if this model is being used for parallel operations, such as usage
-     * by ParallelWrapper.
-     * NOTE: you should never have to call this manually.
-     */
-    public void setParallelism(boolean parallelism) {
-        isParallel = parallelism;
-        manualBatchSize = 0;
-    }
-
-    /**
      * When performing parallel operations, input information will have to be manually
      * specified for listeners such as StatsListener.
      * NOTE: you should never have to call this manually.
      */
     public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
-
-    /**
-     * When performing parallel operations, input information will have to be manually
-     * specified for listeners such as StatsListener.
-     * NOTE: you should never have to call this manually.
-     */
-    public void incrementBatchSize(int batchNum) { manualBatchSize += batchNum; }
 
     /**
      * Returns the number of layers in the ComputationGraph
@@ -1707,9 +1684,7 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
-    public int batchSize() {
-        return isParallel ? manualBatchSize : inputs[0].size(0);
-    }
+    public int batchSize() { return manualBatchSize==Integer.MAX_VALUE ? inputs[0].size(0) : batchSize(); }
 
     @Override
     public NeuralNetConfiguration conf() {
