@@ -2,7 +2,7 @@
 
 DeepLearning4J is a java based toolkit for building, training and deploying Neural Networks. 
 
-# DeepLearning4J Components
+### DeepLearning4J Components
  
 DeepLearning4J has the following sub-projects. 
 
@@ -20,7 +20,7 @@ Ingesting cleaning, joining, scaling, normalizing and transforming data are jobs
 
 DataVec is our toolkit for that process.
 
-## DataVec Examples
+### DataVec Examples
 
 There are DataVec examples in our examples repo on github. 
 [here](https://github.com/deeplearning4j/dl4j-examples) .
@@ -28,11 +28,11 @@ There are DataVec examples in our examples repo on github.
 A descriptive summary of many of the examples is 
 [here](examples-tour)
 
-## Github Repo
+### Github Repo
 
 The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec).
 
-## JavaDoc
+### JavaDoc
 
 DataVec JavaDoc is [here](./datavecdoc/). 
 
@@ -99,16 +99,16 @@ DataNormalization
 
 DeepLearning4J is where you design your Neural Networks
 
-## Github Repo
+### Github Repo
 
 The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeplearning4j).
 
-## JavaDoc 
+### JavaDoc 
 
 The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/)
 
 
-## DeepLearning4J Examples
+### DeepLearning4J Examples
 
 
 There are DeepLearning4J examples in our examples repo on github. 
@@ -117,7 +117,7 @@ There are DeepLearning4J examples in our examples repo on github.
 A descriptive summary of many of the examples is 
 [here](examples-tour)
 
-## DeepLearning4J frequently used classes
+### DeepLearning4J frequently used classes
 
 * **MultiLayerConfiguration** Configure a network
 * **MultiLayerConfiguration.Builder** Builder interface to configure a network
@@ -133,20 +133,20 @@ A descriptive summary of many of the examples is
 
 ND4J is the numerical processing library for DeepLearning4J
 
-## Github Repo
+### Github Repo
 
 The ND4J Github repo is [here](http://github.com/deeplearning4j/nd4j).
 
-## JavaDoc 
+### JavaDoc 
 
 The ND4J JavaDoc is available [here](http://nd4j.org/doc/)
 
 
-## ND4J Examples
+### ND4J Examples
 
 There are ND4J examples [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples)
 
-## ND4J Frequently Used Classes
+### ND4J Frequently Used Classes
 
 You may not use some of these classes directly, but when you configure a Neural Network. Behind the scenes the configurations you set for OptimizationAlgorithm, Updater, and LossFunction are all done in ND4J
 
@@ -160,16 +160,16 @@ You may not use some of these classes directly, but when you configure a Neural 
 
 If you have worked with Keras the Python Library for Deeplearning and would like to import a trained model, or a model configuration into DeepLearning4J see our Model Import feature. 
 
-## Github Repo
+### Github Repo
 
 The Model Import is actually part of DeepLearning4J, but it is worth it's own section. Github folder is [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport).
 
 
-## Model Import Examples
+### Model Import Examples
 
 We will add examples [here](https://github.com/deeplearning4j/dl4j-examples/)
 
-## Model Import Frequently Used Classes
+### Model Import Frequently Used Classes
 
 
 * **KerasModel.Import** saved Keras Model to DeepLearning4J MultiLayerNetwork or Computation Graph
@@ -178,7 +178,7 @@ We will add examples [here](https://github.com/deeplearning4j/dl4j-examples/)
 
 
 
-## Video 
+### Video 
 
 A video demonstrating the import of a Keras model is available
 
