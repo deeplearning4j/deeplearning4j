@@ -98,7 +98,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Setter protected boolean initDone = false;
     protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
-    protected int manualBatchSize = Integer.MAX_VALUE;
 
     /*
       Binary drop connect mask
@@ -271,18 +270,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
-
-
-
-    /**
-     * When performing parallel operations, input information will have to be manually
-     * specified for listeners such as StatsListener.
-     * NOTE: you should never have to call this manually.
-     */
-    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
-
     @Override
-    public int batchSize() { return manualBatchSize==Integer.MAX_VALUE ? input.size(0) : manualBatchSize; }
+    public int batchSize() {
+        return input.size(0);
+    }
 
     @Override
     public NeuralNetConfiguration conf() {
