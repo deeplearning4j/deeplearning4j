@@ -28,4 +28,6 @@ public interface RoutingIterationListener extends TrainingListener, Cloneable {
 
     String getSessionID();
 
+    RoutingIterationListener clone();
+
 }

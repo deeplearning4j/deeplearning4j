@@ -230,4 +230,32 @@ public class GravesLSTMTest {
 			assertEquals(d1,d2,0.0);
 		}
 	}
+
+
+	@Test
+	public void testGateActivationFnsSanityCheck(){
+		for(String gateAfn : new String[]{"sigmoid", "hardsigmoid"}){
+
+			MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+					.seed(12345)
+					.list()
+					.layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+							.gateActivationFunction(gateAfn)
+							.activation("tanh").nIn(2).nOut(2).build())
+					.layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+							.nIn(2).nOut(2).activation("tanh").build())
+					.build();
+
+			MultiLayerNetwork net = new MultiLayerNetwork(conf);
+			net.init();
+
+			assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM)net.getLayer(0).conf().getLayer()).getGateActivationFn().toString());
+
+			INDArray in = Nd4j.rand(new int[]{3,2,5});
+			INDArray labels = Nd4j.rand(new int[]{3,2,5});
+
+			net.fit(in, labels);
+		}
+	}
 }
