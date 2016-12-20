@@ -227,10 +227,11 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         logger.debug("Iterations passed: {}", iterationsCounter.get());
-        iterationsCounter.set(0);
+//        iterationsCounter.set(0);
     }
 
     /**
@@ -396,10 +397,11 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
+            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+//            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         logger.debug("Iterations passed: {}", iterationsCounter.get());
-        iterationsCounter.set(0);
+//        iterationsCounter.set(0);
     }
 
     public static class Builder<T extends Model> {
