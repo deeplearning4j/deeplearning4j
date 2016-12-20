@@ -60,10 +60,8 @@ public class ParallelWrapper implements AutoCloseable {
 
         if (this.model instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) this.model).getUpdater();
-            ((MultiLayerNetwork) this.model).setBatchSize(0);
         } else if (this.model instanceof ComputationGraph) {
             ((ComputationGraph) this.model).getUpdater();
-            ((ComputationGraph) this.model).setBatchSize(0);
         }
 
         zoo = new Trainer[workers];
@@ -204,9 +202,6 @@ public class ParallelWrapper implements AutoCloseable {
                                     updater.setStateViewArray(state);
                                 }
                             }
-
-                            // update batch input data for stats listener
-                            ((ComputationGraph) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((ComputationGraph) model).setScore(score);
@@ -339,9 +334,6 @@ public class ParallelWrapper implements AutoCloseable {
                                     updater.setStateViewArray((MultiLayerNetwork) model, state, false);
                                 }
                             }
-
-                            // update batch input data for stats listener
-                            ((MultiLayerNetwork) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
@@ -374,9 +366,6 @@ public class ParallelWrapper implements AutoCloseable {
                                     updater.setStateViewArray(state);
                                 }
                             }
-
-                            // update batch input data for stats listener
-                            ((ComputationGraph) model).setBatchSize(batchSize*averagingFrequency);
                         }
 
                         ((ComputationGraph) model).setScore(score);

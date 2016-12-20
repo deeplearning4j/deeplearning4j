@@ -116,7 +116,7 @@ public class TestParallelEarlyStopping {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.SGD).learningRate(5.0)    //Intentionally huge LR
+                .updater(Updater.SGD).learningRate(1.0)    //Intentionally huge LR
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build())
