@@ -16,6 +16,7 @@ function languageSelect(languageCode, redirect){
 
 var currSession = "";
 var currWorkerIdx = 0;
+var prevNumWorkers = 0;
 function updateSessionWorkerSelect(){
 
     $.ajax({
@@ -57,20 +58,30 @@ function updateSessionWorkerSelect(){
                     //Set up worker selection...
                     if(data[currSession]){
                         var numWorkers = data[currSession]["numWorkers"];
+                        var workers = data[currSession]["workers"];
 
                         var elem = $("#workerSelect");
                         elem.empty();
 
                         if(numWorkers > 1){
-                        // if(numWorkers >= 0){    //For testing
-                            for(var i=0; i<numWorkers; i++){
-                                elem.append("<option value='" + i + "'>" + i + "</option>");
+//                        if(numWorkers >= 0){    //For testing
+                            for(var i=0; i<workers.length; i++){
+                                elem.append("<option value='" + i + "'>" + workers[i] + "</option>");
                             }
 
                             $("#workerSelect option[value='" + currWorkerIdx +"']").attr("selected", "selected");
                             $("#workerSelectDiv").show();
                         } else {
                             $("#workerSelectDiv").hide();
+                        }
+
+                        // if workers change then reset
+                        if(prevNumWorkers != numWorkers) {
+                            if(numWorkers==0) {
+                                $("#workerSelect").val("0");
+                                selectNewWorker();
+                            }
+                            else selectNewWorker();
                         }
                     }
                 }
