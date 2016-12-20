@@ -61,6 +61,10 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 	private List<Point>	initialPoints;
 	private transient ExecutorService exec;
 
+	protected BaseClusteringAlgorithm() {
+		// no-op for serialization only
+	}
+
 	protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
 		this.clusteringStrategy = clusteringStrategy;
 		this.exec = MultiThreadUtils.newExecutorService();

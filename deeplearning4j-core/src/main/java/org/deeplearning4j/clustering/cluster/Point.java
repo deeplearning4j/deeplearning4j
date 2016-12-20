@@ -34,6 +34,10 @@ public class Point  implements Serializable {
 	private String label;
 	private INDArray array;
 
+	protected Point() {
+		// no-op for serialization only
+	}
+
 	public Point(INDArray array) {
 		super();
 		this.array = array;
