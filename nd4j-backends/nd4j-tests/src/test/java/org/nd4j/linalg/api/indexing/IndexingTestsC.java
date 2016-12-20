@@ -34,6 +34,61 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertEquals(arr2, Nd4j.linspace(1, 100, 100));
     }
 
+    @Test
+    public void testRows() {
+        //https://github.com/deeplearning4j/nd4j/issues/1362
+        INDArray matrix = Nd4j.create(new double[][]{
+                {0,  1,  2,  3,  4},
+                {5,  6,  7,  8,  9},
+                {10, 11, 12, 13, 14},
+                {15, 16, 17, 18, 19},
+                {20, 21, 22, 23, 24}
+        });
+
+        final INDArrayIndex evenRowsOfSubMatrix = NDArrayIndex.interval(0, 2, matrix.rows());
+        final INDArrayIndex oddRowsOfSubMatrix = NDArrayIndex.interval(1, 2, matrix.rows());
+        final INDArrayIndex evenColumnsOfSubMatrix = NDArrayIndex.interval(0, 2, matrix.columns());
+        final INDArrayIndex oddColumnsOfSubMatrix = NDArrayIndex.interval(1, 2, matrix.columns());
+
+
+        INDArray evenRowEvenColumns = Nd4j.create(new double[][]{
+                { 0.00,  2.00,  4.00},
+                {10.00, 12.00, 14.00},
+                {20.00, 22.00, 24.00}});
+        INDArray testEvenRowsEvenColumns = matrix.get(evenRowsOfSubMatrix, evenColumnsOfSubMatrix);
+        assertEquals(evenRowEvenColumns,testEvenRowsEvenColumns);
+
+        //offset should be 1
+        //offset is 2 instead o_0
+        INDArray evenRowsOddColumns = Nd4j.create(new double[][]{
+                { 1.00,  3.00},
+                {11.00, 13.00},
+                {21.00, 23.00}});
+        INDArray testEvenRowsOddColumns = matrix.get(evenRowsOfSubMatrix, oddColumnsOfSubMatrix);
+        assertEquals(evenRowsOddColumns,testEvenRowsOddColumns);
+
+        //offset should be 4
+        //offset is 10 instead o_0
+        INDArray oddRowsEvenColumns = Nd4j.create(new double[][] {
+                { 5.00,  7.00,  9.00},
+                {15.00, 17.00, 19.00}});
+        INDArray testOddRowsEvenColumns = matrix.get(oddRowsOfSubMatrix, evenColumnsOfSubMatrix);
+        assertEquals(oddRowsEvenColumns,testOddRowsEvenColumns);
+
+
+        INDArray oddRowsOddColumns = Nd4j.create(new double[][]{
+                { 6.00,  8.00},
+                {16.00, 18.00}});
+        INDArray testOddRowsOddColums = matrix.get(oddRowsOfSubMatrix, oddColumnsOfSubMatrix);
+        assertEquals(oddRowsOddColumns,testOddRowsOddColums);
+
+        System.out.println("source matrix : \n" + matrix);
+        System.out.println("even rows, even cols : \n" + matrix.get(evenRowsOfSubMatrix, evenColumnsOfSubMatrix));
+        System.out.println("even rows, odd cols : \n" + matrix.get(evenRowsOfSubMatrix, oddColumnsOfSubMatrix));
+        System.out.println("odd rows, even cols : \n" + matrix.get(oddRowsOfSubMatrix, evenColumnsOfSubMatrix));
+        System.out.println("odd rows, odd cols : \n" + matrix.get(oddRowsOfSubMatrix, oddColumnsOfSubMatrix));
+    }
+
 
     @Test
     public void testPutRowIndexing() {

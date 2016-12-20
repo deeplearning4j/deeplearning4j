@@ -2,6 +2,8 @@ package org.nd4j.parameterserver.node;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import org.agrona.CloseHelper;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -52,6 +54,12 @@ public class ParameterServerNodeTest {
             Thread.sleep(10000);
         }
 
+    }
+
+    @AfterClass
+    public static void after() {
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(mediaDriver);
     }
 
     @Test
