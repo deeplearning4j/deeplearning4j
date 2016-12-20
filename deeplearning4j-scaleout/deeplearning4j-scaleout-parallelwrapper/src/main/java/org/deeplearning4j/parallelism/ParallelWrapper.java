@@ -620,6 +620,8 @@ public class ParallelWrapper implements AutoCloseable {
                             routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
                             routingListener.setWorkerID(uuid);
                             replicatedListeners.add(routingListener);
+                        } else {
+                            replicatedListeners.add(listener);
                         }
                     }
 
@@ -637,6 +639,8 @@ public class ParallelWrapper implements AutoCloseable {
                             routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
                             routingIterationListener.setWorkerID(uuid);
                             replicatedListeners.add(routingIterationListener);
+                        } else {
+                            replicatedListeners.add(listener);
                         }
                     }
 
