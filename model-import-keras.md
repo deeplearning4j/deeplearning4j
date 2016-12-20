@@ -30,16 +30,16 @@ Using the Keras Model Import feature you have the following options.
 
 Be aware that not all models will be supported, it is our goal however to import the most useful and widely used networks.
 
-To use this, you would save the model in Keras to a JSON file, and in DL4J you would create a new `MultiLayerConfiguration` by loading the saved model. The next steps would then be to train the model in DeepLearning4j.
+To use this, you would save the model in Keras to a JSON file, and in DL4J you would create a new `MultiLayerConfiguration` by loading the saved model. The next steps would then be to train the model in Deeplearning4j.
 
 ## The Model Configuration and the Saved Weights from a Model Trained in Keras
 
 In this case you would save both the JSON config and the weights from the trained model in Keras. 
-In DeepLEarning4J you wouldimport both the model config and the weights, using modelimport.keras.Model.importSequentialModel and passing it both the config file path, and the path to the h5file that contains the weights. 
+In Deeplearning4j you would import both the model config and the weights, using modelimport.keras.Model.importSequentialModel and passing it both the config file path, and the path to the h5file that contains the weights. 
 
 ## Keras Model Import
 
-Below is a [video tutorial](https://www.youtube.com/embed/bI1aR1Tj2DM) demonstrating working code to load a Keras model into DeepLearning4J and validating the working network. Instructor Tom Hanlon provides an overview of a simple classifier over Iris data built in Keras with a Theano backend, and exported and loaded into DeepLearning4J:
+Below is a [video tutorial](https://www.youtube.com/embed/bI1aR1Tj2DM) demonstrating working code to load a Keras model into Deeplearning4j and validating the working network. Instructor Tom Hanlon provides an overview of a simple classifier over Iris data built in Keras with a Theano backend, and exported and loaded into Deeplearning4j:
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
