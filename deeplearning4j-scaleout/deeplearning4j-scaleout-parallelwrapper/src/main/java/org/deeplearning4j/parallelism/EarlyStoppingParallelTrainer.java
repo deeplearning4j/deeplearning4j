@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.parallelism;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Conduct parallel early stopping training with ParallelWrapper under the hood.<br>
@@ -57,10 +60,10 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     private ParallelWrapper wrapper;
     private double bestModelScore = Double.MAX_VALUE;
     private int bestModelEpoch = -1;
-    private double latestScore = 0.0;
-    private boolean terminate = false;
-    private int iterCount = 0;
-    protected IterationTerminationCondition terminationReason = null;
+    private AtomicDouble latestScore = new AtomicDouble(0.0);
+    private AtomicBoolean terminate = new AtomicBoolean(false);
+    private AtomicInteger iterCount = new AtomicInteger(0);
+    protected volatile IterationTerminationCondition terminationReason = null;
 
     public EarlyStoppingParallelTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
                                         DataSetIterator train, MultiDataSetIterator trainMulti,
@@ -105,12 +108,12 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
     }
 
-    protected synchronized void setTerminationReason(IterationTerminationCondition terminationReason) {
+    protected void setTerminationReason(IterationTerminationCondition terminationReason) {
         this.terminationReason = terminationReason;
     }
 
     @Override
-    public synchronized EarlyStoppingResult<T> fit() {
+    public EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
         if(wrapper==null) {
             throw new IllegalStateException("Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
@@ -167,7 +170,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     bestModel);
             }
 
-            if (terminate) {
+            if (terminate.get()) {
                 //Handle termination condition:
                 log.info("Hit per iteration termination condition at epoch {}, iteration {}. Reason: {}",
                         epochCount, iterCount, terminationReason);
@@ -295,19 +298,21 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
     }
 
-    public synchronized void setLatestScore(double latestScore) {
-        this.latestScore = latestScore;
+    public void setLatestScore(double latestScore) {
+        this.latestScore.set(latestScore);
     }
 
-    public synchronized void incrementIteration() {
-        iterCount++;
+    public void incrementIteration() {
+        this.iterCount.incrementAndGet();
     }
 
-    public synchronized void setTermination(boolean terminate) {
-        this.terminate = terminate;
+    public void setTermination(boolean terminate) {
+        this.terminate.set(terminate);
     }
 
-    public synchronized boolean getTermination() { return terminate; }
+    public boolean getTermination() {
+        return this.terminate.get();
+    }
 
     /**
      * AveragingIterationListener is attached to the primary model within ParallelWrapper. It is invoked
@@ -348,7 +353,6 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                 // use built-in kill switch to stop fit operation
                 wrapper.stopFit();
             }
-            System.out.println(latestScore);
 
             trainer.incrementIteration();
         }
