@@ -83,7 +83,6 @@ public class ComputationGraph implements Serializable, Model {
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
-    protected int manualBatchSize = Integer.MAX_VALUE;
     @Setter
     private boolean initDone = false;
 
@@ -140,13 +139,6 @@ public class ComputationGraph implements Serializable, Model {
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
-
-    /**
-     * When performing parallel operations, input information will have to be manually
-     * specified for listeners such as StatsListener.
-     * NOTE: you should never have to call this manually.
-     */
-    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
 
     /**
      * Returns the number of layers in the ComputationGraph
@@ -1684,7 +1676,9 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
-    public int batchSize() { return manualBatchSize==Integer.MAX_VALUE ? inputs[0].size(0) : batchSize(); }
+    public int batchSize() {
+        return inputs[0].size(0);
+    }
 
     @Override
     public NeuralNetConfiguration conf() {
