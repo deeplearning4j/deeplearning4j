@@ -13,12 +13,14 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -27,8 +29,8 @@ import static org.junit.Assert.*;
 
 public class TestParallelEarlyStoppingUI {
 
-    @Test
-    public void testParallelStatsListenerCompatibility(){
+    @Test @Ignore   //To be run manually
+    public void testParallelStatsListenerCompatibility() throws Exception {
         UIServer uiServer = UIServer.getInstance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -36,7 +38,8 @@ public class TestParallelEarlyStoppingUI {
             .updater(Updater.SGD)
             .weightInit(WeightInit.XAVIER)
             .list()
-            .layer(0,new OutputLayer.Builder().nIn(4).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+            .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+            .layer(1,new OutputLayer.Builder().nIn(3).nOut(3).lossFunction(LossFunctions.LossFunction.MCXENT).build())
             .pretrain(false).backprop(true)
             .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

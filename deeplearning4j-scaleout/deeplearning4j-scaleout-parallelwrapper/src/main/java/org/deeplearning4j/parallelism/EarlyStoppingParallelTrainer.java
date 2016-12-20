@@ -89,7 +89,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         if (model instanceof MultiLayerNetwork) {
             Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
             Collection<IterationListener> newListeners = new LinkedList<>(listeners);
-            newListeners.addAll(listeners);
+            newListeners.add(trainerListener);
             ((MultiLayerNetwork) model).setListeners(newListeners);
 
         } else if (model instanceof ComputationGraph) {
@@ -169,7 +169,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
             if (terminate) {
                 //Handle termination condition:
-                log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
+                log.info("Hit per iteration termination condition at epoch {}, iteration {}. Reason: {}",
                         epochCount, iterCount, terminationReason);
 
                 if (esConfig.isSaveLastModel()) {
@@ -186,6 +186,11 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
                     bestModel = esConfig.getModelSaver().getBestModel();
                 } catch (IOException e2) {
                     throw new RuntimeException(e2);
+                }
+
+                if(bestModel == null){
+                    //Could occur with very early termination
+                    bestModel = model;
                 }
 
                 EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
