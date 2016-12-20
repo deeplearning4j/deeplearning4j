@@ -167,7 +167,7 @@ The Model Import is actually part of DeepLearning4J, but it is worth it's own se
 
 ## Model Import Examples
 
-We will add examples here [here](https://github.com/deeplearning4j/dl4j-examples/)
+We will add examples [here](https://github.com/deeplearning4j/dl4j-examples/)
 
 ## Model Import Frequently Used Classes
 
