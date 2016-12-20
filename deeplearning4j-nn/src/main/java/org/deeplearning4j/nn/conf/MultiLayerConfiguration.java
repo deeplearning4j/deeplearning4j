@@ -200,7 +200,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                     } else {
                         log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON: layer 'confs' field is not an ArrayNode (is: {})",
-                                (confs != null ? confs.getClass() : null));
+                            (confs != null ? confs.getClass() : null));
                     }
                 } catch(IOException e){
                     log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON",e);
@@ -327,16 +327,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             this.backprop = backprop;
             return this;
         }
-        
+
         /**The type of backprop. Default setting is used for most networks (MLP, CNN etc),
          * but optionally truncated BPTT can be used for training recurrent neural networks.
          * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
          */
         public Builder backpropType(BackpropType type){
-        	this.backpropType = type;
-        	return this;
+            this.backpropType = type;
+            return this;
         }
-        
+
         /**When doing truncated BPTT: how many steps of forward pass should we do
          * before doing (truncated) backprop?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
@@ -348,10 +348,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param forwardLength Forward length > 0, >= backwardLength
          */
         public Builder tBPTTForwardLength(int forwardLength){
-        	this.tbpttFwdLength = forwardLength;
-        	return this;
+            this.tbpttFwdLength = forwardLength;
+            return this;
         }
-        
+
         /**When doing truncated BPTT: how many steps of backward should we do?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
          * This is the k2 parameter on pg23 of
@@ -359,8 +359,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param backwardLength <= forwardLength
          */
         public Builder tBPTTBackwardLength(int backwardLength){
-        	this.tbpttBackLength = backwardLength;
-        	return this;
+            this.tbpttBackLength = backwardLength;
+            return this;
         }
 
         /**
@@ -453,8 +453,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         inputType = InputType.recurrent(nIn);
                     }
                 } else if (firstLayer instanceof DenseLayer ||
-                        firstLayer instanceof EmbeddingLayer ||
-                        firstLayer instanceof OutputLayer) {
+                    firstLayer instanceof EmbeddingLayer ||
+                    firstLayer instanceof OutputLayer) {
                     //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
                     FeedForwardLayer ffl = (FeedForwardLayer) firstLayer;
                     int nIn = ffl.getNIn();

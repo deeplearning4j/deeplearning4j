@@ -98,6 +98,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Setter protected boolean initDone = false;
     protected INDArray flattenedParams;     //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
+    protected int manualBatchSize = Integer.MAX_VALUE;
 
     /*
       Binary drop connect mask
@@ -150,7 +151,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (defaultConfiguration == null)
             defaultConfiguration = new NeuralNetConfiguration.Builder()
-                    .build();
+                .build();
     }
 
 
@@ -271,10 +272,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
 
+
+
+    /**
+     * When performing parallel operations, input information will have to be manually
+     * specified for listeners such as StatsListener.
+     * NOTE: you should never have to call this manually.
+     */
+    public void setBatchSize(int batchNum) { manualBatchSize = batchNum; }
+
     @Override
-    public int batchSize() {
-        return input.size(0);
-    }
+    public int batchSize() { return manualBatchSize==Integer.MAX_VALUE ? input.size(0) : manualBatchSize; }
 
     @Override
     public NeuralNetConfiguration conf() {
@@ -1025,9 +1033,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     setLabels(next.getLabels());
                     if( solver == null ){
                         solver = new Solver.Builder()
-                                .configure(conf())
-                                .listeners(getListeners())
-                                .model(this).build();
+                            .configure(conf())
+                            .listeners(getListeners())
+                            .model(this).build();
                     }
                     solver.optimize();
                 }
@@ -1140,7 +1148,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                    + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1179,9 +1187,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             if(solver == null) {
                 solver = new Solver.Builder()
-                        .configure(conf())
-                        .listeners(getListeners())
-                        .model(this).build();
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
             }
             solver.optimize();
 
@@ -1436,9 +1444,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             else {
                 if( solver == null) {
                     solver = new Solver.Builder()
-                            .configure(conf())
-                            .listeners(getListeners())
-                            .model(this).build();
+                        .configure(conf())
+                        .listeners(getListeners())
+                        .model(this).build();
                 }
 
                 solver.optimize();
@@ -1499,7 +1507,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray examples, int[] labels) {
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
+            (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
         fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
     }
 
@@ -1954,7 +1962,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (!layer.conf().getLearningRateByParam().isEmpty()) {
                 for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
                     layer.conf().setLearningRateByParam(lrPair.getKey(),
-                            lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+                        lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
                 }
             }
         }
@@ -2290,9 +2298,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public synchronized Updater getUpdater() {
         if(solver == null){
             solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+                .configure(conf())
+                .listeners(getListeners())
+                .model(this).build();
             solver.getOptimizer().setUpdater(UpdaterCreator.getUpdater(this));
         }
         return solver.getOptimizer().getUpdater();
@@ -2302,9 +2310,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setUpdater(Updater updater) {
         if(solver == null) {
             solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+                .configure(conf())
+                .listeners(getListeners())
+                .model(this).build();
         }
         solver.getOptimizer().setUpdater(updater);
     }
