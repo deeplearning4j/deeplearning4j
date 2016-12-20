@@ -598,8 +598,7 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
         else
-            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides)  / numIntervals;
-
+            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides);
     }
 
 
