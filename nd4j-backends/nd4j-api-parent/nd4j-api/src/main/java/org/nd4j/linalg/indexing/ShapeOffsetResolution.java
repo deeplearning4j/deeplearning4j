@@ -1,6 +1,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Data
 public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
@@ -594,54 +596,15 @@ public class ShapeOffsetResolution implements Serializable {
             if(encounteredAll && arr.size(0) != 1)
                 this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides);
             else
-                this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides) / numIntervals;
+                this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides) /  Math.max(1,numIntervals);
 
         }
+        else if(Shape.isVector(Ints.toArray(accumShape)))
+            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides);
+
         else
-            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides)  / numIntervals;
+            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides)  / Math.max(1,numIntervals);
 
     }
 
-
-
-
-    public INDArray getArr() {
-        return arr;
-    }
-
-    public void setArr(INDArray arr) {
-        this.arr = arr;
-    }
-
-    public int[] getOffsets() {
-        return offsets;
-    }
-
-    public void setOffsets(int[] offsets) {
-        this.offsets = offsets;
-    }
-
-    public int[] getShapes() {
-        return shapes;
-    }
-
-    public void setShapes(int[] shapes) {
-        this.shapes = shapes;
-    }
-
-    public int[] getStrides() {
-        return strides;
-    }
-
-    public void setStrides(int[] strides) {
-        this.strides = strides;
-    }
-
-    public long getOffset() {
-        return offset;
-    }
-
-    public void setOffset(long offset) {
-        this.offset = offset;
-    }
 }

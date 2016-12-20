@@ -3904,7 +3904,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
-        if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll)
+        //check for row/column vector and point index being 0
+        if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll || (indexes.length == 2 &&
+                (isRowVector() && indexes[0] instanceof PointIndex && indexes[0].offset() == 0 && indexes[1] instanceof NDArrayIndexAll
+                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0 && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
 

@@ -95,7 +95,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(1,10);
         INDArray row = Nd4j.create(1,10);
 
-//        arr.putRow(0, row);   //OK
+        arr.putRow(0, row);   //OK
         arr.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all()}, row);   //Exception
     }
 
