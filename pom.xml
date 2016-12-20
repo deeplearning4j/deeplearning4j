@@ -174,9 +174,9 @@
         </profile>
     </profiles>
     <scm>
-        <connection>scm:git:git@github.com:SkymindIO/Canova.git</connection>
-        <developerConnection>scm:git:git@github.com:SkymindIO/Canova.git</developerConnection>
-        <url>git@github.com:SkymindIO/Canova.git</url>
+        <connection>scm:git:git@github.com:deeplearning4j/DataVec.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/DataVec.git</developerConnection>
+        <url>git@github.com:deeplearning4j/DataVec.git</url>
         <tag>HEAD</tag>
     </scm>
 
