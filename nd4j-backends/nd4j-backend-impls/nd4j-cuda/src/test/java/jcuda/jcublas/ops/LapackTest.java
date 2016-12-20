@@ -11,10 +11,11 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
+ * // why i'm set as the author here? that's not my code
  */
 @Ignore
-public class CublasTests {
-
+public class LapackTest {
+/*
     java.util.Random rng = new java.util.Random(1230) ;
 
     @Test
@@ -87,4 +88,5 @@ public class CublasTests {
             }
         }
     }
+    */
 }
