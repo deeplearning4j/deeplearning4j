@@ -37,7 +37,7 @@ public class CNNGradientCheckTest {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -220,6 +220,7 @@ public class CNNGradientCheckTest {
 
     @Test
     public void testCnnWithSubsampling(){
+        Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
 
         int[] minibatchSizes = {1,3};
@@ -230,9 +231,10 @@ public class CNNGradientCheckTest {
         int[] kernel = {2,2};
         int[] stride = {1,1};
         int[] padding = {0,0};
+        int pnorm = 2;
 
         String[] activations = {"sigmoid","tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
+        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for(String afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
@@ -256,6 +258,7 @@ public class CNNGradientCheckTest {
                                     .kernelSize(kernel)
                                     .stride(stride)
                                     .padding(padding)
+                                    .pnorm(pnorm)
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
                                     .nIn(3 * 3 * 3)
@@ -268,7 +271,12 @@ public class CNNGradientCheckTest {
                     net.init();
 
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
-                    System.out.println(msg);
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                             PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
@@ -291,9 +299,10 @@ public class CNNGradientCheckTest {
         int[] kernel = {2,2};
         int[] stride = {1,1};
         int[] padding = {0,0};
+        int pNorm = 3;
 
         String[] activations = {"sigmoid","tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
+        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for(String afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
@@ -317,6 +326,7 @@ public class CNNGradientCheckTest {
                                     .kernelSize(kernel)
                                     .stride(stride)
                                     .padding(padding)
+                                    .pnorm(pNorm)
                                     .build())   //output: (4-2+0)/1+1 =3 -> 3x3x3
                             .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
                                     .nIn(3).nOut(2)

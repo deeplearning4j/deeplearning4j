@@ -151,10 +151,16 @@
         <!-- This is a dependency for both Spark (1.2.1 for Spark 1.6.0, as a transitive dependency via Akka) and for
              Play (1.3.0). Play requires 1.3.0 (fails with 1.2.1 - missing required methods), but Spark can use 1.3.0.
              By promoting this to a direct dependency, we are more likely to resolve 1.3.0 over Spark's 1.2.1 -->
+        <!--<dependency>-->
+            <!--<groupId>com.typesafe</groupId>-->
+            <!--<artifactId>config</artifactId>-->
+            <!--<version>${typesafe.config.version}</version>-->
+        <!--</dependency>-->
+
         <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
-            <version>${typesafe.config.version}</version>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-cluster_2.10</artifactId>
+            <version>2.3.13</version>
         </dependency>
 
         <!-- Test Scope Dependencies -->
@@ -168,6 +174,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.27</version>
         </dependency>
     </dependencies>
 

@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -185,7 +186,14 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
 
         gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
+
         setScoreWithZ(negVSamples); // this is compared to input on
+
+        if(trainingListeners != null && trainingListeners.size() > 0){
+            for(TrainingListener tl : trainingListeners){
+                tl.onBackwardPass(this);
+            }
+        }
     }
 
     /**
@@ -482,6 +490,11 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
         return r;
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return true;
     }
 
 

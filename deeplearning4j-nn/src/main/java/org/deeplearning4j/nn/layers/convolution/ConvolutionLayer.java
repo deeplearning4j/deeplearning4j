@@ -30,6 +30,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -39,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Map;
 
 
 /**
@@ -76,17 +79,35 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
 
-        double l2Norm = getParam(ConvolutionParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
-        return 0.5 * conf.getLayer().getL2() * l2Norm * l2Norm;
+        double l2Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l2 = conf.getL2ByParam(entry.getKey());
+            if(l2 > 0) {
+                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
+                l2Sum += 0.5 * l2 * norm2 * norm2;
+            }
+        }
+
+        return l2Sum;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
     	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
-        return conf.getLayer().getL1() * getParam(ConvolutionParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+
+        double l1Sum = 0.0;
+        for(Map.Entry<String,INDArray> entry : paramTable().entrySet()){
+            double l1 = conf.getL1ByParam(entry.getKey());
+            if(l1 > 0) {
+                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
+                l1Sum += l1 * norm1;
+            }
+        }
+
+        return l1Sum;
     }
 
     @Override
@@ -130,16 +151,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray delta;
-        String afn = conf.getLayer().getActivationFunction();
+        IActivation afn = conf.getLayer().getActivationFn();
 
-        if("identity".equals(afn)){
-            delta = epsilon;    //avoid doing .muli with 1s
-        } else {
-            INDArray sigmaPrimeZ = preOutput(true);
-            Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                    afn, sigmaPrimeZ, conf.getExtraArgs()).derivative());
-            delta = sigmaPrimeZ.muli(epsilon);  //Current shape: [miniBatch,outD,outH,outW]
-        }
+        delta = conf().getLayer().getActivationFn().backprop(preOutput(true), epsilon).getFirst();  //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad, biasGradView, weightGradView, afn,
@@ -289,25 +303,28 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
-        String afn = conf.getLayer().getActivationFunction();
-        if("identity".equals(afn)){
-            return z;
-        }
+        //String afn = conf.getLayer().getActivationFunction();
+        IActivation afn = conf.getLayer().getActivationFn();
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
-            INDArray ret = helper.activate(z, conf.getLayer().getActivationFunction());
+            INDArray ret = helper.activate(z, conf.getLayer().getActivationFn());
             if (ret != null) {
                 return ret;
             }
         }
 
-        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(afn, z));
+        INDArray activation = afn.getActivation(z, training);
         return activation;
     }
 
     @Override
     public Layer transpose(){
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
     }
 
 
