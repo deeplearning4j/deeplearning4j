@@ -19,12 +19,19 @@
 package org.deeplearning4j.clustering.algorithm.condition;
 
 import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
+import org.deeplearning4j.clustering.algorithm.strategy.FixedClusterCountStrategy;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.GreaterThanOrEqual;
 
-public class FixedIterationCountCondition implements ClusteringAlgorithmCondition {
+import java.io.Serializable;
+
+public class FixedIterationCountCondition implements ClusteringAlgorithmCondition, Serializable {
 
 	private Condition	iterationCountCondition;
+
+	protected FixedIterationCountCondition() {
+		// no-op for serialization only
+	}
 
 	protected FixedIterationCountCondition(int initialClusterCount) {
 		iterationCountCondition = new GreaterThanOrEqual(initialClusterCount);

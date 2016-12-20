@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.clustering.cluster.info;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClusterInfo {
+public class ClusterInfo implements Serializable {
 
 	private double averagePointDistanceFromCenter;
 	private double maxPointDistanceFromCenter;

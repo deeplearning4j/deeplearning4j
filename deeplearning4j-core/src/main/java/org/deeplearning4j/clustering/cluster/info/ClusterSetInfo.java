@@ -23,13 +23,14 @@ import com.google.common.collect.Table;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ClusterSetInfo {
+public class ClusterSetInfo implements Serializable {
 
 	private Map<String, ClusterInfo> clustersInfos	= new HashMap<>();
 	private Table<String, String, Double>	distancesBetweenClustersCenters	= HashBasedTable.create();
