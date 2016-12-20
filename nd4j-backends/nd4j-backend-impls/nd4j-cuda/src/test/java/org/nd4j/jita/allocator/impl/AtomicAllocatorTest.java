@@ -110,8 +110,8 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testInit() throws Exception {
-        NativeOps nativeOps = new NativeOps();
-        nativeOps.initializeDevicesAndFunctions();
+        //NativeOps nativeOps = new NativeOps();
+        //nativeOps.initializeDevicesAndFunctions();
     }
 
     @Test
