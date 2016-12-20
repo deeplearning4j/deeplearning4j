@@ -117,7 +117,8 @@ This example can be run using either Lenet, or AlexNet.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
 
-------
+---------------
+
 # Saving and Loading Models
 
 Training a Network over a large volume of training data takes time. Fortunately you can save a trained model and
@@ -135,11 +136,9 @@ Demostrates saving and loading a Neural Network built with MultiLayer Network
 
 ### Saving/loading a trained model and passing it new input. 
 
-A video series includes this step. 
+Our video series demonstrates code that includes saving loading and inference. 
 
 [Our youtube channel](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
-
-https://www.youtube.com/watch?v=DRHIpeJpJDI
 
 ----------
 
@@ -157,7 +156,7 @@ Check out these examples
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossL1L2.java)
 
-## Custom Layer
+### Custom Layer
 
 Need to add a Layer with features that are not available in DeepLearning4J core? This example show where to begin. 
 
