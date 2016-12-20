@@ -12,9 +12,7 @@ import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.Clipboard;
-import org.nd4j.parameterserver.distributed.logic.Connector;
-import org.nd4j.parameterserver.distributed.logic.Shard;
+import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
@@ -66,15 +64,10 @@ public class VoidParameterServer {
 
     protected Clipboard clipboard = new Clipboard();
 
+    protected Storage storage = new WordVectorStorage();
+
 
     ////////////////////// SeqVec part
-
-    protected INDArray syn0;
-    protected INDArray syn1;
-    protected INDArray syn1Neg;
-
-    protected INDArray expTable;
-    protected INDArray negTable;
 
     protected static double MAX_EXP = 6;
 
@@ -113,23 +106,23 @@ public class VoidParameterServer {
     }
 
     protected INDArray getSyn0() {
-        return syn0;
+        return storage.getArray(WordVectorStorage.SYN_0);
     }
 
     protected INDArray getSyn1() {
-        return syn1;
+        return storage.getArray(WordVectorStorage.SYN_1);
     }
 
     protected INDArray getSyn1Neg() {
-        return syn1Neg;
+        return storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
     }
 
     protected INDArray getExpTable() {
-        return expTable;
+        return storage.getArray(WordVectorStorage.EXP_TABLE);
     }
 
     protected INDArray getNegTable() {
-        return negTable;
+        return storage.getArray(WordVectorStorage.NEGATIVE_TABLE);
     }
 
     public void init(@NonNull Configuration configuration) {
@@ -290,6 +283,10 @@ public class VoidParameterServer {
 
         log.info("Processing message: {}", message.getMessageType());
 
+        message.attachContext(configuration, transport, storage, nodeRole, shardIndex);
+        message.processMessage();
+
+        /*
         switch (message.getMessageType()) {
             // initialization message
             case 4: {
@@ -298,38 +295,30 @@ public class VoidParameterServer {
                 break;
             // share solid, propagates array among all Shard/Backup nodes
             case 5: {
-                    negTable = ((ShareSolidMessage) message).getPayload();
+              //      negTable = ((ShareSolidMessage) message).getPayload();
                 }
                 break;
             // assign
             case 6: {
                     AssignMessage assign = (AssignMessage) message;
                     if (assign.getIndex() >= 0) {
-                        syn0.getRow(assign.getIndex()).assign(assign.getValue());
+               //         syn0.getRow(assign.getIndex()).assign(assign.getValue());
                     } else {
-                        syn0.assign(assign.getValue());
+               //         syn0.assign(assign.getValue());
                     }
                 }
                 break;
             // joint vector request for specific
             case 7: {
-                    VectorRequestMessage vrm = (VectorRequestMessage) message;
-                    VectorAggregation aggregation = new VectorAggregation(vrm.getRowIndex(), (short) configuration.getNumberOfShards(), getShardIndex(), syn0.getRow(vrm.getRowIndex()).dup());
-
-                    log.info("Got request for rowIndex: {}", vrm.getRowIndex());
-
-                    clipboard.pin(aggregation);
-
-                    DistributedVectorMessage dvm = new DistributedVectorMessage(vrm.getRowIndex());
-                    transport.sendMessageToAllShards(dvm);
+                    //
                 }
                 break;
             case 20: {
                     DistributedVectorMessage dvm = (DistributedVectorMessage) message;
 
                     log.info("Got distributed request for rowIndex: {}", dvm.getRowIndex());
-                    VectorAggregation aggregation = new VectorAggregation(dvm.getRowIndex(), (short) configuration.getNumberOfShards(), getShardIndex(), syn0.getRow(dvm.getRowIndex()).dup());
-                    transport.sendMessageToAllShards(aggregation);
+              //      VectorAggregation aggregation = new VectorAggregation(dvm.getRowIndex(), (short) configuration.getNumberOfShards(), getShardIndex(), syn0.getRow(dvm.getRowIndex()).dup());
+              //      transport.sendMessageToAllShards(aggregation);
                 }
                 break;
             case 21: {
@@ -344,6 +333,7 @@ public class VoidParameterServer {
             default:
                 log.info("Unknown messageType [{}] being passed in...", message.getMessageType());
         }
+        */
     }
 
     /**
@@ -353,36 +343,9 @@ public class VoidParameterServer {
      */
     // TODO: right now we support only columnar splits over tables
     protected void initializeSeqVec(@NonNull InitializationMessage message) {
-        // protection check, we definitely don't want double spending here
-        if (syn0 == null) {
-            // we initialize only syn0/syn1/syn1neg and expTable
-            // negTable will be initalized at driver level and will be shared via message
-            Nd4j.getRandom().setSeed(message.getSeed() * (getShardIndex() + 1));
 
-            int[] shardShape = new int[]{message.getNumWords(), message.getColumnsPerShard()};
-
-            syn0 = Nd4j.rand(shardShape, 'c').subi(0.5).divi(message.getVectorLength());
-
-            if (message.isUseHs())
-                syn1 = Nd4j.create(shardShape, 'c');
-
-            if (message.isUseNeg())
-                syn1Neg = Nd4j.create(shardShape, 'c');
-
-            // we handle full exp table here
-            expTable = initExpTable(100000);
-        }
     }
 
-    protected INDArray initExpTable(int tableWidth) {
-        double[] expTable = new double[tableWidth];
-        for (int i = 0; i < expTable.length; i++) {
-            double tmp =   FastMath.exp((i / (double) expTable.length * 2 - 1) * MAX_EXP);
-            expTable[i]  = tmp / (tmp + 1.0);
-        }
-
-        return Nd4j.create(expTable);
-    }
 
     /**
      * This method takes AggregateOp, and sends them for execution over network

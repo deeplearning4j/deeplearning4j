@@ -13,4 +13,12 @@ public class VectorAggregation extends BaseAggregation {
 
         addToChunks(payload);
     }
+
+    /**
+     * This method will be started in context of executor, either Shard, Client or Backup node
+     */
+    @Override
+    public void processMessage() {
+        // TODO: to be implemented
+    }
 }

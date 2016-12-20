@@ -8,6 +8,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 
 import java.io.Serializable;
 import java.util.*;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Data
 @Slf4j
-public abstract class BaseAggregation implements VoidAggregation, Serializable {
+public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {
     protected short aggregationType = -1;
     protected short aggregationWidth;
     protected int numberOfElements;

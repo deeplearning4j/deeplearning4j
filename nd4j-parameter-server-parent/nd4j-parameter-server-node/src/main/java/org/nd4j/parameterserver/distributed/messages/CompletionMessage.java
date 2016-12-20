@@ -15,4 +15,12 @@ public class CompletionMessage extends BaseVoidMessage {
     public CompletionMessage() {
         super(10);
     }
+
+    /**
+     * This method will be started in context of executor, either Shard, Client or Backup node
+     */
+    @Override
+    public void processMessage() {
+        // TODO: to be implemented
+    }
 }

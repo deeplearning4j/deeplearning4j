@@ -17,10 +17,27 @@ public class AssignMessage extends BaseVoidMessage {
      */
     private int index;
     private double value;
+    private String key;
 
-    public AssignMessage(int index, double value) {
+    public AssignMessage(@NonNull String key, int index, double value) {
         super(6);
         this.index = index;
         this.value = value;
+        this.key = key;
+    }
+
+    /**
+     * This method assigns
+     */
+    @Override
+    public void processMessage() {
+        INDArray array = storage.getArray(key);
+        if (array != null) {
+            if (index < 0)
+                array.assign(value);
+            else
+                array.getRow(index).assign(value);
+        }
+
     }
 }

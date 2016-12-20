@@ -5,6 +5,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.io.Serializable;
@@ -19,9 +21,13 @@ public abstract class BaseVoidMessage implements VoidMessage {
     protected long nodeId;
     protected long batchId;
 
+    // these fields are used only for op invocation
     protected transient Configuration configuration;
+    protected transient Clipboard clipboard;
     protected transient Transport transport;
+    protected transient Storage storage;
     protected transient NodeRole role;
+    protected transient short shardIndex;
 
     protected BaseVoidMessage(int messageType) {
         this.messageType = messageType;
@@ -43,9 +49,10 @@ public abstract class BaseVoidMessage implements VoidMessage {
     }
 
     @Override
-    public void attachContext(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull NodeRole role) {
+    public void attachContext(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
         this.configuration = configuration;
         this.transport = transport;
+        this.storage = storage;
         this.role = role;
     }
 }

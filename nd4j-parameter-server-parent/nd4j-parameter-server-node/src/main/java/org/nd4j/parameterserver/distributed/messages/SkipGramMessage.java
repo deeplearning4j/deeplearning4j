@@ -29,4 +29,9 @@ public class SkipGramMessage extends BaseVoidMessage {
         this.points = points;
         this.codes = codes;
     }
+
+    @Override
+    public void processMessage() {
+        // TODO: to be implemented
+    }
 }

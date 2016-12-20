@@ -18,4 +18,12 @@ public class DistributedVectorMessage extends BaseVoidMessage{
         this();
         this.rowIndex = rowIndex;
     }
+
+    /**
+     * This method will be started in context of executor, either Shard, Client or Backup node
+     */
+    @Override
+    public void processMessage() {
+        // TODO: to be implemented
+    }
 }

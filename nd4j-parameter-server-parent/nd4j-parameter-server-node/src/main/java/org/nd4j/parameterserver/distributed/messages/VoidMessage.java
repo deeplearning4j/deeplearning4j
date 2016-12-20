@@ -1,10 +1,10 @@
 package org.nd4j.parameterserver.distributed.messages;
 
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.io.Serializable;
@@ -24,7 +24,13 @@ public interface VoidMessage extends Serializable {
         return (VoidMessage) SerializationUtils.deserialize(array);
     }
 
-    void attachContext(Configuration configuration, Transport transport, NodeRole role);
+    /**
+     * This method initializes message for further processing
+     */
+    void attachContext(Configuration configuration, Transport transport, Storage storage,  NodeRole role, short shardIndex);
 
-    void execute();
+    /**
+     * This method will be started in context of executor, either Shard, Client or Backup node
+     */
+    void processMessage();
 }
