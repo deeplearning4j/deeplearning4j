@@ -531,7 +531,7 @@ public class ParallelWrapper implements AutoCloseable {
         private AtomicBoolean shouldStop = new AtomicBoolean(false);
         private Exception thrownException;
         private volatile boolean useMDS = false;
-        private final String uuid = UUID.randomUUID().toString().split("-")[0];
+        private final String uuid = UUID.randomUUID().toString();
 
 
         public Trainer(int threadId, Model model, boolean useMDS) {
