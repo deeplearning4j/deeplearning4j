@@ -29,8 +29,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.slf4j.Logger;
@@ -90,56 +88,13 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         AveragingIterationListener trainerListener = new AveragingIterationListener(this);
         if (model instanceof MultiLayerNetwork) {
             Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
-            Collection<IterationListener> newListeners = new LinkedList<>();
-
-            for(IterationListener listen : listeners) {
-                if (listen instanceof StatsListener) {
-                    ((StatsListener) listen).setUpdateConfig(
-                        new DefaultStatsUpdateConfiguration.Builder()
-                            .collectHistogramsActivations(false)
-                            .collectHistogramsUpdates(false)
-                            .collectMeanUpdates(false)
-                            .collectStdevUpdates(false)
-                            .collectMeanActivations(false)
-                            .collectStdevActivations(false)
-                            .collectMeanMagnitudesUpdates(false)
-                            .build()
-                    );
-                    ((StatsListener) listen).setWorkerID("primary-model");
-                }
-                newListeners.add(listen);
-            }
-            newListeners.add(trainerListener);
+            Collection<IterationListener> newListeners = new LinkedList<>(listeners);
+            newListeners.addAll(listeners);
             ((MultiLayerNetwork) model).setListeners(newListeners);
 
         } else if (model instanceof ComputationGraph) {
             Collection<IterationListener> listeners = ((ComputationGraph) model).getListeners();
-            Collection<IterationListener> newListeners = new LinkedList<>();
-
-            for(IterationListener listen : listeners) {
-                if (listen instanceof StatsListener) {
-                    StatsListener oldStats = (StatsListener) listener;
-                    StatsListener newStats = new StatsListener(
-                        oldStats.getStorageRouter(),
-                        oldStats.getInitConfig(),
-                        new DefaultStatsUpdateConfiguration.Builder()
-                            .collectHistogramsActivations(false)
-                            .collectHistogramsUpdates(false)
-                            .collectMeanUpdates(false)
-                            .collectStdevUpdates(false)
-                            .collectMeanActivations(false)
-                            .collectStdevActivations(false)
-                            .collectMeanMagnitudesUpdates(false)
-                            .build(),
-                        oldStats.getSessionID(),
-                        "primary-model"
-                    );
-                    newListeners.add(newStats);
-                } else {
-                    newListeners.add(listen);
-                }
-            }
-
+            Collection<IterationListener> newListeners = new LinkedList<>(listeners);
             newListeners.add(trainerListener);
             ((ComputationGraph) model).setListeners(newListeners);
         }

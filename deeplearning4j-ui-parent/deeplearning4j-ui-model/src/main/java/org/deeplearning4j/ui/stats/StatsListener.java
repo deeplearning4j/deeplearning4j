@@ -51,7 +51,7 @@ public class StatsListener extends BaseStatsListener {
     }
 
     public StatsListener clone() {
-        return new StatsListener(this.getStorageRouter(), this.getInitConfig(), this.getUpdateConfig(), "", "");
+        return new StatsListener(this.getStorageRouter(), this.getInitConfig(), this.getUpdateConfig(), null, null);
     }
 
     @Override
