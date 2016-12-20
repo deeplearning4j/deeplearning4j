@@ -94,6 +94,7 @@ DataNormalization
 * **Normalizer**  Although part of  ND4J seems like it should be mentioned here
 
 -------------------------
+
 # DeepLearning4J
 
 DeepLearning4J is where you design your Neural Networks
