@@ -735,4 +735,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
         return out;
     }
+
+    @Override
+    public abstract BaseStatsListener clone();
 }
