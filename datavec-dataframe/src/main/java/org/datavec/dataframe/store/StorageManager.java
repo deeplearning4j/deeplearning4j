@@ -56,9 +56,15 @@ public class StorageManager {
 
   private static final int READER_POOL_SIZE = 4;
 
+  private static final String WINDOWS_PATH_SEPARATOR = "\\";
+
   static String separator() {
     FileSystem fileSystem = FileSystems.getDefault();
-    return fileSystem.getSeparator();
+    String separator = fileSystem.getSeparator();
+    if(WINDOWS_PATH_SEPARATOR.equals(separator)){
+      return "\\\\";  //Regex: "\\" is a single '\', and need 2 of them to be a valid regex
+    }
+    return separator;
   }
 
   /**
