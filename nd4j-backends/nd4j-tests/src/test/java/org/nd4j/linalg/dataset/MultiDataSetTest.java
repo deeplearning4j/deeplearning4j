@@ -521,7 +521,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
     @Test
     public void multiDataSetSaveLoadTest() throws IOException {
 
-        int max = 2;
+        int max = 3;
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -533,23 +533,23 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 INDArray[] lm = (numL > 0 ? new INDArray[numL] : null);
 
                 if (numF > 0) {
-                    for( int i=0; i<f.length; i++ ){
-                        f[i] = Nd4j.rand(new int[]{3,4,5});
+                    for (int i = 0; i < f.length; i++) {
+                        f[i] = Nd4j.rand(new int[]{3, 4, 5});
                     }
                 }
-                if(numL > 0){
-                    for( int i=0; i<l.length; i++ ){
-                        l[i] = Nd4j.rand(new int[]{2,3,4});
+                if (numL > 0) {
+                    for (int i = 0; i < l.length; i++) {
+                        l[i] = Nd4j.rand(new int[]{2, 3, 4});
                     }
                 }
-                if(numF > 0){
-                    for( int i=0; i<fm.length; i++ ){
-                        fm[i] = Nd4j.rand(new int[]{3,5});
+                if (numF > 0) {
+                    for (int i = 0; i < Math.min(fm.length, 2); i++) {
+                        fm[i] = Nd4j.rand(new int[]{3, 5});
                     }
                 }
-                if(numL > 0){
-                    for( int i=0; i<lm.length; i++ ){
-                        lm[i] = Nd4j.rand(new int[]{2,4});
+                if (numL > 0) {
+                    for (int i = 0; i < Math.min(lm.length, 2); i++) {
+                        lm[i] = Nd4j.rand(new int[]{2, 4});
                     }
                 }
 
