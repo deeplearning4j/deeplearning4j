@@ -1,37 +1,37 @@
 ---
-title: Artificial Intelligence, Machine Learning and Deep Learning
-layout: default
+title: 人工智能、机器学习与深度学习
+layout: cn-default
 ---
 
-# Artificial intelligence, machine learning & deep learning
+# 人工智能、机器学习与深度学习
 
-You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, which is a subset of AI.
+您可以将深度学习、机器学习、人工智能想象成一组由小到大、一个套一个的俄罗斯套娃。深度学习是机器学习的子集，而机器学习则是人工智能（AI）的子集。
 
-AI is any computer program that does something smart, broadly speaking.
+广义上讲，任何能够从事某种智能活动的计算机程序都是人工智能。
 
-It can be a pile of if-then statements or a complex statistical model. Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
+它可以是一堆if-then语句，也可以是一个复杂的统计模型。每当人工智能研究者设计出一种擅长某种任务（例如下国际象棋）的计算机程序时，许多人通常都会说“这不是真正的智能”，因为人们完全理解其算法的内部原理。所以也可以说真正的人工智能是任何计算机目前还做不到的事。;)
 
-Machine learning, as others here have said, is a subset of AI. That is, all machine learning counts as AI, but not all AI counts as machine learning. For example, symbolic logic (rules engines, expert systems and knowledge graphs) as well as evolutionary algorithms and Baysian statistics could all be described as AI, and none of them are machine learning.
+人们常说，机器学习是人工智能的子集。这意味着所有的机器学习都能算作人工智能，但并非所有人工智能都属于机器学习。例如，符号逻辑（规则引擎、专家系统和知识图谱）、进化算法和贝叶斯统计都可以称为人工智能，但它们都不属于机器学习。
 
 <p align="center">
-<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
+<a href="zh-quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event’, 'quickstart', 'click');">DEEPLEARNING4J快速入门指南</a>
 </p>
 
-The "learning" part of machine learning means that ML algorithms attempt to optimize along a certain dimension; i.e. they usually try to minimize error or maximize the likelihood of their predictions being true. This has three names: an error function, a loss function, or an objective function, because the algorithm has an objective... When someone says they are working with a machine-learning algorithm, you can get to the gist of its value by asking: What's the objective function?
+机器学习之所以包含“学习”二字，是因为机器学习算法会尝试优化一项特定的指标：它们一般会努力将预测的误差最小化，或者说将预测正确的概率最大化。这样的算法有三种名称：误差函数、损失函数、目标函数（因为这种算法有一个目标……）。如果有人说他们在用一种机器学习算法，那么只要问两个问题就能大致了解这种算法的价值：目标函数是什么？
 
-How does one minimize error? Well, one way is to build a framework that multiplies inputs in order to make guesses as to the inputs' nature. Different outputs/guesses are the product of the inputs and the algorithm. Usually, the initial guesses are quite wrong, and if you are lucky enough to have ground-truth labels pertaining to the input, you can measure how wrong your guesses are by contrasting them with the truth, and then use that error to modify your algorithm. That's what neural networks do. They keep on measuring the error and modifying their parameters until they can't achieve any less error.
+怎样将误差最小化？一种方法是构建一个算法框架，通过与输入值相乘来预测输入的性质。不同的输出/预测结果是输入值与算法的乘积。初始的预测通常错误较大，如果您有和输入值相关的实际基准标签，就可以将预测结果与基准标签进行对比，衡量误差的大小，然后依据误差来调整算法。这就是神经网络的工作方式。它们会不断衡量误差、调整自身的参数，直至误差无法继续缩小。
 
-They are, in short, an optimization algorithm. If you tune them right, they minimize their error by guessing and guessing and guessing again.
+简而言之，神经网络就是一种优化算法。如果调试得当，神经网络可以经由反复的预测来实现误差最小化。
 
-Deep learning is a subset of machine learning. Deep artificial neural networks are a set of algorithms setting new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. Deep learning is part of DeepMind's notorious AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016. A more complete explanation of neural works is [here](./neuralnet-overview).
+深度学习是机器学习的一个子集。深度人工神经网络是一类在图像识别、声音识别、推荐系统等重要问题上不断刷新准确率纪录的算法。DeepMind声名远扬的AlphaGo算法在2016年早些时候击败了前世界围棋冠军李世石，这种算法当中就包含深度学习技术。更完整的神经网络介绍请参见[此处](./neuralnet-overview)。
 
-Deep is a technical term. It refers to the number of layers in a neural network. A shallow network has one so-called *hidden layer*, and a deep network has more than one. Multiple hidden layers allow deep neural networks to learn features of the data in a hierarchy, because simple features (e.g. two pixels) recombine from one layer to the next, to form more complex features (e.g. a line).
+“深度”是一个术语。它指的是一个神经网络中的层的数量。浅层神经网络有一个所谓的*隐藏层*，而深度神经网络则不止一个隐藏层。多个隐藏层让深度神经网络能够以分层的方式学习数据的特征，因为简单特征（比如两个像素）可逐层叠加，形成更为复杂的特征（比如一条直线）。
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Introduction to Neural Networks](./neuralnet-overview)
-* [Word2Vec: Neural Embeddings for Java](./word2vec)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./linear-regression)
-* [Convolutional Networks](./convolutionalnets)
+### <a name="beginner">其他Deeplearning4j教程</a>
+* [神经网络简介](./neuralnet-overview)
+* [Word2vec：基于Java语言的神经词向量](./word2vec)
+* [受限玻尔兹曼机](./restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./cn/eigenvector)
+* [LSTM和循环网络](./cn/lstm)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络](./convolutionalnets)
