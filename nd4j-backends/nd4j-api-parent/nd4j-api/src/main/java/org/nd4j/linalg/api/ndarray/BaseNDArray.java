@@ -4591,7 +4591,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else if(isCompressed() && compressDebug)
             return "COMPRESSED ARRAY. SYSTEM PROPERTY compressdebug is true. This is to prevent auto decompression from being triggered.";
         else if(preventUnpack)
-            return "STRING UNPACK DISABLED.";
+            return "Array string unpacking is disabled.";
         return new NDArrayStrings().format(this);
 
     }
