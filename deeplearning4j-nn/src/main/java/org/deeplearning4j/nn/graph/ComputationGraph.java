@@ -2132,6 +2132,10 @@ public class ComputationGraph implements Serializable, Model {
                 throw new IllegalArgumentException("Invalid number of feature mask arrays");
             }
             for (int i = 0; i < featureMaskArrays.length; i++) {
+                if (featureMaskArrays[i] == null) {
+                    // This input doesn't have a mask, we can skip it.
+                    continue;
+                }
                 String inputName = configuration.getNetworkInputs().get(i);
 
                 //feedforward layers below a RNN layer: need the input (features) mask
@@ -2179,6 +2183,10 @@ public class ComputationGraph implements Serializable, Model {
                 throw new IllegalArgumentException("Invalid number of label mask arrays");
             }
             for (int i = 0; i < labelMaskArrays.length; i++) {
+                if (labelMaskArrays[i] == null) {
+                    // This output doesn't have a mask, we can skip it.
+                    continue;
+                }
                 String outputName = configuration.getNetworkOutputs().get(i);
                 GraphVertex v = verticesMap.get(outputName);
                 Layer ol = v.getLayer();
