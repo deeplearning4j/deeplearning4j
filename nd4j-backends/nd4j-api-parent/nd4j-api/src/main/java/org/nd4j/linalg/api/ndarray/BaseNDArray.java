@@ -795,6 +795,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        INDArray tad = doTad(index, dimension);
+        int elementWiseStride = Shape.elementWiseStride(tad.shapeInfoDataBuffer());
+        DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
+        tad.shapeInfoDataBuffer().assign(shapeInfo);
+        return tad;
+    }
+
+    private INDArray doTad(int index,int...dimension) {
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
@@ -3907,7 +3915,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //check for row/column vector and point index being 0
         if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll || (indexes.length == 2 &&
                 (isRowVector() && indexes[0] instanceof PointIndex && indexes[0].offset() == 0 && indexes[1] instanceof NDArrayIndexAll
-                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0 && indexes[0] instanceof NDArrayIndexAll)))
+                        || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0 && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
 

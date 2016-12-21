@@ -1429,7 +1429,7 @@ public class Shape {
     public static int size(IntBuffer buffer, int dimension){
         int rank = rank(buffer);
         if(dimension >= rank) throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
-        return buffer.get(1+dimension);
+        return buffer.get(1 + dimension);
     }
 
     /**
@@ -1671,6 +1671,19 @@ public class Shape {
     public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
         if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
+        buffer.put(length2 - 2, elementWiseStride);
+    }
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static void setElementWiseStride(DataBuffer buffer,int elementWiseStride) {
+        int length2 = shapeInfoLength(Shape.rank(buffer));
+        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
         buffer.put(length2 - 2, elementWiseStride);
     }
 

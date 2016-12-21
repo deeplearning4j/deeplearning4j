@@ -599,12 +599,26 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset += ArrayUtil.dotProductLong(accumOffsets,accumStrides) /  Math.max(1,numIntervals);
 
         }
-        else if(Shape.isVector(Ints.toArray(accumShape)))
+        else if(numIntervals > 0 && anyHaveStrideOne(indexes))
             this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides);
-
         else
             this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides)  / Math.max(1,numIntervals);
 
+    }
+
+
+    private boolean anyHaveStrideOne(INDArrayIndex...indexes) {
+        for(INDArrayIndex indArrayIndex : indexes)
+            if(indArrayIndex.stride() == 1)
+                return true;
+        return false;
+    }
+
+    private boolean allIndexGreatherThanZero(INDArrayIndex...indexes) {
+        for(INDArrayIndex indArrayIndex : indexes)
+            if(indArrayIndex.offset() == 0)
+                return false;
+        return true;
     }
 
 }
