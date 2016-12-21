@@ -548,24 +548,24 @@ public class KerasModel {
             else
                 layer = ((ComputationGraph)model).getLayer(layerName);
             for (String kerasParamName : weights.get(layerName).keySet()) {
-                String paramName = mapParameterName(kerasParamName);
-                INDArray paramValue = weights.get(layerName).get(kerasParamName);
+                String dl4JParamName = mapParameterName(kerasParamName);
+                INDArray kerasParamValue = weights.get(layerName).get(kerasParamName);
+                INDArray dl4jParamValue = null;
                 if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) {
-                    if (paramName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
+                    if (dl4JParamName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
                         /* Theano and TensorFlow backends store convolutional weights
                          * with a different dimensional ordering than DL4J so we need
                          * to permute them to match.
                          *
-                         * DL4J: (# outputs, # channels, # rows, # cols)
+                         * DL4J: (# outputs, # inputs, # rows, # cols)
                          */
                         switch (kerasLayer.getDimOrder()) {
                             case TENSORFLOW:
-                                /* TensorFlow convolutional weights: # rows, # cols, # channels, # outputs */
-                                paramValue = paramValue.permute(3, 2, 0, 1);
+                                /* TensorFlow convolutional weights: # rows, # cols, # inputs, # outputs */
+                                kerasParamValue = kerasParamValue.permute(3, 2, 0, 1);
                                 break;
                             case THEANO:
-                                /* Theano convolutional weights: # channels, # rows, # cols, # outputs */
-                                paramValue = paramValue.permute(3, 0, 1, 2);
+                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols */
                                 break;
                             case NONE:
                                 break;
@@ -573,89 +573,89 @@ public class KerasModel {
                                 throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
                         }
                     }
-                    layer.setParam(paramName, paramValue);
+                    dl4jParamValue = kerasParamValue;
                 } else if (layer instanceof org.deeplearning4j.nn.layers.recurrent.GravesLSTM) {
                     /* Keras stores LSTM parameters in distinct arrays (e.g., the recurrent weights
                      * are stored in four matrices: U_c, U_f, U_i, U_o) while DL4J stores them
                      * concatenated into one matrix (e.g., U = [ U_c U_f U_o U_i ]). Thus we have
                      * to map the Keras weight matrix to its corresponding DL4J weight submatrix.
                      */
+
                     if (kerasParamName.startsWith(PARAM_NAME_W)) {
-                        INDArray W = layer.getParam(paramName);
+                        dl4jParamValue = layer.getParam(dl4JParamName);
                         int nIn = ((BaseRecurrentLayer)layer.conf().getLayer()).getNIn();
                         int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
                         switch (kerasParamName) {
                             case PARAM_NAME_W_C:
-                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                                          NDArrayIndex.interval(0, nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                                          NDArrayIndex.interval(0, nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_W_F:
-                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                                          NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                                          NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_W_O:
-                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_W_I:
-                                W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
+                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
                                 break;
                         }
-                        int a = 1;
                     } else if (kerasParamName.startsWith(PARAM_NAME_U)) {
-                        INDArray U = layer.getParam(paramName);
+                        dl4jParamValue = layer.getParam(dl4JParamName);
                         int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
                         switch (kerasParamName) {
                             case PARAM_NAME_U_C:
-                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(0, nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(0, nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_U_F:
-                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_U_O:
-                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_U_I:
-                                U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                                                          NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
                                 break;
                         }
                         /* DL4J has three additional columns in its recurrent weights matrix that don't appear
                          * in Keras LSTMs. These are for peephole connections. Since Keras doesn't use them,
                          * we zero them out.
                          */
-                        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
+                        dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
                                                   NDArrayIndex.interval(4*nOut, 4*nOut+3)}, Nd4j.zeros(nOut, 3));
                     } else if (kerasParamName.startsWith(PARAM_NAME_B)) {
-                        INDArray b = layer.getParam(paramName);
+                        dl4jParamValue = layer.getParam(dl4JParamName);
                         int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
                         switch (kerasParamName) {
                             case PARAM_NAME_B_C:
-                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(0, nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(0, nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_B_F:
-                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(nOut, 2*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_B_O:
-                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
                                 break;
                             case PARAM_NAME_B_I:
-                                b.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, paramValue);
+                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
+                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
                                 break;
                         }
-                        int a = 1;
                     }
-                } else {
-                    layer.setParam(paramName, paramValue);
                 }
+                if (!layer.paramTable().keySet().contains(dl4JParamName))
+                    throw new InvalidKerasConfigurationException("Layer " + layerName + ": Keras param " + kerasParamName + " maps to unknown param " + dl4JParamName);
+                layer.setParam(dl4JParamName, dl4jParamValue);
             }
         }
         return model;
