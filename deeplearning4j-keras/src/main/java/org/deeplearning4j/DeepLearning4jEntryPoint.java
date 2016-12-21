@@ -38,8 +38,6 @@ public class DeepLearning4jEntryPoint {
             String dimOrdering
 
     ) throws IOException, InterruptedException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        logger.info("Alive");
-
         try {
             MultiLayerNetwork multiLayerNetwork;
             if ("sequential".equals(type)) {
