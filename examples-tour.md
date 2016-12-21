@@ -39,17 +39,15 @@ An example of parsing Log Data using DataVec
 
 ### MnistImagePipelineExample.java
 
-This example is from the video here
+This example is from the video below, which demonstrates the ParentPathLabelGenerator, and ImagePreProcessing scaler. 
+
 <iframe width="560" height="315" src="http://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
-
-
-The Video demonstrates ParentPathLabelGenerator, and ImagePreProcessing scaler. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/MnistImagePipelineExample.java)
 
 ### PreprocessNormalizerExample.java
 
-A nice example demonstrating pre-processing features available in DataVec.
+Here's an example demonstrating pre-processing features available in DataVec.
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/PreprocessNormalizerExample.java)
 
@@ -63,18 +61,15 @@ This example demostrates the functionality in the RecordMetaData class.
 
 -------------------
 
-# DeepLearning4J Examples
+## DeepLearning4J Examples
 
+To build a neural net, you will use either `MultiLayerNetwork`, or `ComputationGraph`. 
 
-To build a Neural Net you will use either MultiLayerNetwork, or ComputationGraph. 
-
-Both options include a  convenient Builder interface. 
-
-A few highlights from the examples are described below. 
+Both options include a convenient Builder interface. A few highlights from the examples are described below. 
 
 ### MNIST dataset of handwritten digits
 
-This has become the "hello world" of deep learning. Simple, straightforward, and focussed on a task that Neural Networks perform well on. 
+This is the "Hello World" of deep learning. Simple, straightforward, and focussed on image recognition, a task that Neural Networks do well. 
 
 ### MLPMnistSingleLayerExample.java
 
@@ -84,7 +79,7 @@ Single Layer Perceptron for recognizing digits. Note that this pulls the images 
 
 ### MLPMnistTwoLayerExample.java
 
-Two layer perceptron for MNist, showing there is more than one way to build a useful Network. 
+Two layer perceptron for MNIST, showing there is more than one way to build a useful Network. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
 
@@ -93,7 +88,6 @@ Two layer perceptron for MNist, showing there is more than one way to build a us
 FeedForward Neural Networks have a single pass from input to hidden layers to output.
 
 They can be used for a wide range of tasks depending on they are configured. Along with the image classification over Mnist data, this directory has examples demonstrating regression, classification, and anomoly detection.
-
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
 
@@ -124,11 +118,11 @@ Demonstrates saving and loading a network build using ComputationGraph,
 Demostrates saving and loading a Neural Network built with MultiLayer Network
 
 
-### Saving/loading a trained model and passing it new input. 
+### Saving/loading a trained model and passing it new input 
 
-Our video series demonstrates code that includes saving loading and inference. 
+Our video series demonstrates code that includes saving and loading models, as well as inference. 
 
-[Our youtube channel](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
+[Our YouTube channel](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
 
 ----------
 
@@ -164,14 +158,11 @@ Neural Networks for NLP? Sure enough here are the examples.
 
 Global Vectors for Word Representation are useful for detecting the relationships between words. 
 
-Our example is here.
-
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/glove/GloVeExample.java)
 
 ### Paragraph Vectors
 
-A vectorized representation of words. Describe (here.)[https://cs.stanford.edu/~quocle/paragraph_vector.pdf]
-
+A vectorized representation of words. Described [here](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 
@@ -183,27 +174,26 @@ One way to represent sentences is a sequence of words.
 
 ### Word2Vec
 
-Described (here)[https://deeplearning4j.org/word2vec.html]
+Described [here](https://deeplearning4j.org/word2vec.html)
 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
 
 -------------------------
 
-# Data Visualization
+## Data Visualization
 
 t-Distributed Stochastic Neighbor Embedding (t-SNE) is useful for data visualization. We include an example in the NLP section since word similarity visualization is a common use. 
-
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java)
 
 ------------------------
 
-# Recurrent Neural Networks
+## Recurrent Neural Networks
 
-Recurrent Neural Networks are useful for processing Sequential or time series data. 
+Recurrent Neural Networks are useful for processing sequential or time series data. 
 
-The examples folder for Recurrent Neural Networks has the following
+The examples folder for Recurrent Neural Networks has the following:
 
 ### BasicRNNExample.java
 
@@ -211,7 +201,6 @@ An RNN learns a string of characters.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/basic/BasicRNNExample.java)
 
- 
 ### GravesLSTMCharModellingExample.java
 
 Takes the complete works of Shakespeare as a sequence of characters and Trains a Neural Net to generate "Shakespeare" one character at a time.
@@ -260,28 +249,24 @@ Sentiment analysis example that classifies sentiment as positive or negative usi
 
 ---------------
 
-# Distributed Training on Spark
+## Distributed Training on Spark
 
-DeepLearning4j supports using a Spark Cluster for network training. 
-
-Here are the examples. 
+DeepLearning4j supports using a Spark Cluster for network training. Here are the examples. 
 
 ### MnistMLPExample.java
 
 An example of a Multi Layer Perceptron training on the Mnist data set of handwritten digits. 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
 
-
-
-
 ### SparkLSTMCharacterExample.java
 
 An LSTM recurrent Network in Spark. 
+
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/rnn/SparkLSTMCharacterExample.java)
 
 ---------------------
 
-# ND4J Examples
+## ND4J Examples
 
 ND4J is the Matrix processing library we have built. It can be thought of as NumPY for java. Neural Networks work by processing and updating MultiDimensional arrays of numeric values. In a typical Neural Net application you use DataVec to ingest and convert the data to numeric. Classes used would be recordreader. Once you need to pass data into a Neural Network you typically use RecordReaderDataSetIterator. REcordReaderDataSetIterator returns a DataSet object. DataSet consists of an NDArray of the input features and an NDArray of the Labels. 
 
@@ -295,11 +280,8 @@ A directory with examples for creating andmanipulating NDArrays
 
 -------------
 
-
 # Reinforcement Learning Examples
 
-Neural Networks have learned to play Space Invaders, or Doom using Reinforcement learning.  DeepLearning4J examples of Reinforcement Learning are available 
+Neural Networks have learned to play Space Invaders and Doom using Reinforcement learning. DeepLearning4J examples of Reinforcement Learning are available here: 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples)
-
-
