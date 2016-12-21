@@ -2,14 +2,13 @@ package org.deeplearning4j;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
-import org.deeplearning4j.nn.modelimport.keras.Model;
+import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.IntervalIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +37,13 @@ public class DeepLearning4jEntryPoint {
             String validationYFilePath,
             String dimOrdering
 
-    ) throws IOException, InterruptedException {
+    ) throws IOException, InterruptedException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         logger.info("Alive");
 
         try {
             MultiLayerNetwork multiLayerNetwork;
             if ("sequential".equals(type)) {
-                multiLayerNetwork = Model.importSequentialModel(modelFilePath);
+                multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(modelFilePath);
                 multiLayerNetwork.init();
             } else {
                 throw new RuntimeException("Model type unsupported! (" + type + ")");
@@ -69,14 +68,17 @@ public class DeepLearning4jEntryPoint {
                 while (begin < features.size(0)) {
                     int end = begin + batchSize;
 
+                    if(logger.isDebugEnabled()) {
+                        logger.debug("Processing batch: " + begin + " " + end);
+                    }
+
                     ndIndexes[0] = NDArrayIndex.interval(begin, end);
                     INDArray featuresBatch = features.get(ndIndexes);
-                    INDArray labelsBatch = labels.get(NDArrayIndex.interval(0, batchSize));
+                    INDArray labelsBatch = labels.get(NDArrayIndex.interval(begin, end));
                     multiLayerNetwork.fit(featuresBatch, labelsBatch);
 
                     begin += batchSize;
                 }
-
             }
 
         } catch (Throwable e) {
