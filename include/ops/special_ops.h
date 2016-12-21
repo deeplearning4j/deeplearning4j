@@ -900,13 +900,14 @@ namespace simdOps {
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer)) {
-				T max = 0;
+				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
 				int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+
 
 #pragma omp simd reduction(max:max)
 						for (int i = 0; i < length; i++) {
@@ -923,7 +924,7 @@ namespace simdOps {
 							result[i] = nd4j::math::nd4j_exp<T>(result[i]);
 						}
 
-#pragma omp simd
+#pragma omp simd reduction(+:sum)
 						for (int i = 0; i < length; i++) {
 							sum += result[i];
 						}
@@ -950,7 +951,7 @@ namespace simdOps {
 							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * resultElementWiseStride]);
 						}
 
-#pragma omp simd
+#pragma omp simd reduction(+:sum)
 						for (int i = 0; i < length; i++) {
 							sum += result[i * resultElementWiseStride];
 						}
@@ -1075,7 +1076,7 @@ namespace simdOps {
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
-				T max = 0;
+				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
@@ -1277,7 +1278,7 @@ namespace simdOps {
 				delete[] maxResultShapeBuffer;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
-				T max = 0;
+				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
