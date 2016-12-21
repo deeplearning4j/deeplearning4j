@@ -141,6 +141,7 @@ public class Nd4j {
     public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
+    public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK")==null ? false : true;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
 
