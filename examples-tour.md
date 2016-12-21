@@ -1,4 +1,4 @@
-# Survey of DeepLearning4J Examples
+# Survey of DeepLearning4j Examples
 
 We have a Github repository with many examples of DeepLearning4j functionality. Our [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
 
