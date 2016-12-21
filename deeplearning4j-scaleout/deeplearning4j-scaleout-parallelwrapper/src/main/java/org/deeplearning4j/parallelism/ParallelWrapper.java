@@ -202,10 +202,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((ComputationGraph) model).setScore(score);
-                        for(IterationListener listener : ((ComputationGraph) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
-                    } else throw new RuntimeException("MultiDataSet might be used only with ComputationGraph model");
+                    } else throw new RuntimeException("MultiDataSet must only be used with ComputationGraph model");
 
                     if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
