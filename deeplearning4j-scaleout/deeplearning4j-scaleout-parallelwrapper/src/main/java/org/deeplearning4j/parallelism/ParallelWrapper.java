@@ -50,6 +50,13 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean wasAveraged = false;
     private AtomicBoolean stopFit = new AtomicBoolean(false);
 
+    // log uncaught exceptions
+    Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+        public void uncaughtException(Thread th, Throwable ex) {
+            logger.error("Uncaught exception: " + ex);
+        }
+    };
+
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
         this.workers = workers;
@@ -64,6 +71,7 @@ public class ParallelWrapper implements AutoCloseable {
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
             zoo[cnt] = new Trainer(cnt, model);
+            zoo[cnt].setUncaughtExceptionHandler(handler);
             zoo[cnt].start();
         }
     }
@@ -102,6 +110,7 @@ public class ParallelWrapper implements AutoCloseable {
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = new Trainer(cnt, model, true);
+                zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
         } else {
@@ -202,10 +211,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
 
                         ((ComputationGraph) model).setScore(score);
-                        for(IterationListener listener : ((ComputationGraph) model).getListeners()) {
-                            listener.iterationDone(model, iterationsCounter.intValue());
-                        }
-                    } else throw new RuntimeException("MultiDataSet might be used only with ComputationGraph model");
+                    } else throw new RuntimeException("MultiDataSet must only be used with ComputationGraph model");
 
                     if (legacyAveraging &&  Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
                         for (int cnt = 0; cnt < workers; cnt++) {
@@ -237,6 +243,7 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
         }
