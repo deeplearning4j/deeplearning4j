@@ -66,8 +66,8 @@ public class DeepLearning4jEntryPoint {
                 while (begin < features.size(0)) {
                     int end = begin + batchSize;
 
-                    if(logger.isDebugEnabled()) {
-                        logger.debug("Processing batch: " + begin + " " + end);
+                    if(logger.isTraceEnabled()) {
+                        logger.trace("Processing batch: " + begin + " " + end);
                     }
 
                     ndIndexes[0] = NDArrayIndex.interval(begin, end);
