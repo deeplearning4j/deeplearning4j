@@ -63,6 +63,7 @@ import java.util.Set;
 
 import static org.nd4j.linalg.factory.Nd4j.compressDebug;
 import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
+import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
 
 
 /**
@@ -4585,10 +4586,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public String toString() {
-        if(!isCompressed())
+        if(!isCompressed() && !preventUnpack)
             return new NDArrayStrings().format(this);
         else if(isCompressed() && compressDebug)
             return "COMPRESSED ARRAY. SYSTEM PROPERTY compressdebug is true. This is to prevent auto decompression from being triggered.";
+        else if(preventUnpack)
+            return "Array string unpacking is disabled.";
         return new NDArrayStrings().format(this);
 
     }
