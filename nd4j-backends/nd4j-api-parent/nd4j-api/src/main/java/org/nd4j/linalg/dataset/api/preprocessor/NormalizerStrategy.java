@@ -26,4 +26,6 @@ interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
      * @param stats statistics of the data population
      */
     void revert(INDArray array, INDArray maskArray, S stats);
+    
+    S.Builder newStatsBuilder();
 }
