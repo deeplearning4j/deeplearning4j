@@ -50,6 +50,13 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean wasAveraged = false;
     private AtomicBoolean stopFit = new AtomicBoolean(false);
 
+    // log uncaught exceptions
+    Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+        public void uncaughtException(Thread th, Throwable ex) {
+            logger.error("Uncaught exception: " + ex);
+        }
+    };
+
     protected ParallelWrapper(Model model, int workers, int prefetchSize) {
         this.model = model;
         this.workers = workers;
@@ -64,6 +71,7 @@ public class ParallelWrapper implements AutoCloseable {
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
             zoo[cnt] = new Trainer(cnt, model);
+            zoo[cnt].setUncaughtExceptionHandler(handler);
             zoo[cnt].start();
         }
     }
@@ -102,6 +110,7 @@ public class ParallelWrapper implements AutoCloseable {
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = new Trainer(cnt, model, true);
+                zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
         } else {
@@ -234,6 +243,7 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 zoo[cnt] = new Trainer(cnt, model);
+                zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
         }
