@@ -50,10 +50,6 @@ public class DeepLearning4jEntryPoint {
             INDArray features = h5FileToNDArray(trainFeaturesFile);
             INDArray labels = h5FileToNDArray(trainLabelsFile);
 
-            // ugly hack to pass shape problems
-            // TODO: handle th vs tf
-            features = features.reshape(60000, 1, 28, 28);
-
             INDArrayIndex[] ndIndexes = new INDArrayIndex[features.shape().length];
             for (int i = 0; i < ndIndexes.length; i++) {
                 ndIndexes[i] = NDArrayIndex.all();
