@@ -69,12 +69,14 @@ public class ParallelWrapper implements AutoCloseable {
             ((ComputationGraph) this.model).getUpdater();
         }
 
+        /*
         zoo = new Trainer[workers];
         for (int cnt = 0; cnt < workers; cnt++) {
             zoo[cnt] = new Trainer(cnt, model);
             zoo[cnt].setUncaughtExceptionHandler(handler);
             zoo[cnt].start();
         }
+        */
     }
 
     @Override
