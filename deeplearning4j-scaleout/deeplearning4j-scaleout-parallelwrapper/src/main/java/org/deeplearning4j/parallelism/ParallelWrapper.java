@@ -619,6 +619,8 @@ public class ParallelWrapper implements AutoCloseable {
         @Override
         public void run() {
             try {
+                logger.info("Started thread {}", threadId);
+
                 // we create fresh network, with the same configuration, as initially created by user
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
