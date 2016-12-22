@@ -552,7 +552,6 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
-            logger.info("Feeding MultiDataSet for thread {}", threadId);
             running.incrementAndGet();
             queueMDS.add(dataSet);
         }
@@ -621,8 +620,6 @@ public class ParallelWrapper implements AutoCloseable {
         @Override
         public void run() {
             try {
-                logger.info("Started thread {}", threadId);
-
                 // we create fresh network, with the same configuration, as initially created by user
                 // however, we don't need clone or anything here
                 if (originalModel instanceof MultiLayerNetwork) {
@@ -667,8 +664,6 @@ public class ParallelWrapper implements AutoCloseable {
                 }
 
                 if (!useMDS) {
-                    logger.info("regular shouldStop: {} for thread {}", shouldStop.get(), threadId);
-
                     while (!shouldStop.get()) {
                         DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
@@ -685,12 +680,10 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     }
                 } else {
-                    logger.info("MDS shouldStop: {} for thread {}", shouldStop.get(), threadId);
                     // loop for MultiDataSet
                     while (!shouldStop.get()) {
                         MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
-                            logger.info("Starting training on thread {}", threadId);
                             if (replicatedModel instanceof ComputationGraph) {
                                 ((ComputationGraph) replicatedModel).fit(dataSet);
                             } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
@@ -699,7 +692,6 @@ public class ParallelWrapper implements AutoCloseable {
                                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
                             running.decrementAndGet();
-                            logger.info("Finished training on thread {}", threadId);
                         }
                     }
                 }
