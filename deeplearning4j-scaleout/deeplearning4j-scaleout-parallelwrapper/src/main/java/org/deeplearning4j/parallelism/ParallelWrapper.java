@@ -550,6 +550,7 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+            logger.info("Feeding MultiDataSet for thread {}", threadId);
             running.incrementAndGet();
             queueMDS.add(dataSet);
         }
