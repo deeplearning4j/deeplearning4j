@@ -6,27 +6,23 @@ DeepLearning4J is a java based toolkit for building, training and deploying Neur
  
 DeepLearning4J has the following sub-projects. 
 
-* **DataVec** for Data Ingestion Normalization and Transformation
-* **DeepLearning4j** provides tools to build MultiLayerNetworks and Computation graphs
-* **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPU or GPU. 
-* **Examples,** DeepLearning4J has a Github Repo of working examples.
-* **Keras Model Import** to support the migration from Python and Keras to DeepLearning4J and Java. 
+* **DataVec** performs data ingestion, normalization and transformation into feature vectors
+* **DeepLearning4j** provides tools to configure neural networks and build computation graphs
+* **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
+* **DL4J-Examples,** contains working examples for classification and clustering of images, time series and text.
+* **Keras Model Import** helps import trained models from Python and Keras to DeepLearning4J and Java. 
 
 ---------------------------
 
 ## DataVec
 
-Ingesting cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of Data analysis. This work is not exciting but it is necessary.
-
-DataVec is our toolkit for that process.
+Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets.
 
 ### DataVec Examples
 
-There are DataVec examples in our examples repo on github. 
-[here](https://github.com/deeplearning4j/dl4j-examples) .
+There are DataVec examples in our examples repo on Github [here](https://github.com/deeplearning4j/dl4j-examples).
 
-A descriptive summary of many of the examples is 
-[here](examples-tour)
+A descriptive summary of many of the examples is [here](examples-tour).
 
 ### Github Repo
 
@@ -36,11 +32,9 @@ The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec).
 
 DataVec JavaDoc is [here](./datavecdoc/). 
 
-
 ### DataVec overview
 
 Neural Networks process multi Dimensional arrays of numeric data. Getting your data from a CSV file, or a directory of images serialized into Numeric Arrays is the job of DataVec. 
-
 
 ### DataVec Commonly used classes
 
