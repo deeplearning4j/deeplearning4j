@@ -682,6 +682,7 @@ public class ParallelWrapper implements AutoCloseable {
                     while (!shouldStop.get()) {
                         MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
+                            logger.info("Starting training on thread {}", threadId);
                             if (replicatedModel instanceof ComputationGraph) {
                                 ((ComputationGraph) replicatedModel).fit(dataSet);
                             } else throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
@@ -690,6 +691,7 @@ public class ParallelWrapper implements AutoCloseable {
                                 ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
                             running.decrementAndGet();
+                            logger.info("Finished training on thread {}", threadId);
                         }
                     }
                 }
