@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 
@@ -75,6 +74,7 @@ public class DeepLearning4jEntryPoint {
                 }
             }
 
+            logger.info("Learning model finished");
         } catch (Throwable e) {
             logger.error("Error while handling request!", e);
             throw e;
