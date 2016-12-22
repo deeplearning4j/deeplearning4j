@@ -8,9 +8,12 @@ DeepLearning4J has the following sub-projects.
 
 * **DataVec** performs data ingestion, normalization and transformation into feature vectors
 * **DeepLearning4j** provides tools to configure neural networks and build computation graphs
-* **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
-* **DL4J-Examples,** contains working examples for classification and clustering of images, time series and text.
 * **Keras Model Import** helps import trained models from Python and Keras to DeepLearning4J and Java. 
+* **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
+* **DL4J-Examples** contains working examples for classification and clustering of images, time series and text.
+* **ScalNet** is a Scala wrapper for Deeplearning4j inspired by Keras. Runs on multi-GPUs with Spark.
+* **RL4J** implements Deep Q Learning, A3C and other reinforcement learning algorithms for the JVM.
+* **Arbiter** helps search the hyperparameter space to find the best neural net configuration.
 
 ---------------------------
 
