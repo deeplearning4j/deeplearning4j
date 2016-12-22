@@ -74,8 +74,9 @@
 
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native-platform</artifactId>
+      <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
+      <classifier>linux-x86_64</classifier>
     </dependency>
   </dependencies>
 
@@ -134,14 +135,6 @@
       </executions>
     </plugin>
 
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-compiler-plugin</artifactId>
-      <configuration>
-        <source>1.7</source>
-        <target>1.7</target>
-      </configuration>
-    </plugin>
     </plugins>
   </build>
 </project>
