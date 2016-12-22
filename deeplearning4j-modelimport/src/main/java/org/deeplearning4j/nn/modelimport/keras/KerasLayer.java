@@ -262,6 +262,15 @@ public class KerasLayer {
     }
 
     /**
+     * Override input shape and dim from next layer config
+     */
+    public void overrideLayerShape (Map<String,Object> nextLayerConfig) {
+        if (getDimOrder().equals(DimOrder.NONE) && !getDimOrderFromConfig(nextLayerConfig).equals(DimOrder.NONE)) {
+            this.inputShape = getInputShapeFromConfig(this.layerConfig, getDimOrderFromConfig(nextLayerConfig));
+        }
+    }
+
+    /**
      * Add layer to list of inbound layers.
      *
      * @param layer
@@ -639,6 +648,13 @@ public class KerasLayer {
          * Theano convolutional input:     # channels, # rows, # cols
          */
         if (dimOrder == DimOrder.THEANO && inputShape.length == 3 && this.dl4jLayer instanceof ConvolutionLayer) {
+            int numChannels = inputShape[0];
+            inputShape[0] = inputShape[1];
+            inputShape[1] = inputShape[2];
+            inputShape[2] = numChannels;
+        }
+        //passed in dim order is not none and the dim order from the layer config is missing
+        if (!dimOrder.equals(DimOrder.NONE) && inputShape.length == 3 && this.getDimOrder().equals(DimOrder.NONE)) {
             int numChannels = inputShape[0];
             inputShape[0] = inputShape[1];
             inputShape[1] = inputShape[2];
