@@ -1,6 +1,6 @@
 ---
 title: 
-layout: zh-default
+layout: cn-default
 ---
 
 # 使用Word2Vec ,DBNS和RNTNs来进行电影评论情感分析
