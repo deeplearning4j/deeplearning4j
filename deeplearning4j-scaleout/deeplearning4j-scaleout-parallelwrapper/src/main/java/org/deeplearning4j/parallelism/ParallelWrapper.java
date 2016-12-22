@@ -665,6 +665,8 @@ public class ParallelWrapper implements AutoCloseable {
                 }
 
                 if (!useMDS) {
+                    logger.info("regular shouldStop: {} for thread {}", shouldStop.get(), threadId);
+
                     while (!shouldStop.get()) {
                         DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                         if (dataSet != null) {
@@ -681,7 +683,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     }
                 } else {
-                    logger.info("shouldStop: {} for thread {}", shouldStop.get(), threadId);
+                    logger.info("MDS shouldStop: {} for thread {}", shouldStop.get(), threadId);
                     // loop for MultiDataSet
                     while (!shouldStop.get()) {
                         MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
