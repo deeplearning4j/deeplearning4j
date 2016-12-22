@@ -412,11 +412,16 @@ public class KerasModel {
             throws UnsupportedOperationException, UnsupportedKerasConfigurationException {
         if (!this.inputLayerNames.contains(inputLayerName))
             throw new UnsupportedOperationException("Cannot infer input type for non-input layer " + inputLayerName);
-        int[] inputShape = this.layers.get(inputLayerName).getInputShape();
+
         InputType inputType = null;
         List<String> layerNameQueue = new ArrayList<String>(this.inputToOutput.get(inputLayerName));
+
+        KerasLayer nextLayer = this.layers.get(layerNameQueue.get(0));
+        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
+        int[] inputShape = this.layers.get(inputLayerName).getInputShape();
+
         while (inputType == null && !layerNameQueue.isEmpty()) {
-            KerasLayer nextLayer = this.layers.get(layerNameQueue.remove(0));
+            nextLayer = this.layers.get(layerNameQueue.remove(0));
             if (nextLayer.isDl4jLayer()) {
                 Layer dl4jLayer = nextLayer.getDl4jLayer();
                 if (dl4jLayer instanceof BaseRecurrentLayer) {
@@ -439,6 +444,10 @@ public class KerasModel {
         if (inputType == null)
             throw new UnsupportedKerasConfigurationException("Could not infer InputType for input layer " + inputLayerName);
         return inputType;
+    }
+
+    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
+        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
     }
 
     /**
