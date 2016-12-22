@@ -2,7 +2,7 @@
 
 DeepLearning4J is a java based toolkit for building, training and deploying Neural Networks. 
 
-### DeepLearning4J Components
+### DeepLearning4j Components
  
 DeepLearning4J has the following sub-projects. 
 
@@ -16,7 +16,18 @@ DeepLearning4J has the following sub-projects.
 
 ## DataVec
 
-Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets.
+Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets. 
+
+### Github Repo
+
+The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). Here is how the repo breaks down.
+
+* [datavec-dataframe](https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe) : DataVec's built-in equivalent of Pandas
+* [datavec-api](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api) : rules for preprocessing data and defining data pipelines.
+* [datavec-data](https://github.com/deeplearning4j/DataVec/tree/master/datavec-data) : knows how to understand audio, video, images, text data types
+* [datavec-spark](https://github.com/deeplearning4j/DataVec/tree/master/datavec-spark) : runs distributed data pipelines on Spark 
+* [datavec-local](https://github.com/deeplearning4j/DataVec/tree/master/datavec-local) : runs Datavec standalone on desktop. For inference. 
+* [datavec-camel](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel) : connects to external Camel components. Camel allows you to define routes and integrates with many data sources. DataVec-camel sends data to datavec as a destination from whichever Camel source you specify.
 
 ### DataVec Examples
 
@@ -24,19 +35,15 @@ There are DataVec examples in our examples repo on Github [here](https://github.
 
 A descriptive summary of many of the examples is [here](examples-tour).
 
-### Github Repo
-
-The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec).
-
 ### JavaDoc
 
 DataVec JavaDoc is [here](./datavecdoc/). 
 
 ### DataVec overview
 
-Neural Networks process multi Dimensional arrays of numeric data. Getting your data from a CSV file, or a directory of images serialized into Numeric Arrays is the job of DataVec. 
+Neural Networks process multi-dimensional arrays of numerical data. Getting your data from a CSV file, or a directory of images serialized into numeric arrays is the job of DataVec. 
 
-### DataVec Commonly used classes
+### DataVec: Commonly used classes
 
 Here's a list of some important DataVec classes:
 
@@ -94,11 +101,21 @@ DeepLearning4J is where you design your Neural Networks
 
 ### Github Repo
 
-The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeplearning4j).
+The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeplearning4j). Here's how the repo breaks down.
+
+* [deeplearning4j-core](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core) : datasetiterators and everything you need to run dl4j on the desktop. 
+* [deeplearning4j-cuda](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-cuda) : cudnn and anything cuda specific.
+* [deeplearning4j-graph](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-graph) : graph processing for deepwalk.
+* [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport): this imports neural net models from Keras, which in turn can import models from major frameworks like Theano, Tensorflow, Caffe and CNTK
+* [deeplearning4j-nlp-parent](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent): text analytics for English, Japanese and Korean as well as external tokenizers and plugins to toolsets like like UIMA, which itself performs dependency parsing, semantic role labeling, relation extraction and QA systems. We integrate with toolsets like UIKMA to pass stuff to word2vec.
+* [nlp](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent/deeplearning4j-nlp): Word2vec, doc2vec and other tools.
+* [deeplearning4j-nn](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn) : a pared-down neural net DSL with fewer dependencies. Configures multilayer nets with a builder pattern for setting hyperparameters.
+* [deeplearning4j-scaleout](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout) : AWS provisioning, parallelwrapper desktop parameter averaging (single box 96 cores) so you don't have to run spark if you don't want to; one for parameter server and the other not; streaming is kafka and spark streaming; spark is spark training and nlp on spark: dist. word2vec
+* [deeplearning4j-ui-parent](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui-parent) : neural net training heuristics and visualization
 
 ### JavaDoc 
 
-The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/)
+The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/).
 
 ### DeepLearning4J Examples
 
