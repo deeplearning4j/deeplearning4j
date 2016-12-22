@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,6 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author raver119@gmail.com
  */
 @Data
+@NoArgsConstructor
 public class DotAggregation extends BaseAggregation{
 
     public DotAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray scalar) {
@@ -35,6 +37,7 @@ public class DotAggregation extends BaseAggregation{
     @Override
     public void processMessage() {
         // we just pin this message, because it's tracked anyway
-        clipboard.pin(this);
+        if (clipboard.isTracking(taskId))
+            clipboard.pin(this);
     }
 }

@@ -33,6 +33,10 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
     protected transient AtomicInteger chunksCounter = new AtomicInteger(1);
     protected transient Map<Short, INDArray> chunks = new TreeMap<>();
 
+    protected BaseAggregation() {
+
+    }
+
     public BaseAggregation(long taskId, short aggregationWidth, short shardIndex) {
         if (aggregationWidth < 2)
             throw new ND4JIllegalStateException("Aggregations smaller then 2 elements make no sense");

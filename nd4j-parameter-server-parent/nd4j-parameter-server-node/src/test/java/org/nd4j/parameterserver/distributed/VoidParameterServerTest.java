@@ -10,6 +10,8 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -359,6 +361,25 @@ public class VoidParameterServerTest {
         log.info("Joint vector: {}", jointVector);
 
         assertEquals(exp, jointVector);
+
+
+        /**
+         * now we're going to test real SkipGram round
+         */
+        // first, we're setting data to something predefined
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,0, 0.0));
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,1, 1.0));
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,2, 2.0));
+
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,0, 0.0));
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,1, 1.0));
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,2, 2.0));
+        }
+
+        DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2});
+        shards[0].handleMessage(ddot);
+
 
         for (int t = 0; t < threads.length; t++) {
             threads[t].join();

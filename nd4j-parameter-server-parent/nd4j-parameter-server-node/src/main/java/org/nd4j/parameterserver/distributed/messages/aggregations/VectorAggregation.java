@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -7,8 +8,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 @Slf4j
 public class VectorAggregation extends BaseAggregation {
+
 
     public VectorAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray array) {
         super(taskId, aggregationWidth, shardIndex);
