@@ -216,4 +216,4 @@ Arbiter helps you search the hyperparameter space to find the best tuning and ar
 The Github repository is [here](https://github.com/deeplearning4j/Arbiter).
 
 * [arbiter-core](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-core) : Aribter-core searches the hyperparameter space with algorithms like grid search. Provides a GUI.
-* [arbiter-deeplearning4j] : Arbiter can talk to DL4J models. When you do model search, you need to be able to run the model. This pilots the model and finds the best model.
+* [arbiter-deeplearning4j](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-deeplearning4j) : Arbiter can talk to DL4J models. When you do model search, you need to be able to run the model. This pilots the model and finds the best model.
