@@ -1,8 +1,6 @@
 ---
 title: Deeplearning4j是什么？
 layout: cn-default
-redirect_from: /zh-index
----
 ---
 
 # Deeplearning4j是什么？
