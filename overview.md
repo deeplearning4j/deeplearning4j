@@ -1,4 +1,4 @@
-# What is DeepLearning4J
+# What Is DeepLearning4j?
 
 DeepLearning4J is a java based toolkit for building, training and deploying Neural Networks. 
 
@@ -133,35 +133,7 @@ A descriptive summary of many of the examples is [here](examples-tour).
 * **ComputationGraphConfiguration.GraphBuilder** Builder interface for Computation Graph configuration
 * **UiServer** Adds a web based Gui to view training parameter progress and configuration of Network
 
------------
-
-# ND4J
-
-ND4J is the numerical processing library for DeepLearning4J, a tensor library, the JVM's answer to Numpy.  
-
-### Github Repo
-
-The ND4J Github repo is [here](http://github.com/deeplearning4j/nd4j).
-
-### JavaDoc 
-
-The ND4J JavaDoc is available [here](http://nd4j.org/doc/).
-
-### ND4J Examples
-
-There are ND4J examples [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples).
-
-### ND4J Frequently Used Classes
-
-You may not use some of these classes directly, but when you configure a Neural Network. Behind the scenes the configurations you set for OptimizationAlgorithm, Updater, and LossFunction are all done in ND4J.
-
-* **DataSetPreProcessor** tools for Normalizing an image or numerical data
-* **BaseTransformOp** Activation functions, tanh, sigmoid, relu, Softmax ...
-* **GradientUpdater** Stochastic Gradient Descent, AdaGrad, Adam, Nesterovs ..
-
--------------------------
-
-# Model Import
+## Model Import
 
 If you have worked with Keras the Python Library for Deeplearning and would like to import a trained model, or a model configuration into DeepLearning4J see our Model Import feature. 
 
@@ -182,3 +154,63 @@ We will add examples [here](https://github.com/deeplearning4j/dl4j-examples/)
 Here's a video showing how to import of a Keras model to DL4J:
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+
+-----------
+
+## ND4J
+
+ND4J is the numerical processing library for DeepLearning4J, a tensor library, the JVM's answer to Numpy.  
+
+### Github Repo
+
+The ND4J Github repo is [here](http://github.com/deeplearning4j/nd4j). ND4J is a DSL for handling n-dimensional arrays (NDArrays).
+
+* [nd4j-parameter-server-parent](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-parameter-server-parent) : a robust parameter server for distributed neural net training using Aeron.
+* [nd4j-backends](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends) : hardware specific backends the optimize on GPUs and CPUs.
+
+### JavaDoc 
+
+The ND4J JavaDoc is available [here](http://nd4j.org/doc/).
+
+### ND4J Examples
+
+There are ND4J examples [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples).
+
+### ND4J Frequently Used Classes
+
+You may not use some of these classes directly, but when you configure a Neural Network. Behind the scenes the configurations you set for OptimizationAlgorithm, Updater, and LossFunction are all done in ND4J.
+
+* **DataSetPreProcessor** tools for Normalizing an image or numerical data
+* **BaseTransformOp** Activation functions, tanh, sigmoid, relu, Softmax ...
+* **GradientUpdater** Stochastic Gradient Descent, AdaGrad, Adam, Nesterovs ..
+
+-------------------------
+
+## ScalNet
+
+ScalNet is Keras for Scala. It's a Scala wrapper for Deeplearning4j that can run Spark on multi-GPUs.
+
+### Github Repo
+
+* [ScalNet on Github](https://github.com/deeplearning4j/ScalNet)
+
+## RL4J 
+
+RL4J is a library and environment for for Deep Q learning, A3C and other algorithms implemented in Java and integrated with DL4J and ND4J. 
+
+### Github Repo
+
+* [RL4J](https://github.com/deeplearning4j/rl4j)
+* [Gym integration](https://github.com/deeplearning4j/rl4j/tree/master/rl4j-gym)
+* [Doom with RL4J](https://github.com/deeplearning4j/rl4j/tree/master/rl4j-doom)
+
+## Arbiter
+
+Arbiter helps you search the hyperparameter space to find the best tuning and architecture for a neural net. This is important because finding the right architecture and hyperparamters is a very large combinatorial problem. The winning ImageNet teams at corporate labs like Microsoft are searching through hyperparameters to surface 150-layer networks like ResNet.
+
+### Github Repo
+
+The Github repository is [here](https://github.com/deeplearning4j/Arbiter).
+
+* [arbiter-core](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-core) : Aribter-core searches the hyperparameter space with algorithms like grid search. Provides a GUI.
+* [arbiter-deeplearning4j] : Arbiter can talk to DL4J models. When you do model search, you need to be able to run the model. This pilots the model and finds the best model.
