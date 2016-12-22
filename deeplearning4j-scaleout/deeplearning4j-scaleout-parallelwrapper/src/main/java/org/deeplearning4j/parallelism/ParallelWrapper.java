@@ -17,6 +17,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,6 +130,9 @@ public class ParallelWrapper implements AutoCloseable {
 
         while (iterator.hasNext() && !stopFit.get()) {
             MultiDataSet dataSet = iterator.next();
+
+            if (dataSet == null)
+                throw new ND4JIllegalStateException("You can't have NULL as MultiDataSet");
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
@@ -259,6 +263,9 @@ public class ParallelWrapper implements AutoCloseable {
         while (iterator.hasNext() && !stopFit.get()) {
             whiles++;
             DataSet dataSet = iterator.next();
+
+            if (dataSet == null)
+                throw new ND4JIllegalStateException("You can't have NULL as DataSet");
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
