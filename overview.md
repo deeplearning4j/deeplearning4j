@@ -25,7 +25,7 @@ Ingesting, cleaning, joining, scaling, normalizing and transforming data are job
 
 The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). Here is how the repo breaks down.
 
-* [datavec-dataframe](https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe) : DataVec's built-in equivalent of Pandas
+* [datavec-dataframe](https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe) : DataVec's built-in equivalent of Pandas Dataframe
 * [datavec-api](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api) : rules for preprocessing data and defining data pipelines.
 * [datavec-data](https://github.com/deeplearning4j/DataVec/tree/master/datavec-data) : knows how to understand audio, video, images, text data types
 * [datavec-spark](https://github.com/deeplearning4j/DataVec/tree/master/datavec-spark) : runs distributed data pipelines on Spark 
