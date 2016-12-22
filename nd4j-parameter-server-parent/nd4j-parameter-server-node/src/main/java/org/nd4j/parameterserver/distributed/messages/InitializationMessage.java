@@ -64,8 +64,12 @@ public class InitializationMessage extends BaseVoidMessage {
 
 
             storage.setArray(WordVectorStorage.SYN_0, syn0);
-            storage.setArray(WordVectorStorage.SYN_1, syn1);
-            storage.setArray(WordVectorStorage.SYN_1_NEGATIVE, syn1Neg);
+
+            if (useHs)
+                storage.setArray(WordVectorStorage.SYN_1, syn1);
+            if (useNeg)
+                storage.setArray(WordVectorStorage.SYN_1_NEGATIVE, syn1Neg);
+
             storage.setArray(WordVectorStorage.EXP_TABLE, expTable);
         }
     }

@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
@@ -298,7 +299,7 @@ public class VoidParameterServerTest {
 
         // now we'll check passing for negTable, but please note - we're not sending it right now
         INDArray negTable = Nd4j.create(100000).assign(12.0f);
-        ShareSolidMessage negMessage = new ShareSolidMessage(negTable);
+        ShareSolidMessage negMessage = new ShareSolidMessage(WordVectorStorage.NEGATIVE_TABLE, negTable, false);
 
         for (int t = 0; t < threads.length; t++) {
             shards[t].handleMessage(negMessage);
@@ -310,7 +311,7 @@ public class VoidParameterServerTest {
 
         // now we assign each row to something
         for (int t = 0; t < threads.length; t++) {
-            shards[t].handleMessage(new AssignMessage(1, (double) t));
+            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,1, (double) t));
 
             assertEquals(Nd4j.create(message.getColumnsPerShard()).assign((double) t), shards[t].getSyn0().getRow(1));
         }
@@ -350,6 +351,7 @@ public class VoidParameterServerTest {
         }
 
         // and at this moment, Shard_0 should contain aggregated vector for us
+        assertEquals(true, shards[0].clipboard.isTracking(1L));
         assertEquals(true, shards[0].clipboard.isReady(1L));
 
         INDArray jointVector = shards[0].clipboard.nextCandidate().getAccumulatedResult();

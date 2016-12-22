@@ -283,7 +283,7 @@ public class VoidParameterServer {
 
         log.info("Processing message: {}", message.getMessageType());
 
-        message.attachContext(configuration, transport, storage, nodeRole, shardIndex);
+        message.attachContext(configuration, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();
 
         /*

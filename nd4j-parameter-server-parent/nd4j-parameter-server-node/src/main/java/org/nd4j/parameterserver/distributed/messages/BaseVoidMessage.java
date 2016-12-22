@@ -49,10 +49,12 @@ public abstract class BaseVoidMessage implements VoidMessage {
     }
 
     @Override
-    public void attachContext(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+    public void attachContext(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
         this.configuration = configuration;
+        this.clipboard = clipboard;
         this.transport = transport;
         this.storage = storage;
         this.role = role;
+        this.shardIndex = shardIndex;
     }
 }

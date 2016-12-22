@@ -9,7 +9,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author raver119@gmail.com
  */
 @Data
-@Builder
 @NoArgsConstructor
 public class AssignMessage extends BaseVoidMessage {
     /**

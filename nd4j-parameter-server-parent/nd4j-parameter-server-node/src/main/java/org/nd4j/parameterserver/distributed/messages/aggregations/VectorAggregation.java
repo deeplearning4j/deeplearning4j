@@ -25,7 +25,7 @@ public class VectorAggregation extends BaseAggregation {
         if (clipboard.isTracking(this.getTaskId())) {
             clipboard.pin(this);
         } else {
-            log.info("Skipping vectors. Shard: {}; ", getShardIndex());
+            log.info("Skipping vectors. Shard: {}; ", shardIndex);
         }
     }
 }

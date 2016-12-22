@@ -21,7 +21,7 @@ public abstract class BaseStorage implements Storage {
     }
 
     @Override
-    public void setArray(@NonNull Integer key, INDArray array) {
+    public void setArray(@NonNull Integer key, @NonNull INDArray array) {
         storage.put(key, array);
     }
 

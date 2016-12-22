@@ -37,7 +37,7 @@ public class VectorRequestMessage extends BaseVoidMessage {
 
         clipboard.pin(aggregation);
 
-        DistributedVectorMessage dvm = new DistributedVectorMessage(rowIndex);
+        DistributedVectorMessage dvm = new DistributedVectorMessage(WordVectorStorage.SYN_0, rowIndex);
         transport.sendMessageToAllShards(dvm);
     }
 }
