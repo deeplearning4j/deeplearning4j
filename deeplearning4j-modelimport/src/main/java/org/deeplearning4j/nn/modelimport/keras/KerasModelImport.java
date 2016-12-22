@@ -183,7 +183,7 @@ public class KerasModelImport {
     public static ComputationGraph importKerasModelAndWeights(String modelJsonFilename, String weightsHdf5Filename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasModelImport archive = new KerasModelImport(modelJsonFilename, weightsHdf5Filename);
-        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
+        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_MODEL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(archive.getModelJson())
