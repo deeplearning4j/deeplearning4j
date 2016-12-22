@@ -17344,7 +17344,7 @@ and (orientation : landscape)
 .banner .container-fluid
 {
     position: relative;
-    top: 50%;
+    top: 60%;
     -webkit-transform: translateY(-50%);
          -o-transform: translateY(-50%);
             transform: translateY(-50%);
