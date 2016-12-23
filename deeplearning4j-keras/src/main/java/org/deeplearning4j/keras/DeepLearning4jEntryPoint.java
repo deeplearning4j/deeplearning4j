@@ -1,4 +1,4 @@
-package org.deeplearning4j;
+package org.deeplearning4j.keras;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;

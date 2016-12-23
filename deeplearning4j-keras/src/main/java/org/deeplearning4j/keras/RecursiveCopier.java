@@ -1,4 +1,4 @@
-package org.deeplearning4j;
+package org.deeplearning4j.keras;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 

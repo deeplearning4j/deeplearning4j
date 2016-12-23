@@ -1,4 +1,4 @@
-package org.deeplearning4j;
+package org.deeplearning4j.keras;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
