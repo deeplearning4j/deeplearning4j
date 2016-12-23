@@ -1,6 +1,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -25,6 +26,7 @@ public class TestJSON extends BaseNd4jTest{
     }
 
     @Test
+    @Ignore
     public void TestReadWrite() {
         INDArray origArr = Nd4j.rand('c',10,10).muli(100); //since we write only two decimal points..
         NdArrayJSONWriter.write(origArr,"someArr.json");

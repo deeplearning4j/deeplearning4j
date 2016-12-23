@@ -795,11 +795,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        INDArray tad = doTad(index, dimension);
-        int elementWiseStride = Shape.elementWiseStride(tad.shapeInfoDataBuffer());
-        DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
-        tad.shapeInfoDataBuffer().assign(shapeInfo);
-        return tad;
+        INDArray toTad = doTad(index,dimension);
+      /*  DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
+        int eWS = Shape.elementWiseStride(toTad.shapeInfoDataBuffer());
+        toTad.shapeInfoDataBuffer().assign(shapeInfo);
+        int length2 = Shape.shapeInfoLength(Shape.rank(shapeInfo));
+        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
+        toTad.shapeInfoDataBuffer().put(length2 - 2, eWS);*/
+        return toTad;
     }
 
     private INDArray doTad(int index,int...dimension) {
@@ -820,9 +823,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if(dimension.length == 1){
-            if(dimension[0] == 0 && isColumnVector()){
+            if(dimension[0] == 0 && isColumnVector()) {
                 return this.transpose();
-            } else if(dimension[0] == 1 && isRowVector()){
+            } else if(dimension[0] == 1 && isRowVector()) {
                 return this;
             }
         }

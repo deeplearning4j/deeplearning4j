@@ -1683,7 +1683,7 @@ public class Shape {
      */
     public static void setElementWiseStride(DataBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(Shape.rank(buffer));
-        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
+        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
         buffer.put(length2 - 2, elementWiseStride);
     }
 
