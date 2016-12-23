@@ -8,18 +8,14 @@
     <version>0.7.2-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.deeplearning4j</groupId>
   <artifactId>deeplearning4j-keras</artifactId>
-  <version>0.7.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>DL4J Keras support</name>
   <description>DL4J as a backend for Keras</description>
-  <url>http://maven.apache.org</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <dl4j.version>0.7.2-SNAPSHOT</dl4j.version>
     <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
     <exec-maven-plugin.version>1.4.0</exec-maven-plugin.version>
   </properties>
@@ -33,7 +29,7 @@
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-modelimport</artifactId>
-      <version>${dl4j.version}</version>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
@@ -45,7 +41,7 @@
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
-      <version>${dl4j.version}</version>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
@@ -63,7 +59,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
