@@ -796,6 +796,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        INDArray toTad = doTad(index,dimension);
+      /*  DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
+        int eWS = Shape.elementWiseStride(toTad.shapeInfoDataBuffer());
+        toTad.shapeInfoDataBuffer().assign(shapeInfo);
+        int length2 = Shape.shapeInfoLength(Shape.rank(shapeInfo));
+        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
+        toTad.shapeInfoDataBuffer().put(length2 - 2, eWS);*/
+        return toTad;
+    }
+
+    private INDArray doTad(int index,int...dimension) {
         if(dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
@@ -813,9 +824,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if(dimension.length == 1){
-            if(dimension[0] == 0 && isColumnVector()){
+            if(dimension[0] == 0 && isColumnVector()) {
                 return this.transpose();
-            } else if(dimension[0] == 1 && isRowVector()){
+            } else if(dimension[0] == 1 && isRowVector()) {
                 return this;
             }
         }
@@ -3905,7 +3916,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
-        if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll)
+        //check for row/column vector and point index being 0
+        if(indexes.length == 1 && indexes[0] instanceof  NDArrayIndexAll || (indexes.length == 2 &&
+                (isRowVector() && indexes[0] instanceof PointIndex && indexes[0].offset() == 0 && indexes[1] instanceof NDArrayIndexAll
+                        || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0 && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
 
