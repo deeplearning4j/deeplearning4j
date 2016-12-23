@@ -12,8 +12,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -22,43 +20,34 @@ import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 @Slf4j
 public class DeepLearning4jEntryPoint {
 
-    public void fit(
-            String modelFilePath,
-            String type,
-            String trainFeaturesFile,
-            String trainLabelsFile,
-            int batchSize,
-            long nbEpoch,
-            String validationXFilePath,
-            String validationYFilePath,
-            String dimOrdering
+    public void fit(EntryPointFitParameters entryPointFitParameters)
+            throws IOException, InterruptedException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
-    ) throws IOException, InterruptedException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         try {
             MultiLayerNetwork multiLayerNetwork;
-            if ("sequential".equals(type)) {
-                multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(modelFilePath);
+            if ("sequential".equals(entryPointFitParameters.getType())) {
+                multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(entryPointFitParameters.getModelFilePath());
                 multiLayerNetwork.init();
             } else {
-                throw new RuntimeException("Model type unsupported! (" + type + ")");
+                throw new RuntimeException("Model type unsupported! (" + entryPointFitParameters.getType() + ")");
             }
 
-            INDArray features = h5FileToNDArray(trainFeaturesFile);
-            INDArray labels = h5FileToNDArray(trainLabelsFile);
+            INDArray features = h5FileToNDArray(entryPointFitParameters.getTrainFeaturesFile());
+            INDArray labels = h5FileToNDArray(entryPointFitParameters.getTrainLabelsFile());
 
             INDArrayIndex[] ndIndexes = new INDArrayIndex[features.shape().length];
             for (int i = 0; i < ndIndexes.length; i++) {
                 ndIndexes[i] = NDArrayIndex.all();
             }
 
-            for (int i = 0; i < nbEpoch; i++) {
+            for (int i = 0; i < entryPointFitParameters.getNbEpoch(); i++) {
                 log.info("Fitting: " + i);
 
                 int begin = 0;
                 while (begin < features.size(0)) {
-                    int end = begin + batchSize;
+                    int end = begin + entryPointFitParameters.getBatchSize();
 
-                    if(log.isTraceEnabled()) {
+                    if (log.isTraceEnabled()) {
                         log.trace("Processing batch: " + begin + " " + end);
                     }
 
@@ -67,7 +56,7 @@ public class DeepLearning4jEntryPoint {
                     INDArray labelsBatch = labels.get(NDArrayIndex.interval(begin, end));
                     multiLayerNetwork.fit(featuresBatch, labelsBatch);
 
-                    begin += batchSize;
+                    begin += entryPointFitParameters.getBatchSize();
                 }
             }
 
