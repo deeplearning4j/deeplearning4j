@@ -548,18 +548,41 @@ public class KerasModel {
             throws InvalidKerasConfigurationException {
         /* TODO: how might this break?
          * - mismatch between layer/parameter names?
+         * If a computational graph dense connected layers W,b are stored separately not under one name
+         * Better to do this backwards - from the layers to the weights?
          */
         for (String layerName : weights.keySet()) {
-            KerasLayer kerasLayer = kerasLayers.get(layerName);
             org.deeplearning4j.nn.api.Layer layer = null;
-            if (model instanceof MultiLayerNetwork)
-                layer = ((MultiLayerNetwork)model).getLayer(layerName);
-            else
-                layer = ((ComputationGraph)model).getLayer(layerName);
+            KerasLayer kerasLayer = kerasLayers.get(layerName);
+            if (model instanceof MultiLayerNetwork) {
+                layer = ((MultiLayerNetwork) model).getLayer(layerName);
+            }
+            else {
+                if (kerasLayer!=null) {
+                    layer = ((ComputationGraph) model).getLayer(layerName);
+
+                }
+                else {
+                    String layerNameMod;
+                    layerNameMod = layerName.replaceAll("_(W|b)$","");
+                    layer = ((ComputationGraph) model).getLayer(layerNameMod);
+                }
+            }
+
             for (String kerasParamName : weights.get(layerName).keySet()) {
-                String dl4JParamName = mapParameterName(kerasParamName);
                 INDArray kerasParamValue = weights.get(layerName).get(kerasParamName);
+                String dl4JParamName;
                 INDArray dl4jParamValue = null;
+                if (!kerasParamName.equals("")) {
+                    dl4JParamName = mapParameterName(kerasParamName);
+                }
+                else {
+                    //remove _W and _b and map
+                    String[] parts = layerName.split("_");
+                    kerasParamName = parts[parts.length-1];
+                    dl4JParamName = mapParameterName(kerasParamName);
+                    dl4jParamValue = kerasParamValue;
+                }
                 if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) {
                     if (dl4JParamName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
                         /* Theano and TensorFlow backends store convolutional weights
