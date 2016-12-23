@@ -6,10 +6,10 @@ public class RecursiveCopier {
 
     private final INDArray output;
     private final float[] input;
-    private final long[] shape;
+    private final int[] shape;
     private int inputIdx = 0;
 
-    public RecursiveCopier(INDArray output, float[] input, long[] shape) {
+    public RecursiveCopier(INDArray output, float[] input, int[] shape) {
         this.output = output;
         this.input = input;
         this.shape = shape;

@@ -1,5 +1,6 @@
 package org.deeplearning4j.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,13 +19,8 @@ import java.io.IOException;
 
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 
+@Slf4j
 public class DeepLearning4jEntryPoint {
-
-    private static final Logger logger = LoggerFactory.getLogger(DeepLearning4jEntryPoint.class);
-
-    public DeepLearning4jEntryPoint() {
-
-    }
 
     public void fit(
             String modelFilePath,
@@ -55,14 +52,14 @@ public class DeepLearning4jEntryPoint {
             }
 
             for (int i = 0; i < nbEpoch; i++) {
-                logger.info("Fitting: " + i);
+                log.info("Fitting: " + i);
 
                 int begin = 0;
                 while (begin < features.size(0)) {
                     int end = begin + batchSize;
 
-                    if(logger.isTraceEnabled()) {
-                        logger.trace("Processing batch: " + begin + " " + end);
+                    if(log.isTraceEnabled()) {
+                        log.trace("Processing batch: " + begin + " " + end);
                     }
 
                     ndIndexes[0] = NDArrayIndex.interval(begin, end);
@@ -74,9 +71,9 @@ public class DeepLearning4jEntryPoint {
                 }
             }
 
-            logger.info("Learning model finished");
+            log.info("Learning model finished");
         } catch (Throwable e) {
-            logger.error("Error while handling request!", e);
+            log.error("Error while handling request!", e);
             throw e;
         }
     }
@@ -85,11 +82,11 @@ public class DeepLearning4jEntryPoint {
         hdf5.H5File h5File = new hdf5.H5File();
         h5File.openFile(inputFilePath, H5F_ACC_RDONLY);
         hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
-        long[] shape = extractShape(dataSet);
-        long totalSize = mulArray(shape);
+        int[] shape = extractShape(dataSet);
+        long totalSize = ArrayUtil.prodLong(shape);
         float[] dataBuffer = readFromDataSet(dataSet, (int) totalSize);
 
-        INDArray input = Nd4j.create(toInt(shape));
+        INDArray input = Nd4j.create(shape);
         new RecursiveCopier(input, dataBuffer, shape).copy();
 
         h5File.close();
@@ -105,20 +102,12 @@ public class DeepLearning4jEntryPoint {
         return dataBuffer;
     }
 
-    private long mulArray(long[] shape) {
-        long retVal = 1L;
-        for (int i = 0; i < shape.length; i++) {
-            retVal *= shape[i];
-        }
-        return retVal;
-    }
-
-    private long[] extractShape(hdf5.DataSet dataSet) {
+    private int[] extractShape(hdf5.DataSet dataSet) {
         hdf5.DataSpace space = dataSet.getSpace();
         int nbDims = space.getSimpleExtentNdims();
         long[] shape = new long[nbDims];
         space.getSimpleExtentDims(shape);
-        return shape;
+        return toInt(shape);
     }
 
     private int[] toInt(long[] array) {
