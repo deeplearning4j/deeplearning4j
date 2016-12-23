@@ -480,6 +480,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                         if (match > 0)
                             throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
+                        }
+                }
+                break;
+            case INF_PANIC: {
+                    if (op.z() != null && !(op instanceof MatchCondition)) {
+                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isInfinite());
+                        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
+                    }
+                }
+                break;
+            case ANY_PANIC: {
+                    if (op.z() != null && !(op instanceof MatchCondition)) {
+                        MatchCondition condition = new MatchCondition(op.z(), Conditions.isNan());
+                        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+                        if (match > 0)
+                            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s)");
 
                         condition = new MatchCondition(op.z(), Conditions.isInfinite());
                         match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
