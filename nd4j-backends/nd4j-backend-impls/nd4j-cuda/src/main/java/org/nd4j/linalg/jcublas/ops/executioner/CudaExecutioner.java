@@ -95,6 +95,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -207,6 +209,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected INDArray naiveExec(Accumulation op, int... dimension) {
         long st = profilingHookIn(op);
         INDArray ret = op.z();
+
+        validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -533,6 +537,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++)
@@ -583,6 +589,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
 
         checkForCompression(op);
+
+        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -781,6 +789,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -887,6 +897,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
 
         checkForCompression(op);
+
+        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1017,6 +1029,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
 
         checkForCompression(op);
+
+        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1453,6 +1467,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -1568,6 +1584,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         // this is special case for assign
@@ -1593,14 +1611,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+        CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         // special temp array for IsMax along dimension
         INDArray ret = null;
 
-        Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
-        Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : null;
+        Pointer x = allocator.getPointer(op.x(), context);
+        Pointer xShapeInfo = allocator.getPointer(op.x().shapeInfoDataBuffer(), context);
+        Pointer extraArgs = op.extraArgs() != null ? allocator.getPointer(op.extraArgsDataBuff(), context) : null;
 
 
         Pointer hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
@@ -1637,14 +1655,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             ret = Nd4j.zeros(retShape);
 
             // FIXME: this maybe misleading use of this particular pointer
-            hostYShapeInfo = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context);
+            hostYShapeInfo = allocator.getPointer(ret.shapeInfoDataBuffer(), context);
 
             //dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-            DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
-            dimensionDevPointer = AtomicAllocator.getInstance().getPointer(dimensionBuffer, context);
-            dimensionHostPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
+            DataBuffer dimensionBuffer = allocator.getConstantBuffer(dimension);
+            dimensionDevPointer = allocator.getPointer(dimensionBuffer, context);
+            dimensionHostPointer = allocator.getHostPointer(dimensionBuffer);
 
-            retPointer = AtomicAllocator.getInstance().getPointer(ret, context);
+            retPointer = allocator.getPointer(ret, context);
         }
 
         Pointer hostTadShapeInfo = null;
@@ -1666,16 +1684,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[]{1});
 
                 hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
-                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+                devTadShapeInfo = allocator.getPointer(tadBuffers.getFirst(), context);
 
                 hostMaxTadShapeInfo = AddressRetriever.retrieveHostPointer(tadMaxBuffers.getFirst());
-                devMaxTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadMaxBuffers.getFirst(), context);
+                devMaxTadShapeInfo = allocator.getPointer(tadMaxBuffers.getFirst(), context);
 
                 DataBuffer offsets = tadBuffers.getSecond();
-                devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
+                devTadOffsets = offsets == null ? null : allocator.getPointer(offsets, context);
 
                 DataBuffer maxOffsets = tadMaxBuffers.getSecond();
-                devMaxTadOffsets = maxOffsets == null ? null : AtomicAllocator.getInstance().getPointer(maxOffsets, context);
+                devMaxTadOffsets = maxOffsets == null ? null : allocator.getPointer(maxOffsets, context);
             } else {
                 tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
@@ -1683,17 +1701,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
                 DataBuffer offsets = tadBuffers.getSecond();
-                devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
+                devTadOffsets = offsets == null ? null : allocator.getPointer(offsets, context);
             }
         }
 
-        Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
-        Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
+        Pointer z = allocator.getPointer(op.z(), context);
+        Pointer zShapeInfo = allocator.getPointer(op.z().shapeInfoDataBuffer(), context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
-                AtomicAllocator.getInstance().getDeviceIdPointer(),        // 2
+                allocator.getDeviceIdPointer(),        // 2
                 context.getBufferAllocation(),      // 3
                 context.getBufferReduction(),   // 4
                 context.getBufferScalar(),      // 5
@@ -1713,8 +1731,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         if(op.y() != null) {
-            Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
-            Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
+            Pointer y = allocator.getPointer(op.y(), context);
+            Pointer yShapeInfo = allocator.getPointer(op.y().shapeInfoDataBuffer(), context);
 
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.x().elementWiseStride() >=1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
@@ -2174,6 +2192,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(RandomOp op, Random rng) {
         long st = profilingHookIn(op);
+
+        checkForCompression(op);
+
+        validateDataType(Nd4j.dataType(), op);
 
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");

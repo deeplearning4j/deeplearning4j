@@ -88,6 +88,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
+        validateDataType(Nd4j.dataType(), op);
+
         Arrays.sort(dimension);
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -198,6 +200,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
+
+        validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -459,6 +463,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             long st = profilingHookIn(op);
 
+            validateDataType(Nd4j.dataType(), op);
+
             if (op.getDimension() != null) {
                 invoke(op, op.getDimension());
                 return;
@@ -526,6 +532,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     private void exec(TransformOp op) {
         long st = 0;
+
+        validateDataType(Nd4j.dataType(), op);
 
         PointerPointer dummy = new PointerPointer(4);
 
@@ -659,6 +667,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         Arrays.sort(dimension);
 
+        validateDataType(Nd4j.dataType(), op);
+
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension) + " contains element that higher then rank of op.X: ["+ op.x().rank()+"]");
@@ -722,6 +732,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             long st = profilingHookIn(op);
+
+            validateDataType(Nd4j.dataType(), op);
+
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.setFinalResult((int) loop.execIndexReduceScalarDouble(
@@ -749,6 +762,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             long st = profilingHookIn(op);
+
+            validateDataType(Nd4j.dataType(), op);
 
             PointerPointer dummy = new PointerPointer(new Pointer[] {null});
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -1067,6 +1082,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException("You should use one of NativeRandom classes for NativeOperations execution");
 
         long st = profilingHookIn(op);
+
+        validateDataType(Nd4j.dataType(), op);
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
