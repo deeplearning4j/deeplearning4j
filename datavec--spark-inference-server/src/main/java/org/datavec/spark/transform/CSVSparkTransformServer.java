@@ -60,6 +60,13 @@ public class CSVSparkTransformServer {
             }
         })));
 
+        routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
+            try {
+                return ok(Json.toJson(transform.toArray(request().body().as(CSVRecord.class))));
+            } catch (Exception e) {
+                return internalServerError();
+            }
+        })));
         Server.forRouter( routingDsl.build(), Mode.DEV, port);
 
 

@@ -3,18 +3,40 @@ package org.datavec.spark.transform;
 import lombok.AllArgsConstructor;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
+import org.datavec.common.RecordConverter;
+import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.CSVRecord;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.serde.base64.Nd4jBase64;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
- * CSVSpark Transform runs the actual {@link TransformProcess}
+ * CSVSpark Transform runs
+ * the actual {@link TransformProcess}
  *
  * @author Adan Gibson
  */
 @AllArgsConstructor
 public class CSVSparkTransform {
     private TransformProcess transformProcess;
+
+
+    /**
+     * Convert a raw record via
+     * the {@link TransformProcess}
+     * to a base 64ed ndarray
+     * @param record the record to convert
+     * @return teh base 64ed ndarray
+     * @throws IOException
+     */
+    public Base64NDArrayBody toArray(CSVRecord record) throws IOException {
+        List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
+        List<Writable> finalRecord = transformProcess.execute(record2);
+        INDArray convert = RecordConverter.toArray(finalRecord);
+        return new Base64NDArrayBody(Nd4jBase64.base64String(convert));
+    }
 
     /**
      * Runs the transform process
