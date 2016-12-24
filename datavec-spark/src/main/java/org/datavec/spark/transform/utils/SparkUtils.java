@@ -209,8 +209,8 @@ public class SparkUtils {
         for(List<Writable> list : writables){
             boolean first = true;
             for(Writable w : list){
-                sb.append(w.toString());
                 if(!first) sb.append(delim);
+                sb.append(w.toString());
                 first = false;
             }
             sb.append("\n");
@@ -221,17 +221,16 @@ public class SparkUtils {
     /**
      * Register the DataVec writable classes for Kryo
      */
-    public static void registerKryoClasses(SparkConf conf){
-        List<Class<?>> classes = Arrays.asList((Class<?>)
-                        BooleanWritable.class,
+    public static void registerKryoClasses(SparkConf conf) {
+        List<Class<?>> classes = Arrays.<Class<?>>asList(
+                BooleanWritable.class,
                 ByteWritable.class,
                 DoubleWritable.class,
                 FloatWritable.class,
                 IntWritable.class,
                 LongWritable.class,
                 NullWritable.class,
-                Text.class
-        );
+                Text.class);
 
         conf.registerKryoClasses((Class<?>[])classes.toArray());
     }

@@ -350,11 +350,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 if (useSpecialPreProcessCifar) {
                     INDArray uChannel = data.getFeatures().tensorAlongDimension(1, new int[] {0,2,3});
                     INDArray vChannel = data.getFeatures().tensorAlongDimension(2, new int[] {0,2,3});
-                    uTempMean = uChannel.mean(new int[] {0,2,3}).getDouble(0);
+                    uTempMean = uChannel.meanNumber().doubleValue();
                     // TODO INDArray.var result is incorrect based on dimensions passed in thus using manual
                     uStd += varManual(uChannel, uTempMean);
                     uMean += uTempMean;
-                    vTempMean = vChannel.mean(new int[] {0,2,3}).getDouble(0);
+                    vTempMean = vChannel.meanNumber().doubleValue();
                     vStd += varManual(vChannel, vTempMean);
                     vMean += vTempMean;
                     data.setFeatures(data.getFeatureMatrix().div(255));
