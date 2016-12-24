@@ -526,6 +526,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (op.y() != null && op.y().data().dataType() != expectedType)
             throw new ND4JIllegalStateException("op.Y dataType is ["+ op.y().data().dataType() +"] instead of expected [" + expectedType + "]");
+
+        DataBuffer extraz = op.extraArgsDataBuff();
+        if (extraz != null && extraz.dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Extras dataType is ["+ extraz.dataType() +"] instead of expected [" + expectedType + "]");
+
     }
 
     public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
