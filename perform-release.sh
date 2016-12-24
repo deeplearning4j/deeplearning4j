@@ -24,9 +24,9 @@ sed -i "s/<dl4j.version>.*<\/dl4j.version>/<dl4j.version>$RELEASE_VERSION<\/dl4j
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
 
 source change-scala-versions.sh 2.10
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -Dmaven.test.skip -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
 source change-scala-versions.sh 2.11
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -Dmaven.test.skip -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
 
 source change-scala-versions.sh 2.10
 git commit -a -m "Update to version $RELEASE_VERSION"
