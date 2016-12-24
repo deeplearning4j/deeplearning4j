@@ -32,6 +32,7 @@
         <module>datavec-camel</module>
         <module>datavec-dataframe</module>
         <module>datavec-local</module>
+        <module>datavec--spark-inference-server</module>
     </modules>
     <name>DataVec</name>
 
@@ -53,6 +54,8 @@
     </developers>
 
     <properties>
+        <jcommander.version>1.27</jcommander.version>
+        <play.version>2.4.6</play.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.7</slf4j.version>
         <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
