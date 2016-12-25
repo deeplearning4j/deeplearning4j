@@ -266,7 +266,7 @@ public class OperationProfilerTests {
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNaNPanic2() throws Exception {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
 
         INDArray a = Nd4j.create(new float[]{1f, 2f, 3f, Float.POSITIVE_INFINITY});
 
@@ -275,7 +275,7 @@ public class OperationProfilerTests {
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNaNPanic3() throws Exception {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
         INDArray a = Nd4j.create(new float[]{1f, 2f, 3f, Float.NEGATIVE_INFINITY});
 

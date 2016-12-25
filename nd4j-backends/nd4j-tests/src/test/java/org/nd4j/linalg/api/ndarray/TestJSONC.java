@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,12 +19,15 @@ import java.nio.file.Paths;
  * Created by susaneraly on 6/18/16.
  */
 @RunWith(Parameterized.class)
+@Ignore
 public class TestJSONC extends BaseNd4jTest{
     public TestJSONC(Nd4jBackend backend) {
         super(backend);
     }
 
     @Test
+    @Ignore
+
     public void TestReadWrite() {
         INDArray origArr = Nd4j.rand('c',10,10).muli(100); //since we write only two decimal points..
         NdArrayJSONWriter.write(origArr,"someArr.json");
@@ -43,6 +47,8 @@ public class TestJSONC extends BaseNd4jTest{
         }
     }
     @Test
+    @Ignore
+
     public void TestReadWriteSimple() {
         INDArray origArr = Nd4j.rand(1,1).muli(100); //since we write only two decimal points..
         NdArrayJSONWriter.write(origArr,"someArr.json");
@@ -61,6 +67,7 @@ public class TestJSONC extends BaseNd4jTest{
         }
     }
     @Test
+    @Ignore
     public void TestReadWriteNd() {
         INDArray origArr = Nd4j.rand(13,2,11,3,7,19).muli(100); //since we write only two decimal points..
         NdArrayJSONWriter.write(origArr,"someArr.json");

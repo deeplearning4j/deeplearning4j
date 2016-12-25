@@ -12,6 +12,11 @@ public class NdArrayJSONWriter {
     private NdArrayJSONWriter() {
     }
 
+    /**
+     *
+     * @param thisnD
+     * @param filePath
+     */
     public static void write(INDArray thisnD, String filePath) {
         //TO DO: Add precision support in toString
         //TO DO: Write to file one line at time

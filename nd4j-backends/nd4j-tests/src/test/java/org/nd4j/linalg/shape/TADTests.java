@@ -43,7 +43,6 @@ public class TADTests extends BaseNd4jTest {
         char[] order = new char[]{'c','f'};
         int[] dim_e = new int[]{0, 2};
         int[] dim_x = new int[]{1, 3};
-
         List<int[]> dim_3 = Arrays.asList(new int[]{0, 2, 3}, new int[]{0, 1, 2}, new int[]{1, 2, 3}, new int[]{0, 1, 3});
 
 
@@ -57,12 +56,10 @@ public class TADTests extends BaseNd4jTest {
 
                     DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
                     DataBuffer tadShape_J = array.tensorAlongDimension(0, shape).shapeInfoDataBuffer();
-
                     log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
                     log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
                     System.out.println();
-
-                    assertEquals(true, compareShapes(tadShape_N, tadShape_J));
+                    assertEquals(tadShape_J,tadShape_N);
                 }
             }
         }

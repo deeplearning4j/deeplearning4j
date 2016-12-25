@@ -35,31 +35,10 @@ public class CrashTest extends BaseNd4jTest {
         super(backend);
     }
 
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 10;
     private static final boolean[] paramsA = new boolean[] {true, false};
     private static final boolean[] paramsB = new boolean[] {true, false};
 
-    @Test
-    public void testArrays1() {
-        System.out.println("arrays 1");
-        INDArray x = Nd4j.create(1024, 64);
-        INDArray y = Nd4j.create(64, 1024);
-
-        for(int i = 0; i < ITERATIONS; i++) {
-            op(x, y, i);
-        }
-    }
-
-    @Test
-    public void testArrays2() {
-        System.out.println("arrays 2");
-        INDArray x = Nd4j.create(1024, 64, 'f');
-        INDArray y = Nd4j.create(64, 1024, 'f');
-
-        for(int i = 0; i < ITERATIONS; i++) {
-            op(x, y, i);
-        }
-    }
 
     /**
      * tensorAlongDimension() produces shapeInfo without EWS defined
@@ -71,7 +50,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for(int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            int slice = RandomUtils.nextInt(0, x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
@@ -83,7 +62,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(new int[] {64, 64, 1024}, 'f');
 
         for(int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            int slice = RandomUtils.nextInt(0, x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
