@@ -2,16 +2,23 @@ package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * @author raver119@gmail.com
  */
-@Data
-@NoArgsConstructor
+@Slf4j
 public class DotAggregation extends BaseAggregation{
+
+    protected DotAggregation() {
+        super();
+    }
 
     public DotAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray scalar) {
         super(taskId, aggregationWidth, shardIndex);
@@ -36,8 +43,13 @@ public class DotAggregation extends BaseAggregation{
      */
     @Override
     public void processMessage() {
-        // we just pin this message, because it's tracked anyway
-        if (clipboard.isTracking(taskId))
-            clipboard.pin(this);
+        // since our computations are symmetric - we aggregate dot everywhere
+        if (chunks == null) {
+            chunks = new TreeMap<>();
+            chunksCounter = new AtomicInteger(1);
+            addToChunks(payload);
+        }
+
+        clipboard.pin(this);
     }
 }

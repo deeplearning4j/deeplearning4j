@@ -378,7 +378,28 @@ public class VoidParameterServerTest {
         }
 
         DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2});
-        shards[0].handleMessage(ddot);
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].handleMessage(ddot);
+        }
+
+        Thread.sleep(100);
+
+        for (int t = threads.length - 1; t >= 0; t--) {
+            VoidMessage msg;
+            while ((msg = shards[t].getTransport().takeMessage()) != null) {
+                shards[t].handleMessage(msg);
+            }
+        }
+
+
+        // at this moment ot should be caclulated everywhere
+        exp = Nd4j.create(new double[]{0.0, 30.0, 120.0});
+        for (int t = 0; t< threads.length; t++) {
+            assertEquals(true, shards[t].clipboard.isReady(2L));
+            DotAggregation dot = (DotAggregation) shards[t].clipboard.unpin(2L);
+            INDArray aggregated = dot.getAccumulatedResult();
+            assertEquals(exp, aggregated);
+        }
 
 
         for (int t = 0; t < threads.length; t++) {

@@ -8,10 +8,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author raver119@gmail.com
  */
-@NoArgsConstructor
 @Slf4j
 public class VectorAggregation extends BaseAggregation {
 
+    protected VectorAggregation() {
+        super();
+    }
 
     public VectorAggregation(long taskId, short aggregationWidth, short shardIndex, INDArray array) {
         super(taskId, aggregationWidth, shardIndex);

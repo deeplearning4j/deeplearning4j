@@ -1,7 +1,9 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
@@ -17,27 +19,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author raver119@gmail.com
  */
-@Data
 @Slf4j
 public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {
-    protected short aggregationType = -1;
-    protected short aggregationWidth;
-    protected int numberOfElements;
-    protected short shardIndex;
-    protected Long taskId;
+    @Getter @Setter protected short aggregationType = -1;
+    @Getter @Setter protected short aggregationWidth;
+    @Getter @Setter protected int numberOfElements;
+    @Getter protected short shardIndex;
+    @Getter @Setter protected Long taskId;
 
 
-    protected INDArray payload;
+    @Getter @Setter protected INDArray payload;
 
     // transient part
-    protected transient AtomicInteger chunksCounter = new AtomicInteger(1);
-    protected transient Map<Short, INDArray> chunks = new TreeMap<>();
+    @Getter protected transient AtomicInteger chunksCounter;
+    @Getter protected transient Map<Short, INDArray> chunks;
 
     protected BaseAggregation() {
-
+        chunksCounter = new AtomicInteger(1);
+        chunks = new TreeMap<>();
     }
 
-    public BaseAggregation(long taskId, short aggregationWidth, short shardIndex) {
+    protected BaseAggregation(long taskId, short aggregationWidth, short shardIndex) {
+        this();
         if (aggregationWidth < 2)
             throw new ND4JIllegalStateException("Aggregations smaller then 2 elements make no sense");
 
@@ -82,6 +85,7 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
     @Override
     public int getMissingChunks() {
+        log.info("ChunksCounter: {}", chunksCounter);
         return aggregationWidth - chunksCounter.get();
     }
 
