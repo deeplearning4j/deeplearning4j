@@ -1,85 +1,65 @@
 ---
-title: The Data You Need For Deep Learning
-layout: default
+title: 深度学习所需的数据
+layout: cn-default
 ---
 
-# The Data You Need For Deep Learning
+# 深度学习所需的数据
 
-The minimum requirements to successfully apply deep learning depends on the problem you’re trying to solve. In contrast to static, 
-benchmark datasets like MNIST and CIFAR-10, real-world data is messy, varied and evolving, and that is the data practical deep learning 
-solutions must deal with. 
+成功应用深度学习的最低数据要求取决于您想要解决什么问题。与MNIST和CIFAR-10等基准数据集不同，现实世界中的数据比较杂乱、各有差异且不断演变，而应用型深度学习解决方案必须处理这样的数据。 
 
-![Alt text](./img/dl-workflow-cats.png) 
+![Alt text](../img/dl-workflow-cats.png) 
 
-## Types of Data
+## 数据类型
 
-Deep learning can be applied to any data type. The data types you work with, and the data you gather, will depend on the problem you’re 
-trying to solve. 
+深度学习可以应用于任何类型的数据。具体的数据类型和需要收集的数据取决于您想要解决的问题。 
 
 
-1. **Sound** (Voice Recognition)
-2. **Text** (Classifying Reviews)
-3. **Images** (Computer Vision)
-4. **Time Series** (Sensor Data, Web Activity)
-5. **Video** (Motion Detection)
+1. **声音**（语音识别）
+2. **文本**（评价分类）
+3. **图像**（计算机视觉）
+4. **时间序列**（传感器数据、网页活动）
+5. **视频**（动作检测）
 
-## Use Cases
+## 应用案例
 
-Deep learning can solve almost any problem of machine perception, including classifying data , clustering it, or making predictions about
-it.
+深度学习几乎可以解决任何机器感知方面的问题，包括数据的分类、聚类及预测。
 
-* Classification: This image represents a horse; this email looks like spam; this transaction is fraudulent
-* Clustering: These two sounds are similar. This document is probably what user X is looking for
-* Predictions: Given their web log activity, Customer A looks like they are going to stop using your service
+* 分类：这幅图像是一匹马；这封电子邮件看起来像是垃圾邮件；这笔交易是欺诈
+* 聚类：聚类与分类有些相似。这份文档大概是用户X在找的文件
+* 预测：根据网页日志活动判断，客户A有可能会停止使用您的服务
 
-Deep learning is best applied to unstructured data like images, video, sound or text. An image is just a blob of pixels, a message is 
-just a blob of text. This data is not organized in a typical, relational database by rows and columns. That makes it more difficult to 
-specify its features manually. 
+深度学习应用于图像、视频、声音、文本等非结构化数据的效果最好。一幅图像就是一团像素，一条消息就是一堆文本。这些数据并未以行和列的方式组织起来，没有形成一个典型的关系数据库，因此人工指定这些数据的特征会比较困难。 
 
-Common use cases for deep learning include sentiment analysis, classifying images, predictive analytics, recommendation systems, anomaly 
-detection and more. 
+深度学习的常见应用包括情感分析、图像分类、预测分析、推荐系统、异常检测等。 
 
-If you are not sure whether deep learning makes sense for your use case, please [get in touch](https://skymind.io/contact).
+如果不清楚深度学习是否适合您的应用领域，请[与我们联系](https://skymind.io/contact)。
 
-## Data Attributes
+## 数据属性
 
-For deep learning to succeed, your data needs to have certain characteristics.
+若要成功应用深度学习，您的数据就需要具备一些特定属性。
 
-### Relevancy
+### 相关性
 
-The data you use to train your neural net must be directly relevant to your problem; that is, it must resemble as much as possible the 
-real-world data you hope to process. Neural networks are born as blank slates, and they only learn what you teach them. If you want them 
-to solve a problem involving certain kinds of data, like CCTV video, then you have to train them on CCTV video, or something similar to 
-it. The training data should resemble the real-world data that they will classify in production.
+用于定型神经网络的数据必须与问题直接相关，即定型数据必须与用户希望处理的实际数据尽可能相似。神经网络在诞生之初都是白纸一张，它们只会学习您教授的信息。如果您想要让神经网络解决的问题与某些特定类型数据相关，例如闭路电视视频，那就必须用闭路电视视频或者其他类似的数据来定型网络。定型数据应当与网络在投入生产后将要分类的实际数据保持相似。
 
-### Proper Classification
+### 正确分类
 
-If a client wants to build a deep-learning solution that classifies data, then they need to have a labeled dataset. That is, someone 
-needs to apply labels to the raw data: “This image is a flower, that image is a panda.” With time and tuning, this training dataset can 
-teach a neural network to classify new images it has not seen before.
+如果客户想要构建一种对数据进行分类的深度学习解决方案，那么就需要一个已标记的数据集，即有人需要为原始数据添加标签：“这幅图像是一朵花，那幅图像是一只熊猫。”投入一定的时间并加以调试，这样的定型数据集就能教会神经网络如何对从未见过的图像进行分类。
 
-### Formatting
+### 格式化
 
-Neural networks eat vectors of data and spit out decisions about those vectors. All data needs to be vectorized, and the vectors should 
-be the same length when they enter the neural net. To get vectors of the same length, it's helpful to have, say, images of the same size 
-(the same height and width). So sometimes you need to resize the images. This is called data pre-processing. We provide a tool called 
-[DataVec](http://deeplearning4j.org/datavec) for that.
+神经网络“吃进”向量形式的数据，“吐出”有关这些向量的判定结果。所有的数据都需要向量化，而向量在输入神经网络时应当具有相同的长度。以图像为例，若要保证向量长度一致，所有图像就得有相同的尺寸（一样的高和宽）。所以有时会需要调整图像尺寸。这一过程被称为数据预处理。我们提供的工具[DataVec](http://deeplearning4j.org/cn/datavec)可以很好地完成这项工作。
 
-### Accessibility
+### 可访问性
 
-The data needs to be stored in a place that's easy to work with. A local file system, or HDFS (the Hadoop file system), or an S3 bucket 
-on AWS, for example. If the data is stored in many different databases that are unconnected, you will have to build data pipelines. 
-Building data pipelines and performing preprocessing can account for at least half the time you spend building deep-learning solutions. 
+数据应当存储在容易访问的位置，例如本地文件系统、HDFS（Hadoop文件系统）、或者AWS上的S3存储桶等。如果数据存储在许多彼此不相连接的数据库中，那么就需要建立数据加工管道。构建深度学习解决方案时，可能会有一半的时间用于建立数据加工管道和数据预处理。 
 
-## Minimum Data Requirement
+## 最低数据要求
 
-The minimums vary with the complexity of the problem, but 100,000 instances in total, across all categories, is a good place to start.
+问题的复杂度不同，最低数据要求也会有所区别，但通常可以先考虑准备10万个实例的数据（包括所有类别）。
 
-If you have labeled data (i.e. categories A, B, C and D), it’s preferable to have an evenly balanced dataset with 25,000 instances of 
-each label; that is, 25,000 instances of A, 25,000 instances of B and so forth.
+如果采用已标记数据（即数据已分为A、B、C、D等类别），最好确保数据集中各类数据的比例一致，每种标签有2.5万个实例，即A类有2.5万个实例、B类有2.5万个实例，以此类推。
 
-## Next Steps
+## 后续步骤
 
-If you’re wondering whether a deep learning solution can be built for your organization, please go through [this 
-checklist](http://deeplearning4j.org/questions) or [get in touch](https://skymind.io/contact). These are the things you need to consider 
-when deploying a deep learning solution to production. 
+如果您仍在考虑能否为自己的企业建立深度学习解决方案，请参考[这一问题列表](http://deeplearning4j.org/cn/questions)或者[与我们联系](https://skymind.io/contact)。该列表给出了您在生产中部署深度学习解决方案时需要考虑的问题。 
