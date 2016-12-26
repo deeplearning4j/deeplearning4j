@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.messages;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
 import static org.junit.Assert.*;
 
@@ -22,11 +23,11 @@ public class VoidMessageTest {
 
     @Test
     public void testSerDe1() throws Exception {
-        SkipGramMessage message = new SkipGramMessage(10, 12, new int[]{10, 20, 30, 40}, new byte[]{(byte)0, (byte) 0, (byte) 1, (byte) 0});
+        SkipGramRequestMessage message = new SkipGramRequestMessage(10, 12, new int[]{10, 20, 30, 40}, new byte[]{(byte)0, (byte) 0, (byte) 1, (byte) 0});
 
         byte[] bytes = message.asBytes();
 
-        SkipGramMessage restored = (SkipGramMessage) VoidMessage.fromBytes(bytes);
+        SkipGramRequestMessage restored = (SkipGramRequestMessage) VoidMessage.fromBytes(bytes);
 
         assertNotEquals(null, restored);
 

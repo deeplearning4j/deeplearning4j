@@ -530,6 +530,7 @@ public class VoidParameterServerTest {
 
         Thread.sleep(200);
 
+        // This is blocking method
         INDArray vec = clientNode.getVector(11);
 
         assertEquals(Nd4j.create(30).assign(192f), vec);
