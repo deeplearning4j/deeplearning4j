@@ -51,7 +51,7 @@ To install Deeplearning4J, there are a couple approaches (briefly described on o
 
 #### Use Maven Central Repository
 
-Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use.
+Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of JAR files you can use.
 
 Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
