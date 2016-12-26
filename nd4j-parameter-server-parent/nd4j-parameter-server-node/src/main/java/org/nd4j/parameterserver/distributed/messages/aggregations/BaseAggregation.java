@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 
 import java.io.Serializable;
 import java.util.*;
@@ -20,12 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
-public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {
+public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, MeaningfulMessage, Serializable {
     @Getter @Setter protected short aggregationType = -1;
     @Getter @Setter protected short aggregationWidth;
     @Getter @Setter protected int numberOfElements;
     @Getter protected short shardIndex;
-    @Getter @Setter protected Long taskId;
 
 
     @Getter @Setter protected INDArray payload;

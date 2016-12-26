@@ -1,8 +1,10 @@
 package org.nd4j.parameterserver.distributed.transport;
 
+import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -100,5 +102,10 @@ public class LocalTransport implements Transport {
     @Override
     public void shutdown() {
 
+    }
+
+    @Override
+    public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
+        throw new UnsupportedOperationException();
     }
 }

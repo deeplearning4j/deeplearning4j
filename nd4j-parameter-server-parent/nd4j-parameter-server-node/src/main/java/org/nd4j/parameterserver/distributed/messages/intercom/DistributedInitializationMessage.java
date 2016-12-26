@@ -1,4 +1,4 @@
-package org.nd4j.parameterserver.distributed.messages;
+package org.nd4j.parameterserver.distributed.messages.intercom;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +8,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
+import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 
 /**
  * @author raver119@gmail.com
@@ -15,7 +16,7 @@ import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 @NoArgsConstructor
 @Builder
 @Data
-public class InitializationMessage extends BaseVoidMessage {
+public class DistributedInitializationMessage extends BaseVoidMessage {
 
     protected int vectorLength;
     protected int numWords;
@@ -24,7 +25,7 @@ public class InitializationMessage extends BaseVoidMessage {
     protected boolean useNeg;
     protected int columnsPerShard;
 
-    public InitializationMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
+    public DistributedInitializationMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
         super(4);
         this.vectorLength = vectorLength;
         this.numWords = numWords;

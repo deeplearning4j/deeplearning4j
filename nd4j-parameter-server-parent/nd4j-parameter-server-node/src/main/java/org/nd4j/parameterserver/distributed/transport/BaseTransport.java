@@ -12,17 +12,15 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingIdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
-import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
-import org.nd4j.parameterserver.distributed.messages.VectorRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +54,8 @@ public abstract class BaseTransport implements Transport {
 
     protected LinkedBlockingQueue<VoidMessage> messages = new LinkedBlockingQueue<>();
 
+    protected Map<Long, MeaningfulMessage> completed = new ConcurrentHashMap<>();
+
     protected AtomicBoolean runner = new AtomicBoolean(true);
 
     // service threads where poll will happen
@@ -70,6 +70,26 @@ public abstract class BaseTransport implements Transport {
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
     @Override
+    public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
+        long taskId = message.getTaskId();
+        sendCommandToShard(message);
+
+        MeaningfulMessage msg;
+        while ((msg = completed.get((Long) taskId)) == null) {
+            // FIXME: fix sleep strategy here
+            try {
+                Thread.sleep(100);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        completed.remove(taskId);
+
+        return msg;
+    }
+
+    @Override
     public void sendMessage(@NonNull VoidMessage message) {
         switch (message.getMessageType()) {
             // messages 0..9 inclusive are reserved for Client->Shard commands
@@ -81,6 +101,7 @@ public abstract class BaseTransport implements Transport {
             case 5:
             case 6:
             case 7:
+            case 8:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
                 sendCommandToShard(message);
@@ -161,9 +182,16 @@ public abstract class BaseTransport implements Transport {
     protected void clientMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
         /**
          *  All incoming messages here are supposed to be "just messages", only unicast communication
+         *  All of them should implement MeaningfulMessage interface
          */
         // TODO: to be implemented
         log.info("clientMessageHandler message request incoming");
+
+        byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+
+        MeaningfulMessage message = (MeaningfulMessage) VoidMessage.fromBytes(data);
+        completed.put(message.getTaskId(), message);
     }
 
 
@@ -310,7 +338,8 @@ public abstract class BaseTransport implements Transport {
     public VoidMessage takeMessage() {
         if (threadingModel != ThreadingModel.SAME_THREAD) {
             try {
-                return messages.poll(2, TimeUnit.SECONDS);
+                //return messages.poll(2, TimeUnit.SECONDS);
+                return messages.take();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

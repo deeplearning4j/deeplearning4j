@@ -11,7 +11,12 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
+import org.nd4j.parameterserver.distributed.messages.requests.AssignRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSolidMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -148,6 +153,8 @@ public class VoidParameterServerTest {
      * This is very important test, it covers basic messages handling over network.
      * Here we have 1 client, 1 connected Shard + 2 shards available over multicast UDP
      *
+     * PLEASE NOTE: This test uses manual stepping through messages
+     *
      * @throws Exception
      */
     @Test
@@ -202,7 +209,7 @@ public class VoidParameterServerTest {
 
 
 
-        VoidParameterServer clientNode = new VoidParameterServer(false);
+        VoidParameterServer clientNode = new VoidParameterServer(true);
         clientNode.setShardIndex((short) 0);
         clientNode.init(clientConf);
         clientNode.getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
@@ -220,7 +227,7 @@ public class VoidParameterServerTest {
             threads[t] = new Thread(() -> {
 
 
-                shards[x] = new VoidParameterServer(false);
+                shards[x] = new VoidParameterServer(true);
                 shards[x].setShardIndex((short) x);
                 shards[x].init(configurations[x]);
 
@@ -246,7 +253,7 @@ public class VoidParameterServerTest {
         Thread.sleep(1000);
 
         // now we'll send commands from Client, and we'll check how these messages will be handled
-        InitializationMessage message = InitializationMessage.builder()
+        DistributedInitializationMessage message = DistributedInitializationMessage.builder()
                 .numWords(100)
                 .columnsPerShard(10)
                 .seed(123)
@@ -301,7 +308,7 @@ public class VoidParameterServerTest {
 
         // now we'll check passing for negTable, but please note - we're not sending it right now
         INDArray negTable = Nd4j.create(100000).assign(12.0f);
-        ShareSolidMessage negMessage = new ShareSolidMessage(WordVectorStorage.NEGATIVE_TABLE, negTable, false);
+        DistributedSolidMessage negMessage = new DistributedSolidMessage(WordVectorStorage.NEGATIVE_TABLE, negTable, false);
 
         for (int t = 0; t < threads.length; t++) {
             shards[t].handleMessage(negMessage);
@@ -313,7 +320,7 @@ public class VoidParameterServerTest {
 
         // now we assign each row to something
         for (int t = 0; t < threads.length; t++) {
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,1, (double) t));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_0,1, (double) t));
 
             assertEquals(Nd4j.create(message.getColumnsPerShard()).assign((double) t), shards[t].getSyn0().getRow(1));
         }
@@ -368,13 +375,13 @@ public class VoidParameterServerTest {
          */
         // first, we're setting data to something predefined
         for (int t = 0; t < threads.length; t++) {
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,0, 0.0));
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,1, 1.0));
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_0,2, 2.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_0,0, 0.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_0,1, 1.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_0,2, 2.0));
 
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,0, 0.0));
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,1, 1.0));
-            shards[t].handleMessage(new AssignMessage(WordVectorStorage.SYN_1_NEGATIVE,2, 2.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_1_NEGATIVE,0, 0.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_1_NEGATIVE,1, 1.0));
+            shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_1_NEGATIVE,2, 2.0));
         }
 
         DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2});
@@ -406,6 +413,130 @@ public class VoidParameterServerTest {
             threads[t].join();
         }
 
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].shutdown();
+        }
+
         assertEquals(threads.length, passCnt.get());
+    }
+
+    /**
+     *
+     * PLEASE NOTE: This test uses automatic feeding through messages
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testNodeInitialization3() throws Exception {
+        final AtomicInteger failCnt = new AtomicInteger(0);
+        final AtomicInteger passCnt = new AtomicInteger(0);
+        final AtomicInteger startCnt = new AtomicInteger(0);
+
+        final Configuration clientConf = Configuration.builder()
+                .unicastPort(34567)
+                .multicastPort(45678)
+                .numberOfShards(3)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .streamId(119)
+                .forcedRole(NodeRole.CLIENT)
+                .ttl(4)
+                .build();
+
+        final Configuration shardConf1 = Configuration.builder()
+                .unicastPort(34567)
+                .multicastPort(45678)
+                .numberOfShards(3)
+                .streamId(119)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
+                .build();
+
+        final Configuration shardConf2 = Configuration.builder()
+                .unicastPort(34569) // we'll never get anything on this port
+                .multicastPort(45678)
+                .numberOfShards(3)
+                .streamId(119)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
+                .build();
+
+        final Configuration shardConf3 = Configuration.builder()
+                .unicastPort(34570) // we'll never get anything on this port
+                .multicastPort(45678)
+                .numberOfShards(3)
+                .streamId(119)
+                .shardAddresses(localIPs)
+                .multicastNetwork("224.0.1.1")
+                .ttl(4)
+                .build();
+
+
+
+        VoidParameterServer clientNode = new VoidParameterServer();
+        clientNode.setShardIndex((short) 0);
+        clientNode.init(clientConf);
+        clientNode.getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
+
+
+        assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
+
+
+        Thread[] threads = new Thread[3];
+        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2, shardConf3};
+        VoidParameterServer[] shards = new VoidParameterServer[threads.length];
+        for (int t = 0; t < threads.length; t++) {
+            final int x = t;
+            threads[t] = new Thread(() -> {
+                shards[x] = new VoidParameterServer();
+                shards[x].setShardIndex((short) x);
+                shards[x].init(configurations[x]);
+
+                shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
+
+                assertEquals(NodeRole.SHARD, shards[x].getNodeRole());
+                startCnt.incrementAndGet();
+            });
+
+            threads[t].setDaemon(true);
+            threads[t].start();
+        }
+
+        // waiting till all shards are initialized
+        while (startCnt.get() < threads.length)
+            Thread.sleep(20);
+
+
+        DistributedInitializationMessage message = DistributedInitializationMessage.builder()
+                .numWords(100)
+                .columnsPerShard(10)
+                .seed(123)
+                .useHs(false)
+                .useNeg(true)
+                .vectorLength(100)
+                .build();
+
+        //clientNode.getTransport().sendMessage(message);
+        for (int t = 0; t < threads.length; t++) {
+            shards[t].handleMessage(message);
+        }
+
+        Thread.sleep(200);
+
+        AssignRequestMessage arm = new AssignRequestMessage(WordVectorStorage.SYN_0, 192f,11);
+        clientNode.getTransport().sendMessage(arm);
+
+        Thread.sleep(200);
+
+        INDArray vec = clientNode.getVector(11);
+
+        assertEquals(Nd4j.create(30).assign(192f), vec);
+
+
+        for (int t = 0; t < threads.length; t++) {
+            threads[t].join();
+        }
     }
 }

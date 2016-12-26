@@ -15,6 +15,8 @@ import java.io.Serializable;
  */
 public interface VoidMessage extends Serializable {
 
+    long getTaskId();
+
     int getMessageType();
 
     byte[] asBytes();

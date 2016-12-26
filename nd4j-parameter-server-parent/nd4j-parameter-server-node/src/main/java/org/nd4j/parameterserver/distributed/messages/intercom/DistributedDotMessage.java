@@ -15,8 +15,6 @@ import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation
 @Data
 @Slf4j
 public class DistributedDotMessage extends BaseVoidMessage {
-
-    protected long taskId;
     protected Integer keyA;
     protected Integer keyB;
     protected int[] rowsA;

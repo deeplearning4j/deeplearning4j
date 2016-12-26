@@ -3,20 +3,16 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedVectorMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -172,7 +168,7 @@ public class VoidParameterServer {
                 // TODO: we need real ip only if this is a shard *FOR NOW*, but later we'll need it for client as well
 
                 // we launch message processing if we're not in debug mode
-                if (manualMode.get()) {
+                if (!manualMode.get()) {
                     processingThread = new Thread(() -> {
                         runner.set(true);
                         while (runner.get())
@@ -322,7 +318,7 @@ public class VoidParameterServer {
      * @param message
      */
     // TODO: right now we support only columnar splits over tables
-    protected void initializeSeqVec(@NonNull InitializationMessage message) {
+    protected void initializeSeqVec(@NonNull DistributedInitializationMessage message) {
 
     }
 
@@ -371,10 +367,8 @@ public class VoidParameterServer {
 
         VectorRequestMessage message = new VectorRequestMessage(rowId);
 
-        transport.sendMessage(message);
+        MeaningfulMessage response = transport.sendMessageAndGetResponse(message);
 
-
-
-        return null;
+        return response.getPayload();
     }
 }

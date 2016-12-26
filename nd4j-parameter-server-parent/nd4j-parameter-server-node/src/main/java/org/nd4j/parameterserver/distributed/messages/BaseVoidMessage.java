@@ -19,7 +19,7 @@ import java.io.Serializable;
 public abstract class BaseVoidMessage implements VoidMessage {
     protected int messageType = -1;
     protected long nodeId;
-    protected long batchId;
+    protected long taskId;
 
     // these fields are used only for op invocation
     protected transient Configuration configuration;

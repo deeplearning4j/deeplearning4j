@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -34,6 +35,13 @@ public interface Transport {
      * @param message
      */
     void sendMessage(VoidMessage message);
+
+    /**
+     * This method accepts message for delivery, and blocks until response delivered
+     *
+     * @return
+     */
+    MeaningfulMessage sendMessageAndGetResponse(VoidMessage message);
 
     /**
      *

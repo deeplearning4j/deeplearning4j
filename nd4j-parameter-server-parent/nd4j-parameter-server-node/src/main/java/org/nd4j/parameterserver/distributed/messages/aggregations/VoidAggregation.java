@@ -10,8 +10,6 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  */
 public interface VoidAggregation extends VoidMessage {
 
-    Long getTaskId();
-
     short getShardIndex();
 
     short getAggregationType();

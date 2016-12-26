@@ -4,6 +4,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMessage;
 
 /**
  * @author raver119@gmail.com
@@ -29,6 +30,13 @@ public class VectorAggregation extends BaseAggregation {
     public void processMessage() {
         if (clipboard.isTracking(this.getTaskId())) {
             clipboard.pin(this);
+
+            if (clipboard.isReady(taskId)) {
+                log.info("Vector for taskId {} is ready", taskId);
+                VoidAggregation aggregation = clipboard.unpin(taskId);
+                VectorCompleteMessage msg = new VectorCompleteMessage(taskId, aggregation.getAccumulatedResult());
+                transport.sendMessage(msg);
+            }
         } else {
             log.info("Skipping vectors. Shard: {}; ", shardIndex);
         }

@@ -1,9 +1,10 @@
-package org.nd4j.parameterserver.distributed.messages;
+package org.nd4j.parameterserver.distributed.messages.intercom;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 
 /**
  * Array passed here will be shared & available on all shards.
@@ -12,7 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @Data
 @NoArgsConstructor
-public class ShareSolidMessage extends BaseVoidMessage {
+public class DistributedSolidMessage extends BaseVoidMessage {
     /**
      * The only use of this message is negTable sharing.
      */
@@ -21,7 +22,7 @@ public class ShareSolidMessage extends BaseVoidMessage {
     private INDArray payload;
     private boolean overwrite;
 
-    public ShareSolidMessage(@NonNull Integer key, @NonNull INDArray array, boolean overwrite) {
+    public DistributedSolidMessage(@NonNull Integer key, @NonNull INDArray array, boolean overwrite) {
         super(5);
         this.payload = array;
         this.key = key;

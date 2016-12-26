@@ -1,9 +1,10 @@
-package org.nd4j.parameterserver.distributed.messages;
+package org.nd4j.parameterserver.distributed.messages.requests;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
+import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedVectorMessage;
 
@@ -24,6 +25,9 @@ public class VectorRequestMessage extends BaseVoidMessage {
     public VectorRequestMessage(int rowIndex) {
         super(7);
         this.rowIndex = rowIndex;
+
+        // FIXME: this is temporary, should be changed
+        this.taskId = rowIndex;
     }
 
     /**
