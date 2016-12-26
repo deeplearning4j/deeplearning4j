@@ -1,10 +1,10 @@
 # Survey of DeepLearning4j Examples
 
-We have a Github repository with many examples of DeepLearning4j functionality. Our [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
+Deeplearning4j's Github repository has many examples that demonstrate its functionality. The [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
 
 ## DataVec examples
 
-Most of the examples make use of DataVec, since reading raw data and transforming it into a DataSet object for the Neural Network is often the first step. If you are unfamiliar with DataVec here is a description and links to some examples that will be useful. 
+Most of the examples make use of DataVec, a toolkit for preprocessing and clearning data through normalization, standardization, search and replace, column shuffles and vectorization. Reading raw data and transforming it into a DataSet object for your Neural Network is often the first step toward training that network. If you're unfamiliar with DataVec, here is a description and some links to useful examples. 
 
 ### IrisAnalysis.java
 
