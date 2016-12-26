@@ -62,13 +62,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>3.6.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
       <version>${nd4j.version}</version>
