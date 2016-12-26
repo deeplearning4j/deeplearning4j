@@ -10,7 +10,7 @@ import java.io.Serializable;
  *
  * @author Ede Meijer
  */
-interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
+public interface NormalizerStrategy<S extends NormalizerStats> extends Serializable {
     /**
      * Normalize a data array
      *

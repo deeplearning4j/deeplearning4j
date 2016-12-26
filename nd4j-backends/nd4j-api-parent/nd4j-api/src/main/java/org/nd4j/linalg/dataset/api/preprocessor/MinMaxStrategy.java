@@ -22,7 +22,7 @@ import java.io.Serializable;
  */
 @Getter
 @EqualsAndHashCode
-class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
+public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {
     private double minRange;
     private double maxRange;
 

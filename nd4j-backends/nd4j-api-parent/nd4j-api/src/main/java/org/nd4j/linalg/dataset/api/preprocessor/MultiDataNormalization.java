@@ -35,7 +35,7 @@ public interface MultiDataNormalization extends MultiDataSetPreProcessor {
     /**
      * Transform the dataset
      *
-     * @param toPreProcess the dataset to re process
+     * @param toPreProcess the dataset to pre process
      */
     void transform(MultiDataSet toPreProcess);
 

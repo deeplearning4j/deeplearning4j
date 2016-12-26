@@ -127,8 +127,8 @@ public class DataSetUtil {
     }
 
     public static void setMaskedValuesToZero(INDArray data, INDArray mask){
-//        if(mask == null || data.rank() != 3) return;
+        if(mask == null || data.rank() != 3) return;
 
-//        Nd4j.getExecutioner().exec(new BroadcastMulOp(data, mask, data, 0,2));
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(data, mask, data, 0,2));
     }
 }

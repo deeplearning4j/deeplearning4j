@@ -5,21 +5,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerMinMaxScaler;
-import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerMinMaxScalerSerializer;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.MultiNormalizerStandardizeSerializer;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerMinMaxScalerSerializer;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
+import org.nd4j.linalg.dataset.api.preprocessor.*;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.*;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -209,6 +206,64 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
 
         MultiNormalizerMinMaxScalerSerializer.write(original, tmpFile);
         MultiNormalizerMinMaxScaler restored = MultiNormalizerMinMaxScalerSerializer.restore(tmpFile);
+
+        assertEquals(original, restored);
+    }
+
+    @Test
+    public void testMultiNormalizerHybridEmpty() throws IOException {
+        MultiNormalizerHybrid original = new MultiNormalizerHybrid();
+        original.setInputStats(new HashMap<Integer, NormalizerStats>());
+        original.setOutputStats(new HashMap<Integer, NormalizerStats>());
+
+        MultiNormalizerHybridSerializer.write(original, tmpFile);
+        MultiNormalizerHybrid restored = MultiNormalizerHybridSerializer.restore(tmpFile);
+
+        assertEquals(original, restored);
+    }
+
+    @Test
+    public void testMultiNormalizerHybridGlobalStats() throws IOException {
+        MultiNormalizerHybrid original = new MultiNormalizerHybrid().minMaxScaleAllInputs().standardizeAllOutputs();
+
+        Map<Integer, NormalizerStats> inputStats = new HashMap<>();
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{1, 2}), Nd4j.create(new float[] {3, 4})));
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{5, 6}), Nd4j.create(new float[] {7, 8})));
+
+        Map<Integer, NormalizerStats> outputStats = new HashMap<>();
+        outputStats.put(0, new DistributionStats(Nd4j.create(new float[]{9, 10}), Nd4j.create(new float[] {11, 12})));
+        outputStats.put(0, new DistributionStats(Nd4j.create(new float[]{13, 14}), Nd4j.create(new float[] {15, 16})));
+        
+        original.setInputStats(inputStats);
+        original.setOutputStats(outputStats);
+
+        MultiNormalizerHybridSerializer.write(original, tmpFile);
+        MultiNormalizerHybrid restored = MultiNormalizerHybridSerializer.restore(tmpFile);
+
+        assertEquals(original, restored);
+    }
+
+    @Test
+    public void testMultiNormalizerHybridGlobalAndSpecificStats() throws IOException {
+        MultiNormalizerHybrid original = new MultiNormalizerHybrid()
+            .standardizeAllInputs()
+            .minMaxScaleInput(0, -5, 5)
+            .minMaxScaleAllOutputs(-10, 10)
+            .standardizeOutput(1);
+
+        Map<Integer, NormalizerStats> inputStats = new HashMap<>();
+        inputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{1, 2}), Nd4j.create(new float[] {3, 4})));
+        inputStats.put(1, new DistributionStats(Nd4j.create(new float[]{5, 6}), Nd4j.create(new float[] {7, 8})));
+
+        Map<Integer, NormalizerStats> outputStats = new HashMap<>();
+        outputStats.put(0, new MinMaxStats(Nd4j.create(new float[]{9, 10}), Nd4j.create(new float[] {11, 12})));
+        outputStats.put(1, new DistributionStats(Nd4j.create(new float[]{13, 14}), Nd4j.create(new float[] {15, 16})));
+
+        original.setInputStats(inputStats);
+        original.setOutputStats(outputStats);
+
+        MultiNormalizerHybridSerializer.write(original, tmpFile);
+        MultiNormalizerHybrid restored = MultiNormalizerHybridSerializer.restore(tmpFile);
 
         assertEquals(original, restored);
     }
