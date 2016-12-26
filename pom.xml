@@ -61,7 +61,7 @@
     </prerequisites>
 
     <properties>
-        <javacpp.version>1.3</javacpp.version>
+        <javacpp.version>1.3.1</javacpp.version>
         <javacpp-presets.version>1.3</javacpp-presets.version>
         <nd4j.version>0.7.2-SNAPSHOT</nd4j.version>
         <datavec.version>0.7.2-SNAPSHOT</datavec.version>
