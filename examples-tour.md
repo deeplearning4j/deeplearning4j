@@ -1,6 +1,6 @@
 # Survey of DeepLearning4j Examples
 
-Deeplearning4j's Github repository has many examples that demonstrate its functionality. The [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
+Deeplearning4j's Github repository has many examples to cover its functionality. The [Quick Start Guide](https://deeplearning4j.org/quickstart) shows you how to set up Intellij and clone the repository. This page provides an overview of some of those examples.
 
 ## DataVec examples
 
@@ -8,14 +8,14 @@ Most of the examples make use of DataVec, a toolkit for preprocessing and clearn
 
 ### IrisAnalysis.java
 
-An example that takes the canonical Iris Dataset of Iris species measurements of sepal length, sepal width, 
-petal length and petal width. This example builds a Spark RDD from the relatively small dataset and runs some analysis against it. 
+This example takes the canonical Iris Dataset of Iris species measurements of sepal length, sepal width, 
+petal length and petal width. It builds a Spark RDD from the relatively small dataset and runs an analysis against it. 
 
 * [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
 
 ### BasicDataVecExample.java
 
-This example loads data into a Spark RDD. All DataVec transform operations use Spark RDDs. In this example, we use DataVec to filter data, apply time transformations and remove columns.
+This example loads data into a Spark RDD. All DataVec transform operations use Spark RDDs. Here, we use DataVec to filter data, apply time transformations and remove columns.
 
 * [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/basic/BasicDataVecExample.java)
 
