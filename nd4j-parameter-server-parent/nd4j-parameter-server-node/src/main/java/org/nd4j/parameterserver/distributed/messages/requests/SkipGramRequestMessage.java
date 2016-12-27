@@ -22,7 +22,7 @@ import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage {
 
     // learning rate for this sequence
-    protected float alpha;
+    protected double alpha;
 
     // current word & lastWord
     protected int w1;
@@ -35,17 +35,21 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
 
     protected short negSamples;
 
+    protected long nextRandom;
+
     protected SkipGramRequestMessage() {
         super(0);
     }
 
-    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes, short negSamples) {
+    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes, short negSamples, double lr, long nextRandom) {
         this();
         this.w1 = w1;
         this.w2 = w2;
         this.points = points;
         this.codes = codes;
         this.negSamples = negSamples;
+        this.alpha = lr;
+        this.nextRandom = nextRandom;
     }
 
     /**

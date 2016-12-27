@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.training.impl;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.Chain;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
@@ -88,13 +89,19 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         if (chain == null)
             throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
 
-        float alpha = chain.getRequestMessage().getAlpha();
-        int code = 0;
+        double alpha = chain.getRequestMessage().getAlpha();
+
 
         // TODO: We DON'T want this code being here
         // TODO: We want algorithm below to be native
         INDArray expTable = storage.getArray(WordVectorStorage.EXP_TABLE);
         INDArray dots = chain.getDotAggregation().getAccumulatedResult();
+
+
+        INDArray syn0 = storage.getArray(WordVectorStorage.SYN_0);
+        INDArray syn1 = storage.getArray(WordVectorStorage.SYN_1);
+
+        INDArray neu1e = Nd4j.create(syn1.columns());
 
         for (int e = 0; e < dots.length(); e++) {
             float dot = dots.getFloat(e);
@@ -111,9 +118,13 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 continue;
             }
 
-            float f = expTable.getFloat(idx);
-            float g = (1 - code - f) * alpha;
-            dots.putScalar(e, g);
+            int code = chain.getRequestMessage().getCodes()[e];
+            double f = expTable.getFloat(idx);
+            double g = (1 - code - f) * alpha;
+
+            // FIXME: this is wrong
+            Nd4j.getBlasWrapper().axpy(g, syn1.getRow(1), neu1e );
+            Nd4j.getBlasWrapper().axpy(g, syn0.getRow(1), syn1.getRow(1));
         }
     }
 }

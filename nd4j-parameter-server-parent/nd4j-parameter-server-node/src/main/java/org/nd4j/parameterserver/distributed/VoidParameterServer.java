@@ -11,6 +11,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
@@ -311,6 +312,11 @@ public class VoidParameterServer {
 
 
         transport.sendMessage(null);
+    }
+
+    public void execDistributed(@NonNull SkipGramRequestMessage message) {
+        transport.sendMessage(message);
+        // simple as that
     }
 
     /**
