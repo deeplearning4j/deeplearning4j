@@ -95,6 +95,12 @@ public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializ
         }
     }
 
+    /**
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * belongs to the current NormalizerStrategy implementation
+     *
+     * @return the new builder
+     */
     @Override
     public NormalizerStats.Builder newStatsBuilder() {
         return new MinMaxStats.Builder();

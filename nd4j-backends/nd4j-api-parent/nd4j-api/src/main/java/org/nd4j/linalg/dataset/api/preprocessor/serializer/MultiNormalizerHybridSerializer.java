@@ -217,6 +217,15 @@ public class MultiNormalizerHybridSerializer {
         return new MinMaxStrategy(dis.readDouble(), dis.readDouble());
     }
 
+    /**
+     * This enum is exclusively used for ser/de purposes in this serializer, for indicating the type of normalizer 
+     * strategy used for an input/output or global settings.
+     * 
+     * NOTE: ONLY EVER CONCATENATE NEW VALUES AT THE BOTTOM!
+     * 
+     * The data format depends on the ordinal values of the enum values. Therefore, removing a value or adding one
+     * in between existing values will corrupt normalizers serialized with previous versions.
+     */
     private enum Strategy {
         NULL,
         STANDARDIZE,
