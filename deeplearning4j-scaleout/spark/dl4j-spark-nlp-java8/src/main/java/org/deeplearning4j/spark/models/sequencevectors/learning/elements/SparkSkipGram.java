@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -53,6 +55,33 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
 
 
     protected void iterateSample(ShallowSequenceElement word, ShallowSequenceElement lastWord, AtomicLong nextRandom, double lr) {
-        // TODO: to be implemented
+        if(word == null || lastWord == null || lastWord.getIndex() < 0 || word.getIndex() == lastWord.getIndex())
+            return;
+        /**
+         * all we want here, is actually very simple:
+         * we just build simple SkipGram frame, and send it over network
+         */
+
+        int [] idxSyn1 = new int[0];
+        byte [] codes = new byte[0];
+        if (vectorsConfiguration.isUseHierarchicSoftmax()){
+            idxSyn1 = new int[word.getCodeLength()];
+            codes = new byte[word.getCodeLength()];
+            for (int i = 0; i < word.getCodeLength(); i++) {
+                byte code = word.getCodes().get(i);
+                int point = word.getPoints().get(i);
+                if (point >= vocabCache.numWords() || point < 0)
+                    continue;
+
+                codes[i] = code;
+                idxSyn1[i] = point;
+            }
+        }
+
+        short neg = (short) vectorsConfiguration.getNegative();
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(word.getIndex(), lastWord.getIndex(), idxSyn1, codes, neg, lr, nextRandom.get());
+
+        // we just shoot for now
+        VoidParameterServer.getInstance().execDistributed(sgrm);
     }
 }
