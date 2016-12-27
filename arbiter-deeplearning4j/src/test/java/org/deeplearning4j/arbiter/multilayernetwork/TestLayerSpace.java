@@ -86,7 +86,7 @@ public class TestLayerSpace {
             assertEquals(20, l.getNOut());
             double lr = l.getLearningRate();
             double l2 = l.getL2();
-            String activation = l.getActivationFunction();
+            String activation = l.getActivationFn().toString();
 
             System.out.println(lr + "\t" + l2 + "\t" + activation);
 
@@ -143,7 +143,7 @@ public class TestLayerSpace {
             }
 
             ActivationLayer al = als.getValue(d);
-            String activation = al.getActivationFunction();
+            String activation = al.getActivationFn().toString();
 
             System.out.println(activation);
 
@@ -179,7 +179,7 @@ public class TestLayerSpace {
             }
 
             EmbeddingLayer el = els.getValue(d);
-            String activation = el.getActivationFunction();
+            String activation = el.getActivationFn().toString();
             int nOut = el.getNOut();
 
             System.out.println(activation + "\t" + nOut);
@@ -218,7 +218,7 @@ public class TestLayerSpace {
             }
 
             GravesBidirectionalLSTM el = ls.getValue(d);
-            String activation = el.getActivationFunction();
+            String activation = el.getActivationFn().toString();
             int nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();
 

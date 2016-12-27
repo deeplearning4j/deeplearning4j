@@ -138,9 +138,9 @@ public class TestMultiLayerSpace {
                 assertTrue( l2 >= 0.2 && l2 <= 0.5);
 
                 if(j == nLayers-1){ //Output layer
-                    assertEquals("softmax",layerConf.getLayer().getActivationFunction());
+                    assertEquals("softmax",layerConf.getLayer().getActivationFn().toString());
                 } else {
-                    String actFn = layerConf.getLayer().getActivationFunction();
+                    String actFn = layerConf.getLayer().getActivationFn().toString();
                     assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
                     if("relu".equals(actFn)) reluCount++;
                     else tanhCount++;
