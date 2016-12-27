@@ -52,7 +52,7 @@ This example demonstrates preprocessing features available in DataVec.
 
 ### CSVExampleEvaluationMetaData.java
 
-DataMeta data tracking - i.e., where data for each example comes from - is useful when tracking down malformed data that causes errors or other issues. This example demostrates the functionality in the RecordMetaData class. 
+DataMeta data tracking - i.e. seeing where data for each example comes from - is useful when tracking down malformed data that causes errors and other issues. This example demostrates the functionality in the RecordMetaData class. 
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java)
 
@@ -60,7 +60,7 @@ DataMeta data tracking - i.e., where data for each example comes from - is usefu
 
 ## DeepLearning4J Examples
 
-To build a neural net, you will use either `MultiLayerNetwork`, or `ComputationGraph`. Both options include a convenient Builder interface. A few highlights from the examples are described below. 
+To build a neural net, you will use either `MultiLayerNetwork` or `ComputationGraph`. Both options work using a Builder interface. A few highlights from the examples are described below. 
 
 ### MNIST dataset of handwritten digits
 
@@ -68,31 +68,31 @@ MNIST is the "Hello World" of deep learning. Simple, straightforward, and focuss
 
 ### MLPMnistSingleLayerExample.java
 
-Single Layer Perceptron for recognizing digits. Note that this pulls the images from a binary package containing the dataset, a rather special case for data ingestion.
+This is a Single Layer Perceptron for recognizing digits. Note that this pulls the images from a binary package containing the dataset, a rather special case for data ingestion.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
 
 ### MLPMnistTwoLayerExample.java
 
-Two layer perceptron for MNIST, showing there is more than one way to build a useful Network. 
+A two-layer perceptron for MNIST, showing there is more than one useful network for a given dataset. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
 
 ### Feedforward Examples
 
-FeedForward Neural Networks have a single pass from input to hidden layers to output.
+Data flows through feed-forward neural networks in a single pass from input via hidden layers to output.
 
-They can be used for a wide range of tasks depending on they are configured. Along with the image classification over Mnist data, this directory has examples demonstrating regression, classification, and anomoly detection.
+These networks can be used for a wide range of tasks depending on they are configured. Along with image classification over MNIST data, this directory has examples demonstrating regression, classification, and anomoly detection.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
 
 ### Convolutional Neural Networks
 
-Convolutional Neural Networks are useful for image recognition. 
+Convolutional Neural Networks are mainly used for image recognition, although they apply to sound and text as well. 
 
 ### AnimalsClassification.java
 
-This example can be run using either Lenet, or AlexNet. 
+This example can be run using either LeNet or AlexNet. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
 
@@ -101,21 +101,21 @@ This example can be run using either Lenet, or AlexNet.
 # Saving and Loading Models
 
 Training a network over a large volume of training data takes time. Fortunately, you can save a trained model and
-load the model for later training or for inference.
+load the model for later training or inference.
 
 ### SaveLoadComputationGraph.java
 
-This demonstrates saving and loading a network build using ComputationGraph.
+This demonstrates saving and loading a network build using the class ComputationGraph.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving/SaveLoadComputationGraph.java)
 
 ### SaveLoadMultiLayerNetwork.java
 
-Demostrates saving and loading a Neural Network built with MultiLayer Network
+Demonstrates saving and loading a Neural Network built with the class MultiLayerNetwork.
 
 ### Saving/loading a trained model and passing it new input 
 
-Our video series demonstrates code that includes saving and loading models, as well as inference. 
+Our video series shows code that includes saving and loading models, as well as inference. 
 
 [Our YouTube channel](https://www.youtube.com/channel/UCa-HKBJwkfzs4AgZtdUuBXQ)
 
@@ -123,7 +123,7 @@ Our video series demonstrates code that includes saving and loading models, as w
 
 # Custom Loss Functions and Layers
 
-Need to add a Loss Functions that is not yet available prebuilt? Check out these examples.
+Do you need to add a Loss Function that is not available or prebuilt yet? Check out these examples.
 
 ### CustomLossExample.java
 
@@ -135,7 +135,7 @@ Need to add a Loss Functions that is not yet available prebuilt? Check out these
 
 ### Custom Layer
 
-Need to add a Layer with features that are not available in DeepLearning4J core? This example show where to begin. 
+Do you need to add a layer with features that aren't available in DeepLearning4J core? This example show where to begin. 
 
 ### CustomLayerExample.java
 
@@ -183,7 +183,7 @@ t-Distributed Stochastic Neighbor Embedding (t-SNE) is useful for data visualiza
 
 ## Recurrent Neural Networks
 
-Recurrent Neural Networks are useful for processing sequential or time series data. 
+Recurrent Neural Networks are useful for processing time series data or other sequentially fed data like video. 
 
 The examples folder for Recurrent Neural Networks has the following:
 
