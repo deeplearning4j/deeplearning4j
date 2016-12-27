@@ -22,12 +22,28 @@ public class GsonDeserializationUtils {
         dimensions.add(jsonArray.size());
         getSizeMultiDimensionalArray(jsonArray, dimensions);
 
+        /*
+            If the dimension list contains only a single element, then
+            we must have an array such as [ 4, 6, 7 ] which means one row
+            with columns. Since the Nd4j create method needs a minimum of two
+            dimensions, then we prepend the list with 1 to designate that
+            we have one row
+         */
         if (isArrayWithSingleRow(dimensions)) {
             dimensions.add(0, 1);
         }
 
         return buildArray(dimensions, serializedRawArray);
     }
+
+    /*
+        The below method works under the following assumption
+        which is an INDArray can not have a row such as [ 1 , 2, [3, 4] ]
+        and either all elements of an INDArray are either INDArrays themselves or scalars.
+        So if that is the case, then it suffices to only check the first element of each JsonArray
+        to see if that first element is itself an JsonArray. If it is an array, then we must check
+        the first element of that array to see if it's a scalar or array.
+     */
 
     private static void getSizeMultiDimensionalArray(JsonArray jsonArray, List<Integer> dimensions) {
         Iterator<JsonElement> iterator = jsonArray.iterator();
