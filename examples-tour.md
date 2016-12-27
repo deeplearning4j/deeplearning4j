@@ -8,8 +8,7 @@ Most of the examples make use of DataVec, a toolkit for preprocessing and clearn
 
 ### IrisAnalysis.java
 
-This example takes the canonical Iris Dataset of Iris species measurements of sepal length, sepal width, 
-petal length and petal width. It builds a Spark RDD from the relatively small dataset and runs an analysis against it. 
+This example takes the canonical Iris dataset of the flower species of the same name, whose relevant measurements are sepal length, sepal width, petal length and petal width. It builds a Spark RDD from the relatively small dataset and runs an analysis against it. 
 
 * [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
 
@@ -21,25 +20,25 @@ This example loads data into a Spark RDD. All DataVec transform operations use S
 
 ### PrintSchemasAtEachStep.java
 
-This example shows the print Schema tools that are useful to visualize and ensure that the code to transform is behaving as expected. 
+This example shows the print Schema tools that are useful to visualize and to ensure that the code for the transform is behaving as expected. 
 
 * [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
 
 ### JoinExample.java
 
-You may need to join datasets before passing to A Neural Network. You can do that in DataVec, this example shows you how. 
+You may need to join datasets before passing to a neural network. You can do that in DataVec, and this example shows you how. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/join/JoinExample.java)
 
 ### LogDataExample.java
 
-An example of parsing Log Data using DataVec
+This is an example of parsing log data using DataVec. The obvious use cases are cybersecurity and customer relationship management. 
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/logdata/LogDataExample.java)
 
 ### MnistImagePipelineExample.java
 
-This example is from the video below, which demonstrates the ParentPathLabelGenerator, and ImagePreProcessing scaler. 
+This example is from the video below, which demonstrates the ParentPathLabelGenerator and ImagePreProcessing scaler. 
 
 <iframe width="560" height="315" src="http://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
 
@@ -47,15 +46,13 @@ This example is from the video below, which demonstrates the ParentPathLabelGene
 
 ### PreprocessNormalizerExample.java
 
-Here's an example demonstrating pre-processing features available in DataVec.
+This example demonstrates preprocessing features available in DataVec.
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/PreprocessNormalizerExample.java)
 
 ### CSVExampleEvaluationMetaData.java
 
-DataMeta data tracking - i.e., where data for each example comes from is useful when tracking down malformed data that causes errors or other issues. 
-
-This example demostrates the functionality in the RecordMetaData class. 
+DataMeta data tracking - i.e., where data for each example comes from - is useful when tracking down malformed data that causes errors or other issues. This example demostrates the functionality in the RecordMetaData class. 
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExampleEvaluationMetaData.java)
 
@@ -67,7 +64,7 @@ To build a neural net, you will use either `MultiLayerNetwork`, or `ComputationG
 
 ### MNIST dataset of handwritten digits
 
-This is the "Hello World" of deep learning. Simple, straightforward, and focussed on image recognition, a task that Neural Networks do well. 
+MNIST is the "Hello World" of deep learning. Simple, straightforward, and focussed on image recognition, a task that Neural Networks do well. 
 
 ### MLPMnistSingleLayerExample.java
 
