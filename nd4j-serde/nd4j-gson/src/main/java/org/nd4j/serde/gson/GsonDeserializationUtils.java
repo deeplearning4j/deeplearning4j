@@ -1,5 +1,6 @@
 package org.nd4j.serde.gson;
 
+import com.google.common.primitives.Ints;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -45,12 +46,7 @@ public class GsonDeserializationUtils {
     }
 
     private static INDArray buildArray(List<Integer> dimensions, String rawArray) {
-        int rank = dimensions.size();
-        int[] shape = new int[rank];
-        for(int i = 0; i < rank; i++) {
-            shape[i] = dimensions.get(i);
-        }
-
+        int[] shape = Ints.toArray(dimensions);
         String[] entries = rawArray.replaceAll("\\[", "").replaceAll("]", "").replaceAll("\\n", "").split(",");
         double[] entryValues = new double[entries.length];
 
