@@ -6,7 +6,9 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
+import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 
 /**
  * This is batch message, describing simple SkipGram round
@@ -17,7 +19,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMess
  * @author raver119@gmail.com
  */
 @Data
-public class SkipGramRequestMessage extends BaseVoidMessage {
+public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage {
 
     // current word & lastWord
     protected int w1;
@@ -51,19 +53,6 @@ public class SkipGramRequestMessage extends BaseVoidMessage {
          * phase B) apply gradients
          */
 
-        /**
-         * If we're on HS, we know pairs in advance, if not - we should use rng to get them
-         */
-        if (points.length > 0) {
-            // we assume this is HS round
-            int row_syn0[] = replicate(w1, points.length);
-
-            // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
-            DistributedDotMessage ddm = new DistributedDotMessage(0L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, points);
-            transport.sendMessage(ddm);
-        } else {
-            // pure negSampling round
-
-        }
+        TrainerProvider.getInstance().doTraining(this);
     }
 }

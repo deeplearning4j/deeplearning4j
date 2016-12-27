@@ -57,13 +57,4 @@ public abstract class BaseVoidMessage implements VoidMessage {
         this.role = role;
         this.shardIndex = shardIndex;
     }
-
-
-    protected int[] replicate(int value, int size) {
-        int[] result = new int[size];
-        for (int e = 0; e < size; e++)
-            result[e] = value;
-
-        return result;
-    }
 }
