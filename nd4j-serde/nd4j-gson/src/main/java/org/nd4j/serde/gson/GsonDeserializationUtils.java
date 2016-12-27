@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -47,7 +48,7 @@ public class GsonDeserializationUtils {
 
     private static INDArray buildArray(List<Integer> dimensions, String rawArray) {
         int[] shape = Ints.toArray(dimensions);
-        String[] entries = rawArray.replaceAll("\\[", "").replaceAll("]", "").replaceAll("\\n", "").split(",");
+        String[] entries  = StringUtils.replacePattern(rawArray, "[\\[\\]\\n]", "").split(",");
         double[] entryValues = new double[entries.length];
 
         for (int i = 0; i < entries.length; i++) {
