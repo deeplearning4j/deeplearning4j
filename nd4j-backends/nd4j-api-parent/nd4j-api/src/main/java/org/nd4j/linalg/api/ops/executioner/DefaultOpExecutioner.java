@@ -518,7 +518,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x().data().dataType() != expectedType)
+        if (op.x() != null && op.x().data().dataType() != expectedType)
             throw new ND4JIllegalStateException("op.X dataType is ["+ op.x().data().dataType() +"] instead of expected [" + expectedType + "]");
 
         if (op.z() != null && op.z().data().dataType() != expectedType)
