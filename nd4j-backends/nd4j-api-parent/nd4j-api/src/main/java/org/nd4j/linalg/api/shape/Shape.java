@@ -48,7 +48,6 @@ import java.util.*;
  */
 public class Shape {
 
-    private static Logger logger = LoggerFactory.getLogger(Shape.class);
 
     private Shape() {
     }
