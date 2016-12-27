@@ -32,7 +32,7 @@
         <module>datavec-camel</module>
         <module>datavec-dataframe</module>
         <module>datavec-local</module>
-        <module>datavec--spark-inference-server</module>
+        <module>datavec-spark-inference-server</module>
     </modules>
     <name>DataVec</name>
 
