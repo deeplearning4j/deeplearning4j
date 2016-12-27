@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.training;
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -13,12 +14,14 @@ public abstract class BaseTrainer<T extends TrainingMessage> implements Training
     protected Configuration configuration;
     protected Transport transport;
     protected Clipboard clipboard;
+    protected Storage storage;
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Clipboard clipboard) {
+    public void init(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Storage storage, @NonNull Clipboard clipboard) {
         this.clipboard = clipboard;
         this.transport = transport;
         this.configuration = configuration;
+        this.storage = storage;
     }
 
     protected int[] replicate(int value, int size) {

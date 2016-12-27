@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,5 +52,9 @@ public class DotAggregation extends BaseAggregation{
         }
 
         clipboard.pin(this);
+
+        if (clipboard.isReady(this.getTaskId())) {
+            trainer.aggregationFinished(clipboard.unpin(this.taskId));
+        }
     }
 }

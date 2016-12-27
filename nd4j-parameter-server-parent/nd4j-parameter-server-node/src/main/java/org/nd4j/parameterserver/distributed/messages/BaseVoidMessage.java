@@ -7,6 +7,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.io.Serializable;
@@ -28,6 +29,7 @@ public abstract class BaseVoidMessage implements VoidMessage {
     protected transient Storage storage;
     protected transient NodeRole role;
     protected transient short shardIndex;
+    protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
     protected BaseVoidMessage(int messageType) {
         this.messageType = messageType;
@@ -49,12 +51,13 @@ public abstract class BaseVoidMessage implements VoidMessage {
     }
 
     @Override
-    public void attachContext(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+    public void attachContext(@NonNull Configuration configuration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
         this.configuration = configuration;
         this.clipboard = clipboard;
         this.transport = transport;
         this.storage = storage;
         this.role = role;
         this.shardIndex = shardIndex;
+        this.trainer = trainer;
     }
 }

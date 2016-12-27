@@ -6,6 +6,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.io.Serializable;
@@ -30,7 +31,7 @@ public interface VoidMessage extends Serializable {
     /**
      * This method initializes message for further processing
      */
-    void attachContext(Configuration configuration, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex);
+    void attachContext(Configuration configuration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex);
 
     /**
      * This method will be started in context of executor, either Shard, Client or Backup node

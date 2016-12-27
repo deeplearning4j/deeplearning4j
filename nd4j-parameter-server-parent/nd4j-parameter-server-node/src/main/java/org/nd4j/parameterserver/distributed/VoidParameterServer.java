@@ -13,6 +13,7 @@ import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -53,8 +54,7 @@ public class VoidParameterServer {
     protected transient AtomicBoolean runner = new AtomicBoolean(false);
 
     protected transient Thread processingThread;
-
-    protected Connector connector;
+    protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
     protected short shardIndex;
 
@@ -81,6 +81,10 @@ public class VoidParameterServer {
 
     public static VoidParameterServer getInstance() {
         return INSTANCE;
+    }
+
+    public void setTrainingDriver(@NonNull TrainingDriver<? extends TrainingMessage> trainer) {
+        this.trainer = trainer;
     }
 
     /**
@@ -279,37 +283,8 @@ public class VoidParameterServer {
 
         log.info("Processing message: {}", message.getMessageType());
 
-        message.attachContext(configuration, clipboard, transport, storage, nodeRole, shardIndex);
+        message.attachContext(configuration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();
-
-        /*
-        switch (message.getMessageType()) {
-
-            case 7: {
-                    //
-                }
-                break;
-            case 20: {
-                    DistributedVectorMessage dvm = (DistributedVectorMessage) message;
-
-                    log.info("Got distributed request for rowIndex: {}", dvm.getRowIndex());
-              //      VectorAggregation aggregation = new VectorAggregation(dvm.getRowIndex(), (short) configuration.getNumberOfShards(), getShardIndex(), syn0.getRow(dvm.getRowIndex()).dup());
-              //      transport.sendMessageToAllShards(aggregation);
-                }
-                break;
-            case 21: {
-                    VoidAggregation aggregation = (VoidAggregation) message;
-                    if (clipboard.isTracking(aggregation.getTaskId())) {
-                        clipboard.pin(aggregation);
-                    } else {
-                        log.info("Skipping vectors. Shard: {}; ", getShardIndex());
-                    }
-                }
-                break;
-            default:
-                log.info("Unknown messageType [{}] being passed in...", message.getMessageType());
-        }
-        */
     }
 
     /**
@@ -330,6 +305,7 @@ public class VoidParameterServer {
      *
      * @param aggregate
      */
+    @Deprecated
     public <T extends Aggregate> void execDistributed(@NonNull T aggregate) {
         // we just form the message and send it
 
@@ -345,6 +321,7 @@ public class VoidParameterServer {
      * @param batch
      * @param <T>
      */
+    @Deprecated
     public <T extends Aggregate> void execDistributed(@NonNull Batch<T> batch) {
         // we form it and send it :)
 

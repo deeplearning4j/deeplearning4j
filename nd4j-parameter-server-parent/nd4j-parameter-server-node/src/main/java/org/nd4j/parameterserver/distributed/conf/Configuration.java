@@ -36,6 +36,11 @@ public class Configuration implements Serializable {
     private int ttl = 4;
     protected NodeRole forcedRole;
 
+    // FIXME: probably worth moving somewhere else
+    // this part is specific to w2v
+    private boolean useHS = true;
+    private boolean useNS = false;
+
     public void setStreamId(int streamId) {
         if (streamId < 1 )
             throw new ND4JIllegalStateException("You can't use streamId 0, please specify other one");

@@ -30,16 +30,19 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     protected int[] points;
     protected byte[] codes;
 
+    protected short negSamples;
+
     protected SkipGramRequestMessage() {
         super(0);
     }
 
-    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes) {
+    public SkipGramRequestMessage(int w1, int w2, int[] points, byte[] codes, short negSamples) {
         this();
         this.w1 = w1;
         this.w2 = w2;
         this.points = points;
         this.codes = codes;
+        this.negSamples = negSamples;
     }
 
     /**
@@ -48,11 +51,9 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     @Override
     public void processMessage() {
         /**
-         * We go for computational phases
-         * phase A) calculate gradients for different rows
-         * phase B) apply gradients
+         * This method in reality just delegates training to specific TrainingDriver, based on message type.
+         * In this case - SkipGram training
          */
-
         TrainerProvider.getInstance().doTraining(this);
     }
 }
