@@ -17,7 +17,7 @@ import java.util.List;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements MultiDataNormalization {
+public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements MultiDataNormalization {
     protected NormalizerStrategy<S> strategy;
     @Setter private List<S> featureStats;
     @Setter private List<S> labelStats;

@@ -7,7 +7,7 @@ import java.io.Serializable;
  *
  * @author Ede Meijer
  */
-abstract class AbstractNormalizer implements Serializable {
+public abstract class AbstractNormalizer implements Serializable {
     protected abstract boolean isFit();
 
     void assertIsFit() {

@@ -17,7 +17,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements DataNormalization {
+public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements DataNormalization {
     protected NormalizerStrategy<S> strategy;
     @Setter(AccessLevel.PROTECTED) private S featureStats;
     @Setter(AccessLevel.PROTECTED) private S labelStats;
