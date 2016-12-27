@@ -24,6 +24,9 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -39,10 +42,12 @@ import java.util.Map;
 public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     private double forgetGateBiasInit;
+    private IActivation gateActivationFn = new ActivationSigmoid();
 
     private GravesBidirectionalLSTM(Builder builder) {
     	super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
+        this.gateActivationFn = builder.gateActivationFn;
     }
 
     @Override
@@ -120,12 +125,44 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
         private double forgetGateBiasInit = 1.0;
+        private IActivation gateActivationFn = new ActivationSigmoid();
 
         /** Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit){
             this.forgetGateBiasInit = biasInit;
+            return this;
+        }
+
+        /**
+         * Activation function for the LSTM gates.
+         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         *
+         * @param gateActivationFn Activation function for the LSTM gates
+         */
+        public Builder gateActivationFunction(String gateActivationFn){
+            return gateActivationFunction(Activation.fromString(gateActivationFn));
+        }
+
+        /**
+         * Activation function for the LSTM gates.
+         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         *
+         * @param gateActivationFn Activation function for the LSTM gates
+         */
+        public Builder gateActivationFunction(Activation gateActivationFn){
+            return gateActivationFunction(gateActivationFn.getActivationFunction());
+        }
+
+        /**
+         * Activation function for the LSTM gates.
+         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         *
+         * @param gateActivationFn Activation function for the LSTM gates
+         */
+        public Builder gateActivationFunction(IActivation gateActivationFn){
+            this.gateActivationFn = gateActivationFn;
             return this;
         }
 

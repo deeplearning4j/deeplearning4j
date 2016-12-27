@@ -108,9 +108,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setListeners(IterationListener... listeners) {
-        this.iterationListeners = new ArrayList<>();
-        for(IterationListener l : listeners)
-            iterationListeners.add(l);
+        setListeners(Arrays.asList(listeners));
     }
 
     @Override
@@ -124,8 +122,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
-        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
-        return deriv;
+        //INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
+//        INDArray deriv = conf().getLayer().getActivationFn().getGradient(input);
+//        return deriv;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -144,8 +144,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true);   //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        INDArray delta = epsilon.muli(activationDerivative);
+        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
+//        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
+//        INDArray delta = epsilon.muli(activationDerivative);
+        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst();  //TODO handle activation function params
 
         if(maskArray != null){
             delta.muliColumnVector(maskArray);
@@ -333,6 +335,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    @Override
+    public Map<String,INDArray> paramTable(boolean backpropParamsOnly){
         return params;
     }
 
@@ -375,8 +382,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray activate(boolean training) {
         INDArray z = preOutput(training);
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-                conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
+        //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
+        //        conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
+        INDArray ret = conf().getLayer().getActivationFn().getActivation(z,training);
 
         if(maskArray != null){
             ret.muliColumnVector(maskArray);
@@ -417,17 +425,33 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public double calcL2() {
+    public double calcL2(boolean backpropParamsOnly) {
     	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
+
         //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
-        double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
-        return 0.5 * conf.getLayer().getL2() * l2Norm * l2Norm;
+        double l2Sum = 0.0;
+        if(conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0){
+            double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
+            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
+        }
+        if(conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0){
+            double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
+            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
+        }
+        return l2Sum;
     }
 
     @Override
-    public double calcL1() {
+    public double calcL1(boolean backpropParamsOnly) {
     	if(!conf.isUseRegularization() || conf.getLayer().getL1()  <= 0.0 ) return 0.0;
-        return conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+        double l1Sum = 0.0;
+        if(conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0){
+            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
+        }
+        if(conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0){
+            l1Sum += conf.getLayer().getL1() * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
+        }
+        return l1Sum;
     }
 
     @Override
@@ -459,6 +483,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected void applyDropOutIfNecessary(boolean training) {
         if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied ) {
+            input = input.dup();
             Dropout.applyDropout(input,conf.getLayer().getDropOut());
             dropoutApplied = true;
         }

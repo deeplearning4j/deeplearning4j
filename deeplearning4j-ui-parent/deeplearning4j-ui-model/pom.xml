@@ -3,7 +3,7 @@
     <parent>
         <artifactId>deeplearning4j-ui-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.2-SNAPSHOT</version>
+        <version>0.7.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -61,6 +61,14 @@
             <artifactId>mapdb</artifactId>
             <version>${mapdb.version}</version>
         </dependency>
+
+        <!-- SQLite - Used only for Java-7 Compatible StatsListener Storage -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>${sqlite.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>junit</groupId>
