@@ -39,6 +39,8 @@ public abstract class BaseOp implements Op {
     protected Object[] extraArgs;
     protected boolean passThrough;
 
+    // cached instance, for dataType checks
+    protected DataBuffer extraArgz;
 
     public BaseOp() {
     }
@@ -96,6 +98,9 @@ public abstract class BaseOp implements Op {
 
     @Override
     public DataBuffer extraArgsDataBuff() {
+        if (extraArgz != null)
+            return extraArgz;
+
         if(extraArgs != null) {
             DataBuffer.Type dtype = x != null ? x.data().dataType() : Nd4j.dataType();
             if(dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.HALF) {
@@ -105,7 +110,8 @@ public abstract class BaseOp implements Op {
                     float val = arg.floatValue();
                     extraz[i] = val;
                 }
-                return Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                return extraArgz;
             } else if (dtype == DataBuffer.Type.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
                 for(int i = 0; i < extraArgs.length; i++) {
@@ -113,7 +119,8 @@ public abstract class BaseOp implements Op {
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                return Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);;
+                return extraArgz;
             }
         }
         return null;

@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,7 +47,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         GemmParams params = new GemmParams(A,B,C);
 
         int charOder = Order;
-            if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), params.getC());
                 dgemm(Order
                         , params.getTransA()
                         , params.getTransB()
@@ -61,7 +63,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , 0
                         , C
                         , params.getLdc());
-            else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+            } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), params.getC());
                 sgemm(Order
                         , params.getTransA()
                         , params.getTransB()
@@ -76,7 +79,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , 0
                         , C
                         , params.getLdc());
-            else
+            } else {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), params.getC());
                 hgemm(Order
                         , params.getTransA()
                         , params.getTransB()
@@ -91,6 +95,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , 0
                         , C
                         , params.getLdc());
+            }
 
     }
 
@@ -102,7 +107,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
         GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
-            if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+            if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), C);
                 dgemm(A.ordering()
                         , params.getTransA()
                         , params.getTransB()
@@ -117,7 +123,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , beta
                         , C
                         , params.getLdc());
-            else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+            } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), C);
                 sgemm(A.ordering()
                         , params.getTransA()
                         , params.getTransB()
@@ -132,7 +139,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , (float) beta
                         , C
                         , params.getLdc());
-            else
+            } else {
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), C);
                 hgemm(A.ordering()
                         , params.getTransA()
                         , params.getTransB()
@@ -147,6 +155,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                         , (float) beta
                         , C
                         , params.getLdc());
+            }
     }
 
 
@@ -171,10 +180,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsymm(Order,Side,Uplo,C.rows(),C.columns(),alpha,A,A.size(0),B,B.size(0),beta,C,C.size(0));
-        else
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
+            dsymm(Order, Side, Uplo, C.rows(), C.columns(), alpha, A, A.size(0), B, B.size(0), beta, C, C.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
             ssymm(Order, Side, Uplo, C.rows(), C.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C, C.size(0));
+        }
 
     }
 
@@ -198,10 +210,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, C);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsyrk(Order,Uplo,Trans,C.rows(),1,alpha,A,A.size(0),beta,C,C.size(0));
-        else
-            ssyrk(Order,Uplo,Trans,C.rows(),1,(float) alpha,A,A.size(0),(float) beta,C,C.size(0));
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, C);
+            dsyrk(Order, Uplo, Trans, C.rows(), 1, alpha, A, A.size(0), beta, C, C.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, C);
+            ssyrk(Order, Uplo, Trans, C.rows(), 1, (float) alpha, A, A.size(0), (float) beta, C, C.size(0));
+        }
 
     }
 
@@ -227,10 +242,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
             dsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0),beta,C,C.size(0));
-        }
-        else
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
             ssyr2k(Order, Uplo, Trans, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C, C.size(0));
+        }
 
     }
 
@@ -257,10 +274,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
             dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
-        }
-        else
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
             strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
+        }
 
     }
 
@@ -287,10 +306,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             OpProfiler.getInstance().processBlasCall(false, A, B);
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B);
             dtrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
-        }
-        else
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B);
             strsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
+        }
 
     }
 
