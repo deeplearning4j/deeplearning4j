@@ -14,9 +14,11 @@ public interface TrainingDriver<T extends TrainingMessage> {
 
     void init(Configuration configuration, Transport transport, Storage storage, Clipboard clipboard);
 
-    void doTraining(T message);
+    void startTraining(T message);
 
     void aggregationFinished(VoidAggregation aggregation);
+
+    void finishTraining(long taskId);
 
     String targetMessageClass();
 }

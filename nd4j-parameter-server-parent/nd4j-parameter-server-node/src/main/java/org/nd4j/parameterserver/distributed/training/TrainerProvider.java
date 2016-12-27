@@ -4,13 +4,13 @@ import lombok.NonNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +26,7 @@ public class TrainerProvider {
     protected Configuration configuration;
     protected Transport transport;
     protected Clipboard clipboard;
+    protected Storage storage;
 
     private TrainerProvider(){
         scanClasspath();
@@ -56,13 +57,14 @@ public class TrainerProvider {
             throw new ND4JIllegalStateException("No TrainingDrivers were found");
     }
 
-    public void init(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Clipboard clipboard) {
+    public void init(@NonNull Configuration configuration, @NonNull Transport transport, @NonNull Storage storage, @NonNull Clipboard clipboard) {
         this.configuration = configuration;
         this.transport = transport;
         this.clipboard = clipboard;
+        this.storage = storage;
 
         for (TrainingDriver<?> trainer: trainers.values()) {
-            trainer.init(configuration, transport, clipboard);
+            trainer.init(configuration, transport, storage,  clipboard);
         }
     }
 
@@ -79,6 +81,6 @@ public class TrainerProvider {
 
     public <T extends TrainingMessage> void doTraining(T message) {
         TrainingDriver<T> trainer = getTrainer(message);
-        trainer.doTraining(message);
+        trainer.startTraining(message);
     }
 }

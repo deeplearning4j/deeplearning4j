@@ -28,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;
 
-    protected Map<Long, Chain> chains = new ConcurrentHashMap<>();
+    protected Map<Long, SkipGramChain> chains = new ConcurrentHashMap<>();
 
     @Override
-    public void doTraining(SkipGramRequestMessage message) {
+    public void startTraining(SkipGramRequestMessage message) {
         /**
          * All we do right HERE - is dot calculation start
          */
@@ -74,16 +74,28 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // the only possible aggregation here is DotAggregation, actually
         // so we just calculate gradients here
 
-        chains.get(aggregation).addElement((DotAggregation) aggregation);
+        SkipGramChain chain = chains.get(aggregation.getTaskId());
+        chain.addElement((DotAggregation) aggregation);
 
+        finishTraining(aggregation.getTaskId());
+    }
+
+    @Override
+    public void finishTraining(long taskId) {
         // TODO: real values needed here
-        float alpha = 1.3f;
+        SkipGramChain chain = chains.get(taskId);
+
+        if (chain == null)
+            throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
+
+        float alpha = chain.getRequestMessage().getAlpha();
         int code = 0;
 
         // TODO: We DON'T want this code being here
         // TODO: We want algorithm below to be native
         INDArray expTable = storage.getArray(WordVectorStorage.EXP_TABLE);
-        INDArray dots = aggregation.getAccumulatedResult();
+        INDArray dots = chain.getDotAggregation().getAccumulatedResult();
+
         for (int e = 0; e < dots.length(); e++) {
             float dot = dots.getFloat(e);
 

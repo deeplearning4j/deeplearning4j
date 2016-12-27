@@ -21,6 +21,9 @@ import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 @Data
 public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage {
 
+    // learning rate for this sequence
+    protected float alpha;
+
     // current word & lastWord
     protected int w1;
     protected int w2;
