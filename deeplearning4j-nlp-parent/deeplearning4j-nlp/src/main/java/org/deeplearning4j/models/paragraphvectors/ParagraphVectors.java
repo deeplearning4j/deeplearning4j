@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -29,6 +30,7 @@ import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIterato
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -507,7 +509,12 @@ public class ParagraphVectors extends Word2Vec {
          * @return
          */
         @Override
+        @SuppressWarnings("unchecked")
         public Builder useExistingWordVectors(@NonNull WordVectors vec) {
+            if (((InMemoryLookupTable<VocabWord>)vec.lookupTable()).getSyn1() == null &&
+                    ((InMemoryLookupTable<VocabWord>)vec.lookupTable()).getSyn1Neg() == null)
+                throw new ND4JIllegalStateException("Model being passed as existing has no syn1/syn1Neg available");
+
             this.existingVectors = vec;
             return this;
         }
@@ -668,8 +675,8 @@ public class ParagraphVectors extends Word2Vec {
                 this.trainElementsVectors = false;
                 this.elementsLearningAlgorithm = null;
 
-                this.lookupTable = this.existingVectors.lookupTable();
-                this.vocabCache = this.existingVectors.vocab();
+                //this.lookupTable = this.existingVectors.lookupTable();
+                //this.vocabCache = this.existingVectors.vocab();
             }
 
             if (this.labelsSource == null) this.labelsSource = new LabelsSource();

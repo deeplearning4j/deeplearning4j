@@ -45,8 +45,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("relu", conf.getConf(0).getLayer().getActivationFunction().toString());
-        assertEquals("relu", conf.getConf(1).getLayer().getActivationFunction().toString());
+        assertEquals("relu", conf.getConf(0).getLayer().getActivationFn().toString());
+        assertEquals("relu", conf.getConf(1).getLayer().getActivationFn().toString());
 
         //With
         conf = new NeuralNetConfiguration.Builder()
@@ -59,8 +59,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("relu", conf.getConf(0).getLayer().getActivationFunction().toString());
-        assertEquals("tanh", conf.getConf(1).getLayer().getActivationFunction().toString());
+        assertEquals("relu", conf.getConf(0).getLayer().getActivationFn().toString());
+        assertEquals("tanh", conf.getConf(1).getLayer().getActivationFn().toString());
     }
 
 

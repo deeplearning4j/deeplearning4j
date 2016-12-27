@@ -61,6 +61,10 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 	private List<Point>	initialPoints;
 	private transient ExecutorService exec;
 
+	protected BaseClusteringAlgorithm() {
+		// no-op for serialization only
+	}
+
 	protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
 		this.clusteringStrategy = clusteringStrategy;
 		this.exec = MultiThreadUtils.newExecutorService();
@@ -89,7 +93,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 	 */
 	private void iterations() {
 		int iterationCount = 0;
-		while (!clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory) ||
+		while ((clusteringStrategy.getTerminationCondition() != null && !clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory)) ||
 				iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
 			currentIteration++;
 			removePoints();

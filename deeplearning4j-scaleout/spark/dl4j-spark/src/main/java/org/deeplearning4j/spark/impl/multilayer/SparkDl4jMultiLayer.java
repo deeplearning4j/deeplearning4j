@@ -44,12 +44,14 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -65,9 +67,7 @@ import scala.Tuple2;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Master class for spark
@@ -293,7 +293,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model. The listeners will be
+     * This method allows you to specify IterationListeners for this model.
      * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
      * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
@@ -301,6 +301,28 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public void setListeners(@NonNull Collection<IterationListener> listeners) {
         setListeners(null, listeners);
+    }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
+     *
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(@NonNull IterationListener... listeners){
+        setListeners(Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+        setListeners(statsStorage, Arrays.asList(listeners));
     }
 
     /**
@@ -482,6 +504,18 @@ public class SparkDl4jMultiLayer implements Serializable {
     public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()),
                 includeRegularizationTerms, batchSize));
+    }
+
+    /**
+     * Feed-forward the specified data, with the given keys. i.e., get the network output/predictions for the specified data
+     *
+     * @param featuresData Features data to feed through the network
+     * @param batchSize    Batch size to use when doing feed forward operations
+     * @param <K>          Type of data for key - may be anything
+     * @return             Network output given the input, by key
+     */
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K,INDArray> featuresData, int batchSize){
+        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()), sc.broadcast(conf.toJson()), batchSize));
     }
 
     /**

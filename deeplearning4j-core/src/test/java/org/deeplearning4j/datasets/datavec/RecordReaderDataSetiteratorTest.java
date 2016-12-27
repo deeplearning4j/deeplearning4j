@@ -23,11 +23,13 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -38,12 +40,10 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -890,5 +890,52 @@ public class RecordReaderDataSetiteratorTest {
             DataSet fromMeta = rrdsi.loadFromMetaData(meta);
             assertEquals(ds, fromMeta);
         }
+    }
+
+
+
+
+    @Test
+    public void testRecordReaderDataSetIteratorNDArrayWritableLabels(){
+
+        Collection<Collection<Writable>> data = new ArrayList<>();
+
+        data.add(Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new NDArrayWritable(Nd4j.create(new double[]{1.1, 2.1, 3.1}))));
+        data.add(Arrays.<Writable>asList(new DoubleWritable(2), new DoubleWritable(3), new NDArrayWritable(Nd4j.create(new double[]{4.1, 5.1, 6.1}))));
+        data.add(Arrays.<Writable>asList(new DoubleWritable(4), new DoubleWritable(5), new NDArrayWritable(Nd4j.create(new double[]{7.1, 8.1, 9.1}))));
+
+        RecordReader rr = new CollectionRecordReader(data);
+        int batchSize = 3;
+        int labelIndexFrom = 2;
+        int labelIndexTo = 2;
+        boolean regression = true;
+        DataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, batchSize,labelIndexFrom, labelIndexTo, regression);
+
+        DataSet ds = rrdsi.next();
+        INDArray expFeatures = Nd4j.create(new double[][]{
+                {0,1},
+                {2,3},
+                {4,5}});
+        INDArray expLabels = Nd4j.create(new double[][]{
+                {1.1, 2.1, 3.1},
+                {4.1, 5.1, 6.1},
+                {7.1, 8.1, 9.1}});
+
+        assertEquals(expFeatures, ds.getFeatures());
+        assertEquals(expLabels, ds.getLabels());
+
+        //ALSO: test if we have NDArrayWritables for BOTH the features and the labels
+        data = new ArrayList<>();
+
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})), new NDArrayWritable(Nd4j.create(new double[]{1.1, 2.1, 3.1}))));
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{2,3})), new NDArrayWritable(Nd4j.create(new double[]{4.1, 5.1, 6.1}))));
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{4,5})), new NDArrayWritable(Nd4j.create(new double[]{7.1, 8.1, 9.1}))));
+
+        rr = new CollectionRecordReader(data);
+        rrdsi = new RecordReaderDataSetIterator(rr, batchSize,labelIndexFrom, labelIndexTo, regression);
+
+        ds = rrdsi.next();
+        assertEquals(expFeatures, ds.getFeatures());
+        assertEquals(expLabels, ds.getLabels());
     }
 }

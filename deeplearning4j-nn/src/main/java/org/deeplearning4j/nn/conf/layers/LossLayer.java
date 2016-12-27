@@ -55,14 +55,18 @@ public class LossLayer extends FeedForwardLayer {
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        public Builder() {}
+        public Builder() {
+            this.activation("identity");
+        }
 
         public Builder(LossFunctions.LossFunction lossFunction) {
             lossFunction(lossFunction);
+            this.activation("identity");
         }
 
         public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
+            this.activation("identity");
         }
 
         @Override

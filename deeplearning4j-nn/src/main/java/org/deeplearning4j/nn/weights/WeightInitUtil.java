@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+
 
 /**
  * Weight initialization utility
@@ -112,7 +114,8 @@ public class WeightInitUtil {
 
         INDArray flat = Nd4j.toFlattened(order, ret);
         if (flat.length() != paramView.length())
-            throw new RuntimeException("ParamView length does not match initialized weights length");
+            throw new RuntimeException("ParamView length does not match initialized weights length (view length: "
+                    + paramView.length() + ", view shape: " + Arrays.toString(paramView.shape()) + "; flattened length: " + flat.length());
 
         paramView.assign(flat);
 
