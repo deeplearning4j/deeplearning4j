@@ -1,6 +1,5 @@
 package org.nd4j.linalg.activations.impl;
 
-import com.fasterxml.jackson.databind.deser.Deserializers;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
@@ -9,7 +8,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.HardSigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.HardSigmoidDerivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 /**
  * f(x) = min(1, max(0, 0.2*x + 0.5))

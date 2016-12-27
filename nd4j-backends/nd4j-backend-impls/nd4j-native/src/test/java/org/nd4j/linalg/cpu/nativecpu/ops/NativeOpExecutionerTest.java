@@ -737,4 +737,19 @@ public class NativeOpExecutionerTest {
 
         assertEquals(exp3d, arr3d);
     }
+
+    @Test
+    public void testGet() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+
+        INDArray recurrentWeights = Nd4j.create(127, 511);
+
+        for (int i = 0; i < 5; i++) {
+            INDArray recurrentWeightsIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * 127)).dup('f');
+
+            log.info("orig: {}", Arrays.toString(recurrentWeights.shapeInfoDataBuffer().asInt()));
+            log.info("data: {}", Arrays.toString(recurrentWeightsIFOG.shapeInfoDataBuffer().asInt()));
+            log.info("--------------");
+        }
+    }
 }
