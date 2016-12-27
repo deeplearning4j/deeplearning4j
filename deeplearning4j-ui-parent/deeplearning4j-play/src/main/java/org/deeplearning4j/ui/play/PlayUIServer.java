@@ -313,6 +313,11 @@ public class PlayUIServer extends UIServer {
         return remoteReceiverModule.isEnabled();
     }
 
+    @Override
+    public void stop() {
+        server.stop();
+    }
+
 
     private class StatsEventRouterRunnable implements Runnable {
 

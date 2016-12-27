@@ -18,10 +18,16 @@
 
 package org.deeplearning4j.clustering.algorithm.optimisation;
 
-public class ClusteringOptimization {
+import java.io.Serializable;
+
+public class ClusteringOptimization implements Serializable {
 
 	private ClusteringOptimizationType	type;
 	private double value;
+
+	protected ClusteringOptimization() {
+		// no-op for serialization only
+	}
 
 	public ClusteringOptimization(ClusteringOptimizationType type, double value) {
 		super();

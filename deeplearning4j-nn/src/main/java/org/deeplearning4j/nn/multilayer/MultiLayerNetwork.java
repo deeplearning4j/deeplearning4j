@@ -150,7 +150,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (defaultConfiguration == null)
             defaultConfiguration = new NeuralNetConfiguration.Builder()
-                    .build();
+                .build();
     }
 
 
@@ -269,7 +269,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layer.conf().setPretrain(false);
         }
     }
-
 
     @Override
     public int batchSize() {
@@ -768,92 +767,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return new Pair<>(gradient(), score());
     }
 
-    /* delta computation for back prop with the R operator */
-    protected List<INDArray> computeDeltasR(INDArray v) {
-        List<INDArray> deltaRet = new ArrayList<>();
-
-        INDArray[] deltas = new INDArray[getnLayers() + 1];
-        List<INDArray> activations = feedForward();
-        List<INDArray> rActivations = feedForwardR(activations, v);
-      /*
-     * Precompute activations and z's (pre activation network outputs)
-		 */
-        List<INDArray> weights = new ArrayList<>();
-        List<INDArray> biases = new ArrayList<>();
-        List<String> activationFunctions = new ArrayList<>();
-
-
-        for (int j = 0; j < getLayers().length; j++) {
-            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
-            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
-            activationFunctions.add(getLayers()[j].conf().getLayer().getActivationFunction());
-        }
-
-
-        INDArray rix = rActivations.get(rActivations.size() - 1).divi((double) input.size(0));
-        LinAlgExceptions.assertValidNum(rix);
-
-        //errors
-        for (int i = getnLayers() - 1; i >= 0; i--) {
-            //W^t * error^l + 1
-            deltas[i] = activations.get(i).transpose().mmul(rix);
-
-            if (i > 0)
-                rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1), activations.get(i)).derivative()));
-
-        }
-
-        for (int i = 0; i < deltas.length - 1; i++) {
-            deltaRet.add(deltas[i]);
-        }
-
-        return deltaRet;
-    }
-
-    /* delta computation for back prop with precon for SFH */
-    protected List<Pair<INDArray, INDArray>> computeDeltas2() {
-        List<Pair<INDArray, INDArray>> deltaRet = new ArrayList<>();
-        List<INDArray> activations = feedForward();
-        INDArray[] deltas = new INDArray[activations.size() - 1];
-        INDArray[] preCons = new INDArray[activations.size() - 1];
-
-
-        //- y - h
-        INDArray ix = activations.get(activations.size() - 1).sub(labels).div(labels.size(0));
-
-       	/*
-		 * Precompute activations and z's (pre activation network outputs)
-		 */
-        List<INDArray> weights = new ArrayList<>();
-        List<INDArray> biases = new ArrayList<>();
-
-        List<String> activationFunctions = new ArrayList<>();
-        for (int j = 0; j < getLayers().length; j++) {
-            weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
-            biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
-            activationFunctions.add(getLayers()[j].conf().getLayer().getActivationFunction());
-        }
-
-
-        //errors
-        for (int i = weights.size() - 1; i >= 0; i--) {
-            deltas[i] = activations.get(i).transpose().mmul(ix);
-            preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.size(0));
-
-            if (i > 0) {
-                //W[i] + b[i] * f'(z[i - 1])
-                ix = ix.mmul(weights.get(i).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1), activations.get(i)).derivative()));
-            }
-        }
-
-        for (int i = 0; i < deltas.length; i++) {
-            deltaRet.add(new Pair<>(deltas[i], preCons[i]));
-
-        }
-
-        return deltaRet;
-    }
-
 
     @Override
     public MultiLayerNetwork clone() {
@@ -883,9 +796,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray params(boolean backwardOnly) {
         if(backwardOnly) return params();
-
-//        if(params != null)
-//            return params;
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers()){
@@ -1114,9 +1024,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     setLabels(next.getLabels());
                     if( solver == null ){
                         solver = new Solver.Builder()
-                                .configure(conf())
-                                .listeners(getListeners())
-                                .model(this).build();
+                            .configure(conf())
+                            .listeners(getListeners())
+                            .model(this).build();
                     }
                     solver.optimize();
                 }
@@ -1229,7 +1139,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                    + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1268,9 +1178,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             if(solver == null) {
                 solver = new Solver.Builder()
-                        .configure(conf())
-                        .listeners(getListeners())
-                        .model(this).build();
+                    .configure(conf())
+                    .listeners(getListeners())
+                    .model(this).build();
             }
             solver.optimize();
 
@@ -1525,9 +1435,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             else {
                 if( solver == null) {
                     solver = new Solver.Builder()
-                            .configure(conf())
-                            .listeners(getListeners())
-                            .model(this).build();
+                        .configure(conf())
+                        .listeners(getListeners())
+                        .model(this).build();
                 }
 
                 solver.optimize();
@@ -1588,7 +1498,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray examples, int[] labels) {
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
+            (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
         fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
     }
 
@@ -2037,39 +1947,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         setParams(params);
     }
 
-
+    @Override
     public void applyLearningRateScoreDecay() {
         for (Layer layer: layers) {
             if (!layer.conf().getLearningRateByParam().isEmpty()) {
                 for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
                     layer.conf().setLearningRateByParam(lrPair.getKey(),
-                            lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+                        lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
                 }
             }
         }
-    }
-
-    /**
-     * Feed forward with the r operator
-     *
-     * @param v the v for the r operator
-     * @return the activations based on the r operator
-     */
-    public List<INDArray> feedForwardR(List<INDArray> acts, INDArray v) {
-        List<INDArray> R = new ArrayList<>();
-        R.add(Nd4j.zeros(input.size(0), input.columns()));
-        List<Pair<INDArray, INDArray>> vWvB = unPack(v);
-        List<INDArray> W = MultiLayerUtil.weightMatrices(this);
-
-        for (int i = 0; i < layers.length; i++) {
-            String derivative = getLayers()[i].conf().getLayer().getActivationFunction();
-            //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-            R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i)
-                    .mmul(vWvB.get(i).getFirst().addiRowVector(vWvB.get(i).getSecond())))
-                    .muli((Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(derivative, acts.get(i + 1)).derivative()))));
-        }
-
-        return R;
     }
 
     public NeuralNetConfiguration getDefaultConfiguration() {
@@ -2402,9 +2289,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public synchronized Updater getUpdater() {
         if(solver == null){
             solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+                .configure(conf())
+                .listeners(getListeners())
+                .model(this).build();
             solver.getOptimizer().setUpdater(UpdaterCreator.getUpdater(this));
         }
         return solver.getOptimizer().getUpdater();
@@ -2414,9 +2301,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setUpdater(Updater updater) {
         if(solver == null) {
             solver = new Solver.Builder()
-                    .configure(conf())
-                    .listeners(getListeners())
-                    .model(this).build();
+                .configure(conf())
+                .listeners(getListeners())
+                .model(this).build();
         }
         solver.getOptimizer().setUpdater(updater);
     }

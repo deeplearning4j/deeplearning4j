@@ -10,6 +10,9 @@ import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -26,7 +29,7 @@ public class LayerBuilderTest {
     int numIn = 10;
     int numOut = 5;
     double drop = 0.3;
-    String act = "softmax";
+    IActivation act = new ActivationSoftmax();
     PoolingType poolType = PoolingType.MAX;
     int[] kernelSize = new int[]{2, 2};
     int[] stride = new int[]{2, 2};
@@ -55,7 +58,7 @@ public class LayerBuilderTest {
 
         checkSerialization(layer);
 
-        assertEquals(act, layer.getActivationFunction());
+        assertEquals(act, layer.getActivationFn());
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
         assertEquals(dropOut, layer.getDropOut(), DELTA);
@@ -153,7 +156,7 @@ public class LayerBuilderTest {
         assertEquals(glstm.getForgetGateBiasInit(),1.5,0.0);
     	assertEquals(glstm.nIn, numIn);
     	assertEquals(glstm.nOut,numOut);
-    	assertEquals(glstm.activationFunction,"tanh");
+        assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
     }
 
     @Test
@@ -168,7 +171,7 @@ public class LayerBuilderTest {
         assertEquals(glstm.getForgetGateBiasInit(),1.5,0.0);
         assertEquals(glstm.nIn,numIn);
         assertEquals(glstm.nOut,numOut);
-        assertEquals(glstm.activationFunction,"tanh");
+        assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
     }
 
     @Test
@@ -205,7 +208,7 @@ public class LayerBuilderTest {
 
         assertEquals(numIn, activationLayer.nIn);
         assertEquals(numOut, activationLayer.nOut);
-        assertEquals(act, activationLayer.activationFunction);
+        assertEquals(act, activationLayer.activationFn);
     }
 
     private void checkSerialization(Layer layer) throws Exception {
