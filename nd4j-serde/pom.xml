@@ -16,6 +16,7 @@
         <module>nd4j-kryo</module>
         <module>nd4j-base64</module>
         <module>nd4j-camel-routes</module>
+        <module>nd4j-gson</module>
     </modules>
 
 </project>
