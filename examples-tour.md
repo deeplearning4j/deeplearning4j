@@ -264,7 +264,7 @@ The learning algorithms and loss functions are executed as ND4J operations.
 
 ### Basic ND4J examples
 
-A directory with examples for creating andmanipulating NDArrays.
+This is a directory with examples for creating and manipulating NDArrays.
 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples/src/main/java/org/nd4j/examples)
 
