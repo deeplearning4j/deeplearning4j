@@ -40,13 +40,14 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ---
 ## Documentation
-Documentation is available at [deeplearning4j.org](http://deeplearning4j.org) and [JavaDocs](http://deeplearning4j.org/doc).
+Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](http://deeplearning4j.org/doc).
 
 ## Support
 
-We are not supporting Stackoverflow right now. Github issues should be limited to bug reports. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact). 
+We are not supporting Stackoverflow right now. Github issues should focus on bug reports and feature requests. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact). 
 
 ## Installation
+
 To install Deeplearning4J, there are a couple approaches (briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below). More information can be found on the [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
