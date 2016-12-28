@@ -24,6 +24,15 @@ import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 @Slf4j
 public class DeepLearning4jEntryPoint {
 
+    /**
+     * Performs fitting of the model which is referenced in the parameters according to learning parameters specified.
+     *
+     * @param entryPointFitParameters
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     */
     public void fit(EntryPointFitParameters entryPointFitParameters)
             throws IOException, InterruptedException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
