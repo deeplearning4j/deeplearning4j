@@ -207,19 +207,19 @@ Regression with an LSTM (Long Short Term Memory) Recurrent Neural Network.
 
 ### AdditionRNN.java
 
-Trains a Neural Net to do addition. 
+This example trains a neural network to do addition. 
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seq2seq/AdditionRNN.java)
 
 ### RegressionMathFunctions.java
 
-Trains a Neural Net to do various math operations. 
+This example trains a neural network to perform various math operations. 
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/regression/RegressionMathFunctions.java)
 
 ### UCISequenceClassificationExample.java
 
-A publicly available dataset of time series data of 6 classes, cyclic, up-trending, etc. Example of an RNN learning to classify the time series. 
+A publicly available dataset of time series data of six classes, cyclic, up-trending, etc. Example of an RNN learning to classify the time series. 
 
 [Show me the code](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/seqClassification/UCISequenceClassificationExample.java)
 
@@ -245,7 +245,7 @@ DeepLearning4j supports using a Spark Cluster for network training. Here are the
 
 ### MnistMLPExample.java
 
-An example of a Multi Layer Perceptron training on the Mnist data set of handwritten digits. 
+This is an example of a Multi-Layer Perceptron training on the Mnist data set of handwritten digits. 
 [Show me the code](http://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
 
 ### SparkLSTMCharacterExample.java
