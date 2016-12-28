@@ -1,7 +1,12 @@
 package org.deeplearning4j.keras;
 
 import lombok.Builder;
+import lombok.Data;
 
+/**
+ * POJO with parameters of the `fit` method of available through the py4j Python-Java bridge
+ */
+@Data
 @Builder
 public class EntryPointFitParameters {
     private String modelFilePath;
@@ -13,40 +18,4 @@ public class EntryPointFitParameters {
     private String validationXFilePath;
     private String validationYFilePath;
     private String dimOrdering;
-
-    public String getModelFilePath() {
-        return modelFilePath;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getTrainFeaturesFile() {
-        return trainFeaturesFile;
-    }
-
-    public String getTrainLabelsFile() {
-        return trainLabelsFile;
-    }
-
-    public int getBatchSize() {
-        return batchSize;
-    }
-
-    public long getNbEpoch() {
-        return nbEpoch;
-    }
-
-    public String getValidationXFilePath() {
-        return validationXFilePath;
-    }
-
-    public String getValidationYFilePath() {
-        return validationYFilePath;
-    }
-
-    public String getDimOrdering() {
-        return dimOrdering;
-    }
 }
