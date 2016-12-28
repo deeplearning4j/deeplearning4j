@@ -17,6 +17,10 @@ import java.io.IOException;
 
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 
+/**
+ * API exposed to the Python side. This class contains methods which are used by the python wrapper.
+ * It is instantiated directly in the server code.
+ */
 @Slf4j
 public class DeepLearning4jEntryPoint {
 
@@ -34,30 +38,12 @@ public class DeepLearning4jEntryPoint {
 
             INDArray features = h5FileToNDArray(entryPointFitParameters.getTrainFeaturesFile());
             INDArray labels = h5FileToNDArray(entryPointFitParameters.getTrainLabelsFile());
-
-            INDArrayIndex[] ndIndexes = new INDArrayIndex[features.shape().length];
-            for (int i = 0; i < ndIndexes.length; i++) {
-                ndIndexes[i] = NDArrayIndex.all();
-            }
+            int batchSize = entryPointFitParameters.getBatchSize();
 
             for (int i = 0; i < entryPointFitParameters.getNbEpoch(); i++) {
                 log.info("Fitting: " + i);
 
-                int begin = 0;
-                while (begin < features.size(0)) {
-                    int end = begin + entryPointFitParameters.getBatchSize();
-
-                    if (log.isTraceEnabled()) {
-                        log.trace("Processing batch: " + begin + " " + end);
-                    }
-
-                    ndIndexes[0] = NDArrayIndex.interval(begin, end);
-                    INDArray featuresBatch = features.get(ndIndexes);
-                    INDArray labelsBatch = labels.get(NDArrayIndex.interval(begin, end));
-                    multiLayerNetwork.fit(featuresBatch, labelsBatch);
-
-                    begin += entryPointFitParameters.getBatchSize();
-                }
+                fitInBatches(multiLayerNetwork, features, labels, batchSize);
             }
 
             log.info("Learning model finished");
@@ -65,6 +51,35 @@ public class DeepLearning4jEntryPoint {
             log.error("Error while handling request!", e);
             throw e;
         }
+    }
+
+    void fitInBatches(MultiLayerNetwork multiLayerNetwork, INDArray features, INDArray labels, int batchSize) {
+        final INDArrayIndex[] ndIndexes = createSlicingIndexes(features.shape().length);
+
+        int begin = 0;
+
+        while (begin < features.size(0)) {
+            int end = begin + batchSize;
+
+            if (log.isTraceEnabled()) {
+                log.trace("Processing batch: " + begin + " " + end);
+            }
+
+            ndIndexes[0] = NDArrayIndex.interval(begin, end);
+            INDArray featuresBatch = features.get(ndIndexes);
+            INDArray labelsBatch = labels.get(NDArrayIndex.interval(begin, end));
+            multiLayerNetwork.fit(featuresBatch, labelsBatch);
+
+            begin += batchSize;
+        }
+    }
+
+    private INDArrayIndex[] createSlicingIndexes(int length) {
+        INDArrayIndex[] ndIndexes = new INDArrayIndex[length];
+        for (int i = 0; i < ndIndexes.length; i++) {
+            ndIndexes[i] = NDArrayIndex.all();
+        }
+        return ndIndexes;
     }
 
     private INDArray h5FileToNDArray(String inputFilePath) {
