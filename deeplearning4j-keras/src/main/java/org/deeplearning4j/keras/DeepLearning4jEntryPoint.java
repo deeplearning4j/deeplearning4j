@@ -68,19 +68,17 @@ public class DeepLearning4jEntryPoint {
     }
 
     private INDArray h5FileToNDArray(String inputFilePath) {
-        hdf5.H5File h5File = new hdf5.H5File();
-        h5File.openFile(inputFilePath, H5F_ACC_RDONLY);
-        hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
-        int[] shape = extractShape(dataSet);
-        long totalSize = ArrayUtil.prodLong(shape);
-        float[] dataBuffer = readFromDataSet(dataSet, (int) totalSize);
+        try (hdf5.H5File h5File = new hdf5.H5File()) {
+            h5File.openFile(inputFilePath, H5F_ACC_RDONLY);
+            hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
+            int[] shape = extractShape(dataSet);
+            long totalSize = ArrayUtil.prodLong(shape);
+            float[] dataBuffer = readFromDataSet(dataSet, (int) totalSize);
 
-        INDArray input = Nd4j.create(shape);
-        new RecursiveCopier(input, dataBuffer, shape).copy();
-
-        h5File.close();
-
-        return input;
+            INDArray input = Nd4j.create(shape);
+            new RecursiveCopier(input, dataBuffer, shape).copy();
+            return input;
+        }
     }
 
     private float[] readFromDataSet(hdf5.DataSet dataSet, int total) {
@@ -96,17 +94,7 @@ public class DeepLearning4jEntryPoint {
         int nbDims = space.getSimpleExtentNdims();
         long[] shape = new long[nbDims];
         space.getSimpleExtentDims(shape);
-        return toInt(shape);
-    }
-
-    private int[] toInt(long[] array) {
-        int[] retVal = new int[array.length];
-
-        for (int i = 0; i < array.length; i++) {
-            retVal[i] = (int) array[i];
-        }
-
-        return retVal;
+        return ArrayUtil.toInts(shape);
     }
 
 }
