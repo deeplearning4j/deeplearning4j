@@ -80,7 +80,7 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
 
         assertPreProcessingGetsCached(expectedNumberOfDataSets, it, cachedIt, preProcessor);
 
-        assertCachingDataSetIteratorTestHasAllTheData(rows, inputColumns, outputColumns, dataSet, it, cachedIt);
+        assertCachingDataSetIteratorHasAllTheData(rows, inputColumns, outputColumns, dataSet, it, cachedIt);
     }
 
     private void assertDataSetCacheGetsCompleted(DataSetCache cache, String namespace, DataSetIterator cachedIt) {
@@ -117,9 +117,9 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
         assertEquals(expectedNumberOfDataSets, preProcessor.getCallCount());
     }
 
-    private void assertCachingDataSetIteratorTestHasAllTheData(int rows, int inputColumns, int outputColumns,
-                                                               DataSet dataSet, DataSetIterator it,
-                                                               CachingDataSetIterator cachedIt) {
+    private void assertCachingDataSetIteratorHasAllTheData(int rows, int inputColumns, int outputColumns,
+                                                           DataSet dataSet, DataSetIterator it,
+                                                           CachingDataSetIterator cachedIt) {
         cachedIt.reset();
         it.reset();
 
