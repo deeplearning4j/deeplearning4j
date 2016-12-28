@@ -2,7 +2,34 @@
 title: Release Notes
 layout: default
 ---
-# <a name="zerosevenzero">Release Notes for Version 0.7.1</a>
+
+# <a name="zeroseventwo">Release Notes for Version 0.7.2</a>
+- Added variational autoencoder [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/variational/VariationalAutoEncoderExample.java)
+- Activation function refactor
+    - Activation functions are now an interface [Link](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/activations/IActivation.java)
+    - Configuration now via enumeration, not via String (see examples - [Link](https://github.com/deeplearning4j/dl4j-examples))
+	- Custom activation functions now supported [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/activationfunctions/CustomActivationExample.java)
+	- New activation functions added: hard sigmoid, randomized leaky rectified linear units (RReLU)
+- Multiple fixes/improvements for Keras model import
+- Added P-norm pooling for CNNs (option as part of SubsamplingLayer configuration)
+- Iteration count persistence: stored/persisted properly in model configuration + fixes to learning rate schedules for Spark network training
+- LSTM: gate activation function can now be configured (previously: hard-coded to sigmoid)
+- UI:
+    - Added Chinese translation
+	- Fixes for UI + pretrain layers
+    - Added Java 7 compatible stats collection compatibility [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/UIStorageExample_Java7.java)
+	- Improvements in front-end for handling NaNs
+	- Added UIServer.stop() method
+	- Fixed score vs. iteration moving average line (with subsampling)
+- Solved Jaxb/Jackson issue with Spring Boot based applications
+- RecordReaderDataSetIterator now supports NDArrayWritable for the labels (set regression == true; used for multi-label classification + images, etc)
+
+### 0.7.1 -> 0.7.2 Transition Notes
+
+- Activation functions (built-in): now specified using Activation enumeration, not String (String-based configuration has been deprecated)
+
+
+# <a name="zerosevenone">Release Notes for Version 0.7.1</a>
 * RBM and AutoEncoder key fixes: 
     - Ensured visual bias updated and applied during pretraining. 
     - RBM HiddenUnit is the activation function for this layer; thus, established derivative calculations for backprop according to respective HiddenUnit.
