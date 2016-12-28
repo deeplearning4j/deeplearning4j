@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -40,7 +41,8 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         GemvParameters parameters = new GemvParameters(A,X,Y);
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(), parameters.getY());
             dgemv(order
                     , parameters.getAOrdering()
                     , parameters.getM()
@@ -53,19 +55,21 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                     , beta
                     , parameters.getY()
                     , parameters.getIncy());
-        else
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(), parameters.getY());
             sgemv(order
                     , parameters.getAOrdering()
                     , parameters.getM()
                     , parameters.getN()
                     , (float) alpha
                     , parameters.getA()
-                    ,parameters.getLda()
+                    , parameters.getLda()
                     , parameters.getX()
                     , parameters.getIncx()
                     , (float) beta
                     , parameters.getY()
                     , parameters.getIncy());
+        }
     }
 
     /**
@@ -142,10 +146,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
             dgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
-        else
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
             sgbmv(order, TransA, A.rows(), A.columns(), KL, KU, (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        }
 
     }
 
@@ -168,10 +175,11 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
             zgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asDouble(), A, A.size(0), X, X.majorStride() / 2, beta.asDouble(), Y, Y.majorStride() / 2);
-        else
+        } else {
             cgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
+        }
 
     }
 
@@ -190,10 +198,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dger(order,A.rows(),A.columns(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
-        else
-            sger(order,A.rows(),A.columns(),(float) alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dger(order, A.rows(), A.columns(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
+            sger(order, A.rows(), A.columns(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+        }
 
     }
 
@@ -340,10 +351,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsbmv(order,Uplo,X.length(),A.columns(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsbmv(order, Uplo, X.length(), A.columns(), alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
             ssbmv(order, Uplo, X.length(), A.columns(), (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        }
 
     }
 
@@ -361,10 +375,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, Ap, X, Y);
 
-        if(Ap.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspmv(order,Uplo,X.length(),alpha,Ap,X, Ap.majorStride(),beta,Y,Y.majorStride());
-        else
+        if(Ap.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+            dspmv(order, Uplo, X.length(), alpha, Ap, X, Ap.majorStride(), beta, Y, Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
             sspmv(order, Uplo, X.length(), (float) alpha, Ap, X, Ap.majorStride(), (float) beta, Y, Y.majorStride());
+        }
 
     }
 
@@ -383,10 +400,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspr(order,Uplo,X.length(),alpha,X,X.majorStride(),Ap);
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
+            dspr(order, Uplo, X.length(), alpha, X, X.majorStride(), Ap);
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
             sspr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Ap);
+        }
 
     }
 
@@ -406,10 +426,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dspr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A);
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dspr2(order, Uplo, X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
             sspr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        }
 
     }
 
@@ -431,10 +454,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsymv(order,Uplo,X.length(),alpha,A,A.size(0),X,X.majorStride(),beta,Y,Y.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsymv(order, Uplo, X.length(), alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
             ssymv(order, Uplo, X.length(), (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+        }
 
     }
 
@@ -454,10 +480,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsyr(order,Uplo,X.length(),alpha,X,X.majorStride(),A,A.size(0));
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dsyr(order, Uplo, X.length(), alpha, X, X.majorStride(), A, A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             ssyr(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), A, A.size(0));
+        }
 
     }
 
@@ -474,10 +503,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dsyr2(order,Uplo,X.length(),alpha,X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
+            dsyr2(order, Uplo, X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
             ssyr2(order, Uplo, X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+        }
 
     }
 
@@ -497,10 +529,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtbmv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtbmv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             stbmv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        }
 
     }
 
@@ -519,10 +554,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtbsv(order,Uplo,TransA,Diag,X.length(),A.columns(),A,A.size(0),X,X.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtbsv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             stbsv(order, Uplo, TransA, Diag, X.length(), A.columns(), A, A.size(0), X, X.majorStride());
+        }
 
     }
 
@@ -541,10 +579,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtpmv(order,Uplo,TransA,Diag,Ap.length(),Ap,X,X.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
+            dtpmv(order, Uplo, TransA, Diag, Ap.length(), Ap, X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
             stpmv(order, Uplo, TransA, Diag, Ap.length(), Ap, X, X.majorStride());
+        }
 
     }
 
@@ -563,10 +604,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtpsv(order,Uplo,TransA,Diag,X.length(),Ap,X,X.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Ap);
+            dtpsv(order, Uplo, TransA, Diag, X.length(), Ap, X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, Ap, X);
             stpsv(order, Uplo, TransA, Diag, X.length(), Ap, X, X.majorStride());
+        }
 
     }
 
@@ -585,10 +629,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
-        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtrmv(order,Uplo,TransA,Diag,X.length(),A,A.size(0),X,X.majorStride());
-        else
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtrmv(order, Uplo, TransA, Diag, X.length(), A, A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             strmv(order, Uplo, TransA, Diag, X.length(), A, A.size(0), X, X.majorStride());
+        }
 
     }
 
@@ -607,10 +654,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
-        if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dtrsv(order,Uplo,TransA,Diag,A.length(),A,A.size(0),X,X.majorStride());
-        else
+        if(X.data().dataType() == DataBuffer.Type.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
+            dtrsv(order, Uplo, TransA, Diag, A.length(), A, A.size(0), X, X.majorStride());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
             strsv(order, Uplo, TransA, Diag, A.length(), A, A.size(0), X, X.majorStride());
+        }
 
     }
 

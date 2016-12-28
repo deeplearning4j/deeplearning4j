@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import lombok.NonNull;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -515,6 +516,36 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
+
+    public static void validateDataType(DataBuffer.Type expectedType, Op op) {
+        if (op.x() != null && op.x().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.X dataType is ["+ op.x().data().dataType() +"] instead of expected [" + expectedType + "]");
+
+        if (op.z() != null && op.z().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Z dataType is ["+ op.z().data().dataType() +"] instead of expected [" + expectedType + "]");
+
+        if (op.y() != null && op.y().data().dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Y dataType is ["+ op.y().data().dataType() +"] instead of expected [" + expectedType + "]");
+
+        DataBuffer extraz = op.extraArgsDataBuff();
+        if (extraz != null && extraz.dataType() != expectedType)
+            throw new ND4JIllegalStateException("op.Extras dataType is ["+ extraz.dataType() +"] instead of expected [" + expectedType + "]");
+
+    }
+
+    public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
+        if (operands == null || operands.length == 0)
+            return;
+
+        int cnt = 0;
+        for (INDArray operand: operands) {
+            if (operand == null)
+                continue;
+
+            if (operand.data().dataType() != expectedType)
+                throw new ND4JIllegalStateException("INDArray [" + cnt++ +"] dataType is ["+ operand.data().dataType() +"] instead of expected [" + expectedType + "]");
+        }
+    }
 
     @Override
     public TADManager getTADManager() {
