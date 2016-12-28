@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -7,6 +8,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -17,6 +19,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  *
  * @author Ede Meijer
  */
+@EqualsAndHashCode
 public class StandardizeStrategy implements NormalizerStrategy<DistributionStats> {
     /**
      * Normalize a data array
@@ -38,7 +41,7 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
             Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, filteredStd(stats), array, 1));
         }
 
-        if(maskArray != null){
+        if (maskArray != null) {
             DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
     }
@@ -59,9 +62,20 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
             Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getMean(), array, 1));
         }
 
-        if(maskArray != null){
+        if (maskArray != null) {
             DataSetUtil.setMaskedValuesToZero(array, maskArray);
         }
+    }
+
+    /**
+     * Create a new {@link NormalizerStats.Builder} instance that can be used to fit new data and of the type that 
+     * belongs to the current NormalizerStrategy implementation
+     *
+     * @return the new builder
+     */
+    @Override
+    public NormalizerStats.Builder newStatsBuilder() {
+        return new DistributionStats.Builder();
     }
 
     private static INDArray filteredStd(DistributionStats stats) {

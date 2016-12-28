@@ -8,7 +8,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,8 @@ import java.util.List;
  * @author Ede Meijer
  */
 @EqualsAndHashCode(callSuper = false)
-abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer<S> implements MultiDataNormalization, Serializable {
+public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer implements MultiDataNormalization {
+    protected NormalizerStrategy<S> strategy;
     @Setter private List<S> featureStats;
     @Setter private List<S> labelStats;
     private boolean fitLabels = false;
@@ -28,7 +28,7 @@ abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends
     }
 
     protected AbstractMultiDataSetNormalizer(NormalizerStrategy<S> strategy) {
-        super(strategy);
+        this.strategy = strategy;
     }
 
     /**
