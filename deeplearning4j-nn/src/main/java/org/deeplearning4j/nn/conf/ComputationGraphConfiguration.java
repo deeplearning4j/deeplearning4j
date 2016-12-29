@@ -61,8 +61,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
     private static Logger log = LoggerFactory.getLogger(ComputationGraphConfiguration.class);
 
-    private static final AtomicBoolean defaultChangeWarningPrinted = new AtomicBoolean(false);
-
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
 
@@ -269,19 +267,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if (!vertices.containsKey(s)) {
                 throw new IllegalStateException("Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
             }
-        }
-
-        boolean warned = false;
-        if (!pretrain && !defaultChangeWarningPrinted.get()) {
-            log.warn("Warning: new network default sets pretrain to false.");
-            warned = true;
-        }
-        if(backprop && !defaultChangeWarningPrinted.get()) {
-            log.warn("Warning: new network default sets backprop to true.");
-            warned = true;
-        }
-        if(warned){
-            defaultChangeWarningPrinted.set(true);
         }
 
         //Check for no graph cycles: done in ComputationGraph.init()
