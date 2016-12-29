@@ -80,6 +80,11 @@ public class SamplingDataSetIterator implements DataSetIterator {
     public DataSet next() {
         DataSet ret = sampleFrom.sample(batchSize,replace);
         numTimesSampled += batchSize;
+
+        if (preProcessor != null) {
+            preProcessor.preProcess(ret);
+        }
+
         return ret;
     }
 
