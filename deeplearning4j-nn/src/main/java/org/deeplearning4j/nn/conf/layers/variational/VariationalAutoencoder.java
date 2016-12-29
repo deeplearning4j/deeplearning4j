@@ -170,6 +170,20 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param outputActivationFn Activation function for the output/reconstruction
          * @param lossFunction       Loss function to use
          */
+        public Builder lossFunction(Activation outputActivationFn, LossFunctions.LossFunction lossFunction){
+            return lossFunction(outputActivationFn.getActivationFunction(), lossFunction.getILossFunction());
+        }
+
+        /**
+         * Configure the VAE to use the specified loss function for the reconstruction, instead of a ReconstructionDistribution.
+         * Note that this is NOT following the standard VAE design (as per Kingma & Welling), which assumes a probabilistic
+         * output - i.e., some p(x|z). It is however a valid network configuration, allowing for optimization of more traditional
+         * objectives such as mean squared error.<br>
+         * Note: clearly, setting the loss function here will override any previously set recontruction distribution
+         *
+         * @param outputActivationFn Activation function for the output/reconstruction
+         * @param lossFunction       Loss function to use
+         */
         public Builder lossFunction(IActivation outputActivationFn, ILossFunction lossFunction){
             return reconstructionDistribution(new LossFunctionWrapper(outputActivationFn, lossFunction));
         }
@@ -186,15 +200,24 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             return this;
         }
 
+
+        /**
+         * @deprecated Use {@link #pzxActivationFunction(Activation)}
+         */
+        @Deprecated
+        public Builder pzxActivationFunction(String activationFunction) {
+            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
+        }
+
         /**
          * Activation function for the input to P(z|data).<br>
          * Care should be taken with this, as some activation functions (relu, etc) are not suitable due to being
          * bounded in range [0,infinity).
          *
-         * @param activationFunction    Activation function for p(z|x)
+         * @param activation    Activation function for p(z|x)
          */
-        public Builder pzxActivationFunction(String activationFunction) {
-            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
+        public Builder pzxActivationFunction(Activation activation){
+            return pzxActivationFn(activation.getActivationFunction());
         }
 
         /**
