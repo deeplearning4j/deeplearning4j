@@ -1,6 +1,8 @@
 package org.deeplearning4j.optimize.listeners;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -63,13 +65,27 @@ public class PerformanceListener implements IterationListener {
             long timeSpent = currentTime - lastTime ;
             float timeSec = timeSpent / 1000f;
 
-            INDArray input = model.input();
-            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1,input.rank()));
+            INDArray input;
+            if (model instanceof ComputationGraph) {
+                // for comp graph (with multidataset
+                ComputationGraph cg = (ComputationGraph) model;
+                INDArray[] inputs = cg.getInputs();
+
+                if (inputs != null && inputs.length > 0)
+                    input = inputs[0];
+                else
+                    input = model.input();
+            } else {
+                input = model.input();
+            }
+
+            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
             long numSamples = input.lengthLong() / tadLength;
 
             samplesPerSec = numSamples / timeSec;
             batchesPerSec = 1 / timeSec;
+
 
             StringBuilder builder = new StringBuilder();
 
