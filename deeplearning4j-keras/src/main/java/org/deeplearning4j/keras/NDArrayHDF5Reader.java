@@ -1,0 +1,42 @@
+package org.deeplearning4j.keras;
+
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.hdf5;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
+
+public class NDArrayHDF5Reader {
+
+    public INDArray readFromPath(String inputFilePath) {
+        try (hdf5.H5File h5File = new hdf5.H5File()) {
+            h5File.openFile(inputFilePath, H5F_ACC_RDONLY);
+            hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
+            int[] shape = extractShape(dataSet);
+            long totalSize = ArrayUtil.prodLong(shape);
+            float[] dataBuffer = readFromDataSet(dataSet, (int) totalSize);
+
+            INDArray input = Nd4j.create(shape);
+            new RecursiveCopier(input, dataBuffer, shape).copy();
+            return input;
+        }
+    }
+
+    private float[] readFromDataSet(hdf5.DataSet dataSet, int total) {
+        float[] dataBuffer = new float[total];
+        FloatPointer fp = new FloatPointer(dataBuffer);
+        dataSet.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
+        fp.get(dataBuffer);
+        return dataBuffer;
+    }
+
+    private int[] extractShape(hdf5.DataSet dataSet) {
+        hdf5.DataSpace space = dataSet.getSpace();
+        int nbDims = space.getSimpleExtentNdims();
+        long[] shape = new long[nbDims];
+        space.getSimpleExtentDims(shape);
+        return ArrayUtil.toInts(shape);
+    }
+}
