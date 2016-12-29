@@ -150,6 +150,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static int[] toInts(long[] array) {
+        int[] retVal = new int[array.length];
+
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (int) array[i];
+        }
+
+        return retVal;
+    }
 
     /**
      * Calculate the offset for a given stride array
