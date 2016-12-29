@@ -254,7 +254,7 @@ public class TestReconstructionDistributions {
     @Test
     public void gradientCheckReconstructionDistributions() {
         double eps = 1e-6;
-        double maxRelError = 1e-7;
+        double maxRelError = 1e-6;
         double minAbsoluteError = 1e-9;
 
         Nd4j.getRandom().setSeed(12345);

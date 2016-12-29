@@ -484,7 +484,7 @@ public class MultiLayerTest {
 
         assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
         assertEquals(layerNameList, net.getLayerNames());
-        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFunction());
+        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFn().toString());
     }
 
     @Test

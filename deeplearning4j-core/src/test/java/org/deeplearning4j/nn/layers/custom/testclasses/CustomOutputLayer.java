@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.nn.layers.custom.testlayers;
+package org.deeplearning4j.nn.layers.custom.testclasses;
 
 
 import lombok.Data;

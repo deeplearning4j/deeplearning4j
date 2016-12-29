@@ -20,13 +20,14 @@ package org.deeplearning4j.clustering.algorithm.iteration;
 
 import org.deeplearning4j.clustering.cluster.info.ClusterSetInfo;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IterationHistory {
+public class IterationHistory implements Serializable {
 
 	private Map<Integer, IterationInfo> iterationsInfos = new HashMap<>();
-	
+
 	public ClusterSetInfo getMostRecentClusterSetInfo() {
 		IterationInfo iterationInfo = getMostRecentIterationInfo();
 		return iterationInfo==null ? null : iterationInfo.getClusterSetInfo();

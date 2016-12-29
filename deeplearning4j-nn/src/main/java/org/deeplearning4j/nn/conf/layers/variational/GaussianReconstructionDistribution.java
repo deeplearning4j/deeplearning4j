@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -25,7 +27,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     private static final double NEG_HALF_LOG_2PI = -0.5*Math.log(2*Math.PI);
 
-    private final String activationFn;
+    private final IActivation activationFn;
 
     /**
      * Create a GaussianReconstructionDistribution with the default identity activation function.
@@ -35,9 +37,24 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     /**
+     * @deprecated Use {@link #GaussianReconstructionDistribution(Activation)}
+     */
+    @Deprecated
+    public GaussianReconstructionDistribution(String activationFn) {
+        this(Activation.fromString(activationFn).getActivationFunction());
+    }
+
+    /**
      * @param activationFn    Activation function for the reconstruction distribution. Typically identity or tanh.
      */
-    public GaussianReconstructionDistribution(String activationFn){
+    public GaussianReconstructionDistribution(Activation activationFn){
+        this(activationFn.getActivationFunction());
+    }
+
+    /**
+     * @param activationFn    Activation function for the reconstruction distribution. Typically identity or tanh.
+     */
+    public GaussianReconstructionDistribution(IActivation activationFn){
         this.activationFn = activationFn;
     }
 
@@ -71,9 +88,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     private INDArray[] calcLogProbArrayExConstants(INDArray x, INDArray preOutDistributionParams){
         INDArray output = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
-        }
+        activationFn.getActivation(output, false);
 
         int size = output.size(1)/2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size));
@@ -90,9 +105,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     @Override
     public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
         INDArray output = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
-        }
+        activationFn.getActivation(output, true);
 
         int size = output.size(1)/2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size));
@@ -111,25 +124,19 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray dLdsigma = sigma.rdiv(-1).addi(xSubMeanSq.divi(sigma3));
         INDArray dLdlogSigma2 = sigma.divi(2).muli(dLdsigma);
 
-        INDArray grad = Nd4j.createUninitialized(output.shape());
-        grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,size)}, dLdmu);
-        grad.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(size, 2*size)}, dLdlogSigma2);
+        INDArray dLdx = Nd4j.createUninitialized(output.shape());
+        dLdx.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,size)}, dLdmu);
+        dLdx.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(size, 2*size)}, dLdlogSigma2);
+        dLdx.negi();
 
-        if(!"identity".equals(activationFn)){
-            INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(
-                    Nd4j.getOpFactory().createTransform(activationFn, preOutDistributionParams.dup()).derivative());
-            grad.muli(sigmaPrimeZ);
-        }
-
-        return grad.negi();
+        //dL/dz
+        return activationFn.backprop(preOutDistributionParams.dup(), dLdx).getFirst();
     }
 
     @Override
     public INDArray generateRandom(INDArray preOutDistributionParams) {
         INDArray output = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, output));
-        }
+        activationFn.getActivation(output, true);
 
         int size = output.size(1)/2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size));
@@ -146,9 +153,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
         int size = preOutDistributionParams.size(1)/2;
         INDArray mean = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(0,size)).dup();
-        if(!"identity".equals(activationFn)){
-            mean = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, mean));
-        }
+        activationFn.getActivation(mean, false);
 
         return mean;
     }

@@ -20,6 +20,7 @@ package org.deeplearning4j.plot;
 
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -37,14 +38,13 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.AdaGrad;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -57,12 +57,11 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  * Barnes hut algorithm for TSNE, uses a dual tree approximation approach.
  * Work based on:
  * http://lvdmaaten.github.io/tsne/
- * For hight dimensions, it's recommanded to reduce the dimension up to 50 using another method (PCA or other)
+ * For hight dimensions, it's recommended to reduce the dimension up to 50 using another method (PCA or other)
  * @author Adam Gibson
  */
+@Slf4j
 public class BarnesHutTsne implements Model {
-    protected static final Logger logger = LoggerFactory.getLogger(BarnesHutTsne.class);
-
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
     protected double initialMomentum = 0.5;
@@ -182,10 +181,10 @@ public class BarnesHutTsne implements Model {
         final double logU =  FastMath.log(u);
         VPTree tree = new VPTree(d,simiarlityFunction,invert);
 
-        logger.info("Calculating probabilities of data similarities...");
+        log.info("Calculating probabilities of data similarities...");
         for(int i = 0; i < N; i++) {
             if(i % 500 == 0)
-                logger.info("Handled " + i + " records");
+                log.info("Handled " + i + " records");
 
             double betaMin = -Double.MAX_VALUE;
             double betaMax = Double.MAX_VALUE;
@@ -420,11 +419,30 @@ public class BarnesHutTsne implements Model {
     }
 
 
+    /**
+     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     *
+     * @param listeners
+     */
+    @Override
+    public void setListeners(Collection<IterationListener> listeners) {
+        
+    }
+
+    /**
+     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     *
+     * @param listeners
+     */
+    @Override
+    public void setListeners(IterationListener... listeners) {
+
+    }
 
     @Override
     public void fit() {
         if (theta == 0.0) {
-            logger.debug("theta == 0, using decomposed version, might be slow");
+            log.debug("theta == 0, using decomposed version, might be slow");
             Tsne decomposedTsne = new Tsne(maxIter, realMin, initialMomentum, finalMomentum,
                     minGain, momentum, switchMomentumIteration, normalize, usePca,
                     stopLyingIteration, tolerance, learningRate, useAdaGrad, perplexity);
@@ -452,7 +470,7 @@ public class BarnesHutTsne implements Model {
                 if (iterationListener != null) {
                     iterationListener.iterationDone(this, i);
                 }
-                logger.info("Error at iteration " + i + " is " + score());
+                log.info("Error at iteration " + i + " is " + score());
             }
         }
     }

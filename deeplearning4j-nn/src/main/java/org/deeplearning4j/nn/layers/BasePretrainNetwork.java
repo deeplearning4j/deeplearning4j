@@ -124,7 +124,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
             throw new IllegalStateException("Cannot calculate score without input and labels");
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
-        double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
+        //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
+        double score = lossFunction.computeScore(input, z, layerConf().getActivationFn(), maskArray, false);
         score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
 
