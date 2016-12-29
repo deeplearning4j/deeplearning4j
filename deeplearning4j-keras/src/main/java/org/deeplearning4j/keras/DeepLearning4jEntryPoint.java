@@ -38,7 +38,7 @@ public class DeepLearning4jEntryPoint {
 
         try {
             MultiLayerNetwork multiLayerNetwork;
-            if ("sequential".equals(entryPointFitParameters.getType())) {
+            if (KerasModelType.SEQUENTIAL.equals(entryPointFitParameters.getType())) {
                 multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(entryPointFitParameters.getModelFilePath());
                 multiLayerNetwork.init();
             } else {

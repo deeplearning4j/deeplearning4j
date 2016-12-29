@@ -10,7 +10,7 @@ import lombok.Data;
 @Builder
 public class EntryPointFitParameters {
     private String modelFilePath;
-    private String type;
+    private KerasModelType type;
     private String trainFeaturesFile;
     private String trainLabelsFile;
     private int batchSize;

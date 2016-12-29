@@ -28,7 +28,7 @@ public class DeepLearning4jEntryPointTest {
                 .trainLabelsFile(labels.getAbsolutePath())
                 .batchSize(128)
                 .nbEpoch(2)
-                .type("sequential")
+                .type(KerasModelType.SEQUENTIAL)
                 .build();
 
         // When
