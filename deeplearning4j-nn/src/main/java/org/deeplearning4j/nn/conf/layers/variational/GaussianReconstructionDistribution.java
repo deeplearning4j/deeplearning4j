@@ -37,10 +37,18 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     /**
-     * @param activationFn    Activation function for the reconstruction distribution. Typically identity or tanh.
+     * @deprecated Use {@link #GaussianReconstructionDistribution(Activation)}
      */
+    @Deprecated
     public GaussianReconstructionDistribution(String activationFn) {
         this(Activation.fromString(activationFn).getActivationFunction());
+    }
+
+    /**
+     * @param activationFn    Activation function for the reconstruction distribution. Typically identity or tanh.
+     */
+    public GaussianReconstructionDistribution(Activation activationFn){
+        this(activationFn.getActivationFunction());
     }
 
     /**
