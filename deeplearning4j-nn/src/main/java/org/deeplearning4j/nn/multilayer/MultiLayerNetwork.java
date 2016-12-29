@@ -1139,7 +1139,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                + Arrays.toString(input.shape()) + "\tand labels with shape " + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1457,7 +1457,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
-        log.warn("Passing in data without labels does not apply backprop to the model.");
         setInput(data);
         if(!layerWiseConfigurations.isPretrain())
             throw new IllegalStateException("Set pretrain to true in the configuration in order to pretrain the model.");
