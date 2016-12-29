@@ -19,6 +19,7 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -74,9 +75,8 @@ import java.util.*;
  *
  * @author Adam Gibson, Alex Black
  */
+@Slf4j
 public class SparkDl4jMultiLayer implements Serializable {
-    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
-
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     private transient JavaSparkContext sc;
     private TrainingMaster trainingMaster;
@@ -85,7 +85,6 @@ public class SparkDl4jMultiLayer implements Serializable {
     private double lastScore;
 
     private List<IterationListener> listeners = new ArrayList<>();
-    private StatsStorage statsStorage;
 
     /**
      * Instantiate a multi layer spark instance
@@ -335,13 +334,13 @@ public class SparkDl4jMultiLayer implements Serializable {
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
-        if(listeners != null ){
-            for(IterationListener l : listeners){
-                if(l instanceof RoutingIterationListener){
+        if(listeners != null) {
+            for(IterationListener l : listeners) {
+                if(l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener)l;
                     if(rl.getStorageRouter() == null){
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
-                    } else if(!(rl.getStorageRouter() instanceof Serializable)){
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
                     }
@@ -353,6 +352,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                 }
             }
         }
+
         this.listeners.clear();
         if(listeners != null) {
             this.listeners.addAll(listeners);
@@ -360,16 +360,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
     }
 
-    protected void invokeListeners(MultiLayerNetwork network, int iteration) {
-        for (IterationListener listener : listeners) {
-            try {
-                listener.iterationDone(network, iteration);
-            } catch (Exception e) {
-                log.error("Exception caught at IterationListener invocation" + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-    }
+
 
     /**
      * Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
