@@ -99,7 +99,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 <br>
 
 <p><h4>.updater(Updater.NESTEROVS).momentum(0.9)</h4>
-<p>动量（momentum）是另一项决定优化算法向最优值靠拢的速度的因素。动量影响权重调整的方向，所以在代码中，我们将其视为一种权重的更新器（<code>updater</code>）。</p>
+<p>动量（momentum）是另一项决定优化算法向最优值收敛的速度的因素。动量影响权重调整的方向，所以在代码中，我们将其视为一种权重的更新器（<code>updater</code>）。</p>
 <br>
 <p><h4>.regularization(true).l2(1e-4)</h4></p>
 <p>正则化（regularization）是用来防止<strong>过拟合</strong>的一种方法。过拟合是指模型对定型数据的拟合非常好，然而一旦在实际应用中遇到从未出现过的数据，运行效果就变得很不理想。</p>
