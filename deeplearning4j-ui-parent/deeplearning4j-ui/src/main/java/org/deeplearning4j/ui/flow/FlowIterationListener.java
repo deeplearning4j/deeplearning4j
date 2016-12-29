@@ -513,8 +513,8 @@ public class FlowIterationListener implements IterationListener {
             }
         }
 
-        subLine.append(" A: [").append(layer.conf().getLayer().getActivationFunction()).append("]");
-        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFunction()).append("</b>").append("<br/>");
+        subLine.append(" A: [").append(layer.conf().getLayer().getActivationFn().toString()).append("]");
+        fullLine.append("Activation function: ").append("<b>").append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());

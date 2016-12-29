@@ -242,6 +242,11 @@ public class TrainModule implements UIModule {
             dataThisSession.put("initTime", initTime == Long.MAX_VALUE ? "" : initTime);
             dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
 
+            // add hashmap of workers
+            if(workerCount > 0) {
+                dataThisSession.put("workers", workerIDs);
+            }
+
             //Model info: type, # layers, # params...
             if (staticInfo != null && staticInfo.size() > 0) {
                 StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);
@@ -824,7 +829,7 @@ public class TrainModule implements UIModule {
                         FeedForwardLayer ffl = (FeedForwardLayer) layer;
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNIn"), String.valueOf(ffl.getNIn())});
                         layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
-                        activationFn = layer.getActivationFunction();
+                        activationFn = layer.getActivationFn().toString();
                     }
                     int nParams = layer.initializer().numParams(nnc);
                     layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"), String.valueOf(nParams)});

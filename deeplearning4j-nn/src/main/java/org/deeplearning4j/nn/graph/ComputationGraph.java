@@ -23,7 +23,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -39,7 +38,6 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
-import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.Solver;
@@ -2134,6 +2132,10 @@ public class ComputationGraph implements Serializable, Model {
                 throw new IllegalArgumentException("Invalid number of feature mask arrays");
             }
             for (int i = 0; i < featureMaskArrays.length; i++) {
+                if (featureMaskArrays[i] == null) {
+                    // This input doesn't have a mask, we can skip it.
+                    continue;
+                }
                 String inputName = configuration.getNetworkInputs().get(i);
 
                 //feedforward layers below a RNN layer: need the input (features) mask
@@ -2181,6 +2183,10 @@ public class ComputationGraph implements Serializable, Model {
                 throw new IllegalArgumentException("Invalid number of label mask arrays");
             }
             for (int i = 0; i < labelMaskArrays.length; i++) {
+                if (labelMaskArrays[i] == null) {
+                    // This output doesn't have a mask, we can skip it.
+                    continue;
+                }
                 String outputName = configuration.getNetworkOutputs().get(i);
                 GraphVertex v = verticesMap.get(outputName);
                 Layer ol = v.getLayer();

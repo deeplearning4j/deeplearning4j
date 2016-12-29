@@ -36,7 +36,7 @@ public class MaxScoreIterationTerminationCondition implements IterationTerminati
 
     @Override
     public boolean terminate(double lastMiniBatchScore) {
-        return lastMiniBatchScore > maxScore;
+        return lastMiniBatchScore > maxScore || Double.isNaN(lastMiniBatchScore);
     }
 
     @Override

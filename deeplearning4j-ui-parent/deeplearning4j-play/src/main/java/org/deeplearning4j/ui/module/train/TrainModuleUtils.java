@@ -174,7 +174,7 @@ public class TrainModuleUtils {
                 encoderInfo.put("Input Size", String.valueOf(inputSize));
                 encoderInfo.put("Layer Size", String.valueOf(outputSize));
                 encoderInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize));
-                encoderInfo.put("Activation Function", va.getActivationFunction());
+                encoderInfo.put("Activation Function", va.getActivationFn().toString());
                 layerInfo.add(encoderInfo);
             }
 
@@ -189,7 +189,7 @@ public class TrainModuleUtils {
             latentInfo.put("Input Size", String.valueOf(inputSize));
             latentInfo.put("Layer Size", String.valueOf(outputSize));
             latentInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize * 2));
-            latentInfo.put("Activation Function", va.getPzxActivationFunction());
+            latentInfo.put("Activation Function", va.getPzxActivationFn().toString());
             layerInfo.add(latentInfo);
 
 
@@ -208,7 +208,7 @@ public class TrainModuleUtils {
                 decoderInfo.put("Input Size", String.valueOf(inputSize));
                 decoderInfo.put("Layer Size", String.valueOf(outputSize));
                 decoderInfo.put("Num Parameters", String.valueOf((inputSize+1) * outputSize));
-                decoderInfo.put("Activation Function", va.getActivationFunction());
+                decoderInfo.put("Activation Function", va.getActivationFn().toString());
                 layerInfo.add(decoderInfo);
             }
 
@@ -259,7 +259,7 @@ public class TrainModuleUtils {
             map.put("Input size", String.valueOf(layer1.getNIn()));
             map.put("Output size", String.valueOf(layer1.getNOut()));
             map.put("Num Parameters", String.valueOf(layer1.initializer().numParams(c)));
-            map.put("Activation Function", layer1.getActivationFunction());
+            map.put("Activation Function", layer1.getActivationFn().toString());
         }
 
         if (layer instanceof ConvolutionLayer) {
