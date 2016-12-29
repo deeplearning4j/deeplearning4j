@@ -308,20 +308,24 @@ public class VoidParameterServer {
         transport.sendMessage(message);
     }
 
+    public INDArray getVector(int rowIdx) {
+        return getVector(WordVectorStorage.SYN_0, rowIdx);
+    }
+
     /**
      * This method returns INDArray matching requested storageId value
      *
      * PLEASE NOTE: This method IS blocking
      *
-     * @param rowId
+     * @param rowIdx
      * @return
      */
-    public INDArray getVector(int rowId) {
+    public INDArray getVector(@NonNull Integer key, int rowIdx) {
         /**
          * we create VoidMessage, send it, and block until it gets responded
          */
 
-        VectorRequestMessage message = new VectorRequestMessage(rowId);
+        VectorRequestMessage message = new VectorRequestMessage(rowIdx);
 
         MeaningfulMessage response = transport.sendMessageAndGetResponse(message);
 

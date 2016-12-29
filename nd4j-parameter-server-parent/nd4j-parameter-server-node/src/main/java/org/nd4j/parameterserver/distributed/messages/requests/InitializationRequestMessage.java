@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.distributed.messages.requests;
 
+import lombok.Builder;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 
@@ -8,6 +9,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitial
  *
  * @author raver119@gmail.com
  */
+@Builder
 public class InitializationRequestMessage extends BaseVoidMessage {
     protected int vectorLength;
     protected int numWords;

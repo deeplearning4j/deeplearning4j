@@ -12,6 +12,7 @@ import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.requests.AssignRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
@@ -509,21 +510,20 @@ public class VoidParameterServerTest {
             Thread.sleep(20);
 
 
-        DistributedInitializationMessage message = DistributedInitializationMessage.builder()
+        InitializationRequestMessage irm = InitializationRequestMessage.builder()
                 .numWords(100)
                 .columnsPerShard(10)
                 .seed(123)
-                .useHs(false)
-                .useNeg(true)
-                .vectorLength(100)
+                .useHs(true)
+                .useNeg(false)
+                .vectorLength(150)
                 .build();
 
-        //clientNode.getTransport().sendMessage(message);
-        for (int t = 0; t < threads.length; t++) {
-            shards[t].handleMessage(message);
-        }
+        clientNode.getTransport().sendMessage(irm);
 
+        // after this point we'll assume all Shards are initialized
         Thread.sleep(200);
+
 
         AssignRequestMessage arm = new AssignRequestMessage(WordVectorStorage.SYN_0, 192f,11);
         clientNode.getTransport().sendMessage(arm);
@@ -533,8 +533,37 @@ public class VoidParameterServerTest {
         // This is blocking method
         INDArray vec = clientNode.getVector(11);
 
-        assertEquals(Nd4j.create(30).assign(192f), vec);
+        assertEquals(Nd4j.create(150).assign(192f), vec);
 
+        // now we go for gradients-like test
+        // first of all we set exptable to something predictable
+        INDArray expSyn0 = Nd4j.create(150).assign(0.01f);
+        INDArray expSyn1_1 = Nd4j.create(150).assign(0.020005);
+        INDArray expSyn1_2 = Nd4j.create(150).assign(0.019995f);
+
+        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        AssignRequestMessage expReqMsg = new AssignRequestMessage(WordVectorStorage.EXP_TABLE, expTable);
+        clientNode.getTransport().sendMessage(expReqMsg);
+
+        arm = new AssignRequestMessage(WordVectorStorage.SYN_0, 0.01, -1);
+        clientNode.getTransport().sendMessage(arm);
+
+        arm = new AssignRequestMessage(WordVectorStorage.SYN_1, 0.02, -1);
+        clientNode.getTransport().sendMessage(arm);
+
+        Thread.sleep(100);
+        // no we'll send single SkipGram request that involves calculation for 0 -> {1,2}, and will check result against pre-calculated values
+
+
+
+        // This is blocking method
+        INDArray row_syn0 = clientNode.getVector(WordVectorStorage.SYN_0,0);
+        INDArray row_syn1_1 = clientNode.getVector(WordVectorStorage.SYN_1, 1);
+        INDArray row_syn1_2 = clientNode.getVector(WordVectorStorage.SYN_1, 2);
+
+        assertEquals(expSyn0, row_syn0);
+        assertEquals(expSyn1_1, row_syn1_1);
+        assertEquals(expSyn1_2, row_syn1_2);
 
         for (int t = 0; t < threads.length; t++) {
             threads[t].join();
