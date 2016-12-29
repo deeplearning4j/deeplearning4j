@@ -89,9 +89,13 @@ public class DropoutLayerTest {
         netSeparate.getLayer(3).setParam("b", Nd4j.zeros(4, 1));
 
         INDArray in = Nd4j.arange(1, 5);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(in.dup(), true);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainSeparate = netSeparate.feedForward(in.dup(), true);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestIntegrated = netIntegrated.feedForward(in.dup(), false);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestSeparate = netSeparate.feedForward(in.dup(), false);
 
         assertEquals(actTrainIntegrated.get(1), actTrainSeparate.get(2));
@@ -153,12 +157,16 @@ public class DropoutLayerTest {
         netIntegrated.setInput(next.getFeatureMatrix());
         netSeparate.setInput(next.getFeatureMatrix());
 
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(true);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainSeparate = netSeparate.feedForward(true);
         assertEquals(actTrainIntegrated.get(1), actTrainSeparate.get(1));
         assertEquals(actTrainIntegrated.get(2), actTrainSeparate.get(3));
 
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestIntegrated = netIntegrated.feedForward(false);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestSeparate = netSeparate.feedForward(false);
         assertEquals(actTestIntegrated.get(1), actTrainSeparate.get(1));
         assertEquals(actTestIntegrated.get(2), actTestSeparate.get(3));
@@ -223,12 +231,16 @@ public class DropoutLayerTest {
         netIntegrated.setInput(next.getFeatureMatrix());
         netSeparate.setInput(next.getFeatureMatrix());
 
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(true);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainSeparate = netSeparate.feedForward(true);
         assertEquals(actTrainIntegrated.get(1), actTrainSeparate.get(1));
         assertEquals(actTrainIntegrated.get(2), actTrainSeparate.get(3));
 
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestIntegrated = netIntegrated.feedForward(false);
+        Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestSeparate = netSeparate.feedForward(false);
         assertEquals(actTestIntegrated.get(1), actTrainSeparate.get(1));
         assertEquals(actTestIntegrated.get(2), actTestSeparate.get(3));

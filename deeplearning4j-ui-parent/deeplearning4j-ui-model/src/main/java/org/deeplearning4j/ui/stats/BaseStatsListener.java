@@ -24,6 +24,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -46,11 +47,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
     private StatsStorageRouter router;
     private final StatsInitializationConfiguration initConfig;
-    private final StatsUpdateConfiguration updateConfig;
+    private StatsUpdateConfiguration updateConfig;
     private String sessionID;
     private String workerID;
 
-    private List<GarbageCollectorMXBean> gcBeans;
+    private transient List<GarbageCollectorMXBean> gcBeans;
     private Map<String, Pair<Long, Long>> gcStatsAtLastReport;
 
     private Map<String, INDArray> activationsMap;
@@ -59,7 +60,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     //NOTE: may have multiple models, due to multiple pretrain layers all using the same StatsListener
     private List<ModelInfo> modelInfos = new ArrayList<>();
 
-    private static class ModelInfo {
+    private static class ModelInfo implements Serializable {
         private final Model model;
         private long initTime;
         private long lastReportTime = -1;
@@ -151,6 +152,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     //new SbeStorageMetaData(initTime, getSessionID(model), TYPE_ID, workerID, SbeStatsInitializationReport.class, SbeStatsReport.class);
 
 
+    public StatsInitializationConfiguration getInitConfig() { return initConfig; }
+
+    public StatsUpdateConfiguration getUpdateConfig() { return updateConfig; }
+
+    public void setUpdateConfig(StatsUpdateConfiguration newConfig) { this.updateConfig = newConfig; }
 
     @Override
     public void setStorageRouter(StatsStorageRouter router) {
@@ -660,9 +666,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).getInput().size(0);
+            examplesThisMinibatch = ((MultiLayerNetwork) model).batchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).getInput(0).size(0);
+            examplesThisMinibatch = ((ComputationGraph) model).batchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }
@@ -729,4 +735,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         }
         return out;
     }
+
+    @Override
+    public abstract BaseStatsListener clone();
 }

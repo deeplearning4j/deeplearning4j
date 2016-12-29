@@ -3,6 +3,7 @@ package org.deeplearning4j.ui.stats;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.ui.stats.api.StatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
@@ -24,7 +25,7 @@ import org.deeplearning4j.ui.storage.impl.JavaStorageMetaData;
 public class J7StatsListener extends BaseStatsListener {
 
     /**
-     * Create a StatsListener with network information collected at every iteration. Equivalent to {@link #StatsListener(StatsStorageRouter, int)}
+     * Create a StatsListener with network information collected at every iteration. Equivalent to {@link #J7StatsListener(StatsStorageRouter, int)}
      * with {@code listenerFrequency == 1}
      *
      * @param router Where/how to store the calculated stats. For example, {@link org.deeplearning4j.ui.storage.InMemoryStatsStorage} or
@@ -64,5 +65,10 @@ public class J7StatsListener extends BaseStatsListener {
     public StorageMetaData getNewStorageMetaData(long initTime, String sessionID, String workerID) {
         return new JavaStorageMetaData(initTime, sessionID, BaseStatsListener.TYPE_ID, workerID, JavaStatsInitializationReport.class,
                 JavaStatsReport.class);
+    }
+
+    @Override
+    public J7StatsListener clone() {
+        return new J7StatsListener(this.getStorageRouter(), this.getInitConfig(), this.getUpdateConfig(), null, null);
     }
 }

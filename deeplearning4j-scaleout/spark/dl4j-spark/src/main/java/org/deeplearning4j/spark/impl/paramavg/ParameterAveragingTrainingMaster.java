@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -73,9 +74,9 @@ import java.util.Random;
 @Data
 @JsonIgnoreProperties({"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath", "trainingMasterUID"})
 @EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath", "trainingMasterUID"})
+@Slf4j
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
-    private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
     private static final int COALESCE_THRESHOLD = 3;
     private static ObjectMapper jsonMapper;
     private static ObjectMapper yamlMapper;
@@ -806,7 +807,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             stats.addWorkerStats(aggregatedStats);
         }
 
-        if(statsStorage != null){
+        if(statsStorage != null) {
             Collection<StorageMetaData> meta = tuple.getListenerMetaData();
             if(meta != null && meta.size() > 0){
                 statsStorage.putStorageMetaData(meta);

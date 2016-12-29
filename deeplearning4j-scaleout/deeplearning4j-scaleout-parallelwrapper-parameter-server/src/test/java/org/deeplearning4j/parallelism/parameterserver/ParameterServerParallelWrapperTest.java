@@ -29,13 +29,13 @@ public class ParameterServerParallelWrapperTest {
         int outputNum = 10;
 
         // for GPU you usually want to have higher batchSize
-        int batchSize = 100;
+        int batchSize = 128;
         int nEpochs = 10;
         int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,60000);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,1000);
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
 
         log.info("Build model....");

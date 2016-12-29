@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -19,10 +21,10 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Data
 public class LossFunctionWrapper implements ReconstructionDistribution {
 
-    private final String activationFn;
+    private final IActivation activationFn;
     private final ILossFunction lossFunction;
 
-    public LossFunctionWrapper(@JsonProperty("activationFn") String activationFn, @JsonProperty("lossFunction") ILossFunction lossFunction){
+    public LossFunctionWrapper(@JsonProperty("activationFn") IActivation activationFn, @JsonProperty("lossFunction") ILossFunction lossFunction){
         this.activationFn = activationFn;
         this.lossFunction = lossFunction;
     }
@@ -61,8 +63,10 @@ public class LossFunctionWrapper implements ReconstructionDistribution {
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
         //Loss functions: not probabilistic -> not random
         INDArray out = preOutDistributionParams.dup();
-        if(!"identity".equals(activationFn)){
-            out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, out));
+        //if(!"identity".equals(activationFn)){
+        if(activationFn instanceof ActivationIdentity){
+            //out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, out));
+            out = activationFn.getActivation(out,true);
         }
         return out;
     }

@@ -22,11 +22,16 @@ import org.deeplearning4j.clustering.algorithm.iteration.IterationHistory;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.LessThan;
 
-public class VarianceVariationCondition implements ClusteringAlgorithmCondition {
+import java.io.Serializable;
+
+public class VarianceVariationCondition implements ClusteringAlgorithmCondition, Serializable {
 
 	private Condition varianceVariationCondition;
 	private int	period;
-	
+
+	protected VarianceVariationCondition() {
+		// no-op for serialization only
+	}
 	
 	protected VarianceVariationCondition(Condition varianceVariationCondition, int period) {
 		super();

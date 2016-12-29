@@ -40,18 +40,19 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 
 ---
 ## Documentation
-Documentation is available at [deeplearning4j.org](http://deeplearning4j.org) and [JavaDocs](http://deeplearning4j.org/doc).
+Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](http://deeplearning4j.org/doc).
 
 ## Support
 
-We are not supporting Stackoverflow right now. Github issues should be limited to bug reports. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact). 
+We are not supporting Stackoverflow right now. Github issues should focus on bug reports and feature requests. Please join the community on [Gitter](https://gitter.im/deepelearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact). 
 
 ## Installation
+
 To install Deeplearning4J, there are a couple approaches (briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below). More information can be found on the [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
-Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use.
+Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of JAR files you can use.
 
 Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
@@ -81,8 +82,8 @@ Note, be sure to install the ND4J modules you need first, especially the backend
 ---
 ## Contribute
 
-1. Check for open issues or open a fresh one to start a discussion around a feature idea or a bug. 
+1. Check for [open issues](https://github.com/deeplearning4j/deeplearning4j/issues) or open a fresh one to start a discussion around a feature idea or a bug. 
 2. If you feel uncomfortable or uncertain about an issue or your changes, don't hesitate to contact us on Gitter using the link above.
 3. Fork [the repository](https://github.com/deeplearning4j/deeplearning4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
-4. Write a test which shows that the bug was fixed or that the feature works as expected.
+4. Write a test that shows the bug was fixed or the feature works as expected.
 5. Send a pull request and bug us on Gitter until it gets merged and published. :)
