@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
@@ -19,8 +20,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,12 +33,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This is simple data-parallel wrapper suitable for multi-cpu/multi-gpu environments.
+ * This is simple data-parallel wrapper
+ * suitable for multi-cpu/multi-gpu environments.
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ParallelWrapper implements AutoCloseable {
-    private static Logger logger = LoggerFactory.getLogger(ParallelWrapper.class);
     private Model model;
     private int workers = 2;
     private int prefetchSize = 2;
@@ -54,7 +55,7 @@ public class ParallelWrapper implements AutoCloseable {
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
-            logger.error("Uncaught exception: " + ex);
+            log.error("Uncaught exception: " + ex);
         }
     };
 
@@ -106,6 +107,10 @@ public class ParallelWrapper implements AutoCloseable {
     */
     public void stopFit() { stopFit.set(true); }
 
+    /**
+     *
+     * @param source
+     */
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
         stopFit.set(false);
         if (zoo == null) {
@@ -185,7 +190,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        logger.info("Averaged score: " + score);
+                        log.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof ComputationGraph) {
@@ -231,10 +236,10 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+            log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
 //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        log.debug("Iterations passed: {}", iterationsCounter.get());
 //        iterationsCounter.set(0);
     }
 
@@ -318,7 +323,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                     // TODO: improve this
                     if (reportScore)
-                        logger.info("Averaged score: " + score);
+                        log.info("Averaged score: " + score);
 
                     // averaging updaters state
                     if (model instanceof MultiLayerNetwork) {
@@ -393,10 +398,10 @@ public class ParallelWrapper implements AutoCloseable {
 
         // sanity checks, or the dataset may never average
         if(!wasAveraged)
-            logger.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
+            log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
 //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
-        logger.debug("Iterations passed: {}", iterationsCounter.get());
+        log.debug("Iterations passed: {}", iterationsCounter.get());
 //        iterationsCounter.set(0);
     }
 
