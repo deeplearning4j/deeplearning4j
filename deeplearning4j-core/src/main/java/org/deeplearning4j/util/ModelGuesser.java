@@ -30,23 +30,25 @@ public class ModelGuesser {
      */
     public static Object loadConfigGuess(String path) throws Exception {
         String input = FileUtils.readFileToString(new File(path));
+        //note here that we load json BEFORE YAML. YAML
+        //turns out to load just fine *accidentally*
         try {
             return MultiLayerConfiguration.fromJson(input);
         }catch (Exception e) {
             try {
-                return MultiLayerConfiguration.fromYaml(input);
+                return KerasModelImport.importKerasModelConfiguration(path);
             }catch(Exception e1) {
                 try {
-                    return ComputationGraphConfiguration.fromYaml(input);
+                    return KerasModelImport.importKerasSequentialConfiguration(path);
                 }catch (Exception e2) {
                     try {
                         return ComputationGraphConfiguration.fromJson(input);
                     }catch(Exception e3) {
                         try {
-                            return KerasModelImport.importKerasModelConfiguration(path);
+                            return MultiLayerConfiguration.fromYaml(input);
                         }catch (Exception e4) {
                             try {
-                                return KerasModelImport.importKerasSequentialConfiguration(path);
+                                return ComputationGraphConfiguration.fromYaml(input);
                             }catch(Exception e5) {
                                 throw e5;
                             }
