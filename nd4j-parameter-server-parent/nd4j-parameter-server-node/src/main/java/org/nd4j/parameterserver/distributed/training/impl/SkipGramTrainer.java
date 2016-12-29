@@ -93,7 +93,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
 
         // TODO: We DON'T want this code being here
-        // TODO: We want algorithm below to be native
+        // TODO: We DO want this algorithm to be native
         INDArray expTable = storage.getArray(WordVectorStorage.EXP_TABLE);
         INDArray dots = chain.getDotAggregation().getAccumulatedResult();
 
@@ -122,7 +122,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             double f = expTable.getFloat(idx);
             double g = (1 - code - f) * alpha;
 
-            // FIXME: this is wrong
+            // FIXME: this is wrong, just a draft showing an idea
             Nd4j.getBlasWrapper().axpy(g, syn1.getRow(1), neu1e );
             Nd4j.getBlasWrapper().axpy(g, syn0.getRow(1), syn1.getRow(1));
         }

@@ -102,6 +102,7 @@ public abstract class BaseTransport implements Transport {
             case 6:
             case 7:
             case 8:
+            case 9:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
                 sendCommandToShard(message);

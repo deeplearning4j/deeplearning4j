@@ -29,7 +29,7 @@ public class AssignRequestMessage extends BaseVoidMessage {
     public AssignRequestMessage(@NonNull Integer key, @NonNull INDArray array) {
         this();
         this.key = key;
-        this.payload = array;
+        this.payload = array.isView() ? array.dup(array.ordering()) : array ;
     }
 
     public AssignRequestMessage(@NonNull Integer key, @NonNull Number value, int rowIdx) {

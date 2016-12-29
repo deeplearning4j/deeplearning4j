@@ -1,0 +1,109 @@
+package org.nd4j.parameterserver.distributed.messages;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.SerializationUtils;
+import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.transport.Transport;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * Simple wrapper for multiple request messages OF THE SAME TYPE being stacked into single message
+ *
+ * @author raver119@gmail.com
+ */
+public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> , VoidMessage {
+
+    @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
+    protected List<T> list = new ArrayList<T>();
+
+
+    protected transient Configuration configuration;
+    protected transient Clipboard clipboard;
+    protected transient Transport transport;
+    protected transient Storage storage;
+    protected transient NodeRole role;
+    protected transient short shardIndex;
+    protected transient TrainingDriver<? extends TrainingMessage> trainer;
+
+    public Frame() {
+        // nothing to do here
+    }
+
+    public Frame(@NonNull T message) {
+        list.add(message);
+    }
+
+    public void stackMessage(@NonNull T message) {
+        list.add(message);
+    }
+
+    public void stackMessages(@NonNull Collection<T> messages) {
+        list.addAll(messages);
+    }
+
+    public Collection<T> getMessages() {
+        return list;
+    }
+
+    public int size() {
+        return list.size();
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return list.iterator();
+    }
+
+    @Override
+    public long getTaskId() {
+        return 0;
+    }
+
+    @Override
+    public int getMessageType() {
+        return 3;
+    }
+
+    @Override
+    public byte[] asBytes() {
+        return SerializationUtils.serialize(this);
+    }
+
+    @Override
+    public UnsafeBuffer asUnsafeBuffer() {
+        return new UnsafeBuffer(asBytes());
+    }
+
+    @Override
+    public void attachContext(@NonNull Configuration configuration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+        this.configuration = configuration;
+        this.clipboard = clipboard;
+        this.transport = transport;
+        this.storage = storage;
+        this.role = role;
+        this.shardIndex = shardIndex;
+        this.trainer = trainer;
+    }
+
+    @Override
+    public void processMessage() {
+        for(T message: list) {
+            message.attachContext(configuration, trainer, clipboard, transport, storage, role, shardIndex);
+            message.processMessage();
+        }
+    }
+}

@@ -9,6 +9,7 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.training.TrainerProvider;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 /**
  * This is batch message, describing simple SkipGram round
@@ -56,11 +57,14 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
      * This method does actual training for SkipGram algorithm
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void processMessage() {
         /**
          * This method in reality just delegates training to specific TrainingDriver, based on message type.
          * In this case - SkipGram training
          */
-        TrainerProvider.getInstance().doTraining(this);
+        // FIXME: we might use something better then unchecked type cast here
+        TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;
+        sgt.startTraining(this);
     }
 }

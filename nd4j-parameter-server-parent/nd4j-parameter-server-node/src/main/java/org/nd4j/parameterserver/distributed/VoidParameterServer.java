@@ -11,6 +11,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
@@ -289,51 +290,23 @@ public class VoidParameterServer {
     }
 
     /**
-     * This method handles Shard initialization
+     * This method handles Shards initialization
      *
-     * @param message
      */
     // TODO: right now we support only columnar splits over tables
-    protected void initializeSeqVec(@NonNull DistributedInitializationMessage message) {
-
-    }
-
-
-    /**
-     * This method takes AggregateOp, and sends them for execution over network
-     *
-     * PLEASE NOTE: This method is NOT blocking
-     *
-     * @param aggregate
-     */
-    @Deprecated
-    public <T extends Aggregate> void execDistributed(@NonNull T aggregate) {
-        // we just form the message and send it
-
-
-        transport.sendMessage(null);
+    protected void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs, boolean useNegSampling) {
+        InitializationRequestMessage dim = new InitializationRequestMessage(vectorLength, numWords, seed, useHs, useNegSampling, columnsPerShard);
+        transport.sendMessage(dim);
     }
 
     public void execDistributed(@NonNull SkipGramRequestMessage message) {
+        // TODO: provide Frame<SkipGramRequestMessage> use here
+        /**
+         * Basically we should batch messages coming from different TrainingFunctions on spark executor side here.
+         * So we pack them into batches, and send over the wire to selected Shard
+         */
         transport.sendMessage(message);
-        // simple as that
     }
-
-    /**
-     * This method takes Batch of Aggregates, and executes them over network
-     *
-     * PLEASE NOTE: This method is NOT blocking
-     *
-     * @param batch
-     * @param <T>
-     */
-    @Deprecated
-    public <T extends Aggregate> void execDistributed(@NonNull Batch<T> batch) {
-        // we form it and send it :)
-
-        transport.sendMessage(null);
-    }
-
 
     /**
      * This method returns INDArray matching requested storageId value
