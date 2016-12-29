@@ -54,11 +54,6 @@ public class CachingDataSetIteratorTest extends BaseNd4jTest {
         FileUtils.deleteDirectory(cacheDir.toFile());
     }
 
-    @Test
-    public void testPreProcessCaching() {
-
-    }
-
     private void runDataSetTest(DataSetCache cache) {
         int rows = 500;
         int inputColumns = 100;
