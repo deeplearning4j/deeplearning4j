@@ -7,9 +7,9 @@ layout: default
 
 Where you start depends on what you already know. 
 
-The prerequisites for understanding and applying deep learning are linear algebra, calculus and statistics, as well as programming and machine learning. 
+The prerequisites for understanding and applying deep learning are linear algebra, calculus and statistics, as well as programming and some machine learning. 
 
-In the case of Deeplearning4j, you should know Java well and be comfortable with the IntelliJ IDE. 
+In the case of Deeplearning4j, you should know Java well and be comfortable with tools like the IntelliJ IDE and the automated build tool Maven. 
 
 Below you'll find a list of resources. The sections are roughly organized in the order they will be useful. 
 
@@ -19,6 +19,8 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
+* [ML@B: Machine Learning Crash Course: Part 1](https://ml.berkeley.edu/blog/2016/11/06/tutorial-1/)
+* [ML@B: Machine Learning Crash Course: Part 2](https://ml.berkeley.edu/blog/2016/12/24/tutorial-2/)
 
 ## Math
 
