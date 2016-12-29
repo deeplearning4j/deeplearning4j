@@ -49,7 +49,7 @@ redirect_from: /zh-lstm
 <p>由于循环网络具有时间维度，所以可能用动画示意最为清楚（最先出现的节点垂直线可被视为一个前馈网络，随时间展开后变为循环网络）。</p><br /><div align="center">
 	<blockquote class="imgur-embed-pub" lang="en" data-id="6Uak4vF"><a href="//imgur.com/6Uak4vF"></a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script></div>
 <br>
-<p>在<a href="https://i.imgur.com/6Uak4vF.gifv" target="_blank">上图</a>中，每一个x都是一个输入样例，<code>w</code> 是用于筛选输入的权重，<code>a</code> 是隐藏层的激活状态（附加权重后的输入与上一个隐藏状态之和），而b则是隐藏层在转换，或称 “挤压” 后的输出，使用线性修正或sigmoid单位。</p>
+<p>在<a href="https://i.imgur.com/6Uak4vF.gifv" target="_blank">上图</a>中，每一个x都是一个输入样例，<code>w</code> 是用于筛选输入的权重，<code>a</code> 是隐藏层的激活状态（附加权重后的输入与上一个隐藏状态之和），而b则是隐藏层用修正线性或sigmoid单元进行变换（或称“挤压”）后的输出。</p>
 <br>
 <p><h2><a name="backpropagation">沿时间反向传播（BPTT）</a></h2></p><p>前文提到，循环网络的目的是准确地对序列输入进行分类。我们依靠误差反向传播和梯度下降来达成这一目标。</p>
 <p>前馈网络的反向传播从最后的误差开始，经每个隐藏层的输出、权重和输入反向移动，将一定比例的误差分配给每个权重，方法是计算权重与误差的偏导数－<em>∂E/∂w</em>，即两者变化速度的比例。随后，梯度下降的学习算法会用这些偏导数对权重进行上下调整以减少误差。</p>
