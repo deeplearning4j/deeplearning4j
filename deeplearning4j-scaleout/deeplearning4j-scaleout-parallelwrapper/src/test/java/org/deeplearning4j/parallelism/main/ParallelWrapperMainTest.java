@@ -14,12 +14,15 @@ import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.parallelism.main.ParallelWrapperMain;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.util.Random;
 
 /**
  * Created by agibsonccc on 12/29/16.
@@ -38,7 +41,8 @@ public class ParallelWrapperMainTest {
         int nEpochs = 10;
         int iterations = 1;
         int seed = 123;
-
+        int uiPort = new Random().nextInt(1000) + 9000;
+        System.setProperty("org.deeplearning4j.ui.port",String.valueOf(uiPort));
         log.info("Load data....");
         DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
@@ -84,7 +88,9 @@ public class ParallelWrapperMainTest {
                 .backprop(true).pretrain(false);
         // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
         new ConvolutionLayerSetup(builder,28,28,1);
-
+        UIServer uiServer = UIServer.getInstance();
+        uiServer.attach(new InMemoryStatsStorage());
+        uiServer.enableRemoteListener();
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -97,8 +103,12 @@ public class ParallelWrapperMainTest {
         parallelWrapperMain.runMain(new String[]{
                 "--modelPath",tempModel.getAbsolutePath(),
                 "--dataSetIteratorFactoryClazz",MnistDataSetIteratorProviderFactory.class.getName(),
-                "--modelOutputPath",tmp.getAbsolutePath()
+                "--modelOutputPath",tmp.getAbsolutePath(),
+                "--uiUrl","localhost:" + uiPort
         });
+
+
+        Thread.sleep(30000);
     }
 
 }

@@ -3,14 +3,20 @@ package org.deeplearning4j.parallelism.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.parallelism.ParallelWrapper;
+import org.deeplearning4j.ui.stats.StatsListener;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelGuesser;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
+import java.util.Collections;
 
 /**
  * Parallelwrapper main class.
@@ -64,6 +70,11 @@ public class ParallelWrapperMain {
             , arity = 1,
             required = true)
     private String modelOutputPath = null;
+    @Parameter(names={"--uiUrl"},
+            description = "The host:port of the ui to use (optional)"
+            , arity = 1,
+            required = true)
+    private String uiUrl = null;
 
 
 
@@ -111,6 +122,13 @@ public class ParallelWrapperMain {
         if(dataSetIteratorFactoryClazz != null) {
             DataSetIteratorProviderFactory dataSetIteratorProviderFactory = (DataSetIteratorProviderFactory) Class.forName(dataSetIteratorFactoryClazz).newInstance();
             DataSetIterator dataSetIterator = dataSetIteratorProviderFactory.create();
+            if(uiUrl != null) {
+                // it's important that the UI can report results from parallel training
+                // there's potential for StatsListener to fail if certain properties aren't set in the model
+                StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
+                wrapper.setListeners(remoteUIRouter,new StatsListener(null));
+
+            }
             wrapper.fit(dataSetIterator);
             ModelSerializer.writeModel(model,new File(modelOutputPath),true);
 
@@ -119,6 +137,13 @@ public class ParallelWrapperMain {
         else if(multiDataSetIteratorFactoryClazz != null) {
             MultiDataSetProviderFactory multiDataSetProviderFactory = (MultiDataSetProviderFactory) Class.forName(multiDataSetIteratorFactoryClazz).newInstance();
             MultiDataSetIterator iterator = multiDataSetProviderFactory.create();
+            if(uiUrl != null) {
+                // it's important that the UI can report results from parallel training
+                // there's potential for StatsListener to fail if certain properties aren't set in the model
+                StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
+                wrapper.setListeners(remoteUIRouter,new StatsListener(null));
+
+            }
             wrapper.fit(iterator);
             ModelSerializer.writeModel(model,new File(modelOutputPath),true);
 

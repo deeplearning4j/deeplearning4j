@@ -2,6 +2,10 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
@@ -22,10 +26,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.io.Serializable;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +53,8 @@ public class ParallelWrapper implements AutoCloseable {
     private boolean legacyAveraging = false;
     private boolean wasAveraged = false;
     private AtomicBoolean stopFit = new AtomicBoolean(false);
-
+    private List<IterationListener> listeners = new ArrayList<>();
+    private StatsStorageRouter storageRouter;
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -103,8 +106,8 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     /**
-    * Will stop a fit operation from continuing to iterate.
-    */
+     * Will stop a fit operation from continuing to iterate.
+     */
     public void stopFit() { stopFit.set(true); }
 
     /**
@@ -242,6 +245,74 @@ public class ParallelWrapper implements AutoCloseable {
         log.debug("Iterations passed: {}", iterationsCounter.get());
 //        iterationsCounter.set(0);
     }
+
+
+
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
+     *
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+        setListeners(null, listeners);
+    }
+
+    /**
+     * This method allows you to specify IterationListeners for this model.
+     * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
+     * using {@link #setListeners(StatsStorageRouter, Collection)}
+     *
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(@NonNull IterationListener... listeners){
+        setListeners(Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+        setListeners(statsStorage, Arrays.asList(listeners));
+    }
+
+    /**
+     * Set the listeners, along with a StatsStorageRouter that the results will be shuffled to (in the case of any listeners
+     * that implement the {@link RoutingIterationListener} interface)
+     *
+     * @param statsStorage Stats storage router to place the results into
+     * @param listeners    Listeners to set
+     */
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
+        //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
+        StatsStorageRouterProvider routerProvider = null;
+        if(listeners != null) {
+            for(IterationListener l : listeners) {
+                if(l instanceof RoutingIterationListener) {
+                    RoutingIterationListener rl = (RoutingIterationListener) l;
+                    if(rl.getStorageRouter() == null) {
+                        log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)) {
+                        //Spark would throw a (probably cryptic) serialization exception later anyway...
+                        throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
+                    }
+
+                }
+            }
+        }
+
+
+        this.storageRouter = statsStorage;
+        this.listeners.addAll(listeners);
+
+    }
+
 
     /**
      * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors
@@ -440,7 +511,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          * Model averaging frequency.
          *
-         * @param freq number of iterations between averagin
+         * @param freq number of iterations between averaging
          * @return
          */
         public Builder averagingFrequency(int freq) {
@@ -523,7 +594,7 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
-    private static class Trainer extends Thread implements Runnable {
+    private  class Trainer extends Thread implements Runnable {
         private Model originalModel;
         private Model replicatedModel;
         private LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
@@ -640,6 +711,7 @@ public class ParallelWrapper implements AutoCloseable {
                             RoutingIterationListener routingListener = ((RoutingIterationListener) listener).clone();
                             routingListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
                             routingListener.setWorkerID(uuid);
+                            routingListener.setStorageRouter(ParallelWrapper.this.storageRouter);
                             replicatedListeners.add(routingListener);
                         } else {
                             replicatedListeners.add(listener);
@@ -659,6 +731,7 @@ public class ParallelWrapper implements AutoCloseable {
                             RoutingIterationListener routingIterationListener = ((RoutingIterationListener) listener).clone();
                             routingIterationListener.setSessionID(((RoutingIterationListener) listener).getSessionID());
                             routingIterationListener.setWorkerID(uuid);
+                            routingIterationListener.setStorageRouter(ParallelWrapper.this.storageRouter);
                             replicatedListeners.add(routingIterationListener);
                         } else {
                             replicatedListeners.add(listener);

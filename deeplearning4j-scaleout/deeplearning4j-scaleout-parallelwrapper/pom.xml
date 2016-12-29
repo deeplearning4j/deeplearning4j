@@ -89,7 +89,6 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-play_2.10</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
