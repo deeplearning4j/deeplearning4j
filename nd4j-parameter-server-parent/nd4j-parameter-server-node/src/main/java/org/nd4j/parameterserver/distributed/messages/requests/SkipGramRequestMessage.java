@@ -8,6 +8,7 @@ import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSkipGramMessage;
 import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
@@ -66,5 +67,8 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         // FIXME: we might use something better then unchecked type cast here
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;
         sgt.startTraining(this);
+
+        DistributedSkipGramMessage dsgm = new DistributedSkipGramMessage(this);
+        transport.sendMessageToAllShards(dsgm);
     }
 }

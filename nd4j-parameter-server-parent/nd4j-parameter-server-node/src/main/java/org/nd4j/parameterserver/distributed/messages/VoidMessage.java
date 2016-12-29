@@ -16,6 +16,10 @@ import java.io.Serializable;
  */
 public interface VoidMessage extends Serializable {
 
+    void setTargetId(short id);
+
+    short getTargetId();
+
     long getTaskId();
 
     int getMessageType();
@@ -32,6 +36,8 @@ public interface VoidMessage extends Serializable {
      * This method initializes message for further processing
      */
     void attachContext(Configuration configuration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex);
+
+    void extractContext(BaseVoidMessage message);
 
     /**
      * This method will be started in context of executor, either Shard, Client or Backup node

@@ -30,6 +30,8 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
     @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
     protected List<T> list = new ArrayList<T>();
 
+    @Getter @Setter protected short targetId;
+
 
     protected transient Configuration configuration;
     protected transient Clipboard clipboard;
@@ -97,6 +99,17 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
         this.role = role;
         this.shardIndex = shardIndex;
         this.trainer = trainer;
+    }
+
+    @Override
+    public void extractContext(@NonNull BaseVoidMessage message) {
+        this.configuration = message.configuration;
+        this.clipboard = message.clipboard;
+        this.transport = message.transport;
+        this.storage = message.storage;
+        this.role = message.role;
+        this.shardIndex = message.shardIndex;
+        this.trainer = message.trainer;
     }
 
     @Override

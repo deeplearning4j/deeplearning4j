@@ -13,6 +13,7 @@ import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.requests.AssignRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
@@ -24,6 +25,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -488,6 +490,7 @@ public class VoidParameterServerTest {
         Thread[] threads = new Thread[3];
         final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2, shardConf3};
         VoidParameterServer[] shards = new VoidParameterServer[threads.length];
+        final AtomicBoolean runner = new AtomicBoolean(true);
         for (int t = 0; t < threads.length; t++) {
             final int x = t;
             threads[t] = new Thread(() -> {
@@ -499,6 +502,11 @@ public class VoidParameterServerTest {
 
                 assertEquals(NodeRole.SHARD, shards[x].getNodeRole());
                 startCnt.incrementAndGet();
+
+                try {
+                    while (runner.get())
+                        Thread.sleep(100);
+                } catch (Exception e) { }
             });
 
             threads[t].setDaemon(true);
@@ -512,7 +520,7 @@ public class VoidParameterServerTest {
 
         InitializationRequestMessage irm = InitializationRequestMessage.builder()
                 .numWords(100)
-                .columnsPerShard(10)
+                .columnsPerShard(50)
                 .seed(123)
                 .useHs(true)
                 .useNeg(false)
@@ -522,16 +530,17 @@ public class VoidParameterServerTest {
         clientNode.getTransport().sendMessage(irm);
 
         // after this point we'll assume all Shards are initialized
-        Thread.sleep(200);
+        Thread.sleep(2000);
 
+        log.info("------------------");
 
         AssignRequestMessage arm = new AssignRequestMessage(WordVectorStorage.SYN_0, 192f,11);
         clientNode.getTransport().sendMessage(arm);
 
-        Thread.sleep(200);
+        Thread.sleep(500);
 
         // This is blocking method
-        INDArray vec = clientNode.getVector(11);
+        INDArray vec = clientNode.getVector(WordVectorStorage.SYN_0, 11);
 
         assertEquals(Nd4j.create(150).assign(192f), vec);
 
@@ -551,9 +560,15 @@ public class VoidParameterServerTest {
         arm = new AssignRequestMessage(WordVectorStorage.SYN_1, 0.02, -1);
         clientNode.getTransport().sendMessage(arm);
 
-        Thread.sleep(100);
+        Thread.sleep(500);
         // no we'll send single SkipGram request that involves calculation for 0 -> {1,2}, and will check result against pre-calculated values
 
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[]{1, 2}, new byte[]{0, 1}, (short) 0, 0.001, 119L);
+        clientNode.getTransport().sendMessage(sgrm);
+
+        // TODO: we might want to introduce optional CompletedMessage here
+        // now we just wait till everything is finished
+        Thread.sleep(500);
 
 
         // This is blocking method
@@ -565,6 +580,7 @@ public class VoidParameterServerTest {
         assertEquals(expSyn1_1, row_syn1_1);
         assertEquals(expSyn1_2, row_syn1_2);
 
+        runner.set(false);
         for (int t = 0; t < threads.length; t++) {
             threads[t].join();
         }

@@ -1,6 +1,8 @@
 package org.nd4j.parameterserver.distributed.training.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.Chain;
@@ -26,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;
 
@@ -42,6 +45,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
          */
         SkipGramChain chain = new SkipGramChain(0L);
         chain.addElement(message);
+
+        log.info("Starting chain [{}]", chain.getTaskId());
+
 
         chains.put(chain.getTaskId(), chain);
 
@@ -76,6 +82,10 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // so we just calculate gradients here
 
         SkipGramChain chain = chains.get(aggregation.getTaskId());
+
+        if (chain == null)
+            throw new ND4JIllegalStateException("Can't get chain for taskId ["+ aggregation.getTaskId() +"]");
+
         chain.addElement((DotAggregation) aggregation);
 
         finishTraining(aggregation.getTaskId());

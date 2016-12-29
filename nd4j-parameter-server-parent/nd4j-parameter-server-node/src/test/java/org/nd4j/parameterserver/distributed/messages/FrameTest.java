@@ -35,6 +35,16 @@ public class FrameTest {
         for(int i = 0; i < 10; i++) {
             frame.stackMessage(new VoidMessage() {
                 @Override
+                public void setTargetId(short id) {
+
+                }
+
+                @Override
+                public short getTargetId() {
+                    return 0;
+                }
+
+                @Override
                 public long getTaskId() {
                     return 0;
                 }
@@ -56,6 +66,11 @@ public class FrameTest {
 
                 @Override
                 public void attachContext(Configuration configuration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex) {
+                    // no-op intentionally
+                }
+
+                @Override
+                public void extractContext(BaseVoidMessage message) {
                     // no-op intentionally
                 }
 

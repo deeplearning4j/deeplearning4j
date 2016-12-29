@@ -69,6 +69,9 @@ public abstract class BaseTransport implements Transport {
 
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
+    // TODO: make this auto-configurable
+    protected short targetId = 0;
+
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
         long taskId = message.getTaskId();
@@ -105,6 +108,7 @@ public abstract class BaseTransport implements Transport {
             case 9:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
+                log.info("Sending message to Shard: {}", message.getClass().getSimpleName());
                 sendCommandToShard(message);
                 break;
             // messages 10..19 inclusive are reserved for Shard->Clients commands
@@ -118,6 +122,7 @@ public abstract class BaseTransport implements Transport {
             case 20:
             case 21:
             case 22:
+                log.info("Sending message to ALL Shards: {}", message.getClass().getSimpleName());
                 sendCoordinationCommand(message);
                 break;
             default:
@@ -201,6 +206,10 @@ public abstract class BaseTransport implements Transport {
      */
     @Override
     public void sendMessageToAllShards(VoidMessage message) {
+        if (nodeRole != NodeRole.SHARD)
+            throw new RuntimeException("This method shouldn't be called only from Shard context");
+
+        message.setTargetId((short) -1);
         publicationForShards.offer(message.asUnsafeBuffer());
     }
 

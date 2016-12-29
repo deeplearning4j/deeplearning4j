@@ -104,4 +104,9 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
     public UnsafeBuffer asUnsafeBuffer() {
         return new UnsafeBuffer(asBytes());
     }
+
+    @Override
+    public short getTargetId() {
+        return (short) -1;
+    }
 }

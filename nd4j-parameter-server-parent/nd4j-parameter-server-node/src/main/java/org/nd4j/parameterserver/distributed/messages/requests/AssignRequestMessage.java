@@ -43,10 +43,14 @@ public class AssignRequestMessage extends BaseVoidMessage {
     public void processMessage() {
         if (payload == null) {
             DistributedAssignMessage dam = new DistributedAssignMessage(key, rowIdx, value.doubleValue());
-            transport.sendMessage(dam);
+            dam.extractContext(this);
+            dam.processMessage();
+            transport.sendMessageToAllShards(dam);
         } else {
             DistributedAssignMessage dam = new DistributedAssignMessage(key, payload);
-            transport.sendMessage(dam);
+            dam.extractContext(this);
+            dam.processMessage();
+            transport.sendMessageToAllShards(dam);
         }
     }
 }

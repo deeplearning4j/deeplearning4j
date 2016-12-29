@@ -21,6 +21,7 @@ public abstract class BaseVoidMessage implements VoidMessage {
     protected int messageType = -1;
     protected long nodeId;
     protected long taskId;
+    protected short targetId;
 
     // these fields are used only for op invocation
     protected transient Configuration configuration;
@@ -59,5 +60,16 @@ public abstract class BaseVoidMessage implements VoidMessage {
         this.role = role;
         this.shardIndex = shardIndex;
         this.trainer = trainer;
+    }
+
+    @Override
+    public void extractContext(@NonNull BaseVoidMessage message) {
+        this.configuration =  message.configuration;
+        this.clipboard = message.clipboard;
+        this.transport = message.transport;
+        this.storage = message.storage;
+        this.role = message.role;
+        this.shardIndex = message.shardIndex;
+        this.trainer = message.trainer;
     }
 }

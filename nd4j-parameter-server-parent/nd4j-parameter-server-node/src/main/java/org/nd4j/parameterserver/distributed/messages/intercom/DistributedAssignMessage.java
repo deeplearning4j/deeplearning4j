@@ -44,15 +44,17 @@ public class DistributedAssignMessage extends BaseVoidMessage {
     public void processMessage() {
         if (payload != null) {
             // we're assigning array
-            if (storage.arrayExists(key))
+            if (storage.arrayExists(key) && storage.getArray(key).length() == payload.length())
                 storage.getArray(key).assign(payload);
             else
                 storage.setArray(key, payload);
         } else {
             // we're assigning number to row
-            if (index >= 0)
+            if (index >= 0) {
+                if (storage.getArray(key) == null)
+                    throw new RuntimeException("Init wasn't called before for key [" + key + "]");
                 storage.getArray(key).getRow(index).assign(value);
-            else
+            } else
                 storage.getArray(key).assign(value);
         }
     }

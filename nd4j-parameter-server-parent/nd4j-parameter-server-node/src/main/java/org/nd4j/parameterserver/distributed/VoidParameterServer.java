@@ -16,6 +16,7 @@ import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMes
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -56,7 +57,9 @@ public class VoidParameterServer {
     protected transient AtomicBoolean runner = new AtomicBoolean(false);
 
     protected transient Thread processingThread;
-    protected transient TrainingDriver<? extends TrainingMessage> trainer;
+
+    // FIXME: we want trainer to be configurable here
+    protected transient TrainingDriver<? extends TrainingMessage> trainer = new SkipGramTrainer();
 
     protected short shardIndex;
 
@@ -191,6 +194,7 @@ public class VoidParameterServer {
 
         // TODO: uncomment this line on later stages
         //transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+        trainer.init(this.configuration, this.transport, storage, clipboard);
     }
 
     /**
@@ -283,7 +287,12 @@ public class VoidParameterServer {
         if (message == null)
             return;
 
-        log.info("Processing message: {}", message.getMessageType());
+        if (message.getTargetId() >= 0 && message.getTargetId() != shardIndex) {
+            log.warn("sI_{}: Skipping message: [{}]; TargetIdx: [{}]", shardIndex, message.getClass().getSimpleName(), message.getTargetId());
+            return;
+        }
+
+        log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
 
         message.attachContext(configuration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();
@@ -325,7 +334,7 @@ public class VoidParameterServer {
          * we create VoidMessage, send it, and block until it gets responded
          */
 
-        VectorRequestMessage message = new VectorRequestMessage(rowIdx);
+        VectorRequestMessage message = new VectorRequestMessage(key, rowIdx);
 
         MeaningfulMessage response = transport.sendMessageAndGetResponse(message);
 

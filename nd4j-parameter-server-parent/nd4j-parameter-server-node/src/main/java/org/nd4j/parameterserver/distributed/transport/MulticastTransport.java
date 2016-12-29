@@ -124,6 +124,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCommandToShard(VoidMessage message) {
+        message.setTargetId(targetId);
         DirectBuffer buffer = message.asUnsafeBuffer();
 
         long result = publicationForShards.offer(buffer);
@@ -131,6 +132,7 @@ public class MulticastTransport extends BaseTransport {
         if (result  < 0)
             for (int i = 0; i < 5 && result < 0; i++) {
                 try {
+                    // TODO: make this configurable
                     Thread.sleep(1000);
                 } catch (Exception e) { }
                 result = publicationForShards.offer(buffer);
@@ -149,6 +151,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
+        message.setTargetId((short) -1);
         publicationForShards.offer(message.asUnsafeBuffer());
     }
 
@@ -159,6 +162,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendFeedbackToClient(VoidMessage message) {
+        message.setTargetId((short) -1);
         publicationForClients.offer(message.asUnsafeBuffer());
     }
 }
