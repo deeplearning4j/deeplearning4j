@@ -1237,13 +1237,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
         }
 
-        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
             currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
 
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            if(currLayer instanceof RecurrentLayer){
+            if(currLayer instanceof RecurrentLayer) {
                 currPair = ((RecurrentLayer)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
             } else {
                 currPair = currLayer.backpropGradient(currPair.getSecond());
@@ -1294,7 +1294,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         this.trainingListeners.clear();
         if(listeners != null) {
-            for (IterationListener il : listeners){
+            for (IterationListener il : listeners) {
                 if(il instanceof TrainingListener){
                     this.trainingListeners.add((TrainingListener) il);
                 }
