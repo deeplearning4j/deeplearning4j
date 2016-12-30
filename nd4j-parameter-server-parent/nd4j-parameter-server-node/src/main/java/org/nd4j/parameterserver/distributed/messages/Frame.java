@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> , VoidMessage {
+public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T> , VoidMessage {
 
     @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
     protected List<T> list = new ArrayList<T>();
@@ -50,8 +50,13 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
     }
 
     public void stackMessage(@NonNull T message) {
-        // TODO: add duplicates handling here
-        list.add(message);
+        if (message.isJoinSupported()) {
+            int index = list.indexOf(message);
+            if (index >= 0)
+                list.get(index).joinMessage(message);
+            else
+                list.add(message);
+        } else list.add(message);
     }
 
     public void stackMessages(@NonNull Collection<T> messages) {
@@ -119,7 +124,10 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
     public void processMessage() {
         for(T message: list) {
             message.attachContext(configuration, trainer, clipboard, transport, storage, role, shardIndex);
-            message.processMessage();
+
+            // if there's more then 1 round should be applied
+            for (int i = 0; i < message.getCounter(); i++)
+                message.processMessage();
         }
     }
 

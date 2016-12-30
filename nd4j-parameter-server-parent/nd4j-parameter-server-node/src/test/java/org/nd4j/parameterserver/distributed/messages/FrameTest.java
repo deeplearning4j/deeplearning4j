@@ -7,6 +7,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -30,10 +31,15 @@ public class FrameTest {
     public void testFrame1() {
         final AtomicInteger count = new AtomicInteger(0);
 
-        Frame<VoidMessage> frame = new Frame<>();
+        Frame<TrainingMessage> frame = new Frame<>();
 
         for(int i = 0; i < 10; i++) {
-            frame.stackMessage(new VoidMessage() {
+            frame.stackMessage(new TrainingMessage() {
+                @Override
+                public byte getCounter() {
+                    return 2;
+                }
+
                 @Override
                 public void setTargetId(short id) {
 
@@ -78,6 +84,16 @@ public class FrameTest {
                 public void processMessage() {
                     count.incrementAndGet();
                 }
+
+                @Override
+                public boolean isJoinSupported() {
+                    return false;
+                }
+
+                @Override
+                public void joinMessage(VoidMessage message) {
+                    // no-op
+                }
             });
         }
 
@@ -85,8 +101,20 @@ public class FrameTest {
 
         frame.processMessage();
 
-        assertEquals(10, count.get());
+        assertEquals(20, count.get());
     }
 
 
+    @Test
+    public void testJoin1() throws Exception {
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[]{3,4,5}, new byte[]{0,1,0}, (short) 0, 0.01, 119L);
+        Frame<SkipGramRequestMessage> frame = new Frame<>(sgrm);
+        for (int i = 0; i < 10; i++) {
+            frame.stackMessage(sgrm);
+        }
+
+        // all messages should be stacked into one message
+        assertEquals(1, frame.size());
+        assertEquals(11, sgrm.getCounter());
+    }
 }

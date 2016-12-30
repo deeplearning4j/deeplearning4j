@@ -13,6 +13,8 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSkipGra
 import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
+import java.util.Arrays;
+
 /**
  * This is batch message, describing simple SkipGram round
  *
@@ -39,6 +41,8 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     protected short negSamples;
 
     protected long nextRandom;
+
+    protected byte counter = 1;
 
     protected SkipGramRequestMessage() {
         super(0);
@@ -78,6 +82,32 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     @Override
     public void joinMessage(VoidMessage message) {
         // TODO: apply proper join handling here
-        alpha += ((SkipGramRequestMessage) message).getAlpha();
+        counter++;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SkipGramRequestMessage message = (SkipGramRequestMessage) o;
+
+        if (w1 != message.w1) return false;
+        if (w2 != message.w2) return false;
+        if (negSamples != message.negSamples) return false;
+        if (!Arrays.equals(points, message.points)) return false;
+        return Arrays.equals(codes, message.codes);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + w1;
+        result = 31 * result + w2;
+        result = 31 * result + Arrays.hashCode(points);
+        result = 31 * result + Arrays.hashCode(codes);
+        result = 31 * result + (int) negSamples;
+        return result;
     }
 }
