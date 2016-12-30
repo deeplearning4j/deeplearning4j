@@ -16,15 +16,14 @@
  *
  */
 
-package org.deeplearning4j.spark.impl.multilayer.scoring;
+package org.deeplearning4j.spark.impl.common.score;
 
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,56 +35,52 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Function to score examples individually, where each example is associated with a particular key<br>
+ * Function to calculate the reconstruction probability for a variational autoencoder.<br>
  * Note that scoring is batched for computational efficiency.<br>
- * This is the Spark implementation of t he {@link MultiLayerNetwork#scoreExamples(DataSet, boolean)} method<br>
- * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
- * between keys and data sets to score)
  *
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @author Alex Black
- * @see ScoreExamplesFunction
  */
-public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, DataSet>>, K, Double> {
+public abstract class BaseVaeReconstructionProbWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray>>, K, Double> {
 
-    protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
+    protected static Logger log = LoggerFactory.getLogger(BaseVaeReconstructionProbWithKeyFunction.class);
 
-    private final Broadcast<INDArray> params;
-    private final Broadcast<String> jsonConfig;
-    private final boolean addRegularization;
+    protected final Broadcast<INDArray> params;
+    protected final Broadcast<String> jsonConfig;
     private final int batchSize;
+    private final boolean useLogProbability;
+    private final int numSamples;
 
     /**
      * @param params                 MultiLayerNetwork parameters
      * @param jsonConfig             MultiLayerConfiguration, as json
-     * @param addRegularizationTerms if true: add regularization terms (L1, L2) to the score
+     * @param useLogProbability      If true: use log probability. False: use raw probability.
      * @param batchSize              Batch size to use when scoring
+     * @param numSamples             Number of samples to use when calling {@link VariationalAutoencoder#reconstructionLogProbability(INDArray, int)}
      */
-    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
-                                        int batchSize) {
+    public BaseVaeReconstructionProbWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean useLogProbability,
+                                                    int batchSize, int numSamples) {
         this.params = params;
         this.jsonConfig = jsonConfig;
-        this.addRegularization = addRegularizationTerms;
+        this.useLogProbability = useLogProbability;
         this.batchSize = batchSize;
+        this.numSamples = numSamples;
     }
+
+    public abstract VariationalAutoencoder getVaeLayer();
 
 
     @Override
-    public Iterable<Tuple2<K, Double>> call(Iterator<Tuple2<K, DataSet>> iterator) throws Exception {
+    public Iterable<Tuple2<K, Double>> call(Iterator<Tuple2<K, INDArray>> iterator) throws Exception {
         if (!iterator.hasNext()) {
             return Collections.emptyList();
         }
 
-        MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
-        network.init();
-        INDArray val = params.value().unsafeDuplication();
-        if (val.length() != network.numParams(false))
-            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
-        network.setParameters(val);
+        VariationalAutoencoder vae = getVaeLayer();
 
         List<Tuple2<K, Double>> ret = new ArrayList<>();
 
-        List<DataSet> collect = new ArrayList<>(batchSize);
+        List<INDArray> collect = new ArrayList<>(batchSize);
         List<K> collectKey = new ArrayList<>(batchSize);
         int totalCount = 0;
         while (iterator.hasNext()) {
@@ -93,21 +88,26 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
             collectKey.clear();
             int nExamples = 0;
             while (iterator.hasNext() && nExamples < batchSize) {
-                Tuple2<K, DataSet> t2 = iterator.next();
-                DataSet ds = t2._2();
-                int n = ds.numExamples();
+                Tuple2<K, INDArray> t2 = iterator.next();
+                INDArray features = t2._2();
+                int n = features.size(0);
                 if (n != 1) throw new IllegalStateException("Cannot score examples with one key per data set if "
                         + "data set contains more than 1 example (numExamples: " + n + ")");
-                collect.add(ds);
+                collect.add(features);
                 collectKey.add(t2._1());
                 nExamples += n;
             }
             totalCount += nExamples;
 
-            DataSet data = DataSet.merge(collect);
+            INDArray toScore = Nd4j.vstack(collect);
 
+            INDArray scores;
+            if(useLogProbability){
+                scores = vae.reconstructionLogProbability(toScore, numSamples);
+            } else {
+                scores = vae.reconstructionProbability(toScore, numSamples);
+            }
 
-            INDArray scores = network.scoreExamples(data, addRegularization);
             double[] doubleScores = scores.data().asDouble();
 
             for (int i = 0; i < doubleScores.length; i++) {
