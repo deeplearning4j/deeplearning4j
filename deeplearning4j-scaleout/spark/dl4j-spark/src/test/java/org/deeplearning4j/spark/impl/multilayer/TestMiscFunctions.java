@@ -7,15 +7,19 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.multilayer.scoring.VaeReconstructionProbWithKeyFunction;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
@@ -23,6 +27,7 @@ import scala.Tuple2;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 17/12/2016.
@@ -126,6 +131,46 @@ public class TestMiscFunctions extends BaseSparkTest {
             INDArray act = map.get(i)[0];
 
             assertEquals(exp, act);
+        }
+    }
+
+
+    @Test
+    public void testVaeScoringWithKey(){
+
+        //Simple test. We can't do a direct comparison, as the reconstruction probabilities are stochastic
+        // due to sampling
+
+        int nIn = 10;
+
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.IDENTITY))
+                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        List<Tuple2<Integer,INDArray>> toScore = new ArrayList<>();
+        for( int i=0; i<100; i++ ){
+            INDArray arr = Nd4j.rand(1,nIn);
+            toScore.add(new Tuple2<Integer, INDArray>(i, arr));
+        }
+
+        JavaPairRDD<Integer,INDArray> rdd = sc.parallelizePairs(toScore);
+
+        JavaPairRDD<Integer,Double> reconstr = rdd.mapPartitionsToPair(new VaeReconstructionProbWithKeyFunction<Integer>(sc.broadcast(net.params()), sc.broadcast(mlc.toJson()),
+                true, 16, 128));
+
+        Map<Integer,Double> l = reconstr.collectAsMap();
+
+        assertEquals(100, l.size());
+
+        for( int i=0; i<100; i++ ){
+            assertTrue(l.containsKey(i));
+            assertTrue(l.get(i) < 0.0); //log probability: should be negative
         }
     }
 
