@@ -2,13 +2,10 @@ package org.nd4j.parameterserver.distributed.transport;
 
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
-import io.aeron.Publication;
-import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
@@ -32,7 +29,7 @@ public class MulticastTransport extends BaseTransport {
     }
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp) {
+    public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
         if (configuration.getTtl() < 1)
             throw new ND4JIllegalStateException("For MulticastTransport you should have TTL >= 1, it won't work otherwise");
 
@@ -50,6 +47,8 @@ public class MulticastTransport extends BaseTransport {
         context.aeronDirectoryName(driver.aeronDirectoryName());
 
         aeron = Aeron.connect(context);
+
+        this.shardIndex = shardIndex;
 
         ip = "192.168.1.36";//localIp;
 
@@ -124,7 +123,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCommandToShard(VoidMessage message) {
-        message.setTargetId(targetId);
+        message.setTargetId(targetIndex);
         DirectBuffer buffer = message.asUnsafeBuffer();
 
         long result = publicationForShards.offer(buffer);

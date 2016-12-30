@@ -20,7 +20,7 @@ public class LocalTransport implements Transport {
      * @param localIp
      */
     @Override
-    public void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp) {
+    public void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex) {
 
     }
 
@@ -107,5 +107,15 @@ public class LocalTransport implements Transport {
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public short getShardIndex() {
+        return 0;
+    }
+
+    @Override
+    public short getTargetIndex() {
+        return 0;
     }
 }

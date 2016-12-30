@@ -16,6 +16,8 @@ public interface TrainingDriver<T extends TrainingMessage> {
 
     void startTraining(T message);
 
+    void pickTraining(T message);
+
     void aggregationFinished(VoidAggregation aggregation);
 
     void finishTraining(long taskId);

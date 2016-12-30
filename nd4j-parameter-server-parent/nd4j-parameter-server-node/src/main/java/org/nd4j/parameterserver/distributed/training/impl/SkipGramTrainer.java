@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.distributed.training.impl;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -43,7 +44,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-        SkipGramChain chain = new SkipGramChain(0L);
+        SkipGramChain chain = new SkipGramChain(message.getTaskId());
         chain.addElement(message);
 
         log.info("Starting chain [{}]", chain.getTaskId());
@@ -57,13 +58,32 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             // FIXME: taskId should be real here, since it'll be used for task chain tracking
             // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
-            DistributedDotMessage ddm = new DistributedDotMessage(0L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, message.getPoints());
+            DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, message.getPoints(),
+                    message.getW1(),
+                    message.getW2(),
+                    message.getCodes(),
+                    message.getPoints() != null && message.getPoints().length > 0,
+                    message.getNegSamples(),
+                    (float) message.getAlpha());
+
             transport.sendMessage(ddm);
         }
 
         // negSampling round
         if (message.getNegSamples() > 0) {
 
+        }
+    }
+
+    /**
+     * This method will be called from non-initialized Shard context
+     * @param message
+     */
+    @Override
+    public void pickTraining(@NonNull SkipGramRequestMessage message) {
+        if (!chains.containsKey(message.getTaskId())) {
+            SkipGramChain chain = new SkipGramChain(message);
+            chains.put(chain.getTaskId(), chain);
         }
     }
 
@@ -77,14 +97,15 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
      * @param aggregation
      */
     @Override
-    public void aggregationFinished(VoidAggregation aggregation) {
+    public void aggregationFinished(@NonNull VoidAggregation aggregation) {
         // the only possible aggregation here is DotAggregation, actually
         // so we just calculate gradients here
 
         SkipGramChain chain = chains.get(aggregation.getTaskId());
 
-        if (chain == null)
-            throw new ND4JIllegalStateException("Can't get chain for taskId ["+ aggregation.getTaskId() +"]");
+        if (chain == null) {
+            throw new RuntimeException("Unable to find chain for specified taskId: [" + aggregation.getTaskId() + "]");
+        }
 
         chain.addElement((DotAggregation) aggregation);
 
@@ -99,8 +120,10 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         if (chain == null)
             throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
 
-        double alpha = chain.getRequestMessage().getAlpha();
+        SkipGramRequestMessage sgrm = chain.getRequestMessage();
+        double alpha = sgrm.getAlpha();
 
+        log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native
@@ -116,15 +139,15 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         for (int e = 0; e < dots.length(); e++) {
             float dot = dots.getFloat(e);
 
+            log.info("dot at shard_{}: [{}]", transport.getShardIndex(), dot);
+
             if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
-                dots.putScalar(e, Float.NaN);
                 continue;
             }
 
             int idx = (int) ((dot + HS_MAX_EXP) * ((float) expTable.length() / HS_MAX_EXP / 2.0));
 
             if (idx >= expTable.length() || idx < 0) {
-                dots.putScalar(e, Float.NaN);
                 continue;
             }
 
@@ -132,9 +155,13 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             double f = expTable.getFloat(idx);
             double g = (1 - code - f) * alpha;
 
+            log.info("gradient at shard_{}: [{}]", transport.getShardIndex(), g);
+
             // FIXME: this is wrong, just a draft showing an idea
-            Nd4j.getBlasWrapper().axpy(g, syn1.getRow(1), neu1e );
-            Nd4j.getBlasWrapper().axpy(g, syn0.getRow(1), syn1.getRow(1));
+            Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
+            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(1), syn1.getRow(sgrm.getPoints()[e]));
         }
+
+        Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
     }
 }

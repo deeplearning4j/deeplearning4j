@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.training.chains;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.messages.Chain;
@@ -26,7 +27,11 @@ public class SkipGramChain implements Chain {
         this.taskId = taskId;
     }
 
-    public SkipGramChain(long taskId, SkipGramRequestMessage message) {
+    public SkipGramChain(@NonNull SkipGramRequestMessage message) {
+        this(message.getTaskId(), message);
+    }
+
+    public SkipGramChain(long taskId, @NonNull SkipGramRequestMessage message) {
         this(taskId);
         addElement(message);
     }

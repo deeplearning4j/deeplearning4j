@@ -387,7 +387,7 @@ public class VoidParameterServerTest {
             shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_1_NEGATIVE,2, 2.0));
         }
 
-        DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2});
+        DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2}, 0, 1, new byte[]{0, 1}, true, (short) 0, 0.01f);
         for (int t = 0; t < threads.length; t++) {
             shards[t].handleMessage(ddot);
         }
@@ -430,10 +430,12 @@ public class VoidParameterServerTest {
      * @throws Exception
      */
     @Test
-    public void testNodeInitialization3() throws Exception {
+    public void testNodeInitiablization3() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
         final AtomicInteger startCnt = new AtomicInteger(0);
+
+        Nd4j.create(1);
 
         final Configuration clientConf = Configuration.builder()
                 .unicastPort(34567)
@@ -568,7 +570,7 @@ public class VoidParameterServerTest {
 
         // TODO: we might want to introduce optional CompletedMessage here
         // now we just wait till everything is finished
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
 
         // This is blocking method
@@ -577,8 +579,8 @@ public class VoidParameterServerTest {
         INDArray row_syn1_2 = clientNode.getVector(WordVectorStorage.SYN_1, 2);
 
         assertEquals(expSyn0, row_syn0);
-        assertEquals(expSyn1_1, row_syn1_1);
-        assertEquals(expSyn1_2, row_syn1_2);
+        assertArrayEquals(expSyn1_1.data().asFloat(), row_syn1_1.data().asFloat(), 1e-6f);
+        assertArrayEquals(expSyn1_2.data().asFloat(), row_syn1_2.data().asFloat(), 1e-6f);
 
         runner.set(false);
         for (int t = 0; t < threads.length; t++) {

@@ -50,11 +50,14 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
     }
 
     public void stackMessage(@NonNull T message) {
+        // TODO: add duplicates handling here
         list.add(message);
     }
 
     public void stackMessages(@NonNull Collection<T> messages) {
-        list.addAll(messages);
+        for (T message: messages) {
+            stackMessage(message);
+        }
     }
 
     public Collection<T> getMessages() {

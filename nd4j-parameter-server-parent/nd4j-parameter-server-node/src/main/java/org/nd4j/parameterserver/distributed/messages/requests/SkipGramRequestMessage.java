@@ -68,7 +68,7 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;
         sgt.startTraining(this);
 
-        DistributedSkipGramMessage dsgm = new DistributedSkipGramMessage(this);
-        transport.sendMessageToAllShards(dsgm);
+        //DistributedSkipGramMessage dsgm = new DistributedSkipGramMessage(this);
+        //transport.sendMessageToAllShards(dsgm);
     }
 }

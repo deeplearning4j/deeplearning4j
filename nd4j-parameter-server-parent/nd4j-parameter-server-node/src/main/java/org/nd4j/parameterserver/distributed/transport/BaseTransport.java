@@ -6,6 +6,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
@@ -70,7 +71,8 @@ public abstract class BaseTransport implements Transport {
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
     // TODO: make this auto-configurable
-    protected short targetId = 0;
+    @Getter protected short targetIndex = 0;
+    @Getter protected short shardIndex = 0;
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
@@ -389,7 +391,7 @@ public abstract class BaseTransport implements Transport {
         return messages.peek();
     }
 
-    public abstract void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp);
+    public abstract void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex);
 
     /**
      * This command is possible to issue only from Client, but Client might be Shard or Backup at the same time

@@ -165,12 +165,12 @@ public class VoidParameterServer {
                     Pair<NodeRole, String> pair = getRole(configuration, getLocalAddresses());
                     nodeRole = pair.getFirst();
 
-                    this.transport.init(configuration, clipboard, nodeRole, pair.getSecond());
+                    this.transport.init(configuration, clipboard, nodeRole, pair.getSecond(), shardIndex);
 
                 } else {
 
                     nodeRole = configuration.getForcedRole();
-                    this.transport.init(configuration, clipboard, nodeRole, "127.0.0.1");
+                    this.transport.init(configuration, clipboard, nodeRole, "127.0.0.1", shardIndex);
                 }
 
 

@@ -19,6 +19,12 @@ public interface Transport {
         DEDICATED_THREADS,
     }
 
+
+    short getShardIndex();
+
+
+    short getTargetIndex();
+
     /**
      * This method does initialization of Transport instance
      *
@@ -26,7 +32,7 @@ public interface Transport {
      * @param role
      * @param localIp
      */
-    void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp);
+    void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex);
 
 
     /**
