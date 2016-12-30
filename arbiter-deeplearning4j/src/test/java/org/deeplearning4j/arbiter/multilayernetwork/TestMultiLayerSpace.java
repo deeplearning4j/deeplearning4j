@@ -31,7 +31,10 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,6 +63,36 @@ public class TestMultiLayerSpace {
                 .seed(12345)
                 .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
                 .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        int nParams = mls.numParameters();
+        assertEquals(0,nParams);
+
+        MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
+
+        assertEquals(expected, conf);
+    }
+
+    @Test
+    public void testILossFunctionGetsSet() {
+        ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[]{1f, 2f}));
+
+        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(lossFunction).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
+                .addLayer(new OutputLayerSpace.Builder().iLossFunction(lossFunction).nIn(10).nOut(5).build())
                 .backprop(true).pretrain(false)
                 .build();
 
