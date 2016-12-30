@@ -72,4 +72,14 @@ public abstract class BaseVoidMessage implements VoidMessage {
         this.shardIndex = message.shardIndex;
         this.trainer = message.trainer;
     }
+
+    @Override
+    public boolean isJoinSupported() {
+        return false;
+    }
+
+    @Override
+    public void joinMessage(VoidMessage message) {
+        // no-op
+    }
 }

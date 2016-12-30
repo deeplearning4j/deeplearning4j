@@ -7,6 +7,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
+import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSkipGramMessage;
 import org.nd4j.parameterserver.distributed.training.TrainerProvider;
@@ -67,8 +68,16 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         // FIXME: we might use something better then unchecked type cast here
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;
         sgt.startTraining(this);
+    }
 
-        //DistributedSkipGramMessage dsgm = new DistributedSkipGramMessage(this);
-        //transport.sendMessageToAllShards(dsgm);
+    @Override
+    public boolean isJoinSupported() {
+        return true;
+    }
+
+    @Override
+    public void joinMessage(VoidMessage message) {
+        // TODO: apply proper join handling here
+        alpha += ((SkipGramRequestMessage) message).getAlpha();
     }
 }

@@ -43,4 +43,9 @@ public interface VoidMessage extends Serializable {
      * This method will be started in context of executor, either Shard, Client or Backup node
      */
     void processMessage();
+
+    boolean isJoinSupported();
+
+    void joinMessage(VoidMessage message);
+
 }

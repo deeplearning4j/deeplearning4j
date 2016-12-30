@@ -159,7 +159,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             // FIXME: this is wrong, just a draft showing an idea
             Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
-            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(1), syn1.getRow(sgrm.getPoints()[e]));
+            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW1()), syn1.getRow(sgrm.getPoints()[e]));
         }
 
         Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));

@@ -122,4 +122,14 @@ public class Frame<T extends VoidMessage> implements Serializable, Iterable<T> ,
             message.processMessage();
         }
     }
+
+    @Override
+    public boolean isJoinSupported() {
+        return false;
+    }
+
+    @Override
+    public void joinMessage(VoidMessage message) {
+        // no-op
+    }
 }
