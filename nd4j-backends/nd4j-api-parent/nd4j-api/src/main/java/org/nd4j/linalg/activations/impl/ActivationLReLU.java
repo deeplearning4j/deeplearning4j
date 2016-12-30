@@ -21,10 +21,12 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 @EqualsAndHashCode
 @Getter
 public class ActivationLReLU extends BaseActivationFunction {
-    private double alpha;
+    public static final double DEFAULT_ALPHA = 0.01;
+
+    private double alpha = DEFAULT_ALPHA;
 
     public ActivationLReLU() {
-        this.alpha = 0.01;
+        this(DEFAULT_ALPHA);
     }
 
     public ActivationLReLU (double alpha) {
