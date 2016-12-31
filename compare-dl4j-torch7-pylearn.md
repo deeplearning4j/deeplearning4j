@@ -22,6 +22,7 @@ Content
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
+* <a href="#bigdl">BigDL</a>
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
@@ -138,6 +139,10 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 ### <a name="paddle">Paddle</a>
 
 [Paddle](https://github.com/PaddlePaddle/Paddle) is a deep-learning framework [created and supported by Baidu](http://www.infoworld.com/article/3114175/artificial-intelligence/baidu-open-sources-python-driven-machine-learning-framework.html). Its name stands for PArallel Distributed Deep LEarning. Paddle is the most recent major framework to be released, and like most others, it offers a Python API. 
+
+### <a name="bigdl">BigDL</a>
+
+[BigDL](https://github.com/intel-analytics/BigDL), a new deep learning framework with a focus on Apache Spark, only works on Intel chips. 
 
 ### <a name="licensing">Licensing</a>
 
