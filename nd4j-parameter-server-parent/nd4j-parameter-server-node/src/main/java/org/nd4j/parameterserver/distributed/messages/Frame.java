@@ -49,7 +49,17 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         list.add(message);
     }
 
-    public void stackMessage(@NonNull T message) {
+    /**
+     * This method adds single TrainingMessage to this Frame
+     *
+     * PLEASE NOTE: This method is synchronized
+     * @param message
+     */
+    public synchronized void stackMessage(@NonNull T message) {
+        stackMessageUnlocked(message);
+    }
+
+    private void stackMessageUnlocked(@NonNull T message) {
         if (message.isJoinSupported()) {
             int index = list.indexOf(message);
             if (index >= 0)
@@ -59,9 +69,28 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         } else list.add(message);
     }
 
-    public void stackMessages(@NonNull Collection<T> messages) {
+    /**
+     * This method adds multiple messages to this frame
+     *
+     * PLEASE NOTE: This method is synchronized
+     * @param messages
+     */
+    public synchronized void stackMessages(@NonNull Collection<T> messages) {
         for (T message: messages) {
-            stackMessage(message);
+            stackMessageUnlocked(message);
+        }
+    }
+
+    /**
+     * This method adds multiple messages to this frame
+     *
+     * PLEASE NOTE: This method is synchronized
+     * @param messages
+     */
+    public synchronized void stackMessages(T... messages) {
+        for (T message: messages) {
+            if (message != null)
+                stackMessageUnlocked(message);
         }
     }
 

@@ -23,6 +23,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -66,6 +67,8 @@ public class VoidParameterServer {
     protected Clipboard clipboard = new Clipboard();
 
     protected Storage storage = new WordVectorStorage();
+
+    protected Map<String, Frame<TrainingMessage>> frames = new ConcurrentHashMap<>();
 
 
     ////////////////////// SeqVec part
@@ -301,6 +304,7 @@ public class VoidParameterServer {
     /**
      * This method handles Shards initialization
      *
+     * PLEASE NOTE: This method is blocking
      */
     // TODO: right now we support only columnar splits over tables
     protected void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs, boolean useNegSampling) {
@@ -308,13 +312,33 @@ public class VoidParameterServer {
         transport.sendMessage(dim);
     }
 
-    public void execDistributed(@NonNull SkipGramRequestMessage message) {
-        // TODO: provide Frame<SkipGramRequestMessage> use here
+    /**
+     * This method dispatches TrainingMessage to ParameterServer network
+     *
+     * PLEASE NOTE: This method is synchonized and *periodically* becomes blocking by design
+     * @param message
+     */
+    public synchronized void execDistributed(@NonNull TrainingMessage message) {
         /**
          * Basically we should batch messages coming from different TrainingFunctions on spark executor side here.
          * So we pack them into batches, and send over the wire to selected Shard
          */
-        transport.sendMessage(message);
+        Frame currentFrame;
+        if ((currentFrame = frames.get(message.getClass().getSimpleName())) == null) {
+            currentFrame = new Frame<>();
+            frames.put(message.getClass().getSimpleName(), currentFrame);
+        }
+
+        currentFrame.stackMessage(message);
+
+        // TODO: make this threshold variable
+        if (currentFrame.size() > 0) {
+            transport.sendMessage(currentFrame);
+            currentFrame = new Frame<>();
+            frames.put(message.getClass().getSimpleName(), currentFrame);
+        }
+
+        //transport.sendMessage(message);
     }
 
     public INDArray getVector(int rowIdx) {
