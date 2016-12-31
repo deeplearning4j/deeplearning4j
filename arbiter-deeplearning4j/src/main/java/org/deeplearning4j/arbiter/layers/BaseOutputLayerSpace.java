@@ -17,9 +17,10 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
  */
 public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L>{
 
-    protected ParameterSpace<LossFunction> lossFunction;
+    protected ParameterSpace<ILossFunction> lossFunction;
 
     protected BaseOutputLayerSpace(Builder builder){
         super(builder);
@@ -51,15 +52,57 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
     @SuppressWarnings("unchecked")
     public static abstract class Builder<T> extends FeedForwardLayerSpace.Builder<T>{
 
-        protected ParameterSpace<LossFunction> lossFunction;
+        protected ParameterSpace<ILossFunction> lossFunction;
 
         public T lossFunction(LossFunction lossFunction){
             return lossFunction(new FixedValue<>(lossFunction));
         }
 
         public T lossFunction(ParameterSpace<LossFunction> lossFunction){
+            return iLossFunction(new LossFunctionParameterSpace(lossFunction));
+        }
+
+        public T iLossFunction(ILossFunction lossFunction) {
+            return iLossFunction(new FixedValue<>(lossFunction));
+        }
+
+        public T iLossFunction(ParameterSpace<ILossFunction> lossFunction){
             this.lossFunction = lossFunction;
             return (T)this;
+        }
+    }
+
+    public static class LossFunctionParameterSpace implements ParameterSpace<ILossFunction> {
+
+        private final ParameterSpace<LossFunction> lossFunctionParameterSpace;
+
+        public LossFunctionParameterSpace(ParameterSpace<LossFunction> lossFunctionParameterSpace) {
+            this.lossFunctionParameterSpace = lossFunctionParameterSpace;
+        }
+
+        @Override
+        public ILossFunction getValue(double[] parameterValues) {
+            return lossFunctionParameterSpace.getValue(parameterValues).getILossFunction();
+        }
+
+        @Override
+        public int numParameters() {
+            return lossFunctionParameterSpace.numParameters();
+        }
+
+        @Override
+        public List<ParameterSpace> collectLeaves() {
+            return lossFunctionParameterSpace.collectLeaves();
+        }
+
+        @Override
+        public boolean isLeaf() {
+            return lossFunctionParameterSpace.isLeaf();
+        }
+
+        @Override
+        public void setIndices(int... indices) {
+            lossFunctionParameterSpace.setIndices(indices);
         }
     }
 

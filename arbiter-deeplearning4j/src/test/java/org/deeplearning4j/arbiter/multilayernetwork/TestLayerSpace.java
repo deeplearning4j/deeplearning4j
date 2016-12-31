@@ -26,6 +26,8 @@ import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpa
 import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -92,7 +94,7 @@ public class TestLayerSpace {
 
             assertTrue(lr >= 0.3 && lr <= 0.4);
             assertTrue(l2 >= 0.01 && l2 <= 0.1 );
-            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(containsActivationFunction(actFns, activation));
         }
     }
 
@@ -147,7 +149,7 @@ public class TestLayerSpace {
 
             System.out.println(activation);
 
-            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(containsActivationFunction(actFns, activation));
         }
     }
 
@@ -184,7 +186,7 @@ public class TestLayerSpace {
 
             System.out.println(activation + "\t" + nOut);
 
-            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
         }
     }
@@ -224,9 +226,16 @@ public class TestLayerSpace {
 
             System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
 
-            assertTrue(ArrayUtils.contains(actFns, activation));
+            assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
             assertTrue(forgetGate >= 0.5 && forgetGate <= 0.8);
         }
+    }
+
+    private static boolean containsActivationFunction(String[] activationFunctions, String activationFunction) {
+        for (String af : activationFunctions) {
+            if (activationFunction.startsWith(af)) return true;
+        }
+        return false;
     }
 }
