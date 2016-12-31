@@ -430,7 +430,7 @@ public class VoidParameterServerTest {
      * @throws Exception
      */
     @Test
-    public void testNodeInitiablization3() throws Exception {
+    public void testNodeInitialization3() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
         final AtomicInteger startCnt = new AtomicInteger(0);
@@ -529,17 +529,16 @@ public class VoidParameterServerTest {
                 .vectorLength(150)
                 .build();
 
-        clientNode.getTransport().sendMessage(irm);
-
         // after this point we'll assume all Shards are initialized
-        Thread.sleep(2000);
+        // mostly because Init message is blocking
+        clientNode.getTransport().sendMessage(irm);
 
         log.info("------------------");
 
         AssignRequestMessage arm = new AssignRequestMessage(WordVectorStorage.SYN_0, 192f,11);
         clientNode.getTransport().sendMessage(arm);
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // This is blocking method
         INDArray vec = clientNode.getVector(WordVectorStorage.SYN_0, 11);

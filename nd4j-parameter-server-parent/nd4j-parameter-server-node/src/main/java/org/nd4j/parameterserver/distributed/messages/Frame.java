@@ -140,4 +140,10 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     public void joinMessage(VoidMessage message) {
         // no-op
     }
+
+    @Override
+    public boolean isBlockingMessage() {
+        // TODO: maybe worth making it blocking?
+        return false;
+    }
 }

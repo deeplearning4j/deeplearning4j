@@ -54,4 +54,9 @@ public class VectorRequestMessage extends BaseVoidMessage {
         DistributedVectorMessage dvm = new DistributedVectorMessage(key, rowIndex);
         transport.sendMessageToAllShards(dvm);
     }
+
+    @Override
+    public boolean isBlockingMessage() {
+        return true;
+    }
 }

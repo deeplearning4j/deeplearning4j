@@ -46,6 +46,8 @@ public interface VoidMessage extends Serializable {
 
     boolean isJoinSupported();
 
+    boolean isBlockingMessage();
+
     void joinMessage(VoidMessage message);
 
 }

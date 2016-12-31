@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
+import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMessage;
 
 /**
  * @author raver119@gmail.com
@@ -72,6 +74,9 @@ public class DistributedInitializationMessage extends BaseVoidMessage {
                 storage.setArray(WordVectorStorage.SYN_1_NEGATIVE, syn1Neg);
 
             storage.setArray(WordVectorStorage.EXP_TABLE, expTable);
+
+            InitializationAggregation ia = new InitializationAggregation((short) configuration.getNumberOfShards(), transport.getShardIndex());
+            transport.sendMessage(ia);
         }
     }
 

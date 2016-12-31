@@ -1,0 +1,33 @@
+package org.nd4j.parameterserver.distributed.messages.aggregations;
+
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.messages.complete.InitializationCompleteMessage;
+
+/**
+ * @author raver119@gmail.com
+ */
+public class InitializationAggregation extends BaseAggregation {
+
+    protected InitializationAggregation() {
+        super();
+    }
+
+    public InitializationAggregation(short aggregationWidth, short shardIndex) {
+        super(-119L, aggregationWidth, shardIndex);
+        this.payload = Nd4j.scalar(1.0);
+    }
+
+    @Override
+    public void processMessage() {
+        if (clipboard.isTracking(taskId)) {
+            clipboard.pin(this);
+
+            if (clipboard.isReady(taskId)) {
+                clipboard.unpin(taskId);
+
+                InitializationCompleteMessage icm = new InitializationCompleteMessage(taskId);
+                transport.sendMessage(icm);
+            }
+        }
+    }
+}

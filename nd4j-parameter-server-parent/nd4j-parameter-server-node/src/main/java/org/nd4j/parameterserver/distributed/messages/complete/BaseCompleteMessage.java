@@ -21,6 +21,10 @@ public abstract class BaseCompleteMessage extends BaseVoidMessage implements Mea
         super(10);
     }
 
+    public BaseCompleteMessage(int messageType) {
+        super(messageType);
+    }
+
 
     @Override
     public void processMessage() {

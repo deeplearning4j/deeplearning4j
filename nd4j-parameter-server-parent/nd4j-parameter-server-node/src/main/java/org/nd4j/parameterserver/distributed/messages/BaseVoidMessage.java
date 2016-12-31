@@ -82,4 +82,9 @@ public abstract class BaseVoidMessage implements VoidMessage {
     public void joinMessage(VoidMessage message) {
         // no-op
     }
+
+    @Override
+    public boolean isBlockingMessage() {
+        return false;
+    }
 }

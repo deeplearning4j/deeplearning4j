@@ -111,12 +111,17 @@ public abstract class BaseTransport implements Transport {
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
                 log.info("Sending message to Shard: {}", message.getClass().getSimpleName());
-                sendCommandToShard(message);
+                if (message.isBlockingMessage()) {
+                    // we issue blocking message, but we don't care about response
+                    sendMessageAndGetResponse(message);
+                } else sendCommandToShard(message);
                 break;
             // messages 10..19 inclusive are reserved for Shard->Clients commands
             case 10:
             case 11:
             case 12:
+            case 13:
+            case 19:
                 // this command is possible to issue only from Shard
                 sendFeedbackToClient(message);
                 break;

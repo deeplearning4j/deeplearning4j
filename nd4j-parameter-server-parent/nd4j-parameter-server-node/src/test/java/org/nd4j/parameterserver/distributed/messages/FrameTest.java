@@ -94,6 +94,11 @@ public class FrameTest {
                 public void joinMessage(VoidMessage message) {
                     // no-op
                 }
+
+                @Override
+                public boolean isBlockingMessage() {
+                    return false;
+                }
             });
         }
 

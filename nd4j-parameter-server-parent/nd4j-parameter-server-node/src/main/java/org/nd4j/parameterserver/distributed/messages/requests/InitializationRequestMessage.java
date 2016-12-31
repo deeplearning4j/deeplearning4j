@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.distributed.messages.requests;
 
 import lombok.Builder;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 
 /**
@@ -20,6 +21,7 @@ public class InitializationRequestMessage extends BaseVoidMessage {
 
     protected InitializationRequestMessage() {
         super(4);
+        taskId = -119L;
     }
 
     public InitializationRequestMessage(int vectorLength, int numWords, long seed, boolean useHs, boolean useNeg, int columnsPerShard) {
@@ -36,6 +38,18 @@ public class InitializationRequestMessage extends BaseVoidMessage {
     @Override
     public void processMessage() {
         DistributedInitializationMessage dim = new DistributedInitializationMessage(vectorLength, numWords, seed, useHs, useNeg, columnsPerShard);
+
+        dim.extractContext(this);
+        dim.processMessage();
+
+        // FIXME: i don't like this hack :(
+        clipboard.pin(new InitializationAggregation((short) configuration.getNumberOfShards(), transport.getShardIndex()));
+
         transport.sendMessageToAllShards(dim);
+    }
+
+    @Override
+    public boolean isBlockingMessage() {
+        return true;
     }
 }
