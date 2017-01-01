@@ -60,10 +60,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 /**
  * ParameterAveragingTrainingMaster: A {@link TrainingMaster} implementation for training networks on Spark.
@@ -224,6 +221,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      */
     @Override
     public void removeHook(TrainingHook trainingHook) {
+        if(trainingHookList == null) return;
         trainingHookList.remove(trainingHook);
     }
 
@@ -234,6 +232,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      */
     @Override
     public void addHook(TrainingHook trainingHook) {
+        if(trainingHookList == null){
+            trainingHookList = new ArrayList<>();
+        }
         trainingHookList.add(trainingHook);
     }
 
