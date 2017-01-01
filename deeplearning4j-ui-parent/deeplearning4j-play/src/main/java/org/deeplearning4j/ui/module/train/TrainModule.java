@@ -299,6 +299,37 @@ public class TrainModule implements UIModule {
         return ok();
     }
 
+    private static double fixNaN(double d){
+        return Double.isFinite(d) ? d : NAN_REPLACEMENT_VALUE;
+    }
+
+    private static void cleanLegacyIterationCounts(List<Integer> iterationCounts){
+        if(iterationCounts.size() > 0){
+            boolean allEqual = true;
+            int maxStepSize = 1;
+            int first = iterationCounts.get(0);
+            int length = iterationCounts.size();
+            int prevIterCount = first;
+            for( int i=1; i<length; i++ ){
+                int currIterCount = iterationCounts.get(i);
+                if(allEqual && first != currIterCount){
+                    allEqual = false;
+                }
+                maxStepSize = Math.max(maxStepSize, prevIterCount-currIterCount);
+                prevIterCount = currIterCount;
+            }
+
+
+            if(allEqual){
+                maxStepSize = 1;
+            }
+
+            for( int i=0; i<length; i++ ){
+                iterationCounts.set(i, first + i*maxStepSize);
+            }
+        }
+    }
+
     private Result getOverviewData() {
         Long lastUpdate = lastUpdateForSession.get(currentSessionID);
         if(lastUpdate == null) lastUpdate = -1L;
@@ -380,8 +411,11 @@ public class TrainModule implements UIModule {
         }
 
         StatsReport last = null;
-        int offset = 0;
-        int countSinceLastOffsetReset = 0;
+        int lastIterCount = -1;
+        //Legacy issue - Spark training - iteration counts are used to be reset... which means: could go 0,1,2,0,1,2, etc...
+        //Or, it could equally go 4,8,4,8,... or 5,5,5,5 - depending on the collection and averaging frequencies
+        //Now, it should use the proper iteration counts
+        boolean needToHandleLegacyIterCounts = false;
         if (!noData) {
             double lastScore;
 
@@ -400,13 +434,10 @@ public class TrainModule implements UIModule {
                 last = (StatsReport) u;
                 int iterCount = last.getIterationCount();
 
-                //Issue - Spark training - iteration counts are currently reset... which means: could go 0, 1, 2, 0, 1, 2, etc...
-                countSinceLastOffsetReset++;
-                if(iterCount == 0){
-                    offset += countSinceLastOffsetReset;
-                    countSinceLastOffsetReset = 0;
+                if(iterCount <= lastIterCount){
+                    needToHandleLegacyIterCounts = true;
                 }
-                iterCount += offset;    //For non-spark cases: offset should always be 0...
+                lastIterCount = iterCount;
 
                 if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
                     //Skip this - subsample the data
@@ -447,40 +478,31 @@ public class TrainModule implements UIModule {
                 if (stdGrad != null) {
                     for (String s : stdevGradients.keySet()) {
                         double d = stdGrad.get(s);
-                        if(Double.isFinite(d)){
-                            stdevGradients.get(s).add(d);
-                        } else {
-                            stdevGradients.get(s).add(NAN_REPLACEMENT_VALUE);
-                        }
+                        stdevGradients.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdUpd != null) {
                     for (String s : stdevUpdates.keySet()) {
                         double d = stdUpd.get(s);
-                        if(Double.isFinite(d)){
-                            stdevUpdates.get(s).add(d);
-                        } else {
-                            stdevUpdates.get(s).add(NAN_REPLACEMENT_VALUE);
-                        }
+                        stdevUpdates.get(s).add(fixNaN(d));
                     }
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
                         double d = stdAct.get(s);
-                        if(Double.isFinite(d)){
-                            stdevActivations.get(s).add(d);
-                        } else {
-                            stdevActivations.get(s).add(NAN_REPLACEMENT_VALUE);
-                        }
-
+                        stdevActivations.get(s).add(fixNaN(d));
                     }
                 }
             }
         }
 
-        //----- Performance Info -----
+        if (needToHandleLegacyIterCounts) {
+            cleanLegacyIterationCounts(scoresIterCount);
+        }
 
-        //TODO reuse?
+
+
+        //----- Performance Info -----
         String[][] perfInfo = new String[][]{
                 {i18N.getMessage("train.overview.perftable.startTime"), ""},
                 {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
@@ -640,6 +662,7 @@ public class TrainModule implements UIModule {
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
         List<Persistable> updates = (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
         List<Integer> iterationCounts = null;
+        boolean needToHandleLegacyIterCounts = false;
         if(updates != null && updates.size() > maxChartPoints){
             int subsamplingFrequency = updates.size() / maxChartPoints;
             List<Persistable> subsampled = new ArrayList<>();
@@ -647,21 +670,18 @@ public class TrainModule implements UIModule {
             int pCount=-1;
             int lastUpdateIdx = updates.size()-1;
 
-            int offset = 0;
-            int countSinceLastOffsetReset = 0;
+            int lastIterCount = -1;
             for(Persistable p : updates){
                 if(!(p instanceof StatsReport)) continue;;
                 StatsReport sr = (StatsReport)p;
                 pCount++;
 
-                //Issue - Spark training - iteration counts are currently reset... which means: could go 0, 1, 2, 0, 1, 2, etc...
-                countSinceLastOffsetReset++;
                 int iterCount = sr.getIterationCount();
-                if(iterCount == 0){
-                    offset += countSinceLastOffsetReset;
-                    countSinceLastOffsetReset = 0;
+                if(iterCount <= lastIterCount){
+                    needToHandleLegacyIterCounts = true;
                 }
-                iterCount += offset;    //For non-spark cases: offset should always be 0...
+                lastIterCount = iterCount;
+
 
                 if(pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0){
                     //Skip this to subsample the data
@@ -671,28 +691,29 @@ public class TrainModule implements UIModule {
                 subsampled.add(p);
                 iterationCounts.add(iterCount);
             }
-
             updates = subsampled;
         } else if(updates != null){
-            //Handle Spark case... iterCounts may go 0,1,2,0,1,2, etc
             int offset = 0;
-            int countSinceLastOffsetReset = 0;
             iterationCounts = new ArrayList<>(updates.size());
-            int pCount=-1;
+            int lastIterCount = -1;
             for(Persistable p : updates){
                 if(!(p instanceof StatsReport)) continue;;
                 StatsReport sr = (StatsReport)p;
-                pCount++;
-
-                countSinceLastOffsetReset++;
                 int iterCount = sr.getIterationCount();
-                if(iterCount == 0){
-                    offset += countSinceLastOffsetReset;
-                    countSinceLastOffsetReset = 0;
+
+                if(iterCount <= lastIterCount){
+                    needToHandleLegacyIterCounts = true;
                 }
-                iterCount += offset;    //For non-spark cases: offset should always be 0...
+
                 iterationCounts.add(iterCount);
             }
+        }
+
+        //Legacy issue - Spark training - iteration counts are used to be reset... which means: could go 0,1,2,0,1,2, etc...
+        //Or, it could equally go 4,8,4,8,... or 5,5,5,5 - depending on the collection and averaging frequencies
+        //Now, it should use the proper iteration counts
+        if (needToHandleLegacyIterCounts) {
+            cleanLegacyIterationCounts(iterationCounts);
         }
 
         //Get mean magnitudes line chart
