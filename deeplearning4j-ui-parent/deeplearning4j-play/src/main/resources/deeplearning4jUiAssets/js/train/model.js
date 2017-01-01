@@ -4,13 +4,13 @@ function setSelectedVertex(vertex){
     selectedVertex = vertex;
     currSelectedParamHist = null;   //Reset selected param
     currSelectedUpdateHist = null;  //Reset selected param
-    lastUpdateTimeModel = -1;       //Reset last update time on vertex change
+    lastUpdateTimeModel = -2;       //Reset last update time on vertex change
 }
 
 var selectedMeanMagChart = "ratios";
 function setSelectMeanMagChart(selectedChart){
     selectedMeanMagChart = selectedChart;
-    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
+    lastUpdateTimeModel = -2;       //Reset last update time on selected chart change
 
     //Tab highlighting logic 
     if (selectedMeanMagChart == "ratios") { 
@@ -464,7 +464,7 @@ function renderLearningRateChart(data) {
 
 function selectParamHist(paramName){
     currSelectedParamHist = paramName;
-    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
+    lastUpdateTimeModel = -2;       //Reset last update time on selected chart change
 }
 
 var currSelectedParamHist = null;
@@ -538,7 +538,7 @@ function renderParametersHistogram(data) {
 /* ---------- Updates Histogram ---------- */
 function selectUpdateHist(paramName){
     currSelectedUpdateHist = paramName;
-    lastUpdateTimeModel = -1;       //Reset last update time on selected chart change
+    lastUpdateTimeModel = -2;       //Reset last update time on selected chart change
 }
 
 var currSelectedUpdateHist = null;

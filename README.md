@@ -9,7 +9,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
-The most recent stable release in Maven Central is `0.7.1`, and the current master is `0.7.2-SNAPSHOT`. 
+The most recent stable release in Maven Central is `0.7.2`, and the current master is `0.7.3-SNAPSHOT`.
 
 ---
 ## Using Deeplearning4j
@@ -24,19 +24,15 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
 ---
 ## Modules
 - datavec = Library for converting images, text and CSV data into format suitable for Deep Learning
-- core = core neural net structures MultiLayer Network and Computation graph for designing Neural Net structures
+- nn = core neural net structures MultiLayer Network and Computation graph for designing Neural Net structures
+- core = additional functionality building on deeplearning4j-nn
+- modelimport = functionality to import models from Keras
+- nlp = natural language processing components including vectorizers, models, sample datasets and renderers
 - scaleout = integrations
+    - spark = integration with Apache Spark versions 1.3 to 1.6 (Spark 2.0 coming soon)
+    - parallel-wraper = Single machine model parallelism (for multi-GPU systems, etc) 
     - aws = loading data to and from aws resources EC2 and S3
-    - nlp = natural language processing components including vectorizers, models, sample datasets and renderers
-    - akka = setup concurrent and distributed applications on the JVM
-    - api = core components like workers and multi-threading
-    - zookeeper = maintain configuration for distributed systems
-    - hadoop-yarn = common map-reduce distributed system
-    - spark = integration with spark
-        - dl4j-spark = spark 1.2-compatible
-        - dl4j-spark-ml = spark 1.4-compatible, based on ML pipeline
-- ui = provides visual interfaces with models like nearest neighbors
-- test-resources = datasets and supporting components for tests
+- ui = provides visual interfaces for tuning models [Details here](https://deeplearning4j.org/visualization)
 
 ---
 ## Documentation
@@ -52,7 +48,7 @@ To install Deeplearning4J, there are a couple approaches (briefly described on o
 
 #### Use Maven Central Repository
 
-Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of JAR files you can use.
+Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of dependencies.
 
 Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
