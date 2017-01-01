@@ -56,7 +56,7 @@ public class TrainModule implements UIModule {
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static enum ModelType {MLN, CG, Layer};
+    private enum ModelType {MLN, CG, Layer};
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
@@ -415,7 +415,12 @@ public class TrainModule implements UIModule {
 
                 scoresIterCount.add(iterCount);
                 lastScore = last.getScore();
-                scores.add(lastScore);
+                if(Double.isFinite(lastScore)){
+                    scores.add(lastScore);
+                } else {
+                    scores.add(NAN_REPLACEMENT_VALUE);
+                }
+
 
                 //Update ratios: mean magnitudes(updates) / mean magnitudes (parameters)
                 Map<String, Double> updateMM = last.getMeanMagnitudes(StatsType.Updates);
@@ -426,10 +431,10 @@ public class TrainModule implements UIModule {
                         double currUpdate = updateMM.get(s);
                         double currParam = paramMM.get(s);
                         double ratio = currUpdate / currParam;
-                        if(Double.isNaN(ratio)){
-                            ratioHistory.add(NAN_REPLACEMENT_VALUE);
-                        } else {
+                        if(Double.isFinite(ratio)){
                             ratioHistory.add(ratio);
+                        } else {
+                            ratioHistory.add(NAN_REPLACEMENT_VALUE);
                         }
                     }
                 }
@@ -442,19 +447,32 @@ public class TrainModule implements UIModule {
                 if (stdGrad != null) {
                     for (String s : stdevGradients.keySet()) {
                         double d = stdGrad.get(s);
-                        stdevGradients.get(s).add(d);
+                        if(Double.isFinite(d)){
+                            stdevGradients.get(s).add(d);
+                        } else {
+                            stdevGradients.get(s).add(NAN_REPLACEMENT_VALUE);
+                        }
                     }
                 }
                 if (stdUpd != null) {
                     for (String s : stdevUpdates.keySet()) {
                         double d = stdUpd.get(s);
-                        stdevUpdates.get(s).add(d);
+                        if(Double.isFinite(d)){
+                            stdevUpdates.get(s).add(d);
+                        } else {
+                            stdevUpdates.get(s).add(NAN_REPLACEMENT_VALUE);
+                        }
                     }
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
                         double d = stdAct.get(s);
-                        stdevActivations.get(s).add(d);
+                        if(Double.isFinite(d)){
+                            stdevActivations.get(s).add(d);
+                        } else {
+                            stdevActivations.get(s).add(NAN_REPLACEMENT_VALUE);
+                        }
+
                     }
                 }
             }
@@ -934,10 +952,10 @@ public class TrainModule implements UIModule {
                         //TODO check and handle not collected case...
                         double pmm = paramMM.get(s);
                         double umm = updateMM.get(s);
-                        if(Double.isNaN(pmm)){
+                        if(!Double.isFinite(pmm)){
                             pmm = NAN_REPLACEMENT_VALUE;
                         }
-                        if(Double.isNaN(umm)){
+                        if(!Double.isFinite(umm)){
                             umm = NAN_REPLACEMENT_VALUE;
                         }
                         double ratio;
@@ -1015,10 +1033,10 @@ public class TrainModule implements UIModule {
                 if (means != null && means.containsKey(layerName)) {
                     mean[used] = means.get(layerName).floatValue();
                     stdev[used] = stdevs.get(layerName).floatValue();
-                    if(Float.isNaN(mean[used])){
+                    if(!Float.isFinite(mean[used])){
                         mean[used] = (float)NAN_REPLACEMENT_VALUE;
                     }
-                    if(Float.isNaN(stdev[used])){
+                    if(!Float.isFinite(stdev[used])){
                         stdev[used] = (float)NAN_REPLACEMENT_VALUE;
                     }
                     used++;
