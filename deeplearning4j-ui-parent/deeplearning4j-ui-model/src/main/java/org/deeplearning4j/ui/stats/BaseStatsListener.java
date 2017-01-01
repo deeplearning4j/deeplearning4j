@@ -286,8 +286,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             updateExamplesMinibatchesCounts(model);
         }
 
-        if (config.reportingFrequency() > 1 && (modelInfo.iterCount == 0 || modelInfo.iterCount % config.reportingFrequency() != 0)) {
-            modelInfo.iterCount++;
+        if (config.reportingFrequency() > 1 && (iteration == 0 || iteration % config.reportingFrequency() != 0)) {
+            modelInfo.iterCount = iteration;
             return;
         }
 
