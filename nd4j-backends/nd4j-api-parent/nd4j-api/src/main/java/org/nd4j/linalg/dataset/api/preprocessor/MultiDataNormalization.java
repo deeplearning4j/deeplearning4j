@@ -35,7 +35,7 @@ public interface MultiDataNormalization extends MultiDataSetPreProcessor {
     /**
      * Transform the dataset
      *
-     * @param toPreProcess the dataset to re process
+     * @param toPreProcess the dataset to pre process
      */
     void transform(MultiDataSet toPreProcess);
 
@@ -79,16 +79,4 @@ public interface MultiDataNormalization extends MultiDataSetPreProcessor {
      * @param labels Labels array to revert the normalization on
      */
     void revertLabels(INDArray[] labels);
-
-    /**
-     * Flag to specify if the labels/outputs in the dataset should be also normalized. Default value is usually false.
-     */
-    void fitLabel(boolean fitLabels);
-
-    /**
-     * Whether normalization for the labels is also enabled. Most commonly used for regression, not classification.
-     *
-     * @return True if labels will be
-     */
-    boolean isFitLabel();
 }

@@ -61,7 +61,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         // check for INT datatype arrays
         interceptIntDataType(op);
 
-        if (op.x().isCompressed())
+        if (op.x() != null && op.x().isCompressed())
             Nd4j.getCompressor().decompressi(op.x());
 
         if (op.y() != null && op.y().isCompressed())

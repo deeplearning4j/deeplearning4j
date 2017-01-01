@@ -1,8 +1,5 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import lombok.NonNull;
-import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
-
 import java.io.Serializable;
 
 /**
@@ -10,17 +7,7 @@ import java.io.Serializable;
  *
  * @author Ede Meijer
  */
-abstract class AbstractNormalizer<S extends NormalizerStats> implements Serializable {
-    protected NormalizerStrategy<S> strategy;
-
-    protected AbstractNormalizer() {
-        //
-    }
-
-    protected AbstractNormalizer(@NonNull NormalizerStrategy<S> strategy) {
-        this.strategy = strategy;
-    }
-
+public abstract class AbstractNormalizer implements Serializable {
     protected abstract boolean isFit();
 
     void assertIsFit() {
