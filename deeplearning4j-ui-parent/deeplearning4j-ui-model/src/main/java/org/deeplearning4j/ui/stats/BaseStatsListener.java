@@ -507,14 +507,12 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         long endTime = getTime();
         report.reportStatsCollectionDurationMS((int) (endTime - currentTime));    //Amount of time required to alculate all histograms, means etc.
         modelInfo.lastReportTime = currentTime;
-        modelInfo.lastReportIteration = modelInfo.iterCount;
-        report.reportIterationCount(modelInfo.iterCount);
+        modelInfo.lastReportIteration = iteration;
+        report.reportIterationCount(iteration);
 
         this.router.putUpdate(report);
 
-        //TODO error handling
-
-        modelInfo.iterCount++;
+        modelInfo.iterCount = iteration;
         activationsMap = null;
     }
 
@@ -633,10 +631,6 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
             initReport.reportModelInfo(model.getClass().getName(), jsonConf, paramNames, numLayers, numParams);
         }
-
-//        StorageMetaData meta = new SbeStorageMetaData(
-//                initTime, getSessionID(model), TYPE_ID, workerID,
-//                SbeStatsInitializationReport.class, SbeStatsReport.class);
 
         StorageMetaData meta = getNewStorageMetaData(initTime, getSessionID(model), workerID);
 
