@@ -3104,6 +3104,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
 
+        log.info("arr data: {}", Arrays.toString(arr.data().asFloat()));
         log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
         log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
 
