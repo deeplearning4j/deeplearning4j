@@ -2,6 +2,7 @@ package org.deeplearning4j.spark.models.sequencevectors.primitives;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,6 +17,11 @@ public class NetworkInformation implements Serializable {
     protected long totalMemory = 0;
     protected long availableMemory = 0;
     protected List<String> ipAddresses = new ArrayList<>();
+
+
+    public void addIpAddress(@NonNull String ip) {
+        ipAddresses.add(ip);
+    }
 
     @Override
     public boolean equals(Object o) {
