@@ -10,6 +10,7 @@ import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,8 +28,11 @@ public class Configuration implements Serializable {
     private int multicastPort;
     private int numberOfShards;
     private FaultToleranceStrategy faultToleranceStrategy;
-    private List<String> shardAddresses;
-    private List<String> backupAddresses;
+    private List<String> shardAddresses = new ArrayList<>();
+    private List<String> backupAddresses = new ArrayList<>();
+
+    // this is very important parameter
+    private String networkMask;
 
     // This two values are optional, and have effect only for MulticastTransport
     private String multicastNetwork;
@@ -46,5 +50,24 @@ public class Configuration implements Serializable {
             throw new ND4JIllegalStateException("You can't use streamId 0, please specify other one");
 
         this.streamId = streamId;
+    }
+
+
+    public void setShardAddresses(String... Ips) {
+        shardAddresses = new ArrayList<>();
+
+        for (String ip: Ips) {
+            if (ip != null)
+                shardAddresses.add(ip);
+        }
+    }
+
+    public void setBackupAddresses(String... Ips) {
+        backupAddresses = new ArrayList<>();
+
+        for (String ip: Ips) {
+            if (ip != null)
+                backupAddresses.add(ip);
+        }
     }
 }
