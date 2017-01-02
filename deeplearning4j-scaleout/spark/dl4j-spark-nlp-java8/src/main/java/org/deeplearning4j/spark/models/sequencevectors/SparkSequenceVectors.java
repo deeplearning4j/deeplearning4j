@@ -59,6 +59,10 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
     protected Configuration paramServerConfiguration;
 
+    protected SparkSequenceVectors() {
+        this(new VectorsConfiguration());
+    }
+
     protected SparkSequenceVectors(@NonNull VectorsConfiguration configuration) {
         this.configuration = configuration;
     }
