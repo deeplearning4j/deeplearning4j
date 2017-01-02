@@ -1,70 +1,70 @@
 ---
-title: "Tutorial: Recurrent Networks and LSTMs in Java"
-layout: default
+title: "教程：基于Java语言的循环网络和LSTM"
+layout: cn-default
 ---
 
-# Tutorial: Recurrent Networks and LSTMs
+# 循环网络和LSTM教程
 
-Recurrent nets are a powerful set of artificial neural network algorithms especially useful for processing sequential data such as sound, time series (sensor) data or written natural language. A version of recurrent networks was used by DeepMind in their work playing video games with autonomous agents.
+循环网络是一类功能强大的人工神经网络算法，特别适用于处理声音、时间序列（传感器）数据或书面自然语言等序列数据。DeepMind在自动代理玩游戏的研究中就使用了一种循环网络。
 
-Recurrent nets differ from feedforward nets because they include a feedback loop, whereby output from step n-1 is fed back to the net to affect the outcome of step n, and so forth for each subsequent step. For example, if a net is exposed to a word letter by letter, and it is asked to guess each following letter, the first letter of a word will help determine what a recurrent net thinks the second letter will be, etc. 
+循环网络与前馈网络的区别在于有一个反馈循环，将第n-1步的输出反馈给神经网络，对第n步的输出产生影响，之后的每一步也都以此类推。举例来说，如果让循环网络逐个字母地学习一个单词，要求它预测每一个接下来的字母，那么单词的第一个字母将会帮助网络决定第二个字母的预测结果。 
 
-This differs from a feedforward network, which learns to classify each handwritten numeral of MNIST independently according to the pixels it is exposed to from a single example, without referring to the preceding example to adjust its predictions. Feedforward networks accept one input at a time, and produce one output. Recurrent nets don't face the same one-to-one constraint.
+前馈网络则与此不同。在学习对MNIST数据集中的手写数字进行分类时，前馈网络仅会根据当前读取到的那一个样例中的像素来作出判断，而不会依据之前学习过的样例来调整预测结果。前馈网络一次只能接受一项输入，产生一项输出；循环网络则没有这种一对一的限制。
 
-While some forms of data, like images, do not seem to be sequential, they can be understood as sequences when fed into a recurrent net. Consider an image of a handwritten word. Just as recurrent nets process handwriting, converting each cursive image into a letter, and using the beginning of a word to guess how that word will end, so nets can treat part of any image like letters in a sequence. A neural net roving over a large picture may learn from each region what the neighboring regions are more likely to be.  
+虽然有些数据类型，比如图像，看似不是序列数据，但它们也可以被解读为序列，然后输入循环网络中。以手写单词的图像为例。循环网络处理手写图像时，会将每一幅书写体图像转换为一个字母，并且用单词的开头来预测它的结尾；与此相似，循环网络也可以将任何其他图像的某一部分当作一个序列中的字母来处理。神经网络在扫视一张较大的图片时，就可以从每一个区域中学到如何预测附近区域可能呈现的图样。  
 
-## Neural Net Models and Memory
+## 神经网络模型与记忆
 
-Recurrent nets and feedforward nets both "remember" something about the world, in a loose sense, by modeling the data they are exposed to. But they remember in very different ways. After training, feedforward net produces a static model of the data it has  been shown, and that model can then accept new examples and accurately classify or cluster them. 
+笼统地讲，循环网络和前馈网络都能通过对读取的数据建模来“记住”有关于现实世界的某些信息。但这两种网络的记忆模式完全不同。在定型之后，前馈网络会生成已学习数据的静态模型，然后这个模型就可以接受新的样例，进行准确的分类或聚类。 
 
-In contrast, recurrent nets produce dynamic models -- i.e. models that change over time -- in ways that yield accurate classifications dependent of the context of the examples they're exposed to. 
+相比之下，循环网络则会生成动态模型，亦即会随时间推移而变化的模型，这种变化可以让模型依据输入样例的上下文来进行准确的分类。 
 
-To be precise, recurrent models include the hidden state that determined the previous classification in a series. In each subsequent step, that hidden state is combined with the new step's input data to produce a) a new hidden state and then b) a new classification. Each hidden state is recycled to produce its modified successor. 
+更精确的说法是，循环模型包含了决定同个序列中的前一次分类结果的隐藏状态。在之后的每一步中，这一隐藏状态会与新一步的输入数据相加，生成（1）一个新的隐藏状态，再得出（2）一个新的分类结果。每个隐藏状态都会被循环利用，生成经过调整的后续隐藏状态。 
 
-Human memories are also context aware, recycling an awareness of previous states to properly interpret new data. For example, let's take two individuals. One is aware that she is near Jack's house. The other is aware that she has entered an airplane. They will interpret the sounds "Hi Jack!" in two very different ways, precisely because they retain a hidden state affected by their short-term memories and preceding sensations. 
+人类的记忆模式同样能考虑上下文，循环利用对于过往状态的认知来恰当地解读新数据。例如，假设有这样两个人：一个人意识到她在Jack的房子附近；另一个人则意识到她登上了一架飞机。这两个人会对“Hi Jack!”这样的声音产生完全不同的理解（译注：既可以理解为“你好，杰克！”，也可以理解为“劫机啦！”），而原因正是她们受到短期记忆和先前感觉的影响，保留了不同的“隐藏状态”。 
 
-Different short-term memories should be recalled at different times, in order to assign the right meaning to current input. Some of those memories will have been forged recently, and other memories will have been forged many time steps before they are needed. The recurrent net that effectively associates memories and input remote in time is called a [Long Short-Term Memory (LSTM)](./lstm.html), as much as that sounds like an oxymoron.
+不同的短期记忆应当在不同的时候调出，以便为当前的输入指定正确的意义。有些记忆会是最近形成的，而另一些则可能是在形成后经过许多个时间步才需要使用。能够将时间间隔较远的记忆与输入有效联系起来的循环网络称作[长短期记忆（LSTM）网络](./lstm.html)，尽管这个名字听起来有点自相矛盾。
 
-## Use Cases
+## 应用案例
 
-Recurrent nets have predictive capacity. They grasp the structure of data dynamically over time, and they are used to predict the next element in a series. Those elements might be the next letters in a word, or the next words in a sentence (natural language generation); the next number in data from sensors, economic tables, stock price action, etc.
+循环网络具有预测能力。它们可以随着时间推移动态地把握数据结构，可以用于预测一个数据序列中的下一个元素。这样的元素有可能是一个单词中接下来的字母，或者一句话中接下来的单词（自然语言生成）；也可以是传感器、经济统计表格、股票价格动态等数据中的下一个数字。
 
-Sequential data also includes videos, and recurrent networks have been used for [object and gesture tracking in videos in real-time](http://arxiv.org/abs/1503.08909).
+序列数据还包括视频。循环网络已被用于[实时的视频对象及手势跟踪](http://arxiv.org/abs/1503.08909)。
 
-Recurrent nets, like other neural nets, are useful for clustering and anomaly detection. That is, they recognize similarities and dissimilarities by grouping examples in vector space and measuring their distance from each other. Modeling normal behavior, and flagging abnormalities, is applicable to healthcare data generated by wearables; home data generated by smart objects such as thermostats; market data generated by the movement of stocks and indices; personal financial data generated by account transactions (which may be used to identify fraud and money laundering).
+和其他神经网络一样，循环网络也适用于聚类和异常状态检测。也就是说，循环网络可以在向量空间中将样例分组并衡量样例之间的距离，从而识别出相似性和非相似性。为正常行为建模、标记非正常状态的功能可以应用于可穿戴式设备生成的医疗保健数据、恒温器等智能设备生成的家居环境数据、股票及指数变动生成的市场数据、账户交易活动生成的个人财务数据（可用于检测欺诈或洗钱行为）等。
 
-## Code Example
+## 代码示例
 
-Recall that Deeplearning4j's multinetwork configuration lets you create a layer in the API simply by naming it. In this case, you create an LSTM. 
+在Deeplearning4j的API中，只需要用多层网络配置类进行指名，就可以创建出所需的网络层。用同样的方法创建一个LSTM即可。 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java?slice=48:218"></script>
 
-### LSTM Implementations in DL4J
+### 在DL4J中实现LSTM
 
-* [Graves LSTM](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java) (Useful for sensor data and time series)
+* [Graves LSTM](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)（适用于传感器数据和时间序列）
 
 
-## Loading Data for LSTMs
+## LSTM网络的数据加载
 
-In Deeplearning4j, normal LSTMs expect a matrix in which the first row, *x_i*, is given, and all subsequent rows, *x_s*, are what the neural network attempts to predict. This is a generative model, and there are no labels. There is no limit to the number of rows the matrix can contain, but all rows must have the same length. 
+在Deeplearning4j中，普通LSTM网络的输入应为一个矩阵，其中第一行*x_i*已给出，其余所有行*x_s*将由神经网络尝试预测。这是一种生成模型，不使用标签。矩阵所包括的行数并没有限制，但所有行的长度应当相同。 
 
-The Graves LSTM, of which an example is forthcoming, is meant to be usesd in a multilayer network. 
+Graves LSTM（示例即将推出）通常在多层网络中使用。 
 
-For example, input data could be: 
+举例而言，输入的数据可以是： 
 
-* A series of handwritten numerals from MNIST, in which case, each row would be 784 elements long. 
-* A series of alphabetic characters, in which case, each row would be one element long.  
+* 来自MNIST的一个手写数字序列，此时每一行将有784个元素。 
+* 一个字母符号序列，此时每一行将有一个元素。  
 
-### Resources
+### 学习资源
 
-* [Recurrent Neural Networks](http://people.idsia.ch/~juergen/rnn.html); Juergen Schmidhuber
-* [Modeling Sequences With RNNs and LSTMs](https://class.coursera.org/neuralnets-2012-001/lecture/77); Geoff Hinton
-* [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
+* [《循环神经网络（Recurrent Neural Networks）》](http://people.idsia.ch/~juergen/rnn.html)；Juergen Schmidhuber
+* [《用RNN和LSTM对序列建模（Modeling Sequences With RNNs and LSTMs）》](https://class.coursera.org/neuralnets-2012-001/lecture/77)；Geoff Hinton
+* [《循环神经网络惊人的有效性（The Unreasonable Effectiveness of Recurrent Neural Networks）》](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
 
-### Definition
+### 定义
 
-Recurrent neural networks "allow for both parallel and sequential computation, and in principle can compute anything a traditional computer can compute. Unlike traditional computers, however, RNN are similar to the human brain, which is a large feedback network of connected neurons that somehow can learn to translate a lifelong sensory input stream into a sequence of useful motor outputs. The brain is a remarkable role model as it can solve many problems current machines cannot yet solve." - Juergen Schmidhuber
+循环神经网络“可以实现并行和序列计算，原则上可以计算任何传统计算机所能计算的东西。但和传统计算机不同的是，RNN与人类大脑有相似之处；人脑是一种由神经元相互联结组成的大型前馈网络，可以借由某种方式学会将长达人的一生的感觉信号输入流转换为一个有效的运动输出序列。人脑是一个杰出的模范，因为它能解决许多计算机尚且力所不及的问题。”  ——Juergen Schmidhuber
 
-### Credit Assignment
+### 研究功臣
 
-*Much research in recurrent nets has been led by Juergen Schmidhuber and his students, notably Sepp Hochreiter, who identified the vanishing gradient problem confronted by very deep networks and later invented Long Short-Term Memory (LSTM) recurrent nets, as well as Alex Graves, now at DeepMind. Two other researchers of note are Felix Gers, who invented LSTM forget gates, and Justin Bayer, who came up with a way to automatically evolve various kinds of LSTM topologies in a problem-specific fashion.*
+*引领循环网络研究的主要是Juergen Schmidhuber和他的学生——其中包括Sepp Hochreiter，他发现了高深度网络所遇到的梯度消失问题，后来又发明了长短期记忆（LSTM）循环网络；还有Alex Graves，他目前在DeepMind任职。另外两位比较著名的研究者分别是：Felix Gers，他发明了LSTM遗忘门；Justin Bayer，他发明了可以让LSTM拓扑结构根据具体问题进行自动演化的方法。*
