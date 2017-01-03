@@ -7,10 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -167,10 +164,10 @@ public class NetworkOrganizerTest {
         NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
 
         for (String ip: ips)
-            tree.map(ip);
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
-        assertEquals(2, tree.getTotalBranches());
         assertEquals(2, tree.getUniqueBranches());
+        assertEquals(2, tree.getTotalBranches());
     }
 
     @Test
@@ -180,18 +177,56 @@ public class NetworkOrganizerTest {
         NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
 
         for (String ip: ips)
-            tree.map(ip);
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
 
-        assertEquals(4, tree.getTotalBranches());
         assertEquals(3, tree.getUniqueBranches());
+        assertEquals(4, tree.getTotalBranches());
+    }
+
+    @Test
+    public void testNetTree3() throws Exception {
+        List<String> ips = new ArrayList<>();
+
+        NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
+
+        for (int i = 0; i < 3000; i++)
+            ips.add(getRandomIp());
+
+
+        for (int i = 0; i < 20; i++)
+            ips.add("192.168.12." + i);
+
+        Collections.shuffle(ips);
+
+        Set<String> uniqueIps = new HashSet<>(ips);
+
+        for (String ip: uniqueIps)
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
+
+        assertEquals(uniqueIps.size(), tree.getTotalBranches());
+        assertEquals(uniqueIps.size(), tree.getUniqueBranches());
+
+    }
+
+    @Test
+    public void testNetTree4() throws Exception {
+        List<String> ips = Arrays.asList("192.168.12.2","192.168.0.2","192.168.0.2","192.168.62.92","5.3.4.5");
+
+        NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
+
+        for (String ip: ips)
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
+
+        assertEquals(4, tree.getUniqueBranches());
+        assertEquals(5, tree.getTotalBranches());
     }
 
     protected String getRandomIp() {
         StringBuilder builder = new StringBuilder();
 
         builder.append(RandomUtils.nextInt(1, 172)).append(".");
-        builder.append(RandomUtils.nextInt(1, 255)).append(".");
-        builder.append(RandomUtils.nextInt(1, 255)).append(".");
+        builder.append(RandomUtils.nextInt(0, 255)).append(".");
+        builder.append(RandomUtils.nextInt(0, 255)).append(".");
         builder.append(RandomUtils.nextInt(1, 255));
 
         return builder.toString();
