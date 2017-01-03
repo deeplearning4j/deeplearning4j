@@ -163,12 +163,12 @@ public class NetworkOrganizer {
                 throw new ND4JIllegalStateException("VirtualTree expects binary octets as input");
 
             if (!nodes.containsKey(ch))
-                nodes.put(ch, new VirtualNode(ch));
+                nodes.put(ch, new VirtualNode(ch, null));
 
             nodes.get(ch).map(chars, 1);
         }
 
-        protected int getUniqueBranches() {
+        public int getUniqueBranches() {
             AtomicInteger cnt = new AtomicInteger(nodes.size());
             for(VirtualNode node: nodes.values()) {
                 cnt.addAndGet(node.getNumDivergents());
@@ -176,12 +176,28 @@ public class NetworkOrganizer {
             return cnt.get();
         }
 
-        protected int getTotalBranches() {
+        public int getTotalBranches() {
             AtomicInteger cnt = new AtomicInteger(0);
             for(VirtualNode node: nodes.values()) {
                 cnt.addAndGet(node.getCounter());
             }
             return cnt.get();
+        }
+
+        public String getHottestNetwork() {
+            int max = 0;
+            Character key = null;
+            for (VirtualNode node: nodes.values()) {
+                if (node.getCounter() > max) {
+                    max = node.getCounter();
+                    key = node.ownChar;
+                }
+            }
+            log.info("top node: {} -> {}", key, max);
+            VirtualNode topNode = nodes.get(key).getHottestNode(max);
+
+
+           return topNode.rewind();
         }
     }
 
@@ -190,9 +206,11 @@ public class NetworkOrganizer {
         protected Map<Character, VirtualNode> nodes = new HashMap<>();
         protected final Character ownChar;
         protected int counter = 0;
+        protected VirtualNode parentNode;
 
-        public VirtualNode(Character character) {
-            ownChar = character;
+        public VirtualNode(Character character, VirtualNode parentNode) {
+            this.ownChar = character;
+            this.parentNode = parentNode;
         }
 
         public void map(String[] chars, int position) {
@@ -200,7 +218,7 @@ public class NetworkOrganizer {
             if (position < chars.length) {
                 Character ch = chars[position].charAt(0);
                 if (!nodes.containsKey(ch))
-                    nodes.put(ch, new VirtualNode(ch));
+                    nodes.put(ch, new VirtualNode(ch, this));
 
                 nodes.get(ch).map(chars, position + 1);
             }
@@ -231,6 +249,34 @@ public class NetworkOrganizer {
 
         protected int getCounter() {
             return counter;
+        }
+
+        /**
+         * This method returns most popular sub-node
+         * @return
+         */
+        protected VirtualNode getHottestNode(int threshold) {
+            for (VirtualNode node: nodes.values()) {
+                if (node.getCounter() >= threshold) {
+                    log.info("    top node: {} -> {}", node.ownChar, node.getCounter());
+                    return node.getHottestNode(threshold);
+                }
+            }
+
+            log.info("No nodes below threshold");
+
+            return this;
+        }
+
+        protected String rewind() {
+            StringBuilder builder = new StringBuilder();
+
+            VirtualNode lastNode = this;
+            while ((lastNode = lastNode.parentNode) != null) {
+                builder.append(lastNode.ownChar);
+            }
+
+            return builder.reverse().toString();
         }
     }
 }
