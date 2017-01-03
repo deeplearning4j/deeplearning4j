@@ -8,6 +8,8 @@ import py4j.GatewayServer;
 /**
  * Main class for the DL4J-as-Keras-backend. Simply launches py4j GatewayServer with
  * an entry point exposing API available on Python side.
+ *
+ * @author pkoperek@gmail.com
  */
 @Slf4j
 public class Server {
