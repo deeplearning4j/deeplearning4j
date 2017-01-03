@@ -168,6 +168,8 @@ public class NetworkOrganizerTest {
 
         assertEquals(2, tree.getUniqueBranches());
         assertEquals(2, tree.getTotalBranches());
+
+        log.info("rewind: {}", tree.getHottestNetwork());
     }
 
     @Test
@@ -183,6 +185,11 @@ public class NetworkOrganizerTest {
         assertEquals(4, tree.getTotalBranches());
     }
 
+    /**
+     * This test is just a naive test for counters
+     *
+     * @throws Exception
+     */
     @Test
     public void testNetTree3() throws Exception {
         List<String> ips = new ArrayList<>();
@@ -219,6 +226,38 @@ public class NetworkOrganizerTest {
 
         assertEquals(4, tree.getUniqueBranches());
         assertEquals(5, tree.getTotalBranches());
+    }
+
+    @Test
+    public void testNetTree5() throws Exception {
+        List<String> ips = new ArrayList<>();
+
+        NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
+
+        for (int i = 0; i < 254; i++)
+            ips.add(getRandomIp());
+
+
+        for (int i = 1; i < 255; i++)
+            ips.add("192.168.12." + i);
+
+        Collections.shuffle(ips);
+
+        Set<String> uniqueIps = new HashSet<>(ips);
+
+        for (String ip: uniqueIps)
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
+
+        assertEquals(508, uniqueIps.size());
+
+        assertEquals(uniqueIps.size(), tree.getTotalBranches());
+        assertEquals(uniqueIps.size(), tree.getUniqueBranches());
+
+        /**
+         * Now the most important part here. we should get 192.168.12. as the most "popular" branch
+         */
+
+        log.info("rewind: {}", tree.getHottestNetwork());
     }
 
     protected String getRandomIp() {
