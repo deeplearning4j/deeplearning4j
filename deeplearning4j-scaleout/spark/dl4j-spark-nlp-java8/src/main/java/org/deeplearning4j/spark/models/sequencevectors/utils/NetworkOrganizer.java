@@ -1,0 +1,192 @@
+package org.deeplearning4j.spark.models.sequencevectors.utils;
+
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.net.util.SubnetUtils;
+import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Utility class that provides
+ *
+ * @author raver119@gmail.com
+ */
+@Slf4j
+public class NetworkOrganizer {
+    protected List<NetworkInformation> informationCollection;
+    protected String networkMask;
+    protected VirtualTree tree = new VirtualTree();
+
+    /**
+     * This constructor is NOT implemented yet
+     *
+     * @param infoSet
+     */
+    // TODO: implement this one properly, we should build mask out of list of Ips
+    public NetworkOrganizer(@NonNull Collection<NetworkInformation> infoSet) {
+        this(infoSet, null);
+    }
+
+    public NetworkOrganizer(@NonNull Collection<NetworkInformation> infoSet, String mask) {
+        informationCollection = new ArrayList<>(infoSet);
+        networkMask = mask;
+    }
+
+    /**
+     * This method returns specified number of IP addresses from original list of addresses
+     *
+     * @param numShards
+     * @return
+     */
+    public List<String> getSubset(int numShards) {
+        return getSubset(numShards, null);
+    }
+
+
+    /**
+     * This method returns specified number of IP addresses from original list of addresses, that are NOT listen in primary collection
+     *
+     * @param numShards
+     * @param primary Collection of IP addresses that shouldn't be in result
+     * @return
+     */
+    public List<String> getSubset(int numShards, Collection<String> primary) {
+        /**
+         * If netmask in unset, we'll use manual
+         */
+        if (networkMask == null)
+            return getIntersections(numShards, primary);
+
+        List<String> addresses = new ArrayList<>();
+
+        SubnetUtils utils = new SubnetUtils(networkMask);
+
+        Collections.shuffle(informationCollection);
+
+        for (NetworkInformation information: informationCollection) {
+            for (String ip: information.getIpAddresses()) {
+                if (primary != null && primary.contains(ip))
+                    continue;
+
+                if (utils.getInfo().isInRange(ip)) {
+                    log.debug("Picked {} as {}", ip, primary == null ? "Shard" : "Backup");
+                    addresses.add(ip);
+                }
+
+                if (addresses.size() >= numShards)
+                    break;
+            }
+
+            if (addresses.size() >= numShards)
+                break;
+        }
+
+        return addresses;
+    }
+
+    protected static String convertIpToOctets(@NonNull String ip) {
+        String[] octets = ip.split("\\.");
+        if (octets.length != 4)
+            throw new UnsupportedOperationException();
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < 3; i++)
+            builder.append(toBinaryOctet(octets[i])).append(".");
+        builder.append(toBinaryOctet(octets[3]));
+
+        return builder.toString();
+    }
+
+    protected static String toBinaryOctet(@NonNull Integer value) {
+        if (value < 0 || value > 255)
+            throw new ND4JIllegalStateException("IP octets cant hold values below 0 or above 255");
+        String octetBase = Integer.toBinaryString(value);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 8 - octetBase.length(); i++) {
+            builder.append("0");
+        }
+        builder.append(octetBase);
+
+        return builder.toString();
+    }
+
+    protected static String toBinaryOctet(@NonNull String value) {
+        return toBinaryOctet(Integer.parseInt(value));
+    }
+
+    /**
+     * This method returns specified numbers of IP's by parsing original list of trees into some form of binary tree
+     *
+     * @param numShards
+     * @param primary
+     * @return
+     */
+    protected List<String> getIntersections(int numShards, Collection<String> primary) {
+        List<String> addresses = new ArrayList<>();
+        /**
+         * Since each ip address can be represented in 4-byte sequence, 1 byte per value, with leading order - we'll use that to build tree
+         */
+
+        for (NetworkInformation information: informationCollection) {
+            for (String ip: information.getIpAddresses()) {
+                // first we get binary representation for each IP
+                String octet = convertIpToOctets(ip);
+
+                // then we map each of them into virtual "tree", to find most popular networks within cluster
+                tree.map(octet);
+            }
+        }
+
+        return addresses;
+    }
+
+
+
+    public static class VirtualTree {
+        // funny but we'll have max of 2 sub-nodes on node
+        protected Map<Character, VirtualNode> nodes = new HashMap<>();
+
+        public void map(@NonNull String string) {
+            String[] chars = string.split("");
+            Character ch = chars[0].charAt(0);
+            if (!nodes.containsKey(ch))
+                nodes.put(ch, new VirtualNode(ch));
+
+            nodes.get(ch).map(chars, 1);
+        }
+
+        protected int getUniqueBranches() {
+            return 0;
+        }
+
+        protected int getTotalBranches() {
+            return 0;
+        }
+    }
+
+
+    public static class VirtualNode {
+        protected Map<Character, VirtualNode> nodes = new HashMap<>();
+        protected final Character ownChar;
+        protected int counter = 0;
+
+        public VirtualNode(Character character) {
+            ownChar = character;
+        }
+
+        public void map(String[] chars, int position) {
+            counter++;
+            if (position < chars.length) {
+                Character ch = chars[position].charAt(0);
+                if (!nodes.containsKey(ch))
+                    nodes.put(ch, new VirtualNode(ch));
+
+                nodes.get(ch).map(chars, position + 1);
+            }
+        }
+    }
+}
