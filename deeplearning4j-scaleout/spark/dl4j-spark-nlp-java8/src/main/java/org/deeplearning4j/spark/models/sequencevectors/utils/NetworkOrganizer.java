@@ -150,9 +150,18 @@ public class NetworkOrganizer {
         // funny but we'll have max of 2 sub-nodes on node
         protected Map<Character, VirtualNode> nodes = new HashMap<>();
 
+        /**
+         * PLEASE NOTE: This method expects binary octets inside the string argument
+         *
+         * @param string
+         */
         public void map(@NonNull String string) {
             String[] chars = string.split("");
             Character ch = chars[0].charAt(0);
+
+            if (ch.charValue() != '0' && ch.charValue() != '1')
+                throw new ND4JIllegalStateException("VirtualTree expects binary octets as input");
+
             if (!nodes.containsKey(ch))
                 nodes.put(ch, new VirtualNode(ch));
 
@@ -160,11 +169,19 @@ public class NetworkOrganizer {
         }
 
         protected int getUniqueBranches() {
-            return 0;
+            AtomicInteger cnt = new AtomicInteger(nodes.size());
+            for(VirtualNode node: nodes.values()) {
+                cnt.addAndGet(node.getNumDivergents());
+            }
+            return cnt.get();
         }
 
         protected int getTotalBranches() {
-            return 0;
+            AtomicInteger cnt = new AtomicInteger(0);
+            for(VirtualNode node: nodes.values()) {
+                cnt.addAndGet(node.getCounter());
+            }
+            return cnt.get();
         }
     }
 
@@ -187,6 +204,33 @@ public class NetworkOrganizer {
 
                 nodes.get(ch).map(chars, position + 1);
             }
+        }
+
+        protected int getNumDivergents() {
+             if (nodes.size() == 0)
+                 return 0;
+
+             AtomicInteger cnt = new AtomicInteger(nodes.size() - 1);
+             for(VirtualNode node: nodes.values()) {
+                 cnt.addAndGet(node.getNumDivergents());
+             }
+             return cnt.get();
+        }
+
+
+        protected int getDiscriminatedCount(){
+            if (nodes.size() == 0 && counter == 1)
+                return 0;
+
+            AtomicInteger cnt = new AtomicInteger(Math.max(0, counter - 1));
+            for(VirtualNode node: nodes.values()) {
+                cnt.addAndGet(node.getDiscriminatedCount());
+            }
+            return cnt.get();
+        }
+
+        protected int getCounter() {
+            return counter;
         }
     }
 }
