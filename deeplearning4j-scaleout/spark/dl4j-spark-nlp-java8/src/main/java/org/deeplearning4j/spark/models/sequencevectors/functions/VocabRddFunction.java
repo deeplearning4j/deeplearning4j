@@ -6,26 +6,39 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.conf.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * This function builds RDD of vocab words
+ *
+ * On top of that, we use this Function to launch VoidParameterServer
+ *
  * @author raver119@gmail.com
  */
 public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunction<Sequence<T>, T> {
     protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
+    protected Broadcast<Configuration> paramServerConfigurationBroadcast;
 
     protected transient VectorsConfiguration configuration;
 
-    public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast) {
+    public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<Configuration> paramServerConfigurationBroadcast) {
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
+        this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
     }
 
     @Override
     public Iterable<T> call(Sequence<T> sequence) throws Exception {
         if (configuration == null)
             configuration = vectorsConfigurationBroadcast.getValue();
+
+        // we just silently initialize server
+        VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue());
+
+        // TODO: call for initializeSeqVec here
 
         List<T> elements = new ArrayList<>();
 

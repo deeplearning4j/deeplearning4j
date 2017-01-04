@@ -132,6 +132,58 @@ public class NetworkOrganizerTest {
         }
     }
 
+    /**
+     * In this test we check for environment which has AWS-like setup:
+     *  1) Each box has IP address from 172.16.0.0/12 range
+     *  2) Within original homogenous network, we have 3 separate networks:
+     *      A) 192.168.0.X
+     *      B) 10.0.12.X
+     *      C) 10.172.12.X
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testSelectionWithoutMaskB2() throws Exception {
+        List<NetworkInformation> collection = new ArrayList<>();
+
+        // we imitiate 512 cluster nodes here
+        for(int i = 0; i < 512; i++) {
+            NetworkInformation information = new NetworkInformation();
+
+            information.addIpAddress(getRandomAwsIp());
+
+            if (i < 30) {
+                information.addIpAddress("192.168.0." + i);
+            } else if (i < 95) {
+                information.addIpAddress("10.0.12." + i);
+            } else if (i < 255) {
+                information.addIpAddress("10.172.12." + i);
+            }
+
+            collection.add(information);
+        }
+
+        NetworkOrganizer organizer = new NetworkOrganizer(collection);
+
+        List<String> shards = organizer.getSubset(15);
+
+        assertEquals(15, shards.size());
+
+        for (String ip: shards) {
+            assertNotEquals(null, ip);
+            assertTrue(ip.startsWith("172."));
+        }
+
+        List<String> backup = organizer.getSubset(15, shards);
+
+        for (String ip: backup) {
+            assertNotEquals(null, ip);
+            assertTrue(ip.startsWith("172."));
+            assertFalse(shards.contains(ip));
+        }
+
+    }
+
 
     /**
      * Here we just check formatting for octets
