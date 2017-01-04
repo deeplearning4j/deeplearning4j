@@ -75,7 +75,7 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-        return true;
+        return false;
     }
 
     @Override
