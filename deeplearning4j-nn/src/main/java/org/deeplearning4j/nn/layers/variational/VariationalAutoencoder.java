@@ -780,7 +780,7 @@ public class VariationalAutoencoder implements Layer {
         if (trainingListeners == null) trainingListeners = new ArrayList<>();
         else trainingListeners.clear();
 
-        if(listeners != null && iterationListeners.size() > 0) {
+        if(listeners != null && listeners.size() > 0) {
             iterationListeners.addAll(listeners);
             for (IterationListener il : listeners) {
                 if (il instanceof TrainingListener) {
