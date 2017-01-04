@@ -11,8 +11,8 @@ import lombok.Data;
 public class EntryPointFitParameters {
     private String modelFilePath;
     private KerasModelType type;
-    private String trainFeaturesFile;
-    private String trainLabelsFile;
+    private String trainFeaturesDirectory;
+    private String trainLabelsDirectory;
     private int batchSize;
     private long nbEpoch;
     private String validationXFilePath;

@@ -6,13 +6,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.nio.file.Path;
+
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 
 public class NDArrayHDF5Reader {
 
-    public INDArray readFromPath(String inputFilePath) {
+    public INDArray readFromPath(Path inputFilePath) {
         try (hdf5.H5File h5File = new hdf5.H5File()) {
-            h5File.openFile(inputFilePath, H5F_ACC_RDONLY);
+            h5File.openFile(inputFilePath.toString(), H5F_ACC_RDONLY);
             hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
             int[] shape = extractShape(dataSet);
             long totalSize = ArrayUtil.prodLong(shape);

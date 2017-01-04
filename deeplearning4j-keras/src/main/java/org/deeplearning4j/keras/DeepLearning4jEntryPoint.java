@@ -2,7 +2,7 @@ package org.deeplearning4j.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
  * API exposed to the Python side. This class contains methods which are used by the python wrapper.
@@ -12,8 +12,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class DeepLearning4jEntryPoint {
 
     private final NeuralNetworkReader neuralNetworkReader = new NeuralNetworkReader();
-    private final NDArrayHDF5Reader ndArrayHDF5Reader = new NDArrayHDF5Reader();
-    private final NeuralNetworkBatchLearner neuralNetworkBatchLearner = new NeuralNetworkBatchLearner();
 
     /**
      * Performs fitting of the model which is referenced in the parameters according to learning parameters specified.
@@ -25,14 +23,15 @@ public class DeepLearning4jEntryPoint {
         try {
             MultiLayerNetwork multiLayerNetwork = neuralNetworkReader.readNeuralNetwork(entryPointFitParameters);
 
-            INDArray features = ndArrayHDF5Reader.readFromPath(entryPointFitParameters.getTrainFeaturesFile());
-            INDArray labels = ndArrayHDF5Reader.readFromPath(entryPointFitParameters.getTrainLabelsFile());
-            int batchSize = entryPointFitParameters.getBatchSize();
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                    entryPointFitParameters.getTrainFeaturesDirectory(),
+                    entryPointFitParameters.getTrainLabelsDirectory()
+            );
 
             for (int i = 0; i < entryPointFitParameters.getNbEpoch(); i++) {
                 log.info("Fitting: " + i);
 
-                neuralNetworkBatchLearner.fitInBatches(multiLayerNetwork, features, labels, batchSize);
+                multiLayerNetwork.fit(dataSetIterator);
             }
 
             log.info("Learning model finished");
