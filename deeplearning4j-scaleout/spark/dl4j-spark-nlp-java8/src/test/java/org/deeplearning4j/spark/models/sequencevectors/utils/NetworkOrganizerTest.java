@@ -257,7 +257,51 @@ public class NetworkOrganizerTest {
          * Now the most important part here. we should get 192.168.12. as the most "popular" branch
          */
 
-        log.info("rewind: {}", tree.getHottestNetwork());
+        String networkA = tree.getHottestNetworkA();
+
+        assertEquals("11000000", networkA);
+
+        String networkAB = tree.getHottestNetworkAB();
+
+        assertEquals("11000000.10101000", networkAB);
+    }
+
+    @Test
+    public void testNetTree6() throws Exception {
+        List<String> ips = new ArrayList<>();
+
+        NetworkOrganizer.VirtualTree tree = new NetworkOrganizer.VirtualTree();
+
+        for (int i = 0; i < 254; i++)
+            ips.add(getRandomIp());
+
+
+        for (int i = 1; i < 255; i++)
+            ips.add(getRandomAwsIp());
+
+        Collections.shuffle(ips);
+
+        Set<String> uniqueIps = new HashSet<>(ips);
+
+        for (String ip: uniqueIps)
+            tree.map(NetworkOrganizer.convertIpToOctets(ip));
+
+        assertEquals(508, uniqueIps.size());
+
+        assertEquals(uniqueIps.size(), tree.getTotalBranches());
+        assertEquals(uniqueIps.size(), tree.getUniqueBranches());
+
+        /**
+         * Now the most important part here. we should get 192.168.12. as the most "popular" branch
+         */
+
+        String networkA = tree.getHottestNetworkA();
+
+        assertEquals("10101100", networkA);
+
+        String networkAB = tree.getHottestNetworkAB();
+
+        assertEquals("10101100.00010000", networkAB);
     }
 
     protected String getRandomIp() {
@@ -265,6 +309,16 @@ public class NetworkOrganizerTest {
 
         builder.append(RandomUtils.nextInt(1, 172)).append(".");
         builder.append(RandomUtils.nextInt(0, 255)).append(".");
+        builder.append(RandomUtils.nextInt(0, 255)).append(".");
+        builder.append(RandomUtils.nextInt(1, 255));
+
+        return builder.toString();
+    }
+
+    protected String getRandomAwsIp() {
+        StringBuilder builder = new StringBuilder("172.");
+
+        builder.append(RandomUtils.nextInt(16, 32)).append(".");
         builder.append(RandomUtils.nextInt(0, 255)).append(".");
         builder.append(RandomUtils.nextInt(1, 255));
 
