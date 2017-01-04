@@ -1139,7 +1139,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                + Arrays.toString(input.shape()) + "\tand labels with shape " + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1237,13 +1237,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
         }
 
-        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
             currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
 
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            if(currLayer instanceof RecurrentLayer){
+            if(currLayer instanceof RecurrentLayer) {
                 currPair = ((RecurrentLayer)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
             } else {
                 currPair = currLayer.backpropGradient(currPair.getSecond());
@@ -1294,7 +1294,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         this.trainingListeners.clear();
         if(listeners != null) {
-            for (IterationListener il : listeners){
+            for (IterationListener il : listeners) {
                 if(il instanceof TrainingListener){
                     this.trainingListeners.add((TrainingListener) il);
                 }
@@ -1457,7 +1457,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
-        log.warn("Passing in data without labels does not apply backprop to the model.");
         setInput(data);
         if(!layerWiseConfigurations.isPretrain())
             throw new IllegalStateException("Set pretrain to true in the configuration in order to pretrain the model.");

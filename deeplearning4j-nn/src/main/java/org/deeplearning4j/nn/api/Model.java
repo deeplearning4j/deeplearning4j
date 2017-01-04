@@ -22,8 +22,10 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -33,6 +35,19 @@ import java.util.Map;
  *
  */
 public interface Model {
+
+
+    /**
+     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     */
+     void setListeners(Collection<IterationListener> listeners);
+
+
+    /**
+     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     */
+    void setListeners(IterationListener...listeners);
+
 
     /**
      * All models have a fit method
