@@ -11,6 +11,12 @@ import java.nio.file.Path;
 
 import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
 
+/**
+ * Reads and INDArray from a HDF5 dataset. The array is expected to be included as the "data" dataset inside the file.
+ * The shape of the output array is the same as the one stored in the HDF5 file.
+ *
+ * @author pkoperek@gmail.com
+ */
 public class NDArrayHDF5Reader {
 
     public INDArray readFromPath(Path inputFilePath) {
