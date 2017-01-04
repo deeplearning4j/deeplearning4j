@@ -126,22 +126,70 @@ public class NetworkOrganizer {
      * @return
      */
     protected List<String> getIntersections(int numShards, Collection<String> primary) {
-        List<String> addresses = new ArrayList<>();
         /**
          * Since each ip address can be represented in 4-byte sequence, 1 byte per value, with leading order - we'll use that to build tree
          */
+        if (primary == null) {
+            for (NetworkInformation information : informationCollection) {
+                for (String ip : information.getIpAddresses()) {
+                    // first we get binary representation for each IP
+                    String octet = convertIpToOctets(ip);
 
-        for (NetworkInformation information: informationCollection) {
-            for (String ip: information.getIpAddresses()) {
-                // first we get binary representation for each IP
-                String octet = convertIpToOctets(ip);
-
-                // then we map each of them into virtual "tree", to find most popular networks within cluster
-                tree.map(octet);
+                    // then we map each of them into virtual "tree", to find most popular networks within cluster
+                    tree.map(octet);
+                }
             }
-        }
 
-        return addresses;
+            // we get most "popular" A network from tree now
+            String octetA = tree.getHottestNetworkA();
+
+            List<String> candidates = new ArrayList<>();
+
+            AtomicInteger matchCount = new AtomicInteger(0);
+            for (NetworkInformation node : informationCollection) {
+                for (String ip : node.getIpAddresses()) {
+                    String octet = convertIpToOctets(ip);
+
+                    // calculating matches
+                    if (octet.startsWith(octetA)) {
+                        matchCount.incrementAndGet();
+                        candidates.add(ip);
+                        break;
+                    }
+                }
+            }
+
+            /**
+             * TODO: improve this. we just need to iterate over popular networks instead of single top A network
+             */
+            if (matchCount.get() != informationCollection.size())
+                throw new ND4JIllegalStateException("Mismatching A class");
+
+            Collections.shuffle(candidates);
+
+            return candidates.subList(0, numShards);
+        } else {
+            // if primary isn't null, we expect network to be already filtered
+            String octetA = tree.getHottestNetworkA();
+
+            List<String> candidates = new ArrayList<>();
+
+            for (NetworkInformation node : informationCollection) {
+                for (String ip : node.getIpAddresses()) {
+                    String octet = convertIpToOctets(ip);
+
+                    // calculating matches
+                    if (octet.startsWith(octetA) && !primary.contains(ip)) {
+                        candidates.add(ip);
+                        break;
+                    }
+                }
+            }
+
+            Collections.shuffle(candidates);
+
+            return candidates.subList(0, numShards);
+        }
     }
 
 
@@ -231,6 +279,10 @@ public class NetworkOrganizer {
             return builder.toString();
         }
 
+        /**
+         * This method returns FULL A octet + B octet UP TO FIRST SIGNIFICANT BIT
+         * @return
+         */
         public String getHottestNetworkAB() {
             StringBuilder builder = new StringBuilder();
 
@@ -242,9 +294,22 @@ public class NetworkOrganizer {
 
             builder.append(startingNode.ownChar);
 
-            for (int i = 0; i < 16; i++) {
+            // building first octet
+            for (int i = 0; i < 7; i++) {
                 startingNode = startingNode.getHottestNode();
                 builder.append(startingNode.ownChar);
+            }
+
+            // adding dot after first octet
+            startingNode = startingNode.getHottestNode();
+            builder.append(startingNode.ownChar);
+
+            // building partial octet for subnet B
+            /**
+             * basically we want widest possible match here
+             */
+            for (int i = 0; i < 8; i++) {
+
             }
 
             return builder.toString();
