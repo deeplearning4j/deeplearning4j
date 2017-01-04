@@ -193,11 +193,61 @@ public class NetworkOrganizer {
                     key = node.ownChar;
                 }
             }
-            log.info("top node: {} -> {}", key, max);
             VirtualNode topNode = nodes.get(key).getHottestNode(max);
 
 
            return topNode.rewind();
+        }
+
+        protected VirtualNode getHottestNode() {
+            int max = 0;
+            Character key = null;
+            for (VirtualNode node: nodes.values()) {
+                if (node.getCounter() > max) {
+                    max = node.getCounter();
+                    key = node.ownChar;
+                }
+            }
+
+            return nodes.get(key);
+        }
+
+        public String getHottestNetworkA() {
+            StringBuilder builder = new StringBuilder();
+
+            int depth = 0;
+            VirtualNode startingNode = getHottestNode();
+
+            if (startingNode == null)
+                throw new ND4JIllegalStateException("VirtualTree wasn't properly initialized, and doesn't have any information within");
+
+            builder.append(startingNode.ownChar);
+
+            for (int i = 0; i < 7; i++) {
+                startingNode = startingNode.getHottestNode();
+                builder.append(startingNode.ownChar);
+            }
+
+            return builder.toString();
+        }
+
+        public String getHottestNetworkAB() {
+            StringBuilder builder = new StringBuilder();
+
+            int depth = 0;
+            VirtualNode startingNode = getHottestNode();
+
+            if (startingNode == null)
+                throw new ND4JIllegalStateException("VirtualTree wasn't properly initialized, and doesn't have any information within");
+
+            builder.append(startingNode.ownChar);
+
+            for (int i = 0; i < 16; i++) {
+                startingNode = startingNode.getHottestNode();
+                builder.append(startingNode.ownChar);
+            }
+
+            return builder.toString();
         }
     }
 
@@ -258,14 +308,24 @@ public class NetworkOrganizer {
         protected VirtualNode getHottestNode(int threshold) {
             for (VirtualNode node: nodes.values()) {
                 if (node.getCounter() >= threshold) {
-                    log.info("    top node: {} -> {}", node.ownChar, node.getCounter());
                     return node.getHottestNode(threshold);
                 }
             }
 
-            log.info("No nodes below threshold");
-
             return this;
+        }
+
+        protected VirtualNode getHottestNode() {
+            int max = 0;
+            Character ch = null;
+            for (VirtualNode node: nodes.values()) {
+                if (node.getCounter() > max) {
+                    ch = node.ownChar;
+                    max = node.getCounter();
+                }
+            }
+
+            return nodes.get(ch);
         }
 
         protected String rewind() {
