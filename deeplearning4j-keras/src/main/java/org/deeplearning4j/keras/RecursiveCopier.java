@@ -3,6 +3,11 @@ package org.deeplearning4j.keras;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ * Copies data from input (DataBuffer) to output (INDArray) preserving the shape of the input data
+ *
+ * @author pkoperek@gmail.com
+ */
 public class RecursiveCopier {
 
     private final INDArray output;
