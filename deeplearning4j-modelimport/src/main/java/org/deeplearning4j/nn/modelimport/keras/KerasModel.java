@@ -563,6 +563,9 @@ public class KerasModel {
 
                 }
                 else {
+                    /* TODO: remove this once commit 61906bc is fully tested.
+                     * Commit: https://github.com/deeplearning4j/deeplearning4j/pull/2566/commits/61906bc81912a3cfc6d011f39feb4f42cc9128c7
+                     */
                     String layerNameMod;
                     layerNameMod = layerName.replaceAll("_(W|b)$","");
                     layer = ((ComputationGraph) model).getLayer(layerNameMod);
