@@ -75,6 +75,10 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
+        /**
+         * Async support is turned off on purpose: otherwise there are indeterministic segfaults in JavaCPP
+         * when cleaning memory after HDF5 libs.
+         */
         return false;
     }
 
