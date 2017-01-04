@@ -1,9 +1,6 @@
 package org.nd4j.parameterserver.distributed.conf;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
@@ -53,6 +50,10 @@ public class Configuration implements Serializable {
     }
 
 
+    public void setShardAddresses(List<String> addresses) {
+        this.shardAddresses = addresses;
+    }
+
     public void setShardAddresses(String... Ips) {
         shardAddresses = new ArrayList<>();
 
@@ -60,6 +61,10 @@ public class Configuration implements Serializable {
             if (ip != null)
                 shardAddresses.add(ip);
         }
+    }
+
+    public void setBackupAddresses(List<String> addresses) {
+        this.backupAddresses = addresses;
     }
 
     public void setBackupAddresses(String... Ips) {
