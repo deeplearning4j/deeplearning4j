@@ -1,15 +1,16 @@
 package org.deeplearning4j.keras;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class RecursiveCopier {
 
     private final INDArray output;
-    private final float[] input;
+    private final DataBuffer input;
     private final int[] shape;
     private int inputIdx = 0;
 
-    public RecursiveCopier(INDArray output, float[] input, int[] shape) {
+    public RecursiveCopier(INDArray output, DataBuffer input, int[] shape) {
         this.output = output;
         this.input = input;
         this.shape = shape;
@@ -21,7 +22,7 @@ public class RecursiveCopier {
 
     private void copyRecursive(int shapeIdx, int[] indexes) {
         if (shape.length == shapeIdx) {
-            output.putScalar(indexes, input[inputIdx++]);
+            output.putScalar(indexes, input.getFloat(inputIdx++));
         } else {
             for (int i = 0; i < shape[shapeIdx]; i++) {
                 indexes[shapeIdx] = i;

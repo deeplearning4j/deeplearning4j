@@ -2,6 +2,7 @@ package org.deeplearning4j.keras;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -18,7 +19,7 @@ public class NDArrayHDF5Reader {
             hdf5.DataSet dataSet = h5File.asCommonFG().openDataSet("data");
             int[] shape = extractShape(dataSet);
             long totalSize = ArrayUtil.prodLong(shape);
-            float[] dataBuffer = readFromDataSet(dataSet, (int) totalSize);
+            DataBuffer dataBuffer = readFromDataSet(dataSet, (int) totalSize);
 
             INDArray input = Nd4j.create(shape);
             new RecursiveCopier(input, dataBuffer, shape).copy();
@@ -26,12 +27,12 @@ public class NDArrayHDF5Reader {
         }
     }
 
-    private float[] readFromDataSet(hdf5.DataSet dataSet, int total) {
+    private DataBuffer readFromDataSet(hdf5.DataSet dataSet, int total) {
         float[] dataBuffer = new float[total];
         FloatPointer fp = new FloatPointer(dataBuffer);
         dataSet.read(fp, new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT()));
         fp.get(dataBuffer);
-        return dataBuffer;
+        return Nd4j.createBuffer(dataBuffer);
     }
 
     private int[] extractShape(hdf5.DataSet dataSet) {
