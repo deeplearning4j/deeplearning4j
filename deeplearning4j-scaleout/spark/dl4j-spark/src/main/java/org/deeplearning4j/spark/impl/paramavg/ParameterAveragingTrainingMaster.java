@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -59,10 +60,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 /**
  * ParameterAveragingTrainingMaster: A {@link TrainingMaster} implementation for training networks on Spark.
@@ -73,9 +71,9 @@ import java.util.Random;
 @Data
 @JsonIgnoreProperties({"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath", "trainingMasterUID"})
 @EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath", "trainingMasterUID"})
+@Slf4j
 public class ParameterAveragingTrainingMaster implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
-    private static final Logger log = LoggerFactory.getLogger(ParameterAveragingTrainingMaster.class);
     private static final int COALESCE_THRESHOLD = 3;
     private static ObjectMapper jsonMapper;
     private static ObjectMapper yamlMapper;
@@ -223,6 +221,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      */
     @Override
     public void removeHook(TrainingHook trainingHook) {
+        if(trainingHookList == null) return;
         trainingHookList.remove(trainingHook);
     }
 
@@ -233,6 +232,9 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
      */
     @Override
     public void addHook(TrainingHook trainingHook) {
+        if(trainingHookList == null){
+            trainingHookList = new ArrayList<>();
+        }
         trainingHookList.add(trainingHook);
     }
 
@@ -806,7 +808,7 @@ public class ParameterAveragingTrainingMaster implements TrainingMaster<Paramete
             stats.addWorkerStats(aggregatedStats);
         }
 
-        if(statsStorage != null){
+        if(statsStorage != null) {
             Collection<StorageMetaData> meta = tuple.getListenerMetaData();
             if(meta != null && meta.size() > 0){
                 statsStorage.putStorageMetaData(meta);
