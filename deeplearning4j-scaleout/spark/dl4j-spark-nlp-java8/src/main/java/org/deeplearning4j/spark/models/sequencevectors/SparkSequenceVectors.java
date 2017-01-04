@@ -206,7 +206,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
         // FIXME: probably we need to reconsider this approach
-        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast)).distinct();
+        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
 
         // proceed to training
         // also, training function is the place where we invoke ParameterServer
