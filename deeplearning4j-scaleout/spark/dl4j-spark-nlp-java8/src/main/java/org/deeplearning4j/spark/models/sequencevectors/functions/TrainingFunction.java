@@ -44,9 +44,10 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         /**
          * Depending on actual training mode, we'll either go for SkipGram/CBOW/PV-DM/PV-DBOW or whatever
          */
-
         if (paramServer == null) {
             paramServer = VoidParameterServer.getInstance();
+
+            // FIXME: init line should probably be removed, basically init happens in VocabRddFunction
             paramServer.init(paramServerConfigurationBroadcast.getValue());
         }
 

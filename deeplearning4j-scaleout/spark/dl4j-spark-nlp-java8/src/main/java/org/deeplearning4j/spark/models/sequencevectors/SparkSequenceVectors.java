@@ -26,6 +26,7 @@ import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLea
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLearningAlgorithm;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
+import org.deeplearning4j.spark.models.sequencevectors.utils.NetworkOrganizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
@@ -132,6 +133,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         Counter<Long> finalCounter;
         long numberOfSequences = 0;
 
+        /**
+         * Here we s
+         */
         if (paramServerConfiguration == null)
             paramServerConfiguration = Configuration.builder()
                 .faultToleranceStrategy(FaultToleranceStrategy.NONE)
@@ -140,8 +144,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
                 .multicastPort(40124)
                 .build();
 
-        // FIXME: probably we need to reconsider this approach
-        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast)).distinct();
+        isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
 
         if (isAutoDiscoveryMode) {
             elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
@@ -161,6 +164,14 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             Set<NetworkInformation> availableHosts = spareReference.getNetworkInformation();
 
             // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
+            NetworkOrganizer organizer = new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
+
+            paramServerConfiguration.setShardAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards()));
+
+            // backup shards are optional
+            if (paramServerConfiguration.getFaultToleranceStrategy() != FaultToleranceStrategy.NONE) {
+                paramServerConfiguration.setBackupAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.getShardAddresses()));
+            }
         } else {
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
@@ -194,7 +205,11 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
+        // FIXME: probably we need to reconsider this approach
+        JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast)).distinct();
+
         // proceed to training
+        // also, training function is the place where we invoke ParameterServer
         TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
 
         if (configuration != null)
