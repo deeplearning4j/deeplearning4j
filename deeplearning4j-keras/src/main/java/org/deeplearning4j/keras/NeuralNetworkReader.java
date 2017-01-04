@@ -8,6 +8,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.IOException;
 
+/**
+ * Reads the neural network model from Keras, specified by the parameters. Reuses the -modelimport code.
+ *
+ * @author pkoperek@gmail.com
+ */
 @Slf4j
 public class NeuralNetworkReader {
 
