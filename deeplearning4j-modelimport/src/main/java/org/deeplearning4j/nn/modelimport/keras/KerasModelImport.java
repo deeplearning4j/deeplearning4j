@@ -376,7 +376,7 @@ public class KerasModelImport {
      * @return              nested Map from layer names to parameter names to INDArrays
      */
     private static Map<String,Map<String,INDArray>> readWeightsFromHdf5(hdf5.H5File file, String weightsGroupName)
-            throws UnsupportedKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         hdf5.Group weightsGroup = file.asCommonFG().openGroup(weightsGroupName);
 
         Map<String,Map<String,INDArray>> weightsMap = new HashMap<String,Map<String,INDArray>>();
@@ -394,15 +394,21 @@ public class KerasModelImport {
                         /* Keras parameter names are typically formatted as [layer name]_[layer no]_[parameter].
                          * For example, the weight matrix in the first Dense layer will be named "dense_1_W."
                          */
-                        String[] tokens = objName.split("_");
-                        String layerName = StringUtils.join(Arrays.copyOfRange(tokens, 0, 2), "_");
-                        String paramName = StringUtils.join(Arrays.copyOfRange(tokens, 2, tokens.length), "_");
+                        Pattern paramNamePattern = Pattern.compile("_([^_])+?$");
+                        Matcher paramNameMatcher = paramNamePattern.matcher(objName);
+                        if (!paramNameMatcher.find())
+                            throw new InvalidKerasConfigurationException("Unable to parse layer/parameter name " + objName + " for stored weights.");
+                        String paramName = paramNameMatcher.group(1);
+                        String layerName = paramNameMatcher.replaceFirst("");
+
                         /* TensorFlow backend often appends ":" followed by one
                          * or more digits to parameter names, but this is not
                          * reflected in the model config. We must strip it off.
                          */
-                        Pattern p = Pattern.compile(":\\d+$");
+                        Pattern p = Pattern.compile(":\\d+?$");
                         Matcher m = p.matcher(paramName);
+                        if (m.find())
+                            paramName = m.replaceFirst("");
 
                         hdf5.DataSet d = g.asCommonFG().openDataSet(objPtr);
                         hdf5.DataSpace space = d.getSpace();
@@ -413,8 +419,6 @@ public class KerasModelImport {
                         FloatPointer fp = null;
                         int j = 0;
                         INDArray weights = null;
-                        if (m.find())
-                            paramName = m.replaceFirst("");
                         switch (nbDims) {
                             case 4: /* 2D Convolution weights */
                                 weightBuffer = new float[(int)(dims[0]*dims[1]*dims[2]*dims[3])];
