@@ -16,7 +16,8 @@ public class GsonDeserializationUtils {
     private static final JsonParser JSON_PARSER = new JsonParser();
 
     public static INDArray deserializeRawJson(String serializedRawArray) {
-        JsonArray jsonArray = JSON_PARSER.parse(serializedRawArray).getAsJsonArray();
+        String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+        JsonArray jsonArray = JSON_PARSER.parse(cleanedRawArray).getAsJsonArray();
 
         List<Integer> dimensions = new ArrayList<>();
         dimensions.add(jsonArray.size());
@@ -33,7 +34,7 @@ public class GsonDeserializationUtils {
             dimensions.add(0, 1);
         }
 
-        return buildArray(dimensions, serializedRawArray);
+        return buildArray(dimensions, cleanedRawArray);
     }
 
     /*
