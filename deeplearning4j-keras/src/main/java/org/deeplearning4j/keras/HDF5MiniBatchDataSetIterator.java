@@ -1,5 +1,6 @@
 package org.deeplearning4j.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -8,11 +9,16 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.jar.Pack200;
 
 /**
+ * Iterator reading mini batches of data stored in separate files. Labels and features are expected to be dumped into
+ * separate directories. Filenames are expected to adhere to a predefined pattern: `batch_%d.h5`.
+ * This class supports only a very narrow subset of the DataSetIterator interface! (e.g.
+ * there is no support for pre-processing of data)
+ *
  * @author pkoperek@gmail.com
  */
+@Slf4j
 public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     private static final String FILE_NAME_PATTERN = "batch_%d.h5";
@@ -45,6 +51,10 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     private DataSet readIdx(int currentIdx) {
         String batchFileName = fileNameForIdx(currentIdx);
+
+        if(log.isTraceEnabled()) {
+            log.trace("Reading: " + batchFileName);
+        }
 
         INDArray features = ndArrayHDF5Reader.readFromPath(
                 Paths.get(trainFeaturesDirectory.getAbsolutePath(), batchFileName));
