@@ -584,7 +584,7 @@ public class KerasModel {
             for (String kerasParamName : weights.get(layerName).keySet()) {
                 INDArray kerasParamValue = weights.get(layerName).get(kerasParamName);
                 String dl4JParamName;
-                INDArray dl4jParamValue = null;
+                INDArray dl4jParamValue = kerasParamValue;
                 if (!kerasParamName.equals("")) {
                     dl4JParamName = mapParameterName(kerasParamName);
                 }
