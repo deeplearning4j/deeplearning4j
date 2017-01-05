@@ -132,6 +132,16 @@ template<typename T>
 			return (T) 1.0f / (y * y);
 		}
 
+        template<typename T>
+        math_def inline T nd4j_sgn(T val) {
+            return val < 0 ? (T) -1.0f : val > 0 ? (T) 1.0f : (T) 0.0f;
+        }
+
+        template<typename T>
+        math_def inline T nd4j_sign(T val) {
+            return nd4j_sgn<T>(val);
+        }
+
 #ifndef __CUDACC__
 
         template<>
