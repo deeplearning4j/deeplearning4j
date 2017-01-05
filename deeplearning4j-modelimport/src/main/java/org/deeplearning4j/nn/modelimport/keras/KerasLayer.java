@@ -149,13 +149,13 @@ public class KerasLayer {
      * in tensors with different dimension orders.
      */
     public enum DimOrder {
-        NONE, THEANO, TENSORFLOW, UNKNOWN;
+        NONE, THEANO, TENSORFLOW;
     }
 
     private Map<String,Object> layerConfig;       // Keras layer configuration
     private String className;                     // Keras layer class name
     private String layerName;                     // Keras layer name
-    private DimOrder dimOrder = DimOrder.NONE; // Keras layer backend dimension order
+    private DimOrder dimOrder = DimOrder.NONE;    // Keras layer backend dimension order
     private int[] inputShape;                     // Keras layer input shape
     private List<String> inboundLayerNames = new ArrayList<>(); // List of inbound layers
     private Layer dl4jLayer;                      // Resulting DL4J layer
@@ -194,7 +194,7 @@ public class KerasLayer {
         this.layerName = (String)checkAndGetField(this.layerConfig, LAYER_FIELD_NAME);
         this.dl4jLayer = buildLayerFromConfig(this.layerConfig, this.train);
         this.dimOrder = getDimOrderFromConfig(this.layerConfig);
-        this.inputShape = getInputShapeFromConfig(this.layerConfig, this.dimOrder);
+        this.inputShape = getInputShapeFromConfig(this.layerConfig);
         this.inboundLayerNames = getInboundLayerNamesFromConfig(this.layerConfig);
     }
 
@@ -235,13 +235,40 @@ public class KerasLayer {
     }
 
     /**
-     * Get Keras layer input shape.
+     * Set Keras layer backend dimension order.
      *
-     * @return      input shape
+     * @return      Keras layer (backend) dimension order
      */
-    public int[] getInputShape() {
-        return this.inputShape;
+    public void setDimOrder(DimOrder dimOrder) {
+        this.dimOrder = dimOrder;
     }
+
+    /**
+     * Get DL4J layer input shape (possibly modified by dim_ordering).
+     *
+     * @return      input shape (possibly modified by dim_ordering)
+     */
+    public int[] getDl4jInputShape() {
+        int[] inputShapeToReturn = this.inputShape.clone();
+        /* DL4J convolutional input:       # rows, # cols, # channels
+         * TensorFlow convolutional input: # rows, # cols, # channels
+         * Theano convolutional input:     # channels, # rows, # cols
+         */
+        if (dimOrder == DimOrder.THEANO && inputShapeToReturn.length == 3) {
+            int numChannels = inputShapeToReturn[0];
+            inputShapeToReturn[0] = inputShapeToReturn[1];
+            inputShapeToReturn[1] = inputShapeToReturn[2];
+            inputShapeToReturn[2] = numChannels;
+        }
+        return inputShapeToReturn;
+    }
+
+    /**
+     * Get Keras layer input shape (unmodified by dim_ordering).
+     *
+     * @return      input shape (unmodified by dim_ordering)
+     */
+    public int[] getKerasInputShape() { return this.inputShape; }
 
     /**
      * Get list of inbound layers.
@@ -261,14 +288,14 @@ public class KerasLayer {
         this.inboundLayerNames = new ArrayList<String>(inboundLayerNames);
     }
 
-    /**
-     * Override input shape and dim from next layer config
-     */
-    public void overrideLayerShape (Map<String,Object> nextLayerConfig) {
-        if (getDimOrder().equals(DimOrder.NONE) && !getDimOrderFromConfig(nextLayerConfig).equals(DimOrder.NONE)) {
-            this.inputShape = getInputShapeFromConfig(this.layerConfig, getDimOrderFromConfig(nextLayerConfig));
-        }
-    }
+//    /**
+//     * Override input shape and dim from next layer config
+//     */
+//    public void overrideLayerShape (Map<String,Object> nextLayerConfig) {
+//        if (getDimOrder().equals(DimOrder.NONE) && !getDimOrderFromConfig(nextLayerConfig).equals(DimOrder.NONE)) {
+//            this.inputShape = getInputShapeFromConfig(this.layerConfig, getDimOrderFromConfig(nextLayerConfig));
+//        }
+//    }
 
     /**
      * Add layer to list of inbound layers.
@@ -630,12 +657,12 @@ public class KerasLayer {
     }
 
     /**
-     * Get input shape from Keras layer configuration.
+     * Get unmodified input shape from Keras layer configuration.
      *
      * @param layerConfig       Keras layer configuration
      * @return                  input shape array
      */
-    private int[] getInputShapeFromConfig(Map<String,Object> layerConfig, DimOrder dimOrder) {
+    private int[] getInputShapeFromConfig(Map<String,Object> layerConfig) {
         if (!layerConfig.containsKey(LAYER_FIELD_BATCH_INPUT_SHAPE))
             return null;
         List<Integer> batchInputShape = (List<Integer>)layerConfig.get(LAYER_FIELD_BATCH_INPUT_SHAPE);
@@ -643,23 +670,23 @@ public class KerasLayer {
         for (int i = 1; i < batchInputShape.size(); i++) {
             inputShape[i - 1] = batchInputShape.get(i) != null ? batchInputShape.get(i) : 0;
         }
-        /* DL4J convolutional input:       # rows, # cols, # channels
-         * TensorFlow convolutional input: # rows, # cols, # channels
-         * Theano convolutional input:     # channels, # rows, # cols
-         */
-        if (dimOrder == DimOrder.THEANO && inputShape.length == 3 && this.dl4jLayer instanceof ConvolutionLayer) {
-            int numChannels = inputShape[0];
-            inputShape[0] = inputShape[1];
-            inputShape[1] = inputShape[2];
-            inputShape[2] = numChannels;
-        }
-        //passed in dim order is not none and the dim order from the layer config is missing
-        if (!dimOrder.equals(DimOrder.NONE) && inputShape.length == 3 && this.getDimOrder().equals(DimOrder.NONE)) {
-            int numChannels = inputShape[0];
-            inputShape[0] = inputShape[1];
-            inputShape[1] = inputShape[2];
-            inputShape[2] = numChannels;
-        }
+//        /* DL4J convolutional input:       # rows, # cols, # channels
+//         * TensorFlow convolutional input: # rows, # cols, # channels
+//         * Theano convolutional input:     # channels, # rows, # cols
+//         */
+//        if (dimOrder == DimOrder.THEANO && inputShape.length == 3 && this.dl4jLayer instanceof ConvolutionLayer) {
+//            int numChannels = inputShape[0];
+//            inputShape[0] = inputShape[1];
+//            inputShape[1] = inputShape[2];
+//            inputShape[2] = numChannels;
+//        }
+//        //passed in dim order is not none and the dim order from the layer config is missing
+//        if (!dimOrder.equals(DimOrder.NONE) && inputShape.length == 3 && this.getDimOrder().equals(DimOrder.NONE)) {
+//            int numChannels = inputShape[0];
+//            inputShape[0] = inputShape[1];
+//            inputShape[1] = inputShape[2];
+//            inputShape[2] = numChannels;
+//        }
         return inputShape;
     }
 
