@@ -167,7 +167,7 @@ public class NetworkOrganizer {
 
             Collections.shuffle(candidates);
 
-            return candidates.subList(0, numShards);
+            return new ArrayList<>(candidates.subList(0, Math.min(numShards,candidates.size())));
         } else {
             // if primary isn't null, we expect network to be already filtered
             String octetA = tree.getHottestNetworkA();
@@ -188,7 +188,7 @@ public class NetworkOrganizer {
 
             Collections.shuffle(candidates);
 
-            return candidates.subList(0, numShards);
+            return new ArrayList<>(candidates.subList(0, Math.min(numShards,candidates.size())));
         }
     }
 

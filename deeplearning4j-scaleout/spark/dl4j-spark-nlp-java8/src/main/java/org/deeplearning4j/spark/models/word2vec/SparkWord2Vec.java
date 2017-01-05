@@ -12,6 +12,7 @@ import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
 import org.deeplearning4j.spark.models.sequencevectors.functions.TokenizerFunction;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.parameterserver.distributed.conf.Configuration;
 
 /**
  * @author raver119@gmail.com
@@ -24,8 +25,9 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         configuration.setTokenizerFactory(DefaultTokenizerFactory.class.getCanonicalName());
     }
 
-    protected SparkWord2Vec(@NonNull VectorsConfiguration configuration) {
+    public SparkWord2Vec(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration configuration) {
         this.configuration = configuration;
+        this.paramServerConfiguration = psConfiguration;
     }
 
     @Override
@@ -60,12 +62,20 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
 
     public static class Builder extends SparkSequenceVectors.Builder<VocabWord> {
 
+        /**
+         * This method should NOT be used in real world applications
+         */
+        @Deprecated
         public Builder() {
             super();
         }
 
-        public Builder(@NonNull VectorsConfiguration configuration) {
-            super(configuration);
+        public Builder(@NonNull Configuration psConfiguration) {
+            super(psConfiguration);
+        }
+
+        public Builder(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration configuration) {
+            super(psConfiguration, configuration);
         }
 
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -78,7 +88,7 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
 
 
         public SparkWord2Vec build() {
-            SparkWord2Vec sw2v = new SparkWord2Vec(configuration);
+            SparkWord2Vec sw2v = new SparkWord2Vec(peersConfiguration, configuration);
 
             return sw2v;
         }
