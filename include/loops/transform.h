@@ -84,7 +84,8 @@
         (49,simdOps::Cube), \
         (50,simdOps::CubeDerivative) , \
         (51,simdOps::HardSigmoid), \
-        (52,simdOps::HardSigmoidDerivative)
+        (52,simdOps::HardSigmoidDerivative) ,\
+        (53,simdOps::RationalTanh)
 
 
 namespace functions {
