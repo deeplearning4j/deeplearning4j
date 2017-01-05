@@ -1,26 +1,26 @@
 ---
-title: Denoising Autoencoders
-layout: default
+title: 降噪自动编码器
+layout: cn-default
 ---
 
-# Denoising Autoencoders
+# 降噪自动编码器
 
-An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simply equals the input -- thereby becoming useless. 
+自动编码器是一种用于降维的神经网络，这也就是说，它可以用于特征选择和提取。隐藏层数量多于输入的自动编码器有可能会学习[恒等函数](https://en.wikipedia.org/wiki/Identity_function)（输出直接等于输入的函数），进而变得无用。 
 
-Denoising autoencoders are an extension of the basic autoencoder, and represent a stochastic version of it. Denoising autoencoders attempt to address identity-function risk by randomly corrupting input (i.e. introducing noise) that the autoencoder must then reconstruct, or denoise. 
+降噪自动编码器是基本自动编码器的一种扩展，是加入了随机因素的自动编码器。降噪自动编码器采用对输入进行随机污染（即引入噪声）的方式来减少学习恒等函数的风险，自动编码器必须将污染后的输入重构，或称降噪。 
 
-### Parameters and Corruption level 
+### 参数和污染率 
 
-The amount of noise to apply to the input takes the form of a percentage. Typically, 30 percent, or 0.3, is fine, but if you have very little data, you may want to consider adding more.
+对输入加入的噪声以百分比形式计量。一般而言，污染率在30%或0.3是比较合适的，但如果数据量非常少，就有可能要增加噪声量。
 
-### Input/initiating a denoising autoencoder
+### 输入/初始化降噪自动编码器
 
-Setting up a single-thread denoising autoencoder is easy. 
+单线程降噪自动编码器很容易设置。 
 
-To create the machine, you simply instantiate an AutoEncoder and set the corruptionLevel, or noise, as you can see in the example below.
+要创建自动编码器，只需将一个AutoEncoder类实例化并设定corruptionLevel，即噪声，如下面的例子所示。
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/autoencoder/StackedAutoEncoderMnistExample.java?slice=24:96"></script>
 
-That's how you set up a denoising autoencoder with one visible layer and one hidden layer using MNIST data. This net has a learning rate of 0.1, momentum of of 0.9, and utilizes reconstruction cross entropy as its loss function. 
+以上就是使用MNIST数据设置有一个可见层和一个隐藏层的降噪自动编码器的方法。该网络的学习速率为0.1，动量为0.9，使用重构叉熵作为损失函数。 
 
-Next, we'll show you a [stacked denoising autoencoder](./stackeddenoisingautoencoder.html), which is simply many denoising autoencoders strung together.
+接下来我们将向您介绍[堆叠式降噪自动编码器](./stackeddenoisingautoencoder.html)，也就是许多串在一起的降噪自动编码器。
