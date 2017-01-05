@@ -684,6 +684,23 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class RationalTanhDerivative {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T dis = ((T) 2.0f / (T) 3.0f) * d1;
+
+			T a = (T) 1.0f + nd4j::math::nd4j_abs<T>(dis) + nd4j::math::nd4j_pow<T>(dis, 2) + (T) 1.41645f * nd4j::math::nd4j_pow<T>(dis,4);
+
+			T tDeriv = ((T)1.0f + nd4j::math::nd4j_sign<T>(dis) * ((T) 2.0f * dis + (T) 4.0f * (T) 1.41645f * nd4j::math::nd4j_pow<T>(dis, 3))) / (a * a);
+
+			return (T) 1.7159f * ((T) 2.0f / (T) 3.0f) * tDeriv;
+		}
+	};
+
+	template<typename T>
 	class Tanh {
 	public:
 		no_op_exec_special
