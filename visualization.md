@@ -144,7 +144,7 @@ Second, in the Spark training instance:
 ```
 To avoid dependency conflicts with Spark, you should use the ```deeplearning4j-ui-model``` dependency to get the StatsListener, *not* the full ```deeplearning4j-ui_2.10``` UI dependency.
 
-Note: you should replace ```UI_MACHINE_IP`` with the IP address of the machine running the user interface instance.
+Note: you should replace ```UI_MACHINE_IP``` with the IP address of the machine running the user interface instance.
 
 
 
