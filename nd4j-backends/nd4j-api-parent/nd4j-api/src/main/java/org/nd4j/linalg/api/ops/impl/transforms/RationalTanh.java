@@ -109,7 +109,7 @@ public class RationalTanh extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new TanhDerivative(x, y, z, n);
+        return new RationalTanhDerivative(x, y, z, n);
     }
 
     @Override
