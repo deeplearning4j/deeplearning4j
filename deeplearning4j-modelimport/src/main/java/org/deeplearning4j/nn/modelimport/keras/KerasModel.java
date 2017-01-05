@@ -43,8 +43,8 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
@@ -413,29 +413,38 @@ public class KerasModel {
         if (!this.inputLayerNames.contains(inputLayerName))
             throw new UnsupportedOperationException("Cannot infer input type for non-input layer " + inputLayerName);
 
+        KerasLayer inputLayer = this.layers.get(inputLayerName);
         InputType inputType = null;
         List<String> layerNameQueue = new ArrayList<String>(this.inputToOutput.get(inputLayerName));
-
-        KerasLayer nextLayer = this.layers.get(layerNameQueue.get(0));
-        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
-        int[] inputShape = this.layers.get(inputLayerName).getInputShape();
+        KerasLayer nextLayer;
+//        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
+        int inputShapeLength = inputLayer.getKerasInputShape().length;
 
         while (inputType == null && !layerNameQueue.isEmpty()) {
             nextLayer = this.layers.get(layerNameQueue.remove(0));
             if (nextLayer.isDl4jLayer()) {
                 Layer dl4jLayer = nextLayer.getDl4jLayer();
                 if (dl4jLayer instanceof BaseRecurrentLayer) {
-                    if (inputShape.length != 2) // recurrent inputs should have rank 2 (# steps, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Recurrent layer must have rank 2 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 2) // recurrent inputs should have rank 2 (# steps, # channels)
+                        throw new UnsupportedKerasConfigurationException("Input to Recurrent layer must have rank 2 (found " + inputShapeLength + ")");
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.recurrent(inputShape[1]);
                     this.truncatedBPTT = inputShape[0];
                 } else if (dl4jLayer instanceof ConvolutionLayer || dl4jLayer instanceof SubsamplingLayer) {
-                    if (inputShape.length != 3) // convolutional inputs should have rank 3 (# rows, # cols, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Convolutional layer must have rank 3 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 3) // convolutional inputs should have rank 3 (# rows, # cols, # channels)
+                        throw new UnsupportedKerasConfigurationException("Input to Convolutional layer must have rank 3 (found " + inputShapeLength + ")");
+                    if (inputLayer.getDimOrder() == DimOrder.NONE) {
+                        DimOrder nextLayerDimOrder = nextLayer.getDimOrder();
+                        if (nextLayerDimOrder == DimOrder.NONE)
+                            throw new UnsupportedKerasConfigurationException("Invalid dim_ordering " + nextLayerDimOrder + " Convolutional layer must have rank 3 (found ");
+                        this.layers.get(inputLayerName).setDimOrder(nextLayerDimOrder);
+                    }
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.convolutional(inputShape[0], inputShape[1], inputShape[2]);
                 } else {
-                    if (inputShape.length != 1) // other inputs should be flat vectors
-                        throw new UnsupportedKerasConfigurationException("Input to FeedForward layer must have rank 1 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 1) // other inputs should be flat vectors
+                        throw new UnsupportedKerasConfigurationException("Input to FeedForward layer must have rank 1 (found " + inputShapeLength + ")");
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.feedForward(inputShape[0]);
                 }
             }
@@ -446,9 +455,9 @@ public class KerasModel {
         return inputType;
     }
 
-    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
-        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
-    }
+//    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
+//        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
+//    }
 
     /**
      * Infer list of inbound layers for (i.e., layer inputs to) given layer.
@@ -603,8 +612,6 @@ public class KerasModel {
                                 /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols */
                                 break;
                             case NONE:
-                                break;
-                            case UNKNOWN:
                                 throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
                         }
                     }
