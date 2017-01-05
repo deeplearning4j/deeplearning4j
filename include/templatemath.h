@@ -134,11 +134,16 @@ template<typename T>
 
         template<typename T>
         math_def inline T nd4j_sgn(T val) {
-            return val < 0 ? (T) -1.0f : val > 0 ? (T) 1.0f : (T) 0.0f;
+            return val < (T) 0.0f ? (T) -1.0f : val > (T) 0.0f ? (T) 1.0f : (T) 0.0f;
         }
 
         template<typename T>
         math_def inline T nd4j_sign(T val) {
+            return nd4j_sgn<T>(val);
+        }
+
+        template<typename T>
+        math_def inline T nd4j_signum(T val) {
             return nd4j_sgn<T>(val);
         }
 
