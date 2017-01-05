@@ -62,6 +62,34 @@ public class NetworkOrganizerTest {
         }
     }
 
+    @Test
+    public void testSelectionSingleBox1() throws Exception {
+        List<NetworkInformation> collection = new ArrayList<>();
+        NetworkInformation information = new NetworkInformation();
+        information.addIpAddress("192.168.21.12");
+        information.addIpAddress("10.0.27.19");
+        collection.add(information);
+
+        NetworkOrganizer organizer = new NetworkOrganizer(collection, "192.168.0.0/16");
+
+        List<String> shards = organizer.getSubset(10);
+        assertEquals(1, shards.size());
+    }
+
+    @Test
+    public void testSelectionSingleBox2() throws Exception {
+        List<NetworkInformation> collection = new ArrayList<>();
+        NetworkInformation information = new NetworkInformation();
+        information.addIpAddress("192.168.72.12");
+        information.addIpAddress("10.2.88.19");
+        collection.add(information);
+
+        NetworkOrganizer organizer = new NetworkOrganizer(collection);
+
+        List<String> shards = organizer.getSubset(10);
+        assertEquals(1, shards.size());
+    }
+
 
     @Test
     public void testSelectionDisjointNetworkC1() {

@@ -120,6 +120,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * and calling this method for training, instead implementing own routines
          */
 
+        log.info("Configuration: {}", paramServerConfiguration);
+
         if (workers > 1)
             corpus.repartition(workers);
 
@@ -148,6 +150,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
 
         if (isAutoDiscoveryMode) {
+            log.info("Trying auto discovery mode...");
+
             elementsFreqAccumExtra = corpus.context().accumulator(new ExtraCounter<Long>(), new ExtraElementsFrequenciesAccumulator());
 
             ExtraCountFunction<T> elementsCounter = new ExtraCountFunction<>(elementsFreqAccumExtra, configuration.isTrainSequenceVectors());
@@ -173,6 +177,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             if (paramServerConfiguration.getFaultToleranceStrategy() != FaultToleranceStrategy.NONE) {
                 paramServerConfiguration.setBackupAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.getShardAddresses()));
             }
+
+            log.info("Got Shards so far: {}", paramServerConfiguration.getShardAddresses());
         } else {
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
@@ -268,12 +274,21 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         protected int workers;
         protected StorageLevel storageLevel;
 
+        /**
+         * This method should NOT be used in real world environment
+         */
+        @Deprecated
         public Builder() {
-            this(new VectorsConfiguration());
+            this(new Configuration(), new VectorsConfiguration());
         }
 
-        public Builder(@NonNull VectorsConfiguration configuration) {
-            this.configuration = configuration;
+        public Builder(@NonNull Configuration psConfiguration) {
+            this(psConfiguration, new VectorsConfiguration());
+        }
+
+        public Builder(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration w2vConfiguration) {
+            this.configuration = w2vConfiguration;
+            this.peersConfiguration = psConfiguration;
         }
 
         /**
