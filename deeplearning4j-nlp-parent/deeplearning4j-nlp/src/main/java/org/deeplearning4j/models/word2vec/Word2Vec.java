@@ -563,6 +563,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
             this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
 
+            if (tokenizerFactory != null) {
+                this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
+                if (tokenizerFactory.getTokenPreProcessor() != null)
+                    this.configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+            }
+
             ret.configuration = this.configuration;
 
             // we hardcode
