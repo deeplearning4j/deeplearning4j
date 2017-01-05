@@ -21,6 +21,8 @@ package org.deeplearning4j.models.embeddings.loader;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -640,7 +642,7 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
-        ZipEntry config = new ZipEntry("config.json");
+        ZipEntry config = new ZipEntry("");
         zipfile.putNextEntry(config);
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
 
@@ -1033,11 +1035,17 @@ public class WordVectorSerializer {
         }
         reader.close();
 
-        Word2Vec w2v = new Word2Vec.Builder(configuration)
+        Word2Vec.Builder builder =  new Word2Vec.Builder(configuration)
                 .vocabCache(vocab)
                 .lookupTable(lookupTable)
-                .resetModel(false)
-                .build();
+                .resetModel(false);
+
+        TokenizerFactory factory = getTokenizerFactory(configuration);
+
+        if (factory != null)
+            builder.tokenizerFactory(factory);
+
+        Word2Vec w2v = builder.build();
 
         return w2v;
     }
@@ -2278,6 +2286,7 @@ public class WordVectorSerializer {
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
         INDArray syn0;
+        VectorsConfiguration configuration = null;
         // try to load zip format
         try {
             if (extendedModel) {
@@ -2288,6 +2297,7 @@ public class WordVectorSerializer {
                 log.debug("Trying simplified model restoration...");
 
                 File tmpFileSyn0 = File.createTempFile("word2vec","syn");
+                File tmpFileConfig = File.createTempFile("word2vec","config");
                 // we don't need full model, so we go directly to syn0 file
 
                 ZipFile zipFile = new ZipFile(file);
@@ -2295,6 +2305,23 @@ public class WordVectorSerializer {
                 InputStream stream = zipFile.getInputStream(syn);
 
                 Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+
+                // now we're restoring configuration saved earlier
+                ZipEntry config = zipFile.getEntry("config.json");
+                stream = zipFile.getInputStream(config);
+
+                Files.copy(stream, Paths.get(tmpFileConfig.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+
+                StringBuilder builder = new StringBuilder();
+                try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                    String line;
+                    while((line = reader.readLine()) != null) {
+                        builder.append(line);
+                    }
+                }
+
+                configuration = VectorsConfiguration.fromJson(builder.toString().trim());
 
                 // basically read up everything, call vstacl and then return model
                 List<INDArray> arrays = new ArrayList<>();
@@ -2324,6 +2351,7 @@ public class WordVectorSerializer {
 
                 try {
                     tmpFileSyn0.delete();
+                    tmpFileConfig.delete();
                 } catch (Exception e) {
                     //
                 }
@@ -2355,8 +2383,7 @@ public class WordVectorSerializer {
             }
         }
 
-
-        vec = new Word2Vec.Builder()
+        Word2Vec.Builder builder = new Word2Vec.Builder()
                 .lookupTable(lookupTable)
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
@@ -2364,10 +2391,45 @@ public class WordVectorSerializer {
 
                 // we don't use hs here, because model is incomplete
                 .useHierarchicSoftmax(false)
-                .resetModel(false)
-                .build();
+                .resetModel(false);
+
+        /*
+            Trying to restore TokenizerFactory & TokenPreProcessor
+         */
+
+        TokenizerFactory factory = getTokenizerFactory(configuration);
+        if (factory != null)
+            builder.tokenizerFactory(factory);
+
+        vec = builder.build();
 
         return vec;
+    }
+
+    protected static TokenizerFactory getTokenizerFactory(VectorsConfiguration configuration) {
+        if (configuration == null)
+            return null;
+
+        if (configuration != null && configuration.getTokenizerFactory() != null && !configuration.getTokenizerFactory().isEmpty()) {
+            try {
+                TokenizerFactory factory = (TokenizerFactory) Class.forName(configuration.getTokenizerFactory()).newInstance();
+
+                if (configuration.getTokenPreProcessor() != null && !configuration.getTokenPreProcessor().isEmpty()) {
+                    TokenPreProcess preProcessor = (TokenPreProcess) Class.forName(configuration.getTokenPreProcessor()).newInstance();
+                    factory.setTokenPreProcessor(preProcessor);
+                }
+
+                return factory;
+
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
     }
 
     /**

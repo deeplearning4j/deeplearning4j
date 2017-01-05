@@ -68,6 +68,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
         for (int x = 0; x < threads.length; x++) {
             threads[x] = new TokenizerThread(x, transformer,stringBuffer, buffer, processing);
+            threads[x].setDaemon(true);
+            threads[x].setName("ParallelTransformer thread " + x);
             threads[x].start();
         }
     }
