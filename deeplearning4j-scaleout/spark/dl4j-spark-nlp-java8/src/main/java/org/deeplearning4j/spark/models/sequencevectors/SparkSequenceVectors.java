@@ -76,6 +76,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
      * PLEASE NOTE: This method isn't supported for Spark implementation. Consider using fitLists() or fitSequences() instead.
      */
     @Override
+    @Deprecated
     public void fit() {
         throw new UnsupportedOperationException("To use fit() method, please consider using standalone implementation");
     }
