@@ -145,12 +145,14 @@ In this 'variable length' case, we need to get the last time step *for each exam
 If we don't have the lengths of the time series directly, we need to extract them from the mask array.
 
 If we have a labels mask array (which is a one-hot vector, like [0,0,0,1,0] for each time series):
+
 ```
     INDArray labelsMaskArray = ...;
     INDArray lastTimeStepIndices = Nd4j.argMax(labelMaskArray,1);
 ```
 
 Alternatively, if we have only the features mask: One quick and dirty approach is to use this:
+
 ```
     INDArray featuresMaskArray = ...;
     int longestTimeSeries = featuresMaskArray.size(1);
@@ -162,6 +164,7 @@ To understand what is happening here, note that originally we have a features ma
 
 
 In either case, we can then do the following:
+
 ```
     int numExamples = timeSeriesFeatures.size(0);
     for( int i=0; i<numExamples; i++ ){
