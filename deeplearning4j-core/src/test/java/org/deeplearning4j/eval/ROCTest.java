@@ -2,13 +2,12 @@ package org.deeplearning4j.eval;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -344,5 +343,45 @@ public class ROCTest {
         List<ROC.ROCValue> actValues = rocAct.getResults();
 
         assertEquals(expValues, actValues);
+    }
+
+
+
+    @Test
+    public void testCompareRocAndRocMultiClass(){
+        Nd4j.getRandom().setSeed(12345);
+
+        //For 2 class case: ROC and Multi-class ROC should be the same...
+        int nExamples = 200;
+        INDArray predictions = Nd4j.rand(nExamples, 2);
+        INDArray tempSum = predictions.sum(1);
+        predictions.diviColumnVector(tempSum);
+
+        INDArray labels = Nd4j.create(nExamples, 2);
+        Random r = new Random(12345);
+        for( int i=0; i<nExamples; i++ ) {
+            labels.putScalar(i, r.nextInt(2), 1.0);
+        }
+
+        int numSteps = 30;
+        ROC roc = new ROC(numSteps);
+        roc.eval(labels, predictions);
+
+        ROCMultiClass rocMultiClass = new ROCMultiClass(numSteps);
+        rocMultiClass.eval(labels, predictions);
+
+        double auc = roc.calculateAUC();
+        double auc1 = rocMultiClass.calculateAUC(1);
+
+        assertEquals(auc, auc1, 1e-6);
+
+        double[][] rocPoints = roc.getResultsAsArray();
+        double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
+
+        assertEquals(rocPoints.length, rocPoints0.length);
+        for( int i=0; i<rocPoints[0].length; i++ ){
+            assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
+            assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
+        }
     }
 }
