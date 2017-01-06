@@ -10,15 +10,18 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
+import org.deeplearning4j.spark.data.BatchDataSetsFunction;
+import org.deeplearning4j.spark.data.shuffle.IntPartitioner;
+import org.deeplearning4j.spark.data.shuffle.SplitDataSetExamplesPairFlatMapFunction;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
+import org.nd4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import scala.Tuple2;
 
@@ -365,5 +368,27 @@ public class SparkUtils {
             paths.add(filePath);
         }
         return sc.parallelize(paths);
+    }
+
+
+    /**
+     * Randomly shuffle the examples in each DataSet object, and recombine them into new DataSet objects
+     * with the specified BatchSize
+     *
+     * @param rdd DataSets to shuffle/recombine
+     * @param newBatchSize New batch size for the DataSet objects, after shuffling/recombining
+     * @param numPartitions Number of partitions to use when splitting/recombining
+     * @return A new {@link JavaRDD<DataSet>}, with the examples shuffled/combined in each
+     */
+    public static JavaRDD<DataSet> shuffleExamples(JavaRDD<DataSet> rdd, int newBatchSize, int numPartitions){
+        //Step 1: split into individual examples, mapping to a pair RDD (random key in range 0 to numPartitions)
+
+        JavaPairRDD<Integer,DataSet> singleExampleDataSets = rdd.flatMapToPair(new SplitDataSetExamplesPairFlatMapFunction(numPartitions));
+
+        //Step 2: repartition according to the random keys
+        singleExampleDataSets = singleExampleDataSets.partitionBy(new IntPartitioner(numPartitions));
+
+        //Step 3: Recombine
+        return singleExampleDataSets.values().mapPartitions(new BatchDataSetsFunction(newBatchSize));
     }
 }
