@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -609,7 +610,19 @@ public class KerasModel {
                                 kerasParamValue = kerasParamValue.permute(3, 2, 0, 1);
                                 break;
                             case THEANO:
-                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols */
+                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols
+                                   However the default is for theano to rotate the filters by 180 degree before applying them
+                                 */
+                                for (int i = 0; i<kerasParamValue.tensorssAlongDimension(2,3); i++) {
+                                    //dup required since we only want data from the view not the whole array
+                                    INDArray copyFilter = kerasParamValue.tensorAlongDimension(i,2,3).dup();
+                                    double [] flattenedFilter = copyFilter.ravel().data().asDouble();
+                                    ArrayUtils.reverse(flattenedFilter);
+                                    INDArray newFilter = Nd4j.create(flattenedFilter,copyFilter.shape());
+                                    //manipulating weights in place to save memory
+                                    INDArray inPlaceFilter = kerasParamValue.tensorAlongDimension(i,2,3);
+                                    inPlaceFilter.muli(0).addi(newFilter);
+                                }
                                 break;
                             case NONE:
                                 throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());

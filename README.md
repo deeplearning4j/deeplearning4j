@@ -44,13 +44,13 @@ We are not supporting Stackoverflow right now. Github issues should focus on bug
 
 ## Installation
 
-To install Deeplearning4J, there are a couple approaches (briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below). More information can be found on the [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
+To install Deeplearning4J, there are a couple approaches briefly described on our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
 Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of dependencies.
 
-Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
+Add the dependency information to your `pom.xml` file. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
 <!--
 #### Yum Install / Load RPM (Fedora or CentOS)

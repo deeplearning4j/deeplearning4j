@@ -19,12 +19,10 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
-import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -35,18 +33,20 @@ import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.Exception;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.bytedeco.javacpp.hdf5.*;
-import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_CLASS_NAME_MODEL;
-import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_CLASS_NAME_SEQUENTIAL;
-import static org.deeplearning4j.nn.modelimport.keras.KerasModel.MODEL_FIELD_CLASS_NAME;
+import static org.deeplearning4j.nn.modelimport.keras.KerasModel.*;
 
 /**
  * Reads stored Keras configurations and weights from one of two archives:
@@ -183,7 +183,7 @@ public class KerasModelImport {
     public static ComputationGraph importKerasModelAndWeights(String modelJsonFilename, String weightsHdf5Filename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasModelImport archive = new KerasModelImport(modelJsonFilename, weightsHdf5Filename);
-        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
+        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_MODEL))
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(archive.getModelJson())

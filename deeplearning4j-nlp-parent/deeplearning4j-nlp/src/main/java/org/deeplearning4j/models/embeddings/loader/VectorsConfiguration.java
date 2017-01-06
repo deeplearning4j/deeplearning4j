@@ -47,6 +47,9 @@ public class VectorsConfiguration implements Serializable {
     private String sequenceLearningAlgorithm;
     private String modelUtils;
 
+    private String tokenizerFactory;
+    private String tokenPreProcessor;
+
     private String UNK = "UNK";
     private String STOP = "STOP";
 
