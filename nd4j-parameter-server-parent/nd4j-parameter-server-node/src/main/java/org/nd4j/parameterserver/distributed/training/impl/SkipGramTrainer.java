@@ -16,6 +16,7 @@ import org.nd4j.parameterserver.distributed.training.chains.SkipGramChain;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Distributed SkipGram trainer
@@ -34,6 +35,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;
 
     protected Map<Long, SkipGramChain> chains = new ConcurrentHashMap<>();
+    protected AtomicLong cntRounds = new AtomicLong(0);
 
     @Override
     public void startTraining(SkipGramRequestMessage message) {
@@ -47,7 +49,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramChain chain = new SkipGramChain(message.getTaskId());
         chain.addElement(message);
 
-        log.info("Starting chain [{}]", chain.getTaskId());
+        //log.info("Starting chain [{}]", chain.getTaskId());
 
 
         chains.put(chain.getTaskId(), chain);
@@ -62,7 +64,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     message.getW1(),
                     message.getW2(),
                     message.getCodes(),
-                    message.getPoints() != null && message.getPoints().length > 0,
+                    message.getCodes() != null && message.getCodes().length > 0,
                     message.getNegSamples(),
                     (float) message.getAlpha());
 
@@ -123,7 +125,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramRequestMessage sgrm = chain.getRequestMessage();
         double alpha = sgrm.getAlpha();
 
-        log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
+        //log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native
@@ -139,7 +141,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         for (int e = 0; e < dots.length(); e++) {
             float dot = dots.getFloat(e);
 
-            log.info("dot at shard_{}: [{}]", transport.getShardIndex(), dot);
+           // log.info("dot at shard_{}: [{}]", transport.getShardIndex(), dot);
 
             if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
                 continue;
@@ -155,7 +157,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             double f = expTable.getFloat(idx);
             double g = (1 - code - f) * alpha;
 
-            log.info("gradient at shard_{}: [{}]", transport.getShardIndex(), g);
+           // log.info("gradient at shard_{}: [{}]", transport.getShardIndex(), g);
 
             // FIXME: this is wrong, just a draft showing an idea
             Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
@@ -163,5 +165,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         }
 
         Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
+
+        if (cntRounds.incrementAndGet() % 10000 == 0)
+            log.info("{} training rounds finished...", cntRounds.get());
     }
 }

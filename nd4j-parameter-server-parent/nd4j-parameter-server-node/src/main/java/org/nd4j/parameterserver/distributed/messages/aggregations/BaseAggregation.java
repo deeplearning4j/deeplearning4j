@@ -79,7 +79,7 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
     public INDArray getAccumulatedResult() {
 
         if (aggregationWidth == 1) {
-            return chunks.get(0);
+            return chunks.get((short) 0);
         } else return Nd4j.hstack(chunks.values());
     }
 

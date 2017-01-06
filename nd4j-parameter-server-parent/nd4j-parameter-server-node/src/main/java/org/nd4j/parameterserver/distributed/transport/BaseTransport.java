@@ -110,7 +110,12 @@ public abstract class BaseTransport implements Transport {
             case 9:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
-                log.info("Sending message to Shard: {}", message.getClass().getSimpleName());
+                // log.info("Sending message to Shard: {}; Messages size: {}", message.getClass().getSimpleName(), messages.size());
+                while (messages.size() > 100)
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception e) { }
+
                 if (message.isBlockingMessage()) {
                     // we issue blocking message, but we don't care about response
                     sendMessageAndGetResponse(message);
@@ -129,7 +134,7 @@ public abstract class BaseTransport implements Transport {
             case 20:
             case 21:
             case 22:
-                log.info("Sending message to ALL Shards: {}", message.getClass().getSimpleName());
+                //log.info("Sending message to ALL Shards: {}", message.getClass().getSimpleName());
                 sendCoordinationCommand(message);
                 break;
             default:

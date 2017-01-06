@@ -14,6 +14,7 @@ import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * This is batch message, describing simple SkipGram round
@@ -57,6 +58,9 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         this.negSamples = negSamples;
         this.alpha = lr;
         this.nextRandom = nextRandom;
+
+        // FIXME: THIS IS TEMPORARY SOLUTION - FIX THIS!!!1
+        this.setTaskId(new Random().nextLong());
     }
 
     /**

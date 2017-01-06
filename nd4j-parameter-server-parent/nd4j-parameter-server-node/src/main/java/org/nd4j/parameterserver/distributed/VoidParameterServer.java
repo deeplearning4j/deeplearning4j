@@ -295,7 +295,7 @@ public class VoidParameterServer {
             return;
         }
 
-        log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
+        //log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
 
         message.attachContext(configuration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();

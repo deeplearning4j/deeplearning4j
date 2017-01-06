@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
@@ -25,6 +26,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T> , VoidMessage {
 
     @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
@@ -151,6 +153,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void processMessage() {
+        //log.info("Processing frame of {} messages...", list.size());
         for(T message: list) {
             message.attachContext(configuration, trainer, clipboard, transport, storage, role, shardIndex);
 
