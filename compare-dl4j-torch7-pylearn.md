@@ -140,7 +140,7 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 ### <a name="mxnet">MxNet</a>
 
-[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. A [comparison](https://deeplearning4j.org/mxnet) between MxNet and some aspects of Deeplearning can be found here. 
+[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Parts of Apple are also rumored to use it after the company's acquisition of Graphlab/Dato/Turi in 2016. A fast and flexible library, MxNet involves Pedro Domingos and a team of researchers at the University of Washington. A [comparison](https://deeplearning4j.org/mxnet) between MxNet and some aspects of Deeplearning4j can be found here. 
 
 ### <a name="paddle">Paddle</a>
 
