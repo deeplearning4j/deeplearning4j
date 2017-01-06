@@ -5,7 +5,10 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -83,5 +86,11 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
 
         // we just shoot for now
         VoidParameterServer.getInstance().execDistributed(sgrm);
+    }
+
+    @Override
+    public TrainingDriver<? extends TrainingMessage>  getTrainingDriver() {
+        TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
+        return driver;
     }
 }

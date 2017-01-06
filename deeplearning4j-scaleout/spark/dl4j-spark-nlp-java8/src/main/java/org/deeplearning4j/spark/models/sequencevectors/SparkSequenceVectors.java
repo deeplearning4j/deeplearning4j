@@ -246,6 +246,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         // unpersist, if we've persisten corpus after all
         if (storageLevel != null)
             corpus.unpersist();
+
+        log.info("Training finish, starting cleanup...");
+        VoidParameterServer.getInstance().shutdown();
     }
 
     /**
