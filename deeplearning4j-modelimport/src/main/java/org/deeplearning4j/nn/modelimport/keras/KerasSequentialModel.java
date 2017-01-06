@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
-import lombok.Data;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -84,8 +83,8 @@ public class KerasSequentialModel extends KerasModel {
         helperPrepareLayers((List<Object>) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CONFIG));
 
         /* Add placeholder input layer and update lists of input and output layers. */
-        int[] inputShape = this.layers.get(this.layerNamesOrdered.get(0)).getInputShape();
-        KerasLayer inputLayer = KerasLayer.createInputLayer("input1", inputShape);
+        int[] kerasInputShape = this.layers.get(this.layerNamesOrdered.get(0)).getKerasInputShape();
+        KerasLayer inputLayer = KerasLayer.createInputLayer("input1", kerasInputShape);
         this.layers.put(inputLayer.getName(), inputLayer);
         this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getName()));
         this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layerNamesOrdered.get(this.layerNamesOrdered.size()-1)));
