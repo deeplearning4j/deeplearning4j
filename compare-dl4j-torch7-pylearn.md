@@ -14,8 +14,11 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 Content
 
 Lua
+
 * <a href="#torch">Torch</a>
+
 Python Frameworks
+
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
@@ -25,7 +28,9 @@ Python Frameworks
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
 * <a href="#bigdl">BigDL</a>
+
 JVM Considerations
+
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
@@ -128,9 +133,9 @@ Pros and Cons:
 
 ### <a name="dsstne">DSSTNE</a>
 
-Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is the most recent of many open-source deep-learning libraries, released after Tensorflow and CNTK. Written largely in C++, DSSTNE appears to be fast, although it has not attracted as large a community as the other libraries. 
+Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.com/amznlabs/amazon-dsstne), is a library for building models for machine- and deep learning. It is one of the more recent of many open-source deep-learning libraries to be released, after Tensorflow and CNTK, and Amazon has since backed MxNet with AWS, so its future is not clear. Written largely in C++, DSSTNE appears to be fast, although it has not attracted as large a community as the other libraries. 
 
-* (+) Handles Sparse encoding!
+* (+) Handles Sparse encoding
 * (-) Amazon may not be sharing [all information necessary to obtain the best results with its examples](https://github.com/amznlabs/amazon-dsstne/issues/24)
 * (-) Amazon has chosen another framework for use on AWS.
 
