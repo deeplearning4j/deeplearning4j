@@ -42,7 +42,7 @@ public class TestImageRecordReader {
     @Test
     public void testMetaData() throws IOException {
 
-        ClassPathResource cpr = new ClassPathResource("/testImages/class0/0.jpg");
+        ClassPathResource cpr = new ClassPathResource("/testimages/class0/0.jpg");
         File parentDir = cpr.getFile().getParentFile().getParentFile();
 //        System.out.println(f.getAbsolutePath());
 //        System.out.println(f.getParentFile().getParentFile().getAbsolutePath());
@@ -83,8 +83,8 @@ public class TestImageRecordReader {
         //Labels order should be consistent, regardless of file iteration order
 
         //Idea: labels order should be consistent regardless of input file order
-        File f0 = new ClassPathResource("/testImages/class0/0.jpg").getFile();
-        File f1 = new ClassPathResource("/testImages/class1/A.jpg").getFile();
+        File f0 = new ClassPathResource("/testimages/class0/0.jpg").getFile();
+        File f1 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
 
         List<URI> order0 = Arrays.asList(f0.toURI(), f1.toURI());
         List<URI> order1 = Arrays.asList(f1.toURI(), f0.toURI());

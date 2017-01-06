@@ -15,9 +15,12 @@
  */
 package org.datavec.image.loader;
 
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 import org.bytedeco.javacpp.indexer.UByteIndexer;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,7 +38,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsRowVector() throws Exception {
-        Mat img1 = makeRandomImage(0, 0, 1);
+        BufferedImage img1 = makeRandomBufferedImage(0, 0, 1);
         Mat img2 = makeRandomImage(0, 0, 3);
 
         int w1 = 35, h1 = 79, ch1 = 3;
@@ -67,7 +70,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsMatrix() throws Exception {
-        Mat img1 = makeRandomImage(0, 0, 3);
+        BufferedImage img1 = makeRandomBufferedImage(0, 0, 3);
         Mat img2 = makeRandomImage(0, 0, 4);
 
         int w1 = 33, h1 = 77, ch1 = 1;
@@ -158,6 +161,15 @@ public class TestNativeImageLoader {
         assertEquals(img2.channels(), cropped2.channels());
     }
 
+
+    BufferedImage makeRandomBufferedImage(int height, int width, int channels) {
+        Mat img = makeRandomImage(height, width, channels);
+
+        OpenCVFrameConverter.ToMat c = new OpenCVFrameConverter.ToMat();
+        Java2DFrameConverter c2 = new Java2DFrameConverter();
+
+        return c2.convert(c.convert(img));
+    }
 
     Mat makeRandomImage(int height, int width, int channels) {
         if (height <= 0) {

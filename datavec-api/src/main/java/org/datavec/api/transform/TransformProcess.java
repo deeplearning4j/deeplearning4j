@@ -18,6 +18,8 @@ package org.datavec.api.transform;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
+import org.datavec.api.transform.transform.string.ConvertToString;
+import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -56,7 +58,6 @@ import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
@@ -314,6 +315,34 @@ public class TransformProcess implements Serializable {
 
 
     /**
+     * Based on the input schema,
+     * map raw string values to the appropriate
+     * writable
+     * @param values the values to convert
+     * @return the transformed values based on the schema
+     */
+    public List<Writable> transformRawStringsToInput(String...values) {
+        List<Writable> ret = new ArrayList<>();
+        if(values.length != initialSchema.numColumns())
+            throw new IllegalArgumentException(String.format("Number of values %d does not match the number of input columns %d for schema",values.length,initialSchema.numColumns()));
+        for(int i = 0; i < values.length; i++) {
+             switch(initialSchema.getType(i)) {
+                 case String: ret.add(new Text(values[i])); break;
+                 case Integer:ret.add(new IntWritable(Integer.parseInt(values[i]))); break;
+                 case Double: ret.add(new DoubleWritable(Double.parseDouble(values[i]))); break;
+                 case Float: ret.add(new FloatWritable(Float.parseFloat(values[i]))); break;
+                 case Categorical: ret.add(new Text(values[i])); break;
+                 case Boolean: ret.add(new BooleanWritable(Boolean.parseBoolean(values[i]))); break;
+                 case Time:
+
+                     break;
+                 case Long: ret.add(new LongWritable(Long.parseLong(values[i])));
+             }
+        }
+        return ret;
+    }
+
+    /**
      * Builder class for constructing a TransformProcess
      */
     public static class Builder {
@@ -562,6 +591,16 @@ public class TransformProcess implements Serializable {
             return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
         }
 
+
+        /**
+         * Convert the specified column to a string.
+         * @param inputColumn the input column to convert
+         * @return builder pattern
+         */
+        public Builder convertToString(String inputColumn) {
+            return transform(new ConvertToString(inputColumn));
+        }
+
         /**
          * Normalize the specified column with a given type of normalization
          *
@@ -794,6 +833,8 @@ public class TransformProcess implements Serializable {
         public TransformProcess build() {
             return new TransformProcess(this);
         }
+
+
     }
 
 
