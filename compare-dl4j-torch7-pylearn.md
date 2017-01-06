@@ -13,9 +13,9 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Content
 
-* Lua
+Lua
 * <a href="#torch">Torch</a>
-* Python Frameworks
+Python Frameworks
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
@@ -25,7 +25,7 @@ Content
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
 * <a href="#bigdl">BigDL</a>
-* JVM Considerations
+JVM Considerations
 * <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
