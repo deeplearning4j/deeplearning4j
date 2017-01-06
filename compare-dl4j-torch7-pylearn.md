@@ -11,7 +11,7 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 <a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
 
-Content
+### Content
 
 Lua
 
@@ -28,16 +28,18 @@ Python Frameworks
 * <a href="#mxnet">Mxnet</a>
 * <a href="#paddle">Paddle</a>
 * <a href="#bigdl">BigDL</a>
+* <a href="#licensing">Licensing</a>
 
 JVM Considerations
 
-* <a href="#licensing">Licensing</a>
 * <a href="#speed">Speed</a>
 * <a href="#java">DL4J: Why the JVM?</a>
 * <a href="#ecosystem">DL4J: Ecosystem</a>
 * <a href="#scala">DL4S: Deep Learning in Scala</a>
 * <a href="#ml">Machine-Learning Frameworks</a>
 * <a href="#tutorial">Further Reading</a>
+
+## Lua
 
 ### <a name="torch">Torch</a>
 
@@ -158,6 +160,8 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 ### <a name="licensing">Licensing</a>
 
 Licensing is another distinction among these open-source projects: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't typically address this issue. 
+
+## JVM Considerations
 
 ### <a name="speed">Speed</a>
 
