@@ -438,6 +438,13 @@ public class WordVectorSerializerTest {
         INDArray day2 = vec2.getWordVectorMatrix("day");
 
         assertEquals(day1, day2);
+
+        File tempFile = File.createTempFile("tetsts","Fdfs");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeWord2VecModel(vec, tempFile);
+
+        Word2Vec vec3 = WordVectorSerializer.readWord2VecModel(tempFile);
     }
 
     @Test
