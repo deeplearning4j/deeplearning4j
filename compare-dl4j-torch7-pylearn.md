@@ -132,9 +132,9 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 
 [Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j [imports models from Keras](./keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google. 
 
-### <a name="mxnet">Mxnet</a>
+### <a name="mxnet">MxNet</a>
 
-[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. 
+[MxNet](https://github.com/dmlc/mxnet) is a machine-learning framework with APIs is languages such as R, Python and Julia which has been [adopted by Amazon Web Services](http://www.allthingsdistributed.com/2016/11/mxnet-default-framework-deep-learning-aws.html). Fast and flexible, and involving Pedro Domingos and a team of researchers at the University of Washington. A [comparison](https://deeplearning4j.org/mxnet) between MxNet and some aspects of Deeplearning can be found here. 
 
 ### <a name="paddle">Paddle</a>
 
