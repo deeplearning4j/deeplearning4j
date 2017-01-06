@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
 
@@ -77,6 +78,24 @@ public class ClipboardTest {
 
         assertEquals(true, clipboard.hasCandidates());
         assertEquals(1, clipboard.getNumberOfCompleteStacks());
+    }
+
+    /**
+     * This test checks how clipboard handles singular aggregations
+     * @throws Exception
+     */
+    @Test
+    public void testPin3() throws Exception {
+        Clipboard clipboard = new Clipboard();
+
+        Random rng = new Random(12345L);
+
+        Long validId = 123L;
+        InitializationAggregation aggregation = new InitializationAggregation(1, 0);
+        clipboard.pin(aggregation);
+
+        assertTrue(clipboard.isTracking(aggregation.getTaskId()));
+        assertTrue(clipboard.isReady(aggregation.getTaskId()));
     }
 
     /**

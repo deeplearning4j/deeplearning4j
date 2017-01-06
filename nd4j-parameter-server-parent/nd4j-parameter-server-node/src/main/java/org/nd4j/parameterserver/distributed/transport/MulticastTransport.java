@@ -11,6 +11,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
 /**
@@ -123,6 +124,15 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCommandToShard(VoidMessage message) {
+        // if this node is shard - we just step over TCP/IP infrastructure
+        // TODO: we want LocalTransport to be used in such cases
+        if (nodeRole == NodeRole.SHARD) {
+            message.setTargetId(shardIndex);
+            messages.add(message);
+            return;
+        }
+
+
         message.setTargetId(targetIndex);
         DirectBuffer buffer = message.asUnsafeBuffer();
 
@@ -150,6 +160,12 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
+        if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1) {
+            message.setTargetId((short) -1);
+            messages.add(message);
+            return;
+        }
+
         message.setTargetId((short) -1);
         publicationForShards.offer(message.asUnsafeBuffer());
     }
@@ -161,6 +177,11 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected void sendFeedbackToClient(VoidMessage message) {
+        if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1 && message instanceof MeaningfulMessage) {
+            message.setTargetId((short) -1);
+            completed.put(message.getTaskId(), (MeaningfulMessage) message);
+            return;
+        }
         message.setTargetId((short) -1);
         publicationForClients.offer(message.asUnsafeBuffer());
     }

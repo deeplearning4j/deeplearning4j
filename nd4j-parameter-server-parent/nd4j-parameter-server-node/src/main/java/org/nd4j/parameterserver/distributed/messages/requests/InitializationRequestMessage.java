@@ -39,13 +39,14 @@ public class InitializationRequestMessage extends BaseVoidMessage {
     public void processMessage() {
         DistributedInitializationMessage dim = new DistributedInitializationMessage(vectorLength, numWords, seed, useHs, useNeg, columnsPerShard);
 
-        dim.extractContext(this);
-        dim.processMessage();
-
         // FIXME: i don't like this hack :(
         clipboard.pin(new InitializationAggregation((short) configuration.getNumberOfShards(), transport.getShardIndex()));
 
-        transport.sendMessageToAllShards(dim);
+        dim.extractContext(this);
+        dim.processMessage();
+
+        if (configuration.getNumberOfShards() > 1)
+            transport.sendMessageToAllShards(dim);
     }
 
     @Override

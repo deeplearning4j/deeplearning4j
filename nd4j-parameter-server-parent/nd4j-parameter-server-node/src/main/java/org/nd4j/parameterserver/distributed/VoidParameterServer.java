@@ -307,7 +307,7 @@ public class VoidParameterServer {
      * PLEASE NOTE: This method is blocking
      */
     // TODO: right now we support only columnar splits over tables
-    protected void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs, boolean useNegSampling) {
+    public void initializeSeqVec(int vectorLength, int numWords, long seed, int columnsPerShard, boolean useHs, boolean useNegSampling) {
         InitializationRequestMessage dim = new InitializationRequestMessage(vectorLength, numWords, seed, useHs, useNegSampling, columnsPerShard);
         transport.sendMessage(dim);
     }

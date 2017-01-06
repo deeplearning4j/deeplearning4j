@@ -41,9 +41,6 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
     protected BaseAggregation(long taskId, short aggregationWidth, short shardIndex) {
         this();
-        if (aggregationWidth < 2)
-            throw new ND4JIllegalStateException("Aggregations smaller then 2 elements make no sense");
-
         this.aggregationWidth = aggregationWidth;
         this.taskId = taskId;
         this.shardIndex = shardIndex;
@@ -80,12 +77,14 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
     @Override
     public INDArray getAccumulatedResult() {
-        return Nd4j.hstack(chunks.values());
+
+        if (aggregationWidth == 1) {
+            return chunks.get(0);
+        } else return Nd4j.hstack(chunks.values());
     }
 
     @Override
     public int getMissingChunks() {
-        log.info("ChunksCounter: {}", chunksCounter);
         return aggregationWidth - chunksCounter.get();
     }
 

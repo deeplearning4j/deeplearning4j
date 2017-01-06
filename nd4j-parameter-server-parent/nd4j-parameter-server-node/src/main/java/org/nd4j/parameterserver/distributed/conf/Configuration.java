@@ -20,10 +20,10 @@ import java.util.List;
 @Slf4j
 @Data
 public class Configuration implements Serializable {
-    private int streamId = 119;
-    private int unicastPort = 49876;
-    private int multicastPort = 59876;
-    private int numberOfShards = -1;
+    private int streamId;
+    private int unicastPort;
+    private int multicastPort;
+    private int numberOfShards;
     private FaultToleranceStrategy faultToleranceStrategy;
     private List<String> shardAddresses = new ArrayList<>();
     private List<String> backupAddresses = new ArrayList<>();
@@ -32,9 +32,9 @@ public class Configuration implements Serializable {
     private String networkMask;
 
     // This two values are optional, and have effect only for MulticastTransport
-    private String multicastNetwork = "224.0.1.1";
+    private String multicastNetwork;
     private String multicastInterface;
-    private int ttl = 4;
+    private int ttl;
     protected NodeRole forcedRole;
 
     // FIXME: probably worth moving somewhere else
@@ -74,5 +74,15 @@ public class Configuration implements Serializable {
             if (ip != null)
                 backupAddresses.add(ip);
         }
+    }
+
+    public static class ConfigurationBuilder {
+        private String multicastNetwork = "224.0.1.1";
+        private int ttl = 4;
+        private int streamId = 119;
+        private int unicastPort = 49876;
+        private int multicastPort = 59876;
+        private int numberOfShards = -1;
+        private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
     }
 }

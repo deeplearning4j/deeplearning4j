@@ -32,6 +32,9 @@ public class DotAggregation extends BaseAggregation{
     public INDArray getAccumulatedResult() {
         INDArray stack = super.getAccumulatedResult();
 
+        if (aggregationWidth == 1)
+            return stack;
+
         if (stack.isRowVector()) {
             return Nd4j.scalar(stack.sumNumber().doubleValue());
         } else {

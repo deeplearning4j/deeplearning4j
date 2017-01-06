@@ -52,7 +52,9 @@ public class VectorRequestMessage extends BaseVoidMessage {
         clipboard.pin(aggregation);
 
         DistributedVectorMessage dvm = new DistributedVectorMessage(key, rowIndex);
-        transport.sendMessageToAllShards(dvm);
+
+        if (configuration.getNumberOfShards() > 1)
+            transport.sendMessageToAllShards(dvm);
     }
 
     @Override
