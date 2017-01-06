@@ -9,6 +9,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
+import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.functions.TokenizerFunction;
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -79,6 +80,12 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             super(psConfiguration, configuration);
         }
 
+        /**
+         * This method defines tokenizer htat will be used for corpus tokenization
+         *
+         * @param tokenizerFactory
+         * @return
+         */
         public Builder setTokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
             configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
             if (tokenizerFactory.getTokenPreProcessor() != null)
@@ -88,14 +95,38 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         }
 
 
+        /**
+         * This method defines the learning algorithm that will be used during training
+         *
+         * @param ela
+         * @return
+         */
         public Builder setLearningAlgorithm(@NonNull SparkElementsLearningAlgorithm ela) {
             this.configuration.setElementsLearningAlgorithm(ela.getClass().getCanonicalName());
             return this;
         }
 
+        /**
+         * This method defines the way model will be exported after training is finished
+         *
+         * @param exporter
+         * @return
+         */
+        public Builder setModelExporter(@NonNull SparkModelExporter<VocabWord> exporter) {
+            this.modelExporter = exporter;
+            return this;
+        }
 
+
+        /**
+         * This method returns you SparkWord2Vec instance ready for training
+         *
+         * @return
+         */
         public SparkWord2Vec build() {
             SparkWord2Vec sw2v = new SparkWord2Vec(peersConfiguration, configuration);
+            sw2v.exporter = this.modelExporter;
+            sw2v.storageLevel = this.storageLevel;
 
             return sw2v;
         }
