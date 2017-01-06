@@ -12,6 +12,7 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.ShutdownRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
@@ -247,7 +248,9 @@ public class VoidParameterServer {
         if (initLocker.get() && shutdownLocker.compareAndSet(false, true)) {
             // do shutdown
             log.info("Shutting down transport...");
-            transport.shutdown();
+
+            // we just sending out ShutdownRequestMessage
+            transport.sendMessage(new ShutdownRequestMessage());
         }
     }
 

@@ -12,4 +12,6 @@ public interface Storage {
     void setArray(Integer key, INDArray array);
 
     boolean arrayExists(Integer key);
+
+    void shutdown();
 }

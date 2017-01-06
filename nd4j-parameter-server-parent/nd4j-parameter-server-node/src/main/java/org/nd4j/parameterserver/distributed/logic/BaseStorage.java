@@ -29,4 +29,9 @@ public abstract class BaseStorage implements Storage {
     public boolean arrayExists(@NonNull Integer key) {
         return storage.containsKey(key);
     }
+
+    @Override
+    public void shutdown() {
+        storage.clear();
+    }
 }
