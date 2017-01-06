@@ -10,6 +10,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
 import org.deeplearning4j.spark.models.sequencevectors.functions.TokenizerFunction;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
@@ -83,6 +84,12 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             if (tokenizerFactory.getTokenPreProcessor() != null)
                 configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
 
+            return this;
+        }
+
+
+        public Builder setLearningAlgorithm(@NonNull SparkElementsLearningAlgorithm ela) {
+            this.configuration.setElementsLearningAlgorithm(ela.getClass().getCanonicalName());
             return this;
         }
 

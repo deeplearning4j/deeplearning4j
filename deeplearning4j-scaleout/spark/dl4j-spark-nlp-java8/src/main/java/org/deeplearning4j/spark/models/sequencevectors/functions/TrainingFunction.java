@@ -11,8 +11,11 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This is wrapper for SequenceVectors training over given Sequence<T>
@@ -62,6 +65,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
             // TODO: do ELA initialization
             try {
                 elementsLearningAlgorithm = (ElementsLearningAlgorithm<ShallowSequenceElement>) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -74,6 +78,10 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        if (elementsLearningAlgorithm == null && sequenceLearningAlgorithm == null) {
+            throw new ND4JIllegalStateException("No LearningAlgorithms specified!");
         }
 
 
@@ -108,7 +116,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
          */
         // FIXME: temporary hook
         if (sequence.size() > 0)
-            sequenceLearningAlgorithm.learnSequence(mergedSequence, null, 25e-3);
+            elementsLearningAlgorithm.learnSequence(mergedSequence, new AtomicLong(119), 25e-3);
         else
             log.warn("Skipping empty sequence...");
 
