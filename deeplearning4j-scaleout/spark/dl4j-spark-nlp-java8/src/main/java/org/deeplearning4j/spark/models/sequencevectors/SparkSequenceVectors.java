@@ -28,6 +28,7 @@ import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
 import org.deeplearning4j.spark.models.sequencevectors.utils.NetworkOrganizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 
@@ -210,10 +211,21 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         shallowVocabCache = buildShallowVocabCache(finalCounter);
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
 
+        // update ps configuration with real values where required
+        paramServerConfiguration.setNumberOfShards(paramServerConfiguration.getShardAddresses().size());
+        paramServerConfiguration.setUseHS(configuration.isUseHierarchicSoftmax());
+        paramServerConfiguration.setUseNS(configuration.getNegative() > 0);
+
         Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
         // FIXME: probably we need to reconsider this approach
         JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
+
+        /**
+         * now we initialize Shards with values. That call should be started from driver which is either Client or Shard in standalone mode.
+         */
+        VoidParameterServer.getInstance().init(paramServerConfiguration);
+        VoidParameterServer.getInstance().initializeSeqVec(configuration.getLayersSize(), (int) numberOfUniqueElements, 119, configuration.getLayersSize() / paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.isUseHS(), paramServerConfiguration.isUseNS());
 
         // proceed to training
         // also, training function is the place where we invoke ParameterServer
