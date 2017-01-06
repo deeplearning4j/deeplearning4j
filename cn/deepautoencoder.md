@@ -1,81 +1,82 @@
 ---
-title: Deep Autoencoders
-layout: default
+title: 深度自动编码器
+layout: cn-default
 ---
 
-# Deep Autoencoders
+# 深度自动编码器
 
-A deep autoencoder is composed of two, symmetrical [deep-belief networks](./deepbeliefnetwork.html) that typically have four or five shallow layers representing the encoding half of the net, and second set of four or five layers that make up the decoding half.
+深度自动编码器由两个对称的[深度置信网络](./deepbeliefnetwork.html)组成，其中一个深度置信网络通常有四到五个浅层，构成负责编码的部分，另一个四到五层的网络则是解码部分。
 
-The layers are [restricted Boltzmann machines](./restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. Here's a simplified schema of a deep autoencoder's structure, which we'll explain below.
+这些层都是[受限玻尔兹曼机](./restrictedboltzmannmachine.html)（RBM），即构成深度置信网络的基本单元，它们有一些特殊之处，我们将在下文中介绍。以下是简化的深度自动编码器架构示意图，下文会作具体说明。
 
-![Alt text](./img/deep_autoencoder.png) 
+![Alt text](../img/deep_autoencoder.png) 
 
-Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
+处理基准数据集[MNIST](http://yann.lecun.com/exdb/mnist/)时，深度自动编码器会在每个RBM之后使用二进制变换。深度自动编码器还可以用于包含实数数据的其他类型的数据集，此时编码器中的RBM可以改用高斯修正变换。 
 
-### Encoding
+### 编码
 
-Let’s sketch out an example encoder:
+让我们用以下的示例来描绘一个编码器的大致结构：
     
-     784 (input) ----> 1000 ----> 500 ----> 250 ----> 100 -----> 30
+     784 (输入) ----> 1000 ----> 500 ----> 250 ----> 100 -----> 30
 
-If, say, the input fed to the network is 784 pixels (the square of the 28x28 pixel images in the MNIST dataset), then the first layer of the deep autoencoder should have 1000 parameters; i.e. slightly larger. 
+假设进入网络的输入是784个像素（MNIST数据集中28 x 28像素的图像），那么深度自动编码器的第一层应当有1000个参数，即相对较大。 
 
-This may seem counterintuitive, because having more parameters than input is a good way to overfit a neural network. 
+这可能会显得有违常理，因为参数多于输入往往会导致神经网络过拟合。 
 
-In this case, expanding the parameters, and in a sense expanding the features of the input itself, will make the eventual decoding of the autoencoded data possible. 
+在这个例子当中， 增加参数从某种意义上来看也就是增加输入本身的特征，而这将使经过自动编码的数据最终能被解码。 
 
-This is due to the representational capacity of sigmoid-belief units, a form of transformation used with each layer. Sigmoid belief units can’t represent as much as information and variance as real-valued data. The expanded first layer is a way of compensating for that. 
+其原因在于每个层中用于变换的sigmoid置信单元的表示能力。sigmoid置信单元无法表示与实数数据等量的信息和差异，而补偿方法之一就是扩张第一个层。 
 
-The layers will be 1000, 500, 250, 100 nodes wide, respectively, until the end, where the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first half of the deep autoencoder, the pretraining half, and it is the product of a normal RBM, rather than an classification output layer such as Softmax or logistic regression, as you would normally see at the end of a deep-belief network. 
+各个层将分别有1000、500、250、100个节点，直至网络最终生成一个30个数值长的向量。这一30个数值的向量是深度自动编码器负责预定型的前半部分的最后一层，由一个普通的RBM生成，而不是一个通常会出现在深度置信网络末端的Softmax或逻辑回归分类输出层。 
 
-### Decoding
+### 解码
 
-Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the condensed vector, which becomes the input as it makes its way back.
+这30个数值是28 x 28像素图像被编码后的版本。深度自动编码器的后半部分会学习如何解码这一压缩后的向量，将其作为输入一步步还原。
 
-The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed; i.e. they are not initialized randomly.) 
+深度自动编码器的解码部分是一个前馈网络，它的各个层分别有100、250、500和1000个节点。 
+层的权重以随机方式初始化。 
 
-		784 (output) <---- 1000 <---- 500 <---- 250 <---- 30
+		784 (输出) <---- 1000 <---- 500 <---- 250 <---- 30
 
-The decoding half of a deep autoencoder is the part that learns to reconstruct the image. It does so with a second feed-forward net which also conducts back propagation. The back propagation happens through reconstruction entropy.
+深度自动编码器的解码部分即是学习重构图像的部分，它用一个会进行反向传播的前馈网络来学习。此处的反向传播通过重构熵实现。
 
-### Training Nuances
+### 定型细节
 
-At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower: somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
+在解码器的反向传播阶段，学习速率应当降低，减慢速度：大约取在1e-3和1e-6之间，具体取决于处理的是二进制数据还是连续数据（分别对应区间的两端）。
 
-## Use Cases
+## 应用案例
 
-### Image Search
+### 图像搜索
 
-As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. 
+如上文所述，深度自动编码器可以将图像压缩为30个数值的向量。 
 
-Image search, therefore, becomes a matter of uploading an image, which the search engine will then compress to 30 numbers, and compare that vector to all the others in its index. 
+因此图像搜索的过程就变成：上传图像，搜索引擎将图像压缩为30个数值，然后将这个向量与索引中的所有其他向量进行比较。 
 
-Vectors containing similar numbers will be returned for the search query, and translated into their matching image. 
+包含相似数值的向量将被返回，再转换为与之匹配的图像，成为搜索查询的结果。 
 
-### Data Compression
+### 数据压缩
 
-A more general case of image compression is data compression. Deep autoencoders are useful for [semantic hashing](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf), as discussed in this paper by Geoff Hinton.
+图像压缩更广泛的应用是数据压缩。正如Geoff Hinton在[这篇论文](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf)中所述，深度自动编码器可用于语义哈希。
 
-### Topic Modeling & Information Retrieval (IR)
+### 主题建模和信息检索（IR）
 
-Deep autoencoders are useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
+深度自动编码器可用于主题建模，即以统计学方式对分布于一个文档集合中的抽象主题建模。 
 
-This, in turn, is an important step in question-answer systems like Watson.
+这是沃森等问答系统的一个重要环节。
 
-In brief, each document in a collection is converted to a Bag-of-Words (i.e. a set of word counts) and those word counts are scaled to decimals between 0 and 1, which may be thought of as the probability of a word occurring in the doc. 
+简而言之，集合中的每篇文档会被转换为一个词袋（即一组词数），而这些词数会被缩放为0到1之间的小数，可以视之为词在文档中出现的概率。 
 
-The scaled word counts are then fed into a deep-belief network, a stack of restricted Boltzmann machines, which themselves are just a subset of feedforward-backprop autoencoders. Those deep-belief networks, or DBNs, compress each document to a set of 10 numbers through a series of sigmoid transforms that map it onto the feature space. 
+缩放后的词数被输入由受限玻尔兹曼机堆叠构成的深度置信网络，而受限玻尔兹曼机本身就是一种前馈式反向传播自动编码器。这些深度置信网络（DBN）通过一系列sigmoid变换将文档映射至特征空间，从而把每篇文档压缩为10个数值。 
 
-Each document’s number set, or vector, is then introduced to the same vector space, and its distance from every other document-vector measured. Roughly speaking, nearby document-vectors fall under the same topic. 
+每篇文档的数值组，即向量会被引入同一个向量空间，测量它到其他各个文档向量的距离。彼此接近的文档向量大致上可以归为同一个主题。 
 
-For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
+例如，一篇文档可能是“问题”，而其他的文档可能是“回答”，软件可以通过在向量空间中测量距离来完成这样的匹配。 
 
-## Code Sample
+## 代码示例
 
-A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwork class](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java).
+深度自动编码器可以通过拓展Deeplearning4j的[MultiLayerNetwork类](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java)来构建。
 
-The code would look something like this:
+代码大致如下：
 
         final int numRows = 28;
         final int numColumns = 28;
@@ -100,10 +101,10 @@ The code would look something like this:
                 .layer(3, new RBM.Builder().nIn(250).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(4, new RBM.Builder().nIn(100).nOut(30).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) 
                 
-                //encoding stops
+                //编码停止
                 .layer(5, new RBM.Builder().nIn(30).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) 	
                 
-                //decoding starts
+                //解码开始
                 .layer(6, new RBM.Builder().nIn(100).nOut(250).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(7, new RBM.Builder().nIn(250).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(8, new RBM.Builder().nIn(500).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
@@ -121,6 +122,6 @@ The code would look something like this:
             DataSet next = iter.next();
             model.fit(new DataSet(next.getFeatureMatrix(),next.getFeatureMatrix()));
 
-To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)
+如需构建深度自动编码器，请确保您已安装[Deeplearning4j及其示例](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)的最新版本。
 
-For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
+如有关于深度自动编码器的问题，请在[Gitter](https://gitter.im/deeplearning4j/deeplearning4j)与我们联系。 
