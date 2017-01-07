@@ -11,6 +11,8 @@ import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
+import org.deeplearning4j.ui.components.text.ComponentText;
+import org.deeplearning4j.ui.components.text.style.StyleText;
 import org.deeplearning4j.ui.standalone.StaticPageUtil;
 
 import java.awt.Color;
@@ -25,6 +27,10 @@ import java.util.List;
  * @author Alex Black
  */
 public class EvaluationTools {
+
+    private static final String ROC_TITLE = "ROC: TPR/Recall (y) vs. FPR (x)";
+    private static final String PR_TITLE = "Precision (y) vs. Recall (x)";
+    private static final String PR_THRESHOLD_TITLE = "Precision and Recall (y) vs. Classifier Threshold (x)";
 
     private static final double CHART_WIDTH_PX = 600.0;
     private static final double CHART_HEIGHT_PX = 400.0;
@@ -72,11 +78,39 @@ public class EvaluationTools {
 
     private static final ComponentDiv PAD_DIV = new ComponentDiv(PAD_DIV_STYLE);
 
-    private static final ComponentTable AXIS_LABEL_TABLE = new ComponentTable.Builder(
+    private static final StyleText HEADER_TEXT_STYLE = new StyleText.Builder()
+            .color(Color.BLACK)
+            .fontSize(16)
+            .underline(true)
+            .build();
+
+    private static final StyleDiv HEADER_DIV_STYLE = new StyleDiv.Builder()
+            .width(2*CHART_WIDTH_PX-150, LengthUnit.Px)
+            .height(30, LengthUnit.Px)
+            .backgroundColor(Color.LIGHT_GRAY)
+            .margin(LengthUnit.Px, 5, 5, 200, 10)
+            .floatValue(StyleDiv.FloatValue.left)
+            .build();
+
+    private static final StyleDiv HEADER_DIV_PAD_STYLE = new StyleDiv.Builder()
+            .width(2*CHART_WIDTH_PX, LengthUnit.Px)
+            .height(150, LengthUnit.Px)
+            .backgroundColor(Color.WHITE)
+            .build();
+
+    private static final StyleDiv HEADER_DIV_TEXT_PAD_STYLE = new StyleDiv.Builder()
+            .width(120, LengthUnit.Px)
+            .height(30, LengthUnit.Px)
+            .backgroundColor(Color.LIGHT_GRAY)
+            .floatValue(StyleDiv.FloatValue.left)
+            .build();
+
+    private static final ComponentTable INFO_TABLE = new ComponentTable.Builder(
             new StyleTable.Builder().backgroundColor(Color.WHITE).borderWidth(0).build())
             .content(new String[][]{
-                    {"Vertical Axis", "True Positive Rate"},
-                    {"Horizontial Axis", "False Positive Rate"}})
+                    {"Precision", "(true positives) / (true positives + false positives)"},
+                    {"True Positive Rate (Recall)", "(true positives) / (data positives)"},
+                    {"False Positive Rate", "(false positives) / (data negatives)"}})
             .build();
 
     private EvaluationTools() { }
@@ -108,8 +142,8 @@ public class EvaluationTools {
     public static String rocChartToHtml(ROC roc) {
         double[][] points = roc.getResultsAsArray();
 
-        Component c = getRocFromPoints("ROC: TPR/Recall (y) vs. FPR (x)", points, roc.getCountActualPositive(), roc.getCountActualNegative(), roc.calculateAUC());
-        Component c2 = getPRCharts("Precision (y) vs. Recall (x)", "Precision and Recall (y) vs. Threshold (x)", roc.getPrecisionRecallCurve());
+        Component c = getRocFromPoints(ROC_TITLE, points, roc.getCountActualPositive(), roc.getCountActualNegative(), roc.calculateAUC());
+        Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, roc.getPrecisionRecallCurve());
 
         return StaticPageUtil.renderHTML(c, c2);
     }
@@ -135,13 +169,23 @@ public class EvaluationTools {
         List<Component> components = new ArrayList<>(actualCountPositive.length);
         for( int i=0; i<actualCountPositive.length; i++ ){
             double[][] points = rocMultiClass.getResultsAsArray(i);
-            String title = "ROC - class " + i;
+            String headerText = "Class " + i;
             if(classNames != null && classNames.size() > i){
-                title += " (" + classNames.get(i) + ")";
+                headerText += " (" + classNames.get(i) + ")";
             }
-            title += " vs. all";;
-            Component c = getRocFromPoints(title, points, actualCountPositive[i], actualCountNegative[i], rocMultiClass.calculateAUC(i));
+            headerText += " vs. All";;
+
+            Component headerDivPad = new ComponentDiv(HEADER_DIV_PAD_STYLE);
+            components.add(headerDivPad);
+
+            Component headerDivLeft = new ComponentDiv(HEADER_DIV_TEXT_PAD_STYLE);
+            Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE, new ComponentText(headerText, HEADER_TEXT_STYLE));
+            Component c = getRocFromPoints(ROC_TITLE, points, actualCountPositive[i], actualCountNegative[i], rocMultiClass.calculateAUC(i));
+            Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, rocMultiClass.getPrecisionRecallCurve(i));
+            components.add(headerDivLeft);
+            components.add(headerDiv);
             components.add(c);
+            components.add(c2);
         }
 
         return StaticPageUtil.renderHTML(components);
@@ -165,7 +209,7 @@ public class EvaluationTools {
                         {"Total Data Negative Count", String.valueOf(negativeCount)}})
                 .build();
 
-        ComponentDiv divLeft = new ComponentDiv(INNER_DIV_STYLE, PAD_DIV, ct, PAD_DIV); //, AXIS_LABEL_TABLE);
+        ComponentDiv divLeft = new ComponentDiv(INNER_DIV_STYLE, PAD_DIV, ct, PAD_DIV, INFO_TABLE);
         ComponentDiv divRight = new ComponentDiv(INNER_DIV_STYLE, chartLine);
 
         return new ComponentDiv(OUTER_DIV_STYLE, divLeft, divRight);
