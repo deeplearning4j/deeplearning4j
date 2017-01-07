@@ -4,10 +4,9 @@ Native operations for nd4j. Build using cmake
 
 ## Prerequisites
 
-* Gcc 4+ or clang
-* Cuda (if needed)
-* CMake
-* A blas implementation or openblas is required
+* GCC 4.9 or 5.x
+* CUDA 7.5 or 8.0 (if desired)
+* CMake 3.2
 
 ### Additional build arguments
 
@@ -27,18 +26,13 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
 [Download the NDK](https://developer.android.com/ndk/downloads/), extract it somewhere, and execute the following commands, replacing `android-xxx` with either `android-arm` or `android-x86`:
 
 ```bash
-git clone https://github.com/bytedeco/javacpp-presets
 git clone https://github.com/deeplearning4j/libnd4j
 git clone https://github.com/deeplearning4j/nd4j
 export ANDROID_NDK=/path/to/android-ndk/
-export LIBND4J_HOME=$PWD/libnd4j/
-export OpenBLAS_HOME=$PWD/javacpp-presets/openblas/cppbuild/android-xxx/
-cd javacpp-presets/openblas
-bash cppbuild.sh install -platform android-xxx
-cd ../../libnd4j
+cd libnd4j
 bash buildnativeoperations.sh -platform android-xxx
 cd ../nd4j
-mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform'
+mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform'
 ```
 
 ### OSX
@@ -59,7 +53,6 @@ wget http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers
 sudo dpkg -i cuda-repo-ubuntu1504-7-5-local_7.5-18_amd64.deb
 sudo apt-get update
 sudo apt-get install cuda
-sudo apt-get install libopenblas-dev
 sudo apt-get install cmake
 sudo apt-get install gcc-4.9
 sudo apt-get install g++-4.9
@@ -77,7 +70,6 @@ sudo ln -s /usr/bin/g++-4.9 /usr/bin/g++
 #### Ubuntu Linux 16.04
 
 ```bash
-sudo apt install libopenblas-dev
 sudo apt install cmake
 sudo apt install nvidia-cuda-dev nvidia-cuda-toolkit nvidia-361
 export TRICK_NVCC=YES
@@ -92,7 +84,7 @@ The standard development headers are needed.
 
 ```bash
 yum install centos-release-scl-rh epel-release
-yum install devtoolset-3-toolchain maven30 cmake3 git openblas-devel
+yum install devtoolset-3-toolchain maven30 cmake3 git
 scl enable devtoolset-3 maven30 bash
 ./buildnativeoperations.sh
 ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
