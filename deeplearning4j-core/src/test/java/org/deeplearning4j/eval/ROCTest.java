@@ -2,14 +2,14 @@ package org.deeplearning4j.eval;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -344,5 +344,192 @@ public class ROCTest {
         List<ROC.ROCValue> actValues = rocAct.getResults();
 
         assertEquals(expValues, actValues);
+    }
+
+
+
+    @Test
+    public void testCompareRocAndRocMultiClass(){
+        Nd4j.getRandom().setSeed(12345);
+
+        //For 2 class case: ROC and Multi-class ROC should be the same...
+        int nExamples = 200;
+        INDArray predictions = Nd4j.rand(nExamples, 2);
+        INDArray tempSum = predictions.sum(1);
+        predictions.diviColumnVector(tempSum);
+
+        INDArray labels = Nd4j.create(nExamples, 2);
+        Random r = new Random(12345);
+        for( int i=0; i<nExamples; i++ ) {
+            labels.putScalar(i, r.nextInt(2), 1.0);
+        }
+
+        int numSteps = 30;
+        ROC roc = new ROC(numSteps);
+        roc.eval(labels, predictions);
+
+        ROCMultiClass rocMultiClass = new ROCMultiClass(numSteps);
+        rocMultiClass.eval(labels, predictions);
+
+        double auc = roc.calculateAUC();
+        double auc1 = rocMultiClass.calculateAUC(1);
+
+        assertEquals(auc, auc1, 1e-6);
+
+        double[][] rocPoints = roc.getResultsAsArray();
+        double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
+
+        assertEquals(rocPoints.length, rocPoints0.length);
+        for( int i=0; i<rocPoints[0].length; i++ ){
+            assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
+            assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
+        }
+    }
+
+    @Test
+    public void testCompare2Vs3Classes(){
+
+        //ROC multi-class: 2 vs. 3 classes should be the same, if we add two of the classes together...
+        //Both methods implement one vs. all ROC/AUC in different ways
+
+        int nExamples = 200;
+        INDArray predictions3 = Nd4j.rand(nExamples, 3);
+        INDArray tempSum = predictions3.sum(1);
+        predictions3.diviColumnVector(tempSum);
+
+        INDArray labels3 = Nd4j.create(nExamples, 3);
+        Random r = new Random(12345);
+        for( int i=0; i<nExamples; i++ ) {
+            labels3.putScalar(i, r.nextInt(3), 1.0);
+        }
+
+        INDArray predictions2 = Nd4j.zeros(nExamples, 2);
+        predictions2.getColumn(0).assign(predictions3.getColumn(0));
+        predictions2.getColumn(0).addi(predictions3.getColumn(1));
+        predictions2.getColumn(1).addi(predictions3.getColumn(2));
+
+        INDArray labels2 = Nd4j.zeros(nExamples, 2);
+        labels2.getColumn(0).assign(labels3.getColumn(0));
+        labels2.getColumn(0).addi(labels3.getColumn(1));
+        labels2.getColumn(1).addi(labels3.getColumn(2));
+
+        int numSteps = 30;
+
+        ROCMultiClass rocMultiClass3 = new ROCMultiClass(numSteps);
+        ROCMultiClass rocMultiClass2 = new ROCMultiClass(numSteps);
+
+        rocMultiClass3.eval(labels3, predictions3);
+        rocMultiClass2.eval(labels2, predictions2);
+
+        double auc3 = rocMultiClass3.calculateAUC(2);
+        double auc2 = rocMultiClass2.calculateAUC(1);
+
+        assertEquals(auc2, auc3, 1e-6);
+
+        double[][] roc3 = rocMultiClass3.getResultsAsArray(2);
+        double[][] roc2 = rocMultiClass2.getResultsAsArray(1);
+
+        assertEquals(2, roc3.length);
+        assertEquals(2, roc2.length);
+
+        assertArrayEquals(roc2[0], roc3[0], 1e-6);
+        assertArrayEquals(roc2[1], roc3[1], 1e-6);
+    }
+
+    @Test
+    public void testROCMerging(){
+
+        int nArrays = 10;
+        int minibatch = 64;
+        int nROCs = 3;
+        int steps = 20;
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        List<ROC> rocList = new ArrayList<>();
+        for( int i=0; i<nROCs; i++ ){
+            rocList.add(new ROC(steps));
+        }
+
+        ROC single = new ROC(steps);
+        for( int i=0; i<nArrays; i++ ){
+            INDArray p = Nd4j.rand(minibatch, 2);
+            p.diviColumnVector(p.sum(1));
+
+            INDArray l = Nd4j.zeros(minibatch, 2);
+            for( int j=0; j<minibatch; j++ ){
+                l.putScalar(j, r.nextInt(2), 1.0);
+            }
+
+            single.eval(l, p);
+
+            ROC other = rocList.get(i % rocList.size());
+            other.eval(l, p);
+        }
+
+        ROC first = rocList.get(0);
+        for( int i=1; i<nROCs; i++ ){
+            first.merge(rocList.get(i));
+        }
+
+        assertEquals(single.calculateAUC(), first.calculateAUC(), 1e-6);
+
+        double[][] rocSingle = single.getResultsAsArray();
+        double[][] rocMerge = first.getResultsAsArray();
+
+        assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
+        assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+    }
+
+
+    @Test
+    public void testROCMultiMerging(){
+
+        int nArrays = 10;
+        int minibatch = 64;
+        int nROCs = 3;
+        int nClasses = 3;
+        int steps = 20;
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        List<ROCMultiClass> rocList = new ArrayList<>();
+        for( int i=0; i<nROCs; i++ ){
+            rocList.add(new ROCMultiClass(steps));
+        }
+
+        ROCMultiClass single = new ROCMultiClass(steps);
+        for( int i=0; i<nArrays; i++ ){
+            INDArray p = Nd4j.rand(minibatch, nClasses);
+            p.diviColumnVector(p.sum(1));
+
+            INDArray l = Nd4j.zeros(minibatch, nClasses);
+            for( int j=0; j<minibatch; j++ ){
+                l.putScalar(j, r.nextInt(nClasses), 1.0);
+            }
+
+            single.eval(l, p);
+
+            ROCMultiClass other = rocList.get(i % rocList.size());
+            other.eval(l, p);
+        }
+
+        ROCMultiClass first = rocList.get(0);
+        for( int i=1; i<nROCs; i++ ){
+            first.merge(rocList.get(i));
+        }
+
+        for( int i=0; i<nClasses; i++ ) {
+
+            assertEquals(single.calculateAUC(i), first.calculateAUC(i), 1e-6);
+
+            double[][] rocSingle = single.getResultsAsArray(i);
+            double[][] rocMerge = first.getResultsAsArray(i);
+
+            assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
+            assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+        }
     }
 }

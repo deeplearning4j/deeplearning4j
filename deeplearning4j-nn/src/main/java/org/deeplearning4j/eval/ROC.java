@@ -3,6 +3,7 @@ package org.deeplearning4j.eval;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -65,7 +66,7 @@ public class ROC implements Serializable {
             //Assume time series input -> reshape to 2d
             evalTimeSeries(labels, predictions);
         }
-        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)) {
+        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1) || labels.size(1) > 2) {
             throw new IllegalArgumentException("Invalid input data shape: labels shape = " + Arrays.toString(labels.shape()) +
                     ", predictions shape = " + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
@@ -144,53 +145,11 @@ public class ROC implements Serializable {
      * @param predicted Predictions
      */
     public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) {
-        if (labels.rank() != 3 || predicted.rank() != 3) {
-            throw new IllegalArgumentException("Invalid data: expect rank 3 arrays. Got arrays with shapes labels=" +
-                    Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
-        }
-
-        //Reshaping here: basically RnnToFeedForwardPreProcessor...
-        //Dup to f order, to ensure consistent buffer for reshaping
-        labels = labels.dup('f');
-        predicted = predicted.dup('f');
-
-        INDArray labels2d = reshape2d(labels);
-        INDArray predicted2d = reshape2d(predicted);
-
-        if (outputMask == null) {
-            eval(labels2d, predicted2d);
-            return;
-        }
-
-        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask);
-        float[] f = oneDMask.dup().data().asFloat();
-        int[] rowsToPull = new int[f.length];
-        int usedCount = 0;
-        for (int i = 0; i < f.length; i++) {
-            if (f[i] == 1.0f) {
-                rowsToPull[usedCount++] = i;
-            }
-        }
-        rowsToPull = Arrays.copyOfRange(rowsToPull, 0, usedCount);
-
-        labels2d = Nd4j.pullRows(labels2d, 1, rowsToPull);
-        predicted2d = Nd4j.pullRows(predicted2d, 1, rowsToPull);
+        Pair<INDArray,INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predicted, outputMask);
+        INDArray labels2d = pair.getFirst();
+        INDArray predicted2d = pair.getSecond();
 
         eval(labels2d, predicted2d);
-    }
-
-    private static INDArray reshape2d(INDArray labels) {
-        int[] labelsShape = labels.shape();
-        INDArray labels2d;
-        if (labelsShape[0] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
-        } else if (labelsShape[2] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
-        } else {
-            labels2d = labels.permute(0, 2, 1);
-            labels2d = labels2d.reshape('f', labelsShape[0] * labelsShape[2], labelsShape[1]);
-        }
-        return labels2d;
     }
 
     /**
@@ -262,6 +221,27 @@ public class ROC implements Serializable {
         return auc;
     }
 
+    /**
+     * Merge this ROC instance with another.
+     * This ROC instance is modified, by adding the stats from the other instance.
+     *
+     * @param other ROC instance to combine with this one
+     */
+    public void merge(ROC other){
+        if(this.thresholdSteps != other.thresholdSteps){
+            throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("
+                    + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
+        }
+        this.countActualPositive += other.countActualPositive;
+        this.countActualNegative += other.countActualNegative;
+        for(Double d : this.counts.keySet()){
+            CountsForThreshold cft = this.counts.get(d);
+            CountsForThreshold otherCft = other.counts.get(d);
+            cft.countTruePositive += otherCft.countTruePositive;
+            cft.countFalsePositive += otherCft.countFalsePositive;
+        }
+    }
+
 
     @AllArgsConstructor
     @Data
@@ -273,21 +253,26 @@ public class ROC implements Serializable {
 
     @AllArgsConstructor
     @Data
-    private static class CountsForThreshold implements Serializable {
+    public static class CountsForThreshold implements Serializable, Cloneable {
         private double threshold;
         private long countTruePositive;
         private long countFalsePositive;
 
-        private CountsForThreshold(double threshold) {
+        public CountsForThreshold(double threshold) {
             this(threshold, 0, 0);
         }
 
-        private void incrementTruePositive(long count) {
+        public void incrementTruePositive(long count) {
             countTruePositive += count;
         }
 
-        private void incrementFalsePositive(long count) {
+        public void incrementFalsePositive(long count) {
             countFalsePositive += count;
+        }
+
+        @Override
+        public CountsForThreshold clone(){
+            return new CountsForThreshold(threshold, countTruePositive, countFalsePositive);
         }
     }
 }
