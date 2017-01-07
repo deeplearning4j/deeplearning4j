@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -16,6 +17,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
  *
  * @author raver119@gmail.coms
  */
+@Slf4j
 public class DistributedFunction<T extends SequenceElement> implements Function<T, ExportContainer<T>> {
 
     protected Broadcast<Configuration> configurationBroadcast;
@@ -39,7 +41,9 @@ public class DistributedFunction<T extends SequenceElement> implements Function<
 
         container.setElement(word);
 
-        container.setArray(VoidParameterServer.getInstance().getVector(word.getIndex()));
+        ShallowSequenceElement reduced = shallowVocabCache.tokenFor(word.getStorageId());
+
+        container.setArray(VoidParameterServer.getInstance().getVector(reduced.getIndex()));
 
         return container;
     }
