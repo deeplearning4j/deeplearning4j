@@ -90,13 +90,13 @@ class ChartLine extends Chart implements Renderable {
         var xMax: number;
         var yMin: number;
         var yMax: number;
-        if(this.setXMin) xMin = this.setXMin;
+        if(this.setXMin != null) xMin = this.setXMin;
         else xMin = (this.xData ? TSUtils.min(this.xData) : 0);
-        if(this.setXMax) xMax = this.setXMax;
+        if(this.setXMax != null) xMax = this.setXMax;
         else xMax = (this.xData ? TSUtils.max(this.xData) : 1);
-        if(this.setYMin) yMin = this.setYMin;
+        if(this.setYMin != null) yMin = this.setYMin;
         else yMin = (this.yData ? TSUtils.min(this.yData) : 0);
-        if(this.setYMax) yMax = this.setYMax;
+        if(this.setYMax != null) yMax = this.setYMax;
         else yMax = (this.yData ? TSUtils.max(this.yData) : 1);
 
         xScale.domain([xMin, xMax]);
