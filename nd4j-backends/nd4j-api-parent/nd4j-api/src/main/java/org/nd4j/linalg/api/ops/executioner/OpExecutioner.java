@@ -247,4 +247,7 @@ public interface OpExecutioner {
      */
     TADManager getTADManager();
 
+
+    void printEnvironmentInformation();
+
 }
