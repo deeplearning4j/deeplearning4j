@@ -116,27 +116,27 @@ public class EvaluationTools {
     private EvaluationTools() { }
 
     /**
-     * Given a {@link ROC} chart, export the ROC chart to a stand-alone HTML file
+     * Given a {@link ROC} chart, export the ROC chart and precision vs. recall charts to a stand-alone HTML file
      * @param roc  ROC to export
      * @param file File to export to
      */
-    public static void exportRocChartToHtmlFile(ROC roc, File file) throws IOException {
+    public static void exportRocChartsToHtmlFile(ROC roc, File file) throws IOException {
         String rocAsHtml = rocChartToHtml(roc);
         FileUtils.writeStringToFile(file, rocAsHtml);
     }
 
     /**
-     * Given a {@link ROCMultiClass} chart, export the ROC chart to a stand-alone HTML file
+     * Given a {@link ROCMultiClass} chart, export the ROC chart and precision vs. recall charts to a stand-alone HTML file
      * @param roc  ROC to export
      * @param file File to export to
      */
-    public static void exportRocChartToHtmlFile(ROCMultiClass roc, File file) throws Exception {
+    public static void exportRocChartsToHtmlFile(ROCMultiClass roc, File file) throws Exception {
         String rocAsHtml = rocChartToHtml(roc);
         FileUtils.writeStringToFile(file, rocAsHtml);
     }
 
     /**
-     * Given a {@link ROC} instance, render the ROC chart to a stand-alone HTML file (returned as a String)
+     * Given a {@link ROC} instance, render the ROC chart and precision vs. recall charts to a stand-alone HTML file (returned as a String)
      * @param roc  ROC to render
      */
     public static String rocChartToHtml(ROC roc) {
@@ -149,7 +149,7 @@ public class EvaluationTools {
     }
 
     /**
-     * Given a {@link ROCMultiClass} instance, render the ROC chart to a stand-alone HTML file (returned as a String)
+     * Given a {@link ROCMultiClass} instance, render the ROC chart and precision vs. recall charts to a stand-alone HTML file (returned as a String)
      * @param rocMultiClass  ROC to render
      */
     public static String rocChartToHtml(ROCMultiClass rocMultiClass) {
