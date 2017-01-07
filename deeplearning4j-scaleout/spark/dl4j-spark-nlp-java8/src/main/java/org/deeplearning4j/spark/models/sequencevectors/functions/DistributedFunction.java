@@ -8,6 +8,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 
 /**
@@ -38,7 +39,7 @@ public class DistributedFunction<T extends SequenceElement> implements Function<
 
         container.setElement(word);
 
-        // TODO: request data from VoidParameterServer
+        container.setArray(VoidParameterServer.getInstance().getVector(word.getIndex()));
 
         return container;
     }
