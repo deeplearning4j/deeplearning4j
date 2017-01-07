@@ -63,7 +63,7 @@ public class EvaluationToolsTests {
 
 
         String str = EvaluationTools.rocChartToHtml(roc);
-        System.out.println(str);
+//        System.out.println(str);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class EvaluationToolsTests {
 
 
         String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
-        System.out.println(str);
+//        System.out.println(str);
     }
 
 }
