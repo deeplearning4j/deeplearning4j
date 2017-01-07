@@ -9,6 +9,10 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedShutdow
  */
 public class ShutdownRequestMessage extends BaseVoidMessage {
 
+    public ShutdownRequestMessage() {
+        super(8);
+    }
+
     @Override
     public void processMessage() {
         DistributedShutdownMessage dsm = new DistributedShutdownMessage();

@@ -134,6 +134,7 @@ public abstract class BaseTransport implements Transport {
             case 20:
             case 21:
             case 22:
+            case 28:
                 //log.info("Sending message to ALL Shards: {}", message.getClass().getSimpleName());
                 sendCoordinationCommand(message);
                 break;
@@ -312,6 +313,17 @@ public abstract class BaseTransport implements Transport {
         }
     }
 
+
+    protected void shutdownSilent() {
+        log.info("Shutting down Aeron infrastructure...");
+        publicationForClients.close();
+        publicationForShards.close();
+        subscriptionForShards.close();
+        subscriptionForClients.close();
+
+        aeron.close();
+        driver.close();
+    }
 
     /**
      * This method stops transport system.

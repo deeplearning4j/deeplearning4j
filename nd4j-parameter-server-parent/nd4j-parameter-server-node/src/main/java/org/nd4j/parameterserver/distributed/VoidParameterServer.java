@@ -58,7 +58,7 @@ public class VoidParameterServer {
     protected transient AtomicBoolean manualMode = new AtomicBoolean(false);
     protected transient AtomicBoolean runner = new AtomicBoolean(false);
 
-    protected transient Thread processingThread;
+    protected transient Thread[] processingThread;
 
     // FIXME: we want trainer to be configurable here
     protected transient TrainingDriver<? extends TrainingMessage> trainer = new SkipGramTrainer();
@@ -182,14 +182,19 @@ public class VoidParameterServer {
 
                 // we launch message processing if we're not in debug mode
                 if (!manualMode.get()) {
-                    processingThread = new Thread(() -> {
-                        runner.set(true);
-                        while (runner.get())
-                            handleMessage(transport.takeMessage());
-                    });
-                    processingThread.setDaemon(true);
-                    processingThread.setName("VoidParameterServer messages handling thread");
-                    processingThread.start();
+                    int numThreads = Runtime.getRuntime().availableProcessors() / 2;
+                    processingThread = new Thread[numThreads];
+
+                    for(int x = 0; x < numThreads; x++) {
+                        processingThread[x] = new Thread(() -> {
+                            runner.set(true);
+                            while (runner.get())
+                                handleMessage(transport.takeMessage());
+                        });
+                        processingThread[x].setDaemon(true);
+                        processingThread[x].setName("VoidParameterServer messages handling thread");
+                        processingThread[x].start();
+                    }
                 }
 
                 initFinished.set(true);
@@ -335,7 +340,7 @@ public class VoidParameterServer {
         currentFrame.stackMessage(message);
 
         // TODO: make this threshold variable
-        if (currentFrame.size() > 0) {
+        if (currentFrame.size() > 512) {
             transport.sendMessage(currentFrame);
             currentFrame = new Frame<>();
             frames.put(message.getClass().getSimpleName(), currentFrame);

@@ -115,6 +115,10 @@ public class MulticastTransport extends BaseTransport {
                 log.warn("Unknown role passed: {}", nodeRole);
                 throw new RuntimeException();
         }
+
+        // if that's local spark run - we don't need this
+        if (configuration.getNumberOfShards() == 1 && nodeRole == NodeRole.SHARD)
+            shutdownSilent();
     }
 
     /**
@@ -123,7 +127,7 @@ public class MulticastTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected void sendCommandToShard(VoidMessage message) {
+    protected synchronized void sendCommandToShard(VoidMessage message) {
         // if this node is shard - we just step over TCP/IP infrastructure
         // TODO: we want LocalTransport to be used in such cases
         if (nodeRole == NodeRole.SHARD) {
@@ -132,6 +136,8 @@ public class MulticastTransport extends BaseTransport {
             return;
         }
 
+
+        log.info("Sending CS: {}", message.getClass().getCanonicalName());
 
         message.setTargetId(targetIndex);
         DirectBuffer buffer = message.asUnsafeBuffer();
@@ -159,12 +165,14 @@ public class MulticastTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected void sendCoordinationCommand(VoidMessage message) {
+    protected synchronized  void sendCoordinationCommand(VoidMessage message) {
         if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1) {
             message.setTargetId((short) -1);
             messages.add(message);
             return;
         }
+
+        log.info("Sending CC: {}", message.getClass().getCanonicalName());
 
         message.setTargetId((short) -1);
         publicationForShards.offer(message.asUnsafeBuffer());
@@ -176,12 +184,15 @@ public class MulticastTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected void sendFeedbackToClient(VoidMessage message) {
+    protected synchronized void sendFeedbackToClient(VoidMessage message) {
         if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1 && message instanceof MeaningfulMessage) {
             message.setTargetId((short) -1);
             completed.put(message.getTaskId(), (MeaningfulMessage) message);
             return;
         }
+
+        log.info("Sending FC: {}", message.getClass().getCanonicalName());
+
         message.setTargetId((short) -1);
         publicationForClients.offer(message.asUnsafeBuffer());
     }
