@@ -253,7 +253,7 @@ public class ROC implements Serializable {
 
     @AllArgsConstructor
     @Data
-    public static class CountsForThreshold implements Serializable {
+    public static class CountsForThreshold implements Serializable, Cloneable {
         private double threshold;
         private long countTruePositive;
         private long countFalsePositive;
@@ -268,6 +268,11 @@ public class ROC implements Serializable {
 
         public void incrementFalsePositive(long count) {
             countFalsePositive += count;
+        }
+
+        @Override
+        public CountsForThreshold clone(){
+            return new CountsForThreshold(threshold, countTruePositive, countFalsePositive);
         }
     }
 }
