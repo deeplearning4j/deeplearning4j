@@ -249,6 +249,42 @@ public class ROCMultiClass implements Serializable {
         return sum / countActualPositive.length;
     }
 
+    public List<ROC.PrecisionRecallPoint> getPrecisionRecallCurve(int classIndex){
+        //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
+        //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
+
+        List<ROC.PrecisionRecallPoint> out = new ArrayList<>(counts.get(classIndex).size());
+
+        for (Map.Entry<Double, ROC.CountsForThreshold> entry : counts.get(classIndex).entrySet()) {
+            double t = entry.getKey();
+            ROC.CountsForThreshold c = entry.getValue();
+            long tpCount = c.getCountTruePositive();
+            long fpCount = c.getCountFalsePositive();
+            //For edge cases: http://stats.stackexchange.com/questions/1773/what-are-correct-values-for-precision-and-recall-in-edge-cases
+            //precision == 1 when FP = 0 -> no incorrect positive predictions
+            //recall == 1 when no dataset positives are present (got all 0 of 0 positives)
+            double precision;
+            if(tpCount == 0 && fpCount == 0){
+                //At this threshold: no predicted positive cases
+                precision = 1.0;
+            } else {
+                precision = tpCount / (double)(tpCount + fpCount);
+            }
+
+            double recall;
+            if(countActualPositive[classIndex] == 0){
+                recall = 1.0;
+            } else {
+                recall = tpCount / ((double) countActualPositive[classIndex]);
+            }
+
+
+            out.add(new ROC.PrecisionRecallPoint(c.getThreshold(), precision, recall));
+        }
+
+        return out;
+    }
+
     /**
      * Merge this ROCMultiClass instance with another.
      * This ROCMultiClass instance is modified, by adding the stats from the other instance.
