@@ -45,8 +45,6 @@ public class VectorRequestMessage extends BaseVoidMessage {
      */
     @Override
     public void processMessage() {
-        log.debug("Got request for rowIndex: {}; key: {}", rowIndex, key);
-
         VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) configuration.getNumberOfShards(), getShardIndex(), storage.getArray(key).getRow(rowIndex).dup());
 
         clipboard.pin(aggregation);
@@ -55,6 +53,10 @@ public class VectorRequestMessage extends BaseVoidMessage {
 
         if (configuration.getNumberOfShards() > 1)
             transport.sendMessageToAllShards(dvm);
+        else {
+            dvm.extractContext(this);
+            dvm.processMessage();
+        }
     }
 
     @Override

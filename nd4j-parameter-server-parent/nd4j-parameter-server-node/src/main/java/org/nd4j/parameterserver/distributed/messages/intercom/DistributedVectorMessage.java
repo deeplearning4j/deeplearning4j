@@ -30,9 +30,7 @@ public class DistributedVectorMessage extends BaseVoidMessage{
      */
     @Override
     public void processMessage() {
-        log.info("Got distributed request for rowIndex: {}", rowIndex);
-
         VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) configuration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
-        transport.sendMessageToAllShards(aggregation);
+        transport.sendMessage(aggregation);
     }
 }

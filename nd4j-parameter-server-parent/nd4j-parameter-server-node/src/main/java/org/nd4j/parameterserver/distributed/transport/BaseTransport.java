@@ -79,6 +79,8 @@ public abstract class BaseTransport implements Transport {
         long taskId = message.getTaskId();
         sendCommandToShard(message);
 
+//        log.info("Sent message to shard: {}, taskId: {}, originalId: {}", message.getClass().getSimpleName(), message.getTaskId(), taskId);
+
         MeaningfulMessage msg;
         while ((msg = completed.get((Long) taskId)) == null) {
             // FIXME: fix sleep strategy here

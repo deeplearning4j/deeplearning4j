@@ -32,13 +32,10 @@ public class VectorAggregation extends BaseAggregation {
             clipboard.pin(this);
 
             if (clipboard.isReady(taskId)) {
-                log.info("Vector for taskId {} is ready", taskId);
                 VoidAggregation aggregation = clipboard.unpin(taskId);
                 VectorCompleteMessage msg = new VectorCompleteMessage(taskId, aggregation.getAccumulatedResult());
                 transport.sendMessage(msg);
             }
-        } else {
-            log.info("Skipping vectors. Shard: {}; ", shardIndex);
         }
     }
 }
