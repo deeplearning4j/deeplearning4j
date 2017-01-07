@@ -15,11 +15,14 @@ import org.deeplearning4j.ui.standalone.StaticPageUtil;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Alex on 07/01/2017.
+ * Tools for evaluation and rendering {@link ROC} and {@link ROCMultiClass} results
+ *
+ * @author Alex Black
  */
 public class EvaluationTools {
 
@@ -65,17 +68,31 @@ public class EvaluationTools {
 
     private EvaluationTools() { }
 
-    public static void exportRocChartToHtmlFile(ROC roc, File file) throws Exception {
+    /**
+     * Given a {@link ROC} chart, export the ROC chart to a stand-alone HTML file
+     * @param roc  ROC to export
+     * @param file File to export to
+     */
+    public static void exportRocChartToHtmlFile(ROC roc, File file) throws IOException {
         String rocAsHtml = rocChartToHtml(roc);
         FileUtils.writeStringToFile(file, rocAsHtml);
     }
 
+    /**
+     * Given a {@link ROCMultiClass} chart, export the ROC chart to a stand-alone HTML file
+     * @param roc  ROC to export
+     * @param file File to export to
+     */
     public static void exportRocChartToHtmlFile(ROCMultiClass roc, File file) throws Exception {
         String rocAsHtml = rocChartToHtml(roc);
         FileUtils.writeStringToFile(file, rocAsHtml);
     }
 
-    public static String rocChartToHtml(ROC roc) throws Exception {
+    /**
+     * Given a {@link ROC} instance, render the ROC chart to a stand-alone HTML file (returned as a String)
+     * @param roc  ROC to render
+     */
+    public static String rocChartToHtml(ROC roc) {
         double[][] points = roc.getResultsAsArray();
 
         Component c = getRocFromPoints("ROC", points, roc.getCountActualPositive(), roc.getCountActualNegative(), roc.calculateAUC());
@@ -83,11 +100,21 @@ public class EvaluationTools {
         return StaticPageUtil.renderHTML(c);
     }
 
-    public static String rocChartToHtml(ROCMultiClass rocMultiClass) throws Exception {
+    /**
+     * Given a {@link ROCMultiClass} instance, render the ROC chart to a stand-alone HTML file (returned as a String)
+     * @param rocMultiClass  ROC to render
+     */
+    public static String rocChartToHtml(ROCMultiClass rocMultiClass) {
         return rocChartToHtml(rocMultiClass, null);
     }
 
-    public static String rocChartToHtml(ROCMultiClass rocMultiClass, List<String> labelNames) throws Exception {
+    /**
+     * Given a {@link ROCMultiClass} instance and (optionally) names for each class, render the ROC chart to a stand-alone
+     * HTML file (returned as a String)
+     * @param rocMultiClass  ROC to render
+     * @param classNames     Names of the classes. May be null
+     */
+    public static String rocChartToHtml(ROCMultiClass rocMultiClass, List<String> classNames) {
         long[] actualCountPositive = rocMultiClass.getCountActualPositive();
         long[] actualCountNegative = rocMultiClass.getCountActualNegative();
 
@@ -95,8 +122,8 @@ public class EvaluationTools {
         for( int i=0; i<actualCountPositive.length; i++ ){
             double[][] points = rocMultiClass.getResultsAsArray(i);
             String title = "ROC - class " + i;
-            if(labelNames != null && labelNames.size() > i){
-                title += " (" + labelNames.get(i) + ")";
+            if(classNames != null && classNames.size() > i){
+                title += " (" + classNames.get(i) + ")";
             }
             title += " vs. all";;
             Component c = getRocFromPoints(title, points, actualCountPositive[i], actualCountNegative[i], rocMultiClass.calculateAUC(i));

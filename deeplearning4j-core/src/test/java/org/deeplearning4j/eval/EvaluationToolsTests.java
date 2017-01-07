@@ -17,6 +17,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+
 /**
  * Created by Alex on 07/01/2017.
  */
@@ -61,7 +63,7 @@ public class EvaluationToolsTests {
 
 
         String str = EvaluationTools.rocChartToHtml(roc);
-        System.out.println(str);
+//        System.out.println(str);
     }
 
     @Test
@@ -95,8 +97,8 @@ public class EvaluationToolsTests {
         roc.eval(l, out);
 
 
-        String str = EvaluationTools.rocChartToHtml(roc);
-        System.out.println(str);
+        String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
+//        System.out.println(str);
     }
 
 }
