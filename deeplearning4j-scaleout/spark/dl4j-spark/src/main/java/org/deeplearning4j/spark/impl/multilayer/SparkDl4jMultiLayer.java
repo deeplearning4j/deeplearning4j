@@ -35,6 +35,8 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.ROC;
+import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -43,8 +45,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.*;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
@@ -78,6 +79,7 @@ import java.util.*;
 @Slf4j
 public class SparkDl4jMultiLayer implements Serializable {
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
+    public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
     private transient JavaSparkContext sc;
     private TrainingMaster trainingMaster;
     private MultiLayerConfiguration conf;
@@ -543,6 +545,55 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList) {
         return evaluate(data, labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner, using the default number of
+     * threshold steps ({@link #DEFAULT_ROC_THRESHOLD_STEPS}) and the default minibatch size ({@link #DEFAULT_EVAL_SCORE_BATCH_SIZE})
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROC roc(JavaRDD<DataSet> data){
+        return roc(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROC for the entire data set
+     */
+    public ROC roc(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+        JavaRDD<ROC> rocs = data.mapPartitions(new ROCFlatMapFunction(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), thresholdSteps, evaluationMinibatchSize));
+        return rocs.reduce(new ROCReduceFunction());
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROCMultiClass rocMultiClass(JavaRDD<DataSet> data){
+        return rocMultiClass(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROCMultiClass for the entire data set
+     */
+    public ROCMultiClass rocMultiClass(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+        JavaRDD<ROCMultiClass> rocs = data.mapPartitions(new ROCMultiClassFlatMapFunction(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), thresholdSteps, evaluationMinibatchSize));
+        return rocs.reduce(new ROCMultiClassReduceFunction());
     }
 
     private void update(int mr, long mg) {
