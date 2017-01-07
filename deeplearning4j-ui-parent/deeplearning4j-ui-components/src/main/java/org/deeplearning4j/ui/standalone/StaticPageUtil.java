@@ -13,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.api.Component;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
@@ -21,19 +22,41 @@ import java.util.*;
  * Idea: Render a set of components as a single static page.
  * The goal here is to provide a simple mechanism for exporting simple pages with static content (charts, etc),
  * where (a) the required UI components, and (b) the data itself, is embedded in the page
- *
+ * <p>
  * This is accomplished using a simple FreeMarker template
+ *
+ * @author Alex Black
  */
 public class StaticPageUtil {
 
     private StaticPageUtil() {
     }
 
-    public static String renderHTML(Collection<Component> components) throws Exception {
+    /**
+     * Given the specified components, render them to a stand-alone HTML page (which is returned as a String)
+     *
+     * @param components Components to render
+     * @return Stand-alone HTML page, as a String
+     */
+    public static String renderHTML(Collection<Component> components) {
         return renderHTML(components.toArray(new Component[components.size()]));
     }
 
-    public static String renderHTML(Component... components) throws Exception {
+    /**
+     * Given the specified components, render them to a stand-alone HTML page (which is returned as a String)
+     *
+     * @param components Components to render
+     * @return Stand-alone HTML page, as a String
+     */
+    public static String renderHTML(Component... components) {
+        try {
+            return renderHTMLContent(components);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String renderHTMLContent(Component... components) throws Exception {
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -53,27 +76,43 @@ public class StaticPageUtil {
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
 
         ClassPathResource cpr = new ClassPathResource("assets/dl4j-ui.js");
-        String scriptContents = IOUtils.toString(cpr.getInputStream(),"UTF-8");
+        String scriptContents = IOUtils.toString(cpr.getInputStream(), "UTF-8");
 
         Map<String, Object> pageElements = new HashMap<>();
         List<ComponentObject> list = new ArrayList<>();
-        int i=0;
-        for(Component c : components){
+        int i = 0;
+        for (Component c : components) {
             list.add(new ComponentObject(String.valueOf(i), mapper.writeValueAsString(c)));
             i++;
         }
-        pageElements.put("components",list);
-        pageElements.put("scriptcontent",scriptContents);
+        pageElements.put("components", list);
+        pageElements.put("scriptcontent", scriptContents);
 
 
         Template template = cfg.getTemplate("staticpage.ftl");
         Writer stringWriter = new StringWriter();
-        template.process(pageElements,stringWriter);
+        template.process(pageElements, stringWriter);
 
         return stringWriter.toString();
     }
 
-    public static void saveHTMLFile(String outputPath, Component... components) throws Exception {
-        FileUtils.writeStringToFile(new File(outputPath), renderHTML(components));
+    /**
+     * A version of {@link #renderHTML(Component...)} that exports the resulting HTML to the specified path.
+     *
+     * @param outputPath Output path
+     * @param components Components to render
+     */
+    public static void saveHTMLFile(String outputPath, Component... components) throws IOException {
+        saveHTMLFile(new File(outputPath));
+    }
+
+    /**
+     * A version of {@link #renderHTML(Component...)} that exports the resulting HTML to the specified File.
+     *
+     * @param outputFile Output path
+     * @param components Components to render
+     */
+    public static void saveHTMLFile(File outputFile, Component... components) throws IOException {
+        FileUtils.writeStringToFile(outputFile, renderHTML(components));
     }
 }
