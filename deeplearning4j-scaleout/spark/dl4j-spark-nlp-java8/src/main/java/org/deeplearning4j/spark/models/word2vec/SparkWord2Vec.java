@@ -117,6 +117,17 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         *
+         *
+         * @param numWorkers
+         * @return
+         */
+        public Builder workers(int numWorkers) {
+            super.workers(numWorkers);
+            return this;
+        }
+
 
         /**
          * This method returns you SparkWord2Vec instance ready for training
@@ -127,6 +138,7 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             SparkWord2Vec sw2v = new SparkWord2Vec(peersConfiguration, configuration);
             sw2v.exporter = this.modelExporter;
             sw2v.storageLevel = this.storageLevel;
+            sw2v.workers = this.workers;
 
             return sw2v;
         }

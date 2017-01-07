@@ -121,8 +121,6 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * and calling this method for training, instead implementing own routines
          */
 
-        log.info("Configuration: {}", paramServerConfiguration);
-
         if (workers > 1)
             corpus.repartition(workers);
 
@@ -445,6 +443,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             seqVec.exporter = modelExporter;
             seqVec.paramServerConfiguration = peersConfiguration;
             seqVec.storageLevel = storageLevel;
+            seqVec.workers = workers;
 
             return seqVec;
         }
