@@ -63,7 +63,7 @@ public class EvaluationToolsTests {
 
 
         String str = EvaluationTools.rocChartToHtml(roc);
-//        System.out.println(str);
+        System.out.println(str);
     }
 
     @Test
