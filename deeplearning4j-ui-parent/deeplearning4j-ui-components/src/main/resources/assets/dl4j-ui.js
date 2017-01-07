@@ -398,11 +398,7 @@ var ChartLine = (function (_super) {
                     var yValues = _this.yData[i];
                     var lastX = values[values.length - 1];
                     var lastY = yValues[yValues.length - 1];
-                    var toDisplay;
-                    if (!lastX || !lastY)
-                        toDisplay = _this.seriesNames[i] + " (no data)";
-                    else
-                        toDisplay = _this.seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                    var toDisplay = _this.seriesNames[i];
                     svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace)
                         .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)

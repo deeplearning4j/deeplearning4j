@@ -172,6 +172,42 @@ public class ROC implements Serializable {
         return out;
     }
 
+    public List<PrecisionRecallPoint> getPrecisionRecallCurve(){
+        //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
+        //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
+
+        List<PrecisionRecallPoint> out = new ArrayList<>(counts.size());
+
+        for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
+            double t = entry.getKey();
+            CountsForThreshold c = entry.getValue();
+            long tpCount = c.getCountTruePositive();
+            long fpCount = c.getCountFalsePositive();
+            //For edge cases: http://stats.stackexchange.com/questions/1773/what-are-correct-values-for-precision-and-recall-in-edge-cases
+            //precision == 1 when FP = 0 -> no incorrect positive predictions
+            //recall == 1 when no dataset positives are present (got all 0 of 0 positives)
+            double precision;
+            if(tpCount == 0 && fpCount == 0){
+                //At this threshold: no predicted positive cases
+                precision = 1.0;
+            } else {
+                precision = tpCount / (double)(tpCount + fpCount);
+            }
+
+            double recall;
+            if(countActualPositive == 0){
+                recall = 1.0;
+            } else {
+                recall = tpCount / ((double) countActualPositive);
+            }
+
+
+            out.add(new PrecisionRecallPoint(c.getThreshold(), precision, recall));
+        }
+
+        return out;
+    }
+
     /**
      * Get the ROC curve, as a set of (falsePositive, truePositive) points
      * <p>
@@ -249,6 +285,14 @@ public class ROC implements Serializable {
         private final double threshold;
         private final double truePositiveRate;
         private final double falsePositiveRate;
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class PrecisionRecallPoint {
+        private final double classiferThreshold;
+        private final double precision;
+        private final double recall;
     }
 
     @AllArgsConstructor
