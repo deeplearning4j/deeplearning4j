@@ -249,6 +249,48 @@ public class ROCMultiClass implements Serializable {
         return sum / countActualPositive.length;
     }
 
+    /**
+     * Merge this ROCMultiClass instance with another.
+     * This ROCMultiClass instance is modified, by adding the stats from the other instance.
+     *
+     * @param other ROCMultiClass instance to combine with this one
+     */
+    public void merge(ROCMultiClass other){
+        if(other.countActualPositive == null){
+            //Other has no data
+            return;
+        } else if(countActualPositive == null){
+            //This instance has no data
+            this.countActualPositive = Arrays.copyOf(other.countActualPositive, other.countActualPositive.length);
+            this.countActualNegative = Arrays.copyOf(other.countActualNegative, other.countActualNegative.length);
+            for(Map.Entry<Integer,Map<Double, ROC.CountsForThreshold>> e : other.counts.entrySet()){
+                Map<Double,ROC.CountsForThreshold> m = e.getValue();
+                Map<Double,ROC.CountsForThreshold> mClone = new LinkedHashMap<>();
+                for(Map.Entry<Double,ROC.CountsForThreshold> e2 : m.entrySet()){
+                    mClone.put(e2.getKey(), e2.getValue().clone());
+                }
+                this.counts.put(e.getKey(), mClone);
+            }
+        } else {
+            for( int i=0; i<countActualPositive.length; i++ ){
+                this.countActualPositive[i] += other.countActualPositive[i];
+                this.countActualNegative[i] += other.countActualNegative[i];
+            }
+
+            for(Integer i : counts.keySet()){
+                Map<Double,ROC.CountsForThreshold> thisMap = counts.get(i);
+                Map<Double,ROC.CountsForThreshold> otherMap = other.counts.get(i);
+
+                for(Double d : thisMap.keySet()){
+                    ROC.CountsForThreshold thisC = thisMap.get(d);
+                    ROC.CountsForThreshold otherC = otherMap.get(d);
+                    thisC.incrementTruePositive(otherC.getCountTruePositive());
+                    thisC.incrementFalsePositive(otherC.getCountFalsePositive());
+                }
+            }
+        }
+    }
+
 
     private void assertHasBeenFit(int classIdx){
         if(countActualPositive == null){
