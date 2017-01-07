@@ -90,7 +90,7 @@ public abstract class BaseTransport implements Transport {
                 Thread.sleep(100);
 
                 if (cnt.incrementAndGet() > 100) {
-                    log.info("Resending request for taskId [{}]", taskId);
+                    //log.info("Resending request for taskId [{}]", taskId);
                     return sendMessageAndGetResponse(message);
                 }
             } catch (Exception e) {
