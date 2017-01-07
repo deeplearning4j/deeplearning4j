@@ -435,4 +435,50 @@ public class ROCTest {
         assertArrayEquals(roc2[0], roc3[0], 1e-6);
         assertArrayEquals(roc2[1], roc3[1], 1e-6);
     }
+
+    @Test
+    public void testROCMerging(){
+
+        int nArrays = 10;
+        int minibatch = 64;
+        int nROCs = 3;
+        int steps = 20;
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        List<ROC> rocList = new ArrayList<>();
+        for( int i=0; i<nROCs; i++ ){
+            rocList.add(new ROC(steps));
+        }
+
+        ROC single = new ROC(steps);
+        for( int i=0; i<nArrays; i++ ){
+            INDArray p = Nd4j.rand(minibatch, 2);
+            p.diviColumnVector(p.sum(1));
+
+            INDArray l = Nd4j.zeros(minibatch, 2);
+            for( int j=0; j<minibatch; j++ ){
+                l.putScalar(j, r.nextInt(2), 1.0);
+            }
+
+            single.eval(l, p);
+
+            ROC other = rocList.get(i % rocList.size());
+            other.eval(l, p);
+        }
+
+        ROC first = rocList.get(0);
+        for( int i=1; i<nROCs; i++ ){
+            first.merge(rocList.get(i));
+        }
+
+        assertEquals(single.calculateAUC(), first.calculateAUC(), 1e-6);
+
+        double[][] rocSingle = single.getResultsAsArray();
+        double[][] rocMerge = first.getResultsAsArray();
+
+        assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
+        assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+    }
 }

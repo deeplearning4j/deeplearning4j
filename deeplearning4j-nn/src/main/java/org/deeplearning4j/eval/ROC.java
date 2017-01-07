@@ -221,6 +221,27 @@ public class ROC implements Serializable {
         return auc;
     }
 
+    /**
+     * Merge this ROC instance with another.
+     * This ROC instance is modified, by adding the stats from the other instance.
+     *
+     * @param other ROC instance to combine with this one
+     */
+    public void merge(ROC other){
+        if(this.thresholdSteps != other.thresholdSteps){
+            throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("
+                    + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
+        }
+        this.countActualPositive += other.countActualPositive;
+        this.countActualNegative += other.countActualNegative;
+        for(Double d : this.counts.keySet()){
+            CountsForThreshold cft = this.counts.get(d);
+            CountsForThreshold otherCft = other.counts.get(d);
+            cft.countTruePositive += otherCft.countTruePositive;
+            cft.countFalsePositive += otherCft.countFalsePositive;
+        }
+    }
+
 
     @AllArgsConstructor
     @Data
