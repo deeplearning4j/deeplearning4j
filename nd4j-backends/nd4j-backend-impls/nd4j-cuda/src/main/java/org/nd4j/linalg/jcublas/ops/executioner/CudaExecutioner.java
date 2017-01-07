@@ -2349,6 +2349,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public TADManager getTADManager() {
         return tadManager;
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void printEnvironmentInformation() {
+        super.printEnvironmentInformation();
+
+        Properties env = getEnvironmentInformation();
+
+        List<Map<String, Object>> devicesList = (List<Map<String, Object>>) env.get("cuda.devicesInformation");
+        for (Map<String, Object> dev: devicesList) {
+            log.info("Device name: [{}]; CC: [{}.{}]; Total memory: [{}]", dev.get("cuda.deviceName"), dev.get("cuda.deviceMajor"), dev.get("cuda.deviceMinor"), dev.get("cuda.totalMemory"));
+        }
+    }
 }
 
 
