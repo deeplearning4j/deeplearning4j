@@ -9,6 +9,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -383,5 +384,55 @@ public class ROCTest {
             assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
             assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
         }
+    }
+
+    @Test
+    public void testCompare2Vs3Classes(){
+
+        //ROC multi-class: 2 vs. 3 classes should be the same, if we add two of the classes together...
+        //Both methods implement one vs. all ROC/AUC in different ways
+
+        int nExamples = 200;
+        INDArray predictions3 = Nd4j.rand(nExamples, 3);
+        INDArray tempSum = predictions3.sum(1);
+        predictions3.diviColumnVector(tempSum);
+
+        INDArray labels3 = Nd4j.create(nExamples, 3);
+        Random r = new Random(12345);
+        for( int i=0; i<nExamples; i++ ) {
+            labels3.putScalar(i, r.nextInt(3), 1.0);
+        }
+
+        INDArray predictions2 = Nd4j.zeros(nExamples, 2);
+        predictions2.getColumn(0).assign(predictions3.getColumn(0));
+        predictions2.getColumn(0).addi(predictions3.getColumn(1));
+        predictions2.getColumn(1).addi(predictions3.getColumn(2));
+
+        INDArray labels2 = Nd4j.zeros(nExamples, 2);
+        labels2.getColumn(0).assign(labels3.getColumn(0));
+        labels2.getColumn(0).addi(labels3.getColumn(1));
+        labels2.getColumn(1).addi(labels3.getColumn(2));
+
+        int numSteps = 30;
+
+        ROCMultiClass rocMultiClass3 = new ROCMultiClass(numSteps);
+        ROCMultiClass rocMultiClass2 = new ROCMultiClass(numSteps);
+
+        rocMultiClass3.eval(labels3, predictions3);
+        rocMultiClass2.eval(labels2, predictions2);
+
+        double auc3 = rocMultiClass3.calculateAUC(2);
+        double auc2 = rocMultiClass2.calculateAUC(1);
+
+        assertEquals(auc2, auc3, 1e-6);
+
+        double[][] roc3 = rocMultiClass3.getResultsAsArray(2);
+        double[][] roc2 = rocMultiClass2.getResultsAsArray(1);
+
+        assertEquals(2, roc3.length);
+        assertEquals(2, roc2.length);
+
+        assertArrayEquals(roc2[0], roc3[0], 1e-6);
+        assertArrayEquals(roc2[1], roc3[1], 1e-6);
     }
 }
