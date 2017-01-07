@@ -255,7 +255,7 @@ public class ROCMultiClass implements Serializable {
             throw new IllegalStateException("Cannot get results: no data has been collected");
         }
         if(classIdx < 0 || classIdx >= countActualPositive.length){
-            throw new IllegalArgumentException("Invalid class index (" + classIdx + "): must be in range 0 to numClasses = " + countActualPositive);
+            throw new IllegalArgumentException("Invalid class index (" + classIdx + "): must be in range 0 to numClasses = " + countActualPositive.length);
         }
     }
 }
