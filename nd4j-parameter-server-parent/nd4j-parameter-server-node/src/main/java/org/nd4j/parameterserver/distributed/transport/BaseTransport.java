@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -78,6 +79,7 @@ public abstract class BaseTransport implements Transport {
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
         long taskId = message.getTaskId();
         sendCommandToShard(message);
+        AtomicLong cnt = new AtomicLong(0);
 
 //        log.info("Sent message to shard: {}, taskId: {}, originalId: {}", message.getClass().getSimpleName(), message.getTaskId(), taskId);
 
@@ -86,6 +88,11 @@ public abstract class BaseTransport implements Transport {
             // FIXME: fix sleep strategy here
             try {
                 Thread.sleep(100);
+
+                if (cnt.incrementAndGet() > 100) {
+                    log.info("Resending request for taskId [{}]", taskId);
+                    return sendMessageAndGetResponse(message);
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
