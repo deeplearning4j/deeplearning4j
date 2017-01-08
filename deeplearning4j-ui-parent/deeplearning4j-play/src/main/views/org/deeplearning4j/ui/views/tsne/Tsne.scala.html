@@ -102,22 +102,22 @@
         .axis {
 
         }
-        .axis path,
-        .axis line {
-            fill: none;
-            stroke: rgba(0,0,0,0.1);
-            shape-rendering: crispEdges;
-        }
-        .axis text {
-            font-family: sans-serif;
-            font-size: 11px;
-            fill: #666;
-        }
-        .label {
-            font-size:14px;
-            fill:rgba(0,0,0,0.5);
-            shape-rendering:auto;
-        }
+        /*.axis path,*/
+        /*.axis line {*/
+            /*fill: none;*/
+            /*stroke: rgba(0,0,0,0.1);*/
+            /*shape-rendering: crispEdges;*/
+        /*}*/
+        /*.axis text {*/
+            /*font-family: sans-serif;*/
+            /*font-size: 11px;*/
+            /*fill: #666;*/
+        /*}*/
+        /*.label {*/
+            /*font-size:14px;*/
+            /*fill:rgba(0,0,0,0.5);*/
+            /*shape-rendering:auto;*/
+        /*}*/
         </style>
 
         <script>
@@ -190,12 +190,10 @@
                 <tr>
                     <td style="width: 48px;"><a href="/"><img src="/assets/legacy/deeplearning4j.img" border="0"/></a></td>
                     <td>DeepLearning4j UI</td>
-                    <td style="width: 512px; text-align: right;" class="hd-small">&nbsp; Available sessions: <select class="selectpicker" id="sessionSelector" onchange="window.location.href = 'tsne?sid='+ this.options[this.selectedIndex].value ;" style="color: #000000; display: inline-block; width: 256px;">
-                        <option value="0" selected="selected">Pick a session to track</option>
-                    </select>&nbsp;&nbsp;
-                        <script>
-                            buildSessionSelector("TSNE");
-                        </script>
+                    <td style="width: 512px; text-align: right;" class="hd-small">&nbsp; Available sessions:
+                        <select class="selectpicker" id="sessionSelect" onchange="selectNewSession()" style="color: #000000; display: inline-block; width: 256px;">
+                            <option value="0" selected="selected">Pick a session to track</option>
+                        </select>
                     </td>
                     <td style="width: 256px;">&nbsp; <!-- placeholder for future use --></td>
                 </tr>
