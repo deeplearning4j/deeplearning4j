@@ -196,37 +196,36 @@ var Chart = (function (_super) {
 var ChartHistogram = (function (_super) {
     __extends(ChartHistogram, _super);
     function ChartHistogram(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ChartHistogram, jsonStr);
         this.render = function (appendToObject) {
-            var s = _this.getStyle();
+            var s = this.getStyle();
             var margin = Style.getMargins(s);
             var xMin;
             var xMax;
             var yMin;
             var yMax;
-            if (_this.setXMin)
-                xMin = _this.setXMin;
+            if (this.setXMin)
+                xMin = this.setXMin;
             else
-                xMin = (_this.lowerBounds ? d3.min(_this.lowerBounds) : 0);
-            if (_this.setXMax)
-                xMax = _this.setXMax;
+                xMin = (this.lowerBounds ? d3.min(this.lowerBounds) : 0);
+            if (this.setXMax)
+                xMax = this.setXMax;
             else
-                xMax = (_this.upperBounds ? d3.max(_this.upperBounds) : 1);
-            if (_this.setYMin)
-                yMin = _this.setYMin;
+                xMax = (this.upperBounds ? d3.max(this.upperBounds) : 1);
+            if (this.setYMin)
+                yMin = this.setYMin;
             else
                 yMin = 0;
-            if (_this.setYMax)
-                yMax = _this.setYMax;
+            if (this.setYMax)
+                yMax = this.setYMax;
             else
-                yMax = (_this.yValues ? d3.max(_this.yValues) : 1);
+                yMax = (this.yValues ? d3.max(this.yValues) : 1);
             var xScale = d3.scale.linear()
                 .domain([xMin, xMax])
                 .range([0, margin.widthExMargins]);
             var xAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom").ticks(5);
-            if (_this.gridVerticalStrokeWidth && _this.gridVerticalStrokeWidth > 0) {
+            if (this.gridVerticalStrokeWidth && this.gridVerticalStrokeWidth > 0) {
                 xAxis.innerTickSize(-margin.heightExMargins);
             }
             var yScale = d3.scale.linear()
@@ -234,16 +233,16 @@ var ChartHistogram = (function (_super) {
                 .range([margin.heightExMargins, 0]);
             var yAxis = d3.svg.axis().scale(yScale)
                 .orient("left").ticks(5);
-            if (_this.gridHorizontalStrokeWidth && _this.gridHorizontalStrokeWidth > 0) {
+            if (this.gridHorizontalStrokeWidth && this.gridHorizontalStrokeWidth > 0) {
                 yAxis.innerTickSize(-margin.widthExMargins);
             }
-            if (_this.suppressAxisHorizontal === true)
+            if (this.suppressAxisHorizontal === true)
                 xAxis.tickValues([]);
-            if (_this.suppressAxisVertical === true)
+            if (this.suppressAxisVertical === true)
                 yAxis.tickValues([]);
-            var lowerBounds = _this.lowerBounds;
-            var upperBounds = _this.upperBounds;
-            var yValues = _this.yValues;
+            var lowerBounds = this.lowerBounds;
+            var upperBounds = this.upperBounds;
+            var yValues = this.yValues;
             var data = lowerBounds.map(function (d, i) {
                 return { 'width': upperBounds[i] - lowerBounds[i], 'height': yValues[i], 'offset': lowerBounds[i] };
             });
@@ -272,8 +271,8 @@ var ChartHistogram = (function (_super) {
                 .style("fill", "none")
                 .call(xAxis);
             xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridVerticalStrokeWidth != null)
-                xAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridVerticalStrokeWidth });
+            if (this.gridVerticalStrokeWidth != null)
+                xAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridVerticalStrokeWidth });
             var yAxisNode = svg.append("g")
                 .attr("class", "y axis")
                 .style("stroke", "#000")
@@ -281,13 +280,13 @@ var ChartHistogram = (function (_super) {
                 .style("fill", "none")
                 .call(yAxis);
             yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridHorizontalStrokeWidth != null)
-                yAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridHorizontalStrokeWidth });
-            if (_this.title) {
+            if (this.gridHorizontalStrokeWidth != null)
+                yAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridHorizontalStrokeWidth });
+            if (this.title) {
                 var titleStyle;
-                if (_this.style)
-                    titleStyle = _this.style.getTitleStyle();
-                Chart.appendTitle(svg, _this.title, margin, titleStyle);
+                if (this.style)
+                    titleStyle = this.style.getTitleStyle();
+                Chart.appendTitle(svg, this.title, margin, titleStyle);
             }
         };
         var json = JSON.parse(jsonStr);
@@ -343,19 +342,19 @@ var ChartLine = (function (_super) {
             var xMax;
             var yMin;
             var yMax;
-            if (_this.setXMin)
+            if (_this.setXMin != null)
                 xMin = _this.setXMin;
             else
                 xMin = (_this.xData ? TSUtils.min(_this.xData) : 0);
-            if (_this.setXMax)
+            if (_this.setXMax != null)
                 xMax = _this.setXMax;
             else
                 xMax = (_this.xData ? TSUtils.max(_this.xData) : 1);
-            if (_this.setYMin)
+            if (_this.setYMin != null)
                 yMin = _this.setYMin;
             else
                 yMin = (_this.yData ? TSUtils.min(_this.yData) : 0);
-            if (_this.setYMax)
+            if (_this.setYMax != null)
                 yMax = _this.setYMax;
             else
                 yMax = (_this.yData ? TSUtils.max(_this.yData) : 1);
@@ -399,11 +398,7 @@ var ChartLine = (function (_super) {
                     var yValues = _this.yData[i];
                     var lastX = values[values.length - 1];
                     var lastY = yValues[yValues.length - 1];
-                    var toDisplay;
-                    if (!lastX || !lastY)
-                        toDisplay = _this.seriesNames[i] + " (no data)";
-                    else
-                        toDisplay = _this.seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                    var toDisplay = _this.seriesNames[i];
                     svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace)
                         .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)
@@ -431,11 +426,10 @@ var ChartLine = (function (_super) {
 var ChartScatter = (function (_super) {
     __extends(ChartScatter, _super);
     function ChartScatter(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ChartScatter, jsonStr);
         this.render = function (appendToObject) {
-            var nSeries = (!_this.xData ? 0 : _this.xData.length);
-            var s = _this.getStyle();
+            var nSeries = (!this.xData ? 0 : this.xData.length);
+            var s = this.getStyle();
             var margin = Style.getMargins(s);
             var xScale = d3.scale.linear().range([0, margin.widthExMargins]);
             var yScale = d3.scale.linear().range([margin.heightExMargins, 0]);
@@ -445,9 +439,9 @@ var ChartScatter = (function (_super) {
             var yAxis = d3.svg.axis().scale(yScale)
                 .innerTickSize(-margin.widthExMargins)
                 .orient("left").ticks(5);
-            if (_this.suppressAxisHorizontal === true)
+            if (this.suppressAxisHorizontal === true)
                 xAxis.tickValues([]);
-            if (_this.suppressAxisVertical === true)
+            if (this.suppressAxisVertical === true)
                 yAxis.tickValues([]);
             var svg = d3.select("#" + appendToObject.attr("id"))
                 .append("svg")
@@ -462,28 +456,28 @@ var ChartScatter = (function (_super) {
             var xMax;
             var yMin;
             var yMax;
-            if (_this.setXMin)
-                xMin = _this.setXMin;
+            if (this.setXMin)
+                xMin = this.setXMin;
             else
-                xMin = (_this.xData ? TSUtils.min(_this.xData) : 0);
-            if (_this.setXMax)
-                xMax = _this.setXMax;
+                xMin = (this.xData ? TSUtils.min(this.xData) : 0);
+            if (this.setXMax)
+                xMax = this.setXMax;
             else
-                xMax = (_this.xData ? TSUtils.max(_this.xData) : 1);
-            if (_this.setYMin)
-                yMin = _this.setYMin;
+                xMax = (this.xData ? TSUtils.max(this.xData) : 1);
+            if (this.setYMin)
+                yMin = this.setYMin;
             else
-                yMin = (_this.yData ? TSUtils.min(_this.yData) : 0);
-            if (_this.setYMax)
-                yMax = _this.setYMax;
+                yMin = (this.yData ? TSUtils.min(this.yData) : 0);
+            if (this.setYMax)
+                yMax = this.setYMax;
             else
-                yMax = (_this.yData ? TSUtils.max(_this.yData) : 1);
+                yMax = (this.yData ? TSUtils.max(this.yData) : 1);
             xScale.domain([xMin, xMax]);
             yScale.domain([yMin, yMax]);
             var defaultColor = d3.scale.category10();
             for (var i = 0; i < nSeries; i++) {
-                var xVals = _this.xData[i];
-                var yVals = _this.yData[i];
+                var xVals = this.xData[i];
+                var yVals = this.yData[i];
                 var data = xVals.map(function (d, i) {
                     return { 'xPos': xVals[i], 'yPos': yVals[i] };
                 });
@@ -508,8 +502,8 @@ var ChartScatter = (function (_super) {
                 .style("fill", "none")
                 .call(xAxis);
             xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridVerticalStrokeWidth != null)
-                xAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridVerticalStrokeWidth });
+            if (this.gridVerticalStrokeWidth != null)
+                xAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridVerticalStrokeWidth });
             var yAxisNode = svg.append("g")
                 .attr("class", "y axis")
                 .style("stroke", "#000")
@@ -517,20 +511,20 @@ var ChartScatter = (function (_super) {
                 .style("fill", "none")
                 .call(yAxis);
             yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridHorizontalStrokeWidth != null)
-                yAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridHorizontalStrokeWidth });
-            if (_this.seriesNames && _this.showLegend === true) {
+            if (this.gridHorizontalStrokeWidth != null)
+                yAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridHorizontalStrokeWidth });
+            if (this.seriesNames && this.showLegend === true) {
                 var legendSpace = margin.widthExMargins / i;
                 for (var i = 0; i < nSeries; i++) {
-                    var values = _this.xData[i];
-                    var yValues = _this.yData[i];
+                    var values = this.xData[i];
+                    var yValues = this.yData[i];
                     var lastX = values[values.length - 1];
                     var lastY = yValues[yValues.length - 1];
                     var toDisplay;
                     if (!lastX || !lastY)
-                        toDisplay = _this.seriesNames[i] + " (no data)";
+                        toDisplay = this.seriesNames[i] + " (no data)";
                     else
-                        toDisplay = _this.seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
+                        toDisplay = this.seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
                     svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace)
                         .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)
@@ -539,11 +533,11 @@ var ChartScatter = (function (_super) {
                         .text(toDisplay);
                 }
             }
-            if (_this.title) {
+            if (this.title) {
                 var titleStyle;
-                if (_this.style)
-                    titleStyle = _this.style.getTitleStyle();
-                Chart.appendTitle(svg, _this.title, margin, titleStyle);
+                if (this.style)
+                    titleStyle = this.style.getTitleStyle();
+                Chart.appendTitle(svg, this.title, margin, titleStyle);
             }
         };
         var json = JSON.parse(jsonStr);
@@ -611,34 +605,33 @@ var Legend = (function () {
 var ChartStackedArea = (function (_super) {
     __extends(ChartStackedArea, _super);
     function ChartStackedArea(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ChartStackedArea, jsonStr);
         this.render = function (appendToObject) {
-            var nSeries = (!_this.xData ? 0 : _this.xData.length);
-            var s = _this.getStyle();
+            var nSeries = (!this.xData ? 0 : this.xData.length);
+            var s = this.getStyle();
             var margin = Style.getMargins(s);
             var xScale = d3.scale.linear().range([0, margin.widthExMargins]);
             var yScale = d3.scale.linear().range([margin.heightExMargins, 0]);
             var xAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom").ticks(5);
-            if (_this.gridVerticalStrokeWidth != null && _this.gridVerticalStrokeWidth > 0) {
+            if (this.gridVerticalStrokeWidth != null && this.gridVerticalStrokeWidth > 0) {
                 xAxis.innerTickSize(-margin.heightExMargins);
             }
             var yAxis = d3.svg.axis().scale(yScale)
                 .orient("left").ticks(5);
-            if (_this.gridHorizontalStrokeWidth != null && _this.gridHorizontalStrokeWidth > 0) {
+            if (this.gridHorizontalStrokeWidth != null && this.gridHorizontalStrokeWidth > 0) {
                 yAxis.innerTickSize(-margin.widthExMargins);
             }
-            if (_this.suppressAxisHorizontal === true)
+            if (this.suppressAxisHorizontal === true)
                 xAxis.tickValues([]);
-            if (_this.suppressAxisVertical === true)
+            if (this.suppressAxisVertical === true)
                 yAxis.tickValues([]);
             var data = [];
-            for (var i = 0; i < _this.xData.length; i++) {
+            for (var i = 0; i < this.xData.length; i++) {
                 var obj = {};
-                for (var j = 0; j < _this.labels.length; j++) {
-                    obj[_this.labels[j]] = _this.yData[j][i];
-                    obj['xValue'] = _this.xData[i];
+                for (var j = 0; j < this.labels.length; j++) {
+                    obj[this.labels[j]] = this.yData[j][i];
+                    obj['xValue'] = this.xData[i];
                 }
                 data.push(obj);
             }
@@ -679,7 +672,7 @@ var ChartStackedArea = (function (_super) {
                 .data(browsers)
                 .enter().append("g")
                 .attr("class", "browser");
-            var tempLabels = _this.labels;
+            var tempLabels = this.labels;
             var defaultColor = d3.scale.category20();
             browser.append("path")
                 .attr("class", "area")
@@ -711,11 +704,11 @@ var ChartStackedArea = (function (_super) {
                 .style("fill", "none")
                 .call(yAxis);
             yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.title) {
+            if (this.title) {
                 var titleStyle;
-                if (_this.style)
-                    titleStyle = _this.style.getTitleStyle();
-                Chart.appendTitle(svg, _this.title, margin, titleStyle);
+                if (this.style)
+                    titleStyle = this.style.getTitleStyle();
+                Chart.appendTitle(svg, this.title, margin, titleStyle);
             }
             var legend = svg.append("g")
                 .attr("class", "legend")
@@ -735,32 +728,31 @@ var ChartStackedArea = (function (_super) {
 var ChartTimeline = (function (_super) {
     __extends(ChartTimeline, _super);
     function ChartTimeline(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ChartTimeline, jsonStr);
         this.render = function (appendToObject) {
-            var instance = _this;
-            var s = _this.getStyle();
+            var instance = this;
+            var s = this.getStyle();
             var margin = Style.getMargins(s);
-            _this.itemData = [];
+            this.itemData = [];
             var count = 0;
-            for (var i = 0; i < _this.laneData.length; i++) {
-                for (var j = 0; j < _this.laneData[i].length; j++) {
+            for (var i = 0; i < this.laneData.length; i++) {
+                for (var j = 0; j < this.laneData[i].length; j++) {
                     var obj = {};
-                    obj["start"] = _this.laneData[i][j]["startTimeMs"];
-                    obj["end"] = _this.laneData[i][j]["endTimeMs"];
+                    obj["start"] = this.laneData[i][j]["startTimeMs"];
+                    obj["end"] = this.laneData[i][j]["endTimeMs"];
                     obj["id"] = count++;
                     obj["lane"] = i;
-                    obj["color"] = _this.laneData[i][j]["color"];
-                    obj["label"] = _this.laneData[i][j]["entryLabel"];
-                    _this.itemData.push(obj);
+                    obj["color"] = this.laneData[i][j]["color"];
+                    obj["label"] = this.laneData[i][j]["entryLabel"];
+                    this.itemData.push(obj);
                 }
             }
-            _this.lanes = [];
-            for (var i = 0; i < _this.laneNames.length; i++) {
+            this.lanes = [];
+            for (var i = 0; i < this.laneNames.length; i++) {
                 var obj = {};
-                obj["label"] = _this.laneNames[i];
+                obj["label"] = this.laneNames[i];
                 obj["id"] = i;
-                _this.lanes.push(obj);
+                this.lanes.push(obj);
             }
             var svg = d3.select("#" + appendToObject.attr("id"))
                 .append("svg")
@@ -771,35 +763,35 @@ var ChartTimeline = (function (_super) {
                 .append("g");
             var heightExMargins = s.getHeight() - margin.top - margin.bottom;
             var widthExMargins = s.getWidth() - margin.left - margin.right;
-            var miniHeight = _this.laneNames.length * ChartTimeline.MINI_LANE_HEIGHT_PX;
+            var miniHeight = this.laneNames.length * ChartTimeline.MINI_LANE_HEIGHT_PX;
             var mainHeight = s.getHeight() - miniHeight - margin.top - margin.bottom - 25;
-            var minTime = d3.min(_this.itemData, function (d) { return d.start; });
-            var maxTime = d3.max(_this.itemData, function (d) { return d.end; });
-            _this.x = d3.time.scale()
+            var minTime = d3.min(this.itemData, function (d) { return d.start; });
+            var maxTime = d3.max(this.itemData, function (d) { return d.end; });
+            this.x = d3.time.scale()
                 .domain([minTime, maxTime])
                 .range([0, widthExMargins]);
-            _this.x1 = d3.time.scale().range([0, widthExMargins]);
-            _this.y1 = d3.scale.linear().domain([0, _this.laneNames.length]).range([0, mainHeight]);
-            _this.y2 = d3.scale.linear().domain([0, _this.laneNames.length]).range([0, miniHeight]);
-            _this.rect = svg.append('defs').append('clipPath')
+            this.x1 = d3.time.scale().range([0, widthExMargins]);
+            this.y1 = d3.scale.linear().domain([0, this.laneNames.length]).range([0, mainHeight]);
+            this.y2 = d3.scale.linear().domain([0, this.laneNames.length]).range([0, miniHeight]);
+            this.rect = svg.append('defs').append('clipPath')
                 .attr('id', 'clip')
                 .append('rect')
                 .attr('width', widthExMargins)
                 .attr('height', s.getHeight() - 100);
-            _this.mainView = svg.append('g')
+            this.mainView = svg.append('g')
                 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
                 .attr('width', widthExMargins)
                 .attr('height', mainHeight)
                 .attr('font-size', '12px')
                 .attr('font', 'sans-serif');
-            _this.miniView = svg.append('g')
+            this.miniView = svg.append('g')
                 .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + margin.top + 25) + ')')
                 .attr('width', widthExMargins)
                 .attr('height', miniHeight)
                 .attr('font-size', '10px')
                 .attr('font', 'sans-serif');
-            _this.mainView.append('g').selectAll('.laneLines')
-                .data(_this.lanes)
+            this.mainView.append('g').selectAll('.laneLines')
+                .data(this.lanes)
                 .enter().append('line')
                 .attr('x1', 0)
                 .attr('y1', function (d) {
@@ -811,8 +803,8 @@ var ChartTimeline = (function (_super) {
             })
                 .attr('stroke', 'lightgray')
                 .attr('stroke-width', 1);
-            _this.mainView.append('g').selectAll('.laneText')
-                .data(_this.lanes)
+            this.mainView.append('g').selectAll('.laneText')
+                .data(this.lanes)
                 .enter().append('text')
                 .text(function (d) {
                 if (d.label)
@@ -826,8 +818,8 @@ var ChartTimeline = (function (_super) {
                 .attr('text-anchor', 'end')
                 .attr("font", "8pt sans-serif")
                 .attr('fill', 'black');
-            _this.miniView.append('g').selectAll('.laneLines')
-                .data(_this.lanes)
+            this.miniView.append('g').selectAll('.laneLines')
+                .data(this.lanes)
                 .enter().append('line')
                 .attr('x1', 0)
                 .attr('y1', function (d) { return d3.round(instance.y2(d.id)) + 0.5; })
@@ -835,8 +827,8 @@ var ChartTimeline = (function (_super) {
                 .attr('y2', function (d) { return d3.round(instance.y2(d.id)) + 0.5; })
                 .attr('stroke', 'gray')
                 .attr('stroke-width', 1.0);
-            _this.miniView.append('g').selectAll('.laneText')
-                .data(_this.lanes)
+            this.miniView.append('g').selectAll('.laneText')
+                .data(this.lanes)
                 .enter().append('text')
                 .text(function (d) {
                 if (d.label)
@@ -850,24 +842,24 @@ var ChartTimeline = (function (_super) {
                 .attr('dy', '0.5ex')
                 .attr('text-anchor', 'end')
                 .attr('fill', 'black');
-            _this.xTimeAxis = d3.svg.axis()
-                .scale(_this.x1)
+            this.xTimeAxis = d3.svg.axis()
+                .scale(this.x1)
                 .orient('bottom')
                 .ticks(d3.time.days, 1)
                 .tickFormat(d3.time.format('%a %d'))
                 .tickSize(6, 0);
-            var temp = _this.mainView.append('g')
+            var temp = this.mainView.append('g')
                 .attr('transform', 'translate(0,' + mainHeight + ')')
                 .attr('class', 'timeAxis')
                 .attr('fill', 'black')
                 .style("stroke", "black").style("stroke-width", 1.0).style("fill", "black")
                 .attr("font", "10px sans-serif")
-                .call(_this.xTimeAxis);
+                .call(this.xTimeAxis);
             temp.selectAll('text').style("stroke-width", 0.0).attr('stroke-width', 0.0);
-            _this.itemRects = _this.mainView.append('g')
+            this.itemRects = this.mainView.append('g')
                 .attr('clip-path', 'url(#clip)');
-            _this.miniView.append('g').selectAll('miniItems')
-                .data(_this.getMiniViewPaths(_this.itemData))
+            this.miniView.append('g').selectAll('miniItems')
+                .data(this.getMiniViewPaths(this.itemData))
                 .enter().append('path')
                 .attr('class', function (d) {
                 return 'miniItem ' + d.class;
@@ -877,19 +869,19 @@ var ChartTimeline = (function (_super) {
             })
                 .attr('stroke', 'black')
                 .attr('stroke-width', 'black');
-            _this.miniView.append('rect')
+            this.miniView.append('rect')
                 .attr('pointer-events', 'painted')
                 .attr('width', widthExMargins)
                 .attr('height', miniHeight)
                 .attr('visibility', 'hidden')
-                .on('mouseup', _this.moveBrush);
-            _this.brush = d3.svg.brush()
-                .x(_this.x)
+                .on('mouseup', this.moveBrush);
+            this.brush = d3.svg.brush()
+                .x(this.x)
                 .extent([minTime, maxTime])
-                .on("brush", _this.renderChart);
-            _this.miniView.append('g')
+                .on("brush", this.renderChart);
+            this.miniView.append('g')
                 .attr('class', 'x brush')
-                .call(_this.brush)
+                .call(this.brush)
                 .selectAll('rect')
                 .attr('y', 1)
                 .attr('height', miniHeight - 1)
@@ -897,14 +889,14 @@ var ChartTimeline = (function (_super) {
                 .style('fill-opacity', '0.2')
                 .style('stroke', 'DarkSlateGray')
                 .style('stroke-width', 1);
-            _this.miniView.selectAll('rect.background').remove();
-            _this.renderChart();
-            if (_this.title) {
+            this.miniView.selectAll('rect.background').remove();
+            this.renderChart();
+            if (this.title) {
                 var titleStyle;
-                if (_this.style)
-                    titleStyle = _this.style.getTitleStyle();
+                if (this.style)
+                    titleStyle = this.style.getTitleStyle();
                 var text = svg.append("text")
-                    .text(_this.title)
+                    .text(this.title)
                     .attr("x", (s.getWidth() / 2))
                     .attr("y", ((margin.top - 30) / 2))
                     .attr("text-anchor", "middle");
@@ -927,36 +919,36 @@ var ChartTimeline = (function (_super) {
             }
         };
         this.renderChart = function () {
-            var instance = _this;
-            var extent = _this.brush.extent();
+            var instance = this;
+            var extent = this.brush.extent();
             var minExtent = extent[0];
             var maxExtent = extent[1];
-            var visibleItems = _this.itemData.filter(function (d) {
+            var visibleItems = this.itemData.filter(function (d) {
                 return d.start < maxExtent && d.end > minExtent;
             });
-            _this.miniView.select('.brush').call(_this.brush.extent([minExtent, maxExtent]));
-            _this.x1.domain([minExtent, maxExtent]);
+            this.miniView.select('.brush').call(this.brush.extent([minExtent, maxExtent]));
+            this.x1.domain([minExtent, maxExtent]);
             var range = maxExtent - minExtent;
             if (range > 2 * ChartTimeline.MILLISEC_PER_WEEK) {
-                _this.xTimeAxis.ticks(d3.time.mondays, 1).tickFormat(d3.time.format('%a %d'));
+                this.xTimeAxis.ticks(d3.time.mondays, 1).tickFormat(d3.time.format('%a %d'));
             }
             else if (range > 2 * ChartTimeline.MILLISEC_PER_DAY) {
-                _this.xTimeAxis.ticks(d3.time.days, 1).tickFormat(d3.time.format('%a %d'));
+                this.xTimeAxis.ticks(d3.time.days, 1).tickFormat(d3.time.format('%a %d'));
             }
             else if (range > 2 * ChartTimeline.MILLISEC_PER_HOUR) {
-                _this.xTimeAxis.ticks(d3.time.hours, 4).tickFormat(d3.time.format('%H %p'));
+                this.xTimeAxis.ticks(d3.time.hours, 4).tickFormat(d3.time.format('%H %p'));
             }
             else if (range > 2 * ChartTimeline.MILLISEC_PER_MINUTE) {
-                _this.xTimeAxis.ticks(d3.time.minutes, 1).tickFormat(d3.time.format('%H:%M'));
+                this.xTimeAxis.ticks(d3.time.minutes, 1).tickFormat(d3.time.format('%H:%M'));
             }
             else if (range >= 30000) {
-                _this.xTimeAxis.ticks(d3.time.seconds, 10).tickFormat(d3.time.format('%H:%M:%S'));
+                this.xTimeAxis.ticks(d3.time.seconds, 10).tickFormat(d3.time.format('%H:%M:%S'));
             }
             else {
-                _this.xTimeAxis.ticks(d3.time.seconds, 1).tickFormat(d3.time.format('%H:%M:%S'));
+                this.xTimeAxis.ticks(d3.time.seconds, 1).tickFormat(d3.time.format('%H:%M:%S'));
             }
-            _this.mainView.select('.timeAxis').call(_this.xTimeAxis);
-            var rects = _this.itemRects.selectAll('rect')
+            this.mainView.select('.timeAxis').call(this.xTimeAxis);
+            var rects = this.itemRects.selectAll('rect')
                 .data(visibleItems, function (d) { return d.id; })
                 .attr('x', function (d) { return instance.x1(d.start); })
                 .attr('width', function (d) { return instance.x1(d.end) - instance.x1(d.start); });
@@ -973,7 +965,7 @@ var ChartTimeline = (function (_super) {
             })
                 .attr('stroke-width', 1);
             rects.exit().remove();
-            var labels = _this.itemRects.selectAll('text')
+            var labels = this.itemRects.selectAll('text')
                 .data(visibleItems, function (d) {
                 return d.id;
             })
@@ -1001,19 +993,19 @@ var ChartTimeline = (function (_super) {
             labels.exit().remove();
         };
         this.moveBrush = function () {
-            var origin = d3.mouse(_this.rect[0]);
-            var time = _this.x.invert(origin[0]).getTime();
-            var halfExtent = (_this.brush.extent()[1].getTime() - _this.brush.extent()[0].getTime()) / 2;
-            _this.brush.extent([new Date(time - halfExtent), new Date(time + halfExtent)]);
-            _this.renderChart();
+            var origin = d3.mouse(this.rect[0]);
+            var time = this.x.invert(origin[0]).getTime();
+            var halfExtent = (this.brush.extent()[1].getTime() - this.brush.extent()[0].getTime()) / 2;
+            this.brush.extent([new Date(time - halfExtent), new Date(time + halfExtent)]);
+            this.renderChart();
         };
         this.getMiniViewPaths = function (items) {
-            var paths = {}, d, offset = .5 * _this.y2(1) + 0.5, result = [];
+            var paths = {}, d, offset = .5 * this.y2(1) + 0.5, result = [];
             for (var i = 0; i < items.length; i++) {
                 d = items[i];
                 if (!paths[d.class])
                     paths[d.class] = '';
-                paths[d.class] += ['M', _this.x(d.start), (_this.y2(d.lane) + offset), 'H', _this.x(d.end)].join(' ');
+                paths[d.class] += ['M', this.x(d.start), (this.y2(d.lane) + offset), 'H', this.x(d.end)].join(' ');
             }
             for (var className in paths) {
                 result.push({ class: className, path: paths[className] });
@@ -1065,29 +1057,28 @@ var StyleChart = (function (_super) {
 var ComponentDiv = (function (_super) {
     __extends(ComponentDiv, _super);
     function ComponentDiv(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ComponentDiv);
         this.render = function (appendToObject) {
             var newDiv = $('<div></div>');
             newDiv.uniqueId();
-            if (_this.style) {
-                if (_this.style.getWidth()) {
-                    var unit = _this.style.getWidthUnit();
-                    newDiv.width(_this.style.getWidth() + (unit ? unit : ""));
+            if (this.style) {
+                if (this.style.getWidth()) {
+                    var unit = this.style.getWidthUnit();
+                    newDiv.width(this.style.getWidth() + (unit ? unit : ""));
                 }
-                if (_this.style.getHeight()) {
-                    var unit = _this.style.getHeightUnit();
-                    newDiv.height(_this.style.getHeight() + (unit ? unit : ""));
+                if (this.style.getHeight()) {
+                    var unit = this.style.getHeightUnit();
+                    newDiv.height(this.style.getHeight() + (unit ? unit : ""));
                 }
-                if (_this.style.getBackgroundColor())
-                    newDiv.css("background-color", _this.style.getBackgroundColor());
-                if (_this.style.getFloatValue())
-                    newDiv.css("float", _this.style.getFloatValue());
+                if (this.style.getBackgroundColor())
+                    newDiv.css("background-color", this.style.getBackgroundColor());
+                if (this.style.getFloatValue())
+                    newDiv.css("float", this.style.getFloatValue());
             }
             appendToObject.append(newDiv);
-            if (_this.components) {
-                for (var i = 0; i < _this.components.length; i++) {
-                    _this.components[i].render(newDiv);
+            if (this.components) {
+                for (var i = 0; i < this.components.length; i++) {
+                    this.components[i].render(newDiv);
                 }
             }
         };
@@ -1121,15 +1112,14 @@ var StyleDiv = (function (_super) {
 var DecoratorAccordion = (function (_super) {
     __extends(DecoratorAccordion, _super);
     function DecoratorAccordion(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.DecoratorAccordion);
         this.render = function (appendToObject) {
-            var s = _this.style;
+            var s = this.style;
             var outerDiv = $('<div></div>');
             outerDiv.uniqueId();
             var titleDiv;
-            if (_this.title)
-                titleDiv = $('<div>' + _this.title + '</div>');
+            if (this.title)
+                titleDiv = $('<div>' + this.title + '</div>');
             else
                 titleDiv = $('<div></div>');
             titleDiv.uniqueId();
@@ -1137,13 +1127,13 @@ var DecoratorAccordion = (function (_super) {
             var innerDiv = $('<div></div>');
             innerDiv.uniqueId();
             outerDiv.append(innerDiv);
-            if (_this.innerComponents) {
-                for (var i = 0; i < _this.innerComponents.length; i++) {
-                    _this.innerComponents[i].render(innerDiv);
+            if (this.innerComponents) {
+                for (var i = 0; i < this.innerComponents.length; i++) {
+                    this.innerComponents[i].render(innerDiv);
                 }
             }
             appendToObject.append(outerDiv);
-            if (_this.defaultCollapsed)
+            if (this.defaultCollapsed)
                 outerDiv.accordion({ collapsible: true, heightStyle: "content", active: false });
             else
                 outerDiv.accordion({ collapsible: true, heightStyle: "content" });
@@ -1176,10 +1166,9 @@ var StyleAccordion = (function (_super) {
 var ComponentTable = (function (_super) {
     __extends(ComponentTable, _super);
     function ComponentTable(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ComponentTable);
         this.render = function (appendToObject) {
-            var s = _this.style;
+            var s = this.style;
             var margin = Style.getMargins(s);
             var tbl = document.createElement('table');
             tbl.style.width = '100%';
@@ -1202,27 +1191,27 @@ var ComponentTable = (function (_super) {
             var padRight = 1;
             var padBottom = 1;
             var padLeft = 1;
-            if (_this.header) {
+            if (this.header) {
                 var theader = document.createElement('thead');
                 var headerRow = document.createElement('tr');
                 if (s && s.getHeaderColor())
                     headerRow.style.backgroundColor = s.getHeaderColor();
-                for (var i = 0; i < _this.header.length; i++) {
+                for (var i = 0; i < this.header.length; i++) {
                     var headerd = document.createElement('th');
                     headerd.style.padding = padTop + 'px ' + padRight + 'px ' + padBottom + 'px ' + padLeft + 'px';
-                    headerd.appendChild(document.createTextNode(_this.header[i]));
+                    headerd.appendChild(document.createTextNode(this.header[i]));
                     headerRow.appendChild(headerd);
                 }
                 tbl.appendChild(headerRow);
             }
-            if (_this.content) {
+            if (this.content) {
                 var tbdy = document.createElement('tbody');
-                for (var i = 0; i < _this.content.length; i++) {
+                for (var i = 0; i < this.content.length; i++) {
                     var tr = document.createElement('tr');
-                    for (var j = 0; j < _this.content[i].length; j++) {
+                    for (var j = 0; j < this.content[i].length; j++) {
                         var td = document.createElement('td');
                         td.style.padding = padTop + 'px ' + padRight + 'px ' + padBottom + 'px ' + padLeft + 'px';
-                        td.appendChild(document.createTextNode(_this.content[i][j]));
+                        td.appendChild(document.createTextNode(this.content[i][j]));
                         tr.appendChild(td);
                     }
                     tbdy.appendChild(tr);
@@ -1265,28 +1254,27 @@ var StyleTable = (function (_super) {
 var ComponentText = (function (_super) {
     __extends(ComponentText, _super);
     function ComponentText(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ComponentText);
         this.render = function (appendToObject) {
-            var textNode = document.createTextNode(_this.text);
-            if (_this.style) {
+            var textNode = document.createTextNode(this.text);
+            if (this.style) {
                 var newSpan = document.createElement('span');
-                if (_this.style.getFont())
-                    newSpan.style.font = _this.style.getFont();
-                if (_this.style.getFontSize() != null)
-                    newSpan.style.fontSize = _this.style.getFontSize() + "pt";
-                if (_this.style.getUnderline() != null)
+                if (this.style.getFont())
+                    newSpan.style.font = this.style.getFont();
+                if (this.style.getFontSize() != null)
+                    newSpan.style.fontSize = this.style.getFontSize() + "pt";
+                if (this.style.getUnderline() != null)
                     newSpan.style.textDecoration = 'underline';
-                if (_this.style.getColor())
-                    newSpan.style.color = _this.style.getColor();
-                if (_this.style.getMarginTop())
-                    newSpan.style.marginTop = _this.style.getMarginTop() + "px";
-                if (_this.style.getMarginBottom())
-                    newSpan.style.marginBottom = _this.style.getMarginBottom() + "px";
-                if (_this.style.getMarginLeft())
-                    newSpan.style.marginLeft = _this.style.getMarginLeft() + "px";
-                if (_this.style.getMarginRight())
-                    newSpan.style.marginRight = _this.style.getMarginRight() + "px";
+                if (this.style.getColor())
+                    newSpan.style.color = this.style.getColor();
+                if (this.style.getMarginTop())
+                    newSpan.style.marginTop = this.style.getMarginTop() + "px";
+                if (this.style.getMarginBottom())
+                    newSpan.style.marginBottom = this.style.getMarginBottom() + "px";
+                if (this.style.getMarginLeft())
+                    newSpan.style.marginLeft = this.style.getMarginLeft() + "px";
+                if (this.style.getMarginRight())
+                    newSpan.style.marginRight = this.style.getMarginRight() + "px";
                 newSpan.appendChild(textNode);
                 appendToObject.append(newSpan);
             }
