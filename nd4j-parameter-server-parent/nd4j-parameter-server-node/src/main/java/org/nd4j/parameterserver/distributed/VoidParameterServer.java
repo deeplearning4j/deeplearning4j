@@ -226,15 +226,18 @@ public class VoidParameterServer {
     protected Pair<NodeRole, String> getRole(@NonNull Configuration configuration, @NonNull Collection<String> localIPs) {
         NodeRole result = NodeRole.CLIENT;
 
-        for (String ip: localIPs) {
-            if (configuration.getShardAddresses().contains(ip))
+        for (String ip: configuration.getShardAddresses()) {
+            ip = ip.replaceAll(":.*","");
+            if (localIPs.contains(ip))
                 return Pair.create(NodeRole.SHARD, ip);
         }
 
         if (configuration.getBackupAddresses() != null)
-            for (String ip: localIPs)
-                if (configuration.getBackupAddresses().contains(ip))
+            for (String ip: configuration.getBackupAddresses()) {
+                ip = ip.replaceAll(":.*","");
+                if (localIPs.contains(ip))
                     return Pair.create(NodeRole.BACKUP, ip);
+            }
 
 
         // local IP from pair is used for shard only, so we don't care

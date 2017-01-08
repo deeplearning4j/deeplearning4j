@@ -41,6 +41,7 @@ public abstract class BaseTransport implements Transport {
     protected String unicastChannelUri;
 
     protected String ip;
+    protected int port;
 
     // TODO: move this to singleton holder
     protected MediaDriver driver;
