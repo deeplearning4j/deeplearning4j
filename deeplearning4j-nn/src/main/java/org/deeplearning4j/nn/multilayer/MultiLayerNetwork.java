@@ -2378,11 +2378,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * Evaluate the network (must be a binary classifier) on the specified data
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
      *
-     * @param iterator
-     * @param rocThresholdSteps
-     * @return
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps){
         ROC roc = new ROC(rocThresholdSteps);
@@ -2390,12 +2390,25 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return roc;
     }
 
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps){
         ROCMultiClass roc = new ROCMultiClass(rocThresholdSteps);
         doEvaluation(iterator, roc);
         return roc;
     }
 
+    /**
+     * Perform evaluation using an arbitrary IEvaluation instance.
+     *
+     * @param iterator   data to evaluate on
+     * @param evaluation IEvaluation instance to perform evaluation with
+     */
     public void doEvaluation(DataSetIterator iterator, IEvaluation evaluation){
         if(!iterator.hasNext() && iterator.resetSupported()){
             iterator.reset();

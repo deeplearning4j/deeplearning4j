@@ -8,11 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ *
+ * Reduction function for use with {@link IEvaluateFlatMapFunction} for distributed evaluation
+ *
  * @author Alex Black
  */
 @Slf4j
 public class IEvaluationReduceFunction<T extends IEvaluation> implements Function2<T, T, T> {
-
     public IEvaluationReduceFunction(){}
 
     @Override

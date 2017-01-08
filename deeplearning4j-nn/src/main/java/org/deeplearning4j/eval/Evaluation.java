@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.eval;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
@@ -52,6 +54,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected Counter<Integer> falseNegatives = new Counter<>();
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
+    @Getter
+    @Setter
     protected List<String> labelsList = new ArrayList<>();
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
@@ -196,7 +200,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
      *
      */
-    public void eval(INDArray realOutcomes, INDArray guesses, List<Serializable> recordMetaData ) {
+    @Override
+    public void eval(INDArray realOutcomes, INDArray guesses, List<? extends Serializable> recordMetaData ) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
