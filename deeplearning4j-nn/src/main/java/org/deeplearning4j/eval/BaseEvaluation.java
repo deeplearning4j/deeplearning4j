@@ -15,13 +15,13 @@ import java.util.List;
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 
     @Override
-    public void evalTimeSeries(INDArray labels, INDArray predicted){
+    public void evalTimeSeries(INDArray labels, INDArray predicted) {
         evalTimeSeries(labels, predicted, null);
     }
 
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
-        Pair<INDArray,INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, labelsMask);
+        Pair<INDArray, INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, labelsMask);
         INDArray labels2d = pair.getFirst();
         INDArray predicted2d = pair.getSecond();
 
@@ -29,7 +29,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     @Override
-    public void eval(INDArray labels, INDArray networkPredictions, List<Serializable> recordMetaData ){
+    public void eval(INDArray labels, INDArray networkPredictions, List<? extends Serializable> recordMetaData) {
         eval(labels, networkPredictions);
     }
 }
