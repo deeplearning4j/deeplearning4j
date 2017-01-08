@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import lombok.extern.slf4j.Slf4j;
+import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.writable.*;
@@ -372,6 +373,18 @@ public class TransformProcess implements Serializable {
         public Builder filter(Filter filter) {
             actionList.add(new DataAction(filter));
             return this;
+        }
+
+        /**
+         * Add a filter operation, based on the specified condition.
+         *
+         * If condition is satisfied (returns true): remove the example or sequence<br>
+         * If condition is not satisfied (returns false): keep the example or sequence
+         *
+         * @param condition Condition to filter on
+         */
+        public Builder filter(Condition condition){
+            return filter( new ConditionFilter(condition));
         }
 
         /**
