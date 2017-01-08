@@ -19,6 +19,7 @@ public interface Transport {
         DEDICATED_THREADS,
     }
 
+    void setIpAndPort(String ip, int port);
 
     short getShardIndex();
 

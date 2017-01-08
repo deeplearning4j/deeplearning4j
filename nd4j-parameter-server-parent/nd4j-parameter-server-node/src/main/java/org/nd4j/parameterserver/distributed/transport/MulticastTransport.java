@@ -51,7 +51,7 @@ public class MulticastTransport extends BaseTransport {
 
         this.shardIndex = shardIndex;
 
-        ip = localIp;
+
 
         multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getMulticastPort();
         if (configuration.getMulticastInterface() != null && !configuration.getMulticastInterface().isEmpty())
@@ -59,6 +59,8 @@ public class MulticastTransport extends BaseTransport {
 
         multicastChannelUri = multicastChannelUri + "|ttl=" + configuration.getTtl();
 
+        if (configuration.getNumberOfShards() < 0)
+            configuration.setNumberOfShards(configuration.getShardAddresses().size());
 
         switch (nodeRole) {
             case BACKUP:
@@ -66,8 +68,13 @@ public class MulticastTransport extends BaseTransport {
                 /*
                     In case of Shard, unicast address for communication is known in advance
                  */
+                if (ip == null) {
+                    ip = localIp;
+                    port = configuration.getUnicastPort();
+                }
 
-                unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + configuration.getUnicastPort();
+
+                unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
                 log.info("Shard unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
 
                 // this channel will be used to receive batches from Clients
@@ -91,11 +98,14 @@ public class MulticastTransport extends BaseTransport {
                 );
                 break;
             case CLIENT:
+                ip = localIp;
 
                 /*
                     In case of Client, unicast will be one of shards, picked up with random
                  */
-                String rts = ArrayUtil.getRandomElement(configuration.getShardAddresses());
+                // FIXME: we don't want that
+
+                String rts = configuration.getShardAddresses().get(0);//ArrayUtil.getRandomElement(configuration.getShardAddresses());
                 String[] split = rts.split(":");
                 if (split.length == 1) {
                     ip = rts;
@@ -149,7 +159,7 @@ public class MulticastTransport extends BaseTransport {
         }
 
 
-        log.info("Sending CS: {}", message.getClass().getCanonicalName());
+        //log.info("Sending CS: {}", message.getClass().getCanonicalName());
 
         message.setTargetId(targetIndex);
         DirectBuffer buffer = message.asUnsafeBuffer();
@@ -184,7 +194,7 @@ public class MulticastTransport extends BaseTransport {
             return;
         }
 
-        log.info("Sending CC: {}", message.getClass().getCanonicalName());
+        //log.info("Sending CC: {}", message.getClass().getCanonicalName());
 
         message.setTargetId((short) -1);
         publicationForShards.offer(message.asUnsafeBuffer());
@@ -203,7 +213,7 @@ public class MulticastTransport extends BaseTransport {
             return;
         }
 
-        log.info("Sending FC: {}", message.getClass().getCanonicalName());
+        //log.info("Sending FC: {}", message.getClass().getCanonicalName());
 
         message.setTargetId((short) -1);
         publicationForClients.offer(message.asUnsafeBuffer());

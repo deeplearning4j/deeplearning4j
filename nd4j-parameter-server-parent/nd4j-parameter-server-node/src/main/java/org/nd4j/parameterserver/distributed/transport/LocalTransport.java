@@ -118,4 +118,9 @@ public class LocalTransport implements Transport {
     public short getTargetIndex() {
         return 0;
     }
+
+    @Override
+    public void setIpAndPort(String ip, int port) {
+
+    }
 }

@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
+import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -164,22 +165,29 @@ public class VoidParameterServerStressTest {
                 .numberOfShards(1)
                 .build();
 
-        configuration.setShardAddresses("192.168.1.35");
+        List<String> addresses = new ArrayList<>();
+        for (int s = 0; s < 5; s++) {
+            addresses.add("192.168.1.35:3789" + s);
+        }
+
+        configuration.setShardAddresses(addresses);
         configuration.setForcedRole(NodeRole.CLIENT);
 
-        Configuration[] configurations = new Configuration[10];
-        VoidParameterServer[] shards = new VoidParameterServer[10];
+        Configuration[] configurations = new Configuration[5];
+        VoidParameterServer[] shards = new VoidParameterServer[5];
         for (int s = 0; s < shards.length; s++) {
             configurations[s] = Configuration.builder()
-                    .unicastPort(3789 + s)
+                    .unicastPort(Integer.valueOf("3789" + s))
                     .networkMask("192.168.0.0/16")
                     .build();
 
-            configurations[s].setShardAddresses("192.168.1.36");
+            configurations[s].setShardAddresses(addresses);
 
+            MulticastTransport transport = new MulticastTransport();
+            transport.setIpAndPort("192.168.1.35", Integer.valueOf("3789" + s));
             shards[s] =  new VoidParameterServer(false);
             shards[s].setShardIndex((short) s);
-            shards[s].init(configurations[s]);
+            shards[s].init(configurations[s], transport);
 
             assertEquals(NodeRole.SHARD, shards[s].getNodeRole());
         }
@@ -188,8 +196,12 @@ public class VoidParameterServerStressTest {
         VoidParameterServer.getInstance().init(configuration);
         assertEquals(NodeRole.CLIENT, VoidParameterServer.getInstance().getNodeRole());
 
-        VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
+        log.info("Instantiation finished...");
 
+        VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 20, true, false);
+
+
+        log.info("Initialization finished...");
 
         final List<Long> times = new CopyOnWriteArrayList<>();
 
@@ -203,7 +215,7 @@ public class VoidParameterServerStressTest {
                 int start = e * chunk;
                 int end =  (e + 1) * chunk;
 
-                for (int i = 0; i < 1000000; i++) {
+                for (int i = 0; i < 100000; i++) {
                     long time1 = System.nanoTime();
                     INDArray array = VoidParameterServer.getInstance().getVector(RandomUtils.nextInt(start, end));
                     long time2 = System.nanoTime();

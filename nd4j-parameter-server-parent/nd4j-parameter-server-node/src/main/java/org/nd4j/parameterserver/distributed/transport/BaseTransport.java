@@ -91,8 +91,8 @@ public abstract class BaseTransport implements Transport {
                 //Thread.sleep(1);
                 idler.idle();
 
-                if (cnt.incrementAndGet() > 100) {
-                    //log.info("Resending request for taskId [{}]", taskId);
+                if (cnt.incrementAndGet() > 20000) {
+                    log.info("Resending request for taskId [{}]", taskId);
                     return sendMessageAndGetResponse(message);
                 }
             } catch (Exception e) {
@@ -103,6 +103,12 @@ public abstract class BaseTransport implements Transport {
         completed.remove(taskId);
 
         return msg;
+    }
+
+    @Override
+    public void setIpAndPort(@NonNull String ip, int port) {
+        this.ip = ip;
+        this.port = port;
     }
 
     @Override
@@ -165,14 +171,14 @@ public abstract class BaseTransport implements Transport {
          * All incoming messages here are supposed to be unicast messages.
          */
         // TODO: implement fragmentation handler here PROBABLY. Or forbid messages > MTU?
-        log.info("shardMessageHandler message request incoming...");
+        //log.info("shardMessageHandler message request incoming...");
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
         VoidMessage message = VoidMessage.fromBytes(data);
         if (message.getMessageType() == 7) {
             // if that's vector request message - it's special case, we don't send it to other shards yet
-            log.info("Shortcut for vector request");
+            //log.info("Shortcut for vector request");
             messages.add(message);
         } else {
             // and send it away to other Shards
@@ -192,12 +198,14 @@ public abstract class BaseTransport implements Transport {
         /**
          * All incoming internal messages are either op commands, or aggregation messages that are tied to commands
          */
-        log.info("internalMessageHandler message request incoming");
-
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
-        messages.add(VoidMessage.fromBytes(data));
+        VoidMessage message = VoidMessage.fromBytes(data);
+
+        messages.add(message);
+
+    //    log.info("internalMessageHandler message request incoming: {}", message.getClass().getSimpleName());
     }
 
     /**
@@ -213,7 +221,7 @@ public abstract class BaseTransport implements Transport {
          *  All of them should implement MeaningfulMessage interface
          */
         // TODO: to be implemented
-        log.info("clientMessageHandler message request incoming");
+      //  log.info("clientMessageHandler message request incoming");
 
         byte[] data = new byte[length];
         buffer.getBytes(offset, data);

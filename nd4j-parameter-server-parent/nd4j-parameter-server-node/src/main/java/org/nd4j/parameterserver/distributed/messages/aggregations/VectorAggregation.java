@@ -33,6 +33,11 @@ public class VectorAggregation extends BaseAggregation {
 
             if (clipboard.isReady(taskId)) {
                 VoidAggregation aggregation = clipboard.unpin(taskId);
+
+                // FIXME: probably there's better solution, then "screw-and-forget" one
+                if (aggregation == null)
+                    return;
+
                 VectorCompleteMessage msg = new VectorCompleteMessage(taskId, aggregation.getAccumulatedResult());
                 transport.sendMessage(msg);
             }

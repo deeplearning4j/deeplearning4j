@@ -106,6 +106,10 @@ public class VoidParameterServer {
         return shardIndex;
     }
 
+    protected void setIpPortForShard(String ip, int port) {
+        transport.setIpAndPort(ip, port);
+    }
+
     protected void setShardIndex(short idx) {
         shardIndex = idx;
     }
@@ -202,7 +206,10 @@ public class VoidParameterServer {
         }
 
         // TODO: uncomment this line on later stages
-        //transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+        if (!(NodeRole.SHARD == nodeRole && configuration.getShardAddresses().size() == 1)) {
+            log.info("Launching transport...");
+            transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+        }
         trainer.init(this.configuration, this.transport, storage, clipboard);
     }
 
