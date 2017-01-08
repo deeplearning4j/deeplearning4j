@@ -1,11 +1,23 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.*;
 
@@ -530,6 +542,50 @@ public class ROCTest {
 
             assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
             assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+        }
+    }
+
+    @Test
+    public void RocEvalSanityCheck(){
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
+                .layer(1, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        NormalizerStandardize ns = new NormalizerStandardize();
+        DataSet ds = iter.next();
+        ns.fit(ds);
+        ns.transform(ds);
+
+        iter.setPreProcessor(ns);
+
+        for( int i=0; i<30; i++ ) {
+            net.fit(ds);
+        }
+
+        ROCMultiClass roc = net.evaluateROCMultiClass(iter, 32);
+
+        INDArray f = ds.getFeatures();
+        INDArray l = ds.getLabels();
+        INDArray out = net.output(f);
+        ROCMultiClass manual = new ROCMultiClass(32);
+        manual.eval(l, out);
+
+        for( int i=0; i<3; i++ ) {
+            assertEquals(manual.calculateAUC(i), roc.calculateAUC(i), 1e-6);
+
+            double[][] rocCurve = roc.getResultsAsArray(i);
+            double[][] rocManual = manual.getResultsAsArray(i);
+
+            assertArrayEquals(rocCurve[0], rocManual[0], 1e-6);
+            assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
         }
     }
 }

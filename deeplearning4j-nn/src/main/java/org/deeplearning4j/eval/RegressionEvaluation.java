@@ -23,19 +23,18 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class RegressionEvaluation {
+public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
 
     private List<String> columnNames;
     private int precision;
-    private int exampleCount = 0;
+    private long exampleCount = 0;
     private INDArray labelsSumPerColumn;    //sum(actual) per column -> used to calculate mean
     private INDArray sumSquaredErrorsPerColumn;     //(predicted - actual)^2
     private INDArray sumAbsErrorsPerColumn;         //abs(predicted-actial)
     private INDArray currentMean;
     private INDArray currentPredictionMean;
-    private INDArray m2Actual;
 
     private INDArray sumOfProducts;
     private INDArray sumSquaredLabels;
@@ -75,6 +74,9 @@ public class RegressionEvaluation {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(List<String> columnNames, int precision) {
+        if(columnNames == null || columnNames.size() == 0){
+            throw new IllegalArgumentException("Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
+        }
         this.columnNames = columnNames;
         this.precision = precision;
 
@@ -83,7 +85,6 @@ public class RegressionEvaluation {
         sumSquaredErrorsPerColumn = Nd4j.zeros(n);
         sumAbsErrorsPerColumn = Nd4j.zeros(n);
         currentMean = Nd4j.zeros(n);
-        m2Actual = Nd4j.zeros(n);
 
         currentPredictionMean = Nd4j.zeros(n);
         sumOfProducts = Nd4j.zeros(n);
@@ -97,7 +98,7 @@ public class RegressionEvaluation {
         return list;
     }
 
-
+    @Override
     public void eval(INDArray labels, INDArray predictions) {
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
@@ -126,65 +127,41 @@ public class RegressionEvaluation {
         exampleCount += nRows;
     }
 
+    @Override
+    public void merge(RegressionEvaluation other) {
 
-    /**
-     * Convenience method for evaluation of time series.
-     * Reshapes time series (3d) to 2d, then calls eval
-     * @see #eval(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions) {
-        //exactly as per Evaluation.evalTimeSeries
-        if(labels.rank() == 2 && predictions.rank() == 2) eval(labels,predictions);
-        if(labels.rank() != 3 ) throw new IllegalArgumentException("Invalid input: labels are not rank 3 (rank="+labels.rank()+")");
-        if(!Arrays.equals(labels.shape(),predictions.shape())){
-            throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
-                    + Arrays.toString(labels.shape()) + ", predictions="+Arrays.toString(predictions.shape()));
+        if(other.labelsSumPerColumn == null){
+            //Other RegressionEvaluation is empty -> no op
+            return;
+
+        } else if(labelsSumPerColumn == null){
+            //This RegressionEvaluation is empty -> just copy over from the other one...
+            this.columnNames = other.columnNames;
+            this.precision = other.precision;
+            this.exampleCount = other.exampleCount;
+            this.labelsSumPerColumn = other.labelsSumPerColumn.dup();
+            this.sumSquaredErrorsPerColumn = other.sumSquaredErrorsPerColumn.dup();
+            this.sumAbsErrorsPerColumn = other.sumAbsErrorsPerColumn.dup();
+            this.currentMean = other.currentMean.dup();
+            this.currentPredictionMean = other.currentPredictionMean.dup();
+            this.sumOfProducts = other.sumOfProducts.dup();
+            this.sumSquaredLabels = other.sumSquaredLabels.dup();
+            this.sumSquaredPredicted = other.sumSquaredPredicted.dup();
+
+            return;
         }
 
-        if( labels.ordering() == 'f' ) labels = Shape.toOffsetZeroCopy(labels, 'c');
-        if( predictions.ordering() == 'f' ) predictions = Shape.toOffsetZeroCopy(predictions, 'c');
+        this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
+        this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
+        this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
+        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
+        this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
+        this.sumOfProducts.addi(other.sumOfProducts);
+        this.sumSquaredLabels.addi(other.sumSquaredLabels);
+        this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
 
-        //Reshape, as per RnnToFeedForwardPreProcessor:
-        int[] shape = labels.shape();
-        labels = labels.permute(0,2,1);	//Permute, so we get correct order after reshaping
-        labels = labels.reshape(shape[0] * shape[2], shape[1]);
-
-        predictions = predictions.permute(0, 2, 1);
-        predictions = predictions.reshape(shape[0] * shape[2], shape[1]);
-
-        eval(labels,predictions);
+        this.exampleCount += other.exampleCount;
     }
-
-    /**
-     * Evaluate a time series, whether the output is masked usind a masking array. That is,
-     * the mask array specified whether the output at a given time step is actually present, or whether it
-     * is just padding.<br>
-     * For example, for N examples, nOut output size, and T time series length:
-     * labels and predicted will have shape [N,nOut,T], and outputMask will have shape [N,T].
-     * @see #evalTimeSeries(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray outputMask) {
-
-        int totalOutputExamples = outputMask.sumNumber().intValue();
-        int outSize = labels.size(1);
-
-        INDArray labels2d = Nd4j.create(totalOutputExamples, outSize);
-        INDArray predicted2d = Nd4j.create(totalOutputExamples,outSize);
-
-        int rowCount = 0;
-        for( int ex=0; ex<outputMask.size(0); ex++ ){
-            for( int t=0; t<outputMask.size(1); t++ ){
-                if(outputMask.getDouble(ex,t) == 0.0) continue;
-
-                labels2d.putRow(rowCount, labels.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-                predicted2d.putRow(rowCount, predictions.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-
-                rowCount++;
-            }
-        }
-        eval(labels2d,predicted2d);
-    }
-
 
     public String stats() {
 

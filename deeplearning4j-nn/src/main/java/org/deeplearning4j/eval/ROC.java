@@ -31,7 +31,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
-public class ROC implements Serializable {
+public class ROC extends BaseEvaluation<ROC> {
 
     private final int thresholdSteps;
 
@@ -123,33 +123,6 @@ public class ROC implements Serializable {
             thresholdCounts.incrementTruePositive(truePositiveCount);
             thresholdCounts.incrementFalsePositive(falsePositiveCount);
         }
-    }
-
-    /**
-     * Evaluate (collect statistics for) the given minibatch of data time series (3d) data, with no mask array
-     *
-     * @param labels      Labels / true outcomes
-     * @param predictions Predictions
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions) {
-        evalTimeSeries(labels, predictions, null);
-    }
-
-    /**
-     * Evaluate (collect statistics for) the given minibatch of data time series (3d) data, with optional (nullable)
-     * output mask array.
-     * labels/predictions arrays should be 3d time series ([minibatchSize, 1 or 2, timeSeriesLength]), and mask
-     * array should be a 2d array with shape [minibatchSize, timeSeriesLength] with values 0 or 1
-     *
-     * @param labels    Labels / true outcomes
-     * @param predicted Predictions
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) {
-        Pair<INDArray,INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predicted, outputMask);
-        INDArray labels2d = pair.getFirst();
-        INDArray predicted2d = pair.getSecond();
-
-        eval(labels2d, predicted2d);
     }
 
     /**
@@ -263,6 +236,7 @@ public class ROC implements Serializable {
      *
      * @param other ROC instance to combine with this one
      */
+    @Override
     public void merge(ROC other){
         if(this.thresholdSteps != other.thresholdSteps){
             throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("
