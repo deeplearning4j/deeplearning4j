@@ -26,9 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +41,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class Evaluation implements Serializable {
+public class Evaluation extends BaseEvaluation {
     protected static final Logger log = LoggerFactory.getLogger(Evaluation.class);
 
     protected final int topN;
@@ -188,7 +186,7 @@ public class Evaluation implements Serializable {
      * @param guesses      the guesses/prediction (usually a probability vector)
      */
     public void eval(INDArray realOutcomes, INDArray guesses) {
-        eval(realOutcomes, guesses, (List<Object>)null);
+        eval(realOutcomes, guesses, (List<Serializable>)null);
     }
 
     /**
@@ -199,7 +197,7 @@ public class Evaluation implements Serializable {
      * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
      *
      */
-    public void eval(INDArray realOutcomes, INDArray guesses, List<?> recordMetaData ) {
+    public void eval(INDArray realOutcomes, INDArray guesses, List<Serializable> recordMetaData ) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -302,66 +300,6 @@ public class Evaluation implements Serializable {
                 topNTotalCount++;
             }
         }
-    }
-
-    /**
-     * Convenience method for evaluation of time series.
-     * Reshapes time series (3d) to 2d, then calls eval
-     *
-     * @see #eval(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predicted) {
-        if (labels.rank() == 2 && predicted.rank() == 2) eval(labels, predicted);
-        if (labels.rank() != 3)
-            throw new IllegalArgumentException("Invalid input: labels are not rank 3 (rank=" + labels.rank() + ")");
-        if (!Arrays.equals(labels.shape(), predicted.shape())) {
-            throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
-                    + Arrays.toString(labels.shape()) + ", predicted=" + Arrays.toString(predicted.shape()));
-        }
-
-        if (labels.ordering() == 'f') labels = Shape.toOffsetZeroCopy(labels, 'c');
-        if (predicted.ordering() == 'f') predicted = Shape.toOffsetZeroCopy(predicted, 'c');
-
-        //Reshape, as per RnnToFeedForwardPreProcessor:
-        int[] shape = labels.shape();
-        labels = labels.permute(0, 2, 1);    //Permute, so we get correct order after reshaping
-        labels = labels.reshape(shape[0] * shape[2], shape[1]);
-
-        predicted = predicted.permute(0, 2, 1);
-        predicted = predicted.reshape(shape[0] * shape[2], shape[1]);
-
-        eval(labels, predicted);
-    }
-
-    /**
-     * Evaluate a time series, whether the output is masked usind a masking array. That is,
-     * the mask array specified whether the output at a given time step is actually present, or whether it
-     * is just padding.<br>
-     * For example, for N examples, nOut output size, and T time series length:
-     * labels and predicted will have shape [N,nOut,T], and outputMask will have shape [N,T].
-     *
-     * @see #evalTimeSeries(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) {
-
-        int totalOutputExamples = outputMask.sumNumber().intValue();
-        int outSize = labels.size(1);
-
-        INDArray labels2d = Nd4j.create(totalOutputExamples, outSize);
-        INDArray predicted2d = Nd4j.create(totalOutputExamples, outSize);
-
-        int rowCount = 0;
-        for (int ex = 0; ex < outputMask.size(0); ex++) {
-            for (int t = 0; t < outputMask.size(1); t++) {
-                if (outputMask.getDouble(ex, t) == 0.0) continue;
-
-                labels2d.putRow(rowCount, labels.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-                predicted2d.putRow(rowCount, predicted.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-
-                rowCount++;
-            }
-        }
-        eval(labels2d, predicted2d);
     }
 
     /**
