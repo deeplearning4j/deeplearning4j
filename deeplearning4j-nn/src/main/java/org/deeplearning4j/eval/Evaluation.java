@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.eval;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
@@ -28,8 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -41,8 +40,8 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class Evaluation extends BaseEvaluation {
-    protected static final Logger log = LoggerFactory.getLogger(Evaluation.class);
+@Slf4j
+public class Evaluation extends BaseEvaluation<Evaluation> {
 
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -850,6 +849,7 @@ public class Evaluation extends BaseEvaluation {
      *
      * @param other Evaluation object to merge into this one.
      */
+    @Override
     public void merge(Evaluation other) {
         if (other == null) return;
 

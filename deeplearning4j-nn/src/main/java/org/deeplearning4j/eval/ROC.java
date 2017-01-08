@@ -31,7 +31,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
-public class ROC extends BaseEvaluation {
+public class ROC extends BaseEvaluation<ROC> {
 
     private final int thresholdSteps;
 
@@ -236,6 +236,7 @@ public class ROC extends BaseEvaluation {
      *
      * @param other ROC instance to combine with this one
      */
+    @Override
     public void merge(ROC other){
         if(this.thresholdSteps != other.thresholdSteps){
             throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("

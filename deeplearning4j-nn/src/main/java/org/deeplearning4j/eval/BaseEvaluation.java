@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public abstract class BaseEvaluation implements IEvaluation {
+public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predicted){
