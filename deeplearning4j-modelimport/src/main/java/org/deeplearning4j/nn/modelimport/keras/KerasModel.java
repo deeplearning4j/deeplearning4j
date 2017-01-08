@@ -45,7 +45,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.util.*;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayerOld.DimOrder;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
@@ -95,7 +95,7 @@ public class KerasModel {
 
     protected String className;               // Keras model class name
     protected List<String> layerNamesOrdered; // ordered list of layer names
-    protected Map<String,KerasLayer> layers;  // map from layer name to KerasLayer
+    protected Map<String,KerasLayerOld> layers;  // map from layer name to KerasLayerOld
     protected ArrayList<String> inputLayerNames;   // list of input layer names
     protected ArrayList<String> outputLayerNames;  // list of output layer names
     protected Map<String,Set<String>> inputToOutput; // graph of input-to-output relationships
@@ -175,16 +175,16 @@ public class KerasModel {
 
     /**
      * Helper method called from constructor. Converts layer configuration
-     * JSON into KerasLayer objects.
+     * JSON into KerasLayerOld objects.
      *
      * @param layerConfigs      List of Keras layer configurations
      */
     protected void helperPrepareLayers(List<Object> layerConfigs)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this.layers = new HashMap<String, KerasLayer>();
+        this.layers = new HashMap<String, KerasLayerOld>();
         this.layerNamesOrdered = new ArrayList<String>();
         for (Object layerConfig : layerConfigs) {
-            KerasLayer layer = new KerasLayer((Map<String, Object>) layerConfig, this.train);
+            KerasLayerOld layer = new KerasLayerOld((Map<String, Object>) layerConfig, this.train);
             this.layerNamesOrdered.add(layer.getName());
             this.layers.put(layer.getName(), layer);
         }
@@ -225,12 +225,12 @@ public class KerasModel {
         Map<String,Object> trainingConfig = parseJsonString(trainingConfigJson);
 
         /* Add loss layers for each loss function. */
-        Map<String,KerasLayer> lossLayers = new HashMap<String,KerasLayer>();
+        Map<String,KerasLayerOld> lossLayers = new HashMap<String,KerasLayerOld>();
         Object kerasLossObj = checkAndGetTrainingField(trainingConfig, TRAINING_CONFIG_FIELD_LOSS);
         if (kerasLossObj instanceof String) {
             String kerasLoss = (String)kerasLossObj;
             for (String outputLayerName : this.outputLayerNames)
-                lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", kerasLoss));
+                lossLayers.put(outputLayerName, KerasLayerOld.createLossLayer(outputLayerName + "_loss", kerasLoss));
             this.outputLayerNames.clear();
         } else if (kerasLossObj instanceof Map) {
             Map<String,Object> kerasLossMap = (Map<String,Object>)kerasLossObj;
@@ -238,7 +238,7 @@ public class KerasModel {
                 this.outputLayerNames.remove(outputLayerName);
                 Object kerasLoss = kerasLossMap.get(outputLayerName);
                 if (kerasLoss instanceof String)
-                    lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", (String)kerasLoss));
+                    lossLayers.put(outputLayerName, KerasLayerOld.createLossLayer(outputLayerName + "_loss", (String)kerasLoss));
                 else
                     throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
             }
@@ -246,7 +246,7 @@ public class KerasModel {
 
         /* Add loss layers to output layer list and layer graph. */
         for (String outputLayerName : lossLayers.keySet()) {
-            KerasLayer lossLayer = lossLayers.get(outputLayerName);
+            KerasLayerOld lossLayer = lossLayers.get(outputLayerName);
             this.layers.put(lossLayer.getName(), lossLayer);
             String lossLayerName = lossLayer.getName();
             outputLayerNames.add(lossLayerName);
@@ -299,7 +299,7 @@ public class KerasModel {
 
         /* Add layerNamesOrdered one at a time. */
         for (String layerName : this.layerNamesOrdered) {
-            KerasLayer layer = this.layers.get(layerName);
+            KerasLayerOld layer = this.layers.get(layerName);
             if (layer.isDl4jLayer()) { // Ignore "preprocessor" layers for now
                 /* Get inbound layer names. */
                 List<String> inboundLayerNames = inferInboundLayerNames(layerName);
@@ -414,10 +414,10 @@ public class KerasModel {
         if (!this.inputLayerNames.contains(inputLayerName))
             throw new UnsupportedOperationException("Cannot infer input type for non-input layer " + inputLayerName);
 
-        KerasLayer inputLayer = this.layers.get(inputLayerName);
+        KerasLayerOld inputLayer = this.layers.get(inputLayerName);
         InputType inputType = null;
         List<String> layerNameQueue = new ArrayList<String>(this.inputToOutput.get(inputLayerName));
-        KerasLayer nextLayer;
+        KerasLayerOld nextLayer;
 //        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
         int inputShapeLength = inputLayer.getKerasInputShape().length;
 
@@ -456,7 +456,7 @@ public class KerasModel {
         return inputType;
     }
 
-//    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
+//    protected void inferFromLaterLayer(KerasLayerOld thisLayer, KerasLayerOld nextLayer) {
 //        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
 //    }
 
@@ -468,7 +468,7 @@ public class KerasModel {
     protected List<String> inferInboundLayerNames(String layerName) {
         ArrayList<String> inboundLayerNames = new ArrayList<String>(this.outputToInput.get(layerName));
         for (int i = 0; i < inboundLayerNames.size(); i++) {
-            KerasLayer nextLayer = this.layers.get(inboundLayerNames.get(i));
+            KerasLayerOld nextLayer = this.layers.get(inboundLayerNames.get(i));
             if (!nextLayer.isValidInboundLayer()) {
                 String nextLayerName = inboundLayerNames.remove(i);
                 inboundLayerNames.addAll(i--, this.outputToInput.get(nextLayerName));
@@ -546,7 +546,7 @@ public class KerasModel {
      *
      * @param model             DL4J Model interface
      * @param weights           nested Map from layer names to parameter names to INDArrays
-     * @param kerasLayers       Map from layerName to layerConfig
+     * @param kerasLayers       Map from layerName to kerasConfig
      * @return                  DL4J Model interface
      * @throws InvalidKerasConfigurationException
      *
@@ -554,7 +554,7 @@ public class KerasModel {
      */
     protected static org.deeplearning4j.nn.api.Model copyWeightsToModel(org.deeplearning4j.nn.api.Model model,
                                                                         Map<String, Map<String, INDArray>> weights,
-                                                                        Map<String,KerasLayer> kerasLayers)
+                                                                        Map<String,KerasLayerOld> kerasLayers)
             throws InvalidKerasConfigurationException {
         /* TODO: how might this break?
          * - mismatch between layer/parameter names?
@@ -563,7 +563,7 @@ public class KerasModel {
          */
         for (String layerName : weights.keySet()) {
             org.deeplearning4j.nn.api.Layer layer = null;
-            KerasLayer kerasLayer = kerasLayers.get(layerName);
+            KerasLayerOld kerasLayer = kerasLayers.get(layerName);
             if (model instanceof MultiLayerNetwork) {
                 layer = ((MultiLayerNetwork) model).getLayer(layerName);
             }
@@ -723,7 +723,7 @@ public class KerasModel {
      * @param kerasParamName        Keras parameter name
      * @return                      DL4J parameter name
      *
-     * TODO: should this be moved into KerasLayer?
+     * TODO: should this be moved into KerasLayerOld?
      */
     private static String mapParameterName(String kerasParamName) {
         String paramName = null;
