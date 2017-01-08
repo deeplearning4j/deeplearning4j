@@ -642,8 +642,9 @@ public class WordVectorSerializer {
         writeEntry(fis, zipfile);
         fis.close();
 
-        ZipEntry config = new ZipEntry("");
+        ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
+        log.info("Current config: {}", vectors.getConfiguration().toJson());
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
 
         zipfile.flush();
@@ -2309,19 +2310,19 @@ public class WordVectorSerializer {
 
                 // now we're restoring configuration saved earlier
                 ZipEntry config = zipFile.getEntry("config.json");
-                stream = zipFile.getInputStream(config);
+                if (config != null) {
+                    stream = zipFile.getInputStream(config);
 
-                Files.copy(stream, Paths.get(tmpFileConfig.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-
-                StringBuilder builder = new StringBuilder();
-                try(BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
-                    String line;
-                    while((line = reader.readLine()) != null) {
-                        builder.append(line);
+                    StringBuilder builder = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            builder.append(line);
+                        }
                     }
-                }
 
-                configuration = VectorsConfiguration.fromJson(builder.toString().trim());
+                    configuration = VectorsConfiguration.fromJson(builder.toString().trim());
+                }
 
                 // basically read up everything, call vstacl and then return model
                 List<INDArray> arrays = new ArrayList<>();

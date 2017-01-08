@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -33,6 +32,8 @@ import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.ROC;
+import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -40,22 +41,22 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
-import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.ExampleCountEventStats;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -66,7 +67,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -939,5 +939,121 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         JavaRDD<DataSet> data = sc.parallelize(trainData);
 
         sparkNet.fit(data);
+    }
+
+
+    @Test
+    public void testROC(){
+
+        int nArrays = 100;
+        int minibatch = 64;
+        int steps = 20;
+        int nIn = 5;
+        int nOut = 2;
+        int layerSize = 10;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).build())
+                .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        ROC local = new ROC(steps);
+        List<DataSet> dsList = new ArrayList<>();
+        for( int i=0; i<nArrays; i++ ){
+            INDArray features = Nd4j.rand(minibatch, nIn);
+
+            INDArray p = net.output(features);
+
+            INDArray l = Nd4j.zeros(minibatch, 2);
+            for( int j=0; j<minibatch; j++ ){
+                l.putScalar(j, r.nextInt(2), 1.0);
+            }
+
+            local.eval(l, p);
+
+            dsList.add(new DataSet(features, l));
+        }
+
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, net, null);
+        JavaRDD<DataSet> rdd = sc.parallelize(dsList);
+
+        ROC sparkROC = sparkNet.evaluateROC(rdd, steps, 32);
+
+        assertEquals(sparkROC.calculateAUC(), sparkROC.calculateAUC(), 1e-6);
+
+        double[][] arrLocal = local.getResultsAsArray();
+        double[][] arrSpark = sparkROC.getResultsAsArray();
+
+        assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
+        assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+    }
+
+
+    @Test
+    public void testROCMultiClass(){
+
+        int nArrays = 100;
+        int minibatch = 64;
+        int steps = 20;
+        int nIn = 5;
+        int nOut = 3;
+        int layerSize = 10;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).build())
+                .layer(1, new OutputLayer.Builder().nIn(layerSize).nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        ROCMultiClass local = new ROCMultiClass(steps);
+        List<DataSet> dsList = new ArrayList<>();
+        for( int i=0; i<nArrays; i++ ){
+            INDArray features = Nd4j.rand(minibatch, nIn);
+
+            INDArray p = net.output(features);
+
+            INDArray l = Nd4j.zeros(minibatch, nOut);
+            for( int j=0; j<minibatch; j++ ){
+                l.putScalar(j, r.nextInt(nOut), 1.0);
+            }
+
+            local.eval(l, p);
+
+            dsList.add(new DataSet(features, l));
+        }
+
+
+        SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, net, null);
+        JavaRDD<DataSet> rdd = sc.parallelize(dsList);
+
+        ROCMultiClass sparkROC = sparkNet.evaluateROCMultiClass(rdd, steps, 32);
+
+        for( int i=0; i<nOut; i++ ) {
+            assertEquals(sparkROC.calculateAUC(i), sparkROC.calculateAUC(i), 1e-6);
+
+            double[][] arrLocal = local.getResultsAsArray(i);
+            double[][] arrSpark = sparkROC.getResultsAsArray(i);
+
+            assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
+            assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+        }
     }
 }
