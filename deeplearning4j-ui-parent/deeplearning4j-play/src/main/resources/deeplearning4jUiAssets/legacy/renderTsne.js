@@ -64,89 +64,160 @@ function zoomHandler() {
 }
 
 
+var marginLeft = 100;
+var widthExMargin = width - marginLeft;
+var marginTop = 100;
+var heightExMargin = height - marginTop;
 
 function drawEmbedding() {
     $("#embed").empty();
     var div = d3.select("#embed");
 
-    fx = d3.scale.linear()
-        .domain([xMin, xMax])
-        .range([0, width])
+    xScale = d3.scale.linear().range([0,widthExMargin]);
+    yScale = d3.scale.linear().range([heightExMargin, 0]);
 
-    fy = d3.scale.linear()
-        .domain([yMin, yMax])
-        .range([height, 0]);
+    xAxis = d3.svg.axis().scale(xScale)
+        .innerTickSize(-height) //Used as grid line
+        .orient("bottom").ticks(5);
 
-
-    //Define X axis
-	xAxis = d3.svg.axis()
-		.scale(fx)
-		.orient("bottom")
-		.tickSize(-height)
-		.tickFormat(d3.format("s"));
-
-	//Define Y axis
-	yAxis = d3.svg.axis()
-		.scale(fy)
-		.orient("left")
-		.ticks(5)
-		.tickSize(-width)
-		.tickFormat(d3.format("s"));
-
+    yAxis = d3.svg.axis().scale(yScale)
+        .innerTickSize(-width)  //Used as grid line
+        .orient("left").ticks(5);
 
     svg = div.append("svg") // svg is global
-    .attr("width", width)
-    .attr("height", height);
+        .attr("width", widthExMargin)
+        .attr("height", heightExMargin)
+        .attr("transform", "translate(" + marginLeft + "," + marginTop + ")");
+
+    // Add the X Axis
+    xAxisNode = svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + heightExMargin + ")")
+        .style("stroke", "#000")
+        .style("stroke-width", "1.0")
+        .style("fill", "#000")
+        .call(xAxis);
+    xAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
 
 
-    svg.append("g")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis);
+    // Add the Y Axis
+    var yAxisNode = svg.append("g")
+        .attr("class", "y axis")
+        .style("stroke", "#000")
+        .style("stroke-width", "1.0")
+        .style("fill", "#000")
+        .call(yAxis);
+    yAxisNode.selectAll('text').style("stroke-width",0).style("fill","#000000");
 
-	svg.append("g")
-		.attr("class", "y axis")
-		.call(yAxis);
 
+    xMin = d3.min(x);
+    xMax = d3.max(x);
+    yMin = d3.min(y);
+    yMax = d3.max(y);
 
+    xScale.domain([xMin, xMax]);
+    yScale.domain([yMin, yMax]);
+
+    //Add the data
+    var data = x.map(function (d, i) {
+        return {'xPos': x[i], 'yPos': y[i]};
+    });
 
     svg.selectAll("circle")
-        .data(name3)
+        .data(data)
         .enter()
         .append("circle")
-        .attr("cx", function(d, i) {
-        			   		return fx(x[i]);
-        			   })
-        			   .attr("cy", function(d, i) {
-        			   		return fy(y[i]);
-        			   })
-        			   .attr("r", 2);
+        .style("fill", "#000000")
+        .attr("r", "3")
+        .attr("cx", function (d) {
+            return xScale(d['xPos']);
+        })
+        .attr("cy", function (d) {
+            return yScale(d['yPos']);
+        });
 
-    svg.selectAll("text")
-       .data(name3)
-       .enter()
-       .append("text")
-       .text(function(d,i) {
-    			   		return name3[i];
-    			   })
-       .attr("x", function(d,i) {
-    			   		return fx(x[i]);
-    			   })
-       .attr("y", function(d, i) {
-    			   		return fy(y[i]);
-    			   })
-       .attr("font-family", "sans-serif")
-       .attr("font-size", "11px")
-       .attr("fill", "red");
-
-
-    var zoomListener = d3.behavior.zoom()
-        .x(fx)
-        .y(fy)
-        .scaleExtent([0.00000001, 100000])
-        .center([0,0])
-        .on("zoom", zoomHandler);
-    zoomListener(svg);
+    //
+    // fx = d3.scale.linear()
+    //     .domain([xMin, xMax])
+    //     .range([0, width])
+    //
+    // fy = d3.scale.linear()
+    //     .domain([yMin, yMax])
+    //     .range([height, 0]);
+    //
+    // console.log("xMin/xMax: " + xMin + "," + xMax + "; yMin/yMax: " + yMin + "," + yMax);
+    // console.log("width = " + width + ", height = " + height);
+    //
+    // //Define X axis
+    // xAxis = d3.svg.axis()
+		// .scale(fx)
+		// .orient("bottom")
+		// .tickSize(-height)
+    //     .ticks(10)
+		// .tickFormat(d3.format("s"));
+    //
+    // //Define Y axis
+    // yAxis = d3.svg.axis()
+		// .scale(fy)
+		// .orient("left")
+		// .ticks(5)
+		// .tickSize(-width)
+		// .tickFormat(d3.format("s"));
+    //
+    //
+    // svg = div.append("svg") // svg is global
+    // .attr("width", width)
+    // .attr("height", height);
+    //
+    //
+    // svg.append("g")
+		// .attr("class", "x axis")
+		// .attr("transform", "translate(0," + height + ")")
+		// .call(xAxis);
+    //
+    // svg.append("g")
+		// .attr("class", "y axis")
+		// .call(yAxis);
+    //
+    //
+    //
+    // svg.selectAll("circle")
+    //     .data(name3)
+    //     .enter()
+    //     .append("circle")
+    //     .attr("cx", function(d, i) {
+    //     			   		return fx(x[i]);
+    //     			   })
+    //     			   .attr("cy", function(d, i) {
+    //     			   		return fy(y[i]);
+    //     			   })
+    //     			   .attr("r", 2);
+    //
+    // svg.selectAll("text")
+    //    .data(name3)
+    //    .enter()
+    //    .append("text")
+    //    .text(function(d,i) {
+    // 			   		return name3[i];
+    // 			   })
+    //    .attr("x", function(d,i) {
+    // 			   		return fx(x[i]);
+    // 			   })
+    //    .attr("y", function(d, i) {
+    // 			   		return fy(y[i]);
+    // 			   })
+    //    .attr("font-family", "sans-serif")
+    //    .attr("font-size", "11px")
+    //    .attr("fill", "red");
+    //
+    //
+    // var zoomListener = d3.behavior.zoom()
+    //     .x(fx)
+    //     .y(fy)
+    //     .scaleExtent([0.00000001, 100000])
+    //     .center([0,0])
+    //     .on("zoom", zoomHandler);
+    // zoomListener(svg);
 
 }
 
@@ -157,13 +228,13 @@ function drawTsne() {
 
 
  $.ajax({
-    url: "/api/coords?sid=" + sid,
+     url: "/tsne/coords/" + sid,
     cache: false
   })
     .done(function( data ) {
-        x = new Array();
-        y = new Array();
-        name3 = new Array();
+        x = [];
+        y = [];
+        name3 = [];
         if (data.length > 0 ) {
           for(var i = 0; i < data.length; i++) {
              var split = data[i].split(',');
@@ -189,11 +260,11 @@ function drawTsne() {
         yMax = d3.max(y);
         yMin = d3.min(y);
 
-        console.log("xMin: " + xMin);
-        console.log("xMax: " + xMax);
-
-        console.log("yMin: " + yMin);
-        console.log("yMax: " + yMax);
+        // console.log("xMin: " + xMin);
+        // console.log("xMax: " + xMax);
+        //
+        // console.log("yMin: " + yMin);
+        // console.log("yMax: " + yMax);
 
         drawEmbedding();
       } else {
