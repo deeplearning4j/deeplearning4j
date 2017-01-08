@@ -796,15 +796,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        INDArray toTad = doTad(index,dimension);
-      /*  DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
-        int eWS = Shape.elementWiseStride(toTad.shapeInfoDataBuffer());
-        toTad.shapeInfoDataBuffer().assign(shapeInfo);
-        int length2 = Shape.shapeInfoLength(Shape.rank(shapeInfo));
-        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
-        toTad.shapeInfoDataBuffer().put(length2 - 2, eWS);*/
+        DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
+        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),Shape.offset(shapeInfo),Shape.length(shapeInfo)));
+        BaseNDArray baseNDArray = (BaseNDArray) toTad;
+        baseNDArray.setShapeInformation(shapeInfo);
         return toTad;
     }
+
+    private void setShapeInformation(DataBuffer shapeInfo) {
+        this.shapeInformation = shapeInfo;
+    }
+
 
     private INDArray doTad(int index,int...dimension) {
         if(dimension == null || dimension.length == 0)

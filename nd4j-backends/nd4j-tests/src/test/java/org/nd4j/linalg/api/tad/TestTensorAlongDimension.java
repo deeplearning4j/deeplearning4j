@@ -206,8 +206,8 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
         INDArray arr = Nd4j.create(shape);
         for( int i = 0; i < shape[0]; i++) {
-            for( int j = 0; j<shape[1]; j++) {
-                for( int k = 0; k<shape[2]; k++) {
+            for( int j = 0; j < shape[1]; j++) {
+                for( int k = 0; k < shape[2]; k++) {
                     double d = 100 * i + 10 * j + k;
                     arr.putScalar(i,j,k,d);
                 }
