@@ -23,7 +23,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class RegressionEvaluation {
+public class RegressionEvaluation extends BaseEvaluation {
 
     public static final int DEFAULT_PRECISION = 5;
 
@@ -125,66 +125,6 @@ public class RegressionEvaluation {
 
         exampleCount += nRows;
     }
-
-
-    /**
-     * Convenience method for evaluation of time series.
-     * Reshapes time series (3d) to 2d, then calls eval
-     * @see #eval(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions) {
-        //exactly as per Evaluation.evalTimeSeries
-        if(labels.rank() == 2 && predictions.rank() == 2) eval(labels,predictions);
-        if(labels.rank() != 3 ) throw new IllegalArgumentException("Invalid input: labels are not rank 3 (rank="+labels.rank()+")");
-        if(!Arrays.equals(labels.shape(),predictions.shape())){
-            throw new IllegalArgumentException("Labels and predicted have different shapes: labels="
-                    + Arrays.toString(labels.shape()) + ", predictions="+Arrays.toString(predictions.shape()));
-        }
-
-        if( labels.ordering() == 'f' ) labels = Shape.toOffsetZeroCopy(labels, 'c');
-        if( predictions.ordering() == 'f' ) predictions = Shape.toOffsetZeroCopy(predictions, 'c');
-
-        //Reshape, as per RnnToFeedForwardPreProcessor:
-        int[] shape = labels.shape();
-        labels = labels.permute(0,2,1);	//Permute, so we get correct order after reshaping
-        labels = labels.reshape(shape[0] * shape[2], shape[1]);
-
-        predictions = predictions.permute(0, 2, 1);
-        predictions = predictions.reshape(shape[0] * shape[2], shape[1]);
-
-        eval(labels,predictions);
-    }
-
-    /**
-     * Evaluate a time series, whether the output is masked usind a masking array. That is,
-     * the mask array specified whether the output at a given time step is actually present, or whether it
-     * is just padding.<br>
-     * For example, for N examples, nOut output size, and T time series length:
-     * labels and predicted will have shape [N,nOut,T], and outputMask will have shape [N,T].
-     * @see #evalTimeSeries(INDArray, INDArray)
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray outputMask) {
-
-        int totalOutputExamples = outputMask.sumNumber().intValue();
-        int outSize = labels.size(1);
-
-        INDArray labels2d = Nd4j.create(totalOutputExamples, outSize);
-        INDArray predicted2d = Nd4j.create(totalOutputExamples,outSize);
-
-        int rowCount = 0;
-        for( int ex=0; ex<outputMask.size(0); ex++ ){
-            for( int t=0; t<outputMask.size(1); t++ ){
-                if(outputMask.getDouble(ex,t) == 0.0) continue;
-
-                labels2d.putRow(rowCount, labels.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-                predicted2d.putRow(rowCount, predictions.get(NDArrayIndex.point(ex), NDArrayIndex.all(), NDArrayIndex.point(t)));
-
-                rowCount++;
-            }
-        }
-        eval(labels2d,predicted2d);
-    }
-
 
     public String stats() {
 

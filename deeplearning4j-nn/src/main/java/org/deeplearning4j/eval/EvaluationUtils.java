@@ -29,7 +29,6 @@ public class EvaluationUtils {
     }
 
     public static Pair<INDArray,INDArray> extractNonMaskedTimeSteps(INDArray labels, INDArray predicted, INDArray outputMask){
-
         if (labels.rank() != 3 || predicted.rank() != 3) {
             throw new IllegalArgumentException("Invalid data: expect rank 3 arrays. Got arrays with shapes labels=" +
                     Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
