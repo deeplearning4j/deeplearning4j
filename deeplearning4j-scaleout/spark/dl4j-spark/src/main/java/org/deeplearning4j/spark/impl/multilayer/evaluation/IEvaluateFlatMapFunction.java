@@ -34,8 +34,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Function to evaluate data (classification), in a distributed manner
- * Flat map function used to batch examples for computational efficiency + reduce number of Evaluation objects returned
+ * Function to evaluate data (using an IEvaluation instance), in a distributed manner
+ * Flat map function used to batch examples for computational efficiency + reduce number of IEvaluation objects returned
  * for network efficiency.
  *
  * @author Alex Black
