@@ -36,13 +36,13 @@ public class VoidParameterServerStressTest {
     }
 
     @Test
-    public void testPerformanceStandalone() {
+    public void testPerformanceStandalone1() {
         Configuration configuration = Configuration.builder()
                 .networkMask("192.168.0.0/16")
                 .numberOfShards(1)
                 .build();
 
-        configuration.setShardAddresses("192.168.1.36");
+        configuration.setShardAddresses("192.168.1.35");
 
         VoidParameterServer.getInstance().init(configuration);
         VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
@@ -53,16 +53,23 @@ public class VoidParameterServerStressTest {
         for (int t = 0; t < threads.length; t++) {
             final int e = t;
             threads[t] = new Thread(() -> {
-                for (int i = 0; i < 1000; i++) {
+                List<Long> results = new ArrayList<>();
+
+                int chunk = NUM_WORDS / threads.length;
+                int start = e * chunk;
+                int end =  (e + 1) * chunk;
+
+                for (int i = 0; i < 1000000; i++) {
                     long time1 = System.nanoTime();
-                    INDArray array = VoidParameterServer.getInstance().getVector(RandomUtils.nextInt(0, NUM_WORDS));
+                    INDArray array = VoidParameterServer.getInstance().getVector(RandomUtils.nextInt(start, end));
                     long time2 = System.nanoTime();
 
-                    times.add(time2 - time1);
+                    results.add(time2 - time1);
 
                     if (i + 1 % 500 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
+                times.addAll(results);
             });
             threads[t].setDaemon(true);
             threads[t].start();

@@ -54,8 +54,8 @@ public class VectorRequestMessage extends BaseVoidMessage {
         if (configuration.getNumberOfShards() > 1)
             transport.sendMessageToAllShards(dvm);
         else {
-            dvm.extractContext(this);
-            dvm.processMessage();
+            aggregation.extractContext(this);
+            aggregation.processMessage();
         }
     }
 

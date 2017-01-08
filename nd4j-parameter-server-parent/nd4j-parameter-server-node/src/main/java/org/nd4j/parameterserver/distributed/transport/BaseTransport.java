@@ -67,7 +67,7 @@ public abstract class BaseTransport implements Transport {
     protected Clipboard clipboard;
 
     // TODO: make this configurable?
-    protected IdleStrategy idler = new SleepingIdleStrategy(50000);
+    protected IdleStrategy idler = new SleepingIdleStrategy(1000);
 
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
@@ -87,7 +87,8 @@ public abstract class BaseTransport implements Transport {
         while ((msg = completed.get((Long) taskId)) == null) {
             // FIXME: fix sleep strategy here
             try {
-                Thread.sleep(100);
+                //Thread.sleep(1);
+                idler.idle();
 
                 if (cnt.incrementAndGet() > 100) {
                     //log.info("Resending request for taskId [{}]", taskId);
