@@ -238,7 +238,7 @@ public class NDArrayCreationUtil {
 
     public static List<Pair<INDArray,String>> get3dSubArraysWithShape(int seed, int... shape) {
         List<Pair<INDArray,String>> list = new ArrayList<>();
-        String baseMsg = "get3dSubArraysWithShape("+seed+","+Arrays.toString(shape)+")";
+        String baseMsg = "get3dSubArraysWithShape("+seed+"," + Arrays.toString(shape)+")";
         //Create and return various sub arrays:
         Nd4j.getRandom().setSeed(seed);
         int[] newShape1 = Arrays.copyOf(shape, shape.length);

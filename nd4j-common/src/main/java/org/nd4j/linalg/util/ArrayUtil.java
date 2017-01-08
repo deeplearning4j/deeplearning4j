@@ -734,7 +734,7 @@ public class ArrayUtil {
             throw new IllegalStateException("Illegal remove: indexes.length > data.length");
         int offset = 0;
         /*
-            workaround for non-existant indexes (such as Integer.MAX_VALUE)
+            workaround for non-existent indexes (such as Integer.MAX_VALUE)
 
 
         for (int i = 0; i < index.length; i ++) {

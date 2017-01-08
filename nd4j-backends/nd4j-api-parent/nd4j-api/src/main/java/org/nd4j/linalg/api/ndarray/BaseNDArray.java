@@ -816,14 +816,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(dimension[i] < 0)
                 dimension[i] += rank();
 
-        Arrays.sort(dimension);
+        if(dimension.length > 1)
+            Arrays.sort(dimension);
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
 
 
-        if(dimension.length == 1){
+        if(dimension.length == 1) {
             if(dimension[0] == 0 && isColumnVector()) {
                 return this.transpose();
             } else if(dimension[0] == 1 && isRowVector()) {
@@ -842,7 +843,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
 
         INDArray ret2 = permuted.slice(sliceIdx);
-        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()){
+        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()) {
             if(dimension.length == 1 && ret2.isRowVector()) return ret2;
             return ret2.permutei(finalPermuteDims);
         }

@@ -1686,6 +1686,12 @@ public class Shape {
         buffer.put(length2 - 2, elementWiseStride);
     }
 
+    /**
+     * Prints the {@link IntBuffer}
+     * @param buffer the buffer to print
+     * @return the to string for the buffer
+     *
+     */
     public static String bufferToString(IntBuffer buffer) {
         StringBuilder builder = new StringBuilder();
         int rank = buffer.get(0);
