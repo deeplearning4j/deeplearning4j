@@ -18,14 +18,15 @@
 
 package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.eval.ROC;
+import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,35 +34,37 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Function to perform ROC evaluation of a classifier (classification), in a distributed manner
- * Flat map function used to batch examples for computational efficiency + reduce number of ROC objects returned
- * for efficiency.
+ * Function to evaluate data (classification), in a distributed manner
+ * Flat map function used to batch examples for computational efficiency + reduce number of Evaluation objects returned
+ * for network efficiency.
  *
  * @author Alex Black
  */
-@Slf4j
-public class ROCFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, ROC> {
-    private Broadcast<String> json;
-    private Broadcast<INDArray> params;
-    private int numThresholdSteps;
-    private int evalBatchSize;
+public class IEvaluateFlatMapFunction<T extends IEvaluation> implements FlatMapFunction<Iterator<DataSet>, T> {
+
+    protected static Logger log = LoggerFactory.getLogger(IEvaluateFlatMapFunction.class);
+
+    protected T evaluation;
+    protected Broadcast<String> json;
+    protected Broadcast<INDArray> params;
+    protected int evalBatchSize;
 
     /**
      * @param json Network configuration (json format)
      * @param params Network parameters
      * @param evalBatchSize Max examples per evaluation. Do multiple separate forward passes if data exceeds
      *                              this. Used to avoid doing too many at once (and hence memory issues)
+     * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public ROCFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int numThresholdSteps,
-                              int evalBatchSize){
+    public IEvaluateFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize, T evaluation){
         this.json = json;
         this.params = params;
-        this.numThresholdSteps = numThresholdSteps;
         this.evalBatchSize = evalBatchSize;
+        this.evaluation = evaluation;
     }
 
     @Override
-    public Iterable<ROC> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<T> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -72,8 +75,6 @@ public class ROCFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, RO
         if (val.length() != network.numParams(false))
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
         network.setParameters(val);
-
-        ROC roc = new ROC(numThresholdSteps);
 
         List<DataSet> collect = new ArrayList<>();
         int totalCount = 0;
@@ -87,7 +88,7 @@ public class ROCFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, RO
             }
             totalCount += nExamples;
 
-            DataSet data = DataSet.merge(collect, false);
+            DataSet data = DataSet.merge(collect);
 
 
             INDArray out;
@@ -100,19 +101,19 @@ public class ROCFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, RO
 
             if(data.getLabels().rank() == 3){
                 if(data.getLabelsMaskArray() == null){
-                    roc.evalTimeSeries(data.getLabels(),out);
+                    evaluation.evalTimeSeries(data.getLabels(),out);
                 } else {
-                    roc.evalTimeSeries(data.getLabels(),out,data.getLabelsMaskArray());
+                    evaluation.evalTimeSeries(data.getLabels(),out,data.getLabelsMaskArray());
                 }
             } else {
-                roc.eval(data.getLabels(),out);
+                evaluation.eval(data.getLabels(),out);
             }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("ROC: Evaluated {} examples ", totalCount);
+            log.debug("Evaluated {} examples ", totalCount);
         }
 
-        return Collections.singletonList(roc);
+        return Collections.singletonList(evaluation);
     }
 }
