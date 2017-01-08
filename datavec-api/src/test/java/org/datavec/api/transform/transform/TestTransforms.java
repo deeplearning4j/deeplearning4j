@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
@@ -773,6 +774,26 @@ public class TestTransforms {
         assertEquals(Collections.singletonList((Writable) new DoubleWritable(-5)), transform.map(Collections.singletonList((Writable) new DoubleWritable(-1))));
         assertEquals(Collections.singletonList((Writable) new DoubleWritable(0)), transform.map(Collections.singletonList((Writable) new DoubleWritable(0))));
         assertEquals(Collections.singletonList((Writable) new DoubleWritable(5)), transform.map(Collections.singletonList((Writable) new DoubleWritable(1))));
+    }
+
+    @Test
+    public void testDoubleMathFunctionTransform() {
+        Schema schema = new Schema.Builder()
+                .addColumnDouble("column")
+                .addColumnString("strCol")
+                .build();
+
+        Transform transform = new DoubleMathFunctionTransform("column", MathFunction.SIN);
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+        assertEquals(2, out.getColumnMetaData().size());
+        assertEquals(ColumnType.Double, out.getType(0));
+        assertEquals(ColumnType.String, out.getType(1));
+
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(1)), new Text("0")), transform.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("0"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(2)), new Text("1")), transform.map(Arrays.<Writable>asList(new DoubleWritable(2), new Text("1"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(3)), new Text("2")), transform.map(Arrays.<Writable>asList(new DoubleWritable(3), new Text("2"))));
     }
 
     @Test

@@ -543,6 +543,16 @@ public class TransformProcess implements Serializable {
         }
 
         /**
+         * Perform a mathematical operation (such as sin(x), ceil(x), exp(x) etc) on a column
+         *
+         * @param columnName   Column name to operate on
+         * @param mathFunction MathFunction to apply to the column
+         */
+        public Builder doubleMathFunction(String columnName, MathFunction mathFunction){
+            return transform(new DoubleMathFunctionTransform(columnName, mathFunction));
+        }
+
+        /**
          * Perform a mathematical operation (add, subtract, scalar min/max only) on the specified time column
          *
          * @param columnName   The integer column to perform the operation on

@@ -83,6 +83,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = StringToTimeTransform.class, name = "StringToTimeTransform"),
         @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
         @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class, name = "ReduceSequenceByWindowTransform"),
+        @JsonSubTypes.Type(value = DoubleMathFunctionTransform.class, name = "DoubleMathFunctionTransform")
 })
 public interface Transform extends Serializable,ColumnOp {
 
