@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import lombok.extern.slf4j.Slf4j;
+import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.writable.*;
@@ -375,6 +376,18 @@ public class TransformProcess implements Serializable {
         }
 
         /**
+         * Add a filter operation, based on the specified condition.
+         *
+         * If condition is satisfied (returns true): remove the example or sequence<br>
+         * If condition is not satisfied (returns false): keep the example or sequence
+         *
+         * @param condition Condition to filter on
+         */
+        public Builder filter(Condition condition){
+            return filter( new ConditionFilter(condition));
+        }
+
+        /**
          * Remove all of the specified columns, by name
          *
          * @param columnNames Names of the columns to remove
@@ -527,6 +540,16 @@ public class TransformProcess implements Serializable {
          */
         public Builder doubleColumnsMathOp(String newColumnName, MathOp mathOp, String... columnNames) {
             return transform(new DoubleColumnsMathOpTransform(newColumnName, mathOp, columnNames));
+        }
+
+        /**
+         * Perform a mathematical operation (such as sin(x), ceil(x), exp(x) etc) on a column
+         *
+         * @param columnName   Column name to operate on
+         * @param mathFunction MathFunction to apply to the column
+         */
+        public Builder doubleMathFunction(String columnName, MathFunction mathFunction){
+            return transform(new DoubleMathFunctionTransform(columnName, mathFunction));
         }
 
         /**
