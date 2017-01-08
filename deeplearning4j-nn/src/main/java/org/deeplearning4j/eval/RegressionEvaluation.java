@@ -29,13 +29,12 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     private List<String> columnNames;
     private int precision;
-    private int exampleCount = 0;
+    private long exampleCount = 0;
     private INDArray labelsSumPerColumn;    //sum(actual) per column -> used to calculate mean
     private INDArray sumSquaredErrorsPerColumn;     //(predicted - actual)^2
     private INDArray sumAbsErrorsPerColumn;         //abs(predicted-actial)
     private INDArray currentMean;
     private INDArray currentPredictionMean;
-    private INDArray m2Actual;
 
     private INDArray sumOfProducts;
     private INDArray sumSquaredLabels;
@@ -75,6 +74,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(List<String> columnNames, int precision) {
+        if(columnNames == null || columnNames.size() == 0){
+            throw new IllegalArgumentException("Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
+        }
         this.columnNames = columnNames;
         this.precision = precision;
 
@@ -83,7 +85,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumSquaredErrorsPerColumn = Nd4j.zeros(n);
         sumAbsErrorsPerColumn = Nd4j.zeros(n);
         currentMean = Nd4j.zeros(n);
-        m2Actual = Nd4j.zeros(n);
 
         currentPredictionMean = Nd4j.zeros(n);
         sumOfProducts = Nd4j.zeros(n);
@@ -128,7 +129,38 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     @Override
     public void merge(RegressionEvaluation other) {
-        throw new UnsupportedOperationException("Not yet implemented");
+
+        if(other.labelsSumPerColumn == null){
+            //Other RegressionEvaluation is empty -> no op
+            return;
+
+        } else if(labelsSumPerColumn == null){
+            //This RegressionEvaluation is empty -> just copy over from the other one...
+            this.columnNames = other.columnNames;
+            this.precision = other.precision;
+            this.exampleCount = other.exampleCount;
+            this.labelsSumPerColumn = other.labelsSumPerColumn.dup();
+            this.sumSquaredErrorsPerColumn = other.sumSquaredErrorsPerColumn.dup();
+            this.sumAbsErrorsPerColumn = other.sumAbsErrorsPerColumn.dup();
+            this.currentMean = other.currentMean.dup();
+            this.currentPredictionMean = other.currentPredictionMean.dup();
+            this.sumOfProducts = other.sumOfProducts.dup();
+            this.sumSquaredLabels = other.sumSquaredLabels.dup();
+            this.sumSquaredPredicted = other.sumSquaredPredicted.dup();
+
+            return;
+        }
+
+        this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
+        this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
+        this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
+        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
+        this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount)).divi(exampleCount + other.exampleCount);
+        this.sumOfProducts.addi(other.sumOfProducts);
+        this.sumSquaredLabels.addi(other.sumSquaredLabels);
+        this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
+
+        this.exampleCount += other.exampleCount;
     }
 
     public String stats() {
