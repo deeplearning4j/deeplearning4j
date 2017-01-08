@@ -23,7 +23,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class RegressionEvaluation extends BaseEvaluation {
+public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
 
@@ -97,7 +97,7 @@ public class RegressionEvaluation extends BaseEvaluation {
         return list;
     }
 
-
+    @Override
     public void eval(INDArray labels, INDArray predictions) {
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
@@ -124,6 +124,11 @@ public class RegressionEvaluation extends BaseEvaluation {
         currentPredictionMean.muli(exampleCount).addi(predictions.sum(0)).divi(exampleCount + nRows);
 
         exampleCount += nRows;
+    }
+
+    @Override
+    public void merge(RegressionEvaluation other) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public String stats() {
