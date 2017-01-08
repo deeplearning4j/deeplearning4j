@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.messages.requests;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 
@@ -13,7 +14,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitial
  */
 @Slf4j
 @Builder
-public class InitializationRequestMessage extends BaseVoidMessage {
+public class InitializationRequestMessage extends BaseVoidMessage  implements RequestMessage {
     protected int vectorLength;
     protected int numWords;
     protected long seed;

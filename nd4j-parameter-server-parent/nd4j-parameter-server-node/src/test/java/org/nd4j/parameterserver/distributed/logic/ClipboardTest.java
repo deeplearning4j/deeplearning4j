@@ -10,7 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
+import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;

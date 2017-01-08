@@ -2,12 +2,13 @@ package org.nd4j.parameterserver.distributed.messages.intercom;
 
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
 /**
  * @author raver119@gmail.com
  */
-public class DistributedSkipGramMessage extends BaseVoidMessage{
+public class DistributedSkipGramMessage extends BaseVoidMessage implements DistributedMessage {
 
     // learning rate for this sequence
     protected double alpha;

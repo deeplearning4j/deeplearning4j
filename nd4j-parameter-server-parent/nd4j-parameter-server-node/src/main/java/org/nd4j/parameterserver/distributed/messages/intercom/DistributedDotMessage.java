@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
@@ -16,7 +17,7 @@ import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
  */
 @Data
 @Slf4j
-public class DistributedDotMessage extends BaseVoidMessage {
+public class DistributedDotMessage extends BaseVoidMessage implements DistributedMessage {
     protected Integer keyA;
     protected Integer keyB;
     protected int[] rowsA;

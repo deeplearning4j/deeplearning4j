@@ -1,7 +1,7 @@
 package org.nd4j.parameterserver.distributed.logic;
 
 import lombok.NonNull;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
+import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

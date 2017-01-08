@@ -4,7 +4,7 @@ import org.nd4j.parameterserver.distributed.conf.Configuration;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
-import org.nd4j.parameterserver.distributed.messages.aggregations.VoidAggregation;
+import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 /**

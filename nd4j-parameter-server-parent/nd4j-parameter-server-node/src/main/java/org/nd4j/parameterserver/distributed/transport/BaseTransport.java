@@ -284,11 +284,12 @@ public abstract class BaseTransport implements Transport {
                         // // Shard or Backup uses two subscriptions
 
                         // setting up thread for shard->client communication listener
-                        threadB = new Thread(() -> {
-                            while (runner.get())
-                                idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
+                        if (messageHandlerForClients != null)
+                            threadB = new Thread(() -> {
+                                while (runner.get())
+                                    idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
 
-                        });
+                            });
 
                         // setting up thread for inter-shard communication listener
                         threadA = new Thread(() -> {
@@ -297,9 +298,11 @@ public abstract class BaseTransport implements Transport {
                                 idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
                         });
 
-                        threadB.setDaemon(true);
-                        threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
-                        threadB.start();
+                        if (threadB != null) {
+                            threadB.setDaemon(true);
+                            threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
+                            threadB.start();
+                        }
                     } else {
                         // setting up thread for shard->client communication listener
                         threadA = new Thread(() -> {
@@ -433,11 +436,41 @@ public abstract class BaseTransport implements Transport {
     public abstract void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex);
 
     /**
-     * This command is possible to issue only from Client, but Client might be Shard or Backup at the same time
+     * This command is possible to issue only from Client
      *
      * @param message
      */
-    protected abstract void sendCommandToShard(VoidMessage message);
+    protected synchronized void sendCommandToShard(VoidMessage message) {
+        // if this node is shard - we just step over TCP/IP infrastructure
+        // TODO: we want LocalTransport to be used in such cases
+        if (nodeRole == NodeRole.SHARD) {
+            message.setTargetId(shardIndex);
+            messages.add(message);
+            return;
+        }
+
+
+        //log.info("Sending CS: {}", message.getClass().getCanonicalName());
+
+        message.setTargetId(targetIndex);
+        DirectBuffer buffer = message.asUnsafeBuffer();
+
+        long result = publicationForShards.offer(buffer);
+
+        if (result  < 0)
+            for (int i = 0; i < 5 && result < 0; i++) {
+                try {
+                    // TODO: make this configurable
+                    Thread.sleep(1000);
+                } catch (Exception e) { }
+                result = publicationForShards.offer(buffer);
+            }
+
+        // TODO: handle retransmit & backpressure separately
+
+        if (result < 0)
+            throw new RuntimeException("Unable to send message over the wire. Error code: " + result);
+    }
 
     /**
      * This command is possible to issue only from Shard

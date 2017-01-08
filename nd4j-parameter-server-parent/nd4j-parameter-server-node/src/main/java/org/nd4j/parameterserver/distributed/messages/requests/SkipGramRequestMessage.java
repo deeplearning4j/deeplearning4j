@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
@@ -25,7 +26,7 @@ import java.util.Random;
  * @author raver119@gmail.com
  */
 @Data
-public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage {
+public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
 
     // learning rate for this sequence
     protected double alpha;

@@ -42,6 +42,8 @@ public class Configuration implements Serializable {
     private boolean useHS = true;
     private boolean useNS = false;
 
+    private long retransmitTimeout = 10;
+
     public void setStreamId(int streamId) {
         if (streamId < 1 )
             throw new ND4JIllegalStateException("You can't use streamId 0, please specify other one");
@@ -84,5 +86,6 @@ public class Configuration implements Serializable {
         private int multicastPort = 59876;
         private int numberOfShards = -1;
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
+        private long retransmitTimeout = 50;
     }
 }

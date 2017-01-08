@@ -144,44 +144,6 @@ public class MulticastTransport extends BaseTransport {
     }
 
     /**
-     * This command is possible to issue only from Client
-     *
-     * @param message
-     */
-    @Override
-    protected synchronized void sendCommandToShard(VoidMessage message) {
-        // if this node is shard - we just step over TCP/IP infrastructure
-        // TODO: we want LocalTransport to be used in such cases
-        if (nodeRole == NodeRole.SHARD) {
-            message.setTargetId(shardIndex);
-            messages.add(message);
-            return;
-        }
-
-
-        //log.info("Sending CS: {}", message.getClass().getCanonicalName());
-
-        message.setTargetId(targetIndex);
-        DirectBuffer buffer = message.asUnsafeBuffer();
-
-        long result = publicationForShards.offer(buffer);
-
-        if (result  < 0)
-            for (int i = 0; i < 5 && result < 0; i++) {
-                try {
-                    // TODO: make this configurable
-                    Thread.sleep(1000);
-                } catch (Exception e) { }
-                result = publicationForShards.offer(buffer);
-            }
-
-            // TODO: handle retransmit & backpressure separately
-
-        if (result < 0)
-            throw new RuntimeException("Unable to send message over the wire. Error code: " + result);
-    }
-
-    /**
      * This command is possible to issue only from Shard
      *
      * @param message

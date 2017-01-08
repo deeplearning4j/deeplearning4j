@@ -4,13 +4,14 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
 
 /**
  * @author raver119@gmail.com
  */
 @Slf4j
-public class AssignRequestMessage extends BaseVoidMessage {
+public class AssignRequestMessage extends BaseVoidMessage  implements RequestMessage {
 
     protected Integer key;
 

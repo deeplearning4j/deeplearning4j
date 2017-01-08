@@ -1,6 +1,5 @@
 package org.nd4j.parameterserver.distributed.messages.aggregations;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -11,7 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
-import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
+import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.io.Serializable;
 import java.util.*;
@@ -21,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
-public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, MeaningfulMessage, Serializable {
+public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {
     @Getter @Setter protected short aggregationType = -1;
     @Getter @Setter protected short aggregationWidth;
     @Getter @Setter protected int numberOfElements;

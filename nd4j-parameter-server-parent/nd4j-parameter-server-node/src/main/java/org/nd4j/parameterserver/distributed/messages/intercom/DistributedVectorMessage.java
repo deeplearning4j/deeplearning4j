@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 
 /**
@@ -11,7 +12,7 @@ import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregat
  */
 @Data
 @Slf4j
-public class DistributedVectorMessage extends BaseVoidMessage{
+public class DistributedVectorMessage extends BaseVoidMessage implements DistributedMessage {
     protected int rowIndex;
     protected int key;
 

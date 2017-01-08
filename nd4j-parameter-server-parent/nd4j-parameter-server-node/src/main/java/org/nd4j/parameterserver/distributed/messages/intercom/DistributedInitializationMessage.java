@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMessage;
 
@@ -18,7 +19,7 @@ import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMess
 @NoArgsConstructor
 @Builder
 @Data
-public class DistributedInitializationMessage extends BaseVoidMessage {
+public class DistributedInitializationMessage extends BaseVoidMessage implements DistributedMessage {
 
     protected int vectorLength;
     protected int numWords;

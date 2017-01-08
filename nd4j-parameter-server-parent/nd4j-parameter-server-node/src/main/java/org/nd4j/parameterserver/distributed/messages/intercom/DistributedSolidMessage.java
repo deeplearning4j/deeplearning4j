@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 
 /**
  * Array passed here will be shared & available on all shards.
@@ -13,7 +14,7 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
  */
 @Data
 @NoArgsConstructor
-public class DistributedSolidMessage extends BaseVoidMessage {
+public class DistributedSolidMessage extends BaseVoidMessage implements DistributedMessage {
     /**
      * The only use of this message is negTable sharing.
      */

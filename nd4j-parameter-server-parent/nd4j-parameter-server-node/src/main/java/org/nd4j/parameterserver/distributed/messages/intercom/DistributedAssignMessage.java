@@ -3,6 +3,8 @@ package org.nd4j.parameterserver.distributed.messages.intercom;
 import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
+import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 
 /**
  * Assign target row to specified value
@@ -10,7 +12,7 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
  * @author raver119@gmail.com
  */
 @Data
-public class DistributedAssignMessage extends BaseVoidMessage {
+public class DistributedAssignMessage extends BaseVoidMessage  implements DistributedMessage {
     /**
      * The only use of this message is negTable sharing.
      */

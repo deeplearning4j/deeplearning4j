@@ -28,8 +28,8 @@ public interface VoidMessage extends Serializable {
 
     UnsafeBuffer asUnsafeBuffer();
 
-    static VoidMessage fromBytes(byte[] array) {
-        return (VoidMessage) SerializationUtils.deserialize(array);
+    static <T extends VoidMessage> T fromBytes(byte[] array) {
+        return SerializationUtils.deserialize(array);
     }
 
     /**
