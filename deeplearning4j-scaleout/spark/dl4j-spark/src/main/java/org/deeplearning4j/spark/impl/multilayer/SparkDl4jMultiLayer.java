@@ -547,7 +547,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
     public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize){
-        return doEvaluation(data, new RegressionEvaluation(), minibatchSize);
+        int nOut = ((FeedForwardLayer)network.getOutputLayer().conf().getLayer()).getNOut();
+        return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 
     /**
