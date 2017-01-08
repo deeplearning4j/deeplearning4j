@@ -5676,6 +5676,8 @@ public class Nd4j {
 
                 } else fallbackMode.set(false);
             } else fallbackMode.set(false);
+
+            OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
