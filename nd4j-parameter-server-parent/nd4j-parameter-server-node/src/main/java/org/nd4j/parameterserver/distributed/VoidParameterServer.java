@@ -349,6 +349,11 @@ public class VoidParameterServer {
         //transport.sendMessage(message);
     }
 
+    public void execDistributed(@NonNull Frame<? extends TrainingMessage> messages) {
+        transport.sendMessage(messages);
+    }
+
+
     public INDArray getVector(int rowIdx) {
         return getVector(WordVectorStorage.SYN_0, rowIdx);
     }

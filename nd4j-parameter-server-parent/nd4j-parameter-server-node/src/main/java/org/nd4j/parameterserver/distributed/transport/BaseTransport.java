@@ -122,9 +122,7 @@ public abstract class BaseTransport implements Transport {
                 // this command is possible to issue from any node role
                 // log.info("Sending message to Shard: {}; Messages size: {}", message.getClass().getSimpleName(), messages.size());
                 while (messages.size() > 100)
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) { }
+                    idler.idle();
 
                 if (message.isBlockingMessage()) {
                     // we issue blocking message, but we don't care about response
