@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public interface IEvaluation extends Serializable {
+public interface IEvaluation<T extends IEvaluation> extends Serializable {
 
 
     void eval(INDArray labels, INDArray networkPredictions);
@@ -21,5 +21,7 @@ public interface IEvaluation extends Serializable {
     void evalTimeSeries(INDArray labels, INDArray predicted);
 
     void evalTimeSeries(INDArray labels, INDArray predicted, INDArray labelsMaskArray);
+
+    void merge(T other);
 
 }

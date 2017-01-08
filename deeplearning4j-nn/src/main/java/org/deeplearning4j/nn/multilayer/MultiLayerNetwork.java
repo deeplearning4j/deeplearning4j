@@ -23,7 +23,7 @@ import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -2366,6 +2366,70 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
+     * Evaluate the network for regression performance
+     * @param iterator Data to evaluate on
+     * @return
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator){
+        RegressionEvaluation e = new RegressionEvaluation();
+        doEvaluation(iterator, e);
+
+        return e;
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data
+     *
+     * @param iterator
+     * @param rocThresholdSteps
+     * @return
+     */
+    public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps){
+        ROC roc = new ROC(rocThresholdSteps);
+        doEvaluation(iterator, roc);
+        return roc;
+    }
+
+    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps){
+        ROCMultiClass roc = new ROCMultiClass(rocThresholdSteps);
+        doEvaluation(iterator, roc);
+        return roc;
+    }
+
+    public void doEvaluation(DataSetIterator iterator, IEvaluation evaluation){
+        if(!iterator.hasNext() && iterator.resetSupported()){
+            iterator.reset();
+        }
+
+        while(iterator.hasNext()){
+            DataSet next = iterator.next();
+
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
+
+            INDArray out;
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
+                out = this.output(features,false,fMask,lMask);
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                evaluation.evalTimeSeries(labels,out,lMask);
+            } else {
+                out = this.output(features,false);
+                if(labels.rank() == 3 ) evaluation.evalTimeSeries(labels,out, null);
+                else{
+                    List<Serializable> meta = next.getExampleMetaData();
+                    evaluation.eval(labels,out, meta);
+                }
+            }
+        }
+    }
+
+    /**
      * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
      *
      * @param iterator Data to undertake evaluation on
@@ -2392,37 +2456,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             labelsList = iterator.getLabels();
 
         Evaluation e = new Evaluation(labelsList, topN);
-        while(iterator.hasNext()){
-            DataSet next = iterator.next();
-
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
-                break;
-
-            INDArray features = next.getFeatures();
-            INDArray labels = next.getLabels();
-
-            INDArray out;
-            if(next.hasMaskArrays()){
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-                out = this.output(features,false,fMask,lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if(lMask != null){
-                    e.evalTimeSeries(labels,out,lMask);
-                } else {
-                    e.evalTimeSeries(labels,out);
-                }
-            } else {
-                out = this.output(features,false);
-                if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
-                else{
-                    List<Serializable> meta = next.getExampleMetaData();
-                    List<Object> meta2 = (meta == null ? null : new ArrayList<Object>(meta));
-                    e.eval(labels,out,meta2);
-                }
-            }
-        }
+        doEvaluation(iterator, e);
 
         return e;
     }

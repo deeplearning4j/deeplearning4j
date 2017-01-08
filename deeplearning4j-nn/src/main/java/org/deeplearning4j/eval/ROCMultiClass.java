@@ -29,7 +29,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
-public class ROCMultiClass extends BaseEvaluation {
+public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
     private final int thresholdSteps;
 
@@ -264,6 +264,7 @@ public class ROCMultiClass extends BaseEvaluation {
      *
      * @param other ROCMultiClass instance to combine with this one
      */
+    @Override
     public void merge(ROCMultiClass other){
         if(other.countActualPositive == null){
             //Other has no data
