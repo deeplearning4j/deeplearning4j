@@ -394,7 +394,7 @@ public class KerasModelImport {
                         /* Keras parameter names are typically formatted as [layer name]_[layer no]_[parameter].
                          * For example, the weight matrix in the first Dense layer will be named "dense_1_W."
                          */
-                        Pattern paramNamePattern = Pattern.compile("_([^_])+?$");
+                        Pattern paramNamePattern = Pattern.compile("_([^_]+?)$");
                         Matcher paramNameMatcher = paramNamePattern.matcher(objName);
                         if (!paramNameMatcher.find())
                             throw new InvalidKerasConfigurationException("Unable to parse layer/parameter name " + objName + " for stored weights.");

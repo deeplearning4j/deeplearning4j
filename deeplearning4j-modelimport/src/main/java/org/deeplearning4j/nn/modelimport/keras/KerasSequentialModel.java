@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -84,7 +85,7 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Add placeholder input layer and update lists of input and output layers. */
         int[] kerasInputShape = this.layers.get(this.layerNamesOrdered.get(0)).getKerasInputShape();
-        KerasLayer inputLayer = KerasLayer.createInputLayer("input1", kerasInputShape);
+        KerasLayerOld inputLayer = KerasLayerOld.createInputLayer("input1", kerasInputShape);
         this.layers.put(inputLayer.getName(), inputLayer);
         this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getName()));
         this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layerNamesOrdered.get(this.layerNamesOrdered.size()-1)));
@@ -131,12 +132,18 @@ public class KerasSequentialModel extends KerasModel {
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
 
         /* Add layers one at a time. */
+        KerasLayerOld prevLayer = null;
         int layerIndex = 0;
         for (String layerName : this.layerNamesOrdered) {
-            KerasLayer layer = this.layers.get(layerName);
+            KerasLayerOld layer = this.layers.get(layerName);
             if (layer.isDl4jLayer()) { // Ignore "preprocessor" layers for now
-                listBuilder.layer(layerIndex++, layer.getDl4jLayer());
+                listBuilder.layer(layerIndex, layer.getDl4jLayer());
             }
+            InputPreProcessor preprocessor = KerasLayer.getInputPreProcessor(layer, prevLayer);
+            if (preprocessor != null)
+                listBuilder.inputPreProcessor(layerIndex, preprocessor);
+            prevLayer = layer;
+            layerIndex++;
         }
 
         InputType inputType = inferInputType(this.inputLayerNames.get(0));
