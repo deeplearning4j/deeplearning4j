@@ -301,26 +301,27 @@ var ChartHistogram = (function (_super) {
 var ChartLine = (function (_super) {
     __extends(ChartLine, _super);
     function ChartLine(jsonStr) {
+        var _this = this;
         _super.call(this, ComponentType.ChartLine, jsonStr);
         this.render = function (appendToObject) {
-            var nSeries = (!this.xData ? 0 : this.xData.length);
-            var s = this.getStyle();
+            var nSeries = (!_this.xData ? 0 : _this.xData.length);
+            var s = _this.getStyle();
             var margin = Style.getMargins(s);
             var xScale = d3.scale.linear().range([0, margin.widthExMargins]);
             var yScale = d3.scale.linear().range([margin.heightExMargins, 0]);
             var xAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom").ticks(5);
-            if (this.gridVerticalStrokeWidth != null && this.gridVerticalStrokeWidth > 0) {
+            if (_this.gridVerticalStrokeWidth != null && _this.gridVerticalStrokeWidth > 0) {
                 xAxis.innerTickSize(-margin.heightExMargins);
             }
             var yAxis = d3.svg.axis().scale(yScale)
                 .orient("left").ticks(5);
-            if (this.gridHorizontalStrokeWidth != null && this.gridHorizontalStrokeWidth > 0) {
+            if (_this.gridHorizontalStrokeWidth != null && _this.gridHorizontalStrokeWidth > 0) {
                 yAxis.innerTickSize(-margin.widthExMargins);
             }
-            if (this.suppressAxisHorizontal === true)
+            if (_this.suppressAxisHorizontal === true)
                 xAxis.tickValues([]);
-            if (this.suppressAxisVertical === true)
+            if (_this.suppressAxisVertical === true)
                 yAxis.tickValues([]);
             var valueline = d3.svg.line()
                 .x(function (d) {
@@ -341,28 +342,28 @@ var ChartLine = (function (_super) {
             var xMax;
             var yMin;
             var yMax;
-            if (this.setXMin != null)
-                xMin = this.setXMin;
+            if (_this.setXMin != null)
+                xMin = _this.setXMin;
             else
-                xMin = (this.xData ? TSUtils.min(this.xData) : 0);
-            if (this.setXMax != null)
-                xMax = this.setXMax;
+                xMin = (_this.xData ? TSUtils.min(_this.xData) : 0);
+            if (_this.setXMax != null)
+                xMax = _this.setXMax;
             else
-                xMax = (this.xData ? TSUtils.max(this.xData) : 1);
-            if (this.setYMin != null)
-                yMin = this.setYMin;
+                xMax = (_this.xData ? TSUtils.max(_this.xData) : 1);
+            if (_this.setYMin != null)
+                yMin = _this.setYMin;
             else
-                yMin = (this.yData ? TSUtils.min(this.yData) : 0);
-            if (this.setYMax != null)
-                yMax = this.setYMax;
+                yMin = (_this.yData ? TSUtils.min(_this.yData) : 0);
+            if (_this.setYMax != null)
+                yMax = _this.setYMax;
             else
-                yMax = (this.yData ? TSUtils.max(this.yData) : 1);
+                yMax = (_this.yData ? TSUtils.max(_this.yData) : 1);
             xScale.domain([xMin, xMax]);
             yScale.domain([yMin, yMax]);
             var defaultColor = d3.scale.category10();
             for (var i = 0; i < nSeries; i++) {
-                var xVals = this.xData[i];
-                var yVals = this.yData[i];
+                var xVals = _this.xData[i];
+                var yVals = _this.yData[i];
                 var data = xVals.map(function (d, i) {
                     return { 'xPos': xVals[i], 'yPos': yVals[i] };
                 });
@@ -379,8 +380,8 @@ var ChartLine = (function (_super) {
                 .style("fill", "none")
                 .call(xAxis);
             xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (this.gridVerticalStrokeWidth != null)
-                xAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridVerticalStrokeWidth });
+            if (_this.gridVerticalStrokeWidth != null)
+                xAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridVerticalStrokeWidth });
             var yAxisNode = svg.append("g")
                 .attr("class", "y axis")
                 .style("stroke", "#000")
@@ -388,16 +389,16 @@ var ChartLine = (function (_super) {
                 .style("fill", "none")
                 .call(yAxis);
             yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (this.gridHorizontalStrokeWidth != null)
-                yAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridHorizontalStrokeWidth });
-            if (this.seriesNames && this.showLegend === true) {
+            if (_this.gridHorizontalStrokeWidth != null)
+                yAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridHorizontalStrokeWidth });
+            if (_this.seriesNames && _this.showLegend === true) {
                 var legendSpace = margin.widthExMargins / i;
                 for (var i = 0; i < nSeries; i++) {
-                    var values = this.xData[i];
-                    var yValues = this.yData[i];
+                    var values = _this.xData[i];
+                    var yValues = _this.yData[i];
                     var lastX = values[values.length - 1];
                     var lastY = yValues[yValues.length - 1];
-                    var toDisplay = this.seriesNames[i];
+                    var toDisplay = _this.seriesNames[i];
                     svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace)
                         .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)
@@ -406,11 +407,11 @@ var ChartLine = (function (_super) {
                         .text(toDisplay);
                 }
             }
-            if (this.title) {
+            if (_this.title) {
                 var titleStyle;
-                if (this.style)
-                    titleStyle = this.style.getTitleStyle();
-                Chart.appendTitle(svg, this.title, margin, titleStyle);
+                if (_this.style)
+                    titleStyle = _this.style.getTitleStyle();
+                Chart.appendTitle(svg, _this.title, margin, titleStyle);
             }
         };
         var json = JSON.parse(jsonStr);
@@ -1036,7 +1037,7 @@ var StyleChart = (function (_super) {
         this.getPointSize = function () { return _this.pointSize; };
         this.getSeriesColors = function () { return _this.seriesColors; };
         this.getSeriesColor = function (idx) {
-            if (!this.seriesColors || idx < 0 || idx > this.seriesColors.length)
+            if (!_this.seriesColors || idx < 0 || idx > _this.seriesColors.length)
                 return null;
             return _this.seriesColors[idx];
         };
