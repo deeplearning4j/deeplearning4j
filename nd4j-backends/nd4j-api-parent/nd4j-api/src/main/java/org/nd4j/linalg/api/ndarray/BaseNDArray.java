@@ -799,7 +799,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray tensorAlongDimension(int index, int... dimension) {
         Pair<DataBuffer,DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
         DataBuffer shapeInfo = tadInfo.getFirst();
-        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),tadInfo.getSecond().getInt(index),Shape.length(shapeInfo)));
+        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),tadInfo.getSecond().getInt(index) + offset(),Shape.length(shapeInfo)));
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
         baseNDArray.setShapeInformation(shapeInfo);
         return toTad;
