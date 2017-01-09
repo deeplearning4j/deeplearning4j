@@ -146,7 +146,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
      private static Logger log = LoggerFactory.getLogger(RBMIrisExample.class);		
 
      public static void main(String[] args) throws IOException {		
-         // Customizing params		
+         // 自定义参数		
          Nd4j.MAX_SLICES_TO_PRINT = -1;		
          Nd4j.MAX_ELEMENTS_PER_SLICE = -1;		
          Nd4j.ENFORCE_NUMERICAL_STABILITY = true;		
@@ -161,7 +161,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
 
          log.info("Load data....");		
          DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);		
-         // Loads data into generator and format consumable for NN		
+         // 将数据加载至生成器中，变为神经网络可接受的格式		
          DataSet iris = iter.next();		
 
          iris.normalizeZeroMeanZeroUnitVariance();		
@@ -169,23 +169,23 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
          log.info("Build model....");		
          NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true)		
                  .miniBatch(true)		
-                 // Gaussian for visible; Rectified for hidden		
-                 // Set contrastive divergence to 1		
+                 // 可见层用高斯；隐藏层用修正		
+                 // 将对比散度设为1		
                  .layer(new RBM.Builder().l2(1e-1).l1(1e-3)		
-                         .nIn(numRows * numColumns) // Input nodes		
-                         .nOut(outputNum) // Output nodes		
-                         .activation("relu") // Activation function type		
-                         .weightInit(WeightInit.RELU) // Weight initialization		
+                         .nIn(numRows * numColumns) // 输入节点		
+                         .nOut(outputNum) // 输出节点		
+                         .activation("relu") // 激活函数类型		
+                         .weightInit(WeightInit.RELU) // 权重初始化		
                          .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).k(3)		
                          .hiddenUnit(HiddenUnit.RECTIFIED).visibleUnit(VisibleUnit.GAUSSIAN)		
                          .updater(Updater.ADAGRAD).gradientNormalization(GradientNormalization.ClipL2PerLayer)		
                          .build())		
-                 .seed(seed) // Locks in weight initialization for tuning		
+                 .seed(seed) // 锁定调试时的初始化权重		
                  .iterations(iterations)		
-                 .learningRate(1e-3) // Backprop step size		
-                 // Speed of modifying learning rate		
+                 .learningRate(1e-3) // 反向传播步幅		
+                 // 学习速率的调整速度		
                  .optimizationAlgo(OptimizationAlgorithm.LBFGS)		
-                         // ^^ Calculates gradients		
+                         // ^^ 计算梯度		
                  .build();		
          Layer model = LayerFactories.getFactory(conf.getLayer()).create(conf);		
          model.setListeners(new ScoreIterationListener(listenerFreq));		
@@ -201,7 +201,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
              model.fit(iris.getFeatureMatrix());		
          }		
      }		
-     // A single layer learns features unsupervised.
+     // 单个层以无监督方式学习特征。
     }
 
 以上是用RBM处理鸢尾花数据集的示例，可点击链接查看这个示例的专门教程。
@@ -230,7 +230,7 @@ RBM有许多用途，其中最强的功能之一就是对权重进行合理的�
 
 ### <a name="CRBM">连续受限玻尔兹曼机</a>
 
-连续受限玻尔兹曼机（CRBM）是一种借由不同的对比散度取样方式接收连续输入（即比整数分得更细的数值）的RBM。所以CRBM能够处理图像像素或字数向量等标准化至零与一之间的小数。
+连续受限玻尔兹曼机（CRBM）是一种借由不同的对比散度采样方式接收连续输入（即比整数分得更细的数值）的RBM。所以CRBM能够处理图像像素或字数向量等标准化至零与一之间的小数。
 
 应当注意的是，深度神经网络的每一层都必须有四个元素：输入、一组系数、一个偏差以及变换机制（激活算法）。
 
