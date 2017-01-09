@@ -329,6 +329,11 @@ Also called a loss function or a cost function, an objective function defines wh
 ### <a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
 
+
+Below is an example of one-hot encoding for the phrase "The quick brown fox" 
+![One Hot Encoding for words](./img/onehot.svg)
+
+
 ### <a name="pooling">Pooling</a> 
 Pooling, max pooling and average pooling are terms that refer to downsampling or subsampling within a convolutional network. Downsampling is a way of reducing the amount of data flowing through the network, and therefore decreasing the computational cost of the network. Average pooling takes the average of several values. Max pooling takes the greatest of several values. Max pooling is currently the preferred type of downsampling layer in convolutional networks. 
 
