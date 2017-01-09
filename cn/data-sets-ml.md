@@ -1,34 +1,34 @@
 ---
-title: "Data sets and machine learning"
-layout: default
+title: "数据集与机器学习"
+layout: cn-default
 ---
 
-# DataSets and Machine Learning
+# 数据集与机器学习
 
-One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the right data in the right format. 
+深度学习领域最难解决的问题之一和神经网络本身没有关系：这个问题就是如何获取格式恰当的合适数据。 
 
-Deep learning, and machine learning more generally, needs a good training set to work properly. Collecting and constructing the training set -- a sizable body of known data -- takes time and domain-specific knowledge of where and how to gather relevant information. The training set acts as the benchmark against which deep-learning nets are trained. That is what they learn to reconstruct before they're unleashed on data they haven't seen before. 
+深度学习和其他类型的机器学习都需要优质的定型数据集才能正常运作。定型数据集是大量已知数据的集合，它的收集和建立需要时间，也需要特定领域的专业知识——要懂得从何处、以何种方式来收集有意义的信息。定型数据集在深度学习网络的定型过程中起到基准的作用。网络先要学习重构定型集中的数据，然后才能去处理从未遇到过的数据。 
 
-At this stage, knowledgeable humans need to find the right raw data and transform it into a numerical representation that the deep-learning algorithm can understand, a vector. Building a training set is, in a sense, pre-pre-training. 
+在定型阶段，具备相关知识的人类需要找到合适的原始数据并将其转换为深度学习算法所能理解的数值表示形式，即向量。建立定型数据集的过程可以算是“预预定型”。 
 
-Training sets that require much time or expertise can serve as a proprietary edge in the world of data science and problem solving. The nature of the expertise is largely in telling your algorithm what matters to you by selecting what goes into the training set. 
+需要大量时间或专业知识的定型数据集可以成为数据科学和问题解决领域中的特有竞争优势，而这种专业知识的本质主要就是通过选择定型数据集中的内容来告诉算法应该重视什么东西。 
 
-It involves telling a story -- through the initial data you select -- that will guide your deep-learning nets as they extrapolate the significant features, both in the training set and in the raw data they've been created to study.
+您需要用最初选择的数据来讲述一个故事，引导深度学习网络推测出重要的特征——不仅是定型集的重要特征，也是网络所要实际学习的原始数据的重要特征。
 
-To create a useful training set, you have to understand the problem you're solving; i.e. what you want your deep-learning nets to pay attention to. 
+要创建一个有效的定型数据集，您就必须充分理解手头需要解决的问题，亦即您想要让深度学习网络关注什么。 
 
-### The Two Datasets of Machine Learning
+### 机器学习中的两种数据集
 
-Machine learning typically works with three data sets: training, dev and test. All three should randomly sample a larger body of data.
+机器学习通常要用到三种数据集：定型集、开发集和测试集。这三种数据集都应当从规模更大的数据集合中采样。
 
-The first set you use is the **training set**, the largest of the three. Running a training set through a neural network teaches the net how to weigh different features, assigning them coefficients according to their likelihood of minimizing errors in your results.
+首先用到的是**定型集**，也是三种数据集中最大的。神经网络在处理定型集的数据时，将学会如何判断不同特征应有的权重，根据使结果误差最小化的可能性来为特征指定系数。
 
-Those coefficients, also known as metadata, will be contained in vectors, one for each each layer of your net. They are the most important results you will obtain from training a neural network.
+这些系数也被称为元数据，它们包含在向量中，神经网络的每一层都有一个这样的向量。它们是神经网络定型所产生的最重要的结果。
 
-The second set is your **test set**. It functions as a seal of approval, and you don’t use it until the end. After you’ve trained and optimized your data, you test your neural net against this final random sampling. The results it produces should validate that your net accurately recognizes images, or recognizes them at least [x] percentage of them.
+第二种数据集是**测试集**。它的作用就相当于是一枚许可图章，不到最后不会使用。数据定型和优化完毕后，就用最后这组随机样本来测试神经网络。测试集产生的结果应当能验证网络可以准确地识别图像，或者至少能识别百分之[x]的图像。
 
-If you don’t get accurate predictions, go back to the training set, look at the hyperparameters you used to tune the network, as well as the quality of your data and look at your pre-processing techniques. 
+如果没有得到准确的预测结果，您就需要回到定型集，检查用于调试网络的超参数，以及数据的质量和预处理的方式。 
 
-Now that you have the overview, we'll show you how to create [custom datasets](./customdatasets.html).
+概述到此为止，下面我们将向您介绍如何创建[自定义数据集](./customdatasets.html)。
 
-Various [repositories of open data sets](./opendata) that may be useful in training neural networks are available through the link. 
+可以用于神经网络定型的各种开放数据集参见[此处](./opendata)。 
