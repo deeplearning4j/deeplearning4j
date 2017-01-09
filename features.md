@@ -80,12 +80,13 @@ Each of these optimization algorithms may be paired with training features (know
 
 ### Loss/objective functions
 
-* Reconstruction entropy
-* Squared loss
-* Mean squared error
-* Multi-class cross entropy for classification
-* Negative log likelihood
-* RMSE_XENT
+* MSE: Mean Squared Error: Linear Regression
+* EXPLL: Exponential log likelihood: Poisson Regression
+* XENT: Cross Entropy: Binary Classification
+* MCXENT: Multiclass Cross Entropy
+* RMSE_XENT: RMSE Cross Entropy
+* SQUARED_LOSS: Squared Loss
+* NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
 
 ### Activation functions 
 
