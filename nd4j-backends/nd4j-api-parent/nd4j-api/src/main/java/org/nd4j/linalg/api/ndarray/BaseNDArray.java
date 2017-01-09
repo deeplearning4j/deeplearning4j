@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -796,11 +797,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
-        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),Shape.offset(shapeInfo),Shape.length(shapeInfo)));
+        Pair<DataBuffer,DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
+        DataBuffer shapeInfo = tadInfo.getFirst();
+        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),tadInfo.getSecond().getInt(index),Shape.length(shapeInfo)));
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
         baseNDArray.setShapeInformation(shapeInfo);
         return toTad;
+    }
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public INDArray javaTensorAlongDimension(int index, int... dimension) {
+        return doTad(index,dimension);
     }
 
     private void setShapeInformation(DataBuffer shapeInfo) {
