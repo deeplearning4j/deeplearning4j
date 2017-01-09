@@ -4,6 +4,9 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -72,5 +75,45 @@ public class RegressionEvalTest {
     }
 
 
+    @Test
+    public void testRegressionEvaluationMerging(){
+        Nd4j.getRandom().setSeed(12345);
+
+        int nRows = 20;
+        int nCols = 3;
+
+        int numMinibatches = 5;
+        int nEvalInstances = 4;
+
+        List<RegressionEvaluation> list = new ArrayList<>();
+
+        RegressionEvaluation single = new RegressionEvaluation(nCols);
+
+        for( int i=0; i<nEvalInstances; i++ ){
+            list.add(new RegressionEvaluation(nCols));
+            for( int j=0; j<numMinibatches; j++ ){
+                INDArray p = Nd4j.rand(nRows, nCols);
+                INDArray act = Nd4j.rand(nRows, nCols);
+
+                single.eval(act, p);
+
+                list.get(i).eval(act,p);
+            }
+        }
+
+        RegressionEvaluation merged = list.get(0);
+        for( int i=1; i<nEvalInstances; i++ ){
+            merged.merge(list.get(i));
+        }
+
+        double prec = 1e-6;
+        for( int i=0; i<nCols; i++ ){
+            assertEquals(single.correlationR2(i), merged.correlationR2(i), prec);
+            assertEquals(single.meanAbsoluteError(i), merged.meanAbsoluteError(i), prec);
+            assertEquals(single.meanSquaredError(i), merged.meanSquaredError(i), prec);
+            assertEquals(single.relativeSquaredError(i), merged.relativeSquaredError(i), prec);
+            assertEquals(single.rootMeanSquaredError(i), merged.rootMeanSquaredError(i), prec);
+        }
+    }
 
 }
