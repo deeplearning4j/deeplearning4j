@@ -144,7 +144,7 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public List<String> getLabels() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
