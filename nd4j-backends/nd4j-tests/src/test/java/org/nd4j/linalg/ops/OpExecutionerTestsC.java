@@ -20,8 +20,6 @@
 
 package org.nd4j.linalg.ops;
 
-import static org.junit.Assert.*;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +29,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
+import org.nd4j.linalg.api.ops.TadCollapseAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -39,11 +38,13 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
-import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -56,7 +57,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 2/22/15.

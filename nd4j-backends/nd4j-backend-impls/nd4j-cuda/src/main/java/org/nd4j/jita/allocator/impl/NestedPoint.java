@@ -1,9 +1,11 @@
 package org.nd4j.jita.allocator.impl;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.jita.allocator.concurrency.AtomicState;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.enums.AccessState;
 import org.nd4j.jita.allocator.time.RateTimer;
 import org.nd4j.jita.allocator.time.impl.BinaryTimer;
 

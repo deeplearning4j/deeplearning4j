@@ -2,7 +2,6 @@ package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -13,8 +12,6 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
-import org.nd4j.linalg.profiler.data.StackAggregator;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
 

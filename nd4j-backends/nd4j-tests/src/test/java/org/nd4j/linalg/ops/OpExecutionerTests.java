@@ -19,15 +19,13 @@
 
 
 package org.nd4j.linalg.ops;
-import static org.junit.Assert.*;
-
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -35,16 +33,20 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
-import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import static org.junit.Assert.*;
 
 
 /**

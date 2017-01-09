@@ -24,11 +24,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.io.File;
-import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
 
 /**

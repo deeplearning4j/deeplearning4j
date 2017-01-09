@@ -6,9 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -20,8 +17,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-
-import java.util.Arrays;
 
 /**
  * This set of test launches different ops in different order, to check for possible data corruption cases

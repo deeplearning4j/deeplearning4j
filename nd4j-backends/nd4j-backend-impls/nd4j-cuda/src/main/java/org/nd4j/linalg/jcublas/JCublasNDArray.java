@@ -20,27 +20,15 @@
 package org.nd4j.linalg.jcublas;
 
 
-
-import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.enums.CudaConstants;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.nativeblas.NativeOpsHolder;
-
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 import java.util.List;
 

@@ -1,7 +1,6 @@
 package org.nd4j.linalg.compression;
 
 import lombok.Data;
-import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.io.Serializable;

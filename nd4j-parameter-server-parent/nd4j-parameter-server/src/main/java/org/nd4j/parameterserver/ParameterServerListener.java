@@ -5,9 +5,8 @@ import org.nd4j.aeron.ipc.NDArrayCallback;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.ParameterServerUpdater;
+import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
 

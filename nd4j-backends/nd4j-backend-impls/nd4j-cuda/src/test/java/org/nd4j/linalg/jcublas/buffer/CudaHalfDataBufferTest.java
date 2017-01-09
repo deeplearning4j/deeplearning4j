@@ -2,12 +2,10 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.factory.CudaDataBufferFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

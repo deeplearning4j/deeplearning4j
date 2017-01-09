@@ -6,7 +6,6 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
-import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 

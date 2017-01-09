@@ -40,6 +40,10 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -48,14 +52,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -66,7 +69,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * NDArrayTests

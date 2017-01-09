@@ -9,7 +9,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author Adam Gibson

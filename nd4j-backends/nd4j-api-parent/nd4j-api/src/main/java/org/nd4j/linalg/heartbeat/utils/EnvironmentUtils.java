@@ -3,10 +3,7 @@ package org.nd4j.linalg.heartbeat.utils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Environment;
 
-import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;

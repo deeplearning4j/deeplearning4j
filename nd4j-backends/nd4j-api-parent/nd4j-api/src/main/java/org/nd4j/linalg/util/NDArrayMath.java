@@ -2,8 +2,6 @@ package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Arrays;
-
 /**
  * @author Adam Gibson
  */

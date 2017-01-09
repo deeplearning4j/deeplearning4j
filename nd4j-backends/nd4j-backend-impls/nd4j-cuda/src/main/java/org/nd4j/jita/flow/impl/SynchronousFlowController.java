@@ -2,20 +2,16 @@ package org.nd4j.jita.flow.impl;
 
 
 import lombok.Getter;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
-import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
-import org.nd4j.jita.handler.MemoryHandler;
-import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

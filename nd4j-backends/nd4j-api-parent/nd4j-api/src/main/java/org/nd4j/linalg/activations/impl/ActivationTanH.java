@@ -8,7 +8,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 /**
  *  f(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))

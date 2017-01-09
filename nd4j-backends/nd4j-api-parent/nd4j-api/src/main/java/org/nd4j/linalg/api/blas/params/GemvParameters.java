@@ -2,12 +2,7 @@ package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrayFactory;
-import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Iterator;
 
 /**
  * Gemv parameters:

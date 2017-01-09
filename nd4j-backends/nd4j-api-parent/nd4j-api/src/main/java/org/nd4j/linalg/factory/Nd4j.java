@@ -53,7 +53,7 @@ import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
-import org.nd4j.linalg.api.rng.*;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
@@ -82,7 +82,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 

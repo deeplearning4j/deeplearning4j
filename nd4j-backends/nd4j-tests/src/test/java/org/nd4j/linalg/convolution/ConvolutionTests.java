@@ -33,7 +33,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;

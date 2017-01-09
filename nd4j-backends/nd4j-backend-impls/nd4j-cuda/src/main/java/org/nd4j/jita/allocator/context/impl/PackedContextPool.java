@@ -3,9 +3,8 @@ package org.nd4j.jita.allocator.context.impl;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
-import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
-
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 

@@ -32,7 +32,6 @@ import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

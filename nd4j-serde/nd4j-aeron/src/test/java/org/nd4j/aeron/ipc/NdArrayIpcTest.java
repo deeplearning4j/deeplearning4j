@@ -1,18 +1,11 @@
 package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
-import io.aeron.AvailableImageHandler;
-import io.aeron.Image;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.uri.AeronUri;
-import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.aeron.util.AeronStat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;

@@ -10,14 +10,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author Alex Black
@@ -35,8 +32,8 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     public void testJavaVsNative() {
        long totalJavaTime = 0;
        long totalCTime = 0;
-       long n = 1000;
-        INDArray row = Nd4j.create(1,1000);
+       long n = 10;
+        INDArray row = Nd4j.create(1,100);
 
         for(int i = 0; i < n; i++) {
            StopWatch javaTiming = new StopWatch();

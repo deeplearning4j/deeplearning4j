@@ -20,11 +20,9 @@
 package org.nd4j.linalg.api.shape;
 
 
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,13 +30,13 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to

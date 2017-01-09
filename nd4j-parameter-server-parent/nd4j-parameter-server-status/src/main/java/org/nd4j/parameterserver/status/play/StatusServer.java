@@ -2,7 +2,10 @@ package org.nd4j.parameterserver.status.play;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.model.*;
+import org.nd4j.parameterserver.model.MasterStatus;
+import org.nd4j.parameterserver.model.ServerTypeJson;
+import org.nd4j.parameterserver.model.SlaveStatus;
+import org.nd4j.parameterserver.model.SubscriberState;
 import play.libs.F;
 import play.libs.Json;
 import play.mvc.Result;
@@ -12,7 +15,7 @@ import play.server.Server;
 import java.util.List;
 
 import static play.libs.Json.toJson;
-import static play.mvc.Controller.*;
+import static play.mvc.Controller.request;
 import static play.mvc.Results.ok;
 
 

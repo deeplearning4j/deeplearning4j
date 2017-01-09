@@ -5,7 +5,7 @@ import org.nd4j.linalg.profiler.data.primitives.ComparableAtomicLong;
 import org.nd4j.linalg.profiler.data.primitives.TimeSet;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 

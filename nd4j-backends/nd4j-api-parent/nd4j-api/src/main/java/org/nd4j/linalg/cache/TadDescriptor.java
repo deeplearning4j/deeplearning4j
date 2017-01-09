@@ -1,21 +1,22 @@
 package org.nd4j.linalg.cache;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
 /**
  * This is utility class, made to compare TADs for caching purposes.
  *
- * Idea: for any given INDArray with any specific shape, TAD for specific dimension will always be the same. So it can be reused as much as we want.
+ * Idea: for any given INDArray with any specific shape,
+ * TAD for specific dimension will always be the same.
+ * So it can be reused as much as we want.
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class TadDescriptor {
-    private static Logger logger = LoggerFactory.getLogger(TadDescriptor.class);
     private int dimensionLength;
     private int[] dimension;
     private int[] shape;

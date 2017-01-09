@@ -2,9 +2,14 @@
 
 package org.nd4j.nativeblas;
 
-import java.nio.*;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.annotation.*;
+import org.bytedeco.javacpp.annotation.ByPtrPtr;
+import org.bytedeco.javacpp.annotation.Cast;
+
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     static { Loader.load(); }

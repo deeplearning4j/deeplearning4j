@@ -28,22 +28,22 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
-import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -52,19 +52,16 @@ import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.NDArrayMath;
-import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.lang.Iterable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.IntBuffer;
 import java.util.*;
-import java.util.Set;
 
-import static org.nd4j.linalg.factory.Nd4j.compressDebug;
-import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
-import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
+import static org.nd4j.linalg.factory.Nd4j.*;
 
 
 /**

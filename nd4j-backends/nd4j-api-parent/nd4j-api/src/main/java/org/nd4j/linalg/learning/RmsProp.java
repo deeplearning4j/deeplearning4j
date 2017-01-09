@@ -2,7 +2,6 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;

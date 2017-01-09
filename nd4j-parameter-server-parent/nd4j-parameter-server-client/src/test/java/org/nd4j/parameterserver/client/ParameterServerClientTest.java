@@ -2,8 +2,8 @@ package org.nd4j.parameterserver.client;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.agrona.CloseHelper;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

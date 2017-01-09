@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.buffer;
 
 import org.bytedeco.javacpp.DoublePointer;
-
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
@@ -34,7 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
-
 
 import java.io.*;
 

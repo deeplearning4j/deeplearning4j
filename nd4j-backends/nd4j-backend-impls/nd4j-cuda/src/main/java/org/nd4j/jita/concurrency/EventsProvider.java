@@ -1,9 +1,7 @@
 package org.nd4j.jita.concurrency;
 
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;

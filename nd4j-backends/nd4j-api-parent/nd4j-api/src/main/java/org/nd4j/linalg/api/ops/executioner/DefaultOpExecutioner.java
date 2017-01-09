@@ -19,10 +19,7 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -32,7 +29,6 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;

@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -19,20 +19,13 @@
 
 package org.nd4j.linalg;
 
-import org.junit.Ignore;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.reflections.Reflections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ServiceLoader;
 
 /**
  * Test suite for nd4j.

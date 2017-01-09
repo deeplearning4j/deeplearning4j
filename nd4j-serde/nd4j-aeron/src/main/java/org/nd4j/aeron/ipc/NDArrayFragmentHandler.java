@@ -7,7 +7,6 @@ import org.agrona.DirectBuffer;
 import org.nd4j.aeron.ipc.chunk.ChunkAccumulator;
 import org.nd4j.aeron.ipc.chunk.InMemoryChunkAccumulator;
 import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

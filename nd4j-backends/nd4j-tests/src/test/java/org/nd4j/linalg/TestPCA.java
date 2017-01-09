@@ -1,19 +1,16 @@
 
 package org.nd4j.linalg.dimensionalityreduction ;
-import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.checkutil.CheckUtil;
-import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-
-import java.util.List;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by rcorbish

@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg.api.rng.distribution;
 
-import java.util.Iterator;
-
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.solvers.UnivariateSolverUtils;
 import org.apache.commons.math3.exception.NotStrictlyPositiveException;
@@ -32,6 +30,8 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Iterator;
 
 /**
  * Base distribution derived from apache commons math

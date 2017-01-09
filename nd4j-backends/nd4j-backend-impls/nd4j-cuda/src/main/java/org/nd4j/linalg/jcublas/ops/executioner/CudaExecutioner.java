@@ -20,7 +20,6 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
@@ -31,23 +30,21 @@ import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.rng.*;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;

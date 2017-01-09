@@ -7,7 +7,6 @@ import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com

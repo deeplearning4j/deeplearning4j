@@ -1,5 +1,4 @@
 package org.nd4j.linalg.inverse;
-import static org.junit.Assert.*;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.LUDecomposition;
@@ -17,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsoncccc on 12/7/15.

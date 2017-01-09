@@ -1,10 +1,8 @@
 package org.nd4j.jita.constant;
 
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
 import java.util.List;

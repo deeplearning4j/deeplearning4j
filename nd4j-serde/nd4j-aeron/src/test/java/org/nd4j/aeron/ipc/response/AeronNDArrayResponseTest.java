@@ -11,14 +11,11 @@ import org.junit.Test;
 import org.nd4j.aeron.ipc.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
-import static org.nd4j.linalg.factory.Nd4j.scalar;
 
 /**
  * Created by agibsonccc on 10/3/16.

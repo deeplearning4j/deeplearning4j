@@ -1,6 +1,5 @@
 package org.nd4j.linalg.shape.indexing;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,6 +9,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson

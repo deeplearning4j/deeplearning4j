@@ -7,8 +7,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ScalarOp;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -28,8 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Properties;
