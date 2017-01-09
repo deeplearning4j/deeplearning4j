@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -904,5 +905,110 @@ public class TestComputationGraphNetwork {
         ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
         ComputationGraph net = ModelSerializer.restoreComputationGraph(bais, true);
         assertEquals(7, net.getConfiguration().getIterationCount());
+    }
+    
+    @Test
+    public void testExampleWeights2d() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .weightInit(WeightInit.XAVIER)
+            .iterations(100)
+            .seed(12345)
+            .graphBuilder()
+            .addInputs("in")
+            .addLayer("L1", new DenseLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).build(), "in")
+            .addLayer(
+                "out", 
+                new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                    .activation(Activation.IDENTITY).nIn(1).nOut(1).build(), 
+                "L1"
+            )
+            .setOutputs("out")
+            .pretrain(false).backprop(true)
+            .build();
+
+        ComputationGraph network = new ComputationGraph(conf);
+        network.init();
+
+        // This data set contains 2 examples, both having 0 as feature, and -10 resp 10 as labels. All we need is bias.
+        // The 2nd example has twice the weight of the first, so the bias should be towards the positive sign.
+        DataSet dataSet = new DataSet(
+            Nd4j.zeros(2, 1),
+            Nd4j.create(new float[][]{{-10}, {10}}),
+            null,
+            Nd4j.create(new float[]{1, 2}).transpose() // Weights of 1 and 2
+        );
+        
+        network.fit(dataSet);
+        INDArray[] result = network.output(Nd4j.zeros(1, 1));
+
+        // The global minimum of ((-10 - x) ^ 2) * 1 + ((10 - x) ^ 2) * 2 is 10 / 3 ~= 3.33
+        assertEquals(10d / 3, result[0].getDouble(0), 1e-4);
+        
+        // With this value of 3.33, the total score should be ((-10 - 3.33) ^ 2) * 1 + ((10 - 3.33) ^ 2) * 2 = 266.67,
+        // so the average score is 133.33.
+        // Score should also be multiplied by the weight, otherwise it seemingly wouldn't go down potentially when using
+        // weighed examples.
+        assertEquals(133d + (1d/3), network.score(), 1e-4);
+    }
+    
+    @Test
+    public void testExampleWeights3d() {
+        // 3D version of testExampleWeights2d
+        
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .updater(Updater.ADAM)
+            .learningRate(0.02)
+            .weightInit(WeightInit.XAVIER)
+            .iterations(2001)
+            .seed(12345)
+            .graphBuilder()
+            .addInputs("in")
+            .addLayer("L1", new GravesLSTM.Builder().nIn(1).nOut(1).activation(Activation.TANH).build(), "in")
+            .addLayer(
+                "out",
+                new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                    .activation(Activation.IDENTITY).nIn(1).nOut(1).build(),
+                "L1"
+            )
+            .setOutputs("out")
+            .pretrain(false).backprop(true)
+            .build();
+
+        ComputationGraph network = new ComputationGraph(conf);
+        network.setListeners(new ScoreIterationListener(500));
+        network.init();
+   
+        // 2 examples with 5 time steps, all zeros
+        INDArray features = Nd4j.zeros(10).reshape(2, 1, 5);
+        // Labels are all -10 for the first example, all 10 for the second example
+        INDArray labels = Nd4j.onesLike(features);
+        labels.getRow(0).muli(-10);
+        labels.getRow(1).muli(10);
+        
+        // Create the weights matrix. It has to be 2D, specifying a weight for every time step.
+        INDArray weights = Nd4j.ones(2, 5);
+        // Let the 2nd example have weight of 2 for every time step
+        weights.getRow(1).muli(2);
+        
+        DataSet dataSet = new DataSet(
+            features,
+            labels,
+            null,
+            weights
+        );
+
+        network.fit(dataSet);
+
+        INDArray testInput = Nd4j.zeros(5).reshape(1, 1, 5);
+        INDArray[] result = network.output(testInput);
+        // The global minimum of ((-10 - x) ^ 2) * 1 + ((10 - x) ^ 2) * 2 is 10 / 3 ~= 3.33 for every time step
+        // Subtract the expected result from the actual result to assert that the difference is small
+        double diff = result[0].sub(Nd4j.onesLike(testInput).mul(10d / 3)).sumNumber().doubleValue();
+        assertEquals(diff, 0, 1e-4);
+
+        // Like with the 2d test, the average score should be 133.33 per time step, so 666.66 in total for 5 time steps.
+        assertEquals(666d + (2d/3), network.score(), 1e-4);
     }
 }
