@@ -3,7 +3,8 @@ package org.datavec.spark.transform;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -34,9 +35,8 @@ public class DataFrameTests extends BaseSparkTest {
         for(int i = 0; i < numColumns; i++)
             builder.addColumnDouble(String.valueOf(i));
         Schema schema = builder.build();
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,sc.parallelize(records));
-        dataFrame.show();
-        dataFrame.describe(DataFrames.toArray(schema.getColumnNames())).show();
+        DataFrames.toDataFrame(schema,sc.parallelize(records)).show();
+        DataFrames.toDataFrame(schema,sc.parallelize(records)).describe(DataFrames.toArray(schema.getColumnNames())).show();
 //        System.out.println(Normalization.minMaxColumns(dataFrame,schema.getColumnNames()));
 //        System.out.println(Normalization.stdDevMeanColumns(dataFrame,schema.getColumnNames()));
 
@@ -65,12 +65,11 @@ public class DataFrameTests extends BaseSparkTest {
         assertEquals(schema,DataFrames.fromStructType(DataFrames.fromSchema(schema)));
         assertEquals(rdd.collect(),DataFrames.toRecords(DataFrames.toDataFrame(schema,rdd)).getSecond().collect());
 
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,rdd);
-        dataFrame.show();
-        Column mean = DataFrames.mean(dataFrame,"0");
-        Column std = DataFrames.std(dataFrame,"0");
-        dataFrame.withColumn("0",dataFrame.col("0").minus(mean)).show();
-        dataFrame.withColumn("0",dataFrame.col("0").divide(std)).show();
+        DataFrames.toDataFrame(schema,rdd).show();
+        Column mean = DataFrames.mean(DataFrames.toDataFrame(schema,rdd),"0");
+        Column std = DataFrames.std(DataFrames.toDataFrame(schema,rdd),"0");
+        DataFrames.toDataFrame(schema,rdd).withColumn("0",DataFrames.toDataFrame(schema,rdd).col("0").minus(mean)).show();
+        DataFrames.toDataFrame(schema,rdd).withColumn("0",DataFrames.toDataFrame(schema,rdd).col("0").divide(std)).show();
 
         /*   DataFrame desc = dataFrame.describe(dataFrame.columns());
         dataFrame.show();
