@@ -41,6 +41,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter private CpuTADManager tadManager = new CpuTADManager();
 
+    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
+    private static final String VERBOSE = "ND4J_VERBOSE";
+
     /**
      * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
      * Since for NativeOpExecutioner all executions are synchronous
@@ -49,6 +52,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
+
+        Map<String, String> env = System.getenv();
+
+        if (env.containsKey(DEBUG_ENABLED)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(DEBUG_ENABLED));
+                loop.enableDebugMode(var);
+            } catch (Exception e) {
+                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
+            }
+        }
+
+        if (env.containsKey(VERBOSE)) {
+            try {
+                boolean var = Boolean.parseBoolean(env.get(VERBOSE));
+                loop.enableVerboseMode(var);
+            } catch (Exception e) {
+                log.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
+            }
+        }
     }
 
     @Override
