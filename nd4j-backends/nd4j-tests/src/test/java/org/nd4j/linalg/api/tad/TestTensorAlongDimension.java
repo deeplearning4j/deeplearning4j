@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.tad;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +31,29 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testJavaVsNative() {
+       long totalJavaTime = 0;
+       long totalCTime = 0;
+       long n = 1000;
+        INDArray row = Nd4j.create(1,1000);
 
+        for(int i = 0; i < n; i++) {
+           StopWatch javaTiming = new StopWatch();
+           javaTiming.start();
+           row.javaTensorAlongDimension(0,0);
+           javaTiming.stop();
+           StopWatch cTiming = new StopWatch();
+           cTiming.start();
+           row.tensorAlongDimension(0,0);
+           cTiming.stop();
+           totalJavaTime += javaTiming.getNanoTime();
+           totalCTime += cTiming.getNanoTime();
+       }
+
+        System.out.println("Java timing " + (totalJavaTime / n) + " C time " + (totalCTime / n));
+
+    }
 
     @Test
     public void testTadShapesEdgeCases() {
