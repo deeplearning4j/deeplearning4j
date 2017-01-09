@@ -1,18 +1,18 @@
 ---
-layout: default
-title: Custom Datasets
+layout: cn-default
+title: 自定义数据集
 ---
 
-# Custom Datasets 
+# 自定义数据集 
 
-All input to the deep-learning nets -- whether it's words, images or other data -- must be transformed into numbers known as vectors, in a process called vectorization. A vector is simply a one-column matrix with an extendible number of rows.
+深度学习网络的一切输入，无论是文字、图像或其他数据，都必须转换为数值组成的向量，这一过程称为向量化。向量就是一个行数不限的单列矩阵。
 
 ## DataVec
 
-DataVec is an Apache2 Licensed open-sourced tool for machine learning ETL (Extract, Transform, Load) operations. The goal of DataVec is to transform raw data into usable vector formats across machine learning tools.
+DataVec是采用Apache 2.0许可协议的开源工具，用于机器学习中的ETL（提取、转换、加载）操作。DataVec的任务是将原始数据转换为各类机器学习工具均可使用的向量格式。
 
-DataVec provides tools to transform images into vectors, including labelling images based on directory name and structure. DataVec also provides tools to read CSV data and transform fields to the appropriate numeric format. 
+DataVec提供将图像转换为向量的工具，还可以根据目录名称和结构来标记图像。DataVec也提供读取CSV数据并将字段转换为数值格式的工具。 
 
-DataVec examples are available in our examples. 
+我们提供的示例中包括了DataVec的示例。 
 
-For more information on DataVec is available [here.](https://deeplearning4j.org/datavec)
+关于DataVec的更多详情请参见[此处](https://deeplearning4j.org/datavec)。
