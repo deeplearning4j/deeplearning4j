@@ -17,10 +17,8 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.*;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -32,7 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class RoutedTransport extends BaseTransport {
 
     protected List<RemoteConnection> shards = new ArrayList<>();
-    protected List<RemoteConnection> clients = new ArrayList<>();
+    protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
 
     @Override
     public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
@@ -92,7 +90,9 @@ public class RoutedTransport extends BaseTransport {
 
         switch (nodeRole) {
             case MASTER:
-            case BACKUP:
+            case BACKUP: {
+
+            }
             case SHARD: {
                     /*
                         For unicast transport we want to have interconnects between all shards first of all, because we know their IPs in advance.
@@ -125,6 +125,7 @@ public class RoutedTransport extends BaseTransport {
      */
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
+/*
         Queue<RemoteConnection> queue = new ArrayDeque<>(shards);
 
         long result = 0;
@@ -151,6 +152,26 @@ public class RoutedTransport extends BaseTransport {
             if (retries > 20)
                 throw new RuntimeException("NOT_CONNECTED: " + rc.getIp() + ":" + rc.getPort());
         }
+*/
+
+        // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
+        shards.parallelStream().forEach((rc) ->{
+            long res = 0;
+            long retr = 0;
+
+            while ((res = rc.getPublication().offer(message.asUnsafeBuffer())) < 0L) {
+                if (res == -1)
+                    retr++;
+
+                if (retr > 20)
+                    throw new RuntimeException("NOT_CONNECTED: " + rc.getIp() + ":" + rc.getPort());
+                else
+                    try {
+                        Thread.sleep(configuration.getRetransmitTimeout());
+                    } catch (Exception e) {}
+
+            }
+        });
     }
 
     /**
@@ -160,17 +181,42 @@ public class RoutedTransport extends BaseTransport {
      */
     @Override
     protected void sendFeedbackToClient(VoidMessage message) {
-        // TODO: we need initial Client address for this message
+        // FIXME: add address field here
+        long targetAddress = message.getTaskId();
+        long result = 0;
+        while ((result = clients.get(targetAddress).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
+            try {
+                Thread.sleep(50);
+            } catch (Exception e) { }
+        }
     }
 
     @Override
     protected void shutdownSilent() {
-        super.shutdownSilent();
+        // closing shards
+        shards.forEach((rc) -> {
+            rc.getPublication().close();
+        });
+
+        // closing clients connections
+        clients.values().forEach((rc) -> {
+            rc.getPublication().close();
+        });
+
+        subscriptionForClients.close();
     }
 
     @Override
     public void shutdown() {
-        super.shutdown();
+        runner.set(false);
+
+        if (threadB != null)
+            threadB.interrupt();
+
+        if (threadA != null)
+            threadA.interrupt();
+
+        shutdownSilent();
     }
 
     /**
