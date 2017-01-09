@@ -29,6 +29,7 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
     private final File trainLabelsDirectory;
     private final int batchesCount;
     private int currentIdx;
+    private DataSetPreProcessor preProcessor;
 
 
     public HDF5MiniBatchDataSetIterator(String trainFeaturesDirectory, String trainLabelsDirectory) {
@@ -46,13 +47,21 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
     public DataSet next() {
         DataSet dataSet = readIdx(currentIdx);
         currentIdx++;
+
+        if (preProcessor != null) {
+            if (!dataSet.isPreProcessed()) {
+                preProcessor.preProcess(dataSet);
+                dataSet.markAsPreProcessed();
+            }
+        }
+
         return dataSet;
     }
 
     private DataSet readIdx(int currentIdx) {
         String batchFileName = fileNameForIdx(currentIdx);
 
-        if(log.isTraceEnabled()) {
+        if (log.isTraceEnabled()) {
             log.trace("Reading: " + batchFileName);
         }
 
@@ -84,7 +93,7 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public void reset() {
-        currentIdx  = 0;
+        currentIdx = 0;
     }
 
     @Override
@@ -125,12 +134,12 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        throw new UnsupportedOperationException();
+        this.preProcessor = preProcessor;
     }
 
     @Override
     public DataSetPreProcessor getPreProcessor() {
-        throw new UnsupportedOperationException();
+        return preProcessor;
     }
 
     @Override
