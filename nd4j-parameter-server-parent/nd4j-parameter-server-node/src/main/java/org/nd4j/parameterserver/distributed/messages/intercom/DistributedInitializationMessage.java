@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -19,6 +20,7 @@ import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMess
 @NoArgsConstructor
 @Builder
 @Data
+@Slf4j
 public class DistributedInitializationMessage extends BaseVoidMessage implements DistributedMessage {
 
     protected int vectorLength;
@@ -49,6 +51,8 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
         INDArray syn1Neg = storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
         INDArray expTable = storage.getArray(WordVectorStorage.EXP_TABLE);
         if (syn0 == null) {
+            log.info("sI_{} is starting initialization...", transport.getShardIndex());
+
             // we initialize only syn0/syn1/syn1neg and expTable
             // negTable will be initalized at driver level and will be shared via message
             Nd4j.getRandom().setSeed(seed * (shardIndex + 1));

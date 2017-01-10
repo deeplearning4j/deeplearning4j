@@ -26,6 +26,7 @@ public class InitializationAggregation extends BaseAggregation {
 
     @Override
     public void processMessage() {
+        log.info("sI_{} received init aggregation", transport.getShardIndex());
         if (clipboard.isTracking(taskId)) {
             clipboard.pin(this);
 
@@ -34,6 +35,8 @@ public class InitializationAggregation extends BaseAggregation {
 
                 InitializationCompleteMessage icm = new InitializationCompleteMessage(taskId);
                 icm.setOriginatorId(aggregation.getOriginatorId());
+
+                log.info("Sendinb back response");
 
                 transport.sendMessage(icm);
             }

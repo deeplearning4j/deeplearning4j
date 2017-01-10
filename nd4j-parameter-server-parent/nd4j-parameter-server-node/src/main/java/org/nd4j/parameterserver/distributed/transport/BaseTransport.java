@@ -243,8 +243,11 @@ public abstract class BaseTransport implements Transport {
         if (nodeRole != NodeRole.SHARD)
             throw new RuntimeException("This method shouldn't be called only from Shard context");
 
+//        log.info("Sending message to All shards");
+
         message.setTargetId((short) -1);
-        publicationForShards.offer(message.asUnsafeBuffer());
+        //publicationForShards.offer(message.asUnsafeBuffer());
+        sendCoordinationCommand(message);
     }
 
     /**

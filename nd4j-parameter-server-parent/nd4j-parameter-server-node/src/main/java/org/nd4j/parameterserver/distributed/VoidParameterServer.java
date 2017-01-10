@@ -12,10 +12,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
-import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequestMessage;
-import org.nd4j.parameterserver.distributed.messages.requests.ShutdownRequestMessage;
-import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
-import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.*;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
@@ -217,6 +214,8 @@ public class VoidParameterServer {
             transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
         }
         trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
+
+
     }
 
     /**

@@ -82,7 +82,7 @@ public class VoidParameterServerStressTest {
 
                     results.add(time2 - time1);
 
-                    if (i + 1 % 500 == 0)
+                    if ((i + 1) % 1000 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);
@@ -144,7 +144,7 @@ public class VoidParameterServerStressTest {
 
                     results.add(time2 - time1);
 
-                    if (i + 1 % 500 == 0)
+                    if ((i + 1) % 1000 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);
@@ -236,7 +236,7 @@ public class VoidParameterServerStressTest {
 
                     results.add(time2 - time1);
 
-                    if (i + 1 % 500 == 0)
+                    if ((i + 1) % 1000 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);
@@ -277,6 +277,7 @@ public class VoidParameterServerStressTest {
 
         VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                 .unicastPort(49823)
+                .numberOfShards(list.size())
                 .shardAddresses(list)
                 .build();
 
@@ -309,7 +310,7 @@ public class VoidParameterServerStressTest {
         final List<Long> times = new CopyOnWriteArrayList<>();
 
         // at this point, everything should be started, time for tests
-        clientNode.initializeSeqVec(NUM_WORDS, 100, 123, 25, true, false);
+        clientNode.initializeSeqVec(100, NUM_WORDS, 123, 25, true, false);
 
         log.info("Initialization finished, going to tests...");
 
@@ -330,11 +331,14 @@ public class VoidParameterServerStressTest {
 
                     results.add(time2 - time1);
 
-                    if (i + 1 % 500 == 0)
+                    if ((i + 1) % 1000 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);
             });
+
+            threads[t].setDaemon(true);
+            threads[t].start();
         }
 
         for (int t = 0; t < threads.length; t++) {

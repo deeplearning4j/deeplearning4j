@@ -22,6 +22,6 @@ public class DistributedIntroductionMessage extends BaseVoidMessage implements D
 
     @Override
     public void processMessage() {
-
+        transport.addClient(this.ip, this.port);
     }
 }

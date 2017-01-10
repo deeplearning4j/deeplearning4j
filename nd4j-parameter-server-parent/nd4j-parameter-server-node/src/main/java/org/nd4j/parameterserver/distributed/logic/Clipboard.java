@@ -4,6 +4,8 @@ import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -15,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Clipboard {
 
 
-    protected Map<Long, VoidAggregation> clipboard = new HashMap<>();
+    protected Map<Long, VoidAggregation> clipboard = new ConcurrentHashMap<>();
 
-    protected Queue<VoidAggregation> completedQueue = new LinkedList<>();
+    protected Queue<VoidAggregation> completedQueue = new ConcurrentLinkedQueue<>();
 
     protected AtomicInteger trackingCounter = new AtomicInteger(0);
     protected AtomicInteger completedCounter = new AtomicInteger(0);

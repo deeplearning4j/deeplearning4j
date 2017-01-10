@@ -14,6 +14,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -35,7 +36,7 @@ public abstract class BaseAggregation extends BaseVoidMessage implements VoidAgg
 
     protected BaseAggregation() {
         chunksCounter = new AtomicInteger(1);
-        chunks = new TreeMap<>();
+        chunks = new ConcurrentHashMap<>();
     }
 
     protected BaseAggregation(long taskId, short aggregationWidth, short shardIndex) {

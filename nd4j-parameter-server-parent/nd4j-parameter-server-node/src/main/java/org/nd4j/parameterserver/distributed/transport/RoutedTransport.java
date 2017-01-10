@@ -10,10 +10,12 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage;
 import org.nd4j.parameterserver.distributed.transport.routing.InterleavedRouter;
 import org.nd4j.parameterserver.distributed.transport.routing.StaticRouter;
 
@@ -191,6 +193,14 @@ public class RoutedTransport extends BaseTransport {
         // TODO: discard message if it's not sent for enough time?
         long targetAddress = message.getOriginatorId();
         long result = 0;
+
+        //log.info("sI_{} trying to send back {}", shardIndex, message.getClass().getSimpleName());
+
+        if (clients.get(targetAddress) == null) {
+            log.info("Can't get client with address [{}]", targetAddress);
+            throw new RuntimeException();
+        }
+
         while ((result = clients.get(targetAddress).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
             try {
                 Thread.sleep(50);
@@ -266,6 +276,9 @@ public class RoutedTransport extends BaseTransport {
         buffer.getBytes(offset, data);
 
         VoidMessage message = VoidMessage.fromBytes(data);
+
+      //  log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
+
         if (message instanceof MeaningfulMessage) {
             MeaningfulMessage msg = (MeaningfulMessage) message;
             completed.put(message.getTaskId(), msg);
@@ -287,13 +300,46 @@ public class RoutedTransport extends BaseTransport {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        } else if (message instanceof VoidAggregation) {
+            try {
+                messages.put((VoidAggregation) message);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
+    @Override
+    public void launch(@NonNull ThreadingModel threading) {
+        super.launch(threading);
+
+        // send introductory message
+        if (nodeRole == NodeRole.CLIENT) {
+//            shards.parallelStream().forEach((rc) -> {
+                IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
+                irm.setTargetId((short) -1);
+                sendCoordinationCommand(irm);
+
+//            });
+
+        }
+    }
 
     @Override
-    public void addClient(String ip, int port) {
-        //this.clients.put();
+    public synchronized void addClient(String ip, int port) {
+        Long hash = StringUtils.getLongHash(ip + ":" + port);
+        if (clients.containsKey(hash))
+            return;
+
+        RemoteConnection connection = RemoteConnection.builder()
+                .ip(ip)
+                .port(port)
+                .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port, voidConfiguration.getStreamId()))
+                .build();
+
+
+        log.info("sI_{}: Adding connection: [{}] to {}:{}", shardIndex, hash, ip, port);
+        this.clients.put(hash, connection);
     }
 
 

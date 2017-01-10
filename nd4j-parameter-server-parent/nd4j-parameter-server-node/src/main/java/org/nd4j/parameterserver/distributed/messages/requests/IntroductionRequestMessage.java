@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.messages.requests;
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
+import org.nd4j.parameterserver.distributed.messages.complete.IntroductionCompleteMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedIntroductionMessage;
 
 /**
@@ -27,12 +28,24 @@ public class IntroductionRequestMessage extends BaseVoidMessage  implements Requ
     @Override
     public void processMessage() {
         // redistribute this message over network
-        DistributedIntroductionMessage dim = new DistributedIntroductionMessage(ip, port);
+        transport.addClient(ip, port);
 
-        dim.extractContext(this);
-        dim.processMessage();
+//        DistributedIntroductionMessage dim = new DistributedIntroductionMessage(ip, port);
 
-        if (voidConfiguration.getNumberOfShards() > 1)
-            transport.sendMessageToAllShards(dim);
+//        dim.extractContext(this);
+//        dim.processMessage();
+
+//        if (voidConfiguration.getNumberOfShards() > 1)
+//            transport.sendMessageToAllShards(dim);
+
+//        IntroductionCompleteMessage icm = new IntroductionCompleteMessage(this.taskId);
+//        icm.setOriginatorId(this.originatorId);
+
+//        transport.sendMessage(icm);
+    }
+
+    @Override
+    public boolean isBlockingMessage() {
+        return true;
     }
 }
