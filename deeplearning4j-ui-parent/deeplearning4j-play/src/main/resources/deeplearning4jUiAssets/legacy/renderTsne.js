@@ -24,7 +24,6 @@ var x = [];
 var y = [];
 var name3 = [];
 
-var svg;
 var renderSpace;
 var xMax = 0, xMin = 0, yMax = 0, yMin = 0;
 
@@ -34,12 +33,14 @@ var yAxis;
 var xScale;
 var yScale;
 
+var currTsneSessionID = null;
+
 function zoomFunction() {
 
     var translateX = d3.event.translate[0];
     var translateY = d3.event.translate[1];
     var currentScale = d3.event.scale;
-    console.log('zoom called. Scale: ' + currentScale + " translateX: " + translateX + " translateY: " + translateY);
+    // console.log('zoom called. Scale: ' + currentScale + " translateX: " + translateX + " translateY: " + translateY);
 
     //Redraw the x and y axis:
     renderSpace.select(".x.axis").call(xAxis);
@@ -207,12 +208,11 @@ function drawEmbedding() {
 
 
 function drawTsne() {
-    var sid = getParameterByName("sid");
-    if (sid == undefined) sid = "UploadedFile";
+    if (currTsneSessionID == undefined) currTsneSessionID = "UploadedFile";
 
 
     $.ajax({
-        url: "/tsne/coords/" + sid,
+        url: "/tsne/coords/" + currTsneSessionID,
         cache: false
     })
         .done(function (data) {
@@ -254,11 +254,15 @@ function drawTsne() {
                     placement: {
                         from: "top",
                         align: "center"
-                    },
+                    }
                 });
             }
         });
 }
 
+function setSessionId(newID){
+    currTsneSessionID = newID;
+    drawTsne();
+}
 
 $(window).load(drawTsne());
