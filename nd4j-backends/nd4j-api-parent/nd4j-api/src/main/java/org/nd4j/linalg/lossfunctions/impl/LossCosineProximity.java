@@ -4,7 +4,9 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Created by susaneraly on 9/9/16.
@@ -21,6 +23,8 @@ public class LossCosineProximity implements ILossFunction {
 
         INDArray yhatmag = postOutput.norm2(1);
         INDArray ymag = labels.norm2(1);
+        yhatmag = Transforms.max(yhatmag, Nd4j.EPS_THRESHOLD,false);
+        ymag = Transforms.max(ymag,Nd4j.EPS_THRESHOLD,false);
 
         INDArray scoreArr = postOutput.mul(labels);
         scoreArr.diviColumnVector(yhatmag);
