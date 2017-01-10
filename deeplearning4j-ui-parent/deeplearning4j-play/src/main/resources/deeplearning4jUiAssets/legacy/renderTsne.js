@@ -1,4 +1,4 @@
-  /*
+/*
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -16,201 +16,253 @@
  *
  */
 
-var height=700;
-var width=1024;
+var height = 700;
+var width = 1024;
 
 
 var x = [];
-  var y = [];
-  var name3 = [];
+var y = [];
+var name3 = [];
 
-
-
-
-var tx=0, ty=0;
-var ss=1;
-
-var svg;
+var renderSpace;
 var xMax = 0, xMin = 0, yMax = 0, yMin = 0;
-
-var fx;
-var fy;
 
 var xAxis;
 var yAxis;
 
-function zoomHandler() {
+var xScale;
+var yScale;
 
-  svg.select(".x.axis").call(xAxis);
-  svg.select(".y.axis").call(yAxis);
+var currTsneSessionID = null;
 
-  tx = d3.event.translate[0];
-  ty = d3.event.translate[1];
-  ss = d3.event.scale;
-  console.log('zoom called. Scale: ' + ss + " tX: " + tx + " tY: " + ty);
-  svg.selectAll('circle')
-      .data(name3)
-      .attr("transform", function(d, i) { return "translate(" +
-                                            ((x[i]*20*ss + tx) + 400) + "," +
-                                            ((y[i]*20*ss + ty) + 400) + ")";
-                                            });
-  svg.selectAll('text')
-        .data(name3)
-        .attr("transform", function(d, i) { return "translate(" +
-                                              ((x[i]*20*ss + tx) + 400) + "," +
-                                              ((y[i]*20*ss + ty) + 400) + ")";
-                                              });
+function zoomFunction() {
+
+    var translateX = d3.event.translate[0];
+    var translateY = d3.event.translate[1];
+    var currentScale = d3.event.scale;
+    // console.log('zoom called. Scale: ' + currentScale + " translateX: " + translateX + " translateY: " + translateY);
+
+    //Redraw the x and y axis:
+    renderSpace.select(".x.axis").call(xAxis);
+    renderSpace.select(".y.axis").call(yAxis);
+    xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
+    yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
+
+    renderSpace.selectAll('circle')
+        .attr("cx", function (d, i) {
+            // return xScale(d.cx);
+            return xScale(d['xPos']);
+        })
+        .attr("cy", function (d, i) {
+            // return yScale(d.cy);
+            return yScale(d['yPos']);
+        });
+
+    renderSpace.selectAll(".tsneTextLabels")
+        .attr("x", function (d, i) {
+            // return xScale(d.cx);
+            return xScale(d['xPos']);
+            // return xScale(d);
+        })
+        .attr("y", function (d, i) {
+            // return yScale(d.cy);
+            return yScale(d['yPos']);
+            // return yScale(d);
+        });
 
 }
 
+var circleRadius = 2.0;
+var textSize = "11pt";
+var textColor = "red";
+var gridColor = "#dddddd";
 
+var marginLeft = 60;
+var marginTop = 10;
+var marginBottom = 30;
+var marginRight = 10;
+var widthExMargin = width - marginLeft - marginRight;
+var heightExMargin = height - marginTop - marginBottom;
+
+var zoom;
+
+
+function centerFn(){
+    return d3.zoomIdentity.scale(0.00001);
+}
 
 function drawEmbedding() {
     $("#embed").empty();
     var div = d3.select("#embed");
 
-    fx = d3.scale.linear()
-        .domain([xMin, xMax])
-        .range([0, width])
+    xScale = d3.scale.linear().range([0, widthExMargin]);
+    yScale = d3.scale.linear().range([heightExMargin, 0]);
 
-    fy = d3.scale.linear()
-        .domain([yMin, yMax])
-        .range([height, 0]);
+    xAxis = d3.svg.axis().scale(xScale)
+        .innerTickSize(-heightExMargin) //Used as grid line
+        .orient("bottom").ticks(5);
 
-
-    //Define X axis
-	xAxis = d3.svg.axis()
-		.scale(fx)
-		.orient("bottom")
-		.tickSize(-height)
-		.tickFormat(d3.format("s"));
-
-	//Define Y axis
-	yAxis = d3.svg.axis()
-		.scale(fy)
-		.orient("left")
-		.ticks(5)
-		.tickSize(-width)
-		.tickFormat(d3.format("s"));
-
+    yAxis = d3.svg.axis().scale(yScale)
+        .innerTickSize(-widthExMargin)  //Used as grid line
+        .orient("left").ticks(5);
 
     svg = div.append("svg") // svg is global
-    .attr("width", width)
-    .attr("height", height);
+        .attr("width", width)
+        .attr("height", height);
+
+    var xMin = d3.min(x);
+    var xMax = d3.max(x);
+    var yMin = d3.min(y);
+    var yMax = d3.max(y);
+
+    // zoom = d3.behavior.zoom()
+    var xRange = xMax - xMin;
+    var yRange = yMax - yMin;
+    var initialScale = 1.0 / Math.max(xRange, yRange);
+    zoom = d3.behavior.zoom()
+        .x(xScale)
+        .y(yScale)
+        .translate([widthExMargin/2, heightExMargin/2])
+        .scale(initialScale)
+        .on("zoom", zoomFunction);
+
+    var initialXScale;
+    var initialYScale;
+    if(xRange > yRange){
+        initialXScale = 1.0;
+        initialYScale = xRange / yRange;
+    } else {
+        initialXScale = yRange / xRange;
+        initialYScale = 1.0;
+    }
+
+    xScale.domain([initialXScale * xMin, initialXScale * xMax]);
+    yScale.domain([initialYScale * yMin, initialYScale * yMax]);
+
+    renderSpace = svg.append("g");
+    renderSpace.attr("transform", "translate(" + marginLeft + "," + marginTop + ")");
+    svg.call(zoom);
+
+    // Add the X Axis
+    xAxisNode = renderSpace.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + heightExMargin + ")")
+        .style("stroke", gridColor)
+        .style("stroke-width", "1.0")
+        .style("fill", "none")
+        .attr("font-size", textSize)
+        .call(xAxis);
+    xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
 
 
-    svg.append("g")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis);
+    // Add the Y Axis
+    yAxisNode = renderSpace.append("g")
+        .attr("class", "y axis")
+        .style("stroke", gridColor)
+        .style("stroke-width", "1.0")
+        .attr("font-size", textSize)
+        .style("fill", "none")
+        .call(yAxis);
+    yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
 
-	svg.append("g")
-		.attr("class", "y axis")
-		.call(yAxis);
 
+    // console.log("x/y min/max: " + xMin + ", " + xMax + ", " + yMin + ", " + yMax);
 
+    //Add the data
+    var data = x.map(function (d, i) {
+        return {'xPos': x[i], 'yPos': y[i], 'name': name3[i]};
+    });
 
-    svg.selectAll("circle")
-        .data(name3)
+    renderSpace.selectAll("circle")
+        .data(data)
         .enter()
         .append("circle")
-        .attr("cx", function(d, i) {
-        			   		return fx(x[i]);
-        			   })
-        			   .attr("cy", function(d, i) {
-        			   		return fy(y[i]);
-        			   })
-        			   .attr("r", 2);
+        .style("fill", "#000000")
+        .attr("r", circleRadius)
+        .attr("cx", function (d) {
+            return xScale(d['xPos']);
+        })
+        .attr("cy", function (d) {
+            return yScale(d['yPos']);
+        });
 
-    svg.selectAll("text")
-       .data(name3)
-       .enter()
-       .append("text")
-       .text(function(d,i) {
-    			   		return name3[i];
-    			   })
-       .attr("x", function(d,i) {
-    			   		return fx(x[i]);
-    			   })
-       .attr("y", function(d, i) {
-    			   		return fy(y[i]);
-    			   })
-       .attr("font-family", "sans-serif")
-       .attr("font-size", "11px")
-       .attr("fill", "red");
-
-
-    var zoomListener = d3.behavior.zoom()
-        .x(fx)
-        .y(fy)
-        .scaleExtent([0.00000001, 100000])
-        .center([0,0])
-        .on("zoom", zoomHandler);
-    zoomListener(svg);
-
+    renderSpace.selectAll("text")
+        .data(data)
+        .enter()
+        .append("text")
+        .text(function (d) {
+            return d['name'];
+        })
+        .attr("x", function (d) {
+            return xScale(d['xPos']);
+        })
+        .attr("y", function (d) {
+            return yScale(d['yPos']);
+        })
+        .attr("class", "tsneTextLabels")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", textSize)
+        .attr("fill", textColor);
 }
+
 
 
 function drawTsne() {
-    var sid = getParameterByName("sid");
-    if (sid == undefined) sid = "UploadedFile";
+    if (currTsneSessionID == undefined) currTsneSessionID = "UploadedFile";
 
 
- $.ajax({
-    url: "/api/coords?sid=" + sid,
-    cache: false
-  })
-    .done(function( data ) {
-        x = new Array();
-        y = new Array();
-        name3 = new Array();
-        if (data.length > 0 ) {
-          for(var i = 0; i < data.length; i++) {
-             var split = data[i].split(',');
-             var xCoord = split[0];
-             var yCoord = split[1];
-             var name2 = split[2];
-             x.push(xCoord);
-             y.push(yCoord);
-             name3.push(name2);
-        }
+    $.ajax({
+        url: "/tsne/coords/" + currTsneSessionID,
+        cache: false
+    })
+        .done(function (data) {
+            x = [];
+            y = [];
+            name3 = [];
+            if (data.length > 0) {
+                for (var i = 0; i < data.length; i++) {
+                    var split = data[i].split(',');
+                    var xCoord = parseFloat(split[0]);
+                    var yCoord = parseFloat(split[1]);
+                    var name2 = split[2];
+                    x.push(xCoord);
+                    y.push(yCoord);
+                    name3.push(name2);
+                }
 
-        /*
-            This values could be pushed for debug purposes
+                /*
+                 This values could be pushed for debug purposes
 
-            x.push(10);
-            y.push(15);
-            name3.push("alpha");
-        */
+                 x.push(10);
+                 y.push(15);
+                 name3.push("alpha");
+                 */
 
-        xMax = d3.max(x);
-        xMin = d3.min(x);
+                xMax = d3.max(x);
+                xMin = d3.min(x);
 
-        yMax = d3.max(y);
-        yMin = d3.min(y);
+                yMax = d3.max(y);
+                yMin = d3.min(y);
 
-        console.log("xMin: " + xMin);
-        console.log("xMax: " + xMax);
-
-        console.log("yMin: " + yMin);
-        console.log("yMax: " + yMax);
-
-        drawEmbedding();
-      } else {
-        $.notify({
-        	title: '<strong>No t-SNE data available!</strong>',
-        	message: 'Please upload something, or check again later.'
-        },{
-        	type: 'danger',
-        	placement: {
-            		from: "top",
-            		align: "center"
-            	},
+                drawEmbedding();
+            } else {
+                $.notify({
+                    title: '<strong>No t-SNE data available!</strong>',
+                    message: 'Please upload something, or check again later.'
+                }, {
+                    type: 'danger',
+                    placement: {
+                        from: "top",
+                        align: "center"
+                    }
+                });
+            }
         });
-      }
-    });
 }
 
-
+function setSessionId(newID){
+    currTsneSessionID = newID;
+    drawTsne();
+}
 
 $(window).load(drawTsne());

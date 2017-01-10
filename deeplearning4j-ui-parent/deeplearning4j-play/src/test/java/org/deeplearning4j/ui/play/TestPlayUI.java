@@ -37,28 +37,28 @@ public class TestPlayUI {
         StatsStorage ss = new InMemoryStatsStorage();
 
         UIServer uiServer = UIServer.getInstance();
-        uiServer.attach(ss);
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .list()
-                .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
-                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
-                .pretrain(false).backprop(true).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.setListeners(new StatsListener(ss, 3), new ScoreIterationListener(1));
-
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-        for (int i = 0; i < 500; i++) {
-            net.fit(iter);
+//        uiServer.attach(ss);
+//
+//        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+//                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+//                .list()
+//                .layer(0, new DenseLayer.Builder().activation("tanh").nIn(4).nOut(4).build())
+//                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation("softmax").nIn(4).nOut(3).build())
+//                .pretrain(false).backprop(true).build();
+//
+//        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+//        net.init();
+//        net.setListeners(new StatsListener(ss, 3), new ScoreIterationListener(1));
+//
+//        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+//
+//        for (int i = 0; i < 500; i++) {
+//            net.fit(iter);
+////            Thread.sleep(100);
 //            Thread.sleep(100);
-            Thread.sleep(100);
-        }
-
-//        uiServer.stop();
+//        }
+//
+////        uiServer.stop();
 
         Thread.sleep(100000);
     }
