@@ -33,7 +33,7 @@ public class TsneModule implements UIModule {
 
     private static final String UPLOADED_FILE = "UploadedFile";
 
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
+    private Map<String, List<String>> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
 
     private List<String> uploadedFileLines = null;
 
@@ -52,7 +52,9 @@ public class TsneModule implements UIModule {
         Route r2 = new Route("/tsne/sessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r3 = new Route("/tsne/coords/:sid", HttpMethod.GET, FunctionType.Function, this::getCoords);
         Route r4 = new Route("/tsne/upload", HttpMethod.POST, FunctionType.Supplier, this::uploadFile);
-        return Arrays.asList(r1, r2, r3, r4);
+//        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
+        Route r5 = new Route("/tsne/post/:sid", HttpMethod.GET, FunctionType.Function, this::postFile);
+        return Arrays.asList(r1, r2, r3, r4, r5);
     }
 
     @Override
@@ -81,6 +83,8 @@ public class TsneModule implements UIModule {
     private Result getCoords(String sessionId){
         if(UPLOADED_FILE.equals(sessionId) && uploadedFileLines != null){
             return Results.ok(Json.toJson(uploadedFileLines));
+        } else if(knownSessionIDs.containsKey(sessionId)){
+            return Results.ok(Json.toJson(knownSessionIDs.get(sessionId)));
         } else {
             return Results.ok();
         }
@@ -105,6 +109,36 @@ public class TsneModule implements UIModule {
         } catch (IOException e){
             return badRequest("Could not read from uploaded file");
         }
+
+        return ok("File uploaded: " + fileName + ", " + contentType + ", " + file);
+    }
+
+    private Result postFile(String sid){
+//        System.out.println("POST FILE CALLED: " + sid);
+        Http.MultipartFormData body = request().body().asMultipartFormData();
+        List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
+
+        if(fileParts.size() <= 0){
+//            System.out.println("**** NO FILE ****");
+            return badRequest("No file uploaded");
+        }
+
+        Http.MultipartFormData.FilePart uploadedFile = fileParts.get(0);
+
+        String fileName = uploadedFile.getFilename();
+        String contentType = uploadedFile.getContentType();
+        File file = uploadedFile.getFile();
+
+        List<String> lines;
+        try{
+            lines = FileUtils.readLines(file);
+        } catch (IOException e){
+//            System.out.println("**** COULD NOT READ FILE ****");
+            return badRequest("Could not read from uploaded file");
+        }
+
+        knownSessionIDs.put(sid, lines);
+
 
         return ok("File uploaded: " + fileName + ", " + contentType + ", " + file);
     }
