@@ -1,4 +1,5 @@
 package org.nd4j.linalg.io;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -702,5 +703,21 @@ public abstract class StringUtils {
 
     public static String arrayToCommaDelimitedString(Object[] arr) {
         return arrayToDelimitedString(arr, ",");
+    }
+
+    /**
+     * This method returns long hashCode
+     * Algorithm is equal to String.hashCode, but returns Long instead of Integer
+     *
+     * @param string
+     * @return
+     */
+    public static long getLongHash(String string) {
+        long p = 2045584067;
+        int l = string.length();
+        for (int e = 0; e < l; e++) {
+            p = 31 * p + string.charAt(e);
+        }
+        return p;
     }
 }

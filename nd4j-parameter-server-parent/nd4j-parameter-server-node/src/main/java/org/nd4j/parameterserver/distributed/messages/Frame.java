@@ -33,6 +33,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
     protected List<T> list = new ArrayList<T>();
 
+    @Getter @Setter protected long originatorId;
     @Getter @Setter protected short targetId;
 
 

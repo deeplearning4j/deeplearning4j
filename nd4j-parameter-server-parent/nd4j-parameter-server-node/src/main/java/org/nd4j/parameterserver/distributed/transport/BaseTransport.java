@@ -493,4 +493,14 @@ public abstract class BaseTransport implements Transport {
     public void addClient(String ip, int port) {
         //
     }
+
+    @Override
+    public String getIp() {
+        return ip;
+    }
+
+    @Override
+    public int getPort() {
+        return port;
+    }
 }

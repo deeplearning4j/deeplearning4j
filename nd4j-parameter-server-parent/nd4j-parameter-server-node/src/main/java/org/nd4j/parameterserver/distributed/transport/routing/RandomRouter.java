@@ -27,12 +27,14 @@ public class RandomRouter extends BaseRouter {
 
     @Override
     public int assignTarget(TrainingMessage message) {
+        setOriginator(message);
         message.setTargetId(getNextShard());
         return message.getTargetId();
     }
 
     @Override
     public int assignTarget(VoidMessage message) {
+        setOriginator(message);
         message.setTargetId(getNextShard());
         return message.getTargetId();
     }

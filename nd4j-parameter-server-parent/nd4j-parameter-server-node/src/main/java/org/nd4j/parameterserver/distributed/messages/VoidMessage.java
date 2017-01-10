@@ -25,6 +25,10 @@ public interface VoidMessage extends Serializable {
 
     int getMessageType();
 
+    long getOriginatorId();
+
+    void setOriginatorId(long id);
+
     byte[] asBytes();
 
     UnsafeBuffer asUnsafeBuffer();

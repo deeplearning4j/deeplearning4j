@@ -22,6 +22,10 @@ public interface Transport {
 
     void setIpAndPort(String ip, int port);
 
+    String getIp();
+
+    int getPort();
+
     short getShardIndex();
 
 

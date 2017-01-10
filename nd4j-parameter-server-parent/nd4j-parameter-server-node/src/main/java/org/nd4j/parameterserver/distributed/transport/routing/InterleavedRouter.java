@@ -39,6 +39,7 @@ public class InterleavedRouter extends BaseRouter {
 
     @Override
     public int assignTarget(TrainingMessage message) {
+        setOriginator(message);
         if (message instanceof SkipGramRequestMessage) {
             SkipGramRequestMessage sgrm = (SkipGramRequestMessage) message;
 
@@ -46,7 +47,7 @@ public class InterleavedRouter extends BaseRouter {
             if (w1 >= voidConfiguration.getNumberOfShards())
                 message.setTargetId((short) (w1 % voidConfiguration.getNumberOfShards()));
             else
-                message.setTargetId((short) voidConfiguration.getNumberOfShards());
+                message.setTargetId((short) w1);
         } else {
             message.setTargetId(targetIndex);
         }
@@ -56,6 +57,7 @@ public class InterleavedRouter extends BaseRouter {
 
     @Override
     public int assignTarget(VoidMessage message) {
+        setOriginator(message);
         message.setTargetId(targetIndex);
         return message.getTargetId();
     }

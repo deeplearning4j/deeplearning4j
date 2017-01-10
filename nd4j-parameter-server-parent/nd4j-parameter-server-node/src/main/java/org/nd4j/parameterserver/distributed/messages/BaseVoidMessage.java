@@ -19,7 +19,7 @@ import java.io.Serializable;
 @Data
 public abstract class BaseVoidMessage implements VoidMessage {
     protected int messageType = -1;
-    protected long nodeId;
+    protected long originatorId;
     protected long taskId;
     protected short targetId;
 

@@ -31,12 +31,14 @@ public class StaticRouter extends BaseRouter {
 
     @Override
     public int assignTarget(TrainingMessage message) {
+        setOriginator(message);
         message.setTargetId(targetIndex);
         return targetIndex;
     }
 
     @Override
     public int assignTarget(VoidMessage message) {
+        setOriginator(message);
         message.setTargetId(targetIndex);
         return targetIndex;
     }

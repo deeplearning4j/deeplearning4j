@@ -78,7 +78,7 @@ public class VoidConfiguration implements Serializable {
         }
     }
 
-    public static class ConfigurationBuilder {
+    public static class VoidConfigurationBuilder {
         private String multicastNetwork = "224.0.1.1";
         private int ttl = 4;
         private int streamId = 119;
