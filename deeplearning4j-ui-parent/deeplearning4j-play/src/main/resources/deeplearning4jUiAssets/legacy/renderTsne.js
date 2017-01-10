@@ -58,6 +58,37 @@ function zoomFunction() {
             // return yScale(d.cy);
             return yScale(d['yPos']);
         });
+
+    renderSpace.selectAll(".tsneTextLabels")
+        .attr("x", function (d, i) {
+            // return xScale(d.cx);
+            return xScale(d['xPos']);
+            // return xScale(d);
+        })
+        .attr("y", function (d, i) {
+            // return yScale(d.cy);
+            return yScale(d['yPos']);
+            // return yScale(d);
+        });
+
+    // renderSpace.selectAll("text")
+    //     .attr("class", "tsneTextLabels")
+    //     .data(data)
+    //     .enter()
+    //     .append("text")
+    //     .text(function (d) {
+    //         return d['name'];
+    //     })
+    //     .attr("x", function (d) {
+    //         return xScale(d['xPos']);
+    //     })
+    //     .attr("y", function (d) {
+    //         return yScale(d['yPos']);
+    //     })
+    //     .attr("font-family", "sans-serif")
+    //     .attr("font-size", textSize)
+    //     .attr("fill", textColor);
+
 }
 
 var circleRadius = 2.0;
@@ -103,6 +134,9 @@ function drawEmbedding() {
     yMax = d3.max(y);
 
     // zoom = d3.behavior.zoom()
+    var xRange = xMax - xMin;
+    var yRange = yMax - yMin;
+    var initialScale = 1.0 / Math.max(xRange, yRange);
     zoom = d3.behavior.zoom()
         .x(xScale)
         .y(yScale)
@@ -110,8 +144,8 @@ function drawEmbedding() {
         // .translate([xMin, yMin])
         // .center([0, 0])
         // .translate([0, 0])
-        .center([(xMax-xMin)/2, (yMax-yMin)/2])
-        .scale(0.00001)
+        // .center([(xMax-xMin)/2, (yMax-yMin)/2])
+        .scale(initialScale)
         .on("zoom", zoomFunction);
 
 
@@ -166,7 +200,6 @@ function drawEmbedding() {
         });
 
     renderSpace.selectAll("text")
-        .attr("class", "tsneTextLabels")
         .data(data)
         .enter()
         .append("text")
@@ -179,6 +212,7 @@ function drawEmbedding() {
         .attr("y", function (d) {
             return yScale(d['yPos']);
         })
+        .attr("class", "tsneTextLabels")
         .attr("font-family", "sans-serif")
         .attr("font-size", textSize)
         .attr("fill", textColor);
