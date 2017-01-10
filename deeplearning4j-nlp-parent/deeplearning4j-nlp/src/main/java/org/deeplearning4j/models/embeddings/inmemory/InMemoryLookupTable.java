@@ -38,8 +38,9 @@ import org.nd4j.linalg.learning.AdaGrad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -195,30 +196,57 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
      */
     @Override
     public void plotVocab(BarnesHutTsne tsne, int numWords, UiConnectionInfo connectionInfo) {
-//        try {
-//            final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
-//            final INDArray reducedData = tsne.getData();
-//            List<String> list = new ArrayList<>();
-//            for (int i = 0; i < reducedData.rows() && i < numWords; i++) {
-//                String word = labels.get(i);
-//                INDArray wordVector = reducedData.getRow(i);
-//                for (int j = 0; j < wordVector.length(); j++) {
-//                    list.add(wordVector.getDouble(j)+"");
-//                }
-//                list.add(word);
-//            }
-//
-//            Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
-//
-//            WebTarget target = client.target(connectionInfo.getFirstPart()).path(connectionInfo.getSecondPart("api")).path("coords").queryParam("sid", connectionInfo.getSessionId());
-//
-//            Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(list,MediaType.APPLICATION_JSON));
-//
-//            log.debug("{}",resp);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-        throw new UnsupportedOperationException("Not yet implemented");
+        try {
+            final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
+            final INDArray reducedData = tsne.getData();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < reducedData.rows() && i < numWords; i++) {
+                String word = labels.get(i);
+                INDArray wordVector = reducedData.getRow(i);
+                for (int j = 0; j < wordVector.length(); j++) {
+                    sb.append(String.valueOf(wordVector.getDouble(j))).append(",");
+                }
+                sb.append(word);
+            }
+
+            String address = connectionInfo.getFirstPart() + "/tsne/post/" + connectionInfo.getSessionId();
+//            System.out.println("ADDRESS: " + address);
+            URI uri = new URI(address);
+
+            HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+//            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Content-Type", "multipart/form-data");
+            connection.setDoOutput(true);
+
+            DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
+            dos.writeBytes(sb.toString());
+            dos.flush();
+            dos.close();
+
+            try {
+                int responseCode = connection.getResponseCode();
+                System.out.println("RESPONSE CODE: " + responseCode);
+
+                if (responseCode != 200) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    log.warn("Error posting to remote UI - received response code {}\tContent: {}", response, response.toString());
+                }
+            } catch (IOException e){
+                log.warn("Error posting to remote UI at {}", uri, e);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
