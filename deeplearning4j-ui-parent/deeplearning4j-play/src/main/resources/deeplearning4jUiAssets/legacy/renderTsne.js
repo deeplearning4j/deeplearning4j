@@ -24,10 +24,6 @@ var x = [];
 var y = [];
 var name3 = [];
 
-
-// var tx=0, ty=0;
-// var ss=1;
-
 var svg;
 var renderSpace;
 var xMax = 0, xMin = 0, yMax = 0, yMin = 0;
@@ -48,6 +44,8 @@ function zoomFunction() {
     //Redraw the x and y axis:
     renderSpace.select(".x.axis").call(xAxis);
     renderSpace.select(".y.axis").call(yAxis);
+    xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
+    yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
 
     renderSpace.selectAll('circle')
         .attr("cx", function (d, i) {
@@ -71,34 +69,17 @@ function zoomFunction() {
             // return yScale(d);
         });
 
-    // renderSpace.selectAll("text")
-    //     .attr("class", "tsneTextLabels")
-    //     .data(data)
-    //     .enter()
-    //     .append("text")
-    //     .text(function (d) {
-    //         return d['name'];
-    //     })
-    //     .attr("x", function (d) {
-    //         return xScale(d['xPos']);
-    //     })
-    //     .attr("y", function (d) {
-    //         return yScale(d['yPos']);
-    //     })
-    //     .attr("font-family", "sans-serif")
-    //     .attr("font-size", textSize)
-    //     .attr("fill", textColor);
-
 }
 
 var circleRadius = 2.0;
 var textSize = "11pt";
 var textColor = "red";
+var gridColor = "#dddddd";
 
-var marginLeft = 100;
-var marginTop = 100;
-var marginBottom = 100;
-var marginRight = 100;
+var marginLeft = 60;
+var marginTop = 10;
+var marginBottom = 30;
+var marginRight = 10;
 var widthExMargin = width - marginLeft - marginRight;
 var heightExMargin = height - marginTop - marginBottom;
 
@@ -128,10 +109,10 @@ function drawEmbedding() {
         .attr("width", width)
         .attr("height", height);
 
-    xMin = d3.min(x);
-    xMax = d3.max(x);
-    yMin = d3.min(y);
-    yMax = d3.max(y);
+    var xMin = d3.min(x);
+    var xMax = d3.max(x);
+    var yMin = d3.min(y);
+    var yMax = d3.max(y);
 
     // zoom = d3.behavior.zoom()
     var xRange = xMax - xMin;
@@ -140,31 +121,35 @@ function drawEmbedding() {
     zoom = d3.behavior.zoom()
         .x(xScale)
         .y(yScale)
-        // .scaleExtent([0.00000001, 100000])
-        // .translate([xMin, yMin])
-        // .center([0, 0])
-        // .translate([0, 0])
-        // .center([(xMax-xMin)/2, (yMax-yMin)/2])
+        .translate([widthExMargin/2, heightExMargin/2])
         .scale(initialScale)
         .on("zoom", zoomFunction);
 
+    var initialXScale;
+    var initialYScale;
+    if(xRange > yRange){
+        initialXScale = 1.0;
+        initialYScale = xRange / yRange;
+    } else {
+        initialXScale = yRange / xRange;
+        initialYScale = 1.0;
+    }
 
-
-    xScale.domain([xMin, xMax]);
-    yScale.domain([yMin, yMax]);
+    xScale.domain([initialXScale * xMin, initialXScale * xMax]);
+    yScale.domain([initialYScale * yMin, initialYScale * yMax]);
 
     renderSpace = svg.append("g");
     renderSpace.attr("transform", "translate(" + marginLeft + "," + marginTop + ")");
-    // renderSpace.call(zoom);
     svg.call(zoom);
 
     // Add the X Axis
     xAxisNode = renderSpace.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + heightExMargin + ")")
-        .style("stroke", "#000")
+        .style("stroke", gridColor)
         .style("stroke-width", "1.0")
         .style("fill", "none")
+        .attr("font-size", textSize)
         .call(xAxis);
     xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
 
@@ -172,14 +157,15 @@ function drawEmbedding() {
     // Add the Y Axis
     yAxisNode = renderSpace.append("g")
         .attr("class", "y axis")
-        .style("stroke", "#000")
+        .style("stroke", gridColor)
         .style("stroke-width", "1.0")
+        .attr("font-size", textSize)
         .style("fill", "none")
         .call(yAxis);
     yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
 
 
-    console.log("x/y min/max: " + xMin + ", " + xMax + ", " + yMin + ", " + yMax);
+    // console.log("x/y min/max: " + xMin + ", " + xMax + ", " + yMin + ", " + yMax);
 
     //Add the data
     var data = x.map(function (d, i) {
@@ -257,12 +243,6 @@ function drawTsne() {
 
                 yMax = d3.max(y);
                 yMin = d3.min(y);
-
-                // console.log("xMin: " + xMin);
-                // console.log("xMax: " + xMax);
-                //
-                // console.log("yMin: " + yMin);
-                // console.log("yMax: " + yMax);
 
                 drawEmbedding();
             } else {
