@@ -342,7 +342,7 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
 
 ``` java
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+    Word2Vec vec = WordVectorSerializer.readWord2VecModel(gModel);
 ```
 
 Remember to add `import java.io.File;` to your imported packages.
