@@ -6,11 +6,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.impl.*;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -51,6 +53,7 @@ public class TestActivationJson extends BaseNd4jTest {
                 new ActivationHardTanH(),
                 new ActivationIdentity(),
                 new ActivationLReLU(0.25),
+                new ActivationRationalTanh(),
                 new ActivationReLU(),
                 new ActivationRReLU(0.25,0.5),
                 new ActivationSigmoid(),
@@ -67,6 +70,7 @@ public class TestActivationJson extends BaseNd4jTest {
                 {}, //Hard TanH
                 {}, //Identity
                 {"alpha"},  //Leaky Relu
+                {}, //rational tanh
                 {}, //relu
                 {"l","u"},  //rrelu
                 {}, //sigmoid

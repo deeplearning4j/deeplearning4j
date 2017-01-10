@@ -15,6 +15,7 @@ public enum Activation {
     HARDTANH,
     IDENTITY,
     LEAKYRELU,
+    RATIONALTANH,
     RELU,
     RRELU,
     SIGMOID,
@@ -47,6 +48,8 @@ public enum Activation {
                 return new ActivationIdentity();
             case LEAKYRELU:
                 return new ActivationLReLU();
+            case RATIONALTANH:
+                return new ActivationRationalTanh();
             case RELU:
                 return new ActivationReLU();
             case RRELU:
