@@ -19,6 +19,12 @@ import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
  */
 public class NDArrayHDF5Reader {
 
+    /**
+     * Reads an HDF5 file into an NDArray.
+     *
+     * @param inputFilePath Path of the HDF5 file
+     * @return NDArray with data and a correct shape
+     */
     public INDArray readFromPath(Path inputFilePath) {
         try (hdf5.H5File h5File = new hdf5.H5File()) {
             h5File.openFile(inputFilePath.toString(), H5F_ACC_RDONLY);
@@ -28,7 +34,8 @@ public class NDArrayHDF5Reader {
             DataBuffer dataBuffer = readFromDataSet(dataSet, (int) totalSize);
 
             INDArray input = Nd4j.create(shape);
-            new RecursiveCopier(input, dataBuffer, shape).copy();
+            input.setData(dataBuffer);
+
             return input;
         }
     }
