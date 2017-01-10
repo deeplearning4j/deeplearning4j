@@ -20,6 +20,7 @@ import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.transform.geo.CoordinatesDistanceTransform;
 import org.datavec.api.transform.transform.geo.IPAddressToCoordinatesTransform;
 import org.junit.Test;
 
@@ -35,6 +36,27 @@ import static org.junit.Assert.assertEquals;
  * @author saudet
  */
 public class TestGeoTransforms {
+
+    @Test
+    public void testCoordinatesDistanceTransform() throws Exception {
+        Schema schema = new Schema.Builder()
+                .addColumnString("point")
+                .addColumnString("mean")
+                .addColumnString("stddev").build();
+
+        Transform transform = new CoordinatesDistanceTransform("dist", "point", "mean", "stddev", "\\|");
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+        assertEquals(4, out.numColumns());
+        assertEquals(Arrays.asList("point", "mean", "stddev", "dist"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.String, ColumnType.String, ColumnType.Double), out.getColumnTypes());
+
+        assertEquals(Arrays.asList((Writable)new Text("-30"), new Text("20"), new Text("10"), new DoubleWritable(5.0)),
+                transform.map(Arrays.asList((Writable)new Text("-30"), new Text("20"), new Text("10"))));
+        assertEquals(Arrays.asList((Writable)new Text("50|40"), new Text("10|-20"), new Text("10|5"), new DoubleWritable(Math.sqrt(160))),
+                transform.map(Arrays.asList((Writable)new Text("50|40"), new Text("10|-20"), new Text("10|5"))));
+    }
 
     @Test
     public void testIPAddressToCoordinatesTransform() throws Exception {
