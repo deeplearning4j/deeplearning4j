@@ -271,7 +271,7 @@ public class Reducer implements IReducer {
         return out;
     }
 
-    private Writable reduceColumn(ReduceOp op, ColumnType type, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static Writable reduceColumn(ReduceOp op, ColumnType type, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (type) {
             case Integer:
             case Long:
@@ -290,7 +290,7 @@ public class Reducer implements IReducer {
         }
     }
 
-    private Writable reduceLongColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static Writable reduceLongColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (op) {
             case Min:
                 long min = Long.MAX_VALUE;
@@ -369,7 +369,7 @@ public class Reducer implements IReducer {
         }
     }
 
-    private Writable reduceDoubleColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static Writable reduceDoubleColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (op) {
             case Min:
                 double min = Double.MAX_VALUE;
@@ -448,7 +448,7 @@ public class Reducer implements IReducer {
         }
     }
 
-    private Writable reduceStringOrCategoricalColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static Writable reduceStringOrCategoricalColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (op) {
             case Count:
                 if (ignoreInvalid) {
@@ -479,7 +479,7 @@ public class Reducer implements IReducer {
         }
     }
 
-    private Writable reduceTimeColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static Writable reduceTimeColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         switch (op) {
             case Min:
@@ -538,7 +538,7 @@ public class Reducer implements IReducer {
         throw new UnsupportedOperationException("Reduce ops for time columns: not yet implemented");
     }
 
-    private Writable reduceBytesColumn(ReduceOp op, List<Writable> list) {
+    public static Writable reduceBytesColumn(ReduceOp op, List<Writable> list) {
         if (op == ReduceOp.TakeFirst) return list.get(0);
         else if (op == ReduceOp.TakeLast) return list.get(list.size() - 1);
         throw new UnsupportedOperationException("Cannot execute op \"" + op + "\" on Bytes column "
