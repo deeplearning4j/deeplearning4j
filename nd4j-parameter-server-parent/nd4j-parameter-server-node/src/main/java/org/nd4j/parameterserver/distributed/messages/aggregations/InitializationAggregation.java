@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.messages.complete.InitializationCompleteMessage;
 
 /**
@@ -29,9 +30,11 @@ public class InitializationAggregation extends BaseAggregation {
             clipboard.pin(this);
 
             if (clipboard.isReady(taskId)) {
-                clipboard.unpin(taskId);
+                InitializationAggregation aggregation = (InitializationAggregation) clipboard.unpin(taskId);
 
                 InitializationCompleteMessage icm = new InitializationCompleteMessage(taskId);
+                icm.setOriginatorId(aggregation.getOriginatorId());
+
                 transport.sendMessage(icm);
             }
         }

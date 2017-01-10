@@ -185,12 +185,16 @@ public class RoutedTransport extends BaseTransport {
      */
     @Override
     protected void sendFeedbackToClient(VoidMessage message) {
-        // FIXME: add address field here
-        long targetAddress = message.getTaskId();
+        /*
+            PLEASE NOTE: In this case we don't change target. We just discard message if something goes wrong.
+         */
+        // TODO: discard message if it's not sent for enough time?
+        long targetAddress = message.getOriginatorId();
         long result = 0;
         while ((result = clients.get(targetAddress).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
             try {
                 Thread.sleep(50);
+                log.info("Resending feedback to client");
             } catch (Exception e) { }
         }
     }
@@ -234,14 +238,13 @@ public class RoutedTransport extends BaseTransport {
 
         int targetShard = router.assignTarget(message);
 
-        log.info("Target shard: {}", targetShard);
-
+        // TODO: we want to switch to other shard in case of failure here
         while ((result = shards.get(targetShard).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
             try {
                  Thread.sleep(1000);
             } catch (Exception e) { }
 
-            log.info("Retrying...{}", result);
+            log.info("Retrying delivery {}:{}", message.getClass().getSimpleName(), result);
         }
     }
 

@@ -71,6 +71,7 @@ public abstract class BaseVoidMessage implements VoidMessage {
         this.role = message.role;
         this.shardIndex = message.shardIndex;
         this.trainer = message.trainer;
+        this.originatorId = message.originatorId;
     }
 
     @Override

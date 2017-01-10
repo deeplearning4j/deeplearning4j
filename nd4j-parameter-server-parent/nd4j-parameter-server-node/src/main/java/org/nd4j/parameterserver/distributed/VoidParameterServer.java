@@ -84,6 +84,10 @@ public class VoidParameterServer {
         nodeRole = NodeRole.NONE;
     }
 
+    protected VoidParameterServer(@NonNull NodeRole nodeRole) {
+        this.nodeRole = nodeRole;
+    }
+
     protected VoidParameterServer(boolean manualMode) {
         this();
         this.manualMode.set(manualMode);
@@ -170,15 +174,16 @@ public class VoidParameterServer {
                 this.transport = transport;
 
                 // first we need to check, if our current IP matches designated shards or backup
-                if (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE) {
+                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
                     Pair<NodeRole, String> pair = getRole(voidConfiguration, getLocalAddresses());
                     nodeRole = pair.getFirst();
 
                     this.transport.init(voidConfiguration, clipboard, nodeRole, pair.getSecond(), shardIndex);
 
                 } else {
+                    if (nodeRole == NodeRole.NONE)
+                        nodeRole = voidConfiguration.getForcedRole();
 
-                    nodeRole = voidConfiguration.getForcedRole();
                     this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1", shardIndex);
                 }
 

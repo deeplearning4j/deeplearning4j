@@ -38,6 +38,7 @@ public class VectorAggregation extends BaseAggregation {
                     return;
 
                 VectorCompleteMessage msg = new VectorCompleteMessage(taskId, aggregation.getAccumulatedResult());
+                msg.setOriginatorId(aggregation.getOriginatorId());
                 transport.sendMessage(msg);
             }
         }

@@ -422,6 +422,13 @@ public class VoidParameterServerTest {
         }
 
         assertEquals(threads.length, passCnt.get());
+
+
+        for(VoidParameterServer server: shards) {
+            server.shutdown();
+        }
+
+        clientNode.shutdown();
     }
 
     /**
@@ -586,5 +593,12 @@ public class VoidParameterServerTest {
         for (int t = 0; t < threads.length; t++) {
             threads[t].join();
         }
+
+
+        for(VoidParameterServer server: shards) {
+            server.shutdown();
+        }
+
+        clientNode.shutdown();
     }
 }

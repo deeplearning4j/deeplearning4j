@@ -11,7 +11,11 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
+import org.nd4j.parameterserver.distributed.transport.ClientRouter;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
+import org.nd4j.parameterserver.distributed.transport.Transport;
+import org.nd4j.parameterserver.distributed.transport.routing.InterleavedRouter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,8 +58,10 @@ public class VoidParameterServerStressTest {
 
         voidConfiguration.setShardAddresses("192.168.1.35");
 
-        VoidParameterServer.getInstance().init(voidConfiguration);
-        VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
+        VoidParameterServer parameterServer = new VoidParameterServer();
+
+        parameterServer.init(voidConfiguration);
+        parameterServer.initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
 
         final List<Long> times = new CopyOnWriteArrayList<>();
 
@@ -71,7 +77,7 @@ public class VoidParameterServerStressTest {
 
                 for (int i = 0; i < 1000000; i++) {
                     long time1 = System.nanoTime();
-                    INDArray array = VoidParameterServer.getInstance().getVector(RandomUtils.nextInt(start, end));
+                    INDArray array = parameterServer.getVector(RandomUtils.nextInt(start, end));
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
@@ -97,6 +103,8 @@ public class VoidParameterServerStressTest {
         Collections.sort(newTimes);
 
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        parameterServer.shutdown();
     }
 
     /**
@@ -111,8 +119,10 @@ public class VoidParameterServerStressTest {
 
         voidConfiguration.setShardAddresses("192.168.1.35");
 
-        VoidParameterServer.getInstance().init(voidConfiguration);
-        VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
+        VoidParameterServer parameterServer = new VoidParameterServer();
+
+        parameterServer.init(voidConfiguration);
+        parameterServer.initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
 
         final List<Long> times = new CopyOnWriteArrayList<>();
 
@@ -129,7 +139,7 @@ public class VoidParameterServerStressTest {
                 for (int i = 0; i < 100000; i++) {
                     SkipGramRequestMessage sgrm = getSGRM();
                     long time1 = System.nanoTime();
-                    VoidParameterServer.getInstance().execDistributed(sgrm);
+                    parameterServer.execDistributed(sgrm);
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
@@ -155,6 +165,8 @@ public class VoidParameterServerStressTest {
         Collections.sort(newTimes);
 
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        parameterServer.shutdown();
     }
 
 
@@ -194,12 +206,13 @@ public class VoidParameterServerStressTest {
         }
 
         // this is going to be our Client shard
-        VoidParameterServer.getInstance().init(voidConfiguration);
+        VoidParameterServer parameterServer = new VoidParameterServer();
+        parameterServer.init(voidConfiguration);
         assertEquals(NodeRole.CLIENT, VoidParameterServer.getInstance().getNodeRole());
 
         log.info("Instantiation finished...");
 
-        VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 20, true, false);
+        parameterServer.initializeSeqVec(100, NUM_WORDS, 123, 20, true, false);
 
 
         log.info("Initialization finished...");
@@ -218,7 +231,7 @@ public class VoidParameterServerStressTest {
 
                 for (int i = 0; i < 100000; i++) {
                     long time1 = System.nanoTime();
-                    INDArray array = VoidParameterServer.getInstance().getVector(RandomUtils.nextInt(start, end));
+                    INDArray array = parameterServer.getVector(RandomUtils.nextInt(start, end));
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
@@ -244,7 +257,106 @@ public class VoidParameterServerStressTest {
         Collections.sort(newTimes);
 
         log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        parameterServer.shutdown();;
+
+        for (VoidParameterServer server: shards) {
+            server.shutdown();
+        }
     }
+
+    /**
+     * This is one of the MOST IMPORTANT tests
+     */
+    @Test
+    public void testPerformanceUnicast1() {
+        List<String> list = new ArrayList<>();
+        for (int t = 0; t < 5; t++) {
+            list.add("127.0.0.1:3838" + t);
+        }
+
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                .unicastPort(49823)
+                .shardAddresses(list)
+                .build();
+
+        VoidParameterServer[] shards = new VoidParameterServer[list.size()];
+        for (int t = 0; t < shards.length; t++) {
+            shards[t] = new VoidParameterServer(NodeRole.SHARD);
+
+            Transport transport = new RoutedTransport();
+            transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
+
+            shards[t].setShardIndex((short) t);
+            shards[t].init(voidConfiguration, transport);
+
+
+            assertEquals(NodeRole.SHARD, shards[t].getNodeRole());
+        }
+
+        VoidParameterServer clientNode = new VoidParameterServer();
+        RoutedTransport transport = new RoutedTransport();
+        ClientRouter router = new InterleavedRouter(0);
+
+        transport.setRouter(router);
+        transport.setIpAndPort("127.0.0.1", voidConfiguration.getUnicastPort());
+
+        router.init(voidConfiguration, transport);
+
+        clientNode.init(voidConfiguration, transport);
+        assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
+
+        final List<Long> times = new CopyOnWriteArrayList<>();
+
+        // at this point, everything should be started, time for tests
+        clientNode.initializeSeqVec(NUM_WORDS, 100, 123, 25, true, false);
+
+        log.info("Initialization finished, going to tests...");
+
+        Thread[] threads = new Thread[4];
+        for (int t = 0; t < threads.length; t++) {
+            final int e = t;
+            threads[t] = new Thread(() -> {
+                List<Long> results = new ArrayList<>();
+
+                int chunk = NUM_WORDS / threads.length;
+                int start = e * chunk;
+                int end = (e + 1) * chunk;
+
+                for (int i = 0; i < 100000; i++) {
+                    long time1 = System.nanoTime();
+                    INDArray array = clientNode.getVector(RandomUtils.nextInt(start, end));
+                    long time2 = System.nanoTime();
+
+                    results.add(time2 - time1);
+
+                    if (i + 1 % 500 == 0)
+                        log.info("Thread {} cnt {}", e, i + 1);
+                }
+                times.addAll(results);
+            });
+        }
+
+        for (int t = 0; t < threads.length; t++) {
+            try {
+                threads[t].join();
+            } catch (Exception e) { }
+        }
+
+        List<Long> newTimes = new ArrayList<>(times);
+
+        Collections.sort(newTimes);
+
+        log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        // shutdown everything
+        for (VoidParameterServer shard: shards) {
+            shard.getTransport().shutdown();
+        }
+
+        clientNode.getTransport().shutdown();
+    }
+
 
     /**
      * This method just produces random SGRM requests, fot testing purposes.

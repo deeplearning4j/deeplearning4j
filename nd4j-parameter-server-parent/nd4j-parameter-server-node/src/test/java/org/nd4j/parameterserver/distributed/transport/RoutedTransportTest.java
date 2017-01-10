@@ -37,6 +37,11 @@ public class RoutedTransportTest {
     }
 
 
+    /**
+     * This test
+     *
+     * @throws Exception
+     */
     @Test
     public void testMessaging1() throws Exception {
 
@@ -71,7 +76,9 @@ public class RoutedTransportTest {
         clientTransport.setIpAndPort("127.0.0.1", voidConfiguration.getUnicastPort());
 
         // setRouter call should be called before init, and we need
-        clientTransport.setRouter(new InterleavedRouter(0));
+        ClientRouter router = new InterleavedRouter(0);
+        clientTransport.setRouter(router);
+        router.init(voidConfiguration, clientTransport);
 
         clientTransport.init(voidConfiguration, clipboard, NodeRole.CLIENT, "127.0.0.1", (short) -1);
         clientTransport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
@@ -90,6 +97,9 @@ public class RoutedTransportTest {
         }
 
 
+        /**
+         * This is very important part, shutting down all transports
+         */
         for (RoutedTransport transport : transports) {
             transport.shutdown();
         }
