@@ -398,6 +398,9 @@ RMSProp is an optimization algorithm like Adagrad. In contrast to Adagrad, it re
 * [Optimization Algorithms (Stanford)](https://cs231n.github.io/neural-networks-3/)
 * [An overview of gradient descent optimization algorithms](http://sebastianruder.com/optimizing-gradient-descent/)
 
+### <a name="score">Score</a>
+Measurement of the overall error rate of the model. The score of the model will be displayed graphically in the webui or it can be displayed the console by using [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html) 
+
 ### <a name="serialization">Serialization</a> 
 Serialization is how you translate data structures or object state into storable formats. Deeplearning4j's nets are serialized, which means they can operate on devices with limited memory.
 
