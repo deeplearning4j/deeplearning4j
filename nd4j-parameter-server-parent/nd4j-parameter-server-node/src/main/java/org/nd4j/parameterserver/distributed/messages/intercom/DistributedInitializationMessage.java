@@ -76,7 +76,7 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
 
             storage.setArray(WordVectorStorage.EXP_TABLE, expTable);
 
-            InitializationAggregation ia = new InitializationAggregation((short) configuration.getNumberOfShards(), transport.getShardIndex());
+            InitializationAggregation ia = new InitializationAggregation((short) voidConfiguration.getNumberOfShards(), transport.getShardIndex());
             transport.sendMessage(ia);
         }
     }

@@ -1,7 +1,8 @@
 package org.nd4j.parameterserver.distributed.transport;
 
 import lombok.NonNull;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
@@ -15,12 +16,12 @@ public class LocalTransport implements Transport {
     /**
      * This method does initialization of Transport instance
      *
-     * @param configuration
+     * @param voidConfiguration
      * @param role
      * @param localIp
      */
     @Override
-    public void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex) {
+    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex) {
 
     }
 
@@ -122,5 +123,10 @@ public class LocalTransport implements Transport {
     @Override
     public void setIpAndPort(String ip, int port) {
 
+    }
+
+    @Override
+    public void addClient(String ip, int port) {
+        //
     }
 }

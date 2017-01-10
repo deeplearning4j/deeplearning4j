@@ -14,7 +14,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public abstract class BaseTransport implements Transport {
-    protected Configuration configuration;
+    protected VoidConfiguration voidConfiguration;
     protected NodeRole nodeRole;
 
     protected Aeron aeron;
@@ -93,6 +94,9 @@ public abstract class BaseTransport implements Transport {
 
                 if (cnt.incrementAndGet() > 20000) {
                     log.info("Resending request for taskId [{}]", taskId);
+                    try {
+                        Thread.sleep(5000);
+                    } catch (Exception e) { }
                     return sendMessageAndGetResponse(message);
                 }
             } catch (Exception e) {
@@ -284,7 +288,7 @@ public abstract class BaseTransport implements Transport {
                         // // Shard or Backup uses two subscriptions
 
                         // setting up thread for shard->client communication listener
-                        if (messageHandlerForClients != null)
+                        if (messageHandlerForShards != null)
                             threadB = new Thread(() -> {
                                 while (runner.get())
                                     idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
@@ -342,6 +346,7 @@ public abstract class BaseTransport implements Transport {
         subscriptionForClients.close();
 
         aeron.close();
+        context.close();
         driver.close();
     }
 
@@ -433,7 +438,7 @@ public abstract class BaseTransport implements Transport {
         return messages.peek();
     }
 
-    public abstract void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex);
+    public abstract void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex);
 
     /**
      * This command is possible to issue only from Client
@@ -484,4 +489,8 @@ public abstract class BaseTransport implements Transport {
      * @param message
      */
     protected abstract void sendFeedbackToClient(VoidMessage message);
+
+    public void addClient(String ip, int port) {
+        //
+    }
 }

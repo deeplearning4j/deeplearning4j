@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
@@ -30,14 +30,14 @@ public class MulticastTransport extends BaseTransport {
     }
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
-        if (configuration.getTtl() < 1)
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
+        if (voidConfiguration.getTtl() < 1)
             throw new ND4JIllegalStateException("For MulticastTransport you should have TTL >= 1, it won't work otherwise");
 
-        if (configuration.getMulticastNetwork() == null || configuration.getMulticastNetwork().isEmpty())
+        if (voidConfiguration.getMulticastNetwork() == null || voidConfiguration.getMulticastNetwork().isEmpty())
             throw new ND4JIllegalStateException("For MulticastTransport you should provide IP from multicast network available/allowed in your environment, i.e.: 224.0.1.1");
 
-        this.configuration = configuration;
+        this.voidConfiguration = voidConfiguration;
         this.nodeRole = role;
         this.clipboard = clipboard;
 
@@ -53,14 +53,14 @@ public class MulticastTransport extends BaseTransport {
 
 
 
-        multicastChannelUri = "aeron:udp?endpoint=" + configuration.getMulticastNetwork() + ":" + configuration.getMulticastPort();
-        if (configuration.getMulticastInterface() != null && !configuration.getMulticastInterface().isEmpty())
-            multicastChannelUri =  multicastChannelUri + "|interface=" + configuration.getMulticastInterface();
+        multicastChannelUri = "aeron:udp?endpoint=" + voidConfiguration.getMulticastNetwork() + ":" + voidConfiguration.getMulticastPort();
+        if (voidConfiguration.getMulticastInterface() != null && !voidConfiguration.getMulticastInterface().isEmpty())
+            multicastChannelUri =  multicastChannelUri + "|interface=" + voidConfiguration.getMulticastInterface();
 
-        multicastChannelUri = multicastChannelUri + "|ttl=" + configuration.getTtl();
+        multicastChannelUri = multicastChannelUri + "|ttl=" + voidConfiguration.getTtl();
 
-        if (configuration.getNumberOfShards() < 0)
-            configuration.setNumberOfShards(configuration.getShardAddresses().size());
+        if (voidConfiguration.getNumberOfShards() < 0)
+            voidConfiguration.setNumberOfShards(voidConfiguration.getShardAddresses().size());
 
         switch (nodeRole) {
             case BACKUP:
@@ -70,24 +70,24 @@ public class MulticastTransport extends BaseTransport {
                  */
                 if (ip == null) {
                     ip = localIp;
-                    port = configuration.getUnicastPort();
+                    port = voidConfiguration.getUnicastPort();
                 }
 
 
                 unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
-                log.info("Shard unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
+                log.info("Shard unicast URI: {}/{}", unicastChannelUri, voidConfiguration.getStreamId());
 
                 // this channel will be used to receive batches from Clients
-                subscriptionForShards = aeron.addSubscription(unicastChannelUri, configuration.getStreamId());
+                subscriptionForShards = aeron.addSubscription(unicastChannelUri, voidConfiguration.getStreamId());
 
                 // this channel will be used to send completion reports back to Clients
-                publicationForClients = aeron.addPublication(multicastChannelUri, configuration.getStreamId()+1);
+                publicationForClients = aeron.addPublication(multicastChannelUri, voidConfiguration.getStreamId()+1);
 
                 // this channel will be used for communication with other Shards
-                publicationForShards = aeron.addPublication(multicastChannelUri, configuration.getStreamId() + 2);
+                publicationForShards = aeron.addPublication(multicastChannelUri, voidConfiguration.getStreamId() + 2);
 
                 // this channel will be used to receive messages from other Shards
-                subscriptionForClients = aeron.addSubscription(multicastChannelUri, configuration.getStreamId() + 2);
+                subscriptionForClients = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 2);
 
                 messageHandlerForShards = new FragmentAssembler(
                         (buffer, offset, length, header) -> shardMessageHandler(buffer, offset, length, header)
@@ -105,11 +105,11 @@ public class MulticastTransport extends BaseTransport {
                  */
                 // FIXME: we don't want that
 
-                String rts = configuration.getShardAddresses().get(0);//ArrayUtil.getRandomElement(configuration.getShardAddresses());
+                String rts = voidConfiguration.getShardAddresses().get(0);//ArrayUtil.getRandomElement(configuration.getShardAddresses());
                 String[] split = rts.split(":");
                 if (split.length == 1) {
                     ip = rts;
-                    port = configuration.getUnicastPort();
+                    port = voidConfiguration.getUnicastPort();
                 } else {
                     ip = split[0];
                     port = Integer.valueOf(split[1]);
@@ -119,15 +119,15 @@ public class MulticastTransport extends BaseTransport {
                 unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
                 //unicastChannelUri = "aeron:udp?endpoint=" + ip  + ":" + (configuration.getUnicastPort()) ;
 
-                log.info("Client unicast URI: {}/{}", unicastChannelUri, configuration.getStreamId());
+                log.info("Client unicast URI: {}/{}", unicastChannelUri, voidConfiguration.getStreamId());
 
                 /*
                  this channel will be used to send batches to Shards, it's 1:1 channel to one of the Shards
                 */
-                publicationForShards = aeron.addPublication(unicastChannelUri, configuration.getStreamId());
+                publicationForShards = aeron.addPublication(unicastChannelUri, voidConfiguration.getStreamId());
 
                 // this channel will be used to receive completion reports from Shards
-                subscriptionForClients = aeron.addSubscription(multicastChannelUri, configuration.getStreamId() + 1);
+                subscriptionForClients = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
                 messageHandlerForClients = new FragmentAssembler(
                         (buffer, offset, length, header) -> clientMessageHandler(buffer, offset, length, header)
@@ -139,7 +139,7 @@ public class MulticastTransport extends BaseTransport {
         }
 
         // if that's local spark run - we don't need this
-        if (configuration.getNumberOfShards() == 1 && nodeRole == NodeRole.SHARD)
+        if (voidConfiguration.getNumberOfShards() == 1 && nodeRole == NodeRole.SHARD)
             shutdownSilent();
     }
 
@@ -150,7 +150,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected synchronized  void sendCoordinationCommand(VoidMessage message) {
-        if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1) {
+        if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
             message.setTargetId((short) -1);
             messages.add(message);
             return;
@@ -169,7 +169,7 @@ public class MulticastTransport extends BaseTransport {
      */
     @Override
     protected synchronized void sendFeedbackToClient(VoidMessage message) {
-        if (nodeRole == NodeRole.SHARD && configuration.getNumberOfShards() == 1 && message instanceof MeaningfulMessage) {
+        if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1 && message instanceof MeaningfulMessage) {
             message.setTargetId((short) -1);
             completed.put(message.getTaskId(), (MeaningfulMessage) message);
             return;

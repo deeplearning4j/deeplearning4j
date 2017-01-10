@@ -7,7 +7,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
@@ -46,14 +47,14 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceStandalone1() {
-        Configuration configuration = Configuration.builder()
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                 .networkMask("192.168.0.0/16")
                 .numberOfShards(1)
                 .build();
 
-        configuration.setShardAddresses("192.168.1.35");
+        voidConfiguration.setShardAddresses("192.168.1.35");
 
-        VoidParameterServer.getInstance().init(configuration);
+        VoidParameterServer.getInstance().init(voidConfiguration);
         VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
 
         final List<Long> times = new CopyOnWriteArrayList<>();
@@ -103,14 +104,14 @@ public class VoidParameterServerStressTest {
      */
     @Test
     public void testPerformanceStandalone2() {
-        Configuration configuration = Configuration.builder()
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                 .networkMask("192.168.0.0/16")
                 .numberOfShards(1)
                 .build();
 
-        configuration.setShardAddresses("192.168.1.35");
+        voidConfiguration.setShardAddresses("192.168.1.35");
 
-        VoidParameterServer.getInstance().init(configuration);
+        VoidParameterServer.getInstance().init(voidConfiguration);
         VoidParameterServer.getInstance().initializeSeqVec(100, NUM_WORDS, 123, 10, true, false);
 
         final List<Long> times = new CopyOnWriteArrayList<>();
@@ -160,7 +161,7 @@ public class VoidParameterServerStressTest {
 
     @Test
     public void testPerformanceMulticast1() throws Exception {
-        Configuration configuration = Configuration.builder()
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                 .networkMask("192.168.0.0/16")
                 .numberOfShards(1)
                 .build();
@@ -170,30 +171,30 @@ public class VoidParameterServerStressTest {
             addresses.add("192.168.1.35:3789" + s);
         }
 
-        configuration.setShardAddresses(addresses);
-        configuration.setForcedRole(NodeRole.CLIENT);
+        voidConfiguration.setShardAddresses(addresses);
+        voidConfiguration.setForcedRole(NodeRole.CLIENT);
 
-        Configuration[] configurations = new Configuration[5];
+        VoidConfiguration[] voidConfigurations = new VoidConfiguration[5];
         VoidParameterServer[] shards = new VoidParameterServer[5];
         for (int s = 0; s < shards.length; s++) {
-            configurations[s] = Configuration.builder()
+            voidConfigurations[s] = VoidConfiguration.builder()
                     .unicastPort(Integer.valueOf("3789" + s))
                     .networkMask("192.168.0.0/16")
                     .build();
 
-            configurations[s].setShardAddresses(addresses);
+            voidConfigurations[s].setShardAddresses(addresses);
 
             MulticastTransport transport = new MulticastTransport();
             transport.setIpAndPort("192.168.1.35", Integer.valueOf("3789" + s));
             shards[s] =  new VoidParameterServer(false);
             shards[s].setShardIndex((short) s);
-            shards[s].init(configurations[s], transport);
+            shards[s].init(voidConfigurations[s], transport);
 
             assertEquals(NodeRole.SHARD, shards[s].getNodeRole());
         }
 
         // this is going to be our Client shard
-        VoidParameterServer.getInstance().init(configuration);
+        VoidParameterServer.getInstance().init(voidConfiguration);
         assertEquals(NodeRole.CLIENT, VoidParameterServer.getInstance().getNodeRole());
 
         log.info("Instantiation finished...");

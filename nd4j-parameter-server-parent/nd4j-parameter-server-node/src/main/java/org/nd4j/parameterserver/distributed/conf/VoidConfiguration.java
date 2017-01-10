@@ -19,7 +19,7 @@ import java.util.List;
 @Builder
 @Slf4j
 @Data
-public class Configuration implements Serializable {
+public class VoidConfiguration implements Serializable {
     private int streamId;
     private int unicastPort;
     private int multicastPort;

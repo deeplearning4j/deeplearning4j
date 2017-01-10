@@ -6,7 +6,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.*;
@@ -55,7 +56,7 @@ public class VoidParameterServerTest {
 
     @Test
     public void testNodeRole1() throws Exception {
-        final Configuration conf = Configuration.builder()
+        final VoidConfiguration conf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
@@ -73,7 +74,7 @@ public class VoidParameterServerTest {
 
     @Test
     public void testNodeRole2() throws Exception {
-        final Configuration conf = Configuration.builder()
+        final VoidConfiguration conf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
@@ -92,7 +93,7 @@ public class VoidParameterServerTest {
 
     @Test
     public void testNodeRole3() throws Exception {
-        final Configuration conf = Configuration.builder()
+        final VoidConfiguration conf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
@@ -114,7 +115,7 @@ public class VoidParameterServerTest {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
 
-        final Configuration conf = Configuration.builder()
+        final VoidConfiguration conf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(10)
@@ -169,7 +170,7 @@ public class VoidParameterServerTest {
         INDArray exp = Nd4j.create(new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00});
 
 
-        final Configuration clientConf = Configuration.builder()
+        final VoidConfiguration clientConf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -180,7 +181,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf1 = Configuration.builder()
+        final VoidConfiguration shardConf1 = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -190,7 +191,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf2 = Configuration.builder()
+        final VoidConfiguration shardConf2 = VoidConfiguration.builder()
                 .unicastPort(34569) // we'll never get anything on this port
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -200,7 +201,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf3 = Configuration.builder()
+        final VoidConfiguration shardConf3 = VoidConfiguration.builder()
                 .unicastPort(34570) // we'll never get anything on this port
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -222,7 +223,7 @@ public class VoidParameterServerTest {
 
 
         Thread[] threads = new Thread[3];
-        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2, shardConf3};
+        final VoidConfiguration[] voidConfigurations = new VoidConfiguration[]{shardConf1, shardConf2, shardConf3};
 
         VoidParameterServer[] shards = new VoidParameterServer[threads.length];
         for (int t = 0; t < threads.length; t++) {
@@ -232,7 +233,7 @@ public class VoidParameterServerTest {
 
                 shards[x] = new VoidParameterServer(true);
                 shards[x].setShardIndex((short) x);
-                shards[x].init(configurations[x]);
+                shards[x].init(voidConfigurations[x]);
 
                 shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
 
@@ -437,7 +438,7 @@ public class VoidParameterServerTest {
 
         Nd4j.create(1);
 
-        final Configuration clientConf = Configuration.builder()
+        final VoidConfiguration clientConf = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -448,7 +449,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf1 = Configuration.builder()
+        final VoidConfiguration shardConf1 = VoidConfiguration.builder()
                 .unicastPort(34567)
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -458,7 +459,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf2 = Configuration.builder()
+        final VoidConfiguration shardConf2 = VoidConfiguration.builder()
                 .unicastPort(34569) // we'll never get anything on this port
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -468,7 +469,7 @@ public class VoidParameterServerTest {
                 .ttl(4)
                 .build();
 
-        final Configuration shardConf3 = Configuration.builder()
+        final VoidConfiguration shardConf3 = VoidConfiguration.builder()
                 .unicastPort(34570) // we'll never get anything on this port
                 .multicastPort(45678)
                 .numberOfShards(3)
@@ -490,7 +491,7 @@ public class VoidParameterServerTest {
 
 
         Thread[] threads = new Thread[3];
-        final Configuration[] configurations = new Configuration[]{shardConf1, shardConf2, shardConf3};
+        final VoidConfiguration[] voidConfigurations = new VoidConfiguration[]{shardConf1, shardConf2, shardConf3};
         VoidParameterServer[] shards = new VoidParameterServer[threads.length];
         final AtomicBoolean runner = new AtomicBoolean(true);
         for (int t = 0; t < threads.length; t++) {
@@ -498,7 +499,7 @@ public class VoidParameterServerTest {
             threads[t] = new Thread(() -> {
                 shards[x] = new VoidParameterServer();
                 shards[x].setShardIndex((short) x);
-                shards[x].init(configurations[x]);
+                shards[x].init(voidConfigurations[x]);
 
                 shards[x].getTransport().launch(Transport.ThreadingModel.DEDICATED_THREADS);
 

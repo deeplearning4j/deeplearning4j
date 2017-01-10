@@ -3,7 +3,7 @@ package org.nd4j.parameterserver.distributed.transport.routing;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
@@ -17,33 +17,46 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  */
 @Slf4j
 public class InterleavedRouter extends BaseRouter {
-    protected short targetIndex;
+    protected short targetIndex = (short) -1;
 
-    @Override
-    public void init(@NonNull Configuration configuration, @NonNull Transport transport) {
-        super.init(configuration, transport);
+    public InterleavedRouter() {
 
-        // by default messages are being routed to any random shard
-        targetIndex = (short) RandomUtils.nextInt(0, configuration.getNumberOfShards());
+    }
+
+    public InterleavedRouter(int defaultIndex) {
+        this();
+        this.targetIndex = (short) defaultIndex;
     }
 
     @Override
-    public void assignTarget(TrainingMessage message) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport) {
+        super.init(voidConfiguration, transport);
+
+        // by default messages are being routed to any random shard
+        if (targetIndex < 0)
+            targetIndex = (short) RandomUtils.nextInt(0, voidConfiguration.getNumberOfShards());
+    }
+
+    @Override
+    public int assignTarget(TrainingMessage message) {
         if (message instanceof SkipGramRequestMessage) {
             SkipGramRequestMessage sgrm = (SkipGramRequestMessage) message;
 
             int w1 = sgrm.getW1();
-            if (w1 >= configuration.getNumberOfShards())
-                message.setTargetId((short) (w1 % configuration.getNumberOfShards()));
+            if (w1 >= voidConfiguration.getNumberOfShards())
+                message.setTargetId((short) (w1 % voidConfiguration.getNumberOfShards()));
             else
-                message.setTargetId((short) configuration.getNumberOfShards());
+                message.setTargetId((short) voidConfiguration.getNumberOfShards());
         } else {
             message.setTargetId(targetIndex);
         }
+
+        return message.getTargetId();
     }
 
     @Override
-    public void assignTarget(VoidMessage message) {
+    public int assignTarget(VoidMessage message) {
         message.setTargetId(targetIndex);
+        return message.getTargetId();
     }
 }

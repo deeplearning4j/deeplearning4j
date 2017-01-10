@@ -91,7 +91,7 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
         }
 
         // send this message to everyone
-        DotAggregation dot = new DotAggregation(taskId, (short) configuration.getNumberOfShards(), shardIndex, result);
+        DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
         transport.sendMessage(dot);
     }
 }

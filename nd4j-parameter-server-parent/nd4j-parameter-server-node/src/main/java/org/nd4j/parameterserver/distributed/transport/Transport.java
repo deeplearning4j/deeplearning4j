@@ -1,7 +1,8 @@
 package org.nd4j.parameterserver.distributed.transport;
 
 import lombok.NonNull;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
@@ -26,14 +27,17 @@ public interface Transport {
 
     short getTargetIndex();
 
+
+    void addClient(String ip, int port);
+
     /**
      * This method does initialization of Transport instance
      *
-     * @param configuration
+     * @param voidConfiguration
      * @param role
      * @param localIp
      */
-    void init(Configuration configuration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex);
+    void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex);
 
 
     /**

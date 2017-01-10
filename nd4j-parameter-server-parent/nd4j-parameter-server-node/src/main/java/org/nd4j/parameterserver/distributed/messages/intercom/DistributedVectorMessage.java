@@ -31,7 +31,7 @@ public class DistributedVectorMessage extends BaseVoidMessage implements Distrib
      */
     @Override
     public void processMessage() {
-        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) configuration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
+        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
         transport.sendMessage(aggregation);
     }
 }

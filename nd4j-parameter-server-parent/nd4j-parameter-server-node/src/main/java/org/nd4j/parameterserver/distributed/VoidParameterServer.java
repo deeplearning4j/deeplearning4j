@@ -7,7 +7,8 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.messages.*;
@@ -45,7 +46,7 @@ public class VoidParameterServer {
 
     @Getter protected volatile NodeRole nodeRole;
 
-    protected volatile Configuration configuration;
+    protected volatile VoidConfiguration voidConfiguration;
 
 
     protected AtomicBoolean initLocker = new AtomicBoolean(false);
@@ -138,8 +139,8 @@ public class VoidParameterServer {
         return storage.getArray(WordVectorStorage.NEGATIVE_TABLE);
     }
 
-    public void init(@NonNull Configuration configuration) {
-        init(configuration, new MulticastTransport());
+    public void init(@NonNull VoidConfiguration voidConfiguration) {
+        init(voidConfiguration, new MulticastTransport());
     }
 
     /**
@@ -147,7 +148,7 @@ public class VoidParameterServer {
      *
      * PLEASE NOTE: This method is blocking for first caller only
      */
-    public void init(@NonNull Configuration configuration, Transport transport){
+    public void init(@NonNull VoidConfiguration voidConfiguration, Transport transport){
         /**
          * Basic plan here:
          *      start publishers/listeners/subscribers
@@ -164,21 +165,21 @@ public class VoidParameterServer {
 
         synchronized (this) {
             if (initLocker.compareAndSet(false, true)) {
-                this.configuration = configuration;
+                this.voidConfiguration = voidConfiguration;
 
                 this.transport = transport;
 
                 // first we need to check, if our current IP matches designated shards or backup
-                if (configuration.getForcedRole() == null || configuration.getForcedRole() == NodeRole.NONE) {
-                    Pair<NodeRole, String> pair = getRole(configuration, getLocalAddresses());
+                if (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE) {
+                    Pair<NodeRole, String> pair = getRole(voidConfiguration, getLocalAddresses());
                     nodeRole = pair.getFirst();
 
-                    this.transport.init(configuration, clipboard, nodeRole, pair.getSecond(), shardIndex);
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, pair.getSecond(), shardIndex);
 
                 } else {
 
-                    nodeRole = configuration.getForcedRole();
-                    this.transport.init(configuration, clipboard, nodeRole, "127.0.0.1", shardIndex);
+                    nodeRole = voidConfiguration.getForcedRole();
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1", shardIndex);
                 }
 
 
@@ -206,11 +207,11 @@ public class VoidParameterServer {
         }
 
         // TODO: uncomment this line on later stages
-        if (!(NodeRole.SHARD == nodeRole && configuration.getShardAddresses().size() == 1)) {
+        if (!(NodeRole.SHARD == nodeRole && voidConfiguration.getShardAddresses().size() == 1)) {
             log.info("Launching transport...");
             transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
         }
-        trainer.init(this.configuration, this.transport, storage, clipboard);
+        trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
     }
 
     /**
@@ -226,21 +227,21 @@ public class VoidParameterServer {
     /**
      * This method checks for designated role, according to local IP addresses and configuration passed into method
      *
-     * @param configuration
+     * @param voidConfiguration
      * @param localIPs
      * @return
      */
-    protected Pair<NodeRole, String> getRole(@NonNull Configuration configuration, @NonNull Collection<String> localIPs) {
+    protected Pair<NodeRole, String> getRole(@NonNull VoidConfiguration voidConfiguration, @NonNull Collection<String> localIPs) {
         NodeRole result = NodeRole.CLIENT;
 
-        for (String ip: configuration.getShardAddresses()) {
+        for (String ip: voidConfiguration.getShardAddresses()) {
             ip = ip.replaceAll(":.*","");
             if (localIPs.contains(ip))
                 return Pair.create(NodeRole.SHARD, ip);
         }
 
-        if (configuration.getBackupAddresses() != null)
-            for (String ip: configuration.getBackupAddresses()) {
+        if (voidConfiguration.getBackupAddresses() != null)
+            for (String ip: voidConfiguration.getBackupAddresses()) {
                 ip = ip.replaceAll(":.*","");
                 if (localIPs.contains(ip))
                     return Pair.create(NodeRole.BACKUP, ip);
@@ -315,7 +316,7 @@ public class VoidParameterServer {
 
         //log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
 
-        message.attachContext(configuration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
+        message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();
     }
 

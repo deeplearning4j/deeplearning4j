@@ -46,13 +46,13 @@ public class VectorRequestMessage extends BaseVoidMessage implements RequestMess
      */
     @Override
     public void processMessage() {
-        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) configuration.getNumberOfShards(), getShardIndex(), storage.getArray(key).getRow(rowIndex).dup());
+        VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(), getShardIndex(), storage.getArray(key).getRow(rowIndex).dup());
 
         clipboard.pin(aggregation);
 
         DistributedVectorMessage dvm = new DistributedVectorMessage(key, rowIndex);
 
-        if (configuration.getNumberOfShards() > 1)
+        if (voidConfiguration.getNumberOfShards() > 1)
             transport.sendMessageToAllShards(dvm);
         else {
             aggregation.extractContext(this);

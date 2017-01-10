@@ -1,6 +1,6 @@
 package org.nd4j.parameterserver.distributed.transport;
 
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
@@ -11,9 +11,9 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  */
 public interface ClientRouter {
 
-    void init(Configuration configuration, Transport transport);
+    void init(VoidConfiguration voidConfiguration, Transport transport);
 
-    void assignTarget(TrainingMessage message);
+    int assignTarget(TrainingMessage message);
 
-    void assignTarget(VoidMessage message);
+    int assignTarget(VoidMessage message);
 }

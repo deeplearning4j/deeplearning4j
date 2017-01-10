@@ -15,10 +15,11 @@ public class IntroductionRequestMessage extends BaseVoidMessage  implements Requ
     private int port;
 
     protected IntroductionRequestMessage() {
-        super();
+        super(5);
     }
 
-    protected IntroductionRequestMessage(@NonNull String ip, int port) {
+    public IntroductionRequestMessage(@NonNull String ip, int port) {
+        this();
         this.ip = ip;
         this.port = port;
     }
@@ -31,7 +32,7 @@ public class IntroductionRequestMessage extends BaseVoidMessage  implements Requ
         dim.extractContext(this);
         dim.processMessage();
 
-        if (configuration.getNumberOfShards() > 1)
+        if (voidConfiguration.getNumberOfShards() > 1)
             transport.sendMessageToAllShards(dim);
     }
 }

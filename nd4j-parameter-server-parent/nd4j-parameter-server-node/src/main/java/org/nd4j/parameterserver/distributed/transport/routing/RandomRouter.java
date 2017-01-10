@@ -2,7 +2,7 @@ package org.nd4j.parameterserver.distributed.transport.routing;
 
 import lombok.NonNull;
 import org.apache.commons.lang3.RandomUtils;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.ClientRouter;
@@ -19,20 +19,22 @@ public class RandomRouter extends BaseRouter {
     protected int numShards;
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Transport transport) {
-        super.init(configuration, transport);
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport) {
+        super.init(voidConfiguration, transport);
 
-        int numShards = configuration.getNumberOfShards();
+        int numShards = voidConfiguration.getNumberOfShards();
     }
 
     @Override
-    public void assignTarget(TrainingMessage message) {
+    public int assignTarget(TrainingMessage message) {
         message.setTargetId(getNextShard());
+        return message.getTargetId();
     }
 
     @Override
-    public void assignTarget(VoidMessage message) {
+    public int assignTarget(VoidMessage message) {
         message.setTargetId(getNextShard());
+        return message.getTargetId();
     }
 
     protected short getNextShard() {

@@ -1,7 +1,7 @@
 package org.nd4j.parameterserver.distributed.transport.routing;
 
 import lombok.NonNull;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
@@ -25,17 +25,19 @@ public class StaticRouter extends BaseRouter {
     }
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Transport transport) {
-        super.init(configuration, transport);
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport) {
+        super.init(voidConfiguration, transport);
     }
 
     @Override
-    public void assignTarget(TrainingMessage message) {
+    public int assignTarget(TrainingMessage message) {
         message.setTargetId(targetIndex);
+        return targetIndex;
     }
 
     @Override
-    public void assignTarget(VoidMessage message) {
+    public int assignTarget(VoidMessage message) {
         message.setTargetId(targetIndex);
+        return targetIndex;
     }
 }

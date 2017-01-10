@@ -6,16 +6,16 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.transport.routing.InterleavedRouter;
+import org.nd4j.parameterserver.distributed.transport.routing.StaticRouter;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,12 +31,13 @@ public class RoutedTransport extends BaseTransport {
 
     protected List<RemoteConnection> shards = new ArrayList<>();
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
+    @Getter @Setter protected ClientRouter router;
 
     @Override
-    public void init(@NonNull Configuration configuration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
         this.nodeRole = role;
         this.clipboard = clipboard;
-        this.configuration = configuration;
+        this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
         this.messages = new LinkedBlockingQueue<>(128);
 
@@ -45,13 +46,16 @@ public class RoutedTransport extends BaseTransport {
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
 
+        if (router == null)
+            router = new InterleavedRouter();
+
 
         /*
             Regardless of current role, we raise subscription for incoming messages channel
          */
         ip = localIp;
         unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
-        subscriptionForClients = aeron.addSubscription(unicastChannelUri, configuration.getStreamId());
+        subscriptionForClients = aeron.addSubscription(unicastChannelUri, voidConfiguration.getStreamId());
 
         messageHandlerForClients = new FragmentAssembler(
                 (buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header)
@@ -63,19 +67,19 @@ public class RoutedTransport extends BaseTransport {
         String shardChannelUri = null;
         String remoteIp = null;
         int remotePort = 0;
-        for (String ip: configuration.getShardAddresses()){
+        for (String ip: voidConfiguration.getShardAddresses()){
             if (ip.contains(":")) {
                 shardChannelUri = "aeron:udp?endpoint=" + ip;
                 String[] split = ip.split(":");
                 remoteIp = split[0];
                 remotePort = Integer.valueOf(split[1]);
             } else {
-                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + configuration.getUnicastPort();
+                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + voidConfiguration.getUnicastPort();
                 remoteIp = ip;
-                remotePort = configuration.getUnicastPort();
+                remotePort = voidConfiguration.getUnicastPort();
             }
 
-            Publication publication = aeron.addPublication(shardChannelUri, configuration.getStreamId());
+            Publication publication = aeron.addPublication(shardChannelUri, voidConfiguration.getStreamId());
 
             RemoteConnection connection = RemoteConnection.builder()
                     .ip(remoteIp)
@@ -167,7 +171,7 @@ public class RoutedTransport extends BaseTransport {
                     throw new RuntimeException("NOT_CONNECTED: " + rc.getIp() + ":" + rc.getPort());
                 else
                     try {
-                        Thread.sleep(configuration.getRetransmitTimeout());
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
                     } catch (Exception e) {}
 
             }
@@ -204,6 +208,10 @@ public class RoutedTransport extends BaseTransport {
         });
 
         subscriptionForClients.close();
+
+        aeron.close();
+        context.close();
+        driver.close();
     }
 
     @Override
@@ -217,6 +225,24 @@ public class RoutedTransport extends BaseTransport {
             threadA.interrupt();
 
         shutdownSilent();
+    }
+
+
+    @Override
+    protected synchronized void sendCommandToShard(VoidMessage message) {
+        long result = 0L;
+
+        int targetShard = router.assignTarget(message);
+
+        log.info("Target shard: {}", targetShard);
+
+        while ((result = shards.get(targetShard).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
+            try {
+                 Thread.sleep(1000);
+            } catch (Exception e) { }
+
+            log.info("Retrying...{}", result);
+        }
     }
 
     /**
@@ -259,6 +285,12 @@ public class RoutedTransport extends BaseTransport {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+
+    @Override
+    public void addClient(String ip, int port) {
+        //this.clients.put();
     }
 
 

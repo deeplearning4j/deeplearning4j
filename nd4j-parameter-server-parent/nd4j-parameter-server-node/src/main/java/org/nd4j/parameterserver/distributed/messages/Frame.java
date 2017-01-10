@@ -7,7 +7,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
@@ -35,7 +36,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     @Getter @Setter protected short targetId;
 
 
-    protected transient Configuration configuration;
+    protected transient VoidConfiguration voidConfiguration;
     protected transient Clipboard clipboard;
     protected transient Transport transport;
     protected transient Storage storage;
@@ -130,8 +131,8 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     }
 
     @Override
-    public void attachContext(@NonNull Configuration configuration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
-        this.configuration = configuration;
+    public void attachContext(@NonNull VoidConfiguration voidConfiguration, @NonNull TrainingDriver<? extends TrainingMessage> trainer, @NonNull Clipboard clipboard, @NonNull Transport transport, @NonNull Storage storage, @NonNull NodeRole role, short shardIndex) {
+        this.voidConfiguration = voidConfiguration;
         this.clipboard = clipboard;
         this.transport = transport;
         this.storage = storage;
@@ -142,7 +143,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void extractContext(@NonNull BaseVoidMessage message) {
-        this.configuration = message.configuration;
+        this.voidConfiguration = message.voidConfiguration;
         this.clipboard = message.clipboard;
         this.transport = message.transport;
         this.storage = message.storage;
@@ -155,7 +156,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     public void processMessage() {
         //log.info("Processing frame of {} messages...", list.size());
         for(T message: list) {
-            message.attachContext(configuration, trainer, clipboard, transport, storage, role, shardIndex);
+            message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
             // if there's more then 1 round should be applied
             for (int i = 0; i < message.getCounter(); i++)
