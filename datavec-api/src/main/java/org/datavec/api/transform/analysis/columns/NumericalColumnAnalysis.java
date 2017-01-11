@@ -26,15 +26,15 @@ import lombok.Data;
 @Data
 public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
 
-    protected final double mean;
-    protected final double sampleStdev;
-    protected final double sampleVariance;
-    protected final long countZero;
-    protected final long countNegative;
-    protected final long countPositive;
-    protected final long countMinValue;
-    protected final long countMaxValue;
-    protected final long countTotal;
+    protected double mean;
+    protected double sampleStdev;
+    protected double sampleVariance;
+    protected long countZero;
+    protected long countNegative;
+    protected long countPositive;
+    protected long countMinValue;
+    protected long countMaxValue;
+    protected long countTotal;
     protected double[] histogramBuckets;
     protected long[] histogramBucketCounts;
 
@@ -50,6 +50,10 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
         this.countTotal = builder.countTotal;
         this.histogramBuckets = builder.histogramBuckets;
         this.histogramBucketCounts = builder.histogramBucketCounts;
+    }
+
+    protected NumericalColumnAnalysis(){
+        //No arg for Jackson
     }
 
     @Override

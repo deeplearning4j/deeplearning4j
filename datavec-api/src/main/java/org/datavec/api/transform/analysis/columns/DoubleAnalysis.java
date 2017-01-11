@@ -18,7 +18,9 @@ package org.datavec.api.transform.analysis.columns;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Analysis for Double columns
@@ -27,11 +29,12 @@ import org.datavec.api.transform.ColumnType;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor  //For Jackson deserialization
 public class DoubleAnalysis extends NumericalColumnAnalysis {
 
-    private final double min;
-    private final double max;
-    private final long countNaN;
+    private double min;
+    private double max;
+    private long countNaN;
 
     private DoubleAnalysis(Builder builder) {
         super(builder);

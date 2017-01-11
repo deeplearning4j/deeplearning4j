@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.analysis.columns;
 
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,9 +30,10 @@ import java.util.*;
  */
 @AllArgsConstructor
 @Data
+@NoArgsConstructor  //For Jackson deserialization
 public class CategoricalAnalysis implements ColumnAnalysis {
 
-    private final Map<String, Long> mapOfCounts;
+    private Map<String, Long> mapOfCounts;
 
 
     @Override
