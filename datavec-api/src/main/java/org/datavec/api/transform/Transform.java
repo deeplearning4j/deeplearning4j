@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.transform.column.*;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -25,10 +26,6 @@ import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTrans
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
 import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
-import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
-import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
-import org.datavec.api.transform.transform.column.RenameColumnsTransform;
-import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.doubletransform.*;
@@ -83,7 +80,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = StringToTimeTransform.class, name = "StringToTimeTransform"),
         @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
         @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class, name = "ReduceSequenceByWindowTransform"),
-        @JsonSubTypes.Type(value = DoubleMathFunctionTransform.class, name = "DoubleMathFunctionTransform")
+        @JsonSubTypes.Type(value = DoubleMathFunctionTransform.class, name = "DoubleMathFunctionTransform"),
+        @JsonSubTypes.Type(value = AddConstantColumnTransform.class, name = "AddConstantColumnTransform")
 })
 public interface Transform extends Serializable,ColumnOp {
 

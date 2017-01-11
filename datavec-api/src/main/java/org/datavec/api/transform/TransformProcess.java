@@ -614,6 +614,47 @@ public class TransformProcess implements Serializable {
             return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
         }
 
+        /**
+         * Add a new column, where all values in the column are identical and as specified.
+         *
+         * @param newColumnName Name of the new column
+         * @param newColumnType Type of the new column
+         * @param fixedValue    Value in the new column for all records
+         */
+        public Builder addConstantColumn(String newColumnName, ColumnType newColumnType, Writable fixedValue){
+            return transform(new AddConstantColumnTransform(newColumnName, newColumnType, fixedValue));
+        }
+
+        /**
+         * Add a new double column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value in the new column for all records
+         */
+        public Builder addConstantDoubleColumn(String newColumnName, double value){
+            return addConstantColumn(newColumnName, ColumnType.Double, new DoubleWritable(value));
+        }
+
+        /**
+         * Add a new integer column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value of the new column for all records
+         */
+        public Builder addConstantIntegerColumn(String newColumnName, int value){
+            return addConstantColumn(newColumnName, ColumnType.Integer, new IntWritable(value));
+        }
+
+        /**
+         * Add a new integer column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value in the new column for all records
+         */
+        public Builder addConstantLongColumn(String newColumnName, long value){
+            return addConstantColumn(newColumnName, ColumnType.Long, new LongWritable(value));
+        }
+
 
         /**
          * Convert the specified column to a string.
