@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
+import org.nd4j.parameterserver.distributed.logic.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
@@ -65,7 +66,7 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
         this.nextRandom = nextRandom;
 
         // FIXME: THIS IS TEMPORARY SOLUTION - FIX THIS!!!1
-        this.setTaskId(new Random().nextLong());
+        this.setTaskId(BasicSequenceProvider.getInstance().getNextValue());
     }
 
     /**
@@ -78,7 +79,7 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
          * This method in reality just delegates training to specific TrainingDriver, based on message type.
          * In this case - SkipGram training
          */
-        log.info("sI_{} starts training...", transport.getShardIndex());
+        //log.info("sI_{} starts training...", transport.getShardIndex());
 
         // FIXME: we might use something better then unchecked type cast here
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;

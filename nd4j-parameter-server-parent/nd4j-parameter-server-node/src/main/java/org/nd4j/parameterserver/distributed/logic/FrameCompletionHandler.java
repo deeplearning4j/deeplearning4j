@@ -35,7 +35,13 @@ public class FrameCompletionHandler {
     }
 
     public boolean isCompleted(Long frameId) {
-        return frames.get(frameId).isFinished();
+        if (isTrackingFrame(frameId))
+            return frames.get(frameId).isFinished();
+        else return false;
+    }
+
+    public int getIncompleteTasksNumber(Long frameId) {
+        return frames.get(frameId).getIncompleteNumber();
     }
 
     public FrameDescriptor getCompletedFrameInfo(Long frameId) {
@@ -73,6 +79,10 @@ public class FrameCompletionHandler {
         public void finishedMessage(Long messageId) {
             states.get(messageId).set(true);
             finished.incrementAndGet();
+        }
+
+        public int getIncompleteNumber() {
+            return messages.get() - finished.get();
         }
     }
 }

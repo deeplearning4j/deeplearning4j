@@ -15,6 +15,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.*;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage;
 import org.nd4j.parameterserver.distributed.transport.routing.InterleavedRouter;
 import org.nd4j.parameterserver.distributed.transport.routing.StaticRouter;
@@ -130,7 +131,7 @@ public class RoutedTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected void sendCoordinationCommand(VoidMessage message) {
+    protected synchronized void sendCoordinationCommand(VoidMessage message) {
 /*
         Queue<RemoteConnection> queue = new ArrayDeque<>(shards);
 
@@ -186,7 +187,7 @@ public class RoutedTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected void sendFeedbackToClient(VoidMessage message) {
+    protected synchronized void sendFeedbackToClient(VoidMessage message) {
         /*
             PLEASE NOTE: In this case we don't change target. We just discard message if something goes wrong.
          */
@@ -248,7 +249,7 @@ public class RoutedTransport extends BaseTransport {
 
         int targetShard = router.assignTarget(message);
 
-        log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
+        //log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
 
         // TODO: we want to switch to other shard in case of failure here
         while ((result = shards.get(targetShard).getPublication().offer(message.asUnsafeBuffer())) < 0L) {

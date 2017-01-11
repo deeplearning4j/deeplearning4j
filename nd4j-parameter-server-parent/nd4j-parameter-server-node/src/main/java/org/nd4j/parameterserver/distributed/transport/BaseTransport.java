@@ -92,10 +92,10 @@ public abstract class BaseTransport implements Transport {
                 //Thread.sleep(1);
                 idler.idle();
 
-                if (cnt.incrementAndGet() > 20000) {
+                if (cnt.incrementAndGet() > 100000) {
                     log.info("Resending request for taskId [{}]", taskId);
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(20000);
                     } catch (Exception e) { }
                     return sendMessageAndGetResponse(message);
                 }

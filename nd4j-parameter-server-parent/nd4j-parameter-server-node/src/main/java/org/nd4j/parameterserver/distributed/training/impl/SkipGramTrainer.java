@@ -8,6 +8,7 @@ import org.nd4j.parameterserver.distributed.logic.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
+import org.nd4j.parameterserver.distributed.messages.complete.FrameCompleteMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.BaseTrainer;
@@ -47,7 +48,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-        log.info("sI_{} adding SkipGramChain {}/{}", transport.getShardIndex(), message.getTaskId(), message.getFrameId());
+        //log.info("sI_{} adding SkipGramChain frame: {}; task: {}", transport.getShardIndex(), message.getFrameId(), message.getTaskId());
         SkipGramChain chain = new SkipGramChain(message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
@@ -71,7 +72,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     (float) message.getAlpha());
             ddm.setTargetId((short) - 1);
             transport.sendMessage(ddm);
-        }
+        } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
         // negSampling round
         if (message.getNegSamples() > 0) {
@@ -87,6 +88,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     public void pickTraining(@NonNull SkipGramRequestMessage message) {
         if (!chains.containsKey(message.getTaskId())) {
             SkipGramChain chain = new SkipGramChain(message);
+       //     log.info("sI_{} Picking chain: {}", transport.getShardIndex(), chain.getTaskId());
             chains.put(chain.getTaskId(), chain);
         }
     }
@@ -127,7 +129,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramRequestMessage sgrm = chain.getRequestMessage();
         double alpha = sgrm.getAlpha();
 
-        log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
+    //   log.info("Executing SkipGram round on shard_{}; taskId: {}", transport.getShardIndex(), taskId);
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native
@@ -170,8 +172,14 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         if (completionHandler.isTrackingFrame(chain.getFrameId())) {
             completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
 
+      //      log.info("sI_{} finished round: frame: {}; task: {}; remnaints: {}", transport.getShardIndex(), chain.getFrameId(), chain.getTaskId(), completionHandler.getIncompleteTasksNumber(chain.getFrameId()));
+
             if (completionHandler.isCompleted(chain.getFrameId())) {
-                log.info("sI_{} frame [{}] completed!", transport.getShardIndex(), chain.getFrameId());
+                FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(chain.getFrameId());
+      //          log.info("sI_{} frame completed! frame: {}; originator: {}", transport.getShardIndex(), chain.getFrameId(), frameDescriptor.getFrameOriginatorId());
+                FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
+                fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
+                transport.sendMessage(fcm);
             }
         }
 

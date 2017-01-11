@@ -76,9 +76,12 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
     @Override
     public void processMessage() {
         // this only picks up new training round
-        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
+        //log.info("sI_{} Processing DistributedDotMessage taskId: {}", transport.getShardIndex(), getTaskId());
 
-//        log.info("sI_{} Processing DistributedDotMessage");
+        SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
+        sgrm.setTaskId(this.taskId);
+
+
 
         // FIXME: get rid of THAT
         SkipGramTrainer sgt = (SkipGramTrainer) trainer;

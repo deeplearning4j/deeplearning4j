@@ -470,7 +470,7 @@ public class VoidParameterServerStressTest {
         int w1 = RandomUtils.nextInt(0, NUM_WORDS);
         int w2 = RandomUtils.nextInt(0, NUM_WORDS);
 
-        byte[] codes = new byte[RandomUtils.nextInt(0, 50)];
+        byte[] codes = new byte[RandomUtils.nextInt(10, 50)];
         int[] points = new int[codes.length];
         for (int e = 0; e < codes.length; e++) {
             codes[e] = (byte) (e % 2 == 0 ? 0 : 1);

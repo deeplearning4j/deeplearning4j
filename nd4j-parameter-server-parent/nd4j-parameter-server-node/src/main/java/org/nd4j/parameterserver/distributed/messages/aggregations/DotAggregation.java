@@ -56,7 +56,7 @@ public class DotAggregation extends BaseAggregation{
 
         clipboard.pin(this);
 
-        log.info("sI_{} dot aggregation received", transport.getShardIndex());
+//        log.info("sI_{} dot aggregation received", transport.getShardIndex());
 
         if (clipboard.isReady(this.getTaskId())) {
             trainer.aggregationFinished(clipboard.unpin(this.taskId));
