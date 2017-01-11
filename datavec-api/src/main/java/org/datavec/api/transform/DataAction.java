@@ -28,7 +28,12 @@ import org.datavec.api.transform.reduce.IReducer;
 
 import java.io.Serializable;
 
-/** A helper class used in TransformProcess to store the types of action to execute next. */
+/** A helper class used in TransformProcess
+ * to store the types of action to
+ * execute next.
+ *
+ * @author Alex Black
+ * */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataAction implements Serializable {
