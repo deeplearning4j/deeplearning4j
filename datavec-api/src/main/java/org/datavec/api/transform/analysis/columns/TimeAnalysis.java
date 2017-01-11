@@ -18,6 +18,7 @@ package org.datavec.api.transform.analysis.columns;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
@@ -30,11 +31,12 @@ import org.joda.time.format.DateTimeFormatter;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor  //For Jackson deserialization
 public class TimeAnalysis extends NumericalColumnAnalysis {
 
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
-    private final long min;
-    private final long max;
+    private long min;
+    private long max;
 
     private TimeAnalysis(Builder builder) {
         super(builder);

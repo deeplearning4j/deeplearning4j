@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.analysis.columns;
 
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,13 +28,14 @@ import lombok.Data;
  */
 @AllArgsConstructor
 @Data
+@NoArgsConstructor  //For Jackson deserialization
 public class BytesAnalysis implements ColumnAnalysis {
 
-    private final long countTotal;
-    private final long countNull;
-    private final long countZeroLength;
-    private final int minNumBytes;
-    private final int maxNumBytes;
+    private long countTotal;
+    private long countNull;
+    private long countZeroLength;
+    private int minNumBytes;
+    private int maxNumBytes;
 
     public BytesAnalysis(Builder builder) {
         this.countTotal = builder.countTotal;
