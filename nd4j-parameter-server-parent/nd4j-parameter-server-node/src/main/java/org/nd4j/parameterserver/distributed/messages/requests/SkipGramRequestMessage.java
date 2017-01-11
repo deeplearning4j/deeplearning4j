@@ -33,6 +33,8 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     // learning rate for this sequence
     protected double alpha;
 
+    long frameId;
+
     // current word & lastWord
     protected int w1;
     protected int w2;

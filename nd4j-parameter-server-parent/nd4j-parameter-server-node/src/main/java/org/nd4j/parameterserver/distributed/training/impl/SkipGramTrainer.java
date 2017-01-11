@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.logic.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
@@ -35,6 +36,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     protected Map<Long, SkipGramChain> chains = new ConcurrentHashMap<>();
     protected AtomicLong cntRounds = new AtomicLong(0);
 
+    protected FrameCompletionHandler completionHandler = new FrameCompletionHandler();
+
     @Override
     public void startTraining(SkipGramRequestMessage message) {
         /**
@@ -44,7 +47,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-        SkipGramChain chain = new SkipGramChain(message.getTaskId());
+        log.info("sI_{} adding SkipGramChain {}/{}", transport.getShardIndex(), message.getTaskId(), message.getFrameId());
+        SkipGramChain chain = new SkipGramChain(message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
         //log.info("Starting chain [{}]", chain.getTaskId());
@@ -163,8 +167,22 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         }
 
         Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
+        if (completionHandler.isTrackingFrame(chain.getFrameId())) {
+            completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
+
+            if (completionHandler.isCompleted(chain.getFrameId())) {
+                log.info("sI_{} frame [{}] completed!", transport.getShardIndex(), chain.getFrameId());
+            }
+        }
+
+
 
         if (cntRounds.incrementAndGet() % 10000 == 0)
             log.info("{} training rounds finished...", cntRounds.get());
+    }
+
+    @Override
+    public void addCompletionHook(long originatorId, long frameId, long messageId) {
+        completionHandler.addHook(originatorId, frameId, messageId);
     }
 }

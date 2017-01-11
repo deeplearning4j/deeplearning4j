@@ -47,6 +47,16 @@ public class FrameTest {
                 }
 
                 @Override
+                public long getFrameId() {
+                    return 0;
+                }
+
+                @Override
+                public void setFrameId(long frameId) {
+
+                }
+
+                @Override
                 public long getOriginatorId() {
                     return 0;
                 }

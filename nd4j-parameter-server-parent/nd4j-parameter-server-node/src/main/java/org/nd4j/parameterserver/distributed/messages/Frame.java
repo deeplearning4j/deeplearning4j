@@ -35,6 +35,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Getter @Setter protected long originatorId;
     @Getter @Setter protected short targetId;
+    @Getter @Setter protected long taskId;
 
 
     protected transient VoidConfiguration voidConfiguration;
@@ -53,6 +54,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         list.add(message);
     }
 
+
     /**
      * This method adds single TrainingMessage to this Frame
      *
@@ -68,9 +70,14 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
             int index = list.indexOf(message);
             if (index >= 0)
                 list.get(index).joinMessage(message);
-            else
+            else {
+                message.setFrameId(this.getTaskId());
                 list.add(message);
-        } else list.add(message);
+            }
+        } else {
+            message.setFrameId(this.getTaskId());
+            list.add(message);
+        }
     }
 
     /**
@@ -109,11 +116,6 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     @Override
     public Iterator<T> iterator() {
         return list.iterator();
-    }
-
-    @Override
-    public long getTaskId() {
-        return 0;
     }
 
     @Override
@@ -156,13 +158,16 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void processMessage() {
-        log.info("Processing frame {} of {} messages...", this.getTaskId(), list.size());
+        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
         for(T message: list) {
             message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
             // if there's more then 1 round should be applied
-            for (int i = 0; i < message.getCounter(); i++)
+            for (int i = 0; i < message.getCounter(); i++) {
+                log.info("Firing message {}/{}", message.getClass().getSimpleName(), message.getTaskId());
+                trainer.addCompletionHook(getOriginatorId(), getTaskId(), message.getTaskId());
                 message.processMessage();
+            }
         }
     }
 

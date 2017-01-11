@@ -351,6 +351,8 @@ public class VoidParameterServer {
         Frame currentFrame;
         if ((currentFrame = frames.get(message.getClass().getSimpleName())) == null) {
             currentFrame = new Frame<>();
+            // FIXME: fix this
+            currentFrame.setTaskId(new Random().nextLong());
             frames.put(message.getClass().getSimpleName(), currentFrame);
         }
 
@@ -360,6 +362,8 @@ public class VoidParameterServer {
         if (currentFrame.size() > 512) {
             transport.sendMessage(currentFrame);
             currentFrame = new Frame<>();
+            // FIXME: fix this
+            currentFrame.setTaskId(new Random().nextLong());
             frames.put(message.getClass().getSimpleName(), currentFrame);
         }
 

@@ -22,5 +22,7 @@ public interface TrainingDriver<T extends TrainingMessage> {
 
     void finishTraining(long taskId);
 
+    void addCompletionHook(long originatorId, long frameId, long messageId);
+
     String targetMessageClass();
 }
