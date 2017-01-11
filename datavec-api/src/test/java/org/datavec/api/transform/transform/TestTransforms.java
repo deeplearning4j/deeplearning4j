@@ -946,7 +946,29 @@ public class TestTransforms {
         expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
         expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
         expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
+    }
 
+
+    @Test
+    public void testAddConstantColumnTransform(){
+        Schema schema = new Schema.Builder()
+                .addColumnString("first")
+                .addColumnDouble("second")
+                .build();
+
+        Transform transform = new AddConstantColumnTransform("newCol", ColumnType.Integer, new IntWritable(10));
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+        assertEquals(3, out.numColumns());
+        assertEquals(Arrays.asList("first","second","newCol"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Integer), out.getColumnTypes());
+
+
+        assertEquals(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0), new IntWritable(10)),
+                transform.map(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0))));
+        assertEquals(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0), new IntWritable(10)),
+                transform.map(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0))));
     }
 
 }
