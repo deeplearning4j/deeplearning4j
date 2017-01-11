@@ -702,7 +702,7 @@ public class TransformProcess implements Serializable {
                     //mean including min value: (sum/totalCount)
                     //mean excluding min value: (sum - countMin*min)/(totalCount - countMin)
                     double meanExMin;
-                    if(ca.getCountTotal() - countMin == 0){
+                    if(ca.getCountTotal() - countMin == 0) {
                         if(ca.getCountTotal() == 0){
                             log.warn("Normalizing with Log2MeanExcludingMin but 0 records present in analysis");
                         } else {
