@@ -19,6 +19,8 @@ package org.datavec.api.transform.serde;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.testClasses.CustomCondition;
+import org.datavec.api.transform.serde.testClasses.CustomFilter;
 import org.datavec.api.transform.serde.testClasses.CustomTransform;
 import org.junit.Test;
 
@@ -41,6 +43,8 @@ public class TestCustomTransformJsonYaml {
                 .integerMathOp("firstCol", MathOp.Add, 1)
                 .transform(new CustomTransform("secondCol", 3.14159))
                 .doubleMathOp("secondCol", MathOp.Multiply, 2.0)
+                .filter(new CustomFilter(123))
+                .filter(new CustomCondition("someArg"))
                 .build();
 
         String asJson = tp.toJson();

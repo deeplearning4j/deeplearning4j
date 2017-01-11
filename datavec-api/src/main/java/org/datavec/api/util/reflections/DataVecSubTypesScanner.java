@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Custom Reflections library scanner for finding DL4J subtypes (custom layers, graph vertices, etc)
+ * Custom Reflections library scanner for finding Datavec subtypes (custom Transforms, Conditions, etc)
  *
  * @author Alex Black
  */

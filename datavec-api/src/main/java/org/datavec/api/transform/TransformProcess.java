@@ -282,12 +282,16 @@ public class TransformProcess implements Serializable {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-
+    /**
+     * Convert the TransformProcess to a JSON string
+     *
+     * @return TransformProcess, as JSON
+     */
     public String toJson() {
         try {
             return jsonMapper.writeValueAsString(this);
         } catch (JsonProcessingException e){
-            //Ignore the first exception, try reinitializing subtypes
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
         jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
@@ -299,11 +303,16 @@ public class TransformProcess implements Serializable {
         }
     }
 
+    /**
+     * Convert the TransformProcess to a YAML string
+     *
+     * @return TransformProcess, as YAML
+     */
     public String toYaml() {
         try {
             return yamlMapper.writeValueAsString(this);
         } catch (JsonProcessingException e){
-            //Ignore the first exception, try reinitializing subtypes
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
         yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
@@ -315,11 +324,16 @@ public class TransformProcess implements Serializable {
         }
     }
 
+    /**
+     * Deserialize a JSON String (created by {@link #toJson()}) to a TransformProcess
+     *
+     * @return TransformProcess, from JSON
+     */
     public static TransformProcess fromJson(String json) {
         try{
             return jsonMapper.readValue(json, TransformProcess.class);
         }catch ( IOException e){
-            //Ignore the first exception, try reinitializing subtypes
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
         jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
@@ -331,11 +345,16 @@ public class TransformProcess implements Serializable {
         }
     }
 
+    /**
+     * Deserialize a JSON String (created by {@link #toJson()}) to a TransformProcess
+     *
+     * @return TransformProcess, from JSON
+     */
     public static TransformProcess fromYaml(String yaml) {
         try{
             return yamlMapper.readValue(yaml, TransformProcess.class);
         }catch ( IOException e){
-            //Ignore the first exception, try reinitializing subtypes
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
         yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
@@ -355,49 +374,52 @@ public class TransformProcess implements Serializable {
         for(Class<?> c : classes) classNames.add(c.getName());
 
         // First: scan the classpath and find all instances of the 'baseClasses' classes
-        List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
-        List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
-        Collection<URL> urls = ClasspathHelper.forClassLoader();
-        List<URL> scanUrls = new ArrayList<>();
-        for (URL u : urls) {
-            String path = u.getPath();
-            if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
-                scanUrls.add(u);
+        if(subtypesClassCache == null) {
+            List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+            List<Class<?>> classesList = Arrays.<Class<?>>asList();
+
+            Collection<URL> urls = ClasspathHelper.forClassLoader();
+            List<URL> scanUrls = new ArrayList<>();
+            for (URL u : urls) {
+                String path = u.getPath();
+                if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
+                    scanUrls.add(u);
+                }
             }
-        }
 
-        Reflections reflections = new Reflections(new ConfigurationBuilder()
-                .filterInputsBy(new FilterBuilder()
-                        .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                        //Exclude the following: the assumption here is that no custom functionality will ever be present
-                        // under these package name prefixes.
-                        .exclude("^org.nd4j.*")
-                        .exclude("^org.bytedeco.*") //JavaCPP
-                        .exclude("^com.fasterxml.*")//Jackson
-                        .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
-                        .exclude("^org.projectlombok.*")
-                        .exclude("^com.twelvemonkeys.*")
-                        .exclude("^org.joda.*")
-                        .exclude("^org.slf4j.*")
-                        .exclude("^com.google.*")
-                        .exclude("^org.reflections.*")
-                        .exclude("^ch.qos.*")       //Logback
-                )
-                .addUrls(scanUrls)
-                .setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
-        org.reflections.Store store = reflections.getStore();
+            Reflections reflections = new Reflections(new ConfigurationBuilder()
+                    .filterInputsBy(new FilterBuilder()
+                            .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                            // under these package name prefixes.
+                            .exclude("^org.nd4j.*")
+                            .exclude("^org.bytedeco.*") //JavaCPP
+                            .exclude("^com.fasterxml.*")//Jackson
+                            .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
+                            .exclude("^org.projectlombok.*")
+                            .exclude("^com.twelvemonkeys.*")
+                            .exclude("^org.joda.*")
+                            .exclude("^org.slf4j.*")
+                            .exclude("^com.google.*")
+                            .exclude("^org.reflections.*")
+                            .exclude("^ch.qos.*")       //Logback
+                    )
+                    .addUrls(scanUrls)
+                    .setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
+            org.reflections.Store store = reflections.getStore();
 
-        Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
+            Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
 
-        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-        Set<Class<?>> subtypesClassCache = new HashSet<>();
-        for (Class<?> c : subtypeClasses) {
-            if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
-                //log.info("Skipping abstract/interface: {}",c);
-                continue;
+            Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+            subtypesClassCache = new HashSet<>();
+            for (Class<?> c : subtypeClasses) {
+                if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
+                    //log.info("Skipping abstract/interface: {}",c);
+                    continue;
+                }
+                subtypesClassCache.add(c);
             }
-            subtypesClassCache.add(c);
         }
 
         //Second: get all currently registered subtypes for this mapper
