@@ -151,11 +151,12 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         this.role = message.role;
         this.shardIndex = message.shardIndex;
         this.trainer = message.trainer;
+        this.originatorId = message.originatorId;
     }
 
     @Override
     public void processMessage() {
-        //log.info("Processing frame of {} messages...", list.size());
+        log.info("Processing frame {} of {} messages...", this.getTaskId(), list.size());
         for(T message: list) {
             message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
@@ -177,7 +178,6 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public boolean isBlockingMessage() {
-        // TODO: maybe worth making it blocking?
-        return false;
+        return true;
     }
 }

@@ -248,6 +248,8 @@ public class RoutedTransport extends BaseTransport {
 
         int targetShard = router.assignTarget(message);
 
+        log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
+
         // TODO: we want to switch to other shard in case of failure here
         while ((result = shards.get(targetShard).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
             try {
@@ -277,7 +279,10 @@ public class RoutedTransport extends BaseTransport {
 
         VoidMessage message = VoidMessage.fromBytes(data);
 
-      //  log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
+        //log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
+
+        if (messages.size() > 500)
+            log.info("sI_{} got {} messages", shardIndex, messages.size());
 
         if (message instanceof MeaningfulMessage) {
             MeaningfulMessage msg = (MeaningfulMessage) message;
@@ -306,6 +311,14 @@ public class RoutedTransport extends BaseTransport {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        } else if (message instanceof Frame) {
+            try {
+                messages.put((Frame) message);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            log.info("Unknown message: {}", message.getClass().getSimpleName());
         }
     }
 

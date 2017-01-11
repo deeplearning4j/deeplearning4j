@@ -78,6 +78,8 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
         // this only picks up new training round
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
 
+//        log.info("sI_{} Processing DistributedDotMessage");
+
         // FIXME: get rid of THAT
         SkipGramTrainer sgt = (SkipGramTrainer) trainer;
         sgt.pickTraining(sgrm);
@@ -92,6 +94,7 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
 
         // send this message to everyone
         DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
+        dot.setTargetId((short) -1);
         transport.sendMessage(dot);
     }
 }

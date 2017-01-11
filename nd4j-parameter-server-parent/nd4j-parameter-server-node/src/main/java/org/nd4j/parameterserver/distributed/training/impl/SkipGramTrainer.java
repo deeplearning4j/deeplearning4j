@@ -65,7 +65,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     message.getCodes() != null && message.getCodes().length > 0,
                     message.getNegSamples(),
                     (float) message.getAlpha());
-
+            ddm.setTargetId((short) - 1);
             transport.sendMessage(ddm);
         }
 
@@ -104,7 +104,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramChain chain = chains.get(aggregation.getTaskId());
 
         if (chain == null) {
-            throw new RuntimeException("Unable to find chain for specified taskId: [" + aggregation.getTaskId() + "]");
+            throw new RuntimeException("sI_" + transport.getShardIndex() + " Unable to find chain for specified taskId: [" + aggregation.getTaskId() + "]");
         }
 
         chain.addElement((DotAggregation) aggregation);
@@ -123,7 +123,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramRequestMessage sgrm = chain.getRequestMessage();
         double alpha = sgrm.getAlpha();
 
-        //log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
+        log.info("Executing SkipGram round on shard_{}", transport.getShardIndex());
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native

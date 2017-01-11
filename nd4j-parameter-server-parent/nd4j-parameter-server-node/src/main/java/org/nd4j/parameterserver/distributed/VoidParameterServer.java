@@ -310,15 +310,17 @@ public class VoidParameterServer {
 
     // TODO: remove @NonNull check here
     protected void handleMessage(@NonNull VoidMessage message) {
-        if (message == null)
+        if (message == null) {
+//            log.info("sI_{} got null message", getShardIndex());
             return;
+        }
 
         if (message.getTargetId() >= 0 && message.getTargetId() != shardIndex) {
             log.warn("sI_{}: Skipping message: [{}]; TargetIdx: [{}]", shardIndex, message.getClass().getSimpleName(), message.getTargetId());
             return;
         }
 
-        //log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
+  //      log.info("sI_{}: Processing message: [{}]", shardIndex, message.getClass().getSimpleName());
 
         message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, nodeRole, shardIndex);
         message.processMessage();

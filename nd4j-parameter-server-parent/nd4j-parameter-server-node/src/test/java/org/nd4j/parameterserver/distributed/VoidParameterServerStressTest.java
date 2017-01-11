@@ -363,6 +363,104 @@ public class VoidParameterServerStressTest {
 
 
     /**
+     * This is second super-important test for unicast transport.
+     * Here we send non-blocking messages
+     */
+    @Test
+    public void testPerformanceUnicast2() {
+        List<String> list = new ArrayList<>();
+        for (int t = 0; t < 5; t++) {
+            list.add("127.0.0.1:3838" + t);
+        }
+
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                .unicastPort(49823)
+                .numberOfShards(list.size())
+                .shardAddresses(list)
+                .build();
+
+        VoidParameterServer[] shards = new VoidParameterServer[list.size()];
+        for (int t = 0; t < shards.length; t++) {
+            shards[t] = new VoidParameterServer(NodeRole.SHARD);
+
+            Transport transport = new RoutedTransport();
+            transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
+
+            shards[t].setShardIndex((short) t);
+            shards[t].init(voidConfiguration, transport);
+
+
+            assertEquals(NodeRole.SHARD, shards[t].getNodeRole());
+        }
+
+        VoidParameterServer clientNode = new VoidParameterServer();
+        RoutedTransport transport = new RoutedTransport();
+        ClientRouter router = new InterleavedRouter(0);
+
+        transport.setRouter(router);
+        transport.setIpAndPort("127.0.0.1", voidConfiguration.getUnicastPort());
+
+        router.init(voidConfiguration, transport);
+
+        clientNode.init(voidConfiguration, transport);
+        assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
+
+        final List<Long> times = new CopyOnWriteArrayList<>();
+
+        // at this point, everything should be started, time for tests
+        clientNode.initializeSeqVec(100, NUM_WORDS, 123, 25, true, false);
+
+        log.info("Initialization finished, going to tests...");
+
+        Thread[] threads = new Thread[4];
+        for (int t = 0; t < threads.length; t++) {
+            final int e = t;
+            threads[t] = new Thread(() -> {
+                List<Long> results = new ArrayList<>();
+
+                int chunk = NUM_WORDS / threads.length;
+                int start = e * chunk;
+                int end = (e + 1) * chunk;
+
+                for (int i = 0; i < 100000; i++) {
+                    long time1 = System.nanoTime();
+                    clientNode.execDistributed(getSGRM());
+                    long time2 = System.nanoTime();
+
+                    results.add(time2 - time1);
+
+                    if ((i + 1) % 1000 == 0)
+                        log.info("Thread {} cnt {}", e, i + 1);
+                }
+                times.addAll(results);
+            });
+
+            threads[t].setDaemon(true);
+            threads[t].start();
+        }
+
+        for (int t = 0; t < threads.length; t++) {
+            try {
+                threads[t].join();
+            } catch (Exception e) { }
+        }
+
+        List<Long> newTimes = new ArrayList<>(times);
+
+        Collections.sort(newTimes);
+
+        log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        // shutdown everything
+        for (VoidParameterServer shard: shards) {
+            shard.getTransport().shutdown();
+        }
+
+        clientNode.getTransport().shutdown();
+    }
+
+
+    /**
      * This method just produces random SGRM requests, fot testing purposes.
      * No real sense could be found here.
      *
