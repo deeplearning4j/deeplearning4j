@@ -43,7 +43,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
 
     @AllArgsConstructor
-    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<Builder<T>> {
+    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
     }
 
