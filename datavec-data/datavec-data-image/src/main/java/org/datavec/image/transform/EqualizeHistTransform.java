@@ -73,9 +73,9 @@ public class EqualizeHistTransform extends BaseImageTransform {
         Mat mat = (Mat) converter.convert(image.getFrame());
         Mat result = new Mat();
         try {
-            if (conversionCode == CV_BGR2GRAY) {
+            if (mat.channels() == 1) {
                 equalizeHist(mat, result);
-            } else if (conversionCode == CV_BGR2YCrCb || conversionCode == COLOR_BGR2Luv) {
+            } else {
                 split(mat, splitChannels);
                 equalizeHist(splitChannels.get(0), splitChannels.get(0)); //equalize histogram on the 1st channel (Y)
                 merge(splitChannels,result);
