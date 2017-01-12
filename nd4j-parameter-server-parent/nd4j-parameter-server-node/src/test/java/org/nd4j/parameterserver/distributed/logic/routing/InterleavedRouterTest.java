@@ -1,4 +1,4 @@
-package org.nd4j.parameterserver.distributed.transport.routing;
+package org.nd4j.parameterserver.distributed.logic.routing;
 
 import org.junit.Before;
 import org.junit.Test;

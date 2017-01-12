@@ -2,9 +2,8 @@ package org.nd4j.parameterserver.distributed.transport;
 
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 

@@ -1,10 +1,9 @@
 package org.nd4j.parameterserver.distributed.messages.requests;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
+import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;

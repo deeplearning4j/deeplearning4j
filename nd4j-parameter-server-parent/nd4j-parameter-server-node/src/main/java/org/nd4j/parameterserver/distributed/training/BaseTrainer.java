@@ -2,8 +2,7 @@ package org.nd4j.parameterserver.distributed.training;
 
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;

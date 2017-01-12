@@ -2,6 +2,7 @@ package org.nd4j.parameterserver.distributed.logic;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 
 import static org.junit.Assert.*;
 

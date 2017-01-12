@@ -6,24 +6,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.BasicSequenceProvider;
+import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
-import org.nd4j.parameterserver.distributed.transport.ClientRouter;
+import org.nd4j.parameterserver.distributed.logic.ClientRouter;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
-import org.nd4j.parameterserver.distributed.transport.routing.InterleavedRouter;
+import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 

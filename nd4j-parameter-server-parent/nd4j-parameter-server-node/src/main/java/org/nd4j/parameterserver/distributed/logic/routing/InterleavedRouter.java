@@ -1,4 +1,4 @@
-package org.nd4j.parameterserver.distributed.transport.routing;
+package org.nd4j.parameterserver.distributed.logic.routing;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

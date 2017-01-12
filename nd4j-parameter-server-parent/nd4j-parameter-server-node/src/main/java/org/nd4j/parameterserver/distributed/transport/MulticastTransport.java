@@ -5,12 +5,10 @@ import io.aeron.FragmentAssembler;
 import io.aeron.driver.MediaDriver;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 

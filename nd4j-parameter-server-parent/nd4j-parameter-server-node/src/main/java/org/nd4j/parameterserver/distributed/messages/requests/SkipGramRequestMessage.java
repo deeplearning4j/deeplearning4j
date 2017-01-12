@@ -1,23 +1,15 @@
 package org.nd4j.parameterserver.distributed.messages.requests;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SerializationUtils;
-import org.nd4j.parameterserver.distributed.logic.BasicSequenceProvider;
-import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
+import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSkipGramMessage;
-import org.nd4j.parameterserver.distributed.training.TrainerProvider;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * This is batch message, describing simple SkipGram round

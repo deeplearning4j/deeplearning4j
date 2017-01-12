@@ -1,4 +1,6 @@
-package org.nd4j.parameterserver.distributed.logic;
+package org.nd4j.parameterserver.distributed.logic.sequence;
+
+import org.nd4j.parameterserver.distributed.logic.SequenceProvider;
 
 import java.util.concurrent.atomic.AtomicLong;
 

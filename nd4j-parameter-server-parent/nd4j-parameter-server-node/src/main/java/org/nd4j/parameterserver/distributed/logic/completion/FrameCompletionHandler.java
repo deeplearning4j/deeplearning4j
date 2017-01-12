@@ -1,4 +1,4 @@
-package org.nd4j.parameterserver.distributed.logic;
+package org.nd4j.parameterserver.distributed.logic.completion;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

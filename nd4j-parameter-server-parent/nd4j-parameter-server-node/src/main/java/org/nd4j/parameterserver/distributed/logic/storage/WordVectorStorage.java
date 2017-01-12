@@ -1,4 +1,6 @@
-package org.nd4j.parameterserver.distributed.logic;
+package org.nd4j.parameterserver.distributed.logic.storage;
+
+import org.nd4j.parameterserver.distributed.logic.storage.BaseStorage;
 
 /**
  * @author raver119@gmail.com

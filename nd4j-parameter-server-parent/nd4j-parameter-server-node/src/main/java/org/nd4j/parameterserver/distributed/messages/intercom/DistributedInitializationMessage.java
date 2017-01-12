@@ -1,6 +1,5 @@
 package org.nd4j.parameterserver.distributed.messages.intercom;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,11 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.logic.WordVectorStorage;
+import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
-import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMessage;
 
 /**
  * @author raver119@gmail.com

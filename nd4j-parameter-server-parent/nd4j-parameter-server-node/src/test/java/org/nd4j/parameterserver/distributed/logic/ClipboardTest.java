@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;

@@ -1,8 +1,9 @@
-package org.nd4j.parameterserver.distributed.logic;
+package org.nd4j.parameterserver.distributed.logic.storage;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.logic.Storage;
 
 import java.util.concurrent.ConcurrentHashMap;
 
