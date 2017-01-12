@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
@@ -188,14 +189,21 @@ public class VoidParameterServer {
 
                 // we launch message processing if we're not in debug mode
                 if (!manualMode.get()) {
-                    int numThreads = Runtime.getRuntime().availableProcessors() / 2;
+                    int numThreads = Runtime.getRuntime().availableProcessors();
                     processingThread = new Thread[numThreads];
 
                     for(int x = 0; x < numThreads; x++) {
                         processingThread[x] = new Thread(() -> {
                             runner.set(true);
-                            while (runner.get())
-                                handleMessage(transport.takeMessage());
+                            while (runner.get()) {
+                                try {
+                                    handleMessage(transport.takeMessage());
+                                } catch (ND4JIllegalStateException e) {
+                                    //
+                                } catch (Exception e) {
+                                    //
+                                }
+                            }
                         });
                         processingThread[x].setDaemon(true);
                         processingThread[x].setName("VoidParameterServer messages handling thread");

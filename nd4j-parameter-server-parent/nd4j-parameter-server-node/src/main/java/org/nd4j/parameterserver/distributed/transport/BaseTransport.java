@@ -83,18 +83,21 @@ public abstract class BaseTransport implements Transport {
 
 //        log.info("Sent message to shard: {}, taskId: {}, originalId: {}", message.getClass().getSimpleName(), message.getTaskId(), taskId);
 
+        long currentTime = System.currentTimeMillis();
+
         MeaningfulMessage msg;
         while ((msg = completed.get((Long) taskId)) == null) {
-            // FIXME: fix sleep strategy here
             try {
-                //Thread.sleep(1);
-                idler.idle();
+                Thread.sleep(voidConfiguration.getResponseTimeframe());
 
-                if (cnt.incrementAndGet() > 200000) {
+                if (System.currentTimeMillis() - currentTime > voidConfiguration.getNumberOfShards()) {
                     log.info("Resending request for taskId [{}]", taskId);
-                    try {
-                        Thread.sleep(5000);
-                    } catch (Exception e) { }
+                    message.incrementRetransmitCount();
+
+                    // TODO: make retransmit threshold configurable
+                    if (message.getRetransmitCount() > 20)
+                        throw new RuntimeException("Giving up on message delivery...");
+
                     return sendMessageAndGetResponse(message);
                 }
             } catch (Exception e) {
@@ -400,8 +403,10 @@ public abstract class BaseTransport implements Transport {
     public VoidMessage takeMessage() {
         if (threadingModel != ThreadingModel.SAME_THREAD) {
             try {
-                //return messages.poll(2, TimeUnit.SECONDS);
                 return messages.take();
+            } catch (InterruptedException e) {
+                // probably we don't want to do anything here
+                return null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

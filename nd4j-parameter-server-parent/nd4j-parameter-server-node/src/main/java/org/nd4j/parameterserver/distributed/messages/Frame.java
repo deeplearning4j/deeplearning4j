@@ -44,6 +44,8 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     protected transient short shardIndex;
     protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
+    @Getter @Setter(AccessLevel.PRIVATE) protected transient int retransmitCount = 0;
+
     protected Frame() {
 
     }
@@ -187,5 +189,10 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     @Override
     public boolean isBlockingMessage() {
         return true;
+    }
+
+    @Override
+    public void incrementRetransmitCount() {
+        retransmitCount++;
     }
 }

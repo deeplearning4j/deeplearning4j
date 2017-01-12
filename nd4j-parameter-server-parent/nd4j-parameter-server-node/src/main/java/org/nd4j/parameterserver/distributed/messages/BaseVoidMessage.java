@@ -30,6 +30,8 @@ public abstract class BaseVoidMessage implements VoidMessage {
     protected transient short shardIndex;
     protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
+    @Setter(AccessLevel.PRIVATE) protected transient int retransmitCount = 0;
+
     protected BaseVoidMessage(int messageType) {
         this.messageType = messageType;
     }
@@ -85,5 +87,10 @@ public abstract class BaseVoidMessage implements VoidMessage {
     @Override
     public boolean isBlockingMessage() {
         return false;
+    }
+
+    @Override
+    public void incrementRetransmitCount() {
+        retransmitCount++;
     }
 }

@@ -46,6 +46,16 @@ public class FrameTest {
                 }
 
                 @Override
+                public int getRetransmitCount() {
+                    return 0;
+                }
+
+                @Override
+                public void incrementRetransmitCount() {
+
+                }
+
+                @Override
                 public long getFrameId() {
                     return 0;
                 }

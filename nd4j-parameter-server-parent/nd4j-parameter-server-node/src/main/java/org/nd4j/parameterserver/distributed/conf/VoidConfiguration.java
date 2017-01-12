@@ -42,7 +42,9 @@ public class VoidConfiguration implements Serializable {
     private boolean useHS = true;
     private boolean useNS = false;
 
-    private long retransmitTimeout = 10;
+    private long retransmitTimeout;
+    private long responseTimeframe;
+    private long responseTimeout;
 
     public void setStreamId(int streamId) {
         if (streamId < 1 )
@@ -86,6 +88,8 @@ public class VoidConfiguration implements Serializable {
         private int multicastPort = 59876;
         private int numberOfShards = -1;
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
-        private long retransmitTimeout = 50;
+        private long retransmitTimeout = 1000;
+        private long responseTimeframe = 100;
+        private long responseTimeout = 10000;
     }
 }

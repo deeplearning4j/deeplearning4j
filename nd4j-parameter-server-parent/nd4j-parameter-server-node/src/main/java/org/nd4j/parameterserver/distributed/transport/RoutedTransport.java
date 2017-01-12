@@ -9,10 +9,12 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
+import org.nd4j.parameterserver.distributed.logic.RetransmissionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage;
@@ -21,6 +23,7 @@ import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Transport implementation based on UDP unicast, for restricted environments, where multicast isn't available. I.e. AWS or Azure
@@ -129,52 +132,47 @@ public class RoutedTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected synchronized void sendCoordinationCommand(VoidMessage message) {
-/*
-        Queue<RemoteConnection> queue = new ArrayDeque<>(shards);
-
-        long result = 0;
-
-        // TODO: probably per-connection retries counter? however, probably doesn't matters why exactly RuntimeException will be thrown
-        long retries = 0;
-
-        while (!queue.isEmpty()) {
-            RemoteConnection rc = queue.poll();
-            result = rc.getPublication().offer(message.asUnsafeBuffer());
-
-            if (result < 0)
-                queue.add(rc);
-
-            if (queue.size() == 1)
-                try {
-                    Thread.sleep(configuration.getRetransmitTimeout());
-                } catch (Exception e) {}
-
-            // not_connected
-            if (result == -1)
-                retries++;
-
-            if (retries > 20)
-                throw new RuntimeException("NOT_CONNECTED: " + rc.getIp() + ":" + rc.getPort());
-        }
-*/
+    protected void sendCoordinationCommand(VoidMessage message) {
 
         // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
         shards.parallelStream().forEach((rc) ->{
-            long res = 0;
+            RetransmissionHandler.TransmissionStatus res;
             long retr = 0;
+            boolean delivered = false;
 
-            while ((res = rc.getPublication().offer(message.asUnsafeBuffer())) < 0L) {
-                if (res == -1)
-                    retr++;
+            while (!delivered) {
+                synchronized (rc.locker) {
+                    res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(message.asUnsafeBuffer()));
+                }
 
-                if (retr > 20)
-                    throw new RuntimeException("NOT_CONNECTED: " + rc.getIp() + ":" + rc.getPort());
-                else
-                    try {
-                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                    } catch (Exception e) {}
+                switch (res) {
+                    case NOT_CONNECTED: {
+                            if (!rc.getActivated().get()) {
+                                retr++;
 
+                                if (retr > 20)
+                                    throw new ND4JIllegalStateException("Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+
+                                try {
+                                    Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                                } catch (Exception e) {}
+                            } else {
+                                throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
+                            }
+                        }
+                        break;
+                    case ADMIN_ACTION:
+                    case BACKPRESSURE: {
+                            try {
+                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            } catch (Exception e) {}
+                        }
+                        break;
+                    case MESSAGE_SENT:
+                        delivered = true;
+                        rc.getActivated().set(true);
+                        break;
+                }
             }
         });
     }
@@ -185,26 +183,49 @@ public class RoutedTransport extends BaseTransport {
      * @param message
      */
     @Override
-    protected synchronized void sendFeedbackToClient(VoidMessage message) {
+    protected void sendFeedbackToClient(VoidMessage message) {
         /*
             PLEASE NOTE: In this case we don't change target. We just discard message if something goes wrong.
          */
         // TODO: discard message if it's not sent for enough time?
         long targetAddress = message.getOriginatorId();
-        long result = 0;
+        RetransmissionHandler.TransmissionStatus result;
 
         //log.info("sI_{} trying to send back {}", shardIndex, message.getClass().getSimpleName());
 
-        if (clients.get(targetAddress) == null) {
+        RemoteConnection connection = clients.get(targetAddress);
+        boolean delivered = false;
+
+        if (connection == null) {
             log.info("Can't get client with address [{}]", targetAddress);
             throw new RuntimeException();
         }
 
-        while ((result = clients.get(targetAddress).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
-            try {
-                Thread.sleep(50);
-                log.info("Resending feedback to client");
-            } catch (Exception e) { }
+        while (!delivered) {
+            synchronized (connection.locker) {
+                result = RetransmissionHandler.getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
+            }
+
+            switch (result) {
+                case ADMIN_ACTION:
+                case BACKPRESSURE: {
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) { }
+                    }
+                    break;
+                case NOT_CONNECTED: {
+                    // client dead? sleep and forget
+                    // TODO: we might want to delay this message & move it to separate queue?
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) { }
+                    }
+                    // do not break here, we can't do too much here, if client is dead
+                case MESSAGE_SENT:
+                    delivered = true;
+                    break;
+            }
         }
     }
 
@@ -242,20 +263,49 @@ public class RoutedTransport extends BaseTransport {
 
 
     @Override
-    protected synchronized void sendCommandToShard(VoidMessage message) {
-        long result = 0L;
+    protected void sendCommandToShard(VoidMessage message) {
+        RetransmissionHandler.TransmissionStatus result;
 
         int targetShard = router.assignTarget(message);
 
         //log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
+        boolean delivered = false;
+        RemoteConnection connection = shards.get(targetShard);
 
-        // TODO: we want to switch to other shard in case of failure here
-        while ((result = shards.get(targetShard).getPublication().offer(message.asUnsafeBuffer())) < 0L) {
-            try {
-                 Thread.sleep(1000);
-            } catch (Exception e) { }
+        while (!delivered) {
+            synchronized (connection.locker) {
+                result = RetransmissionHandler.getTransmissionStatus(connection.getPublication().offer(message.asUnsafeBuffer()));
+            }
 
-            log.info("Retrying delivery {}:{}", message.getClass().getSimpleName(), result);
+            switch (result) {
+                case BACKPRESSURE:
+                case ADMIN_ACTION: {
+                    // we just sleep, and retransmit again later
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) { }
+                    }
+                    break;
+                case NOT_CONNECTED:
+                    /*
+                        two possible cases here:
+                        1) We hadn't sent any messages to this Shard before
+                        2) It was active before, and suddenly died
+                     */
+                    if (!connection.getActivated().get()) {
+                        // wasn't initialized before, just sleep and re-transmit
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) { }
+                    } else {
+                        throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
+                    }
+                    break;
+                case MESSAGE_SENT:
+                    delivered = true;
+                    connection.getActivated().set(true);
+                    break;
+            }
         }
     }
 
@@ -347,6 +397,8 @@ public class RoutedTransport extends BaseTransport {
                 .ip(ip)
                 .port(port)
                 .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port, voidConfiguration.getStreamId()))
+                .locker(new Object())
+                .activated(new AtomicBoolean(false))
                 .build();
 
 
@@ -361,6 +413,8 @@ public class RoutedTransport extends BaseTransport {
         private String ip;
         private int port;
         private Publication publication;
+        private final Object locker;
+        private AtomicBoolean activated;
     }
 
 }

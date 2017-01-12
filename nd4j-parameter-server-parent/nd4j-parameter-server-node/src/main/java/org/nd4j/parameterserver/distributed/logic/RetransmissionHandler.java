@@ -20,8 +20,9 @@ public interface RetransmissionHandler {
 
     void handleMessage(TrainingMessage message);
 
+    void onBackPressure();
 
-    public default TransmissionStatus getTransmissionStatus(long resp) {
+    static TransmissionStatus getTransmissionStatus(long resp) {
         if (resp >= 0) {
             return TransmissionStatus.MESSAGE_SENT;
         } else if (resp == -1) {
@@ -34,4 +35,6 @@ public interface RetransmissionHandler {
             throw new ND4JIllegalStateException("Unknown response from Aeron received: [" + resp + "]");
         }
     }
+
+
 }

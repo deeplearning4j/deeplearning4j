@@ -54,4 +54,7 @@ public interface VoidMessage extends Serializable {
 
     void joinMessage(VoidMessage message);
 
+    int getRetransmitCount();
+
+    void incrementRetransmitCount();
 }
