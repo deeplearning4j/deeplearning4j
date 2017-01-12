@@ -53,6 +53,7 @@ public class TestActivationJson extends BaseNd4jTest {
                 new ActivationHardTanH(),
                 new ActivationIdentity(),
                 new ActivationLReLU(0.25),
+                new ActivationRationalTanh(),
                 new ActivationReLU(),
                 new ActivationRReLU(0.25,0.5),
                 new ActivationSigmoid(),
@@ -69,6 +70,7 @@ public class TestActivationJson extends BaseNd4jTest {
                 {}, //Hard TanH
                 {}, //Identity
                 {"alpha"},  //Leaky Relu
+                {}, //rational tanh
                 {}, //relu
                 {"l","u"},  //rrelu
                 {}, //sigmoid

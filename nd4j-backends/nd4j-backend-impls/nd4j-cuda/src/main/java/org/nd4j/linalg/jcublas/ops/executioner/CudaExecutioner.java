@@ -1466,6 +1466,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
+        if (op.x().length() != op.z().length())
+            throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["+Arrays.toString(op.x().shapeInfoDataBuffer().asInt())+"] != [" + Arrays.toString(op.z().shapeInfoDataBuffer().asInt())+"]");
+
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 

@@ -559,5 +559,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         log.info("Backend used: [{}]; OS: [{}]", env.get("backend"),  env.get("os"));
         log.info("Cores: [{}]; Memory: [{}GB];", env.get("cores"), fm);
+        log.info("Blas vendor: [{}]", env.get("blas.vendor"));
     }
 }
