@@ -1,156 +1,156 @@
 ---
-title: Deeplearning4j on Spark
-layout: default
+title: 基于Spark的Deeplearning4j
+layout: cn-default
 ---
 
-# Deeplearning4j on Spark
+# 基于Spark的Deeplearning4j
 
-Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism.
+深度学习的计算强度较高，所以对于规模非常大的数据集而言，速度很重要。您可以采用速度更快的硬件、优化的代码以及某种形式的并行来处理问题。
 
-Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark for this, training models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
+数据并行指切分大规模的数据集，然后将分片交给不同的神经网络，而每个网络可能都在各自不同的处理器核上运行。Deeplearning4j依靠Spark来实现数据并行，以并行方式定型模型，对这些模型产生的参数进行[迭代式平均化](./iterativereduce.html)，得到一个中央模型。（[如Jeff Dean等人在这篇论文中所述](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf)，模型并行可以让多个模型分别负责大型数据集中的不同部分而无需平均化。）
 
-**Contents**
+**目录**
 
-* [Overview](#overview)
-* [How Distributed Network Training Occurs with DL4J on Spark](#how)
-* [A Minimal Example](#minimal)
-* [Configuring the TrainingMaster](#configuring)
-* [Dependencies for Training on Spark](#dependencies)
-* [Spark Examples Repository](#examples)
-* [Configuring Memory for Spark on YARN](#memoryyarn)
-    * [How Deeplearning4j (and ND4J) Manages Memory](#memory1)
-    * [How YARN Manages Memory](#memory2)
-    * [Configuring Memory for Deeplearning4j Spark Training on YARN](#memory3)
-* [Spark Locality Configuration for Improved Training Performance](#locality)
-* [Performance Debugging and Collecting Training Performance Information](#sparkstats)
-    * [Debugging "Error querying NTP server" when collecting performance information](#sparkstatsntp)
-* [Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;](#caching)
-* [Using Kryo Serialization with Deeplearning4j](#kryo)
-* [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
+* [概述](#overview)
+* [基于Spark的DL4J如何进行分布式的网络定型](#how)
+* [最简示例](#minimal)
+* [配置TrainingMaster](#configuring)
+* [在Spark上定型所需的依赖项](#dependencies)
+* [Spark示例库](#examples)
+* [在YARN上为Spark配置内存](#memoryyarn)
+    * [Deeplearning4j（以及ND4J）的内存管理方式](#memory1)
+    * [YARN的内存管理方式](#memory2)
+    * [在YARN上为基于Spark的Deeplearning4j定型配置内存](#memoryyarn)
+* [用Spark本地性配置来改善定型表现](#locality)
+* [性能调试和定型表现信息收集](#sparkstats)
+    * [调试收集表现信息时出现的“NTP服务器查询错误”](#sparkstatsntp)
+* [缓存/持久化RDD<DataSets>和RDD<INDArrays>](#caching)
+* [Kryo序列化与Deeplearning4j并用](#kryo)
+* [在亚马逊Elastic MapReduce上使用英特尔MKL和Deeplearning4j](#mklemr)
 
-## <a name="overview">Overview</a>
+## <a name="overview">概述</a>
 
-Deeplearning4j supports training neural networks on a Spark cluster, in order to accelerate network training.
+Deeplearning4j支持在Spark集群上定型神经网络，以便加快网络定型速度。
 
-Similar to DL4J's MultiLayerNetwork and ComputationGraph classes, DL4J defines two classes for training neural networks on Spark:
+DL4J定义了两个与MultiLayerNetwork和ComputationGraph相似的类，用于在Spark上定型神经网络：
 
-- SparkDl4jMultiLayer, a wrapper around MultiLayerNetwork
-- SparkComputationGraph, a wrapper around ComputationGraph
+- SparkDl4jMultiLayer，MultiLayerNetwork的包装类
+- SparkComputationGraph，ComputationGraph的包装类
 
-Because these two classes are wrappers around the stardard single-machine classes, the network configuration process (i.e., creating a MultiLayerConfiguration or ComputationGraphConfiguration) is identical in both standard and distributed training. Distributed on Spark differs from local training in two respects, however: how data is loaded, and how training is set up (requiring some additional cluster-specific configuration).
+此二者均是标准单机类的包装类，所以不论是标准定型还是分布式定型，网络配置的过程（即创建一个MultiLayerConfiguration或ComputationGraphConfiguration）都是完全相同的。但是，基于Spark的分布式定型与本地定型有两个区别：数据的加载方式和定型的设置方式（需要一些额外的集群专用配置）。
 
-The typical workflow for training a network on a Spark cluster (using spark-submit) is as follows.
+在Spark集群上（使用spark-submit）进行网络定型的典型工作流程如下所示。
 
-1. Create your network training class. Typically, this will involve code for:
-    * Specifying your network configuration (MultiLayerConfiguration or ComputationGraphConfiguration), as you would for single-machine training
-    * Creating a TrainingMaster instance: this specifies how distributed training will be conducted in practice (more on this later)
-    * Creating the SparkDl4jMultiLayer or SparkComputationGraph instance using the network configuration and TrainingMaster objects
-    * Load your training data. There are a number of different methods of loading data, with different tradeoffs; further details will be provided in future documentation
-    * Calling the appropriate ```fit``` method on the SparkDl4jMultiLayer or SparkComputationGraph instance
-    * Saving or using the trained network (the trained MultiLayerNetwork or ComputationGraph instance)
-2. Package your jar file ready for Spark submit
-    * If you are using maven, running "mvn package -DskipTests" is one approach
-3. Call Spark submit with the appropriate launch configuration for your cluster
-
-
-**Note**: For single machine training, Spark local *can* be used with DL4J, though this is not recommended (due to the synchronization and serialization overheads of Spark). Instead, consider the following:
-
-* For single CPU/GPU systems, use standard MultiLayerNetwork or ComputationGraph training
-* For multi-CPU/GPU systems, use [ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java). This is functionally equivalent to running Spark in local mode, though has lower overhead (and hence provides better training performance).
-
-## <a name="how">How Distributed Network Training Occurs with DL4J on Spark</a>
-
-The current version of DL4J uses a process of parameter averaging in order to train a network. Future versions may additionally include other distributed network training approaches.
+1. 创建网络定型类。这通常需要用到下列代码：
+    * 指定网络配置（MultiLayerConfiguration或ComputationGraphConfiguration），与单机定型一样
+    * 创建一个TrainingMaster实例，指定分布式定型的实际开展方式（下文详述）
+    * 用网络配置和TrainingMaster对象创建SparkDl4jMultiLayer或SparkComputationGraph实例
+    * 加载定型数据。有几种不同的数据加载方式，各有利弊；详情将在后续的文档中提供
+    * 对SparkDl4jMultiLayer或SparkComputationGraph实例调用适当的```fit```方法
+    * 保存或使用已定型的网络（已定型的MultiLayerNetwork或ComputationGraph实例）
+2. 打包jar文件，准备用Spark submit提交
+    * 如果您在使用maven，方法之一是运行“mvn package -DskipTests”
+3. 以适合您的集群的启动配置调用Spark submit
 
 
-The process of training a network using parameter averaging is conceptually quite simple:
+**注**：对于单机定型，Spark本地*可以*和DL4J一同使用，不过我们不推荐这种方式（因为Spark的同步和序列化开销）。您可以考虑以下的方法：
 
-1. The master (Spark driver) starts with an initial network configuration and parameters
-2. Data is split into a number of subsets, based on the configuration of the TrainingMaster
-3. Iterate over the data splits. For each split of the training data:
-    * Distribute the configuration, parameters (and if applicable, network updater state for momentum/rmsprop/adagrad) from the master to each worker
-    * Fit each worker on its portion of the split
-    * Average the parameters (and if applicable, updater state) and return the averaged results to the master
-4. Training is complete, with the master having a copy of the trained network
+* 单CPU/GPU系统可用标准的MultiLayerNetwork或ComputationGraph来定型
+* 多CPU/GPU系统可采用[ParallelWrapper](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java)。上述方法在功能上与运行Spark的本地模式相同，但开销更低（因而可以产生更好的定型表现）。
 
-For example, the diagram below shows the parameter averaging process with 5 workers (W1, ..., W5) and a parameter averaging frequency of 1.
-Just as with offline training, a training data set is split up into a number of subsets (generally known as minibatches, in the non-distributed setting); training proceeds over each split, with each worker getting a subset of the split. In practice, the number of splits is determined automatically, based on the training configuration (based on number of workers, averaging frequency and worker minibatch sizes - see configuration section).
+## <a name="how">基于Spark的DL4J如何进行分布式的网络定型</a>
 
-![Parameter Averaging](./img/parameter_averaging.png)
+DL4J的当前版本用一种参数平均化的流程来定型网络。未来版本可能会加入其他的分布式网络定型方法。
 
-## <a name="minimal">A Minimal Example</a>
 
-This section shows the minimal set of components that you need in order to train a network on Spark.
-Details on the various approaches to loading data are forthcoming.
+从概念上看，采用参数平均化方法的网络定型流程很简单：
+
+1. 主节点（Spark驱动）以初始的网络配置及参数开始运行
+2. 数据按TrainingMaster的配置被切分为一定数量的子集。
+3. 对数据分片进行迭代。对于每个分片的定型数据：
+    * 将配置、参数（以及动量/rmsprop/adagrad更新器状态，如适用）从主节点分发至各个工作节点
+    * 每个工作节点用数据分片中相应的一部分来定型
+    * 将参数（以及更新器状态，如适用）平均化，并将平均化结果返回至主节点
+4. 定型完毕，主节点得到已定型网络的一份副本
+
+举例而言，下图显示了有五个工作节点（W1、……、W5）的参数平均化流程，参数平均化频率为1。
+和线下定型一样，定型数据集被切分为多个子集（在非分布式学习中一般称为微批次）；先后用各个数据分片进行定型，每个工作节点分到数据分片的一个子集。在实际操作中，分片的数量会依据定型配置（取决于工作节点数量、平均化频率和工作节点的微批次大小－参见配置段落）自动决定。
+
+![Parameter Averaging](../img/parameter_averaging.png)
+
+## <a name="minimal">最简示例</a>
+
+本段介绍在Spark上定型网络所需的最基本要素。
+有关各种数据加载方法的详情即将推出。
 
 ```java
 JavaSparkContent sc = ...;
 JavaRDD<DataSet> trainingData = ...;
 MultiLayerConfiguration networkConfig = ...;
 
-//Create the TrainingMaster instance
+//创建TrainingMaster实例
 int examplesPerDataSetObject = 1;
 TrainingMaster trainingMaster = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
         .(other configuration options)
         .build();
 
-//Create the SparkDl4jMultiLayer instance
+//创建SparkDl4jMultiLayer实例
 SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, networkConfig, trainingMaster);
 
-//Fit the network using the training data:
+//用定型数据训练网络：
 sparkNetwork.fit(trainingData);
 ```
 
-## <a name="configuring">Configuring the TrainingMaster</a>
+## <a name="configuring">配置TrainingMaster</a>
 
-A TrainingMaster in DL4J is an abstraction (interface) that allows for multiple different training implementations to be used with SparkDl4jMultiLayer and SparkComputationGraph.
+DL4J中的TrainingMaster抽象类（接口）可以提供不同的定型实现，与SparkDl4jMultiLayer和SparkComputationGraph配合使用。
 
-Currently DL4J has one implementation, the ParameterAveragingTrainingMaster. This implements the parameter averaging process shown in the image above.
-To create one, use the builder pattern:
+目前DL4J提供一种实现：ParameterAveragingTrainingMaster。它用于实现上文图中所示的参数平均化流程，
+可以用构建器（builder）模式来创建：
 
 ```java
     TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(int dataSetObjectSize)
-            ... (your configuration here)
+            ...(此处插入配置)
             .build();
 ```
 
-The ParameterAveragingTrainingMaster defines a number of configuration options that control how training is executed:
+ParameterAveragingTrainingMaster定义了一系列配置选项，用于控制定型的执行方式：
 
-* **dataSetObjectSize**: Required option. This is specified in the builder constructor. This value specifies how many examples are in each DataSet object. As a general rule,
-    * If you are training with pre-processed DataSet objects, this will be the size of those preprocessed DataSets
-    * If you are training directly from Strings (for example, CSV data to a ```RDD<DataSet>``` though a number of steps) then this will usually be 1
-* **batchSizePerWorker**: This controls the minibatch size for each worker. This is analagous to the minibatch size used when training on a single machine. Put another way: it is the number of examples used for each parameter update in each worker.
-* **averagingFrequency**: This controls how frequently the parameters are averaged and redistributed, in terms of number of minibatches of size batchSizePerWorker. As a general rule:
-    * Low averaging periods (for example, averagingFrequency=1) may be inefficient (too much network communication and initialization overhead, relative to computation)
-    * Large averaging periods (for example, averagingFrequency=200) may result in poor performance (parameters in each worker instance may diverge significantly)
-    * Averaging periods in the range of 5-10 minibatches is usually a safe default choice.
-* **workerPrefetchNumBatches**: Spark workers are capable of asynchorously prefetching a number of minibatches (DataSet objects), to avoid waiting for the data to be loaded.
-    * Setting this value to 0 disables prefetching.
-    * A value of 2 is often a sensible default. Much larger values are unlikely to help in many circumstances (but will use more memory)
-* **saveUpdater**: In DL4J, training methods such as momentum, RMSProp and AdaGrad are known as 'updaters'. Most of these updaters have internal history or state.
-    * If saveUpdater is set to true: the updater state (at each worker) will be averaged and returned to the master along with the parameters; the current updater state will also be distributed from the master to the workers. This adds extra time and network traffic, but may improve training results.
-    * If saveUpdater is set to false: the updater state (at each worker) is discarded, and the updater is reset/reinitialized in each worker.
-* **rddTrainingApproach**: As of version 0.6.0 and later, DL4J provides two approaches when training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. These are ```RDDTrainingApproach.Export``` and ```RDDTrainingApproach.Direct```
-    * Export: (Default) This first saves the ```RDD<DataSet>``` to disk, in batched and serialized form. The executors then load the DataSet objects asynchronously, as required. This approach performs better than the Direct approach, especially for large data sets and multiple epochs. It avoids the split and repartitioning overhead of the Direct method, and also uses less memory. Temporary files can be deleted using ```TrainingMaster.deleteTempFiles()```
-    * Direct: This is how DL4J operated in earlier releases. It may provide good performance for small data sets that fit entirely into memory.
-* **exportDirectory**: only used with the Export training approach (above). This controls where the temporary data files are stored. Default: use ```{hadoop.tmp.dir}/dl4j/``` directory, where ```{hadoop.tmp.dir}``` is the Hadoop temporary directory property value.
-* **storageLevel**: Only applies when (a) using Direct training approach, and (b) training from a ```RDD<DataSet>``` or ```RDD<MultiDataSet>```. This is the storage level that DL4J will persist the RDDs at. Default: StorageLevel.MEMORY_ONLY_SER.
-* **storageLevelStreams**: Only applies when using the ```fitPaths(RDD<String>)``` method. This is the storage level that DL4J will use for persisting the ```RDD<String>```. Default: StorageLevel.MEMORY_ONLY. The default value should be ok in almost all circumstances.
-* **repartition**: Configuration setting for when data should be repartitioned. The ParameterAveragingTrainingMaster does a mapParititons operation; consequently, the number of partitions (and, the values in each partition) matters a lot for proper cluster utilization. However, repartitioning is not a free operation, as some data necessarily has to be copied across the network. The following options are available:
-    * Always: Default option. That is, repartition data to ensure the correct number of partitions. Recommended, especially with RDDTrainingApproach.Export (default as of 0.6.0) or ```fitPaths(RDD<String>)```
-    * Never: Never repartition the data, no matter how imbalanced the partitions may be.
-    * NumPartitionsWorkersDiffers: Repartition only if the number of partitions and the number of workers (total number of cores) differs. Note however that even if the number of partitions is equal to the total number of cores, this does not guarantee that the correct number of DataSet objects is present in each partition: some partitions may be much larger or smaller than others.
-* **repartitionStrategy**: Strategy by which repartitioning should be done
-    * Balanced: (Default) This is a custom repartitioning strategy defined by DL4J. It attempts to ensure that each partition is more balanced (in terms of number of objects) compared to the SparkDefault option. However, in practice this requires an additional count operation to execute; in some cases (most notably in small networks, or those with a small amount of computation per minibatch), the benefit may not outweigh additional overhead of executing the better repartitioning. Recommended, especially with RDDTrainingApproach.Export (default as of 0.5.1) or ```fitPaths(RDD<String>)```
-    * SparkDefault: This is the stardard repartitioning strategy used by Spark. Essentially, each object in the initial RDD is mapped to one of N RDDs independently at random. Consequently, the partitions may not be optimally balanced; this can be especially problematic with smaller RDDs, such as those used for preprocessed DataSet objects and frequent averaging periods (simply due to random sampling variation).
-
-
+* **dataSetObjectSize**：必需选项。在builder构造函数中指定。该项的值指定每个DataSet对象中有多少个样例。总体上的规则是：
+    * 如果定型使用的是经过预处理的DataSet对象， 该项的值应等于已预处理的DataSets对象的大小
+    * 如果定型直接使用字符串（例如CSV数据通过一些步骤转换为一个```RDD<DataSet>```），那么该项的值通常为1
+* **batchSizePerWorker**：该项目控制每个工作节点的微批次大小。这与单机定型中的微批次大小设定相仿。换言之，这是每个工作节点中每次参数更新所使用的样例数量。
+* **averagingFrequency**：该项目控制参数平均化和再分发的频率，按大小等于batchSizePerWorker的微批次的数量计算。总体上的规则是：
+    * 平均化周期太短（例如averagingFrequency=1）可能效率不佳（相对于计算量而言，网络通讯和初始化开销太多）
+    * 平均化周期太长（例如averagingFrequency=200）可能会导致表现不佳（不同工作节点实例的参数可能出现很大差异）
+    * 通常将平均化周期设在5～10个微批次的范围内比较保险。
+* **workerPrefetchNumBatches**：Spark工作节点能够以异步方式预抓取一定数量的微批次（DataSet对象），从而避免数据加载时的等待。
+    * 将该项的值设置为0会禁用预提取。
+    * 比较合理的默认值通常是2。过高的值在许多情况下并无帮助（但会使用更多的内存）
+* **saveUpdater**：在DL4J中，动量、RMSProp和AdaGrad等定型方法称为“更新器”。大多数更新器都有内部历史记录或状态。
+    * 如果saveUpdater设为真：更新器的状态（在每个工作节点中）将会被平均化并和参数一起返回至主节点；当前的更新器状态也会从主节点分发至工作节点。这会增加额外的时间和网络流量，但有可能改善定型结果。
+    * 如果saveUpdater设为假：更新器状态（在每个工作节点中）会被放弃，然后各个工作节点的更新器会被重置/重新初始化。
+* **rddTrainingApproach**：从0.6.0版开始，DL4J提供两种用```RDD<DataSet>```或```RDD<MultiDataSet>```定型的方法，分别是```RDDTrainingApproach.Export```（导出式）和```RDDTrainingApproach.Direct```（直接式）
+    * 导出式：（默认）先将```RDD<DataSet>```以分批次和序列化的形式保存至磁盘。执行器随后会按要求异步加载DataSet对象。这种方法的效果好于直接式方法，尤其是对大型数据集和多个epoch而言。如此可以避免直接式方法的切分和重分区开销，使用的内存也更少。临时文件可以用```TrainingMaster.deleteTempFiles()```来删除
+    * 直接式：这是DL4J早先版本的运作方法。对于内存可以完全容纳的小型数据集，这种方法可以带来较好的表现。
+* **exportDirectory**：仅用于导出式方法（上一种方法）。该项目控制临时数据文件的存储位置。默认：使用```{hadoop.tmp.dir}/dl4j/```目录，其中```{hadoop.tmp.dir}```是Hadoop临时目录属性值。
+* **storageLevel**：仅适用于（a）直接式定型方法，以及（b）用```RDD<DataSet>```或```RDD<MultiDataSet>```数据定型时。这是DL4J持久化RDD的存储级别。默认：StorageLevel.MEMORY_ONLY_SER.
+* **storageLevelStreams**：仅在采用```fitPaths(RDD<String>)```方法时适用。这是DL4J在持久化```RDD<String>```时所用的存储级别。默认：StorageLevel.MEMORY_ONLY。该默认值几乎适用于所有的情形。
+* **repartition**：决定数据应在何时重分区的配置设定。ParameterAveragingTrainingMaster会进行mapParititons操作；因此分区数量（以及每个分区中的值）对于集群的妥善利用有着重大意义。但是，重分区不是一项无开销的操作，因为一部分数据必须在整个网络中进行复制。具体有以下几种选项：
+    * Always：默认选项，亦即始终对数据进行重分区，确保分区数量正确。推荐采用该选项，尤其是使用RDDTrainingApproach.Export（0.6.0版开始为默认）或```fitPaths(RDD<String>)```时
+    * Never：从不对数据进行重分区，无论分区如何失衡。
+    * NumPartitionsWorkersDiffers：只有在分区数量和工作节点数量（处理器核总数）不同的时候才进行重分区。请注意，即使分区数量等于处理器核的总数，也无法保证每个分区内的DataSet对象数量正确：有些分区可能会比其他分区大很多或小很多。
+* **repartitionStrategy**：重分区的策略
+    * Balanced：（默认）这是DL4J自定义的一项重分区策略。与SparkDefault选项相比，这种策略会尝试确保分区之间更加平衡（就对象数量而言）。但在实际操作中，执行平衡策略需要额外的计数操作；在某些情况下（特别是小型网络或每个微批次计算量较少的网络），其效益可能无法超过改善重分区所需的额外开销。推荐采用该选项，尤其是使用RDDTrainingApproach.Export（0.5.1版开始为默认）或```fitPaths(RDD<String>)```时
+    * SparkDefault：这是Spark所用的标准重分区策略。这种策略基本上就是将初始RDD中的每个对象单独地随机映射至N个RDD中的一个。因此，分区的平衡性可能不是最理想；由此造成的问题对比较小的RDD而言可能尤其严重，比如用于已预处理的DataSet对象和高频率平均化的小型RDD（原因就是随机采样差异）。
 
 
 
-## <a name="dependencies">Dependencies for Training on Spark</a>
 
-To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency:
+
+## <a name="dependencies">在Spark上定型所需的依赖项</a>
+
+若要在Spark上运行DL4J，您需要安装deeplearning4j-spark依赖项：
 
 ```
         <dependency>
@@ -160,171 +160,171 @@ To use DL4J on Spark, you'll need to include the deeplearning4j-spark dependency
         </dependency>
 ```
 
-Note that ```${scala.binary.version}``` is a Maven property with the value ```2.10``` or ```2.11``` and should match the version of Spark you are using.
+请注意，```${scala.binary.version}```是一项Maven属性，取值为```2.10```或```2.11```，应当与您所使用的Spark版本相匹配。
 
 
-## <a name="examples">Spark Examples Repository</a>
+## <a name="examples">Spark示例库</a>
 
-The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) ([old examples here](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)) contains a number of Spark examples.
-
-
-## <a name="memoryyarn">Configuring Memory for Spark on YARN</a>
-
-Apache Hadoop YARN is a commonly used resource manager for Hadoop clusters ([Apache Mesos](http://mesos.apache.org/) being an alternative).
-When submitting a job to a cluster via Spark submit, it is necessary to specify a small number of configuration options, such as the number of executors, the number of cores per executor and amount of memory for each executor.
-
-To get the best performance out of DL4J when training on Spark (and to avoid exceeding memory limits), some additional memory configuration is required. This section explains why this is necessary, and how to do it in practice.
-
-### <a name="memory1">How Deeplearning4j (and ND4J) Manages Memory</a>
-
-Deeplearning4j is built upon the numerical computing library ND4J. The neural network implementations in DL4J are built using the matrix and vector operations in ND4J.
-
-One key design aspect of ND4J is the fact that it utilizes off-heap memory management. This means that the memory allocated for INDArrays by ND4J is not allocated on on the JVM heap (as a standard Java object would be); instead, it is allocated in a separate pool of memory, outside of the JVM. This memory management is implemented using [JavaCPP](https://github.com/bytedeco/javacpp).
-
-Off-heap memory management provides a number of benefits.
-Most notably, it allows for efficient use of high-performance native (c++) code for numerical operations (using BLAS libraries such as OpenBLAS and Intel MKL, as well as the C++ library [Libnd4j](https://github.com/deeplearning4j/libnd4j)). Off-heap memory management is also necessary for efficient GPU operations with CUDA. If memory was allocated on the JVM heap (as it is in some other JVM BLAS implementations), it would be necessary to first copy the data from the JVM, perform the operations, and then copy the result back - adding both a memory and time overhead to each operation. Instead, ND4J can simply pass pointers around for numerical operations - entirely avoiding the data copying issue.
-
-The important point here is that the on-heap (JVM) memory and off-heap (ND4J/JavaCPP) are two separate memory pools. It is possible to configure the size of each independently; by default, JavaCPP will allow the off-heap memory allocation to grow as large as the Runtime.maxMemory() setting (see: [code](https://github.com/bytedeco/javacpp/blob/master/src/main/java/org/bytedeco/javacpp/Pointer.java)) - this default is essentially equivalent to the size of the JVM 'Xmx' memory setting, used for configuring Java memory.
-
-To manually control the maximum amount of off-heap memory that JavaCPP can allocate, we can set the ```org.bytedeco.javacpp.maxbytes``` system property. For a single JVM run locally, we would pass ```-Dorg.bytedeco.javacpp.maxbytes=1073741824``` to limit the off-heap memory allocation to 1GB. We will see how to configure this for Spark on YARN in a later section.
+[Deeplearning4j示例库](https://github.com/deeplearning4j/dl4j-examples) （[旧的示例见此处](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)）中包含一些Spark示例。
 
 
-### <a name="memory2">How YARN Manages Memory</a>
+## <a name="memoryyarn">在YARN上为Spark配置内存</a>
 
-As noted, YARN is a cluster resource manager. When submitting a compute task (such as DL4J Spark network training) to a YARN-managed cluster, it is YARN that is responsible for managing the allocation of a limited pool of resources (memory, CPU cores) to your job (and all other jobs). For more details on YARN and resource allocation, see [this](http://blog.cloudera.com/blog/2015/09/untangling-apache-hadoop-yarn-part-1/) and [this](http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/).
+Apache Hadoop YARN是Hadoop集群常用的资源管理器（[Apache Mesos](http://mesos.apache.org/)是另一种选择）。
+用Spark submit向一个集群提交一项任务的时候，必须指定几个配置选项，比如执行器数量、每个执行器的处理器核数量，以及每个执行器的内存。
 
+为了让基于Spark的DL4J定型取得最理想的表现（同时避免超出内存限制），还需要进行一些额外的内存配置。本段将解释其必要性，并介绍实际的操作方法。
 
-The key points for our purposes are as follows:
+### <a name="memory1">Deeplearning4j（以及ND4J）的内存管理方式</a>
 
-* YARN jobs run in containers, with a fixed amount of memory for each
-* The amount of memory allocated to a YARN container is the sum of the on-heap (i.e., JVM memory size) and off-heap ("memory overhead" in YARN terms) memory requested by the user
-* If a task exceeds the amount of memory available allocated to the container, YARN may kill the container, and hence the executor running in it. The exact behaviour will depend on the YARN configuration.
-* Programs that exceed the container memory limits usually do so due to off-heap memory; the maximum amount of on-heap (JVM) memory is fixed as a launch parameter via Spark submit.
+Deeplearning4j建立在数值计算库ND4J的基础之上。DL4J中的神经网络实现是用ND4J中的矩阵和向量化运算构建的。
 
+ND4J的设计要素之一是利用了堆外内存管理。这意味着ND4J分配给INDArrays的内存不在JVM堆之内（与标准的Java对象不同），而是属于JVM之外的单独的内存池。这种内存管理是用[JavaCPP](https://github.com/bytedeco/javacpp)来实现的。
 
-There are two key configuration options for controlling how much memory YARN will allocate to a container.
+堆外内存管理有一系列好处。
+最主要的是，它让高性能的原生（C++）代码可以被高效地用于数值运算（使用OpenBLAS和英特尔MKL等BLAS库，以及C++库[Libnd4j](https://github.com/deeplearning4j/libnd4j)）。堆外内存管理对于用CUDA进行高效的GPU运算也是必需的。如果分配了JVM堆内的内存（与其他JVM BLAS实现相同），就必须首先将数据从JVM复制出来，进行运算，再将结果复制回去——这样会增加每次运算所需的内存和时间开销。相比之下，ND4J在数值运算过程中只需要使用指针传递，完全避免了数据复制的问题。
 
-1. ```spark.executor.memory```: This is the standard JVM memory allocation. It is analogous to the Xmx setting for a single JVM.
-2. ```spark.yarn.executor.memoryOverhead```: This is  the amount of 'extra' memory allocated to the container. It is not allocated to the JVM, and hence is available for code that utilizes off-heap memory (including ND4J/JavaCPP).
+此处的重点在于，堆内（JVM）内存和堆外（ND4J/JavaCPP）内存是两个相互独立的内存池，大小可以分别设置；在默认情况下，JavaCPP允许的堆外内存分配大小等于Runtime.maxMemory()的设置（参见[代码](https://github.com/bytedeco/javacpp/blob/master/src/main/java/org/bytedeco/javacpp/Pointer.java))——这一默认设置与JVM用于配置Java内存的'Xmx’内存设置大小相等。
 
-By default, the ```spark.yarn.executor.memoryOverhead``` setting is equal to 10% of the executor memory, with a minimum of 384 MB.
-For more details, see the [Apache Spark documentation for YARN](http://spark.apache.org/docs/latest/running-on-yarn.html).
-
-Because of the extensive use of off-heap memory by ND4J, it is generally necessary to increase the memory overhead setting when training on Spark.
+如需手动控制JavaCPP所能分配的堆外内存上限，可以设置```org.bytedeco.javacpp.maxbytes```系统属性。对于在本地运行的单一JVM，我们会用```-Dorg.bytedeco.javacpp.maxbytes=1073741824```来将堆外内存分配限制在1GB以内。后面的段落将会介绍如何在YARN上为Spark进行这项配置。
 
 
-### <a name="memory3">Configuring Memory for Deeplearning4j Spark Training on YARN</a>
+### <a name="memory2">YARN的内存管理方式</a>
 
-To recap the previous sections, when running distributed neural network training on Spark via YARN, it is necessary to do the following:
+如上文所述，YARN是一种集群资源管理器。在向一个由YARN管理的集群提交一项计算任务（比如DL4J Spark网络定型）时，YARN会负责管理有限资源池（内存、CPU核）的分配，决定如何将资源分配给您的任务（以及所有其他任务）。有关YARN和资源分配的更多细节，请参阅[这篇文章](http://blog.cloudera.com/blog/2015/09/untangling-apache-hadoop-yarn-part-1/)和[这篇文章](http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/)。
 
-1. Specify the executor JVM memory amount, using ```spark.executor.memory```
-2. Specify the YARN container memory overhead, using ```spark.yarn.executor.memoryOverhead```
-3. Let ND4J/JavaCPP know how much off-heap memory it is allowed to use, using the ```org.bytedeco.javacpp.maxbytes``` system property
 
-When setting these values, there are some things to keep in mind.
-First, the sum of ```spark.executor.memory``` and ```spark.yarn.executor.memoryOverhead``` must be less than the maximum amount of memory that YARN will allocate to a single container. You can generally find this limit in the YARN configuration or YARN resource manager web UI. If you exceed this limit, YARN is likely to reject your job.
+与我们的应用情形相关的要点如下：
 
-Second, the value for ```org.bytedeco.javacpp.maxbytes``` should be strictly less than ```spark.yarn.executor.memoryOverhead```. Recall by default the memoryOverhead setting is 10% of the executor memory - this is because the JVM itself (and possibly other libraries) may require some off-heap memory. Consequently, we don't want JavaCPP to use up the entire non-JVM allocation of memory.  
+* YARN任务在容器（container）内运行，每个容器有固定的内存量
+* 分配给一个YARN容器的内存量包括堆内内存总量（即JVM内存大小）和用户请求的堆外内存（YARN称之为“额外内存开销（memory overhead）”）
+* 如果一项任务所需的内存超出了可以分配给容器的总量，YARN有可能会“杀死”（kill）容器和其中运行的执行器。具体行为取决于YARN的配置。
+* 程序超出容器内存限制通常是因为堆外内存；堆内（JVM）内存的上限会通过Spark submit设置成固定的启动参数。
 
-Third, because DL4J/ND4J makes use off-heap memory for data, parameters and activations, we can afford to allocate less to the JVM (i.e., executor.memory) than we might otherwise do. Of course, we still require enough JVM memory for Spark itself (and any other libraries we are using), so we don't want to reduce this too much.
 
-Here's an example. Suppose we are running Spark training, and want to configure our memory as follows:
+有两项关键的配置选项可以控制YARN分配给容器的内存量。
 
-* 4 executors, 8 cores each
-* Maximum container memory allocatable by YARN: 11GB
-* JVM (executors and driver) memory: 4GB
-* ND4J/JavaCPP off-heap memory (executors and driver): 5GB
-* Extra off-heap memory: 1GB
+1. ```spark.executor.memory```: 这是标准的JVM内存分配，与单一JVM的Xmx设置相同。
+2. ```spark.yarn.executor.memoryOverhead```: 这是分配给容器的“额外”内存量。这部分内存不是分配给JVM的，因此可以供利用堆外内存的代码使用（包括ND4J/JavaCPP）。
 
-The total off-heap memory is 5+1=6GB; the total memory (JVM + off-heap/overhead) is 4+6=10GB, which is less than the YARN maximum allocation of 11GB. Note that the JavaCPP memory is specified in bytes, and 5GB is 5,368,709,120 bytes; YARN memory overhead is specified in MB, and 6GB is 6,144MB.
+在默认情况下，```spark.yarn.executor.memoryOverhead```设置等于执行器内存的10%，下限为384MB。
+更多详情请参阅[Apache Spark的YARN文档](http://spark.apache.org/docs/latest/running-on-yarn.html)。
 
-The arguments for Spark submit would be specified as follows:
+由于ND4J会使用大量堆外内存，在Spark上定型时通常有必要提高额外内存开销的设置。
+
+
+### <a name="memory3">在YARN上为基于Spark的Deeplearning4j定型配置内存</a>
+
+根据上一段的主要内容，在通过YARN运行基于Spark的分布式神经网络定型时，必须要做以下几件事：
+
+1. 用```spark.executor.memory```指定执行器JVM内存量
+2. 用```spark.yarn.executor.memoryOverhead```指定YARN容器的额外内存开销
+3. 用```org.bytedeco.javacpp.maxbytes```系统属性告诉ND4J/JavaCPP可以使用的堆外内存量
+
+在设置这些值的时候，有几点需要注意。
+首先，```spark.executor.memory```与```spark.yarn.executor.memoryOverhead```之和必须小于YARN所能分配给一个容器的内存量上限。通常这一上限可以在YARN配置或YARN资源管理器网页UI中找到。如果超过这一上限，YARN可能会拒绝您的任务。
+
+其次，```org.bytedeco.javacpp.maxbytes```的值务必要小于```spark.yarn.executor.memoryOverhead```。上文曾提到，默认的memoryOverhead设置是执行器内存的10%——这是因为JVM自身（以及其他的库）也可能需要一些堆外内存。因此，我们不能让JavaCPP用完所有的非JVM内存。  
+
+第三，由于DL4J/ND4J使用堆外内存来处理数据、参数和激活函数，所以分配给JVM（即executor.memory）的内存量可以比其他状况少一些。当然，我们还需要足够的JVM内存来满足Spark自身（以及我们使用的其他库）的需求，所以也不能减少得太多。
+
+下面来看示例。假设我们在运行Spark定型，想要以如下方式配置内存：
+
+* 4个执行器，每个有8个核
+* YARN可分配给容器的内存上限：11GB
+* JVM（执行器和驱动）内存：4GB
+* ND4J/JavaCPP堆外内存（执行器和驱动）：5GB
+* 额外的堆外内存：1GB
+
+总计堆外内存为5+1=6GB；总内存（JVM + 堆外/额外开销）为4+6=10GB，小于YARN的分配上限11GB。注意JavaCPP的内存是以比特为单位指定的，5GB是5,368,709,120比特；YARN的额外内存开销以MB为单位指定，6GB是6,144MB。
+
+Spark submit参数的指定方式如下：
 
 ```
 --class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf "spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf "spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5368709120" --conf spark.yarn.executor.memoryOverhead=6144
 ```
 
-## <a name="locality">Spark Locality Configuration for Improved Training Performance</a>
+## <a name="locality">用Spark本地性配置来改善定型表现</a>
 
-Configuring Spark locality settings is an optional configuration option that can improve training performance.
+Spark的本地性（locality）设置是一项可选配置，有助于提高定型表现。
 
-The summary: adding ```--conf spark.locality.wait=0``` to your Spark submit configuration may reduce training times, by scheduling the network fit operations to be started sooner.
+总结：为Spark submit配置添加```--conf spark.locality.wait=0```会让网络的定型操作提早开始，有可能缩短定型时间。
 
-### Why Configuring Spark Locality Configuration Can Improve Performance
+### 为什么Spark本地性配置可以改善定型表现
 
-Spark has a number of configuration options for how it controls execution. One important component of this is the settings around locality.
-Locality, simply put, refers to where data is relative to where data can be processed. Suppose an executor is free, but data would have to be copied across the network, in order to process it. Spark must decide whether it should execute that network transfer, or if instead it should wait for an executor that has local access to the data to become free. By default, instead of transferring data immediately, Spark will wait a bit before transferring data across the network to a free executor. This default behaviour might work well for other tasks, but isn't an ideal fit for maximizing cluster utilization when training networks with Deeplearning4j.
+Spark有一系列配置选项，用于决定如何控制执行。其中一个重要的部分是有关于本地性的设置。
+简而言之，本地性就是指数据相对于其处理地点的位置。假设有一个空闲的执行器，但数据必须跨网络复制才能处理。Spark必须决定是应该执行网络传输，还是应该等待可以在本地访问数据的执行器变为空闲状态。在默认情况下，Spark不会立即将数据跨网络传输至空闲的执行器，而是会稍作等待。这样的默认行为或许适用于其他任务，但在用Deeplearning4j定型神经网络时，这种方式不利于集群利用率的最大化。
 
-Deep learning is computationally intensive, and hence the amount of computation per input DataSet object is relatively high. Furthermore, during Spark training, DL4J ensures there is exactly one task (partition) per executor. Consequently, we are always better off immediately transferring data to a free executor, rather than waiting for another executor to become free. The computation time will outweigh any network transfer time.
-The way we can instruct Spark to do this is to add ```--conf spark.locality.wait=0``` to our Spark submit configuration.
+深度学习的计算强度大，因此每个输入的DataSet对象的计算量都相对较高。此外，在Spark定型过程中，DL4J会确保每个执行器恰好进行一个任务（分区）。所以，更好的方式始终是立即将数据传输至空闲的执行器，而非等待另一个执行器变为空闲状态。计算时间会超过任何网络传输时间。
+让Spark采用这种做法的方式是为Spark submit配置添加```--conf spark.locality.wait=0```。
 
-For more details, see the [Spark Tuning Guide - Data Locality](http://spark.apache.org/docs/latest/tuning.html#data-locality) and [Spark Configuration Guide](http://spark.apache.org/docs/1.6.2/configuration.html#scheduling).
+更多详情请参阅[Spark调试指南－数据本地性](http://spark.apache.org/docs/latest/tuning.html#data-locality)和[Spark配置指南](http://spark.apache.org/docs/1.6.2/configuration.html#scheduling)。
 
-## <a name="sparkstats">Performance Debugging and Collecting Training Performance Information</a>
+## <a name="sparkstats">性能调试和定型表现信息收集</a>
 
-Deeplearning4j's Spark training implementation has the ability to collect performance information (such as how long it takes to create the inital network, receive broadcast data, perform network fitting operations, etc).
-This information can be useful to isolate and debug any performance issues when training a network with Deeplearning4j on Spark.
+Deeplearning4j的Spark定型实现能够收集表现信息（例如创建初始网络、接收广播数据、进行网络定型操作等所需的时间）。
+这样的信息可以用于识别和调试在Spark上定型Deeplearning4j网络时出现的任何表现问题。
 
-To collect and export these performance statistics, use the following:
+收集和导出表现信息的代码如下：
 
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(...);
-    sparkNet.setCollectTrainingStats(true);     //Enable collection
-    sparkNet.fit(trainData);    //Train network in the normal way
+    sparkNet.setCollectTrainingStats(true);     //启用收集
+    sparkNet.fit(trainData);    //以常规方式定型网络
 
-    SparkTrainingStats stats = sparkNet.getSparkTrainingStats();    //Get the collect stats information
-    StatsUtils.exportStatsAsHtml(stats, "SparkStats.html", sc);     //Export it to a stand-alone HTML file
+    SparkTrainingStats stats = sparkNet.getSparkTrainingStats();    //获取收集到的统计信息
+    StatsUtils.exportStatsAsHtml(stats, "SparkStats.html", sc);     //导出至独立的HTML文件
 ```
 
-Note that as of Deeplearning4j version 0.6.0, the current HTML rendering implementation doesn't scale well to a large amount of stats: i.e., large clusters and long-running jobs. This is being worked on and will be improved in future releases.
+请注意，截止到Deeplearning4j的0.6.0版，当前的HTML渲染实现还无法很好地适应大量的统计信息，即大型集群或长期运行的任务。我们正在处理这一问题，未来发布的版本将有所改善。
 
-Timeline information available via Spark training stats collection functionality:
+时间线信息可以通过Spark定型统计信息收集功能获得：
 
-![Spark Stats](./img/spark_stats_v060.png)
+![Spark Stats](../img/spark_stats_v060.png)
 
-One of the charts (Worker fit(DataSet) times) available via Spark Stats
+图表之一（工作节点fit(DataSet)时间）可以通过Spark Stats获得
 
-![Spark Stats](./img/spark_stats_v060_2.png)
-
-
+![Spark Stats](../img/spark_stats_v060_2.png)
 
 
-### <a name="sparkstatsntp">Debugging "Error querying NTP server" when collecting performance information</a>
 
-By default, the Spark training performance stats rely on a Network Time Protocal (NTP) implementation to ensure that the event timestamps correspond across machines.
-Without this, there is no guarantee that clocks on each worker machine are accurate - they could be incorrect by an arbitrary/unknown amount. Without a NTP implementation, accurately plotting of timeline information (shown in the timeline figure above) is impossible.
 
-It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these failures are transient (later retries will work) and can be ignored.
-However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (or specifically, the NTP server), all retries can fail.
+### <a name="sparkstatsntp">调试收集表现信息时出现的“NTP服务器查询错误”</a>
 
-Two solutions are available:
+在默认情况下，Spark定型表现统计依赖一项网络时间协议（NTP）实现来确保所有计算机的事件时间戳保持一致，
+否则就无法保证每个工作节点的时钟都是准确的——时钟可能出现任意/未知的误差。如果没有NTP实现，就不可能准确地描绘时间线信息（如上文的时间线图所示）。
 
-1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
-2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
+有可能会出现```NTPTimeSource: Error querying NTP server, attempt 1 of 10```这样的错误信息。有时这些错误是暂时的（之后重试可能会恢复正常），可以忽略。
+但是，如果Spark集群中有一个或多个工作节点无法访问互联网（更具体而言，是无法访问NTP服务器），那么所有重试可能都会出现错误。
 
-To use the system clock time source, add the following  to Spark submit:
+有两种解决办法：
+
+1. 不使用```sparkNet.setCollectTrainingStats(true)```——这项功能是可选的（不是定型必需的功能），默认情况下是禁用的
+2. 将系统的时间来源设置为本地计算机时钟，而非NTP服务器（但是注意这有可能导致时间线信息变得很不准确）。
+
+如果要用系统时钟作为时间来源，可以将以下代码添加至Spark submit：
 ```
 --conf spark.driver.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
 --conf spark.executor.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
 ```
 
 
-## <a name="caching">Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;</a>
+## <a name="caching">缓存/持久化RDD<DataSets>和RDD<INDArrays></a>
 
-Spark has some quirks regarding how it handles Java objects with large off-heap components, such as the DataSet and INDArray objects used in Deeplearning4j. This section explains the issues related to caching/persisting these objects.
+Spark在处理包含大型堆外组件的Java对象，比如Deeplearning4j中使用的DataSet和INDArray对象时，有一些特殊问题需要注意。本段将介绍与这些对象的缓存/持久化相关的问题。
 
-The key points to know about are:
+需要了解的要点包括：
 
-* ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence can be problematic with off-heap memory, due to Spark not properly estimating the size of objects in the RDD. This can lead to out of memory issues.
-* When persisting a ```RDD<DataSet>``` or ```RDD<INDArray>``` for re-use, use ```MEMORY_ONLY_SER``` or ```MEMORY_AND_DISK_SER```
-* As of Deeplearning4j 0.5.1 and later, by default the training data (```RDD<DataSet>```) will be exported to disk first (this improves performance, especially for large training sets); it is neither necessary nor recommended to manually persist/cache your training data RDDs. (This behaviour is configurable using the rddTrainingApproach configuration option).
+* ```MEMORY_ONLY```和```MEMORY_AND_DISK```持久化在使用堆外内存时可能出现问题，因为Spark无法很好地估计RDD中对象的大小。这可能会造成内存不足的问题。
+* 若要持久化```RDD<DataSet>```或```RDD<INDArray>```以供重复使用，请采用```MEMORY_ONLY_SER```或```MEMORY_AND_DISK_SER```
+* 从Deeplearning4j 0.5.1版开始，在默认情况下，定型数据（```RDD<DataSet>```）将首先被导出至磁盘（这会改善表现，尤其是对较大的定型集而言）；不必用手动方式持久化/缓存定型数据RDD，也不建议这样操作。（这一行为可以用rddTrainingApproach配置选项来配置）。
 
-### Why MEMORY_ONLY_SER or MEMORY_AND_DISK_SER Are Recommended
+### 为什么推荐使用MEMORY_ONLY_SER或MEMORY_AND_DISK_SER
 
-One of the way that Apache Spark improves performance is by allowing users to cache data in memory. This can be done using the ```RDD.cache()``` or ```RDD.persist(StorageLevel.MEMORY_ONLY())``` to store the contents in-memory, in deserialized (i.e., standard Java object) form.
-The basic idea is simple: if you persist a RDD, you can re-use it from memory (or disk, depending on configuration) without having to recalculate it. However, large RDDs may not entirely fit into memory. In this case, some parts of the RDD have to be recomputed or loaded from disk, depending on the storage level used. Furthermore, to avoid using too much memory, Spark will drop parts (blocks) of an RDD when required.
+Apache Spark提高性能的方式之一是允许用户将数据缓存至内存。可以用```RDD.cache()```或```RDD.persist(StorageLevel.MEMORY_ONLY())```将数据内容以反序列化（即标准的Java对象）形式存储在内存中。
+其基本原理很简单：RDD持久化后，就可以从内存（或者磁盘，取决于具体配置）中调出重复使用，而无需重新计算。但是，内存可能无法完全容纳较大的RDD。在这种情况下，RDD的一些部分必须重新计算或从磁盘中加载，具体取决于持久化时所用的存储级别。此外，为了避免使用过多的内存，Spark会在需要时删除RDD的一些部分（块）。
 
-The main storage levels available in Spark are listed below. For an explanation of  these, see the [Spark Programming Guide](https://spark.apache.org/docs/1.6.2/programming-guide.html#rdd-persistence).
+Spark中可用的主要存储级别如下所列。具体说明参见[Spark编程指南](https://spark.apache.org/docs/1.6.2/programming-guide.html#rdd-persistence)。
 
 * MEMORY_ONLY
 * MEMORY_AND_DISK
@@ -332,19 +332,19 @@ The main storage levels available in Spark are listed below. For an explanation 
 * MEMORY_AND_DISK_SER
 * DISK_ONLY
 
-The problem with Spark is how it handles memory. In particular, Spark will drop part of an RDD (a block) based on the estimated size of that block. The way Spark estimates the size of a block depends on the persistence level. For ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, this is done by walking the Java object graph - i.e., look at the fields in an object and recursively estimate the size of those objects. This process does not however take into account the off-heap memory used by Deeplearning4j or ND4J. For objects like DataSets and INDArrays (which are stored almost entirely off-heap), Spark significantly under-estimates the true size of the objects using this process. Furthermore, Spark considers only the amount of on-heap memory use when deciding whether to keep or drop blocks. Because DataSet and INDArray objects have a very small on-heap size, Spark will keep too many of them around with ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, resulting in off-heap memory being exhausted, causing out of memory issues.
+Spark的问题在于它处理内存的方式。具体来说，Spark在删除RDD的一部分（一块）时，会根据对块的大小的估计来进行判断。而Spark估计块的大小的方式取决于持久化级别。对于```MEMORY_ONLY```和```MEMORY_AND_DISK```持久化，估计的方式是遍历Java对象图，即读取一个对象中的字段，以递归方式估计对象大小。但是，这一过程并不会考虑Deeplearning4j或ND4J所使用的堆外内存。对于DataSets和INDArrays这样的对象（几乎完全存储在堆外）而言，Spark的这种估计方法会大大低估它们的真实大小。此外，Spark在决定保留或删除块的时候只会考虑堆内内存的使用量。在使用```MEMORY_ONLY```和```MEMORY_AND_DISK```持久化的情况下，由于DataSet和INDArray对象的堆内内存用量很小，Spark会保留过多的这两种对象，导致堆外内存用尽，造成内存不足的问题。
 
-However, for ```MEMORY_ONLY_SER``` and ```MEMORY_AND_DISK_SER``` Spark stores blocks in *serialized* form, on the Java heap. The size of objects stored in serialized form can be estimated accurately by Spark (there is no off-heap memory component for the serialized objects) and consequently Spark will drop blocks when required - avoiding any out of memory issues.
+但在```MEMORY_ONLY_SER```和```MEMORY_AND_DISK_SER```级别的持久化中，Spark会以序列化形式将块存储在Java堆内。Spark可以准确估计以序列化形式存储的对象大小（序列化对象没有堆外内存部分），因此Spark会在需要时删除一些块，避免出现内存不足的问题。
 
 
 
-## <a name="kryo">Using Kryo Serialization with Deeplearning4j</a>
+## <a name="kryo">Kryo序列化与Deeplearning4j并用</a>
 
-Kryo is a serialization library commonly used with Apache Spark. It proposes to increase performance by reducing the amount of time taken to serialize objects.
-However, Kryo has difficulties working with the off-heap data structures in ND4J. To use Kryo serialization with ND4J on Apache Spark, it is necessary to set up some extra configuration for Spark.
-If Kryo is not correctly configured, it is possible to get NullPointerExceptions on some of the INDArray fields, due to incorrect serialization.
+Kryo是经常与Apache Spark配合使用的序列化库，据称能通过减少对象序列化所需的时间来提高性能。
+但是，Kryo无法很好地适应ND4J的堆外数据结构。若要在Apache Spark上同时使用ND4J和Kryo序列化，就必须对Spark进行一些额外的配置设置。
+如果Kryo的配置不正确，某些INDArray可能会出现NullPointerExceptions，原因是错误的序列化。
 
-To use Kryo, add the appropriate [nd4j-kryo dependency](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-kryo) and configure the Spark configuration to use the Nd4j Kryo Registrator, as follows:
+若要使用Kryo，可以添加合适的[nd4j-kryo依赖项](http://search.maven.org/#search%7Cga%7C1%7Cnd4j-kryo)，并将Spark配置设为使用Nd4j Kryo Registrator，方法如下：
 
 ```
     SparkConf conf = new SparkConf();
@@ -352,16 +352,16 @@ To use Kryo, add the appropriate [nd4j-kryo dependency](http://search.maven.org/
     conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 ```
 
-Note that when using Deeplearning4j's SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
+请注意，在使用Deeplearning4j的SparkDl4jMultiLayer或SparkComputationGraph类时，如果Kryo配置不正确，会记录一次警报。
 
-## <a name="mklemr">Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j</a>
+## <a name="mklemr">在亚马逊Elastic MapReduce上使用英特尔MKL和Deeplearning4j</a>
 
-Releases of DL4J available on Maven Cental are distributed with OpenBLAS. Thus this section does not apply to users who are using using versions of Deeplearning4j on Maven Central.
+Maven中央仓库上发布的DL4J版本采用的是OpenBLAS。因此本段不适用于选择了Maven中央仓库提供的Deeplearning4j的用户。
 
-If DL4J is built from source with Intel MKL as the BLAS library, some additional configuration is required to make this work on Amazon Elastic MapReduce.
-When creating a cluster in EMR, to use Intel MKL it is necessary to provide some additional configuration.
+对于用英特尔MKL作为BLAS库从源码构建的DL4J，还需要一些额外的配置才能在亚马逊Elastic MapReduce上正常运行。
+在EMR中创建一个集群时，若要使用英特尔MKL，就必须提供一些额外的配置。
 
-Under the Create Cluster -> Advanced Options -> Edit Software Settings, add the following:
+依次进入Create Cluster（创建集群） -> Advanced Options（高级选项） -> Edit Software Settings（编辑软件设置），然后添加以下代码：
 
 ```
 [
@@ -383,9 +383,9 @@ Under the Create Cluster -> Advanced Options -> Edit Software Settings, add the 
 ```
 
 
-## Resources
+## 相关资源
 
-* [Deeplearning4j Examples Repo](https://github.com/deeplearning4j/dl4j-examples)
-* ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
-* [ND4J, Scala & Scientific Computing](http://nd4j.org/scala.html)
-* [Intro to Iterative Reduce](./iterativereduce)
+* [Deeplearning4j示例库](https://github.com/deeplearning4j/dl4j-examples)
+* ND4S：[为Scala编写的N维数组](https://github.com/deeplearning4j/nd4s)
+* [ND4J、Scala和科学计算](http://nd4j.org/scala.html)
+* [迭代式归纳简介](./iterativereduce)
