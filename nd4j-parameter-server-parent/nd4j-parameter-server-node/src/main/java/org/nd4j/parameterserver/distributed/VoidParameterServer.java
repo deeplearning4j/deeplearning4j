@@ -350,9 +350,7 @@ public class VoidParameterServer {
          */
         Frame currentFrame;
         if ((currentFrame = frames.get(message.getClass().getSimpleName())) == null) {
-            currentFrame = new Frame<>();
-            // FIXME: fix this
-            currentFrame.setTaskId(BasicSequenceProvider.getInstance().getNextValue());
+            currentFrame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
             frames.put(message.getClass().getSimpleName(), currentFrame);
         }
 
@@ -361,9 +359,7 @@ public class VoidParameterServer {
         // TODO: make this threshold variable
         if (currentFrame.size() >= 128) {
             transport.sendMessage(currentFrame);
-            currentFrame = new Frame<>();
-            // FIXME: fix this
-            currentFrame.setTaskId(BasicSequenceProvider.getInstance().getNextValue());
+            currentFrame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
             frames.put(message.getClass().getSimpleName(), currentFrame);
         }
 

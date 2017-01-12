@@ -10,6 +10,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.logic.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
@@ -46,11 +47,16 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     protected transient short shardIndex;
     protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
-    public Frame() {
-        // nothing to do here
+    protected Frame() {
+
+    }
+
+    public Frame(long taskId) {
+        this.taskId = taskId;
     }
 
     public Frame(@NonNull T message) {
+        this();
         list.add(message);
     }
 
@@ -164,7 +170,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
             // if there's more then 1 round should be applied
             for (int i = 0; i < message.getCounter(); i++) {
-//                log.info("Firing message {}/{}", message.getClass().getSimpleName(), message.getTaskId());
+                //log.info("Firing message {}; frameId: {}; taskId: {}", message.getClass().getSimpleName(), message.getFrameId(), message.getTaskId());
                 trainer.addCompletionHook(getOriginatorId(), getTaskId(), message.getTaskId());
                 message.processMessage();
             }

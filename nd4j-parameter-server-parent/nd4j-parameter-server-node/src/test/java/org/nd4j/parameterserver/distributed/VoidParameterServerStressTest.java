@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.logic.BasicSequenceProvider;
+import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.transport.ClientRouter;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
@@ -422,14 +424,18 @@ public class VoidParameterServerStressTest {
                 int start = e * chunk;
                 int end = (e + 1) * chunk;
 
-                for (int i = 0; i < 100000; i++) {
+                for (int i = 0; i < 200; i++) {
+                    Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
+                    for (int f = 0; f < 128; f++) {
+                        frame.stackMessage(getSGRM());
+                    }
                     long time1 = System.nanoTime();
-                    clientNode.execDistributed(getSGRM());
+                    clientNode.execDistributed(frame);
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
 
-                    if ((i + 1) % 1000 == 0)
+                    if ((i + 1) % 100 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);

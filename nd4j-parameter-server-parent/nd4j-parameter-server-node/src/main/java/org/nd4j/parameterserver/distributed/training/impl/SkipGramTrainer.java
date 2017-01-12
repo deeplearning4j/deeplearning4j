@@ -129,7 +129,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramRequestMessage sgrm = chain.getRequestMessage();
         double alpha = sgrm.getAlpha();
 
-    //   log.info("Executing SkipGram round on shard_{}; taskId: {}", transport.getShardIndex(), taskId);
+      //og.info("Executing SkipGram round on shard_{}; taskId: {}", transport.getShardIndex(), taskId);
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native
@@ -172,11 +172,11 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         if (completionHandler.isTrackingFrame(chain.getFrameId())) {
             completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
 
-      //      log.info("sI_{} finished round: frame: {}; task: {}; remnaints: {}", transport.getShardIndex(), chain.getFrameId(), chain.getTaskId(), completionHandler.getIncompleteTasksNumber(chain.getFrameId()));
+            //log.info("sI_{} finished round: frame: {}; task: {}; remnaints: {}", transport.getShardIndex(), chain.getFrameId(), chain.getTaskId(), completionHandler.getIncompleteTasksNumber(chain.getFrameId()));
 
             if (completionHandler.isCompleted(chain.getFrameId())) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(chain.getFrameId());
-      //          log.info("sI_{} frame completed! frame: {}; originator: {}", transport.getShardIndex(), chain.getFrameId(), frameDescriptor.getFrameOriginatorId());
+              //  log.info("sI_{} frame completed! frame: {}; originator: {}", transport.getShardIndex(), chain.getFrameId(), frameDescriptor.getFrameOriginatorId());
                 FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
                 fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
                 transport.sendMessage(fcm);

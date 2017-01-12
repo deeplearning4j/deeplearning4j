@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BasicSequenceProvider implements SequenceProvider {
 
     private static final BasicSequenceProvider INSTANCE = new BasicSequenceProvider();
-    private static final AtomicLong sequence = new AtomicLong(0);
+    private static final AtomicLong sequence = new AtomicLong(1);
 
     private BasicSequenceProvider() {
 
