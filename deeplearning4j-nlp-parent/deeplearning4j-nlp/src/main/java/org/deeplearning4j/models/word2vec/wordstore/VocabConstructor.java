@@ -437,7 +437,7 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         public Builder<T> enableScavenger(boolean reallyEnable) {
-            this.enableScavenger(reallyEnable);
+            this.enableScavenger = reallyEnable;
             return this;
         }
 
