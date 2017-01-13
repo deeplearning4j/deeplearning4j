@@ -1667,7 +1667,7 @@ public class Shape {
      */
     public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
-        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
+//        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
         buffer.put(length2 - 2, elementWiseStride);
     }
 

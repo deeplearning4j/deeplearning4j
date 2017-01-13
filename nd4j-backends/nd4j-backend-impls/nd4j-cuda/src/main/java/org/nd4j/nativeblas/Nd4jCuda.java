@@ -2,14 +2,9 @@
 
 package org.nd4j.nativeblas;
 
+import java.nio.*;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.annotation.ByPtrPtr;
-import org.bytedeco.javacpp.annotation.Cast;
-
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
+import org.bytedeco.javacpp.annotation.*;
 
 public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     static { Loader.load(); }
@@ -55,6 +50,14 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #endif
 // #include <dll.h>
 
+public static native int tad_threshold(); public static native void tad_threshold(int tad_threshold);
+public static native int element_threshold(); public static native void element_threshold(int element_threshold);
+
+public static native @Cast("bool") boolean debug(); public static native void debug(boolean debug);
+public static native @Cast("bool") boolean verbose(); public static native void verbose(boolean verbose);
+
+
+
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
     /** Default native constructor. */
@@ -68,6 +71,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     @Override public NativeOps position(long position) {
         return (NativeOps)super.position(position);
     }
+
 
 
 

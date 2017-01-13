@@ -169,7 +169,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-//        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -796,9 +796,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray tensorAlongDimension(int index, int... dimension) {
         Pair<DataBuffer,DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
         DataBuffer shapeInfo = tadInfo.getFirst();
-        INDArray toTad = Nd4j.create(Nd4j.createBuffer(data(),tadInfo.getSecond().getInt(index) + offset(),Shape.length(shapeInfo)));
+        int[] shape = Shape.shape(shapeInfo);
+        int[] stride = Shape.stride(shapeInfo).asInt();
+        int offset = tadInfo.getSecond().getInt(index);
+        INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
-        baseNDArray.setShapeInformation(shapeInfo);
         return toTad;
     }
 
@@ -4515,9 +4517,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             this.attemptedToFindElementWiseStride = true;
         }
-        if (shapeInfo.get(2*rank + 2) > 0) {
+
+        if (shapeInfo.get(2 * rank + 2) > 0) {
             //for the backend to work - no ews for permutei
-            this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), -1 , newOrder);
+            //^^ not true anymore? Not sure here. Marking this for raver
+            this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), ews , newOrder);
         }
 
         this.rows = size(0);

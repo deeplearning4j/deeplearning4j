@@ -119,38 +119,38 @@ public class NDArrayCreationUtil {
         INDArray[] out = new INDArray[12];
 
         INDArray temp01 = Nd4j.linspace(1,cols * rows * 4,cols * rows * 4).reshape(cols,rows,4);
-        out[0] = temp01.tensorAlongDimension(0, 0,1).reshape(rows,cols);
+        out[0] = temp01.javaTensorAlongDimension(0, 0,1).reshape(rows,cols);
         int[] temp01Shape = new int[]{cols, rows, 4};
         int len = ArrayUtil.prod(temp01Shape);
         temp01 = Nd4j.linspace(1,len,len).reshape(temp01Shape);
-        out[1] = temp01.tensorAlongDimension(2, 0, 1).reshape(rows,cols);
+        out[1] = temp01.javaTensorAlongDimension(2, 0, 1).reshape(rows,cols);
 
         Nd4j.getRandom().setSeed(seed);
         INDArray temp02 = Nd4j.linspace(1, len,len).reshape(new int[]{
                 cols, 4, rows});
-        out[2] = temp02.tensorAlongDimension(0, 0,2).reshape(rows,cols);
+        out[2] = temp02.javaTensorAlongDimension(0, 0,2).reshape(rows,cols);
         temp02 = Nd4j.linspace(1, len,len).reshape(cols, 4, rows);
-        out[3] = temp02.tensorAlongDimension(2, 0,2).reshape(rows,cols);
+        out[3] = temp02.javaTensorAlongDimension(2, 0,2).reshape(rows,cols);
 
         INDArray temp10 = Nd4j.linspace(1, len,len).reshape(rows, cols, 4);
-        out[4] = temp10.tensorAlongDimension(0, 1,0).reshape(rows,cols);
+        out[4] = temp10.javaTensorAlongDimension(0, 1,0).reshape(rows,cols);
         temp10 = Nd4j.linspace(1, len,len).reshape(rows, cols, 4);
-        out[5] = temp10.tensorAlongDimension(2, 1,0).reshape(rows,cols);
+        out[5] = temp10.javaTensorAlongDimension(2, 1,0).reshape(rows,cols);
 
         INDArray temp12 = Nd4j.linspace(1, len,len).reshape(4, cols, rows);
-        out[6] = temp12.tensorAlongDimension(0, 1,2).reshape(rows,cols);
+        out[6] = temp12.javaTensorAlongDimension(0, 1,2).reshape(rows,cols);
         temp12 = Nd4j.linspace(1, len,len).reshape(4,cols,rows);
-        out[7] = temp12.tensorAlongDimension(2, 1,2).reshape(rows,cols);
+        out[7] = temp12.javaTensorAlongDimension(2, 1,2).reshape(rows,cols);
 
         INDArray temp20 = Nd4j.linspace(1, len,len).reshape(rows, 4, cols);
-        out[8] = temp20.tensorAlongDimension(0, 2,0).reshape(rows,cols);
+        out[8] = temp20.javaTensorAlongDimension(0, 2,0).reshape(rows,cols);
         temp20 = Nd4j.linspace(1, len,len).reshape(rows, 4, cols);
-        out[9] = temp20.tensorAlongDimension(2, 2,0).reshape(rows,cols);
+        out[9] = temp20.javaTensorAlongDimension(2, 2,0).reshape(rows,cols);
 
         INDArray temp21 = Nd4j.linspace(1, len,len).reshape(4, rows, cols);
-        out[10] = temp21.tensorAlongDimension(0, 2,1).reshape(rows,cols);
+        out[10] = temp21.javaTensorAlongDimension(0, 2,1).reshape(rows,cols);
         temp21 = Nd4j.linspace(1, len,len).reshape(4, rows, cols);
-        out[11] = temp21.tensorAlongDimension(2, 2, 1).reshape(rows,cols);
+        out[11] = temp21.javaTensorAlongDimension(2, 2, 1).reshape(rows,cols);
 
         String baseMsg = "getTensorAlongDimensionMatricesWithShape(" + rows +"," + cols + "," + seed + ")";
         List<Pair<INDArray,String>> list = new ArrayList<>(12);
@@ -286,9 +286,9 @@ public class NDArrayCreationUtil {
         int[] shape4d1 = {shape[0],shape[1],shape[2],3};
         int lenshape4d1 = ArrayUtil.prod(shape4d1);
         INDArray orig1a = Nd4j.linspace(1, lenshape4d1, lenshape4d1).reshape(shape4d1);
-        INDArray tad1a = orig1a.tensorAlongDimension(0, 0, 1, 2);
+        INDArray tad1a = orig1a.javaTensorAlongDimension(0, 0, 1, 2);
         INDArray orig1b = Nd4j.linspace(1, lenshape4d1, lenshape4d1).reshape(shape4d1);
-        INDArray tad1b = orig1b.tensorAlongDimension(1, 0, 1, 2);
+        INDArray tad1b = orig1b.javaTensorAlongDimension(1, 0, 1, 2);
 
         list.add(new Pair<>(tad1a,baseMsg+".get(0)"));
         list.add(new Pair<>(tad1b,baseMsg+".get(1)"));
@@ -296,19 +296,19 @@ public class NDArrayCreationUtil {
         int[] shape4d2 = {3, shape[0], shape[1], shape[2]};
         int lenshape4d2 = ArrayUtil.prod(shape4d2);
         INDArray orig2 = Nd4j.linspace(1,lenshape4d2,lenshape4d2).reshape(shape4d2);
-        INDArray tad2 = orig2.tensorAlongDimension(1,1,2,3);
+        INDArray tad2 = orig2.javaTensorAlongDimension(1,1,2,3);
         list.add(new Pair<>(tad2,baseMsg+".get(2)"));
 
         int[] shape4d3 = {shape[0],shape[1],3,shape[2]};
         int lenshape4d3 = ArrayUtil.prod(shape4d3);
         INDArray orig3 = Nd4j.linspace(1, lenshape4d3,lenshape4d3).reshape(shape4d3);
-        INDArray tad3 = orig3.tensorAlongDimension(1,1,3,0);
+        INDArray tad3 = orig3.javaTensorAlongDimension(1,1,3,0);
         list.add(new Pair<>(tad3,baseMsg +".get(3)"));
 
         int[] shape4d4 = {shape[0],3,shape[1],shape[2]};
         int lenshape4d4 = ArrayUtil.prod(shape4d4);
         INDArray orig4 = Nd4j.linspace(1, lenshape4d4,lenshape4d4).reshape(shape4d4);
-        INDArray tad4 = orig4.tensorAlongDimension(1,2,0,3);
+        INDArray tad4 = orig4.javaTensorAlongDimension(1,2,0,3);
         list.add(new Pair<>(tad4,baseMsg+".get(4)"));
 
         return list;
@@ -421,9 +421,9 @@ public class NDArrayCreationUtil {
         int[] shape4d1 = {3,shape[0],shape[1],shape[2],shape[3]};
         int len = ArrayUtil.prod(shape4d1);
         INDArray orig1a = Nd4j.linspace(1,len,len).reshape(shape4d1);
-        INDArray tad1a = orig1a.tensorAlongDimension(0, 1, 2, 3, 4);
+        INDArray tad1a = orig1a.javaTensorAlongDimension(0, 1, 2, 3, 4);
         INDArray orig1b = Nd4j.linspace(1,len,len).reshape(shape4d1);
-        INDArray tad1b = orig1b.tensorAlongDimension(2, 1, 2, 3, 4);
+        INDArray tad1b = orig1b.javaTensorAlongDimension(2, 1, 2, 3, 4);
 
         list.add(new Pair<>(tad1a,baseMsg + ".get(0)"));
         list.add(new Pair<>(tad1b,baseMsg +".get(1)"));
@@ -431,19 +431,19 @@ public class NDArrayCreationUtil {
         int[] shape4d2 = {3, shape[0], shape[1], shape[2], shape[3]};
         int len2 = ArrayUtil.prod(shape4d2);
         INDArray orig2 = Nd4j.linspace(1,len2,len2).reshape(shape4d2);
-        INDArray tad2 = orig2.tensorAlongDimension(1,3,4,2,1);
+        INDArray tad2 = orig2.javaTensorAlongDimension(1,3,4,2,1);
         list.add(new Pair<>(tad2,baseMsg+".get(2)"));
 
         int[] shape4d3 = {shape[0],shape[1],3,shape[2],shape[3]};
         int len3 = ArrayUtil.prod(shape4d3);
         INDArray orig3 = Nd4j.linspace(1,len3,len3).reshape(shape4d3);
-        INDArray tad3 = orig3.tensorAlongDimension(1,4,1,3,0);
+        INDArray tad3 = orig3.javaTensorAlongDimension(1,4,1,3,0);
         list.add(new Pair<>(tad3,baseMsg+".get(3)"));
 
         int[] shape4d4 = {shape[0],shape[1],shape[2],shape[3],3};
         int len4 = ArrayUtil.prod(shape4d4);
         INDArray orig4 = Nd4j.linspace(1,len4,len4).reshape(shape4d4);
-        INDArray tad4 = orig4.tensorAlongDimension(1,2,0,3,1);
+        INDArray tad4 = orig4.javaTensorAlongDimension(1,2,0,3,1);
         list.add(new Pair<>(tad4,baseMsg+".get(4)"));
 
         return list;
@@ -556,26 +556,26 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int[] shape4d1 = {3,shape[0],shape[1],shape[2],shape[3],shape[4]};
         INDArray orig1a = Nd4j.rand(shape4d1);
-        INDArray tad1a = orig1a.tensorAlongDimension(0, 1, 2, 3, 4, 5);
+        INDArray tad1a = orig1a.javaTensorAlongDimension(0, 1, 2, 3, 4, 5);
         INDArray orig1b = Nd4j.rand(shape4d1);
-        INDArray tad1b = orig1b.tensorAlongDimension(2, 1, 2, 3, 4, 5);
+        INDArray tad1b = orig1b.javaTensorAlongDimension(2, 1, 2, 3, 4, 5);
 
         list.add(new Pair<>(tad1a,baseMsg+".get(0)"));
         list.add(new Pair<>(tad1b,baseMsg+".get(1)"));
 
         int[] shape4d2 = {3, shape[0], shape[1], shape[2], shape[3], shape[4]};
         INDArray orig2 = Nd4j.rand(shape4d2);
-        INDArray tad2 = orig2.tensorAlongDimension(1,3,5,4,2,1);
+        INDArray tad2 = orig2.javaTensorAlongDimension(1,3,5,4,2,1);
         list.add(new Pair<>(tad2,baseMsg+".get(2)"));
 
         int[] shape4d3 = {shape[0],shape[1],shape[2],shape[3],shape[4], 2};
         INDArray orig3 = Nd4j.rand(shape4d3);
-        INDArray tad3 = orig3.tensorAlongDimension(1,4,1,3,2,0);
+        INDArray tad3 = orig3.javaTensorAlongDimension(1,4,1,3,2,0);
         list.add(new Pair<>(tad3,baseMsg+".get(3)"));
 
         int[] shape4d4 = {shape[0],shape[1],shape[2],shape[3],3,shape[4]};
         INDArray orig4 = Nd4j.rand(shape4d4);
-        INDArray tad4 = orig4.tensorAlongDimension(1,5,2,0,3,1);
+        INDArray tad4 = orig4.javaTensorAlongDimension(1,5,2,0,3,1);
         list.add(new Pair<>(tad4,baseMsg+".get(4)"));
 
         return list;

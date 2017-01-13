@@ -26,6 +26,13 @@ public class TADTests extends BaseNd4jTest {
     public TADTests(Nd4jBackend backend) {
         super(backend);
     }
+    @Test
+    public void testStall() {
+        //[4, 3, 3, 4, 5, 60, 20, 5, 1, 0, 1, 99], dimensions: [1, 2, 3]
+        INDArray arr = Nd4j.create(3,3,4,5);
+        arr.tensorAlongDimension(0,1,2,3);
+    }
+
 
 
     /**
