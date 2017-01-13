@@ -74,6 +74,7 @@
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <spark.version>1.6.2</spark.version>
         <spark.major.version>1</spark.major.version>
+        <reflections.version>0.9.10</reflections.version>
     </properties>
 
     <prerequisites>

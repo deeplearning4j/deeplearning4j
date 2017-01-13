@@ -16,17 +16,29 @@
 
 package org.datavec.api.transform;
 
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ClassUtils;
+import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
+import org.datavec.api.util.reflections.DataVecSubTypesScanner;
+import org.reflections.ReflectionUtils;
+import org.reflections.Reflections;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.jsontype.NamedType;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
@@ -65,7 +77,10 @@ import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -81,6 +96,10 @@ public class TransformProcess implements Serializable {
 
     private final Schema initialSchema;
     private List<DataAction> actionList;
+
+    private static Set<Class<?>> subtypesClassCache = null;
+    private static ObjectMapper jsonMapper = initMapperJson();
+    private static ObjectMapper yamlMapper = initMapperYaml();
 
     public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema, @JsonProperty("actionList") List<DataAction> actionList) {
         this.initialSchema = initialSchema;
@@ -263,42 +282,200 @@ public class TransformProcess implements Serializable {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-
+    /**
+     * Convert the TransformProcess to a JSON string
+     *
+     * @return TransformProcess, as JSON
+     */
     public String toJson() {
-        return toJacksonString(new JsonFactory());
+        try {
+            return jsonMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e){
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
+        }
+
+        jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
+
+        try {
+            return jsonMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * Convert the TransformProcess to a YAML string
+     *
+     * @return TransformProcess, as YAML
+     */
     public String toYaml() {
-        return toJacksonString(new YAMLFactory());
-    }
-
-    private String toJacksonString(JsonFactory factory) {
-        ObjectMapper om = new ObjectMapper(factory);
-        om.registerModule(new JodaModule());
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        String str;
         try {
-            str = om.writeValueAsString(this);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return yamlMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e){
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
         }
 
-        return str;
+        yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
+
+        try {
+            return yamlMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * Deserialize a JSON String (created by {@link #toJson()}) to a TransformProcess
+     *
+     * @return TransformProcess, from JSON
+     */
     public static TransformProcess fromJson(String json) {
-        return fromJacksonString(json, new JsonFactory());
+        try{
+            return jsonMapper.readValue(json, TransformProcess.class);
+        }catch ( IOException e){
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
+        }
+
+        jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
+
+        try {
+            return jsonMapper.readValue(json, TransformProcess.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * Deserialize a JSON String (created by {@link #toJson()}) to a TransformProcess
+     *
+     * @return TransformProcess, from JSON
+     */
     public static TransformProcess fromYaml(String yaml) {
-        return fromJacksonString(yaml, new YAMLFactory());
+        try{
+            return yamlMapper.readValue(yaml, TransformProcess.class);
+        }catch ( IOException e){
+            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
+        }
+
+        yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
+
+        try {
+            return yamlMapper.readValue(yaml, TransformProcess.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
-    private static TransformProcess fromJacksonString(String str, JsonFactory factory) {
+    private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper){
+        //Register concrete subtypes for JSON serialization
+
+        List<Class<?>> classes = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+        List<String> classNames = new ArrayList<>(6);
+        for(Class<?> c : classes) classNames.add(c.getName());
+
+        // First: scan the classpath and find all instances of the 'baseClasses' classes
+
+        if(subtypesClassCache == null) {
+            List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+            List<Class<?>> classesList = Arrays.<Class<?>>asList();
+
+            Collection<URL> urls = ClasspathHelper.forClassLoader();
+            List<URL> scanUrls = new ArrayList<>();
+            for (URL u : urls) {
+                String path = u.getPath();
+                if (!path.matches(".*/jre/lib/.*jar")) {    //Skip JRE/JDK JARs
+                    scanUrls.add(u);
+                }
+            }
+
+            Reflections reflections = new Reflections(new ConfigurationBuilder()
+                    .filterInputsBy(new FilterBuilder()
+                            .exclude("^(?!.*\\.class$).*$")     //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                            // under these package name prefixes.
+                            .exclude("^org.nd4j.*")
+                            .exclude("^org.bytedeco.*") //JavaCPP
+                            .exclude("^com.fasterxml.*")//Jackson
+                            .exclude("^org.apache.*")   //Apache commons, Spark, log4j etc
+                            .exclude("^org.projectlombok.*")
+                            .exclude("^com.twelvemonkeys.*")
+                            .exclude("^org.joda.*")
+                            .exclude("^org.slf4j.*")
+                            .exclude("^com.google.*")
+                            .exclude("^org.reflections.*")
+                            .exclude("^ch.qos.*")       //Logback
+                    )
+                    .addUrls(scanUrls)
+                    .setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
+            org.reflections.Store store = reflections.getStore();
+
+            Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
+
+            Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
+            subtypesClassCache = new HashSet<>();
+            for (Class<?> c : subtypeClasses) {
+                if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
+                    //log.info("Skipping abstract/interface: {}",c);
+                    continue;
+                }
+                subtypesClassCache.add(c);
+            }
+        }
+
+        //Second: get all currently registered subtypes for this mapper
+        Set<Class<?>> registeredSubtypes = new HashSet<>();
+        for (Class<?> c : classes) {
+            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(), null);
+            Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
+            for (NamedType nt : types) {
+                registeredSubtypes.add(nt.getType());
+            }
+        }
+
+        //Third: register all _concrete_ subtypes that are not already registered
+        List<NamedType> toRegister = new ArrayList<>();
+        for (Class<?> c : subtypesClassCache) {
+            //Check if it's concrete or abstract...
+            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())){
+                //log.info("Skipping abstract/interface: {}",c);
+                continue;
+            }
+
+            if (!registeredSubtypes.contains(c)) {
+                String name;
+                if (ClassUtils.isInnerClass(c)) {
+                    Class<?> c2 = c.getDeclaringClass();
+                    name = c2.getSimpleName() + "$" + c.getSimpleName();
+                } else {
+                    name = c.getSimpleName();
+                }
+                toRegister.add(new NamedType(c, name));
+                if(log.isDebugEnabled()){
+                    for(Class<?> baseClass : classes){
+                        if(baseClass.isAssignableFrom(c)){
+                            log.debug("Registering class for JSON serialization: {} as subtype of {}",c.getName(),baseClass.getName());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
+        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
+        mapper = mapper.copy();
+        return mapper;
+    }
+
+    private static ObjectMapper initMapperJson() {
+        return initMapper(new JsonFactory());
+    }
+
+    private static ObjectMapper initMapperYaml(){
+        return initMapper(new YAMLFactory());
+    }
+
+    private static ObjectMapper initMapper(JsonFactory factory){
         ObjectMapper om = new ObjectMapper(factory);
         om.registerModule(new JodaModule());
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -306,11 +483,7 @@ public class TransformProcess implements Serializable {
         om.enable(SerializationFeature.INDENT_OUTPUT);
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        try {
-            return om.readValue(str, TransformProcess.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return om;
     }
 
 
@@ -372,6 +545,18 @@ public class TransformProcess implements Serializable {
         public Builder filter(Filter filter) {
             actionList.add(new DataAction(filter));
             return this;
+        }
+
+        /**
+         * Add a filter operation, based on the specified condition.
+         *
+         * If condition is satisfied (returns true): remove the example or sequence<br>
+         * If condition is not satisfied (returns false): keep the example or sequence
+         *
+         * @param condition Condition to filter on
+         */
+        public Builder filter(Condition condition){
+            return filter( new ConditionFilter(condition));
         }
 
         /**
@@ -530,6 +715,16 @@ public class TransformProcess implements Serializable {
         }
 
         /**
+         * Perform a mathematical operation (such as sin(x), ceil(x), exp(x) etc) on a column
+         *
+         * @param columnName   Column name to operate on
+         * @param mathFunction MathFunction to apply to the column
+         */
+        public Builder doubleMathFunction(String columnName, MathFunction mathFunction){
+            return transform(new DoubleMathFunctionTransform(columnName, mathFunction));
+        }
+
+        /**
          * Perform a mathematical operation (add, subtract, scalar min/max only) on the specified time column
          *
          * @param columnName   The integer column to perform the operation on
@@ -591,6 +786,47 @@ public class TransformProcess implements Serializable {
             return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
         }
 
+        /**
+         * Add a new column, where all values in the column are identical and as specified.
+         *
+         * @param newColumnName Name of the new column
+         * @param newColumnType Type of the new column
+         * @param fixedValue    Value in the new column for all records
+         */
+        public Builder addConstantColumn(String newColumnName, ColumnType newColumnType, Writable fixedValue){
+            return transform(new AddConstantColumnTransform(newColumnName, newColumnType, fixedValue));
+        }
+
+        /**
+         * Add a new double column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value in the new column for all records
+         */
+        public Builder addConstantDoubleColumn(String newColumnName, double value){
+            return addConstantColumn(newColumnName, ColumnType.Double, new DoubleWritable(value));
+        }
+
+        /**
+         * Add a new integer column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value of the new column for all records
+         */
+        public Builder addConstantIntegerColumn(String newColumnName, int value){
+            return addConstantColumn(newColumnName, ColumnType.Integer, new IntWritable(value));
+        }
+
+        /**
+         * Add a new integer column, where the value for that column (for all records) are identical
+         *
+         * @param newColumnName Name of the new column
+         * @param value         Value in the new column for all records
+         */
+        public Builder addConstantLongColumn(String newColumnName, long value){
+            return addConstantColumn(newColumnName, ColumnType.Long, new LongWritable(value));
+        }
+
 
         /**
          * Convert the specified column to a string.
@@ -638,7 +874,7 @@ public class TransformProcess implements Serializable {
                     //mean including min value: (sum/totalCount)
                     //mean excluding min value: (sum - countMin*min)/(totalCount - countMin)
                     double meanExMin;
-                    if(ca.getCountTotal() - countMin == 0){
+                    if(ca.getCountTotal() - countMin == 0) {
                         if(ca.getCountTotal() == 0){
                             log.warn("Normalizing with Log2MeanExcludingMin but 0 records present in analysis");
                         } else {

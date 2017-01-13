@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *
@@ -94,10 +95,28 @@ public class TestImageTransform {
     }
 
     @Test
+    public void testRotateImageTransform() throws Exception {
+        ImageWritable writable = makeRandomImage(0, 0, 1);
+        Frame frame = writable.getFrame();
+        ImageTransform transform = new RotateImageTransform(rng, 180)
+                .interMode(INTER_NEAREST).borderMode(BORDER_REFLECT);
+
+        for (int i = 0; i < 100; i++) {
+            ImageWritable w = transform.transform(writable);
+            Frame f = w.getFrame();
+            assertEquals(f.imageHeight, frame.imageHeight);
+            assertEquals(f.imageWidth, frame.imageWidth);
+            assertEquals(f.imageChannels, frame.imageChannels);
+        }
+        assertEquals(null, transform.transform(null));
+    }
+
+    @Test
     public void testWarpImageTransform() throws Exception {
         ImageWritable writable = makeRandomImage(0, 0, 1);
         Frame frame = writable.getFrame();
-        ImageTransform transform = new WarpImageTransform(rng, frame.imageWidth / 10);
+        ImageTransform transform = new WarpImageTransform(rng, frame.imageWidth / 10)
+                .interMode(INTER_CUBIC).borderMode(BORDER_REPLICATE);
 
         for (int i = 0; i < 100; i++) {
             ImageWritable w = transform.transform(writable);

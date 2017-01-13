@@ -16,6 +16,9 @@
 package org.datavec.image.transform;
 
 import java.util.Random;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 
@@ -23,13 +26,19 @@ import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * Warps the perspective of images deterministically or randomly.
+ * Warps the perspective of images deterministically or randomly. Calls
+ * {@link org.bytedeco.javacpp.opencv_imgproc#warpPerspective(Mat, Mat, Mat, Size, int, int, Scalar)}
+ * with given properties (interMode, borderMode, and borderValue).
  *
  * @author saudet
  */
+@Accessors(fluent = true)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
     float[] deltas;
+    @Getter @Setter int interMode = INTER_LINEAR;
+    @Getter @Setter int borderMode = BORDER_CONSTANT;
+    @Getter @Setter Scalar borderValue = Scalar.ZERO;
 
     /** Calls {@code this(null, delta, delta, delta, delta, delta, delta, delta, delta)}. */
     public WarpImageTransform(float delta) {
@@ -98,7 +107,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         }
         Mat result = new Mat();
         Mat M = getPerspectiveTransform(src, dst);
-        warpPerspective(mat, result, M, mat.size());
+        warpPerspective(mat, result, M, mat.size(), interMode, borderMode, borderValue);
 
         return new ImageWritable(converter.convert(result));
     }

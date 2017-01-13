@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.analysis.columns;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 
@@ -25,13 +27,15 @@ import lombok.Data;
  * @author Alex Black
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor  //For Jackson deserialization
 public class StringAnalysis implements ColumnAnalysis {
-    private final int minLength;
-    private final int maxLength;
-    private final double meanLength;
-    private final double sampleStdevLength;
-    private final double sampleVarianceLength;
-    private final long countTotal;
+    private int minLength;
+    private int maxLength;
+    private double meanLength;
+    private double sampleStdevLength;
+    private double sampleVarianceLength;
+    private long countTotal;
     private double[] histogramBuckets;
     private long[] histogramBucketCounts;
 

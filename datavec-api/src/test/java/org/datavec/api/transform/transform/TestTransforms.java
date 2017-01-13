@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
@@ -776,6 +777,26 @@ public class TestTransforms {
     }
 
     @Test
+    public void testDoubleMathFunctionTransform() {
+        Schema schema = new Schema.Builder()
+                .addColumnDouble("column")
+                .addColumnString("strCol")
+                .build();
+
+        Transform transform = new DoubleMathFunctionTransform("column", MathFunction.SIN);
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+        assertEquals(2, out.getColumnMetaData().size());
+        assertEquals(ColumnType.Double, out.getType(0));
+        assertEquals(ColumnType.String, out.getType(1));
+
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(1)), new Text("0")), transform.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("0"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(2)), new Text("1")), transform.map(Arrays.<Writable>asList(new DoubleWritable(2), new Text("1"))));
+        assertEquals(Arrays.<Writable>asList(new DoubleWritable(Math.sin(3)), new Text("2")), transform.map(Arrays.<Writable>asList(new DoubleWritable(3), new Text("2"))));
+    }
+
+    @Test
     public void testDoubleColumnsMathOpTransform(){
         Schema schema = new Schema.Builder()
                 .addColumnString("first")
@@ -925,7 +946,29 @@ public class TestTransforms {
         expected.add(Arrays.<Writable>asList(new Text("val1"), new IntWritable(15), NullWritable.INSTANCE));
         expected.add(Arrays.<Writable>asList(new Text("val2"), new IntWritable(25), new DoubleWritable(25-10)));
         expected.add(Arrays.<Writable>asList(new Text("val3"), new IntWritable(40), new DoubleWritable(40-15)));
+    }
 
+
+    @Test
+    public void testAddConstantColumnTransform(){
+        Schema schema = new Schema.Builder()
+                .addColumnString("first")
+                .addColumnDouble("second")
+                .build();
+
+        Transform transform = new AddConstantColumnTransform("newCol", ColumnType.Integer, new IntWritable(10));
+        transform.setInputSchema(schema);
+
+        Schema out = transform.transform(schema);
+        assertEquals(3, out.numColumns());
+        assertEquals(Arrays.asList("first","second","newCol"), out.getColumnNames());
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Integer), out.getColumnTypes());
+
+
+        assertEquals(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0), new IntWritable(10)),
+                transform.map(Arrays.asList((Writable)new Text("something"), new DoubleWritable(1.0))));
+        assertEquals(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0), new IntWritable(10)),
+                transform.map(Arrays.asList((Writable)new Text("something2"), new DoubleWritable(100.0))));
     }
 
 }

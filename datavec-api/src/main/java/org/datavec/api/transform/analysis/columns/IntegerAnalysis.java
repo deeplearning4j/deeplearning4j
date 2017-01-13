@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.analysis.columns;
 
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,10 +28,11 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor  //For Jackson deserialization
 public class IntegerAnalysis extends NumericalColumnAnalysis {
 
-    private final int min;
-    private final int max;
+    private int min;
+    private int max;
 
     private IntegerAnalysis(Builder builder) {
         super(builder);

@@ -36,7 +36,8 @@ import java.util.List;
 @JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value= {
         @JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
-        @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues")
+        @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues"),
+        @JsonSubTypes.Type(value = InvalidNumColumns.class, name = "InvalidNumCols")
 })
 public interface Filter extends Serializable,ColumnOp {
 

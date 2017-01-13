@@ -31,7 +31,7 @@ import static play.mvc.Results.ok;
 public class CSVSparkTransformServer {
     @Parameter(names = {"-j","--jsonPath"},arity = 1,required = true)
     private String jsonPath = null;
-    @Parameter(names = {"-p","--port"},arity = 1)
+    @Parameter(names = {"-dp","--dataVecPort"},arity = 1)
     private int port = 9000;
 
     public void runMain(String[] args) throws Exception {
@@ -42,6 +42,8 @@ public class CSVSparkTransformServer {
         } catch(ParameterException e) {
             //User provides invalid input -> print the usage info
             jcmdr.usage();
+            if(jsonPath == null)
+                System.err.println("Json path parameter is missing.");
             try{ Thread.sleep(500); } catch(Exception e2){ }
             System.exit(1);
         }
