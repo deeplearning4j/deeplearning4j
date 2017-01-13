@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
+import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
@@ -339,5 +341,40 @@ public class BooleanIndexing {
         }
     }
 
+    public static INDArray firstIndex(INDArray array, Condition condition) {
+        FirstIndex idx = new FirstIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
 
+    /**
+     * This method returns
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray firstIndex(INDArray array, Condition condition, int... dimension) {
+        return Nd4j.getExecutioner().exec(new FirstIndex(array, condition), dimension);
+    }
+
+
+    public static INDArray lastIndex(INDArray array, Condition condition) {
+        LastIndex idx = new LastIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
+
+    /**
+     * This method returns
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray lastIndex(INDArray array, Condition condition, int... dimension) {
+        return Nd4j.getExecutioner().exec(new LastIndex(array, condition), dimension);
+    }
 }
