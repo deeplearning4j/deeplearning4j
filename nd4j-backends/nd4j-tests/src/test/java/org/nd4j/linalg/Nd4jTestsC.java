@@ -1782,7 +1782,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testLogX1() {
+        INDArray x = Nd4j.create(10).assign(7);
 
+
+        INDArray logX8 = Transforms.log()
+    }
 
     @Test
     public void testAddMatrix() {
