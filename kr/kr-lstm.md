@@ -17,7 +17,7 @@ redirect_from: /kr-lstm
 * [예제 코드](#code)
 * [학습자료](#resources)
 
-이 포스팅은 RNNs(Recurrent Neural Networks), 특히 RNNs의 한 종류인 LSTM을 설명하는 포스팅입니다.
+이 포스팅은 RNNs(Recurrent Neural Networks), 특히 RNNs의 한 종류인 LSTM(Long Short-Term Memory)을 설명하는 포스팅입니다.
 
 RNNs은 글, 유전자, 손글씨, 음성 신호, 센서가 감지한 데이타, 주가 등 배열(sequence, 또는 시계열 데이터)의 형태를 갖는 데이터에서 패턴을 인식하는 인공 신경망 입니다.
 
