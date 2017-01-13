@@ -801,7 +801,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = tadInfo.getSecond().getInt(index);
         INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
-        Shape.setElementWiseStride(baseNDArray.shapeInfoDataBuffer(),-1);
+        DataBuffer newShapeInfo = baseNDArray.shapeInfoDataBuffer().dup();
+        Shape.setElementWiseStride(newShapeInfo,-1);
+        baseNDArray.setShapeInformation(newShapeInfo);
         return toTad;
     }
 
