@@ -169,7 +169,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+       // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -801,6 +801,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = tadInfo.getSecond().getInt(index);
         INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
+        Shape.setElementWiseStride(baseNDArray.shapeInfoDataBuffer(),-1);
         return toTad;
     }
 
@@ -4521,7 +4522,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (shapeInfo.get(2 * rank + 2) > 0) {
             //for the backend to work - no ews for permutei
             //^^ not true anymore? Not sure here. Marking this for raver
-            this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), ews , newOrder);
+            this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), -1 , newOrder);
         }
 
         this.rows = size(0);
