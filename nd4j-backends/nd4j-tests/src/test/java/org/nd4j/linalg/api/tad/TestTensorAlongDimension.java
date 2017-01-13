@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.tad;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -19,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Alex Black
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class TestTensorAlongDimension extends BaseNd4jTest {
 
@@ -96,6 +99,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
         //From a 3d array:
         int dim2 = 5;
+        log.info("AF");
         testValues = Nd4j.linspace(1,rows * cols * dim2,rows * cols * dim2).reshape('c',rows,cols,dim2);
         list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345,rows,cols,dim2);
         for(Pair<INDArray,String> p : list) {
@@ -287,6 +291,15 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         assertEquals(exp12_1, arr.tensorAlongDimension(1,2,1));
     }
 
+    @Test
+    public void testStalled() {
+        int shape[] = new int[]{3, 3, 4, 5};
+        INDArray orig2 = Nd4j.create(shape, 'c');
+        System.out.println("Shape: " + Arrays.toString(orig2.shapeInfoDataBuffer().asInt()));
+        INDArray tad2 = orig2.tensorAlongDimension(1,1,2,3);
+
+        log.info("You'll never see this message");
+    }
 
     @Override
     public char ordering() {
