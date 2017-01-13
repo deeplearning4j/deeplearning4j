@@ -794,15 +794,41 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        if(dimension == null || dimension.length == 0)
+            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
+
+        if(dimension.length >= rank())
+            return this;
+        for(int i = 0; i < dimension.length; i++)
+            if(dimension[i] < 0)
+                dimension[i] += rank();
+
+        if(dimension.length > 1)
+            Arrays.sort(dimension);
+
+        int tads = tensorssAlongDimension(dimension);
+        if(index >= tads)
+            throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
+
+
+        if(dimension.length == 1) {
+            if(dimension[0] == 0 && isColumnVector()) {
+                return this.transpose();
+            } else if(dimension[0] == 1 && isRowVector()) {
+                return this;
+            }
+        }
+
         Pair<DataBuffer,DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
         DataBuffer shapeInfo = tadInfo.getFirst();
         int[] shape = Shape.shape(shapeInfo);
         int[] stride = Shape.stride(shapeInfo).asInt();
-        int offset = tadInfo.getSecond().getInt(index);
+        int offset = offset() + tadInfo.getSecond().getInt(index);
         INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
         //preserve immutability
         DataBuffer newShapeInfo = baseNDArray.shapeInfoDataBuffer().dup();
+        newShapeInfo.put(newShapeInfo.length() - 1,Shape.getOrder(shape,stride,1));
         //TAD always calls permute. Permute EWS is always -1.
         Shape.setElementWiseStride(newShapeInfo,-1);
         baseNDArray.setShapeInformation(newShapeInfo);
@@ -1996,11 +2022,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
+        char newOrder = Shape.getOrder(shape,stride,1);
+
         return create(
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
-                , offset, ordering()
+                , offset, newOrder
         );
     }
 

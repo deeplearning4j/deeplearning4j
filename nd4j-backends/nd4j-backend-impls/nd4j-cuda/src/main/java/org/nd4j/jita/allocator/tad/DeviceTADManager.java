@@ -101,9 +101,11 @@ public class DeviceTADManager extends BasicTADManager {
             if (buffers.getSecond() != null)
                 AtomicAllocator.getInstance().moveToConstant(buffers.getSecond());
 
-            // so, at this point we have buffer valid on host side. And we just need to replace DevicePointer with constant pointer
+            // so, at this point we have buffer valid on host side.
+            // And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
-        } //log.info("Using TAD from cache...");
+            log.trace("Using TAD from cache...");
+        }
 
         return tadCache.get(deviceId).get(descriptor);
     }

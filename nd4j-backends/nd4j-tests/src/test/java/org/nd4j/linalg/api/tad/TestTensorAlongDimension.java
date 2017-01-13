@@ -154,7 +154,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
                 int javaEleStride = javaTad.elementWiseStride();
                 int testTad = tad.elementWiseStride();
                 assertEquals(javaEleStride,testTad);
-                assertEquals(javaTad.shapeInfoDataBuffer(),tad.shapeInfoDataBuffer());
+                assertEquals(p.getValue() + " " + i,javaTad.shapeInfoDataBuffer(),tad.shapeInfoDataBuffer());
                 assertEquals(javaTad,tad);
                 assertArrayEquals(new int[]{rows,cols}, tad.shape());
                 assertEquals(testValues.tensorAlongDimension(i,0,1), tad);
@@ -238,8 +238,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadKnownValues(){
-
+    public void testTadKnownValues() {
         int[] shape = {2,3,4};
 
         INDArray arr = Nd4j.create(shape);
