@@ -169,7 +169,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-       // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -801,7 +801,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = tadInfo.getSecond().getInt(index);
         INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
+        //preserve immutability
         DataBuffer newShapeInfo = baseNDArray.shapeInfoDataBuffer().dup();
+        //TAD always calls permute. Permute EWS is always -1.
         Shape.setElementWiseStride(newShapeInfo,-1);
         baseNDArray.setShapeInformation(newShapeInfo);
         return toTad;
