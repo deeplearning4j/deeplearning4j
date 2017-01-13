@@ -461,15 +461,6 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testLastIndex1() {
-        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
-        INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(3));
-
-        assertEquals(8, result.getDouble(0), 0.0);
-    }
-
-
-    @Test
     public void testFirstIndex2() {
         INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
         INDArray result = BooleanIndexing.firstIndex(arr, Conditions.lessThan(3));
@@ -477,6 +468,13 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         assertEquals(0, result.getDouble(0), 0.0);
     }
 
+    @Test
+    public void testLastIndex1() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
+        INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(3));
+
+        assertEquals(8, result.getDouble(0), 0.0);
+    }
 
     @Test
     public void testFirstIndex2D() {

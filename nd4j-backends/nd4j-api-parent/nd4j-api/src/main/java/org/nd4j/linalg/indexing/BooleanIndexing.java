@@ -342,7 +342,9 @@ public class BooleanIndexing {
     }
 
     public static INDArray firstIndex(INDArray array, Condition condition) {
-        return firstIndex(array, condition, Integer.MAX_VALUE);
+        FirstIndex idx = new FirstIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
     }
 
     /**
@@ -359,7 +361,9 @@ public class BooleanIndexing {
 
 
     public static INDArray lastIndex(INDArray array, Condition condition) {
-        return lastIndex(array, condition, Integer.MAX_VALUE);
+        LastIndex idx = new LastIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
     }
 
     /**
