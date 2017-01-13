@@ -341,14 +341,28 @@ public class BooleanIndexing {
         }
     }
 
+    /**
+     * This method returns first index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
     public static INDArray firstIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
         FirstIndex idx = new FirstIndex(array, condition);
         Nd4j.getExecutioner().exec(idx);
         return Nd4j.scalar((double) idx.getFinalResult());
     }
 
     /**
-     * This method returns
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
      *
      * @param array
      * @param condition
@@ -356,18 +370,35 @@ public class BooleanIndexing {
      * @return
      */
     public static INDArray firstIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
         return Nd4j.getExecutioner().exec(new FirstIndex(array, condition), dimension);
     }
 
 
+    /**
+     * This method returns last index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
     public static INDArray lastIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
         LastIndex idx = new LastIndex(array, condition);
         Nd4j.getExecutioner().exec(idx);
         return Nd4j.scalar((double) idx.getFinalResult());
     }
 
     /**
-     * This method returns
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
      *
      * @param array
      * @param condition
@@ -375,6 +406,9 @@ public class BooleanIndexing {
      * @return
      */
     public static INDArray lastIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
         return Nd4j.getExecutioner().exec(new LastIndex(array, condition), dimension);
     }
 }
