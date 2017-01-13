@@ -31,7 +31,9 @@
         (0, simdOps::IndexMax), \
         (1, simdOps::IndexMin), \
 		(2, simdOps::IndexAbsoluteMax), \
-		(3, simdOps::IndexAbsoluteMin)
+		(3, simdOps::IndexAbsoluteMin) , \
+		(4, simdOps::FirstIndex) , \
+		(5, simdOps::LastIndex)
         
 
 namespace functions {
@@ -181,11 +183,11 @@ template<typename OpType>
 
 
 		sPartials = (IndexValue<T> *)manager->getSharedReductionBuffer(); //holder.getPointer();
-		T startingVal = OpType::startingValue(dx);
+//		T startingVal = OpType::startingValue(dx);
 
 
-		IndexValue <T> val = {startingVal, threadIdx.x};
-		sPartials[threadIdx.x] = val;
+	//	IndexValue <T> val = {startingVal, threadIdx.x};
+		sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
 		//length for the tad
 		__shared__ volatile int xLength;
@@ -397,10 +399,9 @@ template<typename OpType>
 						 int *xShapeInfo,
 						 T *extraParams) {
 
-				T startingVal = OpType::startingValue(x);
-				IndexValue<T> startingIndex;
-				startingIndex.value = startingVal;
-				startingIndex.index = 0;
+				//T startingVal = OpType::startingValue(x);
+				IndexValue<T> startingIndex = OpType::startingIndexValue(x);
+
 				int length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if(xElementWiseStride < 1) {
@@ -425,6 +426,7 @@ template<typename OpType>
 
 					if (xElementWiseStride == 1) {
 						if(length < ELEMENT_THRESHOLD) {
+                            printf("branch A\n");
 // FIXME: proper reduction to be used here
 //#pragma omp simd
 							for (Nd4jIndex i = 0; i < length; i++) {
@@ -434,17 +436,18 @@ template<typename OpType>
 								startingIndex = OpType::update(startingIndex, curr, extraParams);
 
 							}
+                            printf("Final index: %i;\n", startingIndex.index);
 							return startingIndex.index;
 						}
 						else {
 							BlockInformation info(length, ELEMENT_THRESHOLD);
+                            printf("branch B\n");
 
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
 
 							{
-								IndexValue<T> local;
-								local.value = OpType::startingValue(x);
-								local.index = 0;
+								IndexValue<T> local = OpType::startingIndexValue(x);
+
 
 								for (Nd4jIndex i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
 									int newOffset = (i * info.items);
@@ -522,9 +525,7 @@ template<typename OpType>
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 				for (Nd4jIndex i = 0; i < resultLength; i++) {
-					IndexValue<T> val;
-					val.value = OpType::startingValue(x);
-					val.index = 0;
+					IndexValue<T> val = OpType::startingIndexValue(x);
 					startingIndex[i] = val;
 				}
 
@@ -576,9 +577,8 @@ template<typename OpType>
 						int rankIter = rank;
 						int xStridesIter[MAX_RANK];
 						T *xPointer = x + offset;
-						IndexValue<T> indexValue;
-						indexValue.index = 0;
-						indexValue.value = x[offset];
+						IndexValue<T> indexValue = OpType::startingIndexValue(xPointer);
+
 						if(PrepareOneRawArrayIter<T>(rankIter,
 													 xShape,
 													 xPointer,
@@ -613,12 +613,10 @@ template<typename OpType>
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
 						int baseOffset = tadOffsets[i];
-						IndexValue<T> indexValue;
-						indexValue.index = 0;
-						indexValue.value = x[baseOffset];
+						IndexValue<T> indexValue = OpType::startingIndexValue(&x[baseOffset]);
 
 // FIXME: proper reduction required here
-						for(int j = 1; j < tadLength; j++) {
+						for(int j = 0; j < tadLength; j++) {
 							IndexValue<T> comp;
 							comp.index = j;
 							comp.value = x[baseOffset + tadElementWiseStride * j];

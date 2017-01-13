@@ -52,7 +52,7 @@ namespace functions {
 		template<typename T>
 		struct IndexValue {
 			T value;
-			unsigned int index;
+            int index;
 		};
 	}
 
@@ -804,6 +804,67 @@ namespace simdOps {
 			return nd4j::math::nd4j_softsignderivative<T>(d1);
 		}
 	};
+
+    template<typename T>
+    class MatchCondition {
+    public:
+
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+        // this op return 1.0 if condition met, 0.0 otherwise
+        op_def static T op(T d1, T *extraParams) {
+            T compare = extraParams[0];
+            T eps = extraParams[1];
+
+            int mode = (int) extraParams[2];
+
+
+            //printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+
+            if (mode == 0) // equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
+            else if (mode == 1) // not equals
+                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0 : 0.0;
+            else if (mode == 2) // less_than
+                return d1 < compare? 1.0 : 0.0;
+            else if (mode ==3) // greater_than
+                return d1 > compare? 1.0 : 0.0;
+            else if (mode == 4) // less_or_equals_than
+                return d1 <= compare? 1.0 : 0.0;
+            else if (mode == 5) // greater_or_equals_than
+                return d1 >= compare? 1.0 : 0.0;
+            else if (mode == 6) // abs_less_than
+                return nd4j::math::nd4j_abs<T>(d1) < compare? 1.0 : 0.0;
+            else if (mode == 7) // abs_greater_than
+                return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
+            else if (mode == 8) // is inf
+                return isinf(d1) ? 1.0 : 0.0;
+            else if (mode == 9) // is nan
+                return isnan(d1) ? 1.0 : 0.0;
+            else if (mode == 10)
+                return (d1 == compare) ? 1.0 : 0.0;
+            else if (mode == 11)
+                return (d1 != compare) ? 1.0 : 0.0;
+            else
+                printf("Undefined match condition: [%i]\n", mode);
+
+            return d1;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
 
 	template<typename T>
 	class ELU {
@@ -1571,11 +1632,179 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = 0;
+            return local;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
 		static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 		functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
 		}
 	};
+
+    template<typename T>
+    class FirstIndex {
+    public:
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+            return val;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static functions::indexreduce::IndexValue<T> update(
+                functions::indexreduce::IndexValue<T> old,
+                functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+
+            T res = simdOps::MatchCondition<T>::op(opOutput.value, extraParams);
+
+            if (res == (T) 0.0f)
+                return old;
+
+            if (old.index < 0)
+                return opOutput;
+
+            if (old.index > opOutput.index)
+                return opOutput;
+
+            return old;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline T startingValue(T *input) {
+            return -MAX_FLOAT;
+        }
+
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = -1;
+            return local;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+                                                               functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+            return d1;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> merge(
+                functions::indexreduce::IndexValue<T> f1,
+                functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+            if (f1.index > f2.index)
+                return f2;
+            return f1;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> postProcess(
+                functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+                T *dx, int incx, T *extraParams, T *result) {
+            return reduction;
+        }
+    };
+
+
+    template<typename T>
+    class LastIndex {
+    public:
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> val, T *extraParams) {
+            return val;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static functions::indexreduce::IndexValue<T> update(
+                functions::indexreduce::IndexValue<T> old,
+                functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+
+            T res = simdOps::MatchCondition<T>::op(opOutput.value, extraParams);
+
+            if (res == (T) 0.0f)
+                return old;
+
+            if (old.index < 0)
+                return opOutput;
+
+            if (old.index < opOutput.index)
+                return opOutput;
+
+            return old;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline T startingValue(T *input) {
+            return -MAX_FLOAT;
+        }
+
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = -1;
+            return local;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
+                                                               functions::indexreduce::IndexValue<T> d2, T *extraParams) {
+            return d1;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> merge(
+                functions::indexreduce::IndexValue<T> f1,
+                functions::indexreduce::IndexValue<T> f2, T *extraParams) {
+            if (f1.index < f2.index)
+                return f2;
+            return f1;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> postProcess(
+                functions::indexreduce::IndexValue<T> reduction, int n, int xOffset,
+                T *dx, int incx, T *extraParams, T *result) {
+            return reduction;
+        }
+    };
+
 
 	template<typename T>
 	class IndexMax  {
@@ -1636,6 +1865,16 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = 0;
+            return local;
+        }
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
         static inline functions::indexreduce::IndexValue<T> op(functions::indexreduce::IndexValue<T> d1,
 				functions::indexreduce::IndexValue<T> d2, T *extraParams) {
 			return d1;
@@ -1660,6 +1899,16 @@ namespace simdOps {
 		static inline T startingValue(T *input) {
 			return MAX_FLOAT;
 		}
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = 0;
+            return local;
+        }
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -1730,6 +1979,16 @@ namespace simdOps {
         static inline T startingValue(T *input) {
 			return MAX_FLOAT;
 		}
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        static inline functions::indexreduce::IndexValue<T> startingIndexValue(T *input) {
+            functions::indexreduce::IndexValue<T> local;
+            local.value = startingValue(input);
+            local.index = 0;
+            return local;
+        }
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -1880,65 +2139,6 @@ template<typename T>
 			return isnan(d1) ? replacement : d1 ;
 		}
 	};
-
-
-    template<typename T>
-    class MatchCondition {
-    public:
-
-        op_def static T startingValue(const T *input) {
-            return (T) 0.0;
-        }
-
-        op_def static T merge(T old, T opOutput, T *extraParams) {
-            return old + opOutput;
-        }
-
-        op_def static T update(T old, T opOutput, T *extraParams) {
-            return old + opOutput;
-        }
-
-        // this op return 1.0 if condition met, 0.0 otherwise
-        op_def static T op(T d1, T *extraParams) {
-            T compare = extraParams[0];
-            T eps = extraParams[1];
-
-            int mode = (int) extraParams[2];
-
-            if (mode == 0) // equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
-            else if (mode == 1) // not equals
-                return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? 1.0 : 0.0;
-            else if (mode == 2) // less_than
-                return d1 < compare? 1.0 : 0.0;
-            else if (mode ==3) // greater_than
-                return d1 > compare? 1.0 : 0.0;
-            else if (mode == 4) // less_or_equals_than
-                return d1 <= compare? 1.0 : 0.0;
-            else if (mode == 5) // greater_or_equals_than
-                return d1 >= compare? 1.0 : 0.0;
-            else if (mode == 6) // abs_less_than
-                return nd4j::math::nd4j_abs<T>(d1) < compare? 1.0 : 0.0;
-            else if (mode == 7) // abs_greater_than
-                return nd4j::math::nd4j_abs<T>(d1) > compare? 1.0 : 0.0;
-            else if (mode == 8) // is inf
-                return isinf(d1) ? 1.0 : 0.0;
-            else if (mode == 9) // is nan
-                return isnan(d1) ? 1.0 : 0.0;
-            else if (mode == 10)
-                return (d1 == compare) ? 1.0 : 0.0;
-            else if (mode == 11)
-                return (d1 != compare) ? 1.0 : 0.0;
-            else
-                printf("Undefined match condition: [%i]\n", mode);
-
-            return d1;
-        }
-
-        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
-            return reduction;
-        }
-    };
 
     // this op is used for conditional pairwise transforms only
     template<typename T>
