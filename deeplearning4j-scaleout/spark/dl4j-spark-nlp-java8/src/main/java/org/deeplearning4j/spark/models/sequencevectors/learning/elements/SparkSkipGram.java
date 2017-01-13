@@ -15,11 +15,14 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     @Override
     public String getCodeName() {
         return "Spark-SkipGram";
     }
+
+    protected transient AtomicLong counter;
 
     @Override
     public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
@@ -85,7 +88,12 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(word.getIndex(), lastWord.getIndex(), idxSyn1, codes, neg, lr, nextRandom.get());
 
         // we just shoot for now
-        VoidParameterServer.getInstance().execDistributed(sgrm);
+        //VoidParameterServer.getInstance().execDistributed(sgrm);
+        if (counter == null)
+            counter = new AtomicLong(0);
+
+        if (counter.incrementAndGet() % 10000 == 0)
+        log.info("Counter: {}", counter.get());
     }
 
     @Override
