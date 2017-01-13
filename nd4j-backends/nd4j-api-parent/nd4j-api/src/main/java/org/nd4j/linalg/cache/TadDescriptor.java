@@ -1,8 +1,11 @@
 package org.nd4j.linalg.cache;
 
+import com.oracle.webservices.internal.api.databinding.DatabindingMode;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 
@@ -13,14 +16,28 @@ import java.util.Arrays;
  * TAD for specific dimension will always be the same.
  * So it can be reused as much as we want.
  *
+ * Of note here is that when used as a key,
+ * we preserve immutability of the shape buffer
+ * in the ndarray by copying the values with
+ * {@link TadDescriptor#dataBufferToArray(DataBuffer)}
+ *
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
+@Data
 public class TadDescriptor {
     private int dimensionLength;
     private int[] dimension;
     private int[] shape;
 
+    /**
+     * Pass in an ndarray to get the databuffer
+     * and the appropriate dimensions
+     * @param array the array to pass in
+     *              to get the shape info from
+     * @param dimension the dimensions for the TAD
+     */
     public TadDescriptor(INDArray array, int[] dimension) {
         this.dimensionLength = dimension == null ? 0 : dimension.length;
         this.dimension = dimension;
@@ -30,35 +47,21 @@ public class TadDescriptor {
     }
 
 
+    /**
+     * Obtain the values from the shape buffer
+     * for the array
+     * @param buffer the buffer to get the values from
+     * @return the int array version of this data buffer
+     */
     public static int[] dataBufferToArray(DataBuffer buffer) {
         int rank = buffer.getInt(0);
-        int ret[] = new int[rank * 2 + 4];
+        int ret[] = new int[Shape.shapeInfoLength(rank)];
         ret[0] = rank;
-        for (int e = 1; e < rank * 2 + 4; e++) {
+        for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {
             ret[e] = buffer.getInt(e);
         }
 
         return ret;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TadDescriptor that = (TadDescriptor) o;
-
-        if (dimensionLength != that.dimensionLength) return false;
-        if (!Arrays.equals(dimension, that.dimension)) return false;
-        return Arrays.equals(shape, that.shape);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = dimensionLength;
-        result = 31 * result + Arrays.hashCode(dimension);
-        result = 31 * result + Arrays.hashCode(shape);
-        return result;
-    }
 }
