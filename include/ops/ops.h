@@ -829,7 +829,7 @@ namespace simdOps {
             int mode = (int) extraParams[2];
 
 
-            //printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+            // printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
 
             if (mode == 0) // equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;
@@ -1665,7 +1665,14 @@ namespace simdOps {
                 functions::indexreduce::IndexValue<T> old,
                 functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
 
+#ifdef __CUDACC__
+            if (opOutput.index < 0)
+                return old;
+#endif
+
             T res = simdOps::MatchCondition<T>::op(opOutput.value, extraParams);
+
+			//printf("res: %f; oldIdx: %i; newIdx: %i\n", res, old.index, opOutput.index);
 
             if (res == (T) 0.0f)
                 return old;
@@ -1743,6 +1750,10 @@ namespace simdOps {
         static functions::indexreduce::IndexValue<T> update(
                 functions::indexreduce::IndexValue<T> old,
                 functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
+#ifdef __CUDACC__
+            if (opOutput.index < 0)
+                return old;
+#endif
 
             T res = simdOps::MatchCondition<T>::op(opOutput.value, extraParams);
 

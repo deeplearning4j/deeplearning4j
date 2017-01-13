@@ -127,7 +127,6 @@ template<typename OpType>
 			__syncthreads();
 		}
 
-#pragma unroll
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
 			if (tid < activeThreads && tid + activeThreads < numElements) {
 				IndexValue<T> curr = sPartials[tid];
@@ -197,7 +196,7 @@ template<typename OpType>
 
 
 		//only compute the tad indexes once
-		IndexValue <T> reduction = {startingVal, 0};
+		IndexValue <T> reduction = OpType::startingIndexValue(dx);
 
 		if (threadIdx.x == 0) {
 			if (resultShapeInfo != nullptr)
@@ -269,7 +268,7 @@ template<typename OpType>
 				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[i];
 
-					sPartials[threadIdx.x] = {dx[tadOffsetForBlock], 0};
+					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 #pragma unroll
 					for (unsigned int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
 						IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
