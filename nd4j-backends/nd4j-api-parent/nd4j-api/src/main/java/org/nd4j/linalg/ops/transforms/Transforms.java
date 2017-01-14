@@ -364,28 +364,6 @@ public class Transforms {
         return Nd4j.getExecutioner().exec(new LogX( duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base)).z();
     }
 
-    /**
-     * Log on arbitrary base
-     *
-     * @param ndArray
-     * @param base
-     * @return
-     */
-    public static INDArray log(INDArray ndArray, double base) {
-        return log(ndArray, base, Nd4j.copyOnOps);
-    }
-
-    /**
-     * Log on arbitrary base
-     *
-     * @param ndArray
-     * @param base
-     * @return
-     */
-    public static INDArray log(INDArray ndArray, double base, boolean duplicate) {
-        return Nd4j.getExecutioner().exec(new LogX( duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base)).z();
-    }
-
     public static INDArray log(INDArray ndArray) {
         return log(ndArray, Nd4j.copyOnOps);
     }
