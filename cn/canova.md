@@ -1,10 +1,10 @@
 ---
-title: "Canova Is Now DataVec"
-layout: default
+title: "Canova 先称为DataVec"
+layout: cn-default
 ---
 
-# Canova Is Now DataVec
+# Canova 先称为 DataVec
 
-The Canova library has been merged into [DataVec](./datavec) with release 0.4.0.
+版本0.4.0之后，Canova库已合并到 [DataVec](./datavec) with release 0.4.0.
 
-The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec), and its [Javadoc is here](./datavecdoc/). 
+DataVec 的 Github 库在 [这里](https://github.com/deeplearning4j/datavec), 和 DataVec的 [Java文件](./datavecdoc/). 
