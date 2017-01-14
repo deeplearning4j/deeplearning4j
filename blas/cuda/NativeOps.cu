@@ -3319,6 +3319,7 @@ void   NativeOps::execSummaryStatsFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF17 opNum:[%i]\n", opNum);
 
+	// limiting number of blocks in grid, to match buffer memory size
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3357,8 +3358,6 @@ void   NativeOps::execSummaryStatsHalf(
 	if (debug && verbose)
 		printf("H17 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
@@ -3367,6 +3366,7 @@ void   NativeOps::execSummaryStatsHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH17 opNum:[%i]\n", opNum);
 
+	// as everywhere else, we limit maximal number of blocks for SummaryStats calls
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3426,6 +3426,7 @@ void   NativeOps::execSummaryStatsFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF18 opNum:[%i]\n", opNum);
 
+	// as everywhere else, we limit maximal number of blocks for SummaryStats calls
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3467,7 +3468,6 @@ void   NativeOps::execSummaryStatsHalf(
 	if (debug && verbose)
 		printf("H18 opNum:[%i]\n", opNum);
 
-	//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[3], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
@@ -3477,6 +3477,7 @@ void   NativeOps::execSummaryStatsHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH18 opNum:[%i]\n", opNum);
 
+	// as everywhere else, we limit maximal number of blocks for SummaryStats calls
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3522,7 +3523,6 @@ void   NativeOps::execTransformFloat(
 	if (debug && verbose)
 		printf("F19 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[2], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -3532,16 +3532,9 @@ void   NativeOps::execTransformFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(transformStrided, float, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-/*
-	transformFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			n,
-			dx,
-			xStride,
-			extraParams,
-			result,resultStride, allocPointer, reductionPointer);
-*/
+
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3563,8 +3556,6 @@ void   NativeOps::execTransformHalf(
 	if (debug && verbose)
 		printf("H19 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[2], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
@@ -3573,16 +3564,9 @@ void   NativeOps::execTransformHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH19 opNum:[%i], xLength: [%i]\n", opNum, shape::length(hostXShapeInfo));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(transformStrided, float16, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-/*
-	transformHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-					n,
-					dx,
-					xStride,
-					extraParams,
-					result,resultStride, allocPointer, reductionPointer);
-*/
+
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3630,6 +3614,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 		printf("AF20 opNum:[%i]\n", opNum);
 
 	// simple trick to get workaround over reductions into scalar
+	// that's special ops: SoftMax, SoftMaxDerivative, LogSoftMax, IsMax
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
@@ -3640,11 +3625,11 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             launchDims.y = block;
             launchDims.z += (block * sizeof(float) * 4);
 
+			// this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 		} else {
 			// going for blockwise specials
-			//float *xpf = reinterpret_cast<float *>(dx);
 
 			int *shape = shape::shapeOf(hostXShapeInfo);
 			switch (opNum) {
@@ -3756,21 +3741,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 				case 41: {
 					// IsMax along all dimensions
-
-//					int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
-
 					bool scalarCheat = false;
 					if (extraParams == nullptr) {
 						scalarCheat = true;
-					} else {
-					/*	//extraParams == nullptr || (shape::isVector(hostXShapeInfo))
-						if (shape::isVector(hostXShapeInfo) && dimensionHostPointer[0] == 1) {
-							scalarCheat = true;
-						}*/
 					}
 
 					if (scalarCheat) {
-						//printf("Going for scalar IsMax\n");
+						// if that's 1D input - we'll just go for single dim IMax op call + filler
 						int maxIdx = (int) execIndexReduceScalarFloat(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -3784,8 +3761,6 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                         checkCudaErrors(cudaStreamSynchronize(*stream));
 					} else {
 						// going for dimension-based IsMax
-						//printf("Going for dimension-based IsMax\n");
-
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
@@ -3812,16 +3787,16 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 				}
 			}
 		}
-//	} else if (opNum == 48) {
-        //
-
     } else {
+		// we're enforcing larger grids for Col2Im & Im2Col
+		// TODO: for high-end gpus we might use higher values here
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
         }
 
+		// histogram op requies additional memory chunk :(
         if (opNum == 48) {
             int length = shape::length(hostZShapeInfo);
             cudaMalloc((void **) &maskedAllocPointer, length * launchDims.x * sizeof(float));
@@ -3836,6 +3811,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
         if (debug || opNum == 48)
             checkCudaErrors(cudaStreamSynchronize(*stream));
 
+		// release memory chunk
         if (opNum == 48) {
             cudaFree((void *) maskedAllocPointer);
         }
@@ -3859,13 +3835,10 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 	if (debug && verbose)
 		printf("H20 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
     int *maskedAllocPointer = allocPointer;
 
-	// special pointer for special buffer for special ops
 	float16 *specialPointer = reinterpret_cast<float16 *>(extraPointers[6]);
 
 	int *dimension = (int *) specialPointer;
@@ -3879,6 +3852,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 		printf("AH20 opNum:[%i]\n", opNum);
 
 	// simple trick to get workaround over reductions into scalar
+	// SoftMax, SoftMaxDerivative, LogSoftMax, IsMax
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
@@ -3889,11 +3863,11 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
             launchDims.y = block;
             launchDims.z += (block * sizeof(float16) * 4);
 
+			// this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 		} else {
 			// going for blockwise specials
-			//float *xpf = reinterpret_cast<float *>(dx);
 
 			int *shape = shape::shapeOf(hostXShapeInfo);
 			switch (opNum) {
@@ -3925,6 +3899,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
 					tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
 
+					// FIXME: fix this
 					prepareShapeBuffer <<< 1, 1, 128, *stream >>> (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
 					if (debug)
@@ -4013,20 +3988,13 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 				case 41: {
 					// IsMax along all dimensions
 
-			//		int *dimensionHostPointer = reinterpret_cast<int *> (extraPointers[16]);
-
 					bool scalarCheat = false;
 					if (extraParams == nullptr) {
 						scalarCheat = true;
-					} else {
-						/*	//extraParams == nullptr || (shape::isVector(hostXShapeInfo))
-                            if (shape::isVector(hostXShapeInfo) && dimensionHostPointer[0] == 1) {
-                                scalarCheat = true;
-                            }*/
 					}
 
 					if (scalarCheat) {
-						//printf("Going for scalar IsMax\n");
+						// 1D input, aka vector
 						int maxIdx = (int) execIndexReduceScalarHalf(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -4038,8 +4006,6 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						fillIsMaxHalf<<< 1, 128, 1536, *stream >>>(result, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						// going for dimension-based IsMax
-						//printf("Going for dimension-based IsMax\n");
-
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
@@ -4067,17 +4033,20 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 			}
 		}
 	} else {
+		// Im2Col & Col2Im enforced grids
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
         }
 
+		// Histogram op requires additional memory chunk
         if (opNum == 48) {
             int length = shape::length(hostZShapeInfo);
             cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(float16));
         }
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 
@@ -4085,6 +4054,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
         if (debug || opNum == 48)
             checkCudaErrors(cudaStreamSynchronize(*stream));
 
+		// release that histogram memory chunk
         if (opNum == 48) {
             cudaFree((void *)maskedAllocPointer);
         }
@@ -4121,8 +4091,6 @@ void   NativeOps::execTransformFloat(
 
 	if (debug && verbose)
 		printf("F21 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[0], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
@@ -4226,10 +4194,6 @@ __device__ void flattenKernelGeneric(int dOffset,
 		} else {
 
 			int rank = shape::rank(inputShapeInfo);
-			/*
-			long allocSize = sizeof(int) * rank;
-			int *coord = shape::cuMalloc(allocationPointer, allocSize, manager);
-			 */
 			int coord[MAX_RANK];
 
 			if(order == 'f') {
@@ -4246,18 +4210,9 @@ __device__ void flattenKernelGeneric(int dOffset,
 					result[i + dOffset] = input[offset];
 				}
 			}
-/*
-			if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-				free(coord);
-			}
-			*/
 		}
 	} else {
 		int rank = shape::rank(inputShapeInfo);
-		/*
-		long allocSize = sizeof(int) * rank;
-		int *coord = shape::cuMalloc(allocationPointer, allocSize, manager);
-		 */
 		int coord[MAX_RANK];
 
 		if(order == 'f') {
@@ -4274,10 +4229,6 @@ __device__ void flattenKernelGeneric(int dOffset,
 				result[i+dOffset] = input[offset];
 			}
 		}
-		/*
-		if (rank > MAX_COORD && tid * allocSize > PREALLOC_SIZE - allocSize) {
-			free(coord);
-		}*/
 	}
 
 }
@@ -4354,8 +4305,6 @@ void NativeOps::flattenFloat(
 
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	if (debug && verbose)
 		printf("F22 opNum:[7]\n");
 
@@ -4426,8 +4375,6 @@ void NativeOps::flattenDouble(
 
 	if (debug && verbose)
 		printf("D30 opNum:[7]\n");
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -4525,7 +4472,6 @@ void NativeOps::enableP2P(bool enable) {
 }
 
 bool NativeOps::isP2PAvailable() {
-	// always TRUE for cpu backend
 	return supportedP2P;
 }
 
@@ -4545,6 +4491,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	checkP2P();
 
+	// enabling p2p gpu access if it's supported
 	if (supportedP2P && devCnt > 1)
     	enableP2P(allowedP2P);
 
@@ -4863,8 +4810,6 @@ int NativeOps::memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jIndex size, int
 }
 
 int NativeOps::memset(Nd4jPointer dst, int value, Nd4jIndex size, int flags, Nd4jPointer reserved) {
-	//cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(&reserved);
-
 	cudaError_t result = cudaMemset((void *) dst, value, (size_t) size);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -5502,6 +5447,7 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
+	// we have to converf float -> fp16 prior to kernel call
     float16 scalA = (float16) scalarA;
     float16 scalB = (float16) scalarB;
 
@@ -5547,11 +5493,11 @@ int NativeOps::getDevice() {
 }
 
 void NativeOps::setElementThreshold(int num) {
-    // TODO: to be implemented
+    // this is no-op for CUDA
 }
 
 void NativeOps::setTADThreshold(int num) {
-    // TODO: to be implemented
+    // this is no-op for CUDA
 }
 
 void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
@@ -5574,12 +5520,9 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
-    //dim3 launchDims = dim3(512, 32, 512);
     dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
 
-//    printf("ProblemLength: %i; tadLength: %i; .x: %i; .y: %i\n", shape::length(hostXShapeInfo), shape::length(hostTadShapeInfo), launchDims.x, launchDims.y);
-//    fflush(stdout);
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launc	h
     DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
     if (debug)
@@ -5603,6 +5546,7 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
     if (debug)
@@ -5626,6 +5570,7 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
     int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
     if (debug)
@@ -5649,9 +5594,9 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: proper launch dims required here
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5675,9 +5620,9 @@ void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: proper launch dims required here
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateSimple, double, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5700,9 +5645,9 @@ void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: proper launch dims required here
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateSimple, float16, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5715,11 +5660,9 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: fix this, we want something better then fixed number of threads per block
     dim3 launchDims = dim3(numAggregates, numThreads, shmem);
 
-    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
@@ -5733,11 +5676,9 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: fix this, we want something better then fixed number of threads per block
     dim3 launchDims = dim3(numAggregates, numThreads, shmem);
 
-    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateBatchSimple, double, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
@@ -5751,11 +5692,9 @@ void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggreg
     int numThreads = getDeviceId(extraPointers[3]);
     int shmem = getDeviceId(extraPointers[4]);
 
-    // TODO: fix this, we want something better then fixed number of threads per block
     dim3 launchDims = dim3(numAggregates, numThreads, shmem);
 
-    //printf("Launch params: .X: %i; .Y: %i; .Z: %i\n", numBlocks, numThreads, shmem);
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(aggregateBatchSimple, float16, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
 
     if (debug)
@@ -5770,6 +5709,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5784,6 +5724,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5798,6 +5739,7 @@ void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPoint
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
     Nd4jPointer state = buffer->getDevicePointer();
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5809,6 +5751,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5820,6 +5763,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5831,6 +5775,7 @@ void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPoin
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(double)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5842,6 +5787,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5853,6 +5799,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5864,6 +5811,7 @@ void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointe
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float16)));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
     if (debug)
@@ -5877,11 +5825,7 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     // we don't synchronize at random initialization, it's safe to go unsync here
-//    cudaStreamSynchronize(*stream);
-
-    // that's device pointer
-
-
+	// cudaStreamSynchronize(*stream);
 
     unsigned long long *ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
     nd4j::random::RandomBuffer *buffer = new nd4j::random::RandomBuffer(seed, bufferSize, (uint64_t *) ptrHost, (uint64_t *) ptrDev);
@@ -5889,10 +5833,11 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 
+	// we generate sequence in the host memory
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
 
-
+	// and copy it to gpu
     cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
 
     return buffer;
@@ -5917,13 +5862,16 @@ void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer
 
     uint64_t *ptrDev = buffer->getDeviceBuffer();
 
+	// update rng state
     buffer->setSeed(seed);
     buffer->setOffset(0);
     buffer->propagateToDevice(buffer, *stream);
 
+	// refresh buffer on host size
     nd4j::random::Xoroshiro128 generator(buffer);
     generator.refreshBuffer();
 
+	// copy back to gpu
     cudaMemcpyAsync(ptrDev, ptrHost, buffer->getSize() * 8, cudaMemcpyHostToDevice, *stream);
 }
 
@@ -5933,6 +5881,7 @@ void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     cudaStreamSynchronize(*stream);
 
+	// update rng state
     buffer->reSeed(seed);
     buffer->setOffset(0);
     buffer->propagateToDevice(buffer, *stream);
