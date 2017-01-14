@@ -1783,8 +1783,16 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testLogX1() {
+        INDArray x = Nd4j.create(10).assign(7);
 
+        INDArray logX5 = Transforms.log(x, 5, true);
 
+        INDArray exp = Transforms.log(x, true).div(Transforms.log(Nd4j.create(10).assign(5)));
+
+        assertEquals(exp, logX5);
+    }
 
     @Test
     public void testAddMatrix() {

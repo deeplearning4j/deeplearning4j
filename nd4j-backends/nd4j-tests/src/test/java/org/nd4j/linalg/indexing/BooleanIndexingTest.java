@@ -451,6 +451,49 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         assertEquals(exp, ones);
     }
 
+
+    @Test
+    public void testFirstIndex1() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
+        INDArray result = BooleanIndexing.firstIndex(arr, Conditions.greaterThanOrEqual(3));
+
+        assertEquals(2, result.getDouble(0), 0.0);
+    }
+
+    @Test
+    public void testFirstIndex2() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
+        INDArray result = BooleanIndexing.firstIndex(arr, Conditions.lessThan(3));
+
+        assertEquals(0, result.getDouble(0), 0.0);
+    }
+
+    @Test
+    public void testLastIndex1() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0});
+        INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(3));
+
+        assertEquals(8, result.getDouble(0), 0.0);
+    }
+
+    @Test
+    public void testFirstIndex2D() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 0, 1, 3, 7, 8, 9}).reshape('c', 3, 3);
+        INDArray result = BooleanIndexing.firstIndex(arr, Conditions.greaterThanOrEqual(2), 1);
+        INDArray exp = Nd4j.create(new double[]{1, 2, 0});
+
+        assertEquals(exp, result);
+    }
+
+    @Test
+    public void testLastIndex2D() {
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 0, 1, 3, 7, 8, 0}).reshape('c', 3, 3);
+        INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(2), 1);
+        INDArray exp = Nd4j.create(new double[]{2, 2, 1});
+
+        assertEquals(exp, result);
+    }
+
     @Override
     public char ordering() {
         return 'c';
