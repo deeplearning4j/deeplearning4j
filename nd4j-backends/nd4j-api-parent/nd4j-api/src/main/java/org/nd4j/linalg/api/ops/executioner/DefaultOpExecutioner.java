@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -49,6 +50,7 @@ import java.util.Properties;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
     protected ProfilingMode profilingMode = ProfilingMode.DISABLED;
@@ -361,24 +363,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
     }
 
-    /**
-     * This method return set of key/value and key/key/value objects, describing current environment
-     *
-     * @return
-     */
-    @Override
-    public Properties getEnvironmentInformation() {
-        Properties environment = new Properties();
-
-
-        environment.put("cores", Runtime.getRuntime().availableProcessors());
-        environment.put("memory.available", Runtime.getRuntime().maxMemory());
-        environment.put("os", System.getProperty("os.name"));
-
-
-        return environment;
-    }
-
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
         throw new UnsupportedOperationException();
@@ -550,5 +534,35 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public TADManager getTADManager() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method return set of key/value and key/key/value objects, describing current environment
+     *
+     * @return
+     */
+    @Override
+    public Properties getEnvironmentInformation() {
+        Properties environment = new Properties();
+
+        environment.put("cores", Runtime.getRuntime().availableProcessors());
+        environment.put("memory.available", Runtime.getRuntime().maxMemory());
+        environment.put("os", System.getProperty("os.name"));
+
+
+        return environment;
+    }
+
+    @Override
+    public void printEnvironmentInformation() {
+        Properties env = getEnvironmentInformation();
+
+
+        double memory = ((Long) env.get("memory.available")) / (double) 1024 / 1024 / 1024;
+        String fm = String.format("%.1f", memory) ;
+
+        log.info("Backend used: [{}]; OS: [{}]", env.get("backend"),  env.get("os"));
+        log.info("Cores: [{}]; Memory: [{}GB];", env.get("cores"), fm);
+        log.info("Blas vendor: [{}]", env.get("blas.vendor"));
     }
 }

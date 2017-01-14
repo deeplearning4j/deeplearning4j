@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
@@ -37,12 +38,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -70,6 +73,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public  class Nd4jTestsC extends BaseNd4jTest {
 
@@ -1777,8 +1781,16 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testLogX1() {
+        INDArray x = Nd4j.create(10).assign(7);
 
+        INDArray logX5 = Transforms.log(x, 5, true);
 
+        INDArray exp = Transforms.log(x, true).div(Transforms.log(Nd4j.create(10).assign(5)));
+
+        assertEquals(exp, logX5);
+    }
 
     @Test
     public void testAddMatrix() {
@@ -3058,7 +3070,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testAssign(){
+    public void testAssignMixedC(){
         int[] shape1 = {3,2,2,2,2,2};
         int[] shape2 = {12,8};
         int length = ArrayUtil.prod(shape1);
@@ -3069,14 +3081,165 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr2c = Nd4j.create(shape2,'c');
         INDArray arr2f = Nd4j.create(shape2,'f');
 
+        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
+
         arr2c.assign(arr);
         System.out.println("--------------");
         arr2f.assign(arr);
 
         INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
 
+        log.info("arr data: {}", Arrays.toString(arr.data().asFloat()));
+        log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
+        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
+        log.info("2c shape: {}", Arrays.toString(arr2c.shapeInfoDataBuffer().asInt()));
+        log.info("2f shape: {}", Arrays.toString(arr2f.shapeInfoDataBuffer().asInt()));
         assertEquals(exp,arr2c);
         assertEquals(exp,arr2f);
+    }
+
+    @Test
+    public void testDummy() {
+        INDArray arr2f = Nd4j.create(new double[]{1.0, 13.0, 25.0, 37.0, 49.0, 61.0, 73.0, 85.0, 2.0, 14.0, 26.0, 38.0, 50.0, 62.0, 74.0, 86.0, 3.0, 15.0, 27.0, 39.0, 51.0, 63.0, 75.0, 87.0, 4.0, 16.0, 28.0, 40.0, 52.0, 64.0, 76.0, 88.0, 5.0, 17.0, 29.0, 41.0, 53.0, 65.0, 77.0, 89.0, 6.0, 18.0, 30.0, 42.0, 54.0, 66.0, 78.0, 90.0, 7.0, 19.0, 31.0, 43.0, 55.0, 67.0, 79.0, 91.0, 8.0, 20.0, 32.0, 44.0, 56.0, 68.0, 80.0, 92.0, 9.0, 21.0, 33.0, 45.0, 57.0, 69.0, 81.0, 93.0, 10.0, 22.0, 34.0, 46.0, 58.0, 70.0, 82.0, 94.0, 11.0, 23.0, 35.0, 47.0, 59.0, 71.0, 83.0, 95.0, 12.0, 24.0, 36.0, 48.0, 60.0, 72.0, 84.0, 96.0}, new int[]{12,8}, 'f'  );
+        log.info("arr2f shape: {}", Arrays.toString(arr2f.shapeInfoDataBuffer().asInt()));
+        log.info("arr2f data: {}", Arrays.toString(arr2f.data().asFloat()));
+        log.info("render: {}", arr2f);
+
+        log.info("----------------------");
+
+        INDArray array = Nd4j.linspace(1, 96, 96).reshape('c', 12,8);
+        log.info("array render: {}", array);
+
+        log.info("----------------------");
+
+        INDArray arrayf = array.dup('f');
+        log.info("arrayf render: {}", arrayf);
+        log.info("arrayf shape: {}", Arrays.toString(arrayf.shapeInfoDataBuffer().asInt()));
+        log.info("arrayf data: {}", Arrays.toString(arrayf.data().asFloat()));
+    }
+
+    @Test
+    public void testPairwiseMixedC() {
+        int[] shape2 = {12,8};
+        int length = ArrayUtil.prod(shape2);
+
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape2);
+        INDArray arr2c = arr.dup('c');
+        INDArray arr2f = arr.dup('f');
+
+        arr2c.addi(arr);
+        System.out.println("--------------");
+        arr2f.addi(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2).mul(2.0);
+
+        assertEquals(exp,arr2c);
+        assertEquals(exp,arr2f);
+
+        log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
+        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
+
+        assertTrue(arrayNotEquals(arr2c.data().asFloat(), arr2f.data().asFloat(), 1e-5f));
+    }
+
+    @Test
+    public void testPairwiseMixedF() {
+        int[] shape2 = {12,8};
+        int length = ArrayUtil.prod(shape2);
+
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape2).dup('f');
+        INDArray arr2c = arr.dup('c');
+        INDArray arr2f = arr.dup('f');
+
+        arr2c.addi(arr);
+        System.out.println("--------------");
+        arr2f.addi(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2).dup('f').mul(2.0);
+
+        assertEquals(exp,arr2c);
+        assertEquals(exp,arr2f);
+
+        log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
+        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
+
+        assertTrue(arrayNotEquals(arr2c.data().asFloat(), arr2f.data().asFloat(), 1e-5f));
+    }
+
+    @Test
+    public void testAssign2D() {
+        int[] shape2 = {8, 4};
+
+        int length = ArrayUtil.prod(shape2);
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape2);
+        INDArray arr2c = Nd4j.create(shape2,'c');
+        INDArray arr2f = Nd4j.create(shape2,'f');
+
+        arr2c.assign(arr);
+        System.out.println("--------------");
+        arr2f.assign(arr);
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
+
+        assertEquals(exp, arr2c);
+        assertEquals(exp, arr2f);
+    }
+
+    @Test
+    public void testAssign2D_2() {
+        int[] shape2 = {8, 4};
+
+        int length = ArrayUtil.prod(shape2);
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c',shape2);
+        INDArray arr2c = Nd4j.create(shape2,'c');
+        INDArray arr2f = Nd4j.create(shape2,'f');
+        INDArray z_f = Nd4j.create(shape2,'f');
+        INDArray z_c = Nd4j.create(shape2,'c');
+
+        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_f, arr2c.length()));
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+
+        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_c, arr2c.length()));
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape2);
+
+
+        System.out.println("Zf data: " + Arrays.toString(z_f.data().asFloat()));
+        System.out.println("Zc data: " + Arrays.toString(z_c.data().asFloat()));
+
+        assertEquals(exp, z_f);
+        assertEquals(exp, z_c);
+    }
+
+    @Test
+    public void testAssign3D_2() {
+        int[] shape3 = {8, 4, 8};
+
+        int length = ArrayUtil.prod(shape3);
+
+        INDArray arr = Nd4j.linspace(1,length,length).reshape('c', shape3).dup('f');
+        INDArray arr3c = Nd4j.create(shape3,'c');
+        INDArray arr3f = Nd4j.create(shape3,'f');
+
+        Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f, arr3c.length()));
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+
+        Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
+
+        INDArray exp = Nd4j.linspace(1,length,length).reshape('c',shape3);
+
+        assertEquals(exp, arr3c);
+        assertEquals(exp, arr3f);
     }
 
     @Test
@@ -3523,6 +3686,21 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             }
         }
+    }
+
+    protected static boolean arrayNotEquals(float[] arrayX, float[] arrayY, float delta) {
+        if (arrayX.length != arrayY.length)
+            return false;
+
+        // on 2d arrays first & last elements will match regardless of order
+        for(int i = 1; i < arrayX.length - 1; i++) {
+            if (Math.abs(arrayX[i] - arrayY[i]) < delta) {
+                log.info("ArrX[{}]: {}; ArrY[{}]: {}", i, arrayX[i], i, arrayY[i]);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override

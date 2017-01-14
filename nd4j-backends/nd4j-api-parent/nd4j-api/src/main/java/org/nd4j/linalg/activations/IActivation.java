@@ -3,6 +3,7 @@ package org.nd4j.linalg.activations;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -19,6 +20,7 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = ActivationHardTanH.class, name = "HardTanh"),
         @JsonSubTypes.Type(value = ActivationIdentity.class, name = "Identity"),
         @JsonSubTypes.Type(value = ActivationLReLU.class, name = "LReLU"),
+        @JsonSubTypes.Type(value = ActivationRationalTanh.class, name = "RationalTanh"),
         @JsonSubTypes.Type(value = ActivationReLU.class, name = "ReLU"),
         @JsonSubTypes.Type(value = ActivationRReLU.class, name = "RReLU"),
         @JsonSubTypes.Type(value = ActivationSigmoid.class, name = "Sigmoid"),
@@ -27,6 +29,7 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = ActivationSoftSign.class, name = "SoftSign"),
         @JsonSubTypes.Type(value = ActivationTanH.class, name = "TanH")
 })
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public interface IActivation extends Serializable {
 
     /**

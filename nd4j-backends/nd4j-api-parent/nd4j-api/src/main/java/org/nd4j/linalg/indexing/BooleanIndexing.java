@@ -25,6 +25,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
+import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
@@ -339,5 +341,74 @@ public class BooleanIndexing {
         }
     }
 
+    /**
+     * This method returns first index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
+    public static INDArray firstIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
 
+        FirstIndex idx = new FirstIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
+
+    /**
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray firstIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        return Nd4j.getExecutioner().exec(new FirstIndex(array, condition), dimension);
+    }
+
+
+    /**
+     * This method returns last index matching given condition
+     *
+     * PLEASE NOTE: This method will return -1 value if condition wasn't met
+     *
+     * @param array
+     * @param condition
+     * @return
+     */
+    public static INDArray lastIndex(INDArray array, Condition condition) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        LastIndex idx = new LastIndex(array, condition);
+        Nd4j.getExecutioner().exec(idx);
+        return Nd4j.scalar((double) idx.getFinalResult());
+    }
+
+    /**
+     * This method returns first index matching given condition along given dimensions
+     *
+     * PLEASE NOTE: This method will return -1 values for missing conditions
+     *
+     * @param array
+     * @param condition
+     * @param dimension
+     * @return
+     */
+    public static INDArray lastIndex(INDArray array, Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        return Nd4j.getExecutioner().exec(new LastIndex(array, condition), dimension);
+    }
 }

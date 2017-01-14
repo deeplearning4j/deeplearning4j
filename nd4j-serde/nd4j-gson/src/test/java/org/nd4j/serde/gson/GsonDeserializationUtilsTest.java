@@ -76,6 +76,19 @@ public class GsonDeserializationUtilsTest {
         assertEquals(expectedArray, array);
     }
 
+    @Test
+    public void deserializeRawJson_HaveCommaInsideNumbers_ExpectCorrectDeserialization() {
+        String serializedRawArray =
+                "[[1.00, 1,100.00, 3.00],\n" +
+                "[13.00, 5.00, 15,591.00],\n" +
+                "[7,000.00, 17.00, 9.00]]";
+        INDArray expectedArray = Nd4j.create(new double[] { 1, 1100, 3, 13, 5, 15591, 7000, 17, 9 }, new int[] { 3, 3 });
+
+        INDArray indArray = GsonDeserializationUtils.deserializeRawJson(serializedRawArray);
+
+        assertEquals(expectedArray, indArray);
+    }
+
     private INDArray buildExpectedArray(int numberOfTripletRows, int... shape) {
         INDArray expectedArray = Nd4j.create(3 * numberOfTripletRows, 3);
         for(int i = 0; i < numberOfTripletRows; i++) {
