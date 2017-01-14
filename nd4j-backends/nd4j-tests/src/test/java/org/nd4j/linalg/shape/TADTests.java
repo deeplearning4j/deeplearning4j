@@ -72,7 +72,7 @@ public class TADTests extends BaseNd4jTest {
             INDArray array = Nd4j.create(new int[]{9, 7, 5, 3}, o);
             for (int[] shape: dim_3) {
                 Arrays.sort(shape);
-
+                log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape " + array.shapeInfoToString());
                 DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
                 DataBuffer tadShape_J = array.tensorAlongDimension(0, shape).shapeInfoDataBuffer();
 

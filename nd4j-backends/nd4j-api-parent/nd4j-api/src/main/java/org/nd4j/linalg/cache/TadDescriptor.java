@@ -1,6 +1,5 @@
 package org.nd4j.linalg.cache;
 
-import com.oracle.webservices.internal.api.databinding.DatabindingMode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
