@@ -2257,7 +2257,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
         //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
-        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)){
+        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(rowVector.shape()) + ")");
         }
 
@@ -3248,12 +3248,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(shapeInformation) == 0) {
+        if (Shape.rank(shapeInformation) == 0 || isRowVector()) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
-            else
-                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+            else if(isRowVector())
+                return createScalarForIndex(slice,true);
 
+            else {
+                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+            }
         }
 
 
