@@ -59,6 +59,33 @@ public class Join implements Serializable {
         this.rightSchema = builder.rightSchema;
         this.joinColumnsLeft = builder.joinColumnsLeft;
         this.joinColumnsRight = builder.joinColumnsRight;
+
+        //Perform validation: ensure columns are correct, etc
+        if(joinType == null)
+            throw new IllegalArgumentException("Join type cannot be null");
+        if(leftSchema == null)
+            throw new IllegalArgumentException("Left schema cannot be null");
+        if(rightSchema == null)
+            throw new IllegalArgumentException("Right schema cannot be null");
+        if(joinColumnsLeft == null || joinColumnsLeft.length == 0){
+            throw new IllegalArgumentException("Invalid left join columns: " + (joinColumnsLeft == null ? null : Arrays.toString(joinColumnsLeft)));
+        }
+        if(joinColumnsRight == null || joinColumnsRight.length == 0){
+            throw new IllegalArgumentException("Invalid right join columns: " + (joinColumnsRight == null ? null : Arrays.toString(joinColumnsRight)));
+        }
+
+        //Check that the join columns actually appear in the schemas:
+        for(String leftCol : joinColumnsLeft){
+            if(!leftSchema.hasColumn(leftCol)){
+                throw new IllegalArgumentException("Cannot perform join: left join column \"" + leftCol + "\" does not exist in left schema");
+            }
+        }
+
+        for(String rightCol : joinColumnsRight){
+            if(!rightSchema.hasColumn(rightCol)){
+                throw new IllegalArgumentException("Cannot perform join: right join column \"" + rightCol + "\" does not exist in right schema");
+            }
+        }
     }
 
 
