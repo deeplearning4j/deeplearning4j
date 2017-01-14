@@ -61,12 +61,16 @@ typedef struct {
 
 typedef __syncInfo SyncInfo;
 
+
+// this method isn't used, left here for legacy and caution purposes
+// TLDR: don't use this way, it sucks
 void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data){
     SyncInfo *sync = (SyncInfo *) data;
 
     printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
 }
 
+// this method just does type conversion in fancy way
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jIndex)ptrToDeviceId;
 }
@@ -121,6 +125,9 @@ int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
 	return memory_limit;
 }
 
+/*
+ * Basic CUDA constants here: number of blocks per MP
+ */
 int getDeviceBlockThreshold(int deviceId) {
 	int ccMinor = deviceProperties[deviceId].minor;
 	int ccMajor = deviceProperties[deviceId].major;
@@ -160,6 +167,9 @@ dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerT
 	return launchDims;
 }
 
+/*
+ * This message returns shared memory threshold value. default overflow ratio is 0.3
+ */
 int getDeviceSharedThreshold(int deviceId) {
 	int ccMinor = deviceProperties[deviceId].minor;
 	int ccMajor = deviceProperties[deviceId].major;
@@ -170,7 +180,7 @@ int getDeviceSharedThreshold(int deviceId) {
 	if (ccMajor == 6 && ccMinor == 0)
 		shmemThreshold = 65536;
 	else if (ccMajor == 6 && ccMinor == 1)
-		shmemThreshold = 98304 / 0.3;
+		shmemThreshold = 49152;
 	else if (ccMajor == 5 && ccMinor == 2)
 		shmemThreshold = 98304;
 	else if (ccMajor == 5)
@@ -179,7 +189,7 @@ int getDeviceSharedThreshold(int deviceId) {
 		shmemThreshold = 114688;
 	else shmemThreshold = 49152;
 
-	return shmemThreshold;
+	return shmemThreshold / 0.3;
 }
 
 
@@ -274,7 +284,9 @@ dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cu
 	return dim3(num_blocks,num_threads, memory_limit);
 }
 
-
+/*
+ * This method returns kernel launch param for linear memory access
+ */
 dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFuncAttributes funcAttr) {
 	int xRank = shape::rank(xShapeInfo);
 	int yRank = yShapeInfo == nullptr ? 0 : shape::rank(yShapeInfo);
@@ -328,6 +340,18 @@ dim3 getFlatLaunchParams(int deviceId, int *xShapeInfo, int *yShapeInfo, cudaFun
 	return launchDims;
 }
 
+/**
+ * This method returns kernel launch params with TAD-based memory access
+ *
+ * @param deviceId
+ * @param xShapeInfo
+ * @param tadShapeInfo
+ * @param funcAttr
+ * @param dimensionLength
+ * @param elementSize
+ * @param reductionSize
+ * @return
+ */
 dim3 getReduceLaunchParams(int deviceId, int *xShapeInfo, int *tadShapeInfo, cudaFuncAttributes funcAttr, int dimensionLength, int elementSize, int reductionSize) {
 
 	int tadLength = 0;
@@ -504,8 +528,6 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	if (debug && verbose)
 		printf("D1 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[27], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
@@ -620,24 +642,12 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 	if (debug && verbose)
 		printf("D3 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[26], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[26],  dimensionLength, sizeof(double), 2);
+
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
 
     DISPATCH_SIMPLE(broadcastSimple, double, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), OPS_A(BROADCAST_OPS))
 
-/*
-	broadcastDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			x,
-			xShapeInfo, shape::rank(hostXShapeInfo),
-			y,
-			yShapeInfo, shape::rank(hostYShapeInfo),
-			result,
-			resultShapeInfo, shape::rank(hostZShapeInfo),
-			dimension,
-			dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ);
-*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -674,8 +684,6 @@ void   NativeOps::execPairwiseTransformDouble(
 
 	if (debug && verbose)
 		printf("D4 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[25], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -829,7 +837,6 @@ void   NativeOps::execReduceDouble(
 	if (debug && verbose)
 		printf("D7 opNum:[%i]\n", opNum);
 
-
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
@@ -839,19 +846,10 @@ void   NativeOps::execReduceDouble(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
+
     DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
-/*
-	reduceScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			x,
-			xShapeInfo,
-			extraParams,
-			result,
-			resultShapeInfo,
-			nullptr,
-			1,
-			reductionPointer, deviceTADShapeInfo);
-*/
+
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
@@ -885,61 +883,28 @@ void   NativeOps::execReduceDouble(
 	if (debug && verbose)
 		printf("D8 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[22], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 
-
+	/**
+	 * We have separate kernels, optimized for different number of dimensions for reductions
+	 */
 	if (dimensionLength == 1) {
         dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[32], dimensionLength, sizeof(double), 2);
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric1D, double, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
 
-        /*
-		reduceDouble1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-*/
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
         dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[33], dimensionLength, sizeof(double), 2);
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric3D, double, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-        /*
-		reduceDouble6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-*/
 	} else {
         dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, sizeof(double), 2);
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGenericXD, double, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-        /*
-		reduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-         */
 	}
 
 	if (debug)
@@ -976,20 +941,9 @@ double NativeOps::execReduceScalarDouble(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
-    /*
-	reduceScalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			x,
-			xShapeInfo,
-			extraParams,
-			resultPointer,
-			nullptr,
-			nullptr,
-			1,
-			reductionPointer, deviceTADShapeInfo);
-*/
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	double result = resultPointer[0];
@@ -1029,8 +983,6 @@ void   NativeOps::execReduce3Double(
 
 	if (debug && verbose)
 		printf("D10 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[21], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -1104,6 +1056,7 @@ double   NativeOps::execReduce3ScalarDouble(
 					1,
 					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
+	// since this method should return scalar value - we should block on this call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	double result  = resultPointer[0];
@@ -1150,8 +1103,6 @@ void   NativeOps::execReduce3Double(
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
     int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, resultShapeInfo, dimensionLength, sizeof(double), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
 	reduce3Double<<<1,launchDims.y,launchDims.z, *stream>>>(
@@ -1197,26 +1148,15 @@ void   NativeOps::execScalarDouble(
 	if (debug && verbose)
 		printf("D13 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[20], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[20]);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleStrided, double, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
 
-    /*
-	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			n,
-			scalar,
-			x,
-			xStride,
-			extraParams,
-			result,resultStride, allocPointer);
-*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -1249,21 +1189,12 @@ void NativeOps::execScalarDouble(
 	if (debug && verbose)
 		printf("D14 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[19], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[19]);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
-
-    /*
-	scalarDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			scalar,
-			x,
-			xShapeInfo, shape::rank(hostXShapeInfo),
-			extraParams,
-			result,resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer);*/
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1303,7 +1234,6 @@ void NativeOps::execScalarDouble(
 	if (debug && verbose)
 		printf("D15 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[18], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[18]);
@@ -1344,8 +1274,6 @@ double   NativeOps::execSummaryStatsScalarDouble(
 	if (debug && verbose)
 		printf("D16 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -1366,6 +1294,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
+	// this is blocking method since method should return scalar
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	double result = resultPointer[0];
@@ -1392,8 +1321,6 @@ void   NativeOps::execSummaryStatsDouble(
 	if (debug && verbose)
 		printf("D17 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
@@ -1409,6 +1336,7 @@ void   NativeOps::execSummaryStatsDouble(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], 1, sizeof(double), 8);
 
+	// we have to limit grid size here, due to limited nature of reduction/allocation pointers
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -1458,13 +1386,12 @@ void   NativeOps::execSummaryStatsDouble(
 	if (debug && verbose)
 		printf("D18 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[17], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[17], dimensionLength, sizeof(double), 8);
 
+	// we're limiting maximum grid size for summaryStats ops
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -1512,17 +1439,8 @@ void   NativeOps::execTransformDouble(
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[16]);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(transformStrided, double, PARAMS(n, dx, xStride, extraParams, z, zStride, allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-
-    /*
-	transformDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			n,
-			dx,
-			xStride,
-			extraParams,
-			result,resultStride, allocPointer, reductionPointer);
-    */
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1555,8 +1473,6 @@ void   NativeOps::execTransformDouble(
 	int *hostYShapeInfo = reinterpret_cast<int *>(extraPointers[7]);
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[1], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
     int *maskedAllocPointer = allocPointer;
@@ -1571,10 +1487,18 @@ void   NativeOps::execTransformDouble(
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	double * special = (double *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
+	/**
+	 * ops between 38 and 41 are special ops:
+	 * SoftMax, LogSoftMax, SoftMaxDerivative, IsMax
+	 * On cuda we execute them as
+	 */
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
 			// if that's vector, we just go directly to op in 1 block
+			/*
+			 * For vector cases of everything, but IsMax (41) we go for single-kernel calls
+			 */
 			int length = shape::length(hostXShapeInfo);
 			int block = nd4j::math::nd4j_min<int>(256, length);
 
@@ -1582,26 +1506,17 @@ void   NativeOps::execTransformDouble(
             launchDims.y = block;
             launchDims.z += (block * sizeof(double) * 4);
 
+			// this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-
-
-            /*
-			transformDouble<<< 1, block,launchDims.z + (block * sizeof(double) * 8), *stream >>> (
-					opNum,
-							dx,
-							xShapeInfo,  shape::rank(hostXShapeInfo),
-							extraParams,
-							result, resultShapeInfo,  shape::rank(hostZShapeInfo), allocPointer, reductionPointer);*/
 		} else {
 			// going for blockwise specials
-			//float *xpf = reinterpret_cast<float *>(dx);
+			// we'll do some pointers mangling here, and execute kernels one by one
 
 			int *shape = shape::shapeOf(hostXShapeInfo);
-			//printf("Rows num: %i\n", shape[0]);
 			switch (opNum) {
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
-				case 38: {// softmax
+				case 38: {// SoftMax
 					Nd4jPointer tempPointers[16];
 					tempPointers[0] = extraPointers[0];
 					tempPointers[1] = extraPointers[1];
@@ -1625,7 +1540,8 @@ void   NativeOps::execTransformDouble(
 					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
 					tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
 
-					prepareShapeBuffer << < 1, 1, 128, *stream >> > (dimension, maxDimension, maxShapeBuffer, shape[0]);
+					// TODO: we could get rid of this one eventually
+					prepareShapeBuffer <<<1, 1, 128, *stream>>> (dimension, maxDimension, maxShapeBuffer, shape[0]);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1688,15 +1604,12 @@ void   NativeOps::execTransformDouble(
 					bool scalarCheat = false;
 					if (extraParams == nullptr) {
 						scalarCheat = true;
-					} else {
-						//extraParams == nullptr || (shape::isVector(hostXShapeInfo))
-						//if (shape::isVector(hostXShapeInfo) && extraParams[1] == 1) {
-						//	scalarCheat = true;
-						//}
 					}
 
 					if (scalarCheat) {
-						//printf("Going for scalar IsMax\n");
+						/**
+						 * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
+						 */
 						int maxIdx = (int) execIndexReduceScalarDouble(extraPointers, 0, dx, xShapeInfo, extraParams);
 						int targetIdx = 0;
 
@@ -1707,9 +1620,6 @@ void   NativeOps::execTransformDouble(
 
 						fillIsMaxDouble<<< 1, 128, 0, *stream >>>(result, shape::length(hostXShapeInfo), targetIdx);
 					} else {
-						// going for dimension-based IsMax
-						//printf("Going for dimension-based IsMax\n");
-
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
@@ -1721,13 +1631,10 @@ void   NativeOps::execTransformDouble(
 						if (debug)
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
-						// at this point, all IMax indexes are gathered, and we execute
+						// at this point, all IMax indexes are gathered, and we execute filler
 						fillDimensionalIsMaxDouble<<<blockLimit, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
 
-
                         checkCudaErrors(cudaStreamSynchronize(*stream));
-
-
 					}
 					break;
 				}
@@ -1738,17 +1645,22 @@ void   NativeOps::execTransformDouble(
 			}
 		}
 	} else {
+		// for Im2Col & Col2Im we enforce higher dimensionality
+		// TODO: investigate this on high-end gpus
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 768;
         }
 
+		// Histogram op requires additional memory chunk
+		// FIXME: make this one to use cache
         if (opNum == 48) {
             int length = shape::length(hostZShapeInfo);
             cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(double));
         }
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 
@@ -1756,6 +1668,7 @@ void   NativeOps::execTransformDouble(
         if (debug || opNum == 48)
             checkCudaErrors(cudaStreamSynchronize(*stream));
 
+		// release Histogram memory
         if (opNum == 48) {
             cudaFree((void *)maskedAllocPointer);
         }
@@ -1792,8 +1705,6 @@ void   NativeOps::execTransformDouble(
 	if (debug && verbose)
 		printf("D21 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[14], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
@@ -1828,8 +1739,6 @@ float   NativeOps::execIndexReduceScalarFloat(
 	if (debug && verbose)
 		printf("F1 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
@@ -1861,6 +1770,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 			1,
 			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
+	// once again - since we return scalar value in this method, we should block this kernel launch
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = resultPointer[0];
@@ -1876,8 +1786,6 @@ float   NativeOps::execIndexReduceScalarHalf(
 		float16 *extraParams){
 	if (debug && verbose)
 		printf("H1 opNum:[%i]\n", opNum);
-
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -1908,6 +1816,7 @@ float   NativeOps::execIndexReduceScalarHalf(
 					1,
 					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
+	// blocking for scalar output
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = (float) resultPointer[0];
@@ -1948,7 +1857,6 @@ void   NativeOps::execIndexReduceFloat(
 	if (debug && verbose)
 		printf("F2 opNum:[%i]\n", opNum);
 
-	// dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
@@ -1996,7 +1904,6 @@ void   NativeOps::execIndexReduceHalf(
 	if (debug && verbose)
 		printf("H2 opNum:[%i]\n", opNum);
 
-	// dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[13], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
@@ -2063,16 +1970,12 @@ void   NativeOps::execBroadcastFloat(
 	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
 	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
 
-
-
 	if (debug && verbose)
 		printf("F3 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[getDeviceId(extraPointers[2])]);
-
-
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float), 0);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(broadcastSimple, float, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), OPS_A(BROADCAST_OPS))
 
 /*
@@ -2142,25 +2045,10 @@ void   NativeOps::execBroadcastHalf(
 	if (debug && verbose)
 		printf("H3 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[12], deviceProperties[getDeviceId(extraPointers[2])]);
-
-
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, sizeof(float16), 0);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(broadcastSimple, float16, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), OPS_A(BROADCAST_OPS))
-
-    /*
-	broadcastHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-					x,
-					xShapeInfo, shape::rank(hostXShapeInfo),
-					y,
-					yShapeInfo, shape::rank(hostYShapeInfo),
-					result,
-					resultShapeInfo, shape::rank(hostZShapeInfo),
-					dimension,
-					dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ);
-     */
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -2198,11 +2086,8 @@ void   NativeOps::execPairwiseTransformFloat(
 	if (debug && verbose)
 		printf("F4 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[11], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], nullptr, (int *) extraPointers[7], 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[11]);
 
 	if (verbose && launchDims.x == 1)
@@ -2243,11 +2128,8 @@ void   NativeOps::execPairwiseTransformHalf(
 	if (debug && verbose)
 		printf("H4 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[11], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], nullptr, (int *) extraPointers[7], 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[11]);
 
 	if (verbose && launchDims.x == 1)
@@ -2308,8 +2190,6 @@ void NativeOps::execPairwiseTransformFloat(
 	if (debug && verbose)
 		printf("F5 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[10], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[10], 1, sizeof(float), 0);
@@ -2359,8 +2239,6 @@ void NativeOps::execPairwiseTransformHalf(
 
 	if (debug && verbose)
 		printf("H5 opNum:[%i]\n", opNum);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[10], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
@@ -2420,11 +2298,8 @@ void NativeOps::execPairwiseTransformFloat(
 	if (debug && verbose)
 		printf("F6 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[9], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], resultShapeInfo,  yShapeInfo, 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[9]);
 
 	if (verbose && launchDims.x == 1) {
@@ -2467,11 +2342,8 @@ void NativeOps::execPairwiseTransformHalf(
 	if (debug && verbose)
 		printf("H6 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[9], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], resultShapeInfo,  yShapeInfo, 1, sizeof(float), 0);
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[9]);
 
 	if (verbose && launchDims.x == 1) {
@@ -2527,20 +2399,8 @@ void   NativeOps::execReduceFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
-
-    /*
-	reduceScalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			x,
-			xShapeInfo,
-			extraParams,
-			result,
-			resultShapeInfo,
-			nullptr,
-			1,
-			reductionPointer, deviceTADShapeInfo);
-     */
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -2570,20 +2430,9 @@ void   NativeOps::execReduceHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH7 opNum:[%i]\n", opNum);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
-    /*
-	reduceScalarHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-					x,
-					xShapeInfo,
-					extraParams,
-					result,
-					resultShapeInfo,
-					nullptr,
-					1,
-					reductionPointer, deviceTADShapeInfo);
-*/
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
@@ -2618,54 +2467,28 @@ void   NativeOps::execReduceFloat(
 
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF8 opNum:[%i]\n", opNum);
 
+	// we call different kernels optimized for different number of dimensions in TAD
 	if (dimensionLength == 1) {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric1D, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric3D, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-        /*
-		reduceFloat6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-						opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);*/
 	} else {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGenericXD, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-
-        /*
-		reduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-						opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-         */
 	}
-
-
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
-
-	//delete tad;
 }
 
 void   NativeOps::execReduceHalf(
@@ -2688,9 +2511,6 @@ void   NativeOps::execReduceHalf(
 	if (debug && verbose)
 		printf("H8 opNum:[%i]\n", opNum);
 
-//	dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
-
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float16), 1);
@@ -2698,59 +2518,23 @@ void   NativeOps::execReduceHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH8 opNum:[%i]\n", opNum);
 
+	// calling different kernels, depending on number of dimensions in TAD
 	if (dimensionLength == 1) {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric1D, float16, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-
-        /*
-		reduceHalf1D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);*/
 	} else if (shape::rank(hostTADShapeInfo) <= 3) {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGeneric3D, float16, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-
-        /*
-		reduceHalf6D<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);*/
 	} else {
 
+		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(reduceSimpleGenericXD, float16, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), OPS_A(REDUCE_OPS))
-        /*
-		reduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-				opNum,
-						x,
-						xShapeInfo,
-						extraParams,
-						result,
-						resultShapeInfo,
-						dimension,
-						dimensionLength,
-						reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-         */
 	}
-
-
 
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
-
-	//delete tad;
 }
 
 /**
@@ -2775,40 +2559,19 @@ float NativeOps::execReduceScalarFloat(
 	if (debug && verbose)
 		printf("F9 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[8], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[8], 1, sizeof(float), 1);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 8, funcAttributes[8]);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
 
-    //printf("Launch params: {x: %i, y: %i, z: %i}\n", launchDims.x,launchDims.y, launchDims.z);
-
-	//printf("reduceScalarFloat is going to start...\n");
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
-    /*
-	reduceScalarFloat<<< launchDims.x,launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-			x,
-			xShapeInfo,
-			extraParams,
-			resultPointer,
-			nullptr,
-			nullptr,
-			1,
-			reductionPointer, deviceTADShapeInfo
-	);
-*/
-	//printf("kernel fired...\n");
-
-
+	// blocking this one
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = resultPointer[0];
@@ -2838,9 +2601,10 @@ float NativeOps::execReduceScalarHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH9 opNum:[%i]\n", opNum);
 
-
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
+	// blocking call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = (float) resultPointer[0];
@@ -2881,13 +2645,9 @@ void   NativeOps::execReduce3Float(
 	if (debug && verbose)
 		printf("F10 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
     float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, resultShapeInfo, 1, sizeof(float), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
@@ -2933,13 +2693,9 @@ void   NativeOps::execReduce3Half(
 	if (debug && verbose)
 		printf("H10 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
     float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, resultShapeInfo, 1, sizeof(float), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 8, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
@@ -2992,14 +2748,10 @@ float   NativeOps::execReduce3ScalarFloat(
 	if (debug && verbose)
 		printf("F11 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
     float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, nullptr, 1, sizeof(float), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 32, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
@@ -3018,6 +2770,7 @@ float   NativeOps::execReduce3ScalarFloat(
 			1,
 			1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
+	// blocking call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result  = resultPointer[0];
@@ -3067,6 +2820,7 @@ float   NativeOps::execReduce3ScalarHalf(
 					1,
 					1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets, yDeviceTADShapeInfo, yDeviceTADOffsets);
 
+	// blocking call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result  = (float) resultPointer[0];
@@ -3109,16 +2863,12 @@ void   NativeOps::execReduce3Float(
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
     int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
-
 	if (debug && verbose)
 		printf("F12 opNum:[%i]\n", opNum);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
     float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo, resultShapeInfo, dimensionLength, sizeof(float), 2);
-	//dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), (int *) extraPointers[0], yShapeInfo);
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[7]);
 
 	if (verbose && launchDims.x == 1)
@@ -3177,8 +2927,6 @@ void   NativeOps::execReduce3Half(
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
     int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
-
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[7], deviceProperties[getDeviceId(extraPointers[2])]);
 
 	if (debug && verbose)
 		printf("H12 opNum:[%i]\n", opNum);
@@ -3258,18 +3006,9 @@ void   NativeOps::execScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF13 opNum:[%i]\n", opNum);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleStrided, float, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
 
-    /*
-	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			n,
-			scalar,
-			x,
-			xStride,
-			extraParams,
-			result,resultStride, allocPointer);
-*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3299,18 +3038,9 @@ void   NativeOps::execScalarHalf(
     if (verbose && launchDims.x == 1)
         printf("AF13 opNum:[%i]\n", opNum);
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
 
-    /*
-	scalarFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			n,
-			scalar,
-			x,
-			xStride,
-			extraParams,
-			result,resultStride, allocPointer);
-*/
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3353,17 +3083,9 @@ void NativeOps::execScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
 
-    /*
-	scalarFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-			scalar,
-			x,
-			xShapeInfo, shape::rank(hostXShapeInfo),
-			extraParams,
-			result,resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer );
-*/
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3387,7 +3109,6 @@ void NativeOps::execScalarHalf(
 	if (debug && verbose)
 		printf("H14 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[5], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[5]);
@@ -3397,16 +3118,9 @@ void NativeOps::execScalarHalf(
 	if (verbose && launchDims.x == 1)
 		printf("AH14 opNum:[%i], xLength:[%i]\n", opNum, shape::length(hostXShapeInfo));
 
+	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
-    /*
-	scalarHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-			opNum,
-					scalar,
-					x,
-					xShapeInfo, shape::rank(hostXShapeInfo),
-					extraParams,
-					result,resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer );
-*/
+
 	if (debug)
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
@@ -3444,7 +3158,6 @@ void NativeOps::execScalarFloat(
 	if (debug && verbose)
 		printf("F15 opNum:[%i]\n", opNum);
 
-	//dim3 launchDims = getOptimalLaunchParameters<float>(&extraPointers[0], funcAttributes[4], deviceProperties[getDeviceId(extraPointers[2])]);
 	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, nullptr, funcAttributes[4]);
@@ -3499,6 +3212,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF16 opNum:[%i]\n", opNum);
 
+	// we limit grid size for SummaryStats calls
     launchDims.x = nd4j::math::nd4j_min<int>(512, launchDims.x);
 
 	summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -3512,6 +3226,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 			1,
 			1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
+	// blocking call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = resultPointer[0];
@@ -3559,6 +3274,7 @@ float   NativeOps::execSummaryStatsScalarHalf(
 					1,
 					1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
+	// blocking call
 	checkCudaErrors(cudaStreamSynchronize(*stream));
 
 	float result = (float) resultPointer[0];
