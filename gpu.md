@@ -58,7 +58,10 @@ If your app can afford using half-precision math (typically neural nets can affo
 
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
 
-Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type. 
+Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type.
+
+However you should be aware: HALF data type offers way smaller precision then FLOAT or DOUBLE, thus neural net tuning might become way harder.
+On top of that, at this moment we don't offer full LAPACK support for HALF data type.
 
 ## Larger Grids
 
