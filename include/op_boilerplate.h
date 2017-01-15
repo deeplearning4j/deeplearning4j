@@ -38,6 +38,10 @@
  * So, DISPATCH_KERNEL_SIMPLE call will generate one kernel for each of ops.
  * This allows us easy addition of new operations. Basically one should just add new Op to the list, and recompile libnd4j
  *
+ * HINT: To debug macro you might want to use simple trick: open console and run "watch -n 1 gcc -e file.h"
+ * This will give you real-time result of macro preprocessing, which will greatly simplify invention process.
+ *
+ *
  * @author Paul Dubs (@treo)
  * @author raver119@gmail.com
  */
