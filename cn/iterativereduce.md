@@ -1,48 +1,48 @@
 ---
-title: "Iterative Reduce With DL4J on Hadoop and Spark"
-layout: default
+title: "DL4J与基于Hadoop和Spark的迭代式归纳"
+layout: cn-default
 ---
 
-# Iterative Reduce With DL4J on Hadoop and Spark
+# DL4J与基于Hadoop和Spark的迭代式归纳
 
-Understanding Iterative Reduce is easier if you start with its simpler predecessor, MapReduce. 
+为了便于理解迭代式归纳（Iterative Reduce），可以从问世更早也更简单一些的MapReduce入手。 
 
 ## MapReduce
 
-MapReduce is a technique for processing very large datasets simultaneously over many cores. Jeff Dean of Google introduced the method in a [2004 research paper](https://static.googleusercontent.com/media/research.google.com/en/us/archive/mapreduce-osdi04.pdf), and Doug Cutting implemented a similar structure a year later at Yahoo. Cutting's project would eventually become [Apache Hadoop](https://hadoop.apache.org/). Both projects were created to batch index the Web, and have since found many other applications. 
+MapReduce（映射/归纳）是一种在多个处理器核上处理超大型数据集的技术。谷歌的Jeff Dean在一篇[2004年的研究论文](https://static.googleusercontent.com/media/research.google.com/en/us/archive/mapreduce-osdi04.pdf)中首次介绍了这一方法，一年后，雅虎的Doug Cutting实现了一种相似的架构。Cutting的项目最终演变为[Apache Hadoop](https://hadoop.apache.org/)。两个项目最初的设计目的都是对Web进行批量索引，后来又产生了许多其他的应用。 
 
-The word MapReduce refers to two methods derived from functional programming. *Map* is an operation that applies the same computation to every element in a list of values, producing a new list of values. *Reduce* is an operation that applies to a list of values and combines them into a smaller number of values. 
+MapReduce这个词指的是函数式编程衍生出的两种方法。*Map（映射）*操作指对一个值列表中的每项元素进行同样的运算，得到一个新的值列表。*Reduce（归纳）*操作指将一个列表中的值合并，减少值的个数。 
 
-For example, in their simplest form, map and reduce can understood with the example of a counting words in a vocab: given a vocabulary, *map* gives each instance of every word in the vocab a value of 1 in a key-value pair; *reduce* sums the 1s associated with each vocab word, creating the word count. 
+可以通过词汇表词数统计的例子来理解Map和Reduce的最简形式：*Map*将一个词汇表中的每一个词的每个实例变成值为1的键值对；*Reduce*则把与每个词相关联的1相加，得到词数。 
 
-MapReduce operates on a larger scale. *Map* breaks down a very large job by distributing data to many cores, and running the same operation(s) on those data shards. *Reduce* consolidates all those scattered and transformed shards into one dataset, gathering all the work into one place and applying an additional operation. Map explodes and Reduce collapses, like a star expands to become a Red Giant, and shrinks to a White Dwarf. 
+MapReduce实际运行时规模更大。*Map*可以分解非常大的任务，将数据分发给许多处理器核，在这些数据分片上运行相同的运算。*Reduce*将所有分散并转换后的分片合并成一个数据集，把所有结果汇集到一处，进行一项加法运算。Map是膨胀，而Reduce则是坍缩，就像一颗恒星先扩张成红巨星，再收缩成白矮星。 
 
-## Iterative MapReduce
+## 迭代式MapReduce
 
-While a single pass of MapReduce performs fine for many use cases, it is insufficient for machine- and deep learning, which are iterative in nature, since a model "learns" with an optimization algorithm that leads it to a point of minimal error over many steps. 
+虽然MapReduce在许多用例中只需单次遍历即可，但这对于机器学习和深度学习来说是不够的，因为模型“学习”的本质就是一项优化算法通过许多次的迭代步骤来达到最小误差。 
 
-You can think of Iterative MapReduce, also [inspired by Jeff Dean](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf), as a YARN framework that makes multiple passes on the data, rather than just one. While the architecture of Iterative Reduce is different from MapReduce, on a high level you can understand it as a sequence of map-reduce operations, where the output of MapReduce1 becomes the input of MapReduce2 and so forth. 
+迭代式MapReduce同样也是[受Jeff Dean启发](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf)而提出的，可以将其视为一种多次而非单次遍历数据的YARN框架。虽然迭代式归纳的架构与MapReduce有所区别，但总体上而言，可以把它理解为一个MapReduce操作序列，其中MapReduce1的输出成为MapReduce2的输入，以此类推。 
 
-Let's say you have a deep-belief net that you want to train on a very large dataset to create a model that accurately classifies  your inputs. A deep-belief net is composed of three functions: a scoring function that maps inputs to classifications; an error function that measures the difference between the model's guesses and the correct answer; and optimization algorithm that adjusts the parameters of your model until they make the guesses with the least amount of error. 
+假设现在有一个深度置信网络，而您想用一个非常大的数据集来定型，生成能够将输入准确分类的模型。深度置信网络由三个函数组成：一个将输入映射到分类的计分函数、一个衡量模型预测结果与正确答案的差距的误差函数、一个调整模型参数直至预测误差达到最小的优化算法。 
 
-*Map* places all those operations on each core in your distributed system. Then it distributes batches of your very large input dataset over those many cores. On each core, a model is trained on the input it receives. *Reduce* takes all those models and averages the parameters, before sending the new, aggregate model back to each core. Iterative Reduce does that many times until learning plateaus and error ceases to shrink. 
+*Map*将以上所有操作置于分布式系统的每个处理器核中。然后它会把规模庞大的输入数据集分批分发给许多处理器核。每个核都用得到的输入定型一个模型。*Reduce*对所有模型的参数进行平均化，然后将聚合后的新模型发送回每一个核。迭代式归纳将这样的操作重复多次，直至学习结果趋于稳定，误差不再缩小。 
 
-The image, [created by Josh Patterson](http://www.slideshare.net/cloudera/strata-hadoop-world-2012-knitting-boar), below compares the two processes. On the left, you have a close-up of MapReduce; on the right, of Iterative. Each "Processor" is a deep-belief network at work, learning on batches of a larger dataset; each "Superstep" is an instance of parameter averaging, before the central model is redistributed to the rest of the cluster. 
+以下这幅[由Josh Patterson绘制的](http://www.slideshare.net/cloudera/strata-hadoop-world-2012-knitting-boar)示意图比较了这两种流程。左侧是MapReduce的流程详情；右边则是迭代式归纳。每个“处理器（Processor）”都是一个用大型数据集中的多批数据进行学习的深度置信网络；每个“超步（Superstep）”是一次参数平均化，所得的中央模型会被重新分发给整个集群。 
 
-![Alt text](./img/mapreduce_v_iterative.png)
+![Alt text](../img/mapreduce_v_iterative.png)
 
-## Hadoop & Spark
+## Hadoop和Spark
 
-Both Hadoop and Spark are distributed run-times that perform a version of MapReduce and Iterative Reduce. Deeplearning4j works as a job within Hadoop/YARN or Spark. It can be called, run and provisioned as a YARN app, for example.
+Hadoop和Spark都是能够进行MapReduce和迭代式归纳的分布式运行时。Deeplearning4j作为Hadoop/YARN或Spark中的一项任务运行，比如可以将其作为一项YARN应用来调用、运行和预配。
 
-In Hadoop, Iterative Reduce workers sit on the their splits, or blocks of HDFS, and process data synchronously in parallel, before they send the their transformed parameters back to the master, where the parameters are averaged and used to update the model on each worker's core. With MapReduce, the map path goes away, but Iterative Reduce workers stay resident. This architecture is roughly similar to Spark.
+在Hadoop中，迭代式归纳的工作节点负责各自的数据分片，亦即HDFS块，以同步方式并行处理数据，再把变换后的参数发回主节点，主节点将参数平均化，然后用其更新每个工作节点的处理器核上的模型。MapReduce的映射路径不会持续保留，而迭代式归纳的工作节点则是“常驻”的。Spark的架构与此大致相似。
 
-To provide a little context about the state-of-the-art, both Google and Yahoo operate parameter servers that store billions of parameters which are then distributed to the cluster for processing. Google's is called the Google Brain, which was created by Andrew Ng and is now led by his student Quoc Le. Here's a rough picture of the Google production stack circa 2015 to show you how MapReduce fits in.
+稍微介绍一下这方面技术的最新进展。谷歌和雅虎都运营着存储了海量参数的参数服务器，这些数以亿计的参数会被分发到集群中进行处理。谷歌的系统称为Google Brain，由Andrew Ng创建，现在由他的学生Quoc Le负责领导。以下是2015年前后谷歌生产栈的总体示意图，其中可见MapReduce的定位。
 
-![Alt text](./img/google_production_stack.png)
+![Alt text](../img/google_production_stack.png)
 
-Deeplearning4j considers distributed run-times to be interchangeable (but not necessarily equal); they are all simply a directory in a larger modular architecture that can be swapped in or out. This allows the overall project to evolve at different speeds, and separate run-times from other modules devoted to neural net algorithms on the one hand, and hardware on the other. Deeplearning4j users are also able to build a standalone distributed architecture via Akka, spinning out nodes on AWS.
+Deeplearning4j认为分布式运行时是可互换的（但不一定完全等同）；它们都只是整个模块化架构中的一个目录，可以任意替换。这让整体项目能以不同速度演进，而来自其他模块的独立的运行时可以分别被专用于神经网络算法或硬件。Deeplearning4j也能用Akka构建一个独立的分布式架构，在AWS上组织节点。
 
-Every form of scaleout including Hadoop and Spark is included in our [scaleout repository](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout).
+包括Hadoop和Spark在内的所有向外扩展形式都收录在我们的[向外扩展库](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout)中。
 
-Lines of Deeplearning4j code can be intermixed with Spark, for example, and DL4J operations will be distributed like any other. 
+比方说，Deeplearning4j的代码可以与Spark相混合，让DL4J也能像其他应用一样实现分布式运行。 
