@@ -98,6 +98,7 @@ namespace randomOps {
         method_idx
         method_XY
 
+        // please note: prob is chance to retain original value
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T randVal = helper->relativeT<T>(idx);
             return randVal >= extraParams[0] ? (T) 0.0f : valueX;
@@ -117,6 +118,7 @@ namespace randomOps {
         method_idx
         method_XY
 
+        // please note: prob is chance to retain original value
         random_def T op(T valueX, int idx, int length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T prob = extraParams[0];
             T randVal = helper->relativeT<T>(idx);

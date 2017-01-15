@@ -1,4 +1,14 @@
 /*
+ * This set of macros is used to generate kernel calls/method calls/cuda kernels on the fly, during precompile phase.
+ *
+ * Entry macros start with DISPATCH_* name.
+ * Basically they are rolling through *_OPS list, building list of kernels.
+ * And DISPATCH_KERNEL_META rolls through any two *_OPS list, building meta kernels and their host counterparts
+ *
+ *
+ * Those scary FE_*, FX_*, FZ_*, FM_* etc macro walls are used to give preprocessor ability to loop over list of argument,
+ * which emulates forEach() pattern.
+ *
  * @author Paul Dubs (@treo)
  * @author raver119@gmail.com
  */

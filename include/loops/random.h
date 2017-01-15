@@ -188,6 +188,7 @@ namespace functions {
                     }
                 }
 
+                // update rng state
                 buffer->rewindH(length);
             }
 
@@ -315,6 +316,7 @@ namespace functions {
                     }
                 }
 
+                // update rng state
                 buffer->rewindH(length);
             }
 
@@ -411,6 +413,7 @@ namespace functions {
                     }
                 }
 
+                // update rng state
                 buffer->rewindH(length);
             }
 
@@ -490,7 +493,7 @@ __device__ void randomTripleGeneric(
 }
 
 
-
+// here we generate kernels for target operations
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double, INPUT(Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16, INPUT(Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))

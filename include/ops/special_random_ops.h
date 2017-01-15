@@ -189,7 +189,6 @@ namespace randomOps {
                         T relProb = y[f * yEWS];
                         cumProb += relProb;
 
-                      //  printf("e: %i; prob: %f; relProb: %f; cumProb: %f\n", e, prob, relProb, cumProb);
                         if (prob <= cumProb || f == yLength - 1) {
                             z[e * zEWS] = x[f * xEWS];
                             f += yLength;
@@ -243,6 +242,7 @@ namespace randomOps {
                 }
             }
 
+            // update rng state
             buffer->rewindH(zLength);
         }
     };
@@ -376,11 +376,11 @@ namespace randomOps {
 
                 for (int e = start; e < end; e++) {
                     if (!generated) {
-
+                        /*
+                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
+                         */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-
-
 
                         z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
                         z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
@@ -400,6 +400,7 @@ namespace randomOps {
                 }
             }
 
+            // update rng state
             buffer->rewindH(zLength);
 
         }
@@ -524,6 +525,7 @@ namespace randomOps {
                 }
             }
 
+            // update rng state
             if (trials > 0)
                 buffer->rewindH(zLength * trials);
         }

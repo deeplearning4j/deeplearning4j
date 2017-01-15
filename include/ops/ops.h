@@ -920,7 +920,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			if (d1 >= (T) 0.0) return 1.0;
+			if (d1 >= (T) 0.0f) return (T) 1.0f;
 			else return params[0];
 			//return (d1 >= (T) 0.0 ? 1.0 : params[0]);
 		}
@@ -992,7 +992,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (d1 > params[0] ? 1.0 : 0.0);
+			return (d1 > params[0] ? (T) 1.0f : (T) 0.0f);
 		}
 	};
 
@@ -1005,7 +1005,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return (T) 1.0 - d1;
+			return (T) 1.0f - d1;
 		}
 	};
 
@@ -1013,7 +1013,7 @@ namespace simdOps {
 	class Sum {
 	public:
 		op_def static T startingValue(const T *input) {
-			return (T) 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1037,7 +1037,7 @@ namespace simdOps {
     class ASum {
     public:
         op_def static T startingValue(const T *input) {
-            return (T) 0.0;
+            return (T) 0.0f;
         }
 
         op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1062,7 +1062,7 @@ namespace simdOps {
 	class Prod {
 	public:
 		op_def static T startingValue(const T *input) {
-			return (T) 1.0;
+			return (T) 1.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1086,7 +1086,7 @@ namespace simdOps {
 	class Mean {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1171,7 +1171,7 @@ namespace simdOps {
 	class Norm1 {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1198,7 +1198,7 @@ namespace simdOps {
 	class Norm2 {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1224,7 +1224,7 @@ namespace simdOps {
 	class NormMax {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1251,7 +1251,7 @@ namespace simdOps {
 	class Variance {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1283,7 +1283,7 @@ namespace simdOps {
 	class StandardDeviation {
 	public:
 		op_def static T startingValue(const T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
@@ -1323,7 +1323,7 @@ namespace simdOps {
 		}
 
 		op_def static T startingValue(T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static  T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
@@ -1380,7 +1380,7 @@ namespace simdOps {
 		}
 		
 		op_def static T startingValue(T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
@@ -1428,7 +1428,7 @@ namespace simdOps {
         }
 
         op_def static T startingValue(T *input) {
-            return 0.0f;
+            return (T) 0.0f;
         }
 
         op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
@@ -1442,7 +1442,7 @@ namespace simdOps {
             T eps = extraParamsRef[2];
 
             if (d1 == d2) {
-                return 0.0f;
+                return (T) 0.0f;
             } else if (d1 == (T) 0.0f || d2 == (T) 0.0f || diff < (T) FLOAT_MIN_NORMAL) {
                 //if (eps > 0.1)
                 return diff < eps ? 0.0f : 1.0f;
@@ -1451,7 +1451,7 @@ namespace simdOps {
                 //return res;
             } else {
                 T xDiff = (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE));
-                return  xDiff < eps ? 0.0f : 1.0f;
+                return  xDiff < eps ? (T) 0.0f : (T) 1.0f;
             }
         }
 
@@ -1490,7 +1490,7 @@ namespace simdOps {
 		}
 
 		op_def static T startingValue(T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
@@ -1536,7 +1536,7 @@ namespace simdOps {
 		}
 
 		op_def static T startingValue(T *input) {
-			return 0.0;
+			return (T) 0.0f;
 		}
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParamsRef) {
@@ -2060,7 +2060,7 @@ namespace simdOps {
         static inline T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
-				if (ret < (T) 0.0)
+				if (ret < (T) 0.0f)
 					return val.variance();
 				return ret;
 			}
@@ -2083,7 +2083,7 @@ namespace simdOps {
         static inline T getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<T> val) {
 			if (biasCorrected) {
 				T ret = val.varianceBiasCorrected();
-				if (ret < (T) 0.0)
+				if (ret < (T) 0.0f)
 					return nd4j::math::nd4j_sqrt(val.variance());
 				else
 					return nd4j::math::nd4j_sqrt(ret);
@@ -2115,7 +2115,7 @@ template<typename T>
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
-			return rnd >= prob ? (T) 0.0 : d1;
+			return rnd >= prob ? (T) 0.0f : d1;
 		}
 	};
 
@@ -2134,7 +2134,7 @@ template<typename T>
 #else
 			T rnd = (T) rand() / (T) RAND_MAX;
 #endif
-			return rnd >= prob ? (T) 0.0 : d1 / prob;
+			return rnd >= prob ? (T) 0.0f : d1 / prob;
 		}
 	};
 
@@ -2288,7 +2288,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
 		 */
 
 		meta_def static T startingValue(const T *input) {
-            return (T) 0.0;
+            return (T) 0.0f;
         }
 
 		// scalar, transform, reduce, indexreduce entry
@@ -2346,7 +2346,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
              * We assume, that this method won't be EVER called
              */
             printf("You should NEVER see this message in output\n");
-            return 0.0f;
+            return (T) 0.0f;
         }
 
         // PWT, broadcast entry. Predicate can be only scalar, transform
@@ -2369,7 +2369,7 @@ template<typename T, typename OpTypeA, typename OpTypeB>
              */
             printf("You should NEVER EVER see this message in output\n");
 
-            return 0.0f;
+            return (T) 0.0f;
         }
 
     };
