@@ -1,6 +1,9 @@
-//
-// @author raver119@gmail.com
-//
+/*
+ * This set of methods provides dataType conversions in all possible directions supported:
+ *  FP8, FP16, FLOAT, DOUBLE, INT8, UINT8, UINT16,
+ *
+ * @author raver119@gmail.com
+ */
 
 #ifndef LIBND4J_TYPE_CONVERSIONS_H
 #define LIBND4J_TYPE_CONVERSIONS_H
@@ -13,7 +16,7 @@
 #define ND4J_UINT16 5
 #define ND4J_FLOAT32 6
 #define ND4J_DOUBLE 7
-#define ND4J_FLOAT24 119
+#define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #include <ops/ops.h>
 #include <types/float16.h>
@@ -51,7 +54,7 @@ void convertGeneric(void *dx,const long N, void *dz) {
         }
     } else {
 
-#pragma omp simd
+#pragma omp parallel for
         for (int i = 0; i < N; i++) {
             z[i] = (T) ((float) x[i]);
         }
