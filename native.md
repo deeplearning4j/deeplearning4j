@@ -91,6 +91,20 @@ Recently, we’ve discovered that on some platforms, popular BLAS-libraries can 
 
 To activate fallback mode you only need to set special environment variable: **ND4J_FALLBACK**. Set it to «**true**» or to **1** before launching your app. It’s possible to use this variable in an Apache Spark environment, as well as in a standalone app.
 
+
+## How it works after all?
+
+Native backend for ND4J is built with C++ and uses OpenMP internally. Basic idea is implicit parallelism: single JVM thread turns into variable number of threads used during Op invocation. 
+
+This gives us simplified process & memory management in Java (i.e. you're always sure you have single thread accessing given INDArray instance) and at the same time Ops are using OpenMP threads + SIMD optimized loops for better performance.
+
+We use two kinds of internal parallelism:
+- Element-level parallelism: Each element in INDArray is processed by separate OpenMP thread or SIMD lane.
+- TAD-level parallelism: Each OpenMP thread processes its own tensor within original operand.
+ 
+
+
+
 *By Vyacheslav Kokorin*
 
 ## Further Reading
