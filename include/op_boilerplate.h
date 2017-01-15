@@ -9,6 +9,35 @@
  * Those scary FE_*, FX_*, FZ_*, FM_* etc macro walls are used to give preprocessor ability to loop over list of argument,
  * which emulates forEach() pattern.
  *
+ * I.e. here's macro call which generates CUDA kernels for RANDOM_OPS:
+ *
+ * DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+ *
+ * we provide arguments:
+ *      output method template
+ *      target generic kernel
+ *      dataType
+ *      signature
+ *      parameters to be passed into generic kernel
+ *      list of operations
+ *
+ *
+ * List of operations used are defined in the same *.h file, i.e. for RandomOps it's defined as:
+ * #define RANDOM_OPS \
+ *       (0, randomOps::UniformDistribution) ,\
+ *       (1, randomOps::DropOut) ,\
+ *       (2, randomOps::DropOutInverted) ,\
+ *       (3, randomOps::ProbablisticMerge) ,\
+ *       (4, randomOps::Linspace) ,\
+ *       (5, randomOps::Choice) ,\
+ *       (6, randomOps::GaussianDistribution) ,\
+ *       (7, randomOps::BernoulliDistribution) ,\
+ *       (8, randomOps::BinomialDistribution)
+ *
+ *
+ * So, DISPATCH_KERNEL_SIMPLE call will generate one kernel for each of ops.
+ * This allows us easy addition of new operations. Basically one should just add new Op to the list, and recompile libnd4j
+ *
  * @author Paul Dubs (@treo)
  * @author raver119@gmail.com
  */
