@@ -89,6 +89,7 @@ public class RoutedTransport extends BaseTransport {
                     .ip(remoteIp)
                     .port(remotePort)
                     .publication(publication)
+                    .locker(new Object())
                     .build();
 
             shards.add(connection);
@@ -413,8 +414,15 @@ public class RoutedTransport extends BaseTransport {
         private String ip;
         private int port;
         private Publication publication;
-        private final Object locker;
+        private Object locker;
         private AtomicBoolean activated;
+
+
+
+        public static class RemoteConnectionBuilder {
+            private Object locker = new Object();
+            private AtomicBoolean activated = new AtomicBoolean();
+        }
     }
 
 }

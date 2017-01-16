@@ -90,7 +90,7 @@ public abstract class BaseTransport implements Transport {
             try {
                 Thread.sleep(voidConfiguration.getResponseTimeframe());
 
-                if (System.currentTimeMillis() - currentTime > voidConfiguration.getNumberOfShards()) {
+                if (System.currentTimeMillis() - currentTime > voidConfiguration.getResponseTimeout()) {
                     log.info("Resending request for taskId [{}]", taskId);
                     message.incrementRetransmitCount();
 
