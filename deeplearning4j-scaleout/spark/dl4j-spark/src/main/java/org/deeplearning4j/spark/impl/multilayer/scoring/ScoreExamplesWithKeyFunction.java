@@ -104,7 +104,7 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
             }
             totalCount += nExamples;
 
-            DataSet data = DataSet.merge(collect, false);
+            DataSet data = DataSet.merge(collect);
 
 
             INDArray scores = network.scoreExamples(data, addRegularization);

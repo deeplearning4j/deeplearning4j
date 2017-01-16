@@ -39,6 +39,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private int limit;
     private AtomicLong seqCount = new AtomicLong(0);
     private InvertedIndex<T> index;
+    private boolean enableScavenger = false;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -171,6 +172,7 @@ public class VocabConstructor<T extends SequenceElement> {
         if (cache == null) cache = new AbstractCache.Builder<T>().build();
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         final AtomicLong elementsCounter = new AtomicLong(0);
+        final AtomicLong loopCounter = new AtomicLong(0);
 
         AbstractCache<T> topHolder = new AbstractCache.Builder<T>()
                 .minElementFrequency(0)
@@ -218,6 +220,7 @@ public class VocabConstructor<T extends SequenceElement> {
                         element.setElementFrequency(1);
                         tempHolder.addToken(element);
                         elementsCounter.incrementAndGet();
+                        loopCounter.incrementAndGet();
                         counter++;
 
                         // if there's no such element in tempHolder, it's safe to set seqCount to 1
@@ -254,24 +257,25 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
-                    log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), elementsCounter.get(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
+                    log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
                     lastSequences = currentSequences;
+                }
+
+                /**
+                 * Firing scavenger loop
+                 */
+                if (enableScavenger && loopCounter.get() >= 1000000) {
+                    log.info("Starting scavenger...");
+                    filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 3));
+                    loopCounter.set(0);
                 }
             }
             // apply minWordFrequency set for this source
             log.debug("Vocab size before truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
             if (source.getMinWordFrequency() > 0) {
-                LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
-                for (T element : tempHolder.vocabWords()) {
-                    if (element.getElementFrequency() < source.getMinWordFrequency() && !element.isSpecial() && !element.isLabel())
-                        labelsToRemove.add(element.getLabel());
-                }
-
-                for (String label: labelsToRemove) {
-                    tempHolder.removeElement(label);
-                }
+                filterVocab(tempHolder, source.getMinWordFrequency());
             }
 
             log.debug("Vocab size after truncation: [" + tempHolder.numWords() + "],  NumWords: [" + tempHolder.totalWordOccurrences()+ "], sequences parsed: [" + sequences+ "], counter: ["+counter+"]");
@@ -321,6 +325,18 @@ public class VocabConstructor<T extends SequenceElement> {
         return cache;
     }
 
+    protected void filterVocab(AbstractCache<T> cache, int minWordFrequency) {
+        LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
+        for (T element : cache.vocabWords()) {
+            if (element.getElementFrequency() < minWordFrequency && !element.isSpecial() && !element.isLabel())
+                labelsToRemove.add(element.getLabel());
+        }
+
+        for (String label: labelsToRemove) {
+            cache.removeElement(label);
+        }
+    }
+
     public static class Builder<T extends SequenceElement> {
         private List<VocabSource<T>> sources = new ArrayList<>();
         private VocabCache<T> cache;
@@ -329,6 +345,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private boolean fetchLabels = false;
         private InvertedIndex<T> index;
         private int limit;
+        private boolean enableScavenger = false;
 
         public Builder() {
 
@@ -419,6 +436,11 @@ public class VocabConstructor<T extends SequenceElement> {
             return this;
         }
 
+        public Builder<T> enableScavenger(boolean reallyEnable) {
+            this.enableScavenger = reallyEnable;
+            return this;
+        }
+
         public VocabConstructor<T> build() {
             VocabConstructor<T> constructor = new VocabConstructor<>();
             constructor.sources = this.sources;
@@ -428,6 +450,7 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.fetchLabels = this.fetchLabels;
             constructor.limit = this.limit;
             constructor.index = this.index;
+            constructor.enableScavenger = this.enableScavenger;
 
             return constructor;
         }

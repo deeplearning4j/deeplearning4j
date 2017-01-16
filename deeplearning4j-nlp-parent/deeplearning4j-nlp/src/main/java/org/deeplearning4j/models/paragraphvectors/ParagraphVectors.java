@@ -665,6 +665,20 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method ebables/disables periodical vocab truncation during construction
+         *
+         * Default value: disabled
+         *
+         * @param reallyEnable
+         * @return
+         */
+        @Override
+        public Builder enableScavenger(boolean reallyEnable) {
+            super.enableScavenger(reallyEnable);
+            return this;
+        }
+
         @Override
         public ParagraphVectors build() {
             presetTables();
@@ -729,6 +743,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.useUnknown = this.useUnknown;
             ret.unknownElement = this.unknownElement;
             ret.seed = this.seed;
+            ret.enableScavenger = this.enableScavenger;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;
@@ -765,6 +780,12 @@ public class ParagraphVectors extends Word2Vec {
             this.configuration.setSequenceLearningAlgorithm(this.sequenceLearningAlgorithm.getClass().getCanonicalName());
             this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
             this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
+
+            if (tokenizerFactory != null) {
+                this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
+                if (tokenizerFactory.getTokenPreProcessor() != null)
+                    this.configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+            }
 
             ret.configuration = this.configuration;
 

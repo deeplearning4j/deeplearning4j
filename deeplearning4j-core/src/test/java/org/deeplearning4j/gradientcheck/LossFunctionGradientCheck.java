@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
@@ -15,7 +14,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -23,7 +21,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -54,6 +51,7 @@ public class LossFunctionGradientCheck {
                 new LossKLD(),
                 new LossL1(),
                 new LossL1(),
+                new LossL1(),
                 new LossL2(),
                 new LossL2(),
                 new LossMAE(),
@@ -79,6 +77,7 @@ public class LossFunctionGradientCheck {
                 "sigmoid",  //kld -> probab so should be between 0 and 1
                 "softmax",  //kld + softmax
                 "tanh",     //l1
+                "rationaltanh", //l1
                 "softmax",  //l1 + softmax
                 "tanh",     //l2
                 "softmax",  //l2 + softmax
@@ -104,6 +103,7 @@ public class LossFunctionGradientCheck {
                 3,          //hinge
                 3,          //kld
                 3,          //kld + softmax
+                3,          //l1
                 3,          //l1
                 3,          //l1 + softmax
                 3,          //l2

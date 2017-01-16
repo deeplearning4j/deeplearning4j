@@ -30,12 +30,25 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         this("identity");
     }
 
+    /**
+     * @deprecated Use {@link #ExponentialReconstructionDistribution(Activation)}
+     */
+    @Deprecated
     public ExponentialReconstructionDistribution(String activationFn) {
         this(Activation.fromString(activationFn).getActivationFunction());
     }
 
+    public ExponentialReconstructionDistribution(Activation activation){
+        this(activation.getActivationFunction());
+    }
+
     public ExponentialReconstructionDistribution(IActivation activationFn){
         this.activationFn = activationFn;
+    }
+
+    @Override
+    public boolean hasLossFunction() {
+        return false;
     }
 
     @Override

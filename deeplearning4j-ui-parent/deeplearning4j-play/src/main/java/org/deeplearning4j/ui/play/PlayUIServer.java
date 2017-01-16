@@ -160,7 +160,8 @@ public class PlayUIServer extends UIServer {
         if(portProperty != null){
             try{
                 port = Integer.parseInt(portProperty);
-            }catch(NumberFormatException e){
+            }
+            catch(NumberFormatException e) {
                 log.warn("Could not parse {} property: NumberFormatException for property value \"{}\". Defaulting to port {}. Set property to 0 for random port",
                         UI_SERVER_PORT_PROPERTY, portProperty, port);
             }

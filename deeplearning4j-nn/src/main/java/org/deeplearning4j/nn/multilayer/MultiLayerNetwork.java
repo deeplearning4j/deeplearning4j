@@ -23,7 +23,7 @@ import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
@@ -1139,7 +1140,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                + Arrays.toString(input.shape()) + "\t" + Arrays.toString(labels.shape()));
+                + Arrays.toString(input.shape()) + "\tand labels with shape " + Arrays.toString(labels.shape()));
             return;
         }
         if( input.size(2) != labels.size(2) ){
@@ -1237,13 +1238,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
         }
 
-        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
             currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),getInputMiniBatchSize()));
 
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            if(currLayer instanceof RecurrentLayer){
+            if(currLayer instanceof RecurrentLayer) {
                 currPair = ((RecurrentLayer)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
             } else {
                 currPair = currLayer.backpropGradient(currPair.getSecond());
@@ -1294,7 +1295,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         this.trainingListeners.clear();
         if(listeners != null) {
-            for (IterationListener il : listeners){
+            for (IterationListener il : listeners) {
                 if(il instanceof TrainingListener){
                     this.trainingListeners.add((TrainingListener) il);
                 }
@@ -1457,7 +1458,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
-        log.warn("Passing in data without labels does not apply backprop to the model.");
         setInput(data);
         if(!layerWiseConfigurations.isPretrain())
             throw new IllegalStateException("Set pretrain to true in the configuration in order to pretrain the model.");
@@ -2367,6 +2367,83 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
+     * Evaluate the network for regression performance
+     * @param iterator Data to evaluate on
+     * @return
+     */
+    public RegressionEvaluation evaluateRegression(DataSetIterator iterator){
+        RegressionEvaluation e = new RegressionEvaluation(iterator.totalOutcomes());
+        doEvaluation(iterator, e);
+
+        return e;
+    }
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps){
+        ROC roc = new ROC(rocThresholdSteps);
+        doEvaluation(iterator, roc);
+        return roc;
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class
+     *
+     * @param iterator          Data to evaluate on
+     * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps){
+        ROCMultiClass roc = new ROCMultiClass(rocThresholdSteps);
+        doEvaluation(iterator, roc);
+        return roc;
+    }
+
+    /**
+     * Perform evaluation using an arbitrary IEvaluation instance.
+     *
+     * @param iterator   data to evaluate on
+     * @param evaluation IEvaluation instance to perform evaluation with
+     */
+    public void doEvaluation(DataSetIterator iterator, IEvaluation evaluation){
+        if(!iterator.hasNext() && iterator.resetSupported()){
+            iterator.reset();
+        }
+
+        while(iterator.hasNext()){
+            DataSet next = iterator.next();
+
+            if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                break;
+
+            INDArray features = next.getFeatures();
+            INDArray labels = next.getLabels();
+
+            INDArray out;
+            if(next.hasMaskArrays()){
+                INDArray fMask = next.getFeaturesMaskArray();
+                INDArray lMask = next.getLabelsMaskArray();
+                out = this.output(features,false,fMask,lMask);
+
+                //Assume this is time series data. Not much point having a mask array for non TS data
+                evaluation.evalTimeSeries(labels,out,lMask);
+            } else {
+                out = this.output(features,false);
+                if(labels.rank() == 3 ) evaluation.evalTimeSeries(labels,out, null);
+                else{
+                    List<Serializable> meta = next.getExampleMetaData();
+                    evaluation.eval(labels,out, meta);
+                }
+            }
+        }
+    }
+
+    /**
      * Evaluate the network on the provided data set. Used for evaluating the performance of classifiers
      *
      * @param iterator Data to undertake evaluation on
@@ -2393,37 +2470,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             labelsList = iterator.getLabels();
 
         Evaluation e = new Evaluation(labelsList, topN);
-        while(iterator.hasNext()){
-            DataSet next = iterator.next();
-
-            if (next.getFeatureMatrix() == null || next.getLabels() == null)
-                break;
-
-            INDArray features = next.getFeatures();
-            INDArray labels = next.getLabels();
-
-            INDArray out;
-            if(next.hasMaskArrays()){
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-                out = this.output(features,false,fMask,lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if(lMask != null){
-                    e.evalTimeSeries(labels,out,lMask);
-                } else {
-                    e.evalTimeSeries(labels,out);
-                }
-            } else {
-                out = this.output(features,false);
-                if(labels.rank() == 3 ) e.evalTimeSeries(labels,out);
-                else{
-                    List<Serializable> meta = next.getExampleMetaData();
-                    List<Object> meta2 = (meta == null ? null : new ArrayList<Object>(meta));
-                    e.eval(labels,out,meta2);
-                }
-            }
-        }
+        doEvaluation(iterator, e);
 
         return e;
     }

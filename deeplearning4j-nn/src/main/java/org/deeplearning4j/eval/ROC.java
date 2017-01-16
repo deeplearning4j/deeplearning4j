@@ -3,6 +3,7 @@ package org.deeplearning4j.eval;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -30,7 +31,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
-public class ROC implements Serializable {
+public class ROC extends BaseEvaluation<ROC> {
 
     private final int thresholdSteps;
 
@@ -65,7 +66,7 @@ public class ROC implements Serializable {
             //Assume time series input -> reshape to 2d
             evalTimeSeries(labels, predictions);
         }
-        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)) {
+        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1) || labels.size(1) > 2) {
             throw new IllegalArgumentException("Invalid input data shape: labels shape = " + Arrays.toString(labels.shape()) +
                     ", predictions shape = " + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
@@ -125,75 +126,6 @@ public class ROC implements Serializable {
     }
 
     /**
-     * Evaluate (collect statistics for) the given minibatch of data time series (3d) data, with no mask array
-     *
-     * @param labels      Labels / true outcomes
-     * @param predictions Predictions
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predictions) {
-        evalTimeSeries(labels, predictions, null);
-    }
-
-    /**
-     * Evaluate (collect statistics for) the given minibatch of data time series (3d) data, with optional (nullable)
-     * output mask array.
-     * labels/predictions arrays should be 3d time series ([minibatchSize, 1 or 2, timeSeriesLength]), and mask
-     * array should be a 2d array with shape [minibatchSize, timeSeriesLength] with values 0 or 1
-     *
-     * @param labels    Labels / true outcomes
-     * @param predicted Predictions
-     */
-    public void evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMask) {
-        if (labels.rank() != 3 || predicted.rank() != 3) {
-            throw new IllegalArgumentException("Invalid data: expect rank 3 arrays. Got arrays with shapes labels=" +
-                    Arrays.toString(labels.shape()) + ", predictions=" + Arrays.toString(predicted.shape()));
-        }
-
-        //Reshaping here: basically RnnToFeedForwardPreProcessor...
-        //Dup to f order, to ensure consistent buffer for reshaping
-        labels = labels.dup('f');
-        predicted = predicted.dup('f');
-
-        INDArray labels2d = reshape2d(labels);
-        INDArray predicted2d = reshape2d(predicted);
-
-        if (outputMask == null) {
-            eval(labels2d, predicted2d);
-            return;
-        }
-
-        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask);
-        float[] f = oneDMask.dup().data().asFloat();
-        int[] rowsToPull = new int[f.length];
-        int usedCount = 0;
-        for (int i = 0; i < f.length; i++) {
-            if (f[i] == 1.0f) {
-                rowsToPull[usedCount++] = i;
-            }
-        }
-        rowsToPull = Arrays.copyOfRange(rowsToPull, 0, usedCount);
-
-        labels2d = Nd4j.pullRows(labels2d, 1, rowsToPull);
-        predicted2d = Nd4j.pullRows(predicted2d, 1, rowsToPull);
-
-        eval(labels2d, predicted2d);
-    }
-
-    private static INDArray reshape2d(INDArray labels) {
-        int[] labelsShape = labels.shape();
-        INDArray labels2d;
-        if (labelsShape[0] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0);    //Edge case: miniBatchSize==1
-        } else if (labelsShape[2] == 1) {
-            labels2d = labels.tensorAlongDimension(0, 1, 0);    //Edge case: timeSeriesLength=1
-        } else {
-            labels2d = labels.permute(0, 2, 1);
-            labels2d = labels2d.reshape('f', labelsShape[0] * labelsShape[2], labelsShape[1]);
-        }
-        return labels2d;
-    }
-
-    /**
      * Get the ROC curve, as a set of points
      *
      * @return ROC curve, as a list of points
@@ -208,6 +140,42 @@ public class ROC implements Serializable {
             double fpr = c.getCountFalsePositive() / ((double) countActualNegative);
 
             out.add(new ROCValue(t, tpr, fpr));
+        }
+
+        return out;
+    }
+
+    public List<PrecisionRecallPoint> getPrecisionRecallCurve(){
+        //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
+        //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
+
+        List<PrecisionRecallPoint> out = new ArrayList<>(counts.size());
+
+        for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
+            double t = entry.getKey();
+            CountsForThreshold c = entry.getValue();
+            long tpCount = c.getCountTruePositive();
+            long fpCount = c.getCountFalsePositive();
+            //For edge cases: http://stats.stackexchange.com/questions/1773/what-are-correct-values-for-precision-and-recall-in-edge-cases
+            //precision == 1 when FP = 0 -> no incorrect positive predictions
+            //recall == 1 when no dataset positives are present (got all 0 of 0 positives)
+            double precision;
+            if(tpCount == 0 && fpCount == 0){
+                //At this threshold: no predicted positive cases
+                precision = 1.0;
+            } else {
+                precision = tpCount / (double)(tpCount + fpCount);
+            }
+
+            double recall;
+            if(countActualPositive == 0){
+                recall = 1.0;
+            } else {
+                recall = tpCount / ((double) countActualPositive);
+            }
+
+
+            out.add(new PrecisionRecallPoint(c.getThreshold(), precision, recall));
         }
 
         return out;
@@ -262,6 +230,28 @@ public class ROC implements Serializable {
         return auc;
     }
 
+    /**
+     * Merge this ROC instance with another.
+     * This ROC instance is modified, by adding the stats from the other instance.
+     *
+     * @param other ROC instance to combine with this one
+     */
+    @Override
+    public void merge(ROC other){
+        if(this.thresholdSteps != other.thresholdSteps){
+            throw new UnsupportedOperationException("Cannot merge ROC instances with different numbers of threshold steps ("
+                    + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
+        }
+        this.countActualPositive += other.countActualPositive;
+        this.countActualNegative += other.countActualNegative;
+        for(Double d : this.counts.keySet()){
+            CountsForThreshold cft = this.counts.get(d);
+            CountsForThreshold otherCft = other.counts.get(d);
+            cft.countTruePositive += otherCft.countTruePositive;
+            cft.countFalsePositive += otherCft.countFalsePositive;
+        }
+    }
+
 
     @AllArgsConstructor
     @Data
@@ -273,21 +263,34 @@ public class ROC implements Serializable {
 
     @AllArgsConstructor
     @Data
-    private static class CountsForThreshold implements Serializable {
+    public static class PrecisionRecallPoint {
+        private final double classiferThreshold;
+        private final double precision;
+        private final double recall;
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class CountsForThreshold implements Serializable, Cloneable {
         private double threshold;
         private long countTruePositive;
         private long countFalsePositive;
 
-        private CountsForThreshold(double threshold) {
+        public CountsForThreshold(double threshold) {
             this(threshold, 0, 0);
         }
 
-        private void incrementTruePositive(long count) {
+        public void incrementTruePositive(long count) {
             countTruePositive += count;
         }
 
-        private void incrementFalsePositive(long count) {
+        public void incrementFalsePositive(long count) {
             countFalsePositive += count;
+        }
+
+        @Override
+        public CountsForThreshold clone(){
+            return new CountsForThreshold(threshold, countTruePositive, countFalsePositive);
         }
     }
 }
