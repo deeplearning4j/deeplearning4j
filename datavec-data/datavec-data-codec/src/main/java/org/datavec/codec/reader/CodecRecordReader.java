@@ -18,12 +18,6 @@ package org.datavec.codec.reader;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.records.SequenceRecord;
-import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.impl.FileRecordReader;
-import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
 import org.datavec.image.loader.ImageLoader;
@@ -35,14 +29,12 @@ import org.jcodec.common.SeekableByteChannel;
 
 
 import java.awt.image.BufferedImage;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,47 +54,29 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CodecRecordReader extends FileRecordReader implements SequenceRecordReader {
-    private int startFrame = 0;
-    private int numFrames = -1;
-    private int totalFrames = -1;
-    private double framesPerSecond = -1;
-    private double videoLength = -1;
+public class CodecRecordReader extends BaseCodecRecordReader {
+
     private ImageLoader imageLoader;
-    private boolean ravel = false;
-
-    public final static String NAME_SPACE = "org.datavec.codec.reader";
-    public final static String ROWS = NAME_SPACE + ".rows";
-    public final static String COLUMNS = NAME_SPACE + ".columns";
-    public final static String START_FRAME = NAME_SPACE + ".startframe";
-    public final static String TOTAL_FRAMES = NAME_SPACE + ".frames";
-    public final static String TIME_SLICE = NAME_SPACE + ".time";
-    public final static String RAVEL = NAME_SPACE + ".ravel";
-    public final static String VIDEO_DURATION = NAME_SPACE + ".duration";
-
 
     @Override
-    public List<List<Writable>> sequenceRecord() {
-        File next = iter.next();
+    public void setConf(Configuration conf) {
+        super.setConf(conf);
+        imageLoader = new ImageLoader(rows,cols);
+    }
 
-        try{
-            return loadData(NIOUtils.readableFileChannel(next));
-        }catch(IOException e){
-            throw new RuntimeException(e);
+    @Override
+    protected List<List<Writable>> loadData( File file, InputStream inputStream  ) throws IOException {
+        SeekableByteChannel seekableByteChannel;
+        if (inputStream != null) {
+            //Reading video from DataInputStream: Need data from this stream in a SeekableByteChannel
+            //Approach used here: load entire video into memory -> ByteBufferSeekableByteChanel
+            byte[] data = IOUtils.toByteArray(inputStream);
+            ByteBuffer bb = ByteBuffer.wrap(data);
+            seekableByteChannel = new FixedByteBufferSeekableByteChannel(bb);
+        } else {
+            seekableByteChannel = NIOUtils.readableFileChannel(file);
         }
-    }
 
-    @Override
-    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        //Reading video from DataInputStream: Need data from this stream in a SeekableByteChannel
-        //Approach used here: load entire video into memory -> ByteBufferSeekableByteChanel
-        byte[] data = IOUtils.toByteArray(dataInputStream);
-        ByteBuffer bb = ByteBuffer.wrap(data);
-        SeekableByteChannel sbc = new FixedByteBufferSeekableByteChannel(bb);
-        return loadData(sbc);
-    }
-
-    private List<List<Writable>> loadData( SeekableByteChannel seekableByteChannel ) throws IOException {
         List<List<Writable>> record = new ArrayList<>();
 
         if(numFrames >= 1) {
@@ -149,79 +123,6 @@ public class CodecRecordReader extends FileRecordReader implements SequenceRecor
 
         return record;
     }
-
-
-    @Override
-    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-        setConf(conf);
-        initialize(split);
-    }
-
-    @Override
-    public List<Writable> next(){
-        throw new UnsupportedOperationException("next() not supported for CodecRecordReader (use: sequenceRecord)");
-    }
-
-    @Override
-    public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        throw new UnsupportedOperationException("record(URI,DataInputStream) not supported for CodecRecordReader");
-    }
-
-    @Override
-    public boolean hasNext() {
-        return iter.hasNext();
-    }
-
-    @Override
-    public void setConf(Configuration conf) {
-        super.setConf(conf);
-        startFrame = conf.getInt(START_FRAME,0);
-        numFrames = conf.getInt(TOTAL_FRAMES,-1);
-        int rows = conf.getInt(ROWS,28);
-        int cols = conf.getInt(COLUMNS,28);
-        imageLoader = new ImageLoader(rows,cols);
-        framesPerSecond = conf.getFloat(TIME_SLICE,-1);
-        videoLength = conf.getFloat(VIDEO_DURATION,-1);
-        ravel = conf.getBoolean(RAVEL, false);
-        totalFrames = conf.getInt(TOTAL_FRAMES, -1);
-    }
-
-    @Override
-    public Configuration getConf() {
-        return super.getConf();
-    }
-
-    @Override
-    public SequenceRecord nextSequence() {
-        File next = iter.next();
-
-        List<List<Writable>> list;
-        try{
-            list = loadData(NIOUtils.readableFileChannel(next));
-        }catch(IOException e){
-            throw new RuntimeException(e);
-        }
-        return new org.datavec.api.records.impl.SequenceRecord(list, new RecordMetaDataURI(next.toURI(), CodecRecordReader.class));
-    }
-
-    @Override
-    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return loadSequenceFromMetaData(Collections.singletonList(recordMetaData)).get(0);
-    }
-
-    @Override
-    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        List<SequenceRecord> out = new ArrayList<>();
-        for(RecordMetaData meta : recordMetaDatas){
-            File f = new File(meta.getURI());
-
-            List<List<Writable>> list = loadData(NIOUtils.readableFileChannel(f));
-            out.add(new org.datavec.api.records.impl.SequenceRecord(list, meta));
-        }
-
-        return out;
-    }
-
 
     /** Ugly workaround to a bug in JCodec: https://github.com/jcodec/jcodec/issues/24 */
     private static class FixedByteBufferSeekableByteChannel extends ByteBufferSeekableByteChannel {

@@ -153,11 +153,17 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testWithQuotes() throws Exception {
-        CSVRecordReader reader = new CSVRecordReader(0,CSVRecordReader.QUOTE_HANDLING_DELIMITER);
-        reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male"));
+        CSVRecordReader reader = new CSVRecordReader(0,CSVRecordReader.QUOTE_HANDLING_DELIMITER,"\"");
+        reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male,\"\"\"\""));
         while (reader.hasNext()) {
             List<Writable> vals = reader.next();
-            assertEquals("Entry count", 5, vals.size());
+            assertEquals("Entry count", 6, vals.size());
+            assertEquals("1", vals.get(0).toString());
+            assertEquals("0", vals.get(1).toString());
+            assertEquals("3", vals.get(2).toString());
+            assertEquals("Braund, Mr. Owen Harris", vals.get(3).toString());
+            assertEquals("male", vals.get(4).toString());
+            assertEquals("\"", vals.get(5).toString());
         }
     }
 

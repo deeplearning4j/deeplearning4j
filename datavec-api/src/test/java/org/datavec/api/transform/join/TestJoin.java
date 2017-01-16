@@ -87,4 +87,43 @@ public class TestJoin {
             assertEquals(expected.get(i), out);
         }
     }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testJoinValidation(){
+
+        Schema firstSchema = new Schema.Builder()
+                .addColumnString("keyColumn1")
+                .addColumnsInteger("first0","first1")
+                .build();
+
+        Schema secondSchema = new Schema.Builder()
+                .addColumnString("keyColumn2")
+                .addColumnsInteger("second0")
+                .build();
+
+        new Join.Builder(Join.JoinType.Inner)
+                .setJoinColumns("keyColumn1", "thisDoesntExist")
+                .setSchemas(firstSchema, secondSchema)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testJoinValidation2(){
+
+        Schema firstSchema = new Schema.Builder()
+                .addColumnString("keyColumn1")
+                .addColumnsInteger("first0","first1")
+                .build();
+
+        Schema secondSchema = new Schema.Builder()
+                .addColumnString("keyColumn2")
+                .addColumnsInteger("second0")
+                .build();
+
+        new Join.Builder(Join.JoinType.Inner)
+                .setJoinColumns("keyColumn1")
+                .setSchemas(firstSchema, secondSchema)
+                .build();
+    }
 }

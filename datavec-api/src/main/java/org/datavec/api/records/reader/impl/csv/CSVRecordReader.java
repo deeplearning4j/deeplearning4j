@@ -45,9 +45,11 @@ public class CSVRecordReader extends LineRecordReader {
     private boolean skippedLines = false;
     protected int skipNumLines = 0;
     protected String delimiter = DEFAULT_DELIMITER;
+    protected String quote = null;
     public final static String DEFAULT_DELIMITER = ",";
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
+    public final static String QUOTE = NAME_SPACE + ".quote";
 
     /**
      * Skip first n lines
@@ -63,8 +65,19 @@ public class CSVRecordReader extends LineRecordReader {
      * @param delimiter the delimiter
      */
     public CSVRecordReader(int skipNumLines,String delimiter) {
+        this(skipNumLines,delimiter,null);
+    }
+
+    /**
+     * Skip lines, use delimiter, and strip quotes
+     * @param skipNumLines the number of lines to skip
+     * @param delimiter the delimiter
+     * @param quote the quote to strip
+     */
+    public CSVRecordReader(int skipNumLines,String delimiter,String quote) {
         this.skipNumLines = skipNumLines;
         this.delimiter = delimiter;
+        this.quote = quote;
     }
 
     public CSVRecordReader() {
@@ -76,6 +89,7 @@ public class CSVRecordReader extends LineRecordReader {
         super.initialize(conf, split);
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES,this.skipNumLines);
         this.delimiter = conf.get(DELIMITER, DEFAULT_DELIMITER);
+        this.quote = conf.get(QUOTE, null);
     }
 
     @Override
@@ -98,6 +112,10 @@ public class CSVRecordReader extends LineRecordReader {
         String[] split = line.split(delimiter, -1);
         List<Writable> ret = new ArrayList<>();
         for(String s : split) {
+            if (quote != null && s.startsWith(quote) && s.endsWith(quote)) {
+                int n = quote.length();
+                s = s.substring(n, s.length() - n).replace(quote + quote, quote);
+            }
             ret.add(new Text(s));
         }
         return ret;
