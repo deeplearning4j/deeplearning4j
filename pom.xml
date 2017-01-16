@@ -51,8 +51,8 @@
     <scala211.version>2.11.8</scala211.version>
     <scala211.binary.version>2.11</scala211.binary.version>
 
-    <scala.binary.version>!!Specify a Scala version!!</scala.binary.version>
-    <scala.version>!!Specify a Scala version!!</scala.version>
+    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.10.6</scala.version>
     <nd4j.version>0.7.3-SNAPSHOT</nd4j.version>
     <dl4j.version>0.7.3-SNAPSHOT</dl4j.version>
     <slf4j.version>1.7.21</slf4j.version>
@@ -295,24 +295,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>scala-2.10.x</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <scala.version>${scala210.version}</scala.version>
-        <scala.binary.version>${scala210.binary.version}</scala.binary.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>scala-2.11.x</id>
-      <properties>
-        <scala.version>${scala211.version}</scala.version>
-        <scala.binary.version>${scala211.binary.version}</scala.binary.version>
-      </properties>
     </profile>
   </profiles>
 
