@@ -77,7 +77,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // TODO
 
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
+        double interClassScore = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
+        double intraClassScore = ;
+
+        double score = interClassScore + intraClassScore;
+
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
 
