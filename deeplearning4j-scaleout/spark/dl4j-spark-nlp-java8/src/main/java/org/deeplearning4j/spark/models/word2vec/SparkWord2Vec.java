@@ -14,7 +14,7 @@ import org.deeplearning4j.spark.models.sequencevectors.functions.TokenizerFuncti
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 /**
  * @author raver119@gmail.com
@@ -27,7 +27,7 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         configuration.setTokenizerFactory(DefaultTokenizerFactory.class.getCanonicalName());
     }
 
-    public SparkWord2Vec(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration configuration) {
+    public SparkWord2Vec(@NonNull VoidConfiguration psConfiguration, @NonNull VectorsConfiguration configuration) {
         this.configuration = configuration;
         this.paramServerConfiguration = psConfiguration;
     }
@@ -72,11 +72,11 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             super();
         }
 
-        public Builder(@NonNull Configuration psConfiguration) {
+        public Builder(@NonNull VoidConfiguration psConfiguration) {
             super(psConfiguration);
         }
 
-        public Builder(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration configuration) {
+        public Builder(@NonNull VoidConfiguration psConfiguration, @NonNull VectorsConfiguration configuration) {
             super(psConfiguration, configuration);
         }
 

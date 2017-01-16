@@ -13,7 +13,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TrainingFunction<T extends SequenceElement> implements VoidFunction<Sequence<T>> {
     protected Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
-    protected Broadcast<Configuration> paramServerConfigurationBroadcast;
+    protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
 
     protected transient VoidParameterServer paramServer;
     protected transient VectorsConfiguration vectorsConfiguration;
@@ -35,7 +35,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
     protected transient SequenceLearningAlgorithm<ShallowSequenceElement> sequenceLearningAlgorithm;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
-    public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<Configuration> paramServerConfigurationBroadcast) {
+    public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
