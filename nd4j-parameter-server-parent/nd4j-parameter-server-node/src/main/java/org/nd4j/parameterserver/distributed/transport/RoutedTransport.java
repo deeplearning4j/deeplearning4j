@@ -45,7 +45,11 @@ public class RoutedTransport extends BaseTransport {
         this.shardIndex = shardIndex;
         this.messages = new LinkedBlockingQueue<>(128);
 
-        context = new Aeron.Context();
+        context = new Aeron.Context()
+                .publicationConnectionTimeout(30000000000L)
+                .driverTimeoutMs(30000)
+                .keepAliveInterval(100000000);
+
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);

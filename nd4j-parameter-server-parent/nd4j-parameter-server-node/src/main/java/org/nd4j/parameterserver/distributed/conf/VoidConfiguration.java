@@ -89,7 +89,7 @@ public class VoidConfiguration implements Serializable {
         private int numberOfShards = -1;
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
         private long retransmitTimeout = 1000;
-        private long responseTimeframe = 100;
-        private long responseTimeout = 10000;
+        private long responseTimeframe = 500;
+        private long responseTimeout = 20000;
     }
 }

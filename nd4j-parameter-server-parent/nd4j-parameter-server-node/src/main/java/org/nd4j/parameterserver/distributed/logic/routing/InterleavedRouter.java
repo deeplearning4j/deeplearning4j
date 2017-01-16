@@ -10,6 +10,8 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * This is main router implementation for VoidParameterServer
  * Basic idea: We route TrainingMessages conditionally, based on Huffman tree index (aka frequency-ordered position)
@@ -19,6 +21,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 @Slf4j
 public class InterleavedRouter extends BaseRouter {
     protected short targetIndex = (short) -1;
+    protected AtomicLong counter = new AtomicLong(0);
 
     public InterleavedRouter() {
 
@@ -50,7 +53,7 @@ public class InterleavedRouter extends BaseRouter {
             else
                 message.setTargetId((short) w1);
         } else {
-            message.setTargetId((short) (message.getTaskId() % voidConfiguration.getNumberOfShards()));
+            message.setTargetId((short) Math.abs(counter.incrementAndGet() % voidConfiguration.getNumberOfShards()));
         }
 
         return message.getTargetId();
@@ -60,7 +63,7 @@ public class InterleavedRouter extends BaseRouter {
     public int assignTarget(VoidMessage message) {
         setOriginator(message);
         if (message instanceof Frame) {
-            message.setTargetId((short) (message.getTaskId() % voidConfiguration.getNumberOfShards()));
+            message.setTargetId((short) Math.abs(counter.incrementAndGet() % voidConfiguration.getNumberOfShards()));
         } else message.setTargetId(targetIndex);
         return message.getTargetId();
     }
