@@ -10,24 +10,24 @@ import org.deeplearning4j.spark.impl.common.score.BaseVaeScoreWithKeyFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Function to calculate the reconstruction probability for a variational autoencoder, that is the first layer in a
+ * Function to calculate the reconstruction error for a variational autoencoder, that is the first layer in a
  * ComputationGraph.<br>
- * Note that scoring is batched for computational efficiency.<br>
+ * Note that the VAE must be using a loss function, not a {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution}<br>
+ * Also note that scoring is batched for computational efficiency.<br>
  *
  * @author Alex Black
+ * @see CGVaeReconstructionProbWithKeyFunction
  */
-public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstructionProbWithKeyFunction<K> {
+public class CGVaeReconstructionErrorWithKeyFunction<K> extends BaseVaeScoreWithKeyFunction<K> {
 
 
     /**
      * @param params            MultiLayerNetwork parameters
      * @param jsonConfig        MultiLayerConfiguration, as json
-     * @param useLogProbability If true: use log probability. False: use raw probability.
      * @param batchSize         Batch size to use when scoring
-     * @param numSamples        Number of samples to use when calling {@link VariationalAutoencoder#reconstructionLogProbability(INDArray, int)}
      */
-    public CGVaeReconstructionProbWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean useLogProbability, int batchSize, int numSamples) {
-        super(params, jsonConfig, useLogProbability, batchSize, numSamples);
+    public CGVaeReconstructionErrorWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+        super(params, jsonConfig, batchSize);
     }
 
     @Override
@@ -41,9 +41,14 @@ public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstruc
 
         Layer l = network.getLayer(0);
         if (!(l instanceof VariationalAutoencoder)) {
-            throw new RuntimeException("Cannot use CGVaeReconstructionProbWithKeyFunction on network that doesn't have a VAE "
+            throw new RuntimeException("Cannot use CGVaeReconstructionErrorWithKeyFunction on network that doesn't have a VAE "
                     + "layer as layer 0. Layer type: " + l.getClass());
         }
         return (VariationalAutoencoder)l;
+    }
+
+    @Override
+    public INDArray computeScore(VariationalAutoencoder vae, INDArray toScore) {
+        return vae.reconstructionError(toScore);
     }
 }
