@@ -60,9 +60,6 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
     @Override
     public Map<String,INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        if (((org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer()).getKernelSize().length != 2)
-            throw new IllegalArgumentException("Filter size must be == 2");
-
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
@@ -97,7 +94,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
         int nWeightParams = nIn*nOut;
-        int nCenterLossParams = nIn*numClasses;
+        int nCenterLossParams = nIn*numClasses; // note: numClasses == nOut
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
         INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));    //Already a row vector
