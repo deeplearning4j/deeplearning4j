@@ -269,7 +269,7 @@ public class RoutedTransport extends BaseTransport {
 
         int targetShard = router.assignTarget(message);
 
-        //log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
+        log.info("Sending message {} to shard {}", message.getClass().getSimpleName(), targetShard);
         boolean delivered = false;
         RemoteConnection connection = shards.get(targetShard);
 

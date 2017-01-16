@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
@@ -49,7 +50,7 @@ public class InterleavedRouter extends BaseRouter {
             else
                 message.setTargetId((short) w1);
         } else {
-            message.setTargetId(targetIndex);
+            message.setTargetId((short) (message.getTaskId() % voidConfiguration.getNumberOfShards()));
         }
 
         return message.getTargetId();
@@ -58,7 +59,9 @@ public class InterleavedRouter extends BaseRouter {
     @Override
     public int assignTarget(VoidMessage message) {
         setOriginator(message);
-        message.setTargetId(targetIndex);
+        if (message instanceof Frame) {
+            message.setTargetId((short) (message.getTaskId() % voidConfiguration.getNumberOfShards()));
+        } else message.setTargetId(targetIndex);
         return message.getTargetId();
     }
 }

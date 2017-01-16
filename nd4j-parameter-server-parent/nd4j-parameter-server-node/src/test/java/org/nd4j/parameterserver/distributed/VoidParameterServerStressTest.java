@@ -411,7 +411,7 @@ public class VoidParameterServerStressTest {
 
         log.info("Initialization finished, going to tests...");
 
-        Thread[] threads = new Thread[4];
+        Thread[] threads = new Thread[8];
         for (int t = 0; t < threads.length; t++) {
             final int e = t;
             threads[t] = new Thread(() -> {
@@ -423,7 +423,7 @@ public class VoidParameterServerStressTest {
 
                 for (int i = 0; i < 200; i++) {
                     Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
-                    for (int f = 0; f < 128; f++) {
+                    for (int f = 0; f < 256; f++) {
                         frame.stackMessage(getSGRM());
                     }
                     long time1 = System.nanoTime();
