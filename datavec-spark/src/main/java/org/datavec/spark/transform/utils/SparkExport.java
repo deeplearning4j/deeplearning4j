@@ -37,9 +37,12 @@ public class SparkExport {
 
     //Quick and dirty CSV export (using Spark). Eventually, rework this to use DataVec record writers on Spark
     public static void exportCSVSpark(String directory, String delimiter, int outputSplits, JavaRDD<List<Writable>> data) {
+        exportCSVSpark(directory, delimiter, null, outputSplits, data);
+    }
+    public static void exportCSVSpark(String directory, String delimiter, String quote, int outputSplits, JavaRDD<List<Writable>> data) {
 
         //NOTE: Order is probably not random here...
-        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter));
+        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         lines.coalesce(outputSplits);
 
         lines.saveAsTextFile(directory);
@@ -47,8 +50,11 @@ public class SparkExport {
 
     //Another quick and dirty CSV export (local). Dumps all values into a single file
     public static void exportCSVLocal(File outputFile, String delimiter, JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+        exportCSVLocal(outputFile, delimiter, null, data, rngSeed);
+    }
+    public static void exportCSVLocal(File outputFile, String delimiter, String quote, JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
 
-        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter));
+        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         List<String> linesList = lines.collect();   //Requires all data in memory
         if(!(linesList instanceof ArrayList)) linesList = new ArrayList<>(linesList);
         Collections.shuffle(linesList, new Random(rngSeed));
@@ -59,8 +65,12 @@ public class SparkExport {
     //Another quick and dirty CSV export (local). Dumps all values into multiple files (specified number of files)
     public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
                                       JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
+        exportCSVLocal(outputDir, baseFileName, numFiles, delimiter, null, data, rngSeed);
+    }
+    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter, String quote,
+                                      JavaRDD<List<Writable>> data, int rngSeed) throws Exception {
 
-        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter));
+        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         double[] split = new double[numFiles];
         for (int i = 0; i < split.length; i++) split[i] = 1.0 / numFiles;
         JavaRDD<String>[] splitData = lines.randomSplit(split);
@@ -79,8 +89,12 @@ public class SparkExport {
     // No shuffling
     public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter,
                                       JavaRDD<List<Writable>> data) throws Exception {
+        exportCSVLocal(outputDir, baseFileName, numFiles, delimiter, null, data);
+    }
+    public static void exportCSVLocal(String outputDir, String baseFileName, int numFiles, String delimiter, String quote,
+                                      JavaRDD<List<Writable>> data) throws Exception {
 
-        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter));
+        JavaRDD<String> lines = data.map(new WritablesToStringFunction(delimiter, quote));
         double[] split = new double[numFiles];
         for (int i = 0; i < split.length; i++) split[i] = 1.0 / numFiles;
         JavaRDD<String>[] splitData = lines.randomSplit(split);
