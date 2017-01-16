@@ -16,9 +16,9 @@
 
 package org.datavec.spark.transform.join;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import scala.Tuple2;
 
 import java.util.List;
@@ -28,16 +28,10 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteJoinFlatMapFunction implements FlatMapFunction<Tuple2<List<Writable>,Iterable<JoinValue>>, List<Writable>> {
-
-    private final ExecuteJoinFlatMapFunctionAdapter adapter;
+public class ExecuteJoinFlatMapFunction extends BaseFlatMapFunctionAdaptee<Tuple2<List<Writable>,Iterable<JoinValue>>, List<Writable>> {
 
     public ExecuteJoinFlatMapFunction(Join join) {
-        this.adapter = new ExecuteJoinFlatMapFunctionAdapter(join);
+        super(new ExecuteJoinFlatMapFunctionAdapter(join));
     }
 
-    @Override
-    public Iterable<List<Writable>> call(Tuple2<List<Writable>, Iterable<JoinValue>> t2) throws Exception {
-        return adapter.call(t2);
-    }
 }

@@ -16,34 +16,21 @@
 
 package org.datavec.spark.transform.sparkfunction;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
-import org.apache.spark.sql.types.StructType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.DataFrames;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Convert a record to a row
  * @author Adam Gibson
  */
-public class SequenceToRows implements FlatMapFunction<List<List<Writable>>,Row> {
-
-    private final SequenceToRowsAdapter adapter;
+public class SequenceToRows extends BaseFlatMapFunctionAdaptee<List<List<Writable>>,Row> {
 
     public SequenceToRows(Schema schema) {
-        this.adapter = new SequenceToRowsAdapter(schema);
+        super(new SequenceToRowsAdapter(schema));
     }
 
-    @Override
-    public Iterable<Row> call(List<List<Writable>> sequence) throws Exception {
-        return adapter.call(sequence);
-    }
 }

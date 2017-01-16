@@ -16,25 +16,19 @@
 
 package org.datavec.spark.transform.transform;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 
 /**
  * Spark function for executing a transform process
  */
-public class SparkTransformProcessFunction implements FlatMapFunction<List<Writable>,List<Writable>> {
-
-    private final SparkTransformProcessFunctionAdapter adapter;
+public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>,List<Writable>> {
 
     public SparkTransformProcessFunction(TransformProcess transformProcess) {
-        this.adapter = new SparkTransformProcessFunctionAdapter(transformProcess);
+        super(new SparkTransformProcessFunctionAdapter(transformProcess));
     }
 
-    @Override
-    public Iterable<List<Writable>> call(List<Writable> v1) throws Exception {
-        return adapter.call(v1);
-    }
 }

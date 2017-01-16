@@ -14,27 +14,21 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis;
+package org.datavec.spark.transform.transform;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.transform.sequence.SequenceSplit;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
- * SequenceFlatMapFunction: very simple function used to flatten a sequence
- * Typically used only internally for certain analysis operations
- *
- * @author Alex Black
+ * Created by Alex on 17/03/2016.
  */
-public class SequenceFlatMapFunction implements FlatMapFunction<List<List<Writable>>, List<Writable>> {
+public class SequenceSplitFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>,List<List<Writable>>> {
 
-    private final SequenceFlatMapFunctionAdapter adapter = new SequenceFlatMapFunctionAdapter();
-
-    @Override
-    public Iterator<List<Writable>> call(List<List<Writable>> collections) throws Exception {
-        return adapter.call(collections).iterator();
+    public SequenceSplitFunction(SequenceSplit split) {
+        super(new SequenceSplitFunctionAdapter(split));
     }
 
 }

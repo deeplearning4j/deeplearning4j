@@ -14,29 +14,23 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.join;
+package org.datavec.spark.transform.analysis;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
-import scala.Tuple2;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
- * Execute a join
+ * SequenceFlatMapFunction: very simple function used to flatten a sequence
+ * Typically used only internally for certain analysis operations
+ *
+ * @author Alex Black
  */
-public class ExecuteJoinFlatMapFunction implements FlatMapFunction<Tuple2<List<Writable>,Iterable<JoinValue>>, List<Writable>> {
+public class SequenceFlatMapFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>, List<Writable>> {
 
-    private final ExecuteJoinFlatMapFunctionAdapter adapter;
-
-    public ExecuteJoinFlatMapFunction(Join join) {
-        this.adapter = new ExecuteJoinFlatMapFunctionAdapter(join);
+    public SequenceFlatMapFunction() {
+        super(new SequenceFlatMapFunctionAdapter());
     }
 
-    @Override
-    public Iterator<List<Writable>> call(Tuple2<List<Writable>, Iterable<JoinValue>> t2) throws Exception {
-        return adapter.call(t2).iterator();
-    }
 }
