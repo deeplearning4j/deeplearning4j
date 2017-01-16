@@ -147,20 +147,21 @@ function createGraph(data){
 
         ready: function () {
             window.cy = this;
-            if (vertexCount <= 4) {
-                cy.zoom(1.6);
-                cy.center();
-            } else if (vertexCount > 4 && vertexCount <=6) {
-                cy.zoom(1);
-                cy.center();
-            }
-            else {
-                cy.zoom(1);
-                cy.panBy({x: -50, y:0});
-            }
+//            if (vertexCount <= 4) {
+//                cy.zoom(1.6);
+//                cy.center();
+//            } else if (vertexCount > 4 && vertexCount <=6) {
+//                cy.zoom(1);
+//                cy.center();
+//            }
+//            else {
+//                cy.zoom(1);
+//                cy.panBy({x: -50, y:0});
+//            }
             cy.panningEnabled(true);
             cy.autoungrabify(true);
-            cy.zoomingEnabled(false);
+            cy.zoomingEnabled(true);
+            cy.fit(elementsToRender, 50);
         }
     });
 

@@ -1,10 +1,12 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
@@ -46,6 +48,57 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
             sizeCount += distributionSizes[i];
         }
         totalSize = sizeCount;
+    }
+
+    public INDArray computeLossFunctionScoreArray(INDArray data, INDArray reconstruction){
+        if(!hasLossFunction()){
+            throw new IllegalStateException("Cannot compute score array unless hasLossFunction() == true");
+        }
+
+        //Sum the scores from each loss function...
+        int inputSoFar = 0;
+        int paramsSoFar = 0;
+        INDArray reconstructionScores = null;
+        for( int i=0; i<distributionSizes.length; i++ ){
+            int thisInputSize = distributionSizes[i];
+            int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisInputSize);
+
+
+            INDArray dataSubset = data.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSoFar, inputSoFar + thisInputSize));
+            INDArray reconstructionSubset = reconstruction.get(NDArrayIndex.all(), NDArrayIndex.interval(paramsSoFar, paramsSoFar + thisParamsSize));
+
+            if(i == 0){
+                reconstructionScores = getScoreArray(reconstructionDistributions[i], dataSubset, reconstructionSubset);
+            } else {
+                reconstructionScores.addi(getScoreArray(reconstructionDistributions[i], dataSubset, reconstructionSubset));
+            }
+
+            inputSoFar += thisInputSize;
+            paramsSoFar += thisParamsSize;
+        }
+
+        return reconstructionScores;
+    }
+
+    private INDArray getScoreArray(ReconstructionDistribution reconstructionDistribution, INDArray dataSubset, INDArray reconstructionSubset){
+        if(reconstructionDistribution instanceof LossFunctionWrapper){
+            ILossFunction lossFunction = ((LossFunctionWrapper) reconstructionDistribution).getLossFunction();
+            //Re: the activation identity here - the reconstruction array already has the activation function applied,
+            // so we don't want to apply it again. i.e., we are passing the output, not the pre-output.
+            return lossFunction.computeScoreArray(dataSubset, reconstructionSubset, new ActivationIdentity(), null);
+        } else if(reconstructionDistribution instanceof CompositeReconstructionDistribution){
+            return ((CompositeReconstructionDistribution)reconstructionDistribution).computeLossFunctionScoreArray(dataSubset, reconstructionSubset);
+        } else {
+            throw new UnsupportedOperationException("Cannot calculate composite reconstruction distribution");
+        }
+    }
+
+    @Override
+    public boolean hasLossFunction() {
+        for(ReconstructionDistribution rd : reconstructionDistributions){
+            if(!rd.hasLossFunction()) return false;
+        }
+        return true;
     }
 
     @Override

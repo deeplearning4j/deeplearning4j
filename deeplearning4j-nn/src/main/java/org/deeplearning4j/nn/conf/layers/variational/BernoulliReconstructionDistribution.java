@@ -36,9 +36,18 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
     /**
      * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
+     * @deprecated Use {@link #BernoulliReconstructionDistribution(Activation)}
      */
+    @Deprecated
     public BernoulliReconstructionDistribution(String activationFn) {
-        this(Activation.fromString(activationFn).getActivationFunction());
+        this(Activation.fromString(activationFn));
+    }
+
+    /**
+     * @param activationFn    Activation function. Sigmoid generally; must be bounded in range 0 to 1
+     */
+    public BernoulliReconstructionDistribution(Activation activationFn){
+        this(activationFn.getActivationFunction());
     }
 
     /**
@@ -50,6 +59,11 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
             log.warn("Using BernoulliRecontructionDistribution with activation function \"" + activationFn + "\"."
                     + " Using sigmoid/hard sigmoid is recommended to bound probabilities in range 0 to 1");
         }
+    }
+
+    @Override
+    public boolean hasLossFunction() {
+        return false;
     }
 
     @Override

@@ -102,7 +102,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             ((ComputationGraph) model).setListeners(newListeners);
         }
 
-        this.wrapper = new ParallelWrapper.Builder<T>(model)
+        this.wrapper = new ParallelWrapper.Builder<>(model)
             .workers(workers).prefetchBuffer(prefetchBuffer)
             .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
             .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
@@ -115,7 +115,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     @Override
     public EarlyStoppingResult<T> fit() {
         log.info("Starting early stopping training");
-        if(wrapper==null) {
+        if(wrapper == null) {
             throw new IllegalStateException("Trainer has already exhausted it's parallel wrapper instance. Please instantiate a new trainer.");
         }
         if (esConfig.getScoreCalculator() == null)
