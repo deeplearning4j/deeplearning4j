@@ -8,11 +8,14 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
+import org.deeplearning4j.spark.impl.multilayer.scoring.VaeReconstructionErrorWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.VaeReconstructionProbWithKeyFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -22,6 +25,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import scala.Tuple2;
 
 import java.util.*;
@@ -136,7 +140,7 @@ public class TestMiscFunctions extends BaseSparkTest {
 
 
     @Test
-    public void testVaeScoringWithKey(){
+    public void testVaeReconstructionProbabilityWithKey(){
 
         //Simple test. We can't do a direct comparison, as the reconstruction probabilities are stochastic
         // due to sampling
@@ -171,6 +175,51 @@ public class TestMiscFunctions extends BaseSparkTest {
         for( int i=0; i<100; i++ ){
             assertTrue(l.containsKey(i));
             assertTrue(l.get(i) < 0.0); //log probability: should be negative
+        }
+    }
+
+
+    @Test
+    public void testVaeReconstructionErrorWithKey(){
+        //Simple test. We CAN do a direct comparison here vs. local, as reconstruction error is deterministic
+
+        int nIn = 10;
+
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
+                        .reconstructionDistribution(new LossFunctionWrapper(Activation.IDENTITY, new LossMSE()))
+                        .nIn(nIn).nOut(5).encoderLayerSizes(12).decoderLayerSizes(13).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+        VariationalAutoencoder vae = (VariationalAutoencoder) net.getLayer(0);
+
+        List<Tuple2<Integer,INDArray>> toScore = new ArrayList<>();
+        for( int i=0; i<100; i++ ){
+            INDArray arr = Nd4j.rand(1,nIn);
+            toScore.add(new Tuple2<Integer, INDArray>(i, arr));
+        }
+
+        JavaPairRDD<Integer,INDArray> rdd = sc.parallelizePairs(toScore);
+
+        JavaPairRDD<Integer,Double> reconstrErrors =
+                rdd.mapPartitionsToPair(new VaeReconstructionErrorWithKeyFunction<Integer>(
+                        sc.broadcast(net.params()), sc.broadcast(mlc.toJson()),16));
+
+        Map<Integer,Double> l = reconstrErrors.collectAsMap();
+
+        assertEquals(100, l.size());
+
+        for( int i=0; i<100; i++ ){
+            assertTrue(l.containsKey(i));
+
+            INDArray localToScore = toScore.get(i)._2();
+            double localScore = vae.reconstructionError(localToScore).data().asDouble()[0];
+
+            assertEquals(localScore, l.get(i), 1e-6);
         }
     }
 
