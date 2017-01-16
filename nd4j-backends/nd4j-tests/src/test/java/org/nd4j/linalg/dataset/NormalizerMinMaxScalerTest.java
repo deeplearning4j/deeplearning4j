@@ -45,7 +45,7 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
 
         //expected min and max
         INDArray theoreticalMin = Nd4j.create(new double[] {x,y,z});
-        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples*x,nSamples*y,nSamples*z});
+        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples * x,nSamples * y,nSamples * z});
         INDArray theoreticalRange = theoreticalMax.sub(theoreticalMin);
 
         NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler();
@@ -53,8 +53,10 @@ public class NormalizerMinMaxScalerTest  extends BaseNd4jTest {
 
         INDArray minDataSet = myNormalizer.getMin();
         INDArray maxDataSet = myNormalizer.getMax();
-        assertEquals(minDataSet.sub(theoreticalMin).max(1).getDouble(0,0), 0.0, 0.000000001);
-        assertEquals(maxDataSet.sub(theoreticalMax).max(1).getDouble(0,0), 0.0, 0.000000001);
+        INDArray minDiff = minDataSet.sub(theoreticalMin).max(1);
+        INDArray maxDiff = maxDataSet.sub(theoreticalMax).max(1);
+        assertEquals(minDiff.getDouble(0,0), 0.0, 0.000000001);
+        assertEquals(maxDiff.max(1).getDouble(0,0), 0.0, 0.000000001);
 
         // SAME TEST WITH THE ITERATOR
         int bSize = 1;

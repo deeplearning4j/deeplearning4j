@@ -74,7 +74,7 @@ public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> 
     }
 
     /**
-     * Fit a MultiDataSet (only compute based on the statistics from this dataset)
+     * Fit a MultiDataSet (only compute based on the statistics from this {@link MultiDataSet})
      *
      * @param dataSet the dataset to compute on
      */

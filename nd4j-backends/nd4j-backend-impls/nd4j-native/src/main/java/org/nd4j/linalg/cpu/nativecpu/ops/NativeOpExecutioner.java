@@ -238,7 +238,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dimension = new int[]{Integer.MAX_VALUE};
 
 
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1,1} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        int[] retShape;
+       if(Shape.wholeArrayDimension(dimension))
+            retShape = new int[] {1,1};
+        else
+            retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -275,7 +279,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
         /**
-         * This is a pointer to a pointe in c.
+         * This is a pointer to a pointer in c.
          */
         PointerPointer dummy = new PointerPointer(
                 hostTadShapeInfo,
@@ -497,7 +501,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     (FloatPointer) getPointerForExtraArgs(op),
                     new IntPointer(dimension),
                     dimension.length
-                    );
+            );
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execScalarDouble(dummy,
                     op.opNum(),
@@ -627,113 +631,113 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else st = profilingHookIn(op);
 
-            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.y() != null) {
-                    if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride()  && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
-                        loop.execPairwiseTransformDouble(
-                                dummy,
-                                op.opNum(),
-                                (DoublePointer)op.x().data().addressPointer(),
-                                op.x().elementWiseStride(),
-                                (DoublePointer)op.y().data().addressPointer(),
-                                op.y().elementWiseStride(),
-                                (DoublePointer)op.z().data().addressPointer(),
-                                op.z().elementWiseStride(),
-                                (DoublePointer)getPointerForExtraArgs(op),
-                                op.n());
-
-                    }
-                    else {
-                        loop.execPairwiseTransformDouble(
-                                dummy,
-                                op.opNum(),
-                                (DoublePointer)op.x().data().addressPointer(),
-                                (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer)op.y().data().addressPointer(),
-                                (IntPointer)op.y().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer)op.z().data().addressPointer(),
-                                (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer)getPointerForExtraArgs(op));
-                    }
+        if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if(op.y() != null) {
+                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride()  && !op.isExecSpecial() && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                    loop.execPairwiseTransformDouble(
+                            dummy,
+                            op.opNum(),
+                            (DoublePointer)op.x().data().addressPointer(),
+                            op.x().elementWiseStride(),
+                            (DoublePointer)op.y().data().addressPointer(),
+                            op.y().elementWiseStride(),
+                            (DoublePointer)op.z().data().addressPointer(),
+                            op.z().elementWiseStride(),
+                            (DoublePointer)getPointerForExtraArgs(op),
+                            op.n());
 
                 }
                 else {
-                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
-                        loop.execTransformDouble(
-                                dummy,
-                                op.opNum(),
-                                (DoublePointer)op.x().data().addressPointer(),
-                                op.x().elementWiseStride(),
-                                (DoublePointer)op.z().data().addressPointer(),
-                                op.z().elementWiseStride(),
-                                (DoublePointer)getPointerForExtraArgs(op), op.n());
-                    }
-                    else {
-                        loop.execTransformDouble(
-                                dummy,
-                                op.opNum(),
-                                (DoublePointer)op.x().data().addressPointer(),
-                                (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer)op.z().data().addressPointer(),
-                                (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer)getPointerForExtraArgs(op));
-                    }
-
+                    loop.execPairwiseTransformDouble(
+                            dummy,
+                            op.opNum(),
+                            (DoublePointer)op.x().data().addressPointer(),
+                            (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)op.y().data().addressPointer(),
+                            (IntPointer)op.y().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)op.z().data().addressPointer(),
+                            (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)getPointerForExtraArgs(op));
                 }
+
             }
             else {
-                if(op.y() != null) {
-                    if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering()) {
-                        loop.execPairwiseTransformFloat
-                                (dummy,op.opNum(),
-                                        (FloatPointer)op.x().data().addressPointer(),
-                                        op.x().elementWiseStride(),
-                                        (FloatPointer)op.y().data().addressPointer(),
-                                        op.y().elementWiseStride(),
-                                        (FloatPointer)op.z().data().addressPointer(),
-                                        op.z().elementWiseStride(),
-                                        (FloatPointer)getPointerForExtraArgs(op),
-                                        op.n());
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
+                    loop.execTransformDouble(
+                            dummy,
+                            op.opNum(),
+                            (DoublePointer)op.x().data().addressPointer(),
+                            op.x().elementWiseStride(),
+                            (DoublePointer)op.z().data().addressPointer(),
+                            op.z().elementWiseStride(),
+                            (DoublePointer)getPointerForExtraArgs(op), op.n());
+                }
+                else {
+                    loop.execTransformDouble(
+                            dummy,
+                            op.opNum(),
+                            (DoublePointer)op.x().data().addressPointer(),
+                            (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)op.z().data().addressPointer(),
+                            (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer)getPointerForExtraArgs(op));
+                }
 
-                    }
-                    else {
-                        loop.execPairwiseTransformFloat(
-                                dummy,
-                                op.opNum(),
-                                (FloatPointer)op.x().data().addressPointer(),
-                                (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer)op.y().data().addressPointer(),
-                                (IntPointer)op.y().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer)op.z().data().addressPointer(),
-                                (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer)getPointerForExtraArgs(op));
-                    }
+            }
+        }
+        else {
+            if(op.y() != null) {
+                if(op.x().elementWiseStride() >=1 && op.y(). elementWiseStride() >= 1 && op.x().elementWiseStride() == op.y(). elementWiseStride() && !op.isExecSpecial() && op.x().ordering() == op.y().ordering()) {
+                    loop.execPairwiseTransformFloat
+                            (dummy,op.opNum(),
+                                    (FloatPointer)op.x().data().addressPointer(),
+                                    op.x().elementWiseStride(),
+                                    (FloatPointer)op.y().data().addressPointer(),
+                                    op.y().elementWiseStride(),
+                                    (FloatPointer)op.z().data().addressPointer(),
+                                    op.z().elementWiseStride(),
+                                    (FloatPointer)getPointerForExtraArgs(op),
+                                    op.n());
 
                 }
                 else {
-                    if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
-                        loop.execTransformFloat(dummy,op.opNum(),
-                                (FloatPointer)op.x().data().addressPointer(),
-                                op.x().elementWiseStride(),
-                                (FloatPointer)op.z().data().addressPointer(),
-                                op.z().elementWiseStride(),
-                                (FloatPointer)getPointerForExtraArgs(op), op.n());
-                    }
-                    else {
-                        loop.execTransformFloat(
-                                dummy,
-                                op.opNum(),
-                                (FloatPointer)op.x().data().addressPointer(),
-                                (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer)op.z().data().addressPointer(),
-                                (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer)getPointerForExtraArgs(op));
-                    }
-
+                    loop.execPairwiseTransformFloat(
+                            dummy,
+                            op.opNum(),
+                            (FloatPointer)op.x().data().addressPointer(),
+                            (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)op.y().data().addressPointer(),
+                            (IntPointer)op.y().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)op.z().data().addressPointer(),
+                            (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)getPointerForExtraArgs(op));
                 }
-            }
 
-            profilingHookOut(op, st);
+            }
+            else {
+                if(op.x(). elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
+                    loop.execTransformFloat(dummy,op.opNum(),
+                            (FloatPointer)op.x().data().addressPointer(),
+                            op.x().elementWiseStride(),
+                            (FloatPointer)op.z().data().addressPointer(),
+                            op.z().elementWiseStride(),
+                            (FloatPointer)getPointerForExtraArgs(op), op.n());
+                }
+                else {
+                    loop.execTransformFloat(
+                            dummy,
+                            op.opNum(),
+                            (FloatPointer)op.x().data().addressPointer(),
+                            (IntPointer)op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)op.z().data().addressPointer(),
+                            (IntPointer)op.z().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer)getPointerForExtraArgs(op));
+                }
+
+            }
+        }
+
+        profilingHookOut(op, st);
     }
 
     @Override
@@ -1055,7 +1059,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public void exec(Aggregate op) {
-       // long st = profilingHookIn(op);
+        // long st = profilingHookIn(op);
 
         int numArguments = op.getArguments().size();
         int numIndexArguments = op.getIndexingArguments().size();
@@ -1113,7 +1117,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numIntArrays,
                     (FloatPointer) realsBuffer.data().addressPointer(),
                     numRealArguments
-                    );
+            );
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             loop.execAggregateDouble(null, op.opNum(),
                     arguments,
@@ -1206,12 +1210,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             //double arg call
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 loop.execRandomFloat(null, op.opNum(),
-                    rng.getStatePointer(), // rng state ptr
-                    (FloatPointer) op.x().data().addressPointer(),
-                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.z().data().addressPointer(),
-                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    (FloatPointer) op.extraArgsDataBuff().addressPointer());
+                        rng.getStatePointer(), // rng state ptr
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer());
             } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execRandomDouble(null, op.opNum(),
                         rng.getStatePointer(), // rng state ptr
@@ -1231,7 +1235,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         (FloatPointer) op.z().data().addressPointer(),
                         (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         (FloatPointer) op.extraArgsDataBuff().addressPointer()
-                        );
+                );
             } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execRandomDouble(null, op.opNum(),
                         rng.getStatePointer(), // rng state ptr
