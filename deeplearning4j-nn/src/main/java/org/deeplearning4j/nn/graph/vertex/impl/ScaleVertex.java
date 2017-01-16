@@ -77,7 +77,7 @@ public class ScaleVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex "+vertexName+" idx "+vertexIndex+")");
 
-        return new Pair<>(null,new INDArray[]{epsilon.muli(1/scaleFactor)});
+        return new Pair<>(null,new INDArray[]{epsilon.muli(scaleFactor)});
     }
 
     @Override
