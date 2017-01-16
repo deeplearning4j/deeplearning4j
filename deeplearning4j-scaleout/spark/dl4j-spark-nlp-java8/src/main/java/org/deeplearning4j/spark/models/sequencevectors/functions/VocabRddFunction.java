@@ -7,7 +7,7 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +21,11 @@ import java.util.List;
  */
 public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunction<Sequence<T>, T> {
     protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
-    protected Broadcast<Configuration> paramServerConfigurationBroadcast;
+    protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
 
     protected transient VectorsConfiguration configuration;
 
-    public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<Configuration> paramServerConfigurationBroadcast) {
+    public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
     }
