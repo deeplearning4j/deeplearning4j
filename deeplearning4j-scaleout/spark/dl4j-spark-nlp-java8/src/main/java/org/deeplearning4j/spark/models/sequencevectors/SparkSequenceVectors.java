@@ -29,7 +29,7 @@ import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInforma
 import org.deeplearning4j.spark.models.sequencevectors.utils.NetworkOrganizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
-import org.nd4j.parameterserver.distributed.conf.Configuration;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 
 import java.util.List;
@@ -59,7 +59,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
     protected SparkModelExporter<T> exporter;
 
-    protected Configuration paramServerConfiguration;
+    protected VoidConfiguration paramServerConfiguration;
 
     protected SparkSequenceVectors() {
         this(new VectorsConfiguration());
@@ -139,7 +139,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * Here we s
          */
         if (paramServerConfiguration == null)
-            paramServerConfiguration = Configuration.builder()
+            paramServerConfiguration = VoidConfiguration.builder()
                 .faultToleranceStrategy(FaultToleranceStrategy.NONE)
                 .numberOfShards(2)
                 .unicastPort(40123)
@@ -214,7 +214,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         paramServerConfiguration.setUseHS(configuration.isUseHierarchicSoftmax());
         paramServerConfiguration.setUseNS(configuration.getNegative() > 0);
 
-        Broadcast<Configuration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
+        Broadcast<VoidConfiguration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
         // FIXME: probably we need to reconsider this approach
         JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
@@ -283,7 +283,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     public static class Builder<T extends SequenceElement> {
         protected VectorsConfiguration configuration;
         protected SparkModelExporter<T> modelExporter;
-        protected Configuration peersConfiguration;
+        protected VoidConfiguration peersConfiguration;
         protected int workers;
         protected StorageLevel storageLevel;
 
@@ -292,14 +292,14 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          */
         @Deprecated
         public Builder() {
-            this(new Configuration(), new VectorsConfiguration());
+            this(new VoidConfiguration(), new VectorsConfiguration());
         }
 
-        public Builder(@NonNull Configuration psConfiguration) {
+        public Builder(@NonNull VoidConfiguration psConfiguration) {
             this(psConfiguration, new VectorsConfiguration());
         }
 
-        public Builder(@NonNull Configuration psConfiguration, @NonNull VectorsConfiguration w2vConfiguration) {
+        public Builder(@NonNull VoidConfiguration psConfiguration, @NonNull VectorsConfiguration w2vConfiguration) {
             this.configuration = w2vConfiguration;
             this.peersConfiguration = psConfiguration;
         }
@@ -349,7 +349,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * @param configuration
          * @return
          */
-        public Builder<T> setParameterServerConfiguration(@NonNull Configuration configuration) {
+        public Builder<T> setParameterServerConfiguration(@NonNull VoidConfiguration configuration) {
             peersConfiguration = configuration;
             return this;
         }
