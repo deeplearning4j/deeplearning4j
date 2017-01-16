@@ -27,6 +27,13 @@ import java.io.Serializable;
 public interface ReconstructionDistribution extends Serializable {
 
     /**
+     * Does this reconstruction distribution has a standard neural network loss function (such as mean squared error,
+     * which is deterministic) or is it a standard VAE with a probabilistic reconstruction distribution?
+     * @return true if the reconstruction distribution has a loss function only (and no probabilistic reconstruction distribution)
+     */
+    boolean hasLossFunction();
+
+    /**
      * Get the number of distribution parameters for the given input data size.
      * For example, a Gaussian distribution has 2 parameters value (mean and log(variance)) for each data value,
      * whereas a Bernoulli distribution has only 1 parameter value (probability) for each data value.
