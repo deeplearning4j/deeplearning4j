@@ -102,11 +102,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementWordCount(String word, int increment) {
-        if (vocabulary.containsKey(word)) {
-            vocabulary.get(word).increaseElementFrequency(increment);
+        T element = vocabulary.get(word);
+        if (element != null) {
+            element.increaseElementFrequency(increment);
             totalWordCount.addAndGet(increment);
         }
-
     }
 
     /**
@@ -118,8 +118,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public int wordFrequency(@NonNull String word) {
         // TODO: proper wordFrequency impl should return long, instead of int
-        if (vocabulary.containsKey(word))
-            return (int) vocabulary.get(word).getElementFrequency();
+        T element = vocabulary.get(word);
+        if (element != null)
+            return (int) element.getElementFrequency();
         return 0;
     }
 
@@ -397,7 +398,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             totalWordCount.getAndAdd((long) element.getElementFrequency() * -1);
             idxMap.remove(element.getIndex());
             vocabulary.remove(label);
-        } else throw new IllegalStateException("Can't get label: '" + label + "'");
+        }// else throw new IllegalStateException("Can't get label: '" + label + "'");
     }
 
     @Override
