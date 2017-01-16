@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.lang.System.setProperty;
+
 /**
  * Transport implementation based on UDP unicast, for restricted environments, where multicast isn't available. I.e. AWS or Azure
  *
@@ -44,6 +46,8 @@ public class RoutedTransport extends BaseTransport {
         this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
         this.messages = new LinkedBlockingQueue<>(128);
+
+        setProperty("aeron.client.liveness.timeout", "30000000000");
 
         context = new Aeron.Context()
                 .publicationConnectionTimeout(30000000000L)

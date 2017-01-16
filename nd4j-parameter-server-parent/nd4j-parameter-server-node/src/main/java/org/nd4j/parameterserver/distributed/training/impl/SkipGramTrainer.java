@@ -145,8 +145,6 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         for (int e = 0; e < dots.length(); e++) {
             float dot = dots.getFloat(e);
 
-           // log.info("dot at shard_{}: [{}]", transport.getShardIndex(), dot);
-
             if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
                 continue;
             }
@@ -161,22 +159,18 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             double f = expTable.getFloat(idx);
             double g = (1 - code - f) * alpha;
 
-           // log.info("gradient at shard_{}: [{}]", transport.getShardIndex(), g);
-
-            // FIXME: this is wrong, just a draft showing an idea
             Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
             Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW1()), syn1.getRow(sgrm.getPoints()[e]));
         }
 
         Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
+
+        // we send back confirmation message only from Shard which received this message
         if (completionHandler.isTrackingFrame(chain.getFrameId())) {
             completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
 
-            //log.info("sI_{} finished round: frame: {}; task: {}; remnaints: {}", transport.getShardIndex(), chain.getFrameId(), chain.getTaskId(), completionHandler.getIncompleteTasksNumber(chain.getFrameId()));
-
             if (completionHandler.isCompleted(chain.getFrameId())) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(chain.getFrameId());
-              //  log.info("sI_{} frame completed! frame: {}; originator: {}", transport.getShardIndex(), chain.getFrameId(), frameDescriptor.getFrameOriginatorId());
                 FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
                 fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
                 transport.sendMessage(fcm);
@@ -187,6 +181,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         if (cntRounds.incrementAndGet() % 10000 == 0)
             log.info("{} training rounds finished...", cntRounds.get());
+
+        // don't forget to remove chain, it'll become a leak otherwise
+        chains.remove(taskId);
     }
 
     @Override
