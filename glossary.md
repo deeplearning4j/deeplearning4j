@@ -442,6 +442,10 @@ The vanishing gradient problem is a challenge the confront backpropagation over 
 
 * [On the difficulty of training recurrent neural networks](http://www.jmlr.org/proceedings/papers/v28/pascanu13.pdf)
 
+### <a name="transfer">Transfer Learning</a>
+
+Transfer learning is when a system can recognize and apply knowledge and skills learned in previous domains or tasks to novel domains or tasks. That is, if a model is trained on image data to recognize one set of categories, transfer learning applies if that same model is capable, with minimal additional training, or recognizing a different set of categories. For example, trained on 1,000 celebrity faces, a transfer learning model can be taught to recognize members of your family by swapping in another output layer with the nodes "mom", "dad", "elder brother", "younger sister" and training that output layer on the new classifications. 
+
 ### <a name="vectors">Vector</a>
 
 [Word2vec](./word2vec.html) and other neural networks represent input as vectors.
