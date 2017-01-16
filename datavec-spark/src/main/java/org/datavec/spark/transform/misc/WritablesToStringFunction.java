@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * Simple function to map an example to a String format (such as CSV)
+ * with given quote around the string value if it contains the delimiter.
  *
  * @author Alex Black
  */
@@ -31,6 +32,11 @@ import java.util.List;
 public class WritablesToStringFunction implements Function<List<Writable>,String> {
 
     private final String delim;
+    private final String quote;
+
+    public WritablesToStringFunction(String delim) {
+        this(delim, null);
+    }
 
     @Override
     public String call(List<Writable> c) throws Exception {
@@ -39,7 +45,16 @@ public class WritablesToStringFunction implements Function<List<Writable>,String
         boolean first = true;
         for(Writable w : c){
             if(!first) sb.append(delim);
-            sb.append(w.toString());
+            String s = w.toString();
+            boolean needQuotes = s.contains(delim);
+            if (needQuotes && quote != null) {
+                sb.append(quote);
+                s = s.replace(quote, quote + quote);
+            }
+            sb.append(s);
+            if (needQuotes && quote != null) {
+                sb.append(quote);
+            }
             first = false;
         }
 
