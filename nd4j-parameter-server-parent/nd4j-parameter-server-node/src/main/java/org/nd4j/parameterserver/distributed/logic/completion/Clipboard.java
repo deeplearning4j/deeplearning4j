@@ -1,12 +1,14 @@
 package org.nd4j.parameterserver.distributed.logic.completion;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Since VoidParameterServer assumes nearly endless asynchronous data flow, we'll use Clipboard approach to aggregate
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Clipboard {
 
 
@@ -23,6 +26,7 @@ public class Clipboard {
 
     protected AtomicInteger trackingCounter = new AtomicInteger(0);
     protected AtomicInteger completedCounter = new AtomicInteger(0);
+    protected AtomicLong counter = new AtomicLong(0);
 
     /**
      * This method places incoming VoidAggregation into clipboard, for further tracking
@@ -39,6 +43,9 @@ public class Clipboard {
         }
 
         existing.accumulateAggregation(aggregation);
+
+        //if (counter.incrementAndGet() % 10000 == 0)
+        //    log.info("Clipboard stats: Totals: {}; Completed: {};", clipboard.size(), completedQueue.size());
 
         int missing = existing.getMissingChunks();
         if (missing == 0) {
@@ -70,6 +77,9 @@ public class Clipboard {
         if ((aggregation = clipboard.get(taskId)) != null) {
             clipboard.remove(taskId);
             trackingCounter.decrementAndGet();
+
+            // FIXME: we don't want this here
+            completedQueue.clear();
             return aggregation;
         } else return null;
     }
