@@ -29,12 +29,14 @@ public class ParameterServerParallelWrapperTest {
         int outputNum = 10;
 
         // for GPU you usually want to have higher batchSize
-        int batchSize = 100;
+        int batchSize = 128;
+        int nEpochs = 10;
         int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,6000);
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,1000);
+        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize,false,12345);
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
@@ -81,13 +83,16 @@ public class ParameterServerParallelWrapperTest {
         model.init();
 
         ParameterServerParallelWrapper parameterServerParallelWrapper = ParameterServerParallelWrapper
-                .builder().model(model).multiLayerNetwork(model).numEpochs(1).numWorkers(Math.min(4,Runtime.getRuntime().availableProcessors()))
+                .builder().model(model).multiLayerNetwork(model).numEpochs(10).numWorkers(Runtime.getRuntime().availableProcessors())
                 .statusServerPort(33000)
                 .preFetchSize(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
         parameterServerParallelWrapper.close();
 
-//        Thread.sleep(30000);
+        Thread.sleep(30000);
+
+
+
     }
 
 }

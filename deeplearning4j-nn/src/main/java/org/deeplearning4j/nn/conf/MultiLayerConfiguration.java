@@ -59,8 +59,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
-    private static final AtomicBoolean defaultChangeWarningPrinted = new AtomicBoolean(false);
-
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean pretrain = false;
@@ -416,26 +414,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        private void validate(){
-            // TODO drop new network default messages after 2 iterations from 0.6.1
-            boolean printed = false;
-            if(pretrain && !backprop && !defaultChangeWarningPrinted.get()) {
-                log.warn("Warning: pretrain is set to true and if finetune is needed set backprop to true.");
-                printed = true;
-            } else if (!pretrain && !defaultChangeWarningPrinted.get()) {
-                log.warn("Warning: new network default sets pretrain to false.");
-                printed = true;
-            }
-            if(backprop && !defaultChangeWarningPrinted.get()) {
-                log.warn("Warning: new network default sets backprop to true.");
-                printed = true;
-            }
-
-            if(printed){
-                defaultChangeWarningPrinted.set(true);
-            }
-        }
-
         public MultiLayerConfiguration build() {
             if (cnnInputSize != null) {
                 new ConvolutionLayerSetup(this, cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
@@ -505,7 +483,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.confs = this.confs;
             conf.pretrain = pretrain;
             conf.backprop = backprop;
-            validate();
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;

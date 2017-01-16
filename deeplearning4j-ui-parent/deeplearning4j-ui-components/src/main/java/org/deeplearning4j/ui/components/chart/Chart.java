@@ -55,6 +55,7 @@ public abstract class Chart extends Component {
         this.title = builder.title;
         this.suppressAxisHorizontal = builder.suppressAxisHorizontal;
         this.suppressAxisVertical = builder.suppressAxisVertical;
+        this.showLegend = builder.showLegend;
 
         this.setXMin = builder.setXMin;
         this.setXMax = builder.setXMax;

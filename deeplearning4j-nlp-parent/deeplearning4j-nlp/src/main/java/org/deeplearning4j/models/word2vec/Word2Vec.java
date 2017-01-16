@@ -14,6 +14,7 @@ import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceItera
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
@@ -69,6 +70,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {
         protected SentenceIterator sentenceIterator;
+        protected LabelAwareIterator labelAwareIterator;
         protected TokenizerFactory tokenizerFactory;
         protected boolean allowParallelTokenization = true;
 
@@ -137,6 +139,17 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         @Override
         public Builder iterate(@NonNull SequenceIterator<VocabWord> iterator) {
             super.iterate(iterator);
+            return this;
+        }
+
+        /**
+         * This method used to feed LabelAwareIterator, that is usually used
+         *
+         * @param iterator
+         * @return
+         */
+        public Builder iterate(@NonNull LabelAwareIterator iterator) {
+            this.labelAwareIterator = iterator;
             return this;
         }
 
@@ -460,6 +473,20 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method ebables/disables periodical vocab truncation during construction
+         *
+         * Default value: disabled
+         *
+         * @param reallyEnable
+         * @return
+         */
+        @Override
+        public Builder enableScavenger(boolean reallyEnable) {
+            super.enableScavenger(reallyEnable);
+            return this;
+        }
+
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
@@ -488,6 +515,17 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
+            if (this.labelAwareIterator != null) {
+                if (tokenizerFactory == null) tokenizerFactory = new DefaultTokenizerFactory();
+
+                SentenceTransformer transformer = new SentenceTransformer.Builder()
+                        .iterator(labelAwareIterator)
+                        .tokenizerFactory(tokenizerFactory)
+                        .allowMultithreading(allowParallelTokenization)
+                        .build();
+                this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
+            }
+
             ret.numEpochs = this.numEpochs;
             ret.numIterations = this.iterations;
             ret.vocab = this.vocabCache;
@@ -508,6 +546,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.unknownElement = this.unknownElement;
             ret.variableWindows = this.variableWindows;
             ret.seed = this.seed;
+            ret.enableScavenger = this.enableScavenger;
 
 
             ret.iterator = this.iterator;
@@ -538,6 +577,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
             this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
             this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
+
+            if (tokenizerFactory != null) {
+                this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
+                if (tokenizerFactory.getTokenPreProcessor() != null)
+                    this.configuration.setTokenPreProcessor(tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+            }
 
             ret.configuration = this.configuration;
 

@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -60,7 +59,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-        @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder")
+        @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
+        @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout")
 })
 @Data
 @NoArgsConstructor

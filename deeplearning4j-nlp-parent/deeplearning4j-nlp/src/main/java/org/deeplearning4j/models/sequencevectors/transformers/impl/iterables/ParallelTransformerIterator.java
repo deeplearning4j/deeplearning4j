@@ -68,6 +68,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
         for (int x = 0; x < threads.length; x++) {
             threads[x] = new TokenizerThread(x, transformer,stringBuffer, buffer, processing);
+            threads[x].setDaemon(true);
+            threads[x].setName("ParallelTransformer thread " + x);
             threads[x].start();
         }
     }
@@ -145,7 +147,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
                     for (String label: document.getLabels()) {
-                        sequence.addSequenceLabel(new VocabWord(1.0, label));
+                        if (label != null && !label.isEmpty())
+                            sequence.addSequenceLabel(new VocabWord(1.0, label));
                     }
 
                     if (sequence != null)

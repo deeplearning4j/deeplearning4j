@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -43,8 +44,8 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
@@ -412,25 +413,39 @@ public class KerasModel {
             throws UnsupportedOperationException, UnsupportedKerasConfigurationException {
         if (!this.inputLayerNames.contains(inputLayerName))
             throw new UnsupportedOperationException("Cannot infer input type for non-input layer " + inputLayerName);
-        int[] inputShape = this.layers.get(inputLayerName).getInputShape();
+
+        KerasLayer inputLayer = this.layers.get(inputLayerName);
         InputType inputType = null;
         List<String> layerNameQueue = new ArrayList<String>(this.inputToOutput.get(inputLayerName));
+        KerasLayer nextLayer;
+//        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
+        int inputShapeLength = inputLayer.getKerasInputShape().length;
+
         while (inputType == null && !layerNameQueue.isEmpty()) {
-            KerasLayer nextLayer = this.layers.get(layerNameQueue.remove(0));
+            nextLayer = this.layers.get(layerNameQueue.remove(0));
             if (nextLayer.isDl4jLayer()) {
                 Layer dl4jLayer = nextLayer.getDl4jLayer();
                 if (dl4jLayer instanceof BaseRecurrentLayer) {
-                    if (inputShape.length != 2) // recurrent inputs should have rank 2 (# steps, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Recurrent layer must have rank 2 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 2) // recurrent inputs should have rank 2 (# steps, # channels)
+                        throw new UnsupportedKerasConfigurationException("Input to Recurrent layer must have rank 2 (found " + inputShapeLength + ")");
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.recurrent(inputShape[1]);
                     this.truncatedBPTT = inputShape[0];
                 } else if (dl4jLayer instanceof ConvolutionLayer || dl4jLayer instanceof SubsamplingLayer) {
-                    if (inputShape.length != 3) // convolutional inputs should have rank 3 (# rows, # cols, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Convolutional layer must have rank 3 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 3) // convolutional inputs should have rank 3 (# rows, # cols, # channels)
+                        throw new UnsupportedKerasConfigurationException("Input to Convolutional layer must have rank 3 (found " + inputShapeLength + ")");
+                    if (inputLayer.getDimOrder() == DimOrder.NONE) {
+                        DimOrder nextLayerDimOrder = nextLayer.getDimOrder();
+                        if (nextLayerDimOrder == DimOrder.NONE)
+                            throw new UnsupportedKerasConfigurationException("Invalid dim_ordering " + nextLayerDimOrder + " Convolutional layer must have rank 3 (found ");
+                        this.layers.get(inputLayerName).setDimOrder(nextLayerDimOrder);
+                    }
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.convolutional(inputShape[0], inputShape[1], inputShape[2]);
                 } else {
-                    if (inputShape.length != 1) // other inputs should be flat vectors
-                        throw new UnsupportedKerasConfigurationException("Input to FeedForward layer must have rank 1 (found " + inputShape.length + ")");
+                    if (inputShapeLength != 1) // other inputs should be flat vectors
+                        throw new UnsupportedKerasConfigurationException("Input to FeedForward layer must have rank 1 (found " + inputShapeLength + ")");
+                    int[] inputShape = inputLayer.getDl4jInputShape();
                     inputType = InputType.feedForward(inputShape[0]);
                 }
             }
@@ -440,6 +455,10 @@ public class KerasModel {
             throw new UnsupportedKerasConfigurationException("Could not infer InputType for input layer " + inputLayerName);
         return inputType;
     }
+
+//    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
+//        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
+//    }
 
     /**
      * Infer list of inbound layers for (i.e., layer inputs to) given layer.
@@ -539,18 +558,44 @@ public class KerasModel {
             throws InvalidKerasConfigurationException {
         /* TODO: how might this break?
          * - mismatch between layer/parameter names?
+         * If a computational graph dense connected layers W,b are stored separately not under one name
+         * Better to do this backwards - from the layers to the weights?
          */
         for (String layerName : weights.keySet()) {
-            KerasLayer kerasLayer = kerasLayers.get(layerName);
             org.deeplearning4j.nn.api.Layer layer = null;
-            if (model instanceof MultiLayerNetwork)
-                layer = ((MultiLayerNetwork)model).getLayer(layerName);
-            else
-                layer = ((ComputationGraph)model).getLayer(layerName);
+            KerasLayer kerasLayer = kerasLayers.get(layerName);
+            if (model instanceof MultiLayerNetwork) {
+                layer = ((MultiLayerNetwork) model).getLayer(layerName);
+            }
+            else {
+                if (kerasLayer!=null) {
+                    layer = ((ComputationGraph) model).getLayer(layerName);
+
+                }
+                else {
+                    /* TODO: remove this once commit 61906bc is fully tested.
+                     * Commit: https://github.com/deeplearning4j/deeplearning4j/pull/2566/commits/61906bc81912a3cfc6d011f39feb4f42cc9128c7
+                     */
+                    String layerNameMod;
+                    layerNameMod = layerName.replaceAll("_(W|b)$","");
+                    layer = ((ComputationGraph) model).getLayer(layerNameMod);
+                }
+            }
+
             for (String kerasParamName : weights.get(layerName).keySet()) {
-                String dl4JParamName = mapParameterName(kerasParamName);
                 INDArray kerasParamValue = weights.get(layerName).get(kerasParamName);
-                INDArray dl4jParamValue = null;
+                String dl4JParamName;
+                INDArray dl4jParamValue = kerasParamValue;
+                if (!kerasParamName.equals("")) {
+                    dl4JParamName = mapParameterName(kerasParamName);
+                }
+                else {
+                    //remove _W and _b and map
+                    String[] parts = layerName.split("_");
+                    kerasParamName = parts[parts.length-1];
+                    dl4JParamName = mapParameterName(kerasParamName);
+                    dl4jParamValue = kerasParamValue;
+                }
                 if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) {
                     if (dl4JParamName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
                         /* Theano and TensorFlow backends store convolutional weights
@@ -565,11 +610,21 @@ public class KerasModel {
                                 kerasParamValue = kerasParamValue.permute(3, 2, 0, 1);
                                 break;
                             case THEANO:
-                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols */
+                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols
+                                   However the default is for theano to rotate the filters by 180 degree before applying them
+                                 */
+                                for (int i = 0; i<kerasParamValue.tensorssAlongDimension(2,3); i++) {
+                                    //dup required since we only want data from the view not the whole array
+                                    INDArray copyFilter = kerasParamValue.tensorAlongDimension(i,2,3).dup();
+                                    double [] flattenedFilter = copyFilter.ravel().data().asDouble();
+                                    ArrayUtils.reverse(flattenedFilter);
+                                    INDArray newFilter = Nd4j.create(flattenedFilter,copyFilter.shape());
+                                    //manipulating weights in place to save memory
+                                    INDArray inPlaceFilter = kerasParamValue.tensorAlongDimension(i,2,3);
+                                    inPlaceFilter.muli(0).addi(newFilter);
+                                }
                                 break;
                             case NONE:
-                                break;
-                            case UNKNOWN:
                                 throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
                         }
                     }

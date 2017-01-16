@@ -19,21 +19,20 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -42,8 +41,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluateFlatMapFunction;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.EvaluationReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.*;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
@@ -60,8 +58,6 @@ import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -74,10 +70,10 @@ import java.util.*;
  *
  * @author Adam Gibson, Alex Black
  */
+@Slf4j
 public class SparkDl4jMultiLayer implements Serializable {
-    private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
-
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
+    public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
     private transient JavaSparkContext sc;
     private TrainingMaster trainingMaster;
     private MultiLayerConfiguration conf;
@@ -85,7 +81,6 @@ public class SparkDl4jMultiLayer implements Serializable {
     private double lastScore;
 
     private List<IterationListener> listeners = new ArrayList<>();
-    private StatsStorage statsStorage;
 
     /**
      * Instantiate a multi layer spark instance
@@ -335,13 +330,13 @@ public class SparkDl4jMultiLayer implements Serializable {
     public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
-        if(listeners != null ){
-            for(IterationListener l : listeners){
-                if(l instanceof RoutingIterationListener){
+        if(listeners != null) {
+            for(IterationListener l : listeners) {
+                if(l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener)l;
                     if(rl.getStorageRouter() == null){
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}", l);
-                    } else if(!(rl.getStorageRouter() instanceof Serializable)){
+                    } else if(!(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException("RoutingIterationListener provided with non-serializable storage router");
                     }
@@ -353,6 +348,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                 }
             }
         }
+
         this.listeners.clear();
         if(listeners != null) {
             this.listeners.addAll(listeners);
@@ -360,16 +356,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         }
     }
 
-    protected void invokeListeners(MultiLayerNetwork network, int iteration) {
-        for (IterationListener listener : listeners) {
-            try {
-                listener.iterationDone(network, iteration);
-            } catch (Exception e) {
-                log.error("Exception caught at IterationListener invocation" + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-    }
+
 
     /**
      * Gets the last (average) minibatch score from calling fit. This is the average score across all executors for the
@@ -543,6 +530,28 @@ public class SparkDl4jMultiLayer implements Serializable {
     }
 
     /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data) {
+        return evaluateRegression(data, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @param minibatchSize Minibatch size to use when doing performing evaluation
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize){
+        int nOut = ((FeedForwardLayer)network.getOutputLayer().conf().getLayer()).getNOut();
+        return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
+    }
+
+    /**
      * Evaluate the network (classification performance) in a distributed manner, using default batch size and a provided
      * list of labels
      *
@@ -552,6 +561,51 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList) {
         return evaluate(data, labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner, using the default number of
+     * threshold steps ({@link #DEFAULT_ROC_THRESHOLD_STEPS}) and the default minibatch size ({@link #DEFAULT_EVAL_SCORE_BATCH_SIZE})
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROC(JavaRDD<DataSet> data){
+        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROC(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+        return doEvaluation(data, new ROC(thresholdSteps), evaluationMinibatchSize);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data){
+        return evaluateROCMultiClass(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROCMultiClass for the entire data set
+     */
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize){
+        return doEvaluation(data, new ROCMultiClass(thresholdSteps), evaluationMinibatchSize);
     }
 
     private void update(int mr, long mg) {
@@ -572,10 +626,31 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize) {
-        Broadcast<List<String>> listBroadcast = (labelsList == null ? null : sc.broadcast(labelsList));
-        JavaRDD<Evaluation> evaluations = data.mapPartitions(new EvaluateFlatMapFunction(sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, listBroadcast));
-        return evaluations.reduce(new EvaluationReduceFunction());
+        Evaluation e = new Evaluation();
+        e = doEvaluation(data, e, evalBatchSize);
+        if(labelsList != null){
+            e.setLabelsList(labelsList);
+        }
+        return e;
     }
 
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation}. For example, {@link Evaluation}, {@link RegressionEvaluation},
+     * {@link ROC}, {@link ROCMultiClass} etc.
+     *
+     * @param data            Data to evaluate on
+     * @param emptyEvaluation Empty evaluation instance. This is the starting point (serialized/duplicated, then merged)
+     * @param evalBatchSize   Evaluation batch size
+     * @param <T>             Type of evaluation instance to return
+     * @return                IEvaluation instance
+     */
+    public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize){
+        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(
+                sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()),
+                evalBatchSize,
+                emptyEvaluation);
+        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
+        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+    }
 }
