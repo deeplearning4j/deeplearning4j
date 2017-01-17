@@ -37,13 +37,13 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Data
 public class NormalizeVertex extends GraphVertex {
 
-    protected int dimension;
+    protected int[] dimension;
 
-    public NormalizeVertex(@JsonProperty("dimension") int dimension) {
+    public NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
         this.dimension = dimension;
     }
     public NormalizeVertex() {
-        this.dimension = -1;
+        this.dimension = new int[]{};
     }
 
     @Override

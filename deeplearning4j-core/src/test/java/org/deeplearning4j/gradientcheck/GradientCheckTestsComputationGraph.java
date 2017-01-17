@@ -258,7 +258,7 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
                 .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
-                .addVertex("normalize", new NormalizeVertex(1), "dense1")
+                .addVertex("normalize", new NormalizeVertex(new int[]{1}), "dense1")
                 .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "normalize")
                 .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
@@ -459,7 +459,7 @@ public class GradientCheckTestsComputationGraph {
 
         int[] minibatchSizes = {1,3};
         for( int mb : minibatchSizes) {
-            INDArray[] inputs = new INDArray[3];
+            INDArray[] inputs =  new INDArray[3];
             for (int i = 0; i < 3; i++) {
                 inputs[i] = Nd4j.rand(mb, 2);
             }
