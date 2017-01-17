@@ -70,7 +70,7 @@ public class RoutedTransport extends BaseTransport {
         irm.getRetransmitCount();
 
         try {
-            Class.forName("org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage");
+            Class.forName("org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage").newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
