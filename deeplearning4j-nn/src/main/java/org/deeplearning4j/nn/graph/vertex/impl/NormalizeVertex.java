@@ -38,14 +38,14 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 public class NormalizeVertex extends BaseGraphVertex {
 
-    private int dimension;
+    private int[] dimension;
 
-    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int dimension){
+    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension){
         this(graph,name,vertexIndex,null,null,dimension);
     }
 
     public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                           VertexIndices[] outputVertices, int dimension) {
+                           VertexIndices[] outputVertices, int[] dimension) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.dimension = dimension;
     }
@@ -73,16 +73,16 @@ public class NormalizeVertex extends BaseGraphVertex {
         // x / |x|2
         INDArray x = inputs[0];
         int[] dimensions;
-        if(dimension<0) {
+        if(dimension.length<1) {
             dimensions = new int[x.rank()-1];
             for( int i=1; i<x.rank(); i++ ){
                 dimensions[i-1] = i;
             }
         } else {
-            dimensions = new int[]{dimension};
+            dimensions = dimension;
         }
 
-        return x.diviColumnVector(x.norm2(dimensions));
+        return x.divColumnVector(x.norm2(dimensions));
 
     }
 
@@ -92,29 +92,20 @@ public class NormalizeVertex extends BaseGraphVertex {
 
         INDArray x = inputs[0];
         int[] dimensions;
-        if(dimension<0) {
+        if(dimension.length<1) {
             dimensions = new int[x.rank()-1];
             for( int i=1; i<x.rank(); i++ ){
                 dimensions[i-1] = i;
             }
         } else {
-            dimensions = new int[]{dimension};
+            dimensions = dimension;
         }
 
         INDArray norm = x.norm2(dimensions);
-        INDArray xSq = Transforms.pow(x, 2, true);
-        INDArray normSq = Transforms.pow(norm, 2, true);
-        INDArray norm3 = Transforms.pow(norm, 3);
-        INDArray dadx;
-        if (x.rank() == 2){
-            //2d case (MLPs etc)
-            dadx = xSq.rsubColumnVector(normSq).diviColumnVector(norm3);
-        } else {
-            //RNN and CNN case - Broadcast along dimension 0
-            dadx = xSq.rsubColumnVector(normSq);
-            dadx = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(norm3, dadx, norm3, dimensions));
-        }
-        INDArray dLdx = epsilon.mmul(dadx.transpose());
+        INDArray norm3 = Transforms.pow(norm, 3.0, true);
+
+        INDArray dLdx = epsilon.divColumnVector(norm)
+            .sub(x.divColumnVector(norm3).muliColumnVector(epsilon.mul(x).sum(1)));
 
         return new Pair<>(null, new INDArray[]{dLdx});
     }
