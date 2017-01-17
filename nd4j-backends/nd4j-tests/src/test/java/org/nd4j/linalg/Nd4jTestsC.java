@@ -746,8 +746,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testVStackDifferentOrders(){
-
+    public void testVStackDifferentOrders() {
         INDArray expected = Nd4j.linspace(1,9,9).reshape('c',3,3);
 
         for(char order : new char[]{'c','f'}){

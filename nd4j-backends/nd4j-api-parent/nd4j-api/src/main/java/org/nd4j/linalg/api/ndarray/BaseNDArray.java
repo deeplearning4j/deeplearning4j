@@ -829,8 +829,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //preserve immutability
         DataBuffer newShapeInfo = baseNDArray.shapeInfoDataBuffer().dup();
         newShapeInfo.put(newShapeInfo.length() - 1,Shape.getOrder(shape,stride,1));
-        //TAD always calls permute. Permute EWS is always -1.
-        Shape.setElementWiseStride(newShapeInfo,-1);
+        //TAD always calls permute. Permute EWS is always -1. This is not true for row vector shapes though.
+        if(!Shape.isRowVectorShape(newShapeInfo))
+            Shape.setElementWiseStride(newShapeInfo,-1);
         baseNDArray.setShapeInformation(newShapeInfo);
         return toTad;
     }
