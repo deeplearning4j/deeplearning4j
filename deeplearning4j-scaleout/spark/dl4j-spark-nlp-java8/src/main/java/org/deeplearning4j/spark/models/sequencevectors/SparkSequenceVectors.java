@@ -202,7 +202,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
-            CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, configuration.isTrainSequenceVectors());
+            CountFunction<T> elementsCounter = new CountFunction<>(paramServerConfigurationBroadcast, elementsFreqAccum, configuration.isTrainSequenceVectors());
 
             // count all sequence elements and their sum
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
