@@ -148,6 +148,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
 
+        Broadcast<VoidConfiguration> paramServerConfigurationBroadcast = null;
+
         if (isAutoDiscoveryMode) {
             log.info("Trying auto discovery mode...");
 
@@ -180,7 +182,24 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             }
 
             log.info("Got Shards so far: {}", paramServerConfiguration.getShardAddresses());
+
+            // update ps configuration with real values where required
+            paramServerConfiguration.setNumberOfShards(paramServerConfiguration.getShardAddresses().size());
+            paramServerConfiguration.setUseHS(configuration.isUseHierarchicSoftmax());
+            paramServerConfiguration.setUseNS(configuration.getNegative() > 0);
+
+            paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
+
         } else {
+
+            // update ps configuration with real values where required
+            paramServerConfiguration.setNumberOfShards(paramServerConfiguration.getShardAddresses().size());
+            paramServerConfiguration.setUseHS(configuration.isUseHierarchicSoftmax());
+            paramServerConfiguration.setUseNS(configuration.getNegative() > 0);
+
+            paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
+
+
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
             CountFunction<T> elementsCounter = new CountFunction<>(elementsFreqAccum, configuration.isTrainSequenceVectors());
@@ -210,13 +229,6 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         // build huffman tree, and update original RDD with huffman encoding info
         shallowVocabCache = buildShallowVocabCache(finalCounter);
         shallowVocabCacheBroadcast = sc.broadcast(shallowVocabCache);
-
-        // update ps configuration with real values where required
-        paramServerConfiguration.setNumberOfShards(paramServerConfiguration.getShardAddresses().size());
-        paramServerConfiguration.setUseHS(configuration.isUseHierarchicSoftmax());
-        paramServerConfiguration.setUseNS(configuration.getNegative() > 0);
-
-        Broadcast<VoidConfiguration> paramServerConfigurationBroadcast = sc.broadcast(paramServerConfiguration);
 
         // FIXME: probably we need to reconsider this approach
         JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
