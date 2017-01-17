@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVRegexRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
@@ -213,4 +214,19 @@ public class CSVRecordReaderTest {
         assertEquals(writables.get(70),contents2.get(3).getRecord());
         assertEquals(writables.get(60),contents2.get(4).getRecord());
     }
+
+    @Test
+    public void testRegex() throws Exception {
+        CSVRecordReader reader = new CSVRegexRecordReader(0, ",", null, new String[] {null, "(.+) (.+) (.+)"});
+        reader.initialize(new StringSplit("normal,1.2.3.4 space separator"));
+        while (reader.hasNext()) {
+            List<Writable> vals = reader.next();
+            assertEquals("Entry count", 4, vals.size());
+            assertEquals("normal", vals.get(0).toString());
+            assertEquals("1.2.3.4", vals.get(1).toString());
+            assertEquals("space", vals.get(2).toString());
+            assertEquals("separator", vals.get(3).toString());
+        }
+    }
+
 }
