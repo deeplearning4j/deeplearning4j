@@ -258,7 +258,8 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
                 .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
-                .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "dense1")
+                .addVertex("normalize", new NormalizeVertex(1), "dense1")
+                .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "normalize")
                 .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
                 .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
@@ -447,8 +448,9 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                 .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
                 .addLayer("d3", new DenseLayer.Builder().nIn(6).nOut(2).build(), "d0", "d1", "d2")
+                .addVertex("normalize", new NormalizeVertex(), "d3")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                    .nIn(2).nOut(2).build(), "d3")
+                    .nIn(2).nOut(2).build(), "normalize")
                 .setOutputs("out")
                 .pretrain(false).backprop(true).build();
 
