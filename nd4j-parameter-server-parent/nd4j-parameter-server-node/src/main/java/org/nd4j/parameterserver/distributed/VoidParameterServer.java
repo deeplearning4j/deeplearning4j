@@ -225,18 +225,16 @@ public class VoidParameterServer {
                     }
                 }
 
+                // TODO: uncomment this line on later stages
+                //if (!(NodeRole.SHARD == nodeRole && voidConfiguration.getShardAddresses().size() == 1)) {
+                    log.info("Launching transport...");
+                    transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
+                //}
+                trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
+
                 initFinished.set(true);
             }
         }
-
-        // TODO: uncomment this line on later stages
-        if (!(NodeRole.SHARD == nodeRole && voidConfiguration.getShardAddresses().size() == 1)) {
-            log.info("Launching transport...");
-            transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
-        }
-        trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
-
-
     }
 
     /**
