@@ -163,7 +163,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void processMessage() {
-        //log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
+        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
         for(T message: list) {
             message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
