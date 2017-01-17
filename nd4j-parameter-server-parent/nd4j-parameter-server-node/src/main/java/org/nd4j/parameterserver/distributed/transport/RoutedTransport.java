@@ -65,6 +65,8 @@ public class RoutedTransport extends BaseTransport {
         if (router == null)
             router = new InterleavedRouter();
 
+        Thread.currentThread().setContextClassLoader(IntroductionRequestMessage.class.getClassLoader());
+
         // FIXME: hack for spark
         IntroductionRequestMessage irm = new IntroductionRequestMessage();
         irm.getRetransmitCount();
