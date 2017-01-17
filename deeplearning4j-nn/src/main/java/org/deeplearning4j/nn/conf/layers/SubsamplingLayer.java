@@ -35,10 +35,6 @@ public class SubsamplingLayer extends Layer {
     protected int[] padding;
     protected int pnorm;
 
-    public enum PoolingType {
-        MAX, AVG, SUM, PNORM, NONE
-    }
-
     private SubsamplingLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
