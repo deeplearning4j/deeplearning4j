@@ -29,7 +29,7 @@ public class MulticastTransport extends BaseTransport {
     }
 
     @Override
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, int localPort, short shardIndex) {
         if (voidConfiguration.getTtl() < 1)
             throw new ND4JIllegalStateException("For MulticastTransport you should have TTL >= 1, it won't work otherwise");
 

@@ -176,13 +176,26 @@ public class VoidParameterServer {
                     Pair<NodeRole, String> pair = getRole(voidConfiguration, getLocalAddresses());
                     nodeRole = pair.getFirst();
 
-                    this.transport.init(voidConfiguration, clipboard, nodeRole, pair.getSecond(), shardIndex);
+                    String ipAndPort = pair.getSecond();
+                    String ip = "127.0.0.1";
+                    int port = 0;
+                    // if we're Shard and have port enforced
+                    if (ipAndPort.contains(":")) {
+                        String[] split = ipAndPort.split(":");
+                        ip = split[0];
+                        port = Integer.valueOf(split[1]);
+                    } else {
+                        ip = ipAndPort;
+                        port = voidConfiguration.getUnicastPort();
+                    }
+
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, ip, port, shardIndex);
 
                 } else {
                     if (nodeRole == NodeRole.NONE)
                         nodeRole = voidConfiguration.getForcedRole();
 
-                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1", shardIndex);
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1", voidConfiguration.getUnicastPort(), shardIndex);
                 }
 
 
@@ -247,21 +260,24 @@ public class VoidParameterServer {
         NodeRole result = NodeRole.CLIENT;
 
         for (String ip: voidConfiguration.getShardAddresses()) {
-            ip = ip.replaceAll(":.*","");
-            if (localIPs.contains(ip))
+            String cleansed = ip.replaceAll(":.*","");
+            if (localIPs.contains(cleansed))
                 return Pair.create(NodeRole.SHARD, ip);
         }
 
         if (voidConfiguration.getBackupAddresses() != null)
             for (String ip: voidConfiguration.getBackupAddresses()) {
-                ip = ip.replaceAll(":.*","");
-                if (localIPs.contains(ip))
+                String cleansed = ip.replaceAll(":.*","");
+                if (localIPs.contains(cleansed))
                     return Pair.create(NodeRole.BACKUP, ip);
             }
 
 
+        String sparkIp = System.getenv("SPARK_PUBLIC_DNS");
+        log.info("Got [{}] as sparkIp", sparkIp);
+
         // local IP from pair is used for shard only, so we don't care
-        return Pair.create(result, "127.0.0.1");
+        return Pair.create(result, sparkIp + ":" + voidConfiguration.getUnicastPort());
     }
 
     /**

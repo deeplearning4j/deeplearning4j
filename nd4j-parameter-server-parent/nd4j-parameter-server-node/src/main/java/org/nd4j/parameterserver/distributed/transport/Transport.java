@@ -39,7 +39,7 @@ public interface Transport {
      * @param role
      * @param localIp
      */
-    void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex);
+    void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort, short shardIndex);
 
 
     /**

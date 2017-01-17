@@ -44,7 +44,7 @@ public class RoutedTransport extends BaseTransport {
     }
 
     @Override
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, int localPort, short shardIndex) {
         this.nodeRole = role;
         this.clipboard = clipboard;
         this.voidConfiguration = voidConfiguration;
@@ -70,6 +70,7 @@ public class RoutedTransport extends BaseTransport {
             Regardless of current role, we raise subscription for incoming messages channel
          */
         ip = localIp;
+        port = localPort;
         unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
         subscriptionForClients = aeron.addSubscription(unicastChannelUri, voidConfiguration.getStreamId());
 

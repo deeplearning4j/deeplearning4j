@@ -446,8 +446,6 @@ public abstract class BaseTransport implements Transport {
         return messages.peek();
     }
 
-    public abstract void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex);
-
     /**
      * This command is possible to issue only from Client
      *

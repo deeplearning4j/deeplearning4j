@@ -20,7 +20,7 @@ public class LocalTransport implements Transport {
      * @param localIp
      */
     @Override
-    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, short shardIndex) {
+    public void init(VoidConfiguration voidConfiguration, Clipboard clipboard, NodeRole role, String localIp, int localPort, short shardIndex) {
 
     }
 
