@@ -22,6 +22,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Dataset;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.transform.DataFrames;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,10 +30,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Combiner function for use in {@link org.datavec.spark.transform.DataFrames#toRecordsSequence(Dataset<Row>)}
+ * Combiner function for use in {@link DataFrames#toRecordsSequence(Dataset<Row>)}
  * <p>
  * Assumption here: first two columns are the sequence UUID and the sequence index, as per
- * {@link org.datavec.spark.transform.DataFrames#toDataFrameSequence(Schema, JavaRDD)}
+ * {@link DataFrames#toDataFrameSequence(Schema, JavaRDD)}
  *
  * @author Alex Black
  */

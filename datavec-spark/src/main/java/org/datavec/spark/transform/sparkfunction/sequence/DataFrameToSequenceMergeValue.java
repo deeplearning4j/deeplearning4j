@@ -30,10 +30,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Combiner function for use in {@link org.datavec.spark.transform.DataFrames#toRecordsSequence(DataFrame)}
+ * Combiner function for use in {@link DataFrames#toRecordsSequence(DataFrame)}
  * <p>
  * Assumption here: first two columns are the sequence UUID and the sequence index, as per
- * {@link org.datavec.spark.transform.DataFrames#toDataFrameSequence(Schema, JavaRDD)}
+ * {@link DataFrames#toDataFrameSequence(Schema, JavaRDD)}
  *
  * @author Alex Black
  */

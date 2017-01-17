@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A create combiner function for use in {@link org.datavec.spark.transform.DataFrames#toRecordsSequence(Dataset<Row>)}
+ * A create combiner function for use in {@link DataFrames#toRecordsSequence(Dataset<Row>)}
  *
  * @author Alex Black
  */

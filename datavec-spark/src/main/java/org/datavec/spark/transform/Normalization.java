@@ -2,20 +2,16 @@ package org.datavec.spark.transform;
 
 import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
-
-import static org.apache.spark.sql.functions.*;
 
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 
 
 import java.util.*;
+
+import static org.datavec.spark.transform.DataRowsFacade.dataRows;
 
 
 /**
@@ -36,7 +32,7 @@ public class Normalization {
      * @return a zero mean unit variance centered
      * rdd
      */
-    public static DataFrame zeromeanUnitVariance(DataFrame frame) {
+    public static DataRowsFacade zeromeanUnitVariance(DataRowsFacade frame) {
         return zeromeanUnitVariance(frame, Collections.<String>emptyList());
     }
 
@@ -61,7 +57,7 @@ public class Normalization {
      * @param max       the maximum value
      * @return the normalized dataframe per column
      */
-    public static DataFrame normalize(DataFrame dataFrame, double min, double max) {
+    public static DataRowsFacade normalize(DataRowsFacade dataFrame, double min, double max) {
         return normalize(dataFrame, min, max, Collections.<String>emptyList());
     }
 
@@ -75,7 +71,7 @@ public class Normalization {
      * @return the normalized ata
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data, double min, double max) {
-        DataFrame frame = DataFrames.toDataFrame(schema, data);
+        DataRowsFacade frame = DataFrames.toDataFrame(schema, data);
         return DataFrames.toRecords(normalize(frame, min, max, Collections.<String>emptyList())).getSecond();
     }
 
@@ -86,7 +82,7 @@ public class Normalization {
      * @param dataFrame the dataframe to scale
      * @return the normalized dataframe per column
      */
-    public static DataFrame normalize(DataFrame dataFrame) {
+    public static DataRowsFacade normalize(DataRowsFacade dataFrame) {
         return normalize(dataFrame, 0, 1, Collections.<String>emptyList());
     }
 
@@ -109,8 +105,8 @@ public class Normalization {
      * @return a zero mean unit variance centered
      * rdd
      */
-    public static DataFrame zeromeanUnitVariance(DataFrame frame, List<String> skipColumns) {
-        List<String> columnsList = DataFrames.toList(frame.columns());
+    public static DataRowsFacade zeromeanUnitVariance(DataRowsFacade frame, List<String> skipColumns) {
+        List<String> columnsList = DataFrames.toList(frame.get().columns());
         columnsList.removeAll(skipColumns);
         String[] columnNames = DataFrames.toArray(columnsList);
         //first row is std second row is mean, each column in a row is for a particular column
@@ -121,7 +117,7 @@ public class Normalization {
             double mean = ((Number) stdDevMean.get(1).get(i)).doubleValue();
             if (std == 0.0) std = 1; //All same value -> (x-x)/1 = 0
 
-            frame = frame.withColumn(columnName, frame.col(columnName).minus(mean).divide(std));
+            frame = dataRows(frame.get().withColumn(columnName, frame.get().col(columnName).minus(mean).divide(std)));
         }
 
 
@@ -139,7 +135,7 @@ public class Normalization {
      * rdd
      */
     public static JavaRDD<List<Writable>> zeromeanUnitVariance(Schema schema, JavaRDD<List<Writable>> data, List<String> skipColumns) {
-        DataFrame frame = DataFrames.toDataFrame(schema, data);
+        DataRowsFacade frame = DataFrames.toDataFrame(schema, data);
         return DataFrames.toRecords(zeromeanUnitVariance(frame, skipColumns)).getSecond();
     }
 
@@ -164,7 +160,7 @@ public class Normalization {
      */
     public static JavaRDD<List<List<Writable>>> zeroMeanUnitVarianceSequence(Schema schema, JavaRDD<List<List<Writable>>> sequence,
                                                                              List<String> excludeColumns) {
-        DataFrame frame = DataFrames.toDataFrameSequence(schema, sequence);
+        DataRowsFacade frame = DataFrames.toDataFrameSequence(schema, sequence);
         if (excludeColumns == null)
             excludeColumns = Arrays.asList(DataFrames.SEQUENCE_UUID_COLUMN, DataFrames.SEQUENCE_INDEX_COLUMN);
         else {
@@ -182,7 +178,7 @@ public class Normalization {
      * @param columns the columns to get the
      * @return
      */
-    public static List<Row> minMaxColumns(DataFrame data,List<String> columns) {
+    public static List<Row> minMaxColumns(DataRowsFacade data,List<String> columns) {
         String[] arr = new String[columns.size()];
         for(int i = 0; i < arr.length; i++)
             arr[i] = columns.get(i);
@@ -196,7 +192,7 @@ public class Normalization {
      * @param columns the columns to get the
      * @return
      */
-    public static List<Row> minMaxColumns(DataFrame data,String...columns) {
+    public static List<Row> minMaxColumns(DataRowsFacade data,String...columns) {
         return aggregate(data,columns,new String[]{"min","max"});
     }
 
@@ -207,7 +203,7 @@ public class Normalization {
      * @param columns the columns to get the
      * @return
      */
-    public static List<Row> stdDevMeanColumns(DataFrame data,List<String> columns) {
+    public static List<Row> stdDevMeanColumns(DataRowsFacade data,List<String> columns) {
         String[] arr = new String[columns.size()];
         for(int i = 0; i < arr.length; i++)
             arr[i] = columns.get(i);
@@ -223,7 +219,7 @@ public class Normalization {
      * @param columns the columns to get the
      * @return
      */
-    public static List<Row> stdDevMeanColumns(DataFrame data,String...columns) {
+    public static List<Row> stdDevMeanColumns(DataRowsFacade data,String...columns) {
         return aggregate(data,columns,new String[]{"stddev","mean"});
     }
 
@@ -237,7 +233,7 @@ public class Normalization {
      * Each row will be a function with the desired columnar output
      * in the order in which the columns were specified.
      */
-    public static List<Row> aggregate(DataFrame data,String[] columns,String[] functions) {
+    public static List<Row> aggregate(DataRowsFacade data,String[] columns,String[] functions) {
         String[] rest = new String[columns.length - 1];
         for(int i = 0; i < rest.length; i++)
             rest[i] = columns[i + 1];
@@ -249,8 +245,8 @@ public class Normalization {
             }
 
             //compute the aggregation based on the operation
-            DataFrame aggregated = data.agg(expressions);
-            String[] columns2 = aggregated.columns();
+            DataRowsFacade aggregated = dataRows(data.get().agg(expressions));
+            String[] columns2 = aggregated.get().columns();
             //strip out the op name and parentheses from the columns
             Map<String,String> opReplace = new TreeMap<>();
             for(String s : columns2) {
@@ -266,20 +262,20 @@ public class Normalization {
 
 
             //get rid of the operation name in the column
-            DataFrame rearranged = null;
+            DataRowsFacade rearranged = null;
             for(Map.Entry<String,String> entries : opReplace.entrySet()) {
                 //first column
                 if(rearranged == null) {
-                    rearranged = aggregated.withColumnRenamed(entries.getKey(),entries.getValue());
+                    rearranged = dataRows(aggregated.get().withColumnRenamed(entries.getKey(),entries.getValue()));
                 }
                 //rearranged is just a copy of aggregated at this point
                 else
-                    rearranged = rearranged.withColumnRenamed(entries.getKey(),entries.getValue());
+                    rearranged = dataRows(rearranged.get().withColumnRenamed(entries.getKey(),entries.getValue()));
             }
 
-            rearranged = rearranged.select(DataFrames.toColumns(columns));
+            rearranged = dataRows(rearranged.get().select(DataFrames.toColumns(columns)));
             //op
-            rows.addAll(rearranged.collectAsList());
+            rows.addAll(rearranged.get().collectAsList());
         }
 
 
@@ -295,8 +291,8 @@ public class Normalization {
      * @param max       the maximum value
      * @return the normalized dataframe per column
      */
-    public static DataFrame normalize(DataFrame dataFrame, double min, double max, List<String> skipColumns) {
-        List<String> columnsList = DataFrames.toList(dataFrame.columns());
+    public static DataRowsFacade normalize(DataRowsFacade dataFrame, double min, double max, List<String> skipColumns) {
+        List<String> columnsList = DataFrames.toList(dataFrame.get().columns());
         columnsList.removeAll(skipColumns);
         String[] columnNames = DataFrames.toArray(columnsList);
         //first row is min second row is max, each column in a row is for a particular column
@@ -308,8 +304,8 @@ public class Normalization {
             double maxSubMin = (dMax - dMin);
             if (maxSubMin == 0) maxSubMin = 1;
 
-            Column newCol = dataFrame.col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);
-            dataFrame = dataFrame.withColumn(columnName, newCol);
+            Column newCol = dataFrame.get().col(columnName).minus(dMin).divide(maxSubMin).multiply(max - min).plus(min);
+            dataFrame = dataRows(dataFrame.get().withColumn(columnName, newCol));
         }
 
 
@@ -326,7 +322,7 @@ public class Normalization {
      * @return the normalized ata
      */
     public static JavaRDD<List<Writable>> normalize(Schema schema, JavaRDD<List<Writable>> data, double min, double max, List<String> skipColumns) {
-        DataFrame frame = DataFrames.toDataFrame(schema, data);
+        DataRowsFacade frame = DataFrames.toDataFrame(schema, data);
         return DataFrames.toRecords(normalize(frame, min, max, skipColumns)).getSecond();
     }
 
@@ -372,7 +368,7 @@ public class Normalization {
             excludeColumns.add(DataFrames.SEQUENCE_UUID_COLUMN);
             excludeColumns.add(DataFrames.SEQUENCE_INDEX_COLUMN);
         }
-        DataFrame frame = DataFrames.toDataFrameSequence(schema, data);
+        DataRowsFacade frame = DataFrames.toDataFrameSequence(schema, data);
         return DataFrames.toRecordsSequence(normalize(frame, min, max, excludeColumns)).getSecond();
     }
 
@@ -383,7 +379,7 @@ public class Normalization {
      * @param dataFrame the dataframe to scale
      * @return the normalized dataframe per column
      */
-    public static DataFrame normalize(DataFrame dataFrame, List<String> skipColumns) {
+    public static DataRowsFacade normalize(DataRowsFacade dataFrame, List<String> skipColumns) {
         return normalize(dataFrame, 0, 1, skipColumns);
     }
 
