@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.berkeley.Counter;
@@ -13,6 +14,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>>{
     protected Accumulator<Counter<Long>> accumulator;
     protected boolean fetchLabels;
@@ -28,6 +30,9 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
         // anyway we're going to loop through it for elements frequencies
         Counter<Long> localCounter = new Counter<>();
         long seqLen = 0;
+
+        log.info("Count function executed");
+        System.out.println("Cnt function executed");
 
         for (T element: sequence.getElements()) {
             if (element == null)
