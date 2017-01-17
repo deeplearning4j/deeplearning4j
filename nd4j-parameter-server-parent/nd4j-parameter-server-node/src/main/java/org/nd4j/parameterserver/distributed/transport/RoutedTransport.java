@@ -125,7 +125,7 @@ public class RoutedTransport extends BaseTransport {
                         Next step is connections setup for backup nodes.
                         TODO: to be implemented
                      */
-
+                    addClient(ip, port);
                 }
                 break;
             case CLIENT: {
@@ -149,6 +149,8 @@ public class RoutedTransport extends BaseTransport {
      */
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
+
+        // log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
 
         // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
         shards.parallelStream().forEach((rc) ->{
@@ -344,7 +346,7 @@ public class RoutedTransport extends BaseTransport {
 
         VoidMessage message = VoidMessage.fromBytes(data);
 
-        //log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
+//        log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
 
         if (messages.size() > 500)
             log.info("sI_{} got {} messages", shardIndex, messages.size());

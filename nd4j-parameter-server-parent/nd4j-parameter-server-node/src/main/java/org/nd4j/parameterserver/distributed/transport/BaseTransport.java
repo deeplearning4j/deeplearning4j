@@ -132,7 +132,7 @@ public abstract class BaseTransport implements Transport {
             case 9:
                 // TODO: check, if current role is Shard itself, in this case we want to modify command queue directly, to reduce network load
                 // this command is possible to issue from any node role
-                // log.info("Sending message to Shard: {}; Messages size: {}", message.getClass().getSimpleName(), messages.size());
+                //log.info("Sending message to Shard: {}; Messages size: {}", message.getClass().getSimpleName(), messages.size());
                 while (messages.size() > 100) {
                     log.info("sI_{} [{}] going to sleep..", shardIndex, nodeRole );
                     idler.idle();
@@ -150,6 +150,7 @@ public abstract class BaseTransport implements Transport {
             case 13:
             case 19:
                 // this command is possible to issue only from Shard
+                //log.info("Sending feedback message to Client: {}", message.getClass().getSimpleName());
                 sendFeedbackToClient(message);
                 break;
             // messages 20..29 inclusive are reserved for Shard->Shard commands

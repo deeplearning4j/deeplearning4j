@@ -213,9 +213,9 @@ public class VoidParameterServer {
                                 try {
                                     handleMessage(transport.takeMessage());
                                 } catch (ND4JIllegalStateException e) {
-                                    //
+                                    throw new RuntimeException(e);
                                 } catch (Exception e) {
-                                    //
+                                    throw new RuntimeException(e);
                                 }
                             }
                         });

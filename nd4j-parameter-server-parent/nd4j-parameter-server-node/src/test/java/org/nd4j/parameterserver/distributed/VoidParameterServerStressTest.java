@@ -473,16 +473,36 @@ public class VoidParameterServerStressTest {
         VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                 .unicastPort(49823)
                 .numberOfShards(1)
-                .shardAddresses(Arrays.asList("127.0.0.1:39832"))
+                .shardAddresses(Arrays.asList("127.0.0.1:49823"))
                 .build();
 
         Transport transport = new RoutedTransport();
-        transport.setIpAndPort("127.0.0.1", Integer.valueOf("39832"));
+        transport.setIpAndPort("127.0.0.1", Integer.valueOf("49823"));
 
         VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
+        parameterServer.setShardIndex((short) 0);
         parameterServer.init(voidConfiguration, transport);
 
+        parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
 
+        final List<Long> times = new ArrayList<>();
+
+        for (int i = 0; i < 200; i++) {
+            Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
+            for(int f = 0; f < 128; f++) {
+                frame.stackMessage(getSGRM());
+            }
+            long time1 = System.nanoTime();
+            parameterServer.execDistributed(frame);
+            long time2 = System.nanoTime();
+
+            times.add(time2 - time1);
+        }
+
+
+        Collections.sort(times);
+
+        log.info("p50: {} us", times.get(times.size() / 2) / 1000);
 
         parameterServer.shutdown();
     }
