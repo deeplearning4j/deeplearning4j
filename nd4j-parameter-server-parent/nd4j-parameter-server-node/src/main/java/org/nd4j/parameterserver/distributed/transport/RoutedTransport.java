@@ -69,6 +69,9 @@ public class RoutedTransport extends BaseTransport {
         IntroductionRequestMessage irm = new IntroductionRequestMessage();
         irm.getRetransmitCount();
 
+        log.info("Trying serde...");
+        IntroductionRequestMessage irm2 = VoidMessage.fromBytes(irm.asBytes());
+
         /*
             Regardless of current role, we raise subscription for incoming messages channel
          */
