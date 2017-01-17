@@ -65,20 +65,6 @@ public class RoutedTransport extends BaseTransport {
         if (router == null)
             router = new InterleavedRouter();
 
-        Thread.currentThread().setContextClassLoader(IntroductionRequestMessage.class.getClassLoader());
-
-        // FIXME: hack for spark
-        IntroductionRequestMessage irm = new IntroductionRequestMessage();
-        irm.getRetransmitCount();
-
-        try {
-            Class.forName("org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage").newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        log.info("Trying serde...");
-        IntroductionRequestMessage irm2 = VoidMessage.fromBytes(irm.asBytes());
 
         /*
             Regardless of current role, we raise subscription for incoming messages channel
@@ -152,6 +138,8 @@ public class RoutedTransport extends BaseTransport {
             default:
                 throw new ND4JIllegalStateException("Unknown NodeRole being passed: " + nodeRole);
         }
+
+        router.init(voidConfiguration, this);
     }
 
     /**
