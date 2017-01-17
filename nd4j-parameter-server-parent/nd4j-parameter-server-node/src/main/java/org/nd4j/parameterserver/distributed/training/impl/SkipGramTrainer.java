@@ -61,6 +61,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             // we assume this is HS round
             int row_syn0[] = replicate(message.getW1(), message.getPoints().length);
 
+            if (message.getPoints().length != message.getCodes().length)
+                throw new RuntimeException("Mismatiching points/codes lengths here!");
+
             // FIXME: taskId should be real here, since it'll be used for task chain tracking
             // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
             DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, message.getPoints(),
