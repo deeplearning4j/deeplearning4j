@@ -4,10 +4,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 /**
  * This accumulator function does count individual elements, using provided Accumulator
@@ -18,10 +21,12 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 public class CountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>>{
     protected Accumulator<Counter<Long>> accumulator;
     protected boolean fetchLabels;
+    protected Broadcast<VoidConfiguration> voidConfigurationBroadcast;
 
-    public CountFunction(@NonNull  Accumulator<Counter<Long>>  accumulator, boolean fetchLabels) {
+    public CountFunction(@NonNull Broadcast<VoidConfiguration> voidConfigurationBroadcast, @NonNull  Accumulator<Counter<Long>>  accumulator, boolean fetchLabels) {
         this.accumulator = accumulator;
         this.fetchLabels = fetchLabels;
+        this.voidConfigurationBroadcast = voidConfigurationBroadcast;
     }
 
     @Override
@@ -31,8 +36,8 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
         Counter<Long> localCounter = new Counter<>();
         long seqLen = 0;
 
-        log.info("Count function executed");
-        System.out.println("Cnt function executed");
+        //System.out.println("Initializing VoidParameterServer in CountFunction");
+        VoidParameterServer.getInstance().init(voidConfigurationBroadcast.getValue());
 
         for (T element: sequence.getElements()) {
             if (element == null)
