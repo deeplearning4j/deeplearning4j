@@ -1,6 +1,7 @@
 package org.nd4j.parameterserver.distributed.messages;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.io.input.ClassLoaderObjectInputStream;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -9,6 +10,8 @@ import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 /**
@@ -33,7 +36,15 @@ public interface VoidMessage extends Serializable {
     UnsafeBuffer asUnsafeBuffer();
 
     static <T extends VoidMessage> T fromBytes(byte[] array) {
-        return SerializationUtils.deserialize(array);
+        try {
+            ObjectInputStream in = new ClassLoaderObjectInputStream(Thread.currentThread().getContextClassLoader(), new ByteArrayInputStream(array));
+
+            T result = (T) in.readObject();
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        //return SerializationUtils.deserialize(array);
     }
 
     /**
