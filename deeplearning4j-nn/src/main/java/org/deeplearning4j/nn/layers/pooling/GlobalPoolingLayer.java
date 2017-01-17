@@ -19,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
     private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[]{2};
+    private static final int[] DEFAULT_CNN_POOL_DIMS = new int[]{2,3};
 
 
     private final int[] poolingDimensions;
@@ -62,10 +63,10 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerNameAndIndex());
         }
 
+        int[] poolDim = null;
         if(input.rank() == 3){
             //TODO validation on pooling dimensions
 
-            int[] poolDim;
             if(poolingDimensions == null){
                 //Use default pooling dimensions;
                 poolDim = DEFAULT_TIMESERIES_POOL_DIMS;
@@ -73,27 +74,29 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 poolDim = poolingDimensions;
             }
 
-            INDArray reduced2d;
-            if(maskArray == null){
-                //Standard 'full array' global pooling op
-                reduced2d = activateHelperFullArray(input, poolDim);
-            } else {
-                throw new UnsupportedOperationException("Not yet implemeted");
-            }
-
-            if(collapseDimensions){
-                return reduced2d;
-            } else {
-                throw new UnsupportedOperationException("Not yet implemeted");
-            }
-
         } else if(input.rank() == 4){
             //CNN activations
+            if(poolingDimensions == null){
+                //Use default pooling dimensions;
+                poolDim = DEFAULT_CNN_POOL_DIMS;
+            } else {
+                poolDim = poolingDimensions;
+            }
+        }
 
+        INDArray reduced2d;
+        if(maskArray == null){
+            //Standard 'full array' global pooling op
+            reduced2d = activateHelperFullArray(input, poolDim);
+        } else {
             throw new UnsupportedOperationException("Not yet implemeted");
         }
 
-        throw new UnsupportedOperationException("Not yet implemeted");
+        if(collapseDimensions){
+            return reduced2d;
+        } else {
+            throw new UnsupportedOperationException("Not yet implemeted");
+        }
     }
 
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim){
@@ -118,10 +121,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         Gradient retGradient = new DefaultGradient();   //Empty: no params
 
+        int[] poolDim = null;
         if(input.rank() == 3){
             //TODO validation on pooling dimensions
 
-            int[] poolDim;
+
             if(poolingDimensions == null){
                 //Use default pooling dimensions;
                 poolDim = DEFAULT_TIMESERIES_POOL_DIMS;
@@ -129,27 +133,31 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 poolDim = poolingDimensions;
             }
 
-            INDArray epsilon3d;
-            if(maskArray == null){
-                //Standard 'full array' global pooling op
-                epsilon3d = epsilonHelperFullArray(input, epsilon, poolDim);
-            } else {
-                throw new UnsupportedOperationException("Not yet implemeted");
-            }
-
-            if(collapseDimensions){
-                return new Pair<>(retGradient, epsilon3d);
-            } else {
-                throw new UnsupportedOperationException("Not yet implemeted");
-            }
-
         } else if(input.rank() == 4){
             //CNN activations
 
+            //CNN activations
+            if(poolingDimensions == null){
+                //Use default pooling dimensions;
+                poolDim = DEFAULT_CNN_POOL_DIMS;
+            } else {
+                poolDim = poolingDimensions;
+            }
+        }
+
+        INDArray epsilonNd;
+        if(maskArray == null){
+            //Standard 'full array' global pooling op
+            epsilonNd = epsilonHelperFullArray(input, epsilon, poolDim);
+        } else {
             throw new UnsupportedOperationException("Not yet implemeted");
         }
 
-        throw new UnsupportedOperationException("Not yet implemeted");
+        if(collapseDimensions){
+            return new Pair<>(retGradient, epsilonNd);
+        } else {
+            throw new UnsupportedOperationException("Not yet implemeted");
+        }
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim){
@@ -165,7 +173,6 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         switch (poolingType){
             case MAX:
-//                return input.max(poolDim);
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
                 return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
             case AVG:
