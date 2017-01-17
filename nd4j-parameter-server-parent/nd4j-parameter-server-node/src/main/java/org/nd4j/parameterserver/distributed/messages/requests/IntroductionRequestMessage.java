@@ -15,7 +15,7 @@ public class IntroductionRequestMessage extends BaseVoidMessage  implements Requ
     private String ip;
     private int port;
 
-    protected IntroductionRequestMessage() {
+    public IntroductionRequestMessage() {
         super(5);
     }
 

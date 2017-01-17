@@ -65,6 +65,8 @@ public class RoutedTransport extends BaseTransport {
         if (router == null)
             router = new InterleavedRouter();
 
+        // FIXME: hack for spark
+        IntroductionRequestMessage irm = new IntroductionRequestMessage();
 
         /*
             Regardless of current role, we raise subscription for incoming messages channel
