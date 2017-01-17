@@ -167,6 +167,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             // getting list of available hosts
             Set<NetworkInformation> availableHosts = spareReference.getNetworkInformation();
 
+            log.info("availableHosts: {}", availableHosts);
+
             // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
             NetworkOrganizer organizer = new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
 
