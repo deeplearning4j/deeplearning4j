@@ -1,28 +1,28 @@
 ---
-title: Output Interpretation
-layout: default
+title: 输出解读
+layout: cn-default
 ---
 
-# Output Interpretation
+# 输出解读
 
-The output of neural networks can be hard to interpret. You'll probably ask yourself questions like "How accurate is my model?" or "What do these numbers mean?" Not only that, but each kind of neural network has a different kind of output. 
+神经网络的输出解读起来可能比较困难。您可能会有诸如“我的模型有多准确？”或者“这些数字是什么意思？”这样的问题。不仅如此，各种神经网络的输出类型也各不相同。 
 
-For example, a single-layer network learns to reconstruct input. This is best illustrated by discussing images. The best way to interpret reconstruciton is to see how well an image is reconstructed after the data is "noised" and fed into a neural network. 
+比如，以学习如何重构输入的单层网络为例。图像处理的例子最容易说明问题。解读这类输出的最佳方式是看一幅经过“噪声污染”的图像输入神经网络后的重构效果有多好。 
 
-As you follow the MNIST tutorial, the best way to gauge your performace is to compare the initial image and network output side by side.
+MNIST教程指出，衡量学习表现的最佳方法是将初始图像和网络输出进行一对一比较。
 
-Another example would be multilayer networks. Multilayer networks are discriminatory classifiers; that is, they label things. 
+另一类例子则是多层网络。多层网络是判别分类器，也就是说，它们是用来标记事物的。 
 
-In machine learning, one metric used to determine how well a classifier performs is called the f1 score. The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy.
+在机器学习中，判断分类器性能优劣的指标之一是F1值。F1值是一个零到一之间的数值，可以说明网络在定型过程中的表现。它与百分比相类似，F1值为1相当于100%的预测准确率。
 
-DL4J has a class called [Evaluation](./doc/org/deeplearning4j/eval/Evaluation.html) that will output f1 scores for you.
+DL4J有一种称为[Evaluation](../doc/org/deeplearning4j/eval/Evaluation.html)的类，可用于输出F1值。
 
-Imagine each label is a binary matrix of 1 row and, say, 10 columns, with each column representing a number from one to 10. (The number of columns will actually vary with the number of possible outcomes, or labels.) There can only be a single 1 in this matrix, and it is located in the column representing the number labeled. That is, [0 1 0 0 0 0 0 0 0 0] means two, and so forth. 
-Each label is then assigned a likelihood of how accurately it describes the input, according to the features recognized by your network. Those probabilities are the network's guesses. At the end of your test, you compare the highest-probability label with the actual number of the input. The aggregate of these comparisons is your accuracy rate, or f score. 
+想象每个标签都是一个二进制矩阵，行数为1而列数可能是10，每一列分别代表从1到10的各个数字。（具体的列数取决于可能出现的结果个数，亦即标签的个数。）该矩阵中只能有一个1，出现在标签数字所对应的那一列，比如[0 1 0 0 0 0 0 0 0 0]代表2，以此类推。 
+随后网络根据所识别出的特征判断每种标签能够准确描述输入的概率。这些概率就是网络所作的预测。当测试结束时，将概率最高的标签与实际输入的数字进行比较。综合这类比较的结果，可以得到网络的准确率，或称F值。 
 
-In fact, you can enter any number of inputs into the network simultaneously. Each of them will be a row in your binary matrix. And the number of rows in your binary input matrix will be equal to the number of rows in your binary out matrix of guesses.
+事实上，您可以将任意数量的数据同时输入网络。每项输入会变成二进制矩阵中的一行。二进制输入矩阵的行数与包含预测结果的二进制输出矩阵相同。
 
-You can also create one evaluation class to track statistics over time. Using a data set iterator, you could do something like this:
+您也可以创建一个evaluation类来跟踪统计指标随时间变化的情况。您可以用数据集迭代器编写如下代码：
 
             DataSetIterator iter = ...;
 
@@ -36,4 +36,4 @@ You can also create one evaluation class to track statistics over time. Using a 
 
             System.out.println(eval.stats());
 
-This will allow you to iterate over a data set and cumulatively add to the results. The eval.stats() call will print the confusion matrices and f scores at the bottom. Those scores are good indicators of performance. 
+以上代码可让您对一个数据集进行迭代，反复累加结果。调用eval.stats()的命令将显示混淆矩阵，并在最下方显示F值。这些值是衡量网络性能的良好指标。 
