@@ -18,6 +18,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -462,6 +463,29 @@ public class VoidParameterServerStressTest {
         clientNode.getTransport().shutdown();
     }
 
+    /**
+     * This test checks for single Shard scenario, when Shard is also a Client
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPerformanceUnicast3() throws Exception {
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                .unicastPort(49823)
+                .numberOfShards(1)
+                .shardAddresses(Arrays.asList("127.0.0.1:39832"))
+                .build();
+
+        Transport transport = new RoutedTransport();
+        transport.setIpAndPort("127.0.0.1", Integer.valueOf("39832"));
+
+        VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
+        parameterServer.init(voidConfiguration, transport);
+
+
+
+        parameterServer.shutdown();
+    }
 
     /**
      * This method just produces random SGRM requests, fot testing purposes.
