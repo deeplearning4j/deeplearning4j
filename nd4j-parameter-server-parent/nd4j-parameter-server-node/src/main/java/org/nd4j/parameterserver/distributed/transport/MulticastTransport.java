@@ -25,6 +25,7 @@ public class MulticastTransport extends BaseTransport {
 
     public MulticastTransport() {
         // no-op
+        log.info("Initializing MulticastTransport");
     }
 
     @Override

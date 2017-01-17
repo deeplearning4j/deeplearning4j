@@ -39,6 +39,10 @@ public class RoutedTransport extends BaseTransport {
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
     @Getter @Setter protected ClientRouter router;
 
+    public RoutedTransport(){
+        log.info("Initializing RoutedTransport");
+    }
+
     @Override
     public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Clipboard clipboard, @NonNull NodeRole role, @NonNull String localIp, short shardIndex) {
         this.nodeRole = role;
