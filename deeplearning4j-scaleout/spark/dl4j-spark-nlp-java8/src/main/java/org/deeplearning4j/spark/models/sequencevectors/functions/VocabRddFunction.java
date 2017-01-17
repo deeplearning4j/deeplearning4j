@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunction<Sequence<T>, T> {
     protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
     protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
@@ -28,12 +30,17 @@ public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunct
     public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
+
+        log.info("VocabRDDFunction constructor");
     }
 
     @Override
     public Iterable<T> call(Sequence<T> sequence) throws Exception {
         if (configuration == null)
             configuration = vectorsConfigurationBroadcast.getValue();
+
+        log.info("Initializing VoidParameterServer...");
+        System.out.println("Initializing VPS...");
 
         // we just silently initialize server
         VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue());
