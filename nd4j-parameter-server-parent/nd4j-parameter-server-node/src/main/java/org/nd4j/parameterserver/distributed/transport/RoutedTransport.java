@@ -67,6 +67,7 @@ public class RoutedTransport extends BaseTransport {
 
         // FIXME: hack for spark
         IntroductionRequestMessage irm = new IntroductionRequestMessage();
+        irm.getRetransmitCount();
 
         /*
             Regardless of current role, we raise subscription for incoming messages channel
