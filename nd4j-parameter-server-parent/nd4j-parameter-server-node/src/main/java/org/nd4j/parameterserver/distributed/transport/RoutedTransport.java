@@ -107,7 +107,7 @@ public class RoutedTransport extends BaseTransport {
             shards.add(connection);
         }
 
-        log.info("Initialized as [{}]", nodeRole);
+        log.info("Initialized as [{}]; Own endpoint: [{}]", nodeRole, unicastChannelUri);
 
         switch (nodeRole) {
             case MASTER:
