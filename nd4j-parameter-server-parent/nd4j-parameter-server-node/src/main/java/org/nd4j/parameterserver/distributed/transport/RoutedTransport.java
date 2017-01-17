@@ -69,6 +69,12 @@ public class RoutedTransport extends BaseTransport {
         IntroductionRequestMessage irm = new IntroductionRequestMessage();
         irm.getRetransmitCount();
 
+        try {
+            Class.forName("org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         log.info("Trying serde...");
         IntroductionRequestMessage irm2 = VoidMessage.fromBytes(irm.asBytes());
 
