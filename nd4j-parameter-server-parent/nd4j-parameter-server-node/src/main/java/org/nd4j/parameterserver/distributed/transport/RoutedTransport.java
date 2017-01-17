@@ -40,7 +40,7 @@ public class RoutedTransport extends BaseTransport {
     @Getter @Setter protected ClientRouter router;
 
     public RoutedTransport(){
-        log.info("Initializing RoutedTransport");
+        //
     }
 
     @Override
@@ -107,7 +107,7 @@ public class RoutedTransport extends BaseTransport {
             shards.add(connection);
         }
 
-
+        log.info("Initialized as [{}]", nodeRole);
 
         switch (nodeRole) {
             case MASTER:
