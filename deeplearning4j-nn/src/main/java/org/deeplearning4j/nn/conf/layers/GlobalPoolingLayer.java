@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Global pooling layer
@@ -35,7 +36,14 @@ public class GlobalPoolingLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        return null;
+        org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret = new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
     }
 
     @Override
@@ -126,6 +134,10 @@ public class GlobalPoolingLayer extends Layer {
         private int[] poolingDimensions;
         private int pnorm;
         private boolean collapseDimensions = true;
+
+        public Builder(){
+
+        }
 
         public Builder(PoolingType poolingType){
             this.poolingType = poolingType;

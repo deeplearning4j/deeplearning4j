@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.pooling;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -8,6 +9,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -150,9 +153,21 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim){
+
+        //Broadcast: occurs on the remaining dimensions, after the pool dimensions have been removed.
+        //TODO find a more efficient way to do this
+        int[] broadcastDims = new int[inputArray.rank()-poolDim.length];
+        int count =0;
+        for( int i=0; i<inputArray.rank(); i++ ){
+            if(ArrayUtils.contains(poolDim, i)) continue;
+            broadcastDims[count++] = i;
+        }
+
         switch (poolingType){
             case MAX:
-                return input.max(poolDim);
+//                return input.max(poolDim);
+                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
+                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;
@@ -160,13 +175,13 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     n *= inputArray.size(d);
                 }
                 INDArray ret = Nd4j.create(inputArray.shape());
-                Nd4j.getExecutioner().exec(new BroadcastCopyOp(ret,epsilon,ret, poolDim));
+                Nd4j.getExecutioner().exec(new BroadcastCopyOp(ret,epsilon,ret, broadcastDims));
                 ret.divi(n);
 
                 return ret;
             case SUM:
                 INDArray retSum = Nd4j.create(inputArray.shape());
-                Nd4j.getExecutioner().exec(new BroadcastCopyOp(retSum,epsilon,retSum, poolDim));
+                Nd4j.getExecutioner().exec(new BroadcastCopyOp(retSum,epsilon,retSum, broadcastDims));
                 return retSum;
             case PNORM:
                 int pnorm = layerConf().getPnorm();
