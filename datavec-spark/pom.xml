@@ -22,7 +22,7 @@
         <version>0.7.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>0.7.3-SNAPSHOT-spark-${spark.major.version}</version>
+    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
     <artifactId>datavec-spark_2.10</artifactId>
 
     <build>
@@ -41,16 +41,6 @@
                 <sources>
                   <source>src/main/spark-${spark.major.version}</source>
                 </sources>
-              </configuration>
-            </execution>
-            <execution>
-              <id>add-test-source</id>
-              <phase>generate-test-sources</phase>
-              <goals><goal>add-test-source</goal></goals>
-              <configuration>
-                  <sources>
-                      <source>src/test/spark-${spark.major.version}</source>
-                  </sources>
               </configuration>
             </execution>
           </executions>
