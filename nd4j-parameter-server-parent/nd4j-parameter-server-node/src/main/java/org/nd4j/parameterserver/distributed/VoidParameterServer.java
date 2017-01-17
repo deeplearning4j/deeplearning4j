@@ -17,6 +17,7 @@ import org.nd4j.parameterserver.distributed.messages.requests.*;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.net.InterfaceAddress;
@@ -141,7 +142,7 @@ public class VoidParameterServer {
     }
 
     public void init(@NonNull VoidConfiguration voidConfiguration) {
-        init(voidConfiguration, new MulticastTransport());
+        init(voidConfiguration, new RoutedTransport());
     }
 
     /**
