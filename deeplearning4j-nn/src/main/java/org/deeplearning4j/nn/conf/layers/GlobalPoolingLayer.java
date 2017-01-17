@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -16,6 +17,7 @@ import java.util.Collection;
  *
  * @author Alex Black
  */
+@Getter
 public class GlobalPoolingLayer extends Layer {
 
     private PoolingType poolingType;
@@ -43,6 +45,9 @@ public class GlobalPoolingLayer extends Layer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
+
+        //TODO check pooling dimensions wrt. input type
+
         switch (inputType.getType()){
             case FF:
                 throw new UnsupportedOperationException("Global max pooling cannot be applied to feed-forward input type. Got input type = " + inputType);

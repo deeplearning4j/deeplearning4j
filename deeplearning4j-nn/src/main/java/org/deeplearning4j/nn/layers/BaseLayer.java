@@ -683,4 +683,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public INDArray getMaskArray(){
         return maskArray;
     }
+
+    protected String layerNameAndIndex(){
+        String name = layerConf().getLayerName();
+        if(name == null){
+            name = "(not named)";
+        }
+        return "layerName=" + name + ", layerIndex=" + index;
+    }
 }
