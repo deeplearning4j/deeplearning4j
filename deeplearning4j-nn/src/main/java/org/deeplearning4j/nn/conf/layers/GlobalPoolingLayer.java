@@ -132,7 +132,7 @@ public class GlobalPoolingLayer extends Layer {
 
         private PoolingType poolingType = PoolingType.MAX;
         private int[] poolingDimensions;
-        private int pnorm;
+        private int pnorm = 2;
         private boolean collapseDimensions = true;
 
         public Builder(){
@@ -159,7 +159,7 @@ public class GlobalPoolingLayer extends Layer {
         }
 
         public Builder pnorm(int pnorm){
-            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
+            if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0. Got: " + pnorm);
             this.pnorm = pnorm;
             return this;
         }
