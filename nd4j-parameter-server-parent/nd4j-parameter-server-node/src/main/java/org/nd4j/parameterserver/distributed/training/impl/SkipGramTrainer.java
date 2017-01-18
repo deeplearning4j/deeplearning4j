@@ -182,9 +182,15 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             if (completionHandler.isCompleted(descriptor)) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
-                FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
-                fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
-                transport.sendMessage(fcm);
+
+                // TODO: there is possible race condition here
+                if (frameDescriptor != null) {
+                    FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
+                    fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
+                    transport.sendMessage(fcm);
+                } else {
+                    log.warn("Frame double spending detected");
+                }
             }
         } else {
         //    log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );

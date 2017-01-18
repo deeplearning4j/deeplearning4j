@@ -90,6 +90,6 @@ public class VoidConfiguration implements Serializable {
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
         private long retransmitTimeout = 1000;
         private long responseTimeframe = 500;
-        private long responseTimeout = 20000;
+        private long responseTimeout = 30000;
     }
 }
