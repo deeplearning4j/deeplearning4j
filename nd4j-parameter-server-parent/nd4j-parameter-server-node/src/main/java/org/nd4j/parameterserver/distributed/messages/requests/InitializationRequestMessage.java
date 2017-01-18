@@ -47,6 +47,7 @@ public class InitializationRequestMessage extends BaseVoidMessage  implements Re
 
         clipboard.pin(aggregation);
 
+        dim.setOriginatorId(this.originatorId);
         dim.extractContext(this);
         dim.processMessage();
 

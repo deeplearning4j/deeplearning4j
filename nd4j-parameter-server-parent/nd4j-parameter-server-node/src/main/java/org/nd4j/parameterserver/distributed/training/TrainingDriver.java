@@ -20,7 +20,7 @@ public interface TrainingDriver<T extends TrainingMessage> {
 
     void aggregationFinished(VoidAggregation aggregation);
 
-    void finishTraining(long taskId);
+    void finishTraining(long originatorId, long taskId);
 
     void addCompletionHook(long originatorId, long frameId, long messageId);
 

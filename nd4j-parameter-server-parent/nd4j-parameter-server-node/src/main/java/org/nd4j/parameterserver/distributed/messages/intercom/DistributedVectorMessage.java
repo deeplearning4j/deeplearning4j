@@ -32,6 +32,7 @@ public class DistributedVectorMessage extends BaseVoidMessage implements Distrib
     @Override
     public void processMessage() {
         VectorAggregation aggregation = new VectorAggregation(rowIndex, (short) voidConfiguration.getNumberOfShards(), shardIndex, storage.getArray(key).getRow(rowIndex).dup());
+        aggregation.setOriginatorId(this.getOriginatorId());
         transport.sendMessage(aggregation);
     }
 }

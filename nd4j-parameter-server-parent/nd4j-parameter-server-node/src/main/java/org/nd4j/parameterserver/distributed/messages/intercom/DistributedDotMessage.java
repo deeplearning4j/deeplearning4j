@@ -80,6 +80,7 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
 
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
         sgrm.setTaskId(this.taskId);
+        sgrm.setOriginatorId(this.getOriginatorId());
 
 
 

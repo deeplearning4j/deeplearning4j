@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -35,6 +36,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
 public class VoidParameterServerStressTest {
     private static final int NUM_WORDS = 100000;
     @Before
@@ -325,14 +327,14 @@ public class VoidParameterServerStressTest {
                 int start = e * chunk;
                 int end = (e + 1) * chunk;
 
-                for (int i = 0; i < 100000; i++) {
+                for (int i = 0; i < 200; i++) {
                     long time1 = System.nanoTime();
                     INDArray array = clientNode.getVector(RandomUtils.nextInt(start, end));
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
 
-                    if ((i + 1) % 1000 == 0)
+                    if ((i + 1) % 100 == 0)
                         log.info("Thread {} cnt {}", e, i + 1);
                 }
                 times.addAll(results);
@@ -423,7 +425,7 @@ public class VoidParameterServerStressTest {
                 int start = e * chunk;
                 int end = (e + 1) * chunk;
 
-                for (int i = 0; i < 1000; i++) {
+                for (int i = 0; i < 200; i++) {
                     Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
                     for (int f = 0; f < 128; f++) {
                         frame.stackMessage(getSGRM());
@@ -562,6 +564,9 @@ public class VoidParameterServerStressTest {
                     long time2 = System.nanoTime();
 
                     results.add(time2 - time1);
+
+                    if ((i + 1) % 50 == 0)
+                        log.info("Thread_{} finished {} frames...", c, i);
                 }
 
                 times.addAll(results);

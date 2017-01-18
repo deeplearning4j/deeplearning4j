@@ -51,6 +51,7 @@ public class VectorRequestMessage extends BaseVoidMessage implements RequestMess
         clipboard.pin(aggregation);
 
         DistributedVectorMessage dvm = new DistributedVectorMessage(key, rowIndex);
+        dvm.setOriginatorId(this.originatorId);
 
         if (voidConfiguration.getNumberOfShards() > 1)
             transport.sendMessageToAllShards(dvm);

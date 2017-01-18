@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;
 
-    protected Map<Long, SkipGramChain> chains = new ConcurrentHashMap<>();
+    protected Map<RequestDescriptor, SkipGramChain> chains = new ConcurrentHashMap<>();
     protected AtomicLong cntRounds = new AtomicLong(0);
 
     protected FrameCompletionHandler completionHandler = new FrameCompletionHandler();
@@ -49,14 +49,14 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-        //log.info("sI_{} adding SkipGramChain frame: {}; task: {}", transport.getShardIndex(), message.getFrameId(), message.getTaskId());
+        //log.info("sI_{} adding SkipGramChain originator: {}; frame: {}; task: {}", transport.getShardIndex(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
         SkipGramChain chain = new SkipGramChain(message.getOriginatorId(), message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
         //log.info("Starting chain [{}]", chain.getTaskId());
 
 
-        chains.put(chain.getTaskId(), chain);
+        chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
 
         if (message.getPoints() != null && message.getPoints().length > 0) {
             // we assume this is HS round
@@ -76,6 +76,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     (float) message.getAlpha());
             ddm.setTargetId((short) - 1);
             ddm.setOriginatorId(message.getOriginatorId());
+
             transport.sendMessage(ddm);
         } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
@@ -91,10 +92,11 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
      */
     @Override
     public void pickTraining(@NonNull SkipGramRequestMessage message) {
-        if (!chains.containsKey(message.getTaskId())) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
+        if (!chains.containsKey(descriptor)) {
             SkipGramChain chain = new SkipGramChain(message);
-       //     log.info("sI_{} Picking chain: {}", transport.getShardIndex(), chain.getTaskId());
-            chains.put(chain.getTaskId(), chain);
+//            log.info("sI_{} Picking chain: originator: {}; taskId: {}", transport.getShardIndex(), message.getOriginatorId(), message.getTaskId());
+            chains.put(descriptor, chain);
         }
     }
 
@@ -112,21 +114,23 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // the only possible aggregation here is DotAggregation, actually
         // so we just calculate gradients here
 
-        SkipGramChain chain = chains.get(aggregation.getTaskId());
+        SkipGramChain chain = chains.get(RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId()));
 
         if (chain == null) {
-            throw new RuntimeException("sI_" + transport.getShardIndex() + " Unable to find chain for specified taskId: [" + aggregation.getTaskId() + "]");
+            throw new RuntimeException("sI_" + transport.getShardIndex() + " Unable to find chain for specified originatorId: ["+ aggregation.getOriginatorId()+"]; taskId: [" + aggregation.getTaskId() + "]");
         }
 
         chain.addElement((DotAggregation) aggregation);
 
-        finishTraining(aggregation.getTaskId());
+        finishTraining(aggregation.getOriginatorId(), aggregation.getTaskId());
     }
 
     @Override
-    public void finishTraining(long taskId) {
+    public void finishTraining(long originatorId, long taskId) {
         // TODO: real values needed here
-        SkipGramChain chain = chains.get(taskId);
+
+
+        SkipGramChain chain = chains.get(RequestDescriptor.createDescriptor(originatorId, taskId));
 
         if (chain == null)
             throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
@@ -172,8 +176,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         // we send back confirmation message only from Shard which received this message
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(chain.getOriginatorId(), chain.getFrameId());
+
         if (completionHandler.isTrackingFrame(descriptor)) {
-            completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
+            completionHandler.notifyFrame(chain.getOriginatorId(), chain.getFrameId(), chain.getTaskId());
 
             if (completionHandler.isCompleted(descriptor)) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
@@ -181,6 +186,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
                 transport.sendMessage(fcm);
             }
+        } else {
+        //    log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
         }
 
 

@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +35,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
 public class VoidParameterServerTest {
     private static List<String> localIPs;
     private static List<String> badIPs;

@@ -31,7 +31,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
     @Getter(AccessLevel.PROTECTED) @Setter(AccessLevel.PROTECTED)
     protected List<T> list = new ArrayList<T>();
 
-    @Getter @Setter protected long originatorId;
+    @Getter protected long originatorId;
     @Getter @Setter protected short targetId;
     @Getter @Setter protected long taskId;
 
@@ -59,6 +59,14 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
         list.add(message);
     }
 
+    @Override
+    public void setOriginatorId(long id) {
+        this.originatorId = id;
+        if (list != null)
+            list.forEach((msg) -> {
+                msg.setOriginatorId(this.getOriginatorId());
+            });
+    }
 
     /**
      * This method adds single TrainingMessage to this Frame
@@ -163,7 +171,7 @@ public class Frame<T extends TrainingMessage> implements Serializable, Iterable<
 
     @Override
     public void processMessage() {
-        log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
+        //log.info("Processing frame {} of {} messages... Originator: {}", this.getTaskId(), list.size(), originatorId);
         for(T message: list) {
             message.attachContext(voidConfiguration, trainer, clipboard, transport, storage, role, shardIndex);
 
