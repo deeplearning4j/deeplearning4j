@@ -40,17 +40,6 @@ layout: default
           </button>
           <a class="navbar-brand" href="/"><i class="fa fa-terminal logo"></i> PROGUR!</a>
         </div>
-        <!-- Options -->
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav navbar-right">
-            <li><a target="_blank" href="https://twitter.com/hathibel" title="Follow me on Twitter"><i class="fa fa-lg fa-twitter" style="color: #4099FF"></i> &nbsp; Twitter</a></li>
-            <li><a target="_blank" href="https://plus.google.com/+Progur" title="Follow me on Google+" ><i class="fa fa-lg fa-google-plus" style="color: #d34836"></i> &nbsp; Google+</a></li>
-            <li><a target="_blank" href="https://github.com/hathibelagal" title="Follow me on GitHub"><i class="fa fa-lg fa-github" style="color: #999999"></i> &nbsp; GitHub</a></li>
-            <li><a target="_blank" href="https://medium.com/@hathibel" title="Follow me on Medium"><i class="fa fa-lg fa-medium" style="color: #0be370"></i> &nbsp; Medium</a></li>
-            <li><a target="_blank" href="/feed.xml" title="Subscribe to our RSS feed"><i class="fa fa-lg fa-rss" style="color: #FF6600"></i>&nbsp; RSS</a></li>
-          </ul>
-        </div>
-        <!-- End of Options -->
       </div>
     </nav>
 
@@ -239,10 +228,6 @@ layout: default
 
 <footer class="footer">
   <div class="container">
-    <p>
-        Copyright &copy; 2016-2017 Progur.com | All rights reserved.
-        <br/>
-    </p>
   </div>
 </footer>
   </body>
