@@ -129,8 +129,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     public void finishTraining(long originatorId, long taskId) {
         // TODO: real values needed here
 
-
-        SkipGramChain chain = chains.get(RequestDescriptor.createDescriptor(originatorId, taskId));
+        RequestDescriptor chainDesc = RequestDescriptor.createDescriptor(originatorId, taskId);
+        SkipGramChain chain = chains.get(chainDesc);
 
         if (chain == null)
             throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
@@ -182,9 +182,15 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             if (completionHandler.isCompleted(descriptor)) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
-                FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
-                fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
-                transport.sendMessage(fcm);
+
+                // TODO: there is possible race condition here
+                if (frameDescriptor != null) {
+                    FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
+                    fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
+                    transport.sendMessage(fcm);
+                } else {
+                    log.warn("Frame double spending detected");
+                }
             }
         } else {
         //    log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
@@ -196,7 +202,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             log.info("{} training rounds finished...", cntRounds.get());
 
         // don't forget to remove chain, it'll become a leak otherwise
-        chains.remove(taskId);
+        chains.remove(chainDesc);
     }
 
     @Override

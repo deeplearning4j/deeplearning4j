@@ -17,6 +17,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
+import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
@@ -78,6 +79,8 @@ public abstract class BaseTransport implements Transport {
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
+        long startTime = System.currentTimeMillis();
+
         long taskId = message.getTaskId();
         sendCommandToShard(message);
         AtomicLong cnt = new AtomicLong(0);
@@ -108,6 +111,13 @@ public abstract class BaseTransport implements Transport {
         }
 
         completed.remove(taskId);
+
+        long endTime = System.currentTimeMillis();
+        long timeSpent = endTime - startTime;
+
+        if (message instanceof Frame)
+            log.info("Frame of {} messages [{}] processed in {} ms", ((Frame) message).size(), message.getTaskId(), timeSpent);
+
 
         return msg;
     }
