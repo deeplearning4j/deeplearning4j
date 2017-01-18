@@ -35,7 +35,10 @@ public class FrameCompletionHandler {
     }
 
     public void notifyFrame(RequestDescriptor descriptor, Long messageId) {
-        frames.get(descriptor).finishedMessage(messageId);
+        FrameDescriptor frameDescriptor = frames.get(descriptor);
+
+        if (frameDescriptor != null)
+            frameDescriptor.finishedMessage(messageId);
     }
 
     public void notifyFrame(Long originatorId, Long frameId, Long messageId) {
@@ -96,7 +99,10 @@ public class FrameCompletionHandler {
         }
 
         public void finishedMessage(Long messageId) {
-            states.get(messageId).set(true);
+            AtomicBoolean boo = states.get(messageId);
+            if (boo != null)
+                boo.set(true);
+
             finished.incrementAndGet();
         }
 
