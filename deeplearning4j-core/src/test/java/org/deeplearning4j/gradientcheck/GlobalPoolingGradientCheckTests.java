@@ -39,8 +39,10 @@ public class GlobalPoolingGradientCheckTests {
         int layerSize = 4;
         int nOut = 2;
 
-        int[] minibatchSizes = new int[]{1,3};
+//        int[] minibatchSizes = new int[]{1,3};
+        int[] minibatchSizes = new int[]{3};
 //        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
         PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
 
         for( int miniBatchSize : minibatchSizes) {
@@ -104,8 +106,10 @@ public class GlobalPoolingGradientCheckTests {
         int layerDepth = 4;
         int nOut = 2;
 
-        int[] minibatchSizes = new int[]{1,3};
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+//        int[] minibatchSizes = new int[]{1,3};
+        int[] minibatchSizes = new int[]{3};
+//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.MAX};
 
         for( int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
