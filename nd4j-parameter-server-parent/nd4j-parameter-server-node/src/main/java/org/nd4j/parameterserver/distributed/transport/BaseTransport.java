@@ -78,6 +78,8 @@ public abstract class BaseTransport implements Transport {
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
+        long startTime = System.currentTimeMillis();
+
         long taskId = message.getTaskId();
         sendCommandToShard(message);
         AtomicLong cnt = new AtomicLong(0);
@@ -108,6 +110,10 @@ public abstract class BaseTransport implements Transport {
         }
 
         completed.remove(taskId);
+
+        long endTime = System.currentTimeMillis();
+
+        log.info("Frame [{}] processed in {} ms", message.getTaskId(), endTime - startTime);
 
         return msg;
     }
