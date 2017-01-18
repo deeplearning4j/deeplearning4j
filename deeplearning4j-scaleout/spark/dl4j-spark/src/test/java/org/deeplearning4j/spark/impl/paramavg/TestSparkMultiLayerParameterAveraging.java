@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -46,13 +45,11 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
-import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -70,7 +67,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -991,7 +987,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, net, null);
         JavaRDD<DataSet> rdd = sc.parallelize(dsList);
 
-        ROC sparkROC = sparkNet.roc(rdd, steps, 32);
+        ROC sparkROC = sparkNet.evaluateROC(rdd, steps, 32);
 
         assertEquals(sparkROC.calculateAUC(), sparkROC.calculateAUC(), 1e-6);
 
@@ -1048,7 +1044,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, net, null);
         JavaRDD<DataSet> rdd = sc.parallelize(dsList);
 
-        ROCMultiClass sparkROC = sparkNet.rocMultiClass(rdd, steps, 32);
+        ROCMultiClass sparkROC = sparkNet.evaluateROCMultiClass(rdd, steps, 32);
 
         for( int i=0; i<nOut; i++ ) {
             assertEquals(sparkROC.calculateAUC(i), sparkROC.calculateAUC(i), 1e-6);
