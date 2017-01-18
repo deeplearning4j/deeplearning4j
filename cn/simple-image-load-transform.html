@@ -104,7 +104,7 @@ DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, 
 <p>由DataIterator传入的DataSet将包含一个或多个像素值数组。例如，假设我们指定RecordReader的高度为10，宽度为10， 通道为1，即灰阶图像</p>
 <pre><code class="language-java">
 ImageRecordReader(height,width,channels)
-</code></pre>
+</code></pre><br>
 <p>那么返回的DataSet将是一个10 x 10的矩阵，其元素为0到255之间的数值。0代表黑色像素，255代表白色像素。100则代表灰色。如果图像是彩色的，就会有三个通道。</p>
 <p>将图像像素值的范围从0～255缩放到0～1可能会更有帮助。</p>
 <p>这可以通过以下的代码来实现。</p>
