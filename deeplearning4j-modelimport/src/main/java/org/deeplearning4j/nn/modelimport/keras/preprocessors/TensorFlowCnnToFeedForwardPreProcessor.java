@@ -5,8 +5,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
- * Created by davekale on 1/5/17.
+ * Specialized CnnToFeedForwardInputPreProcessor for use with
+ * Convolutional layers imported from Keras using the TensorFlow
+ * backend.
+ *
+ * @author dave@skymind.io
  */
 public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreProcessor {
 
@@ -25,13 +32,21 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
         super();
     }
 
-
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         if(input.rank() == 2) return input; //Should usually never happen
+        /* DL4J convolutional input:       # channels, # rows, # cols
+         * TensorFlow convolutional input: # rows, # cols, # channels
+         * Theano convolutional input:     # channels, # rows, # cols
+         */
 
-        INDArray inputPermuted = input.permute(0, 2, 3, 1);
-        return super.preProcess(inputPermuted, miniBatchSize);
+        /* TODO: remove the extra copies of the input. These are only
+         * used for debugging purposes during development and testing.
+         */
+        INDArray flatInput = super.preProcess(input, miniBatchSize);
+        INDArray permuted = input.permute(0, 2, 3, 1);
+        INDArray flatPermuted = super.preProcess(permuted, miniBatchSize);
+        return flatPermuted;
     }
 
     @Override

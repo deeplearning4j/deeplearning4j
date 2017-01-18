@@ -90,8 +90,8 @@ public class KerasModelImport {
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(archive.getModelJson())
                 .trainingJson(archive.getTrainingJson())
-                .weights(archive.getWeights())
-                .train(false)
+//                .weights(archive.getWeights())
+                .enforceTrainingConfig(false)
                 .buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -115,8 +115,8 @@ public class KerasModelImport {
         KerasSequentialModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(archive.getModelJson())
                 .trainingJson(archive.getTrainingJson())
-                .weights(archive.getWeights())
-                .train(false)
+//                .weights(archive.getWeights())
+                .enforceTrainingConfig(false)
                 .buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -140,8 +140,8 @@ public class KerasModelImport {
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                                         .modelJson(archive.getModelJson())
                                         .trainingJson(archive.getTrainingJson())
-                                        .weights(archive.getWeights())
-                                        .train(false)
+//                                        .weights(archive.getWeights())
+                                        .enforceTrainingConfig(false)
                                         .buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -157,14 +157,9 @@ public class KerasModelImport {
      */
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelHdf5Filename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModelImport archive = new KerasModelImport(modelHdf5Filename);
-        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
-            throw new InvalidKerasConfigurationException("Expected Keras model class name Sequential (found " + archive.getModelClassName() + ")");
         KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder()
-                .modelJson(archive.getModelJson())
-                .trainingJson(archive.getTrainingJson())
-                .weights(archive.getWeights())
-                .train(false)
+                .modelHdf5Filename(modelHdf5Filename)
+                .enforceTrainingConfig(false)
                 .buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -187,8 +182,8 @@ public class KerasModelImport {
             throw new InvalidKerasConfigurationException("Expected Keras model class name Model (found " + archive.getModelClassName() + ")");
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(archive.getModelJson())
-                .weights(archive.getWeights())
-                .train(false)
+//                .weights(archive.getWeights())
+                .enforceTrainingConfig(false)
                 .buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -206,14 +201,10 @@ public class KerasModelImport {
      */
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelJsonFilename, String weightsHdf5Filename)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModelImport archive = new KerasModelImport(modelJsonFilename, weightsHdf5Filename);
-        if (!archive.getModelClassName().equals(MODEL_CLASS_NAME_SEQUENTIAL))
-            throw new InvalidKerasConfigurationException("Expected Keras model class name Sequential (found " + archive.getModelClassName() + ")");
         KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder()
-                .modelJson(archive.getModelJson())
-                .trainingJson(archive.getTrainingJson())
-                .weights(archive.getWeights())
-                .train(false)
+                .modelJsonFilename(modelJsonFilename)
+                .weightsHdf5Filename(weightsHdf5Filename)
+                .enforceTrainingConfig(false)
                 .buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -233,7 +224,7 @@ public class KerasModelImport {
         String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
         KerasModel kerasModel = new KerasModel.ModelBuilder()
                 .modelJson(modelJson)
-                .train(false)
+                .enforceTrainingConfig(false)
                 .buildModel();
         return kerasModel.getComputationGraphConfiguration();
     }
@@ -252,7 +243,7 @@ public class KerasModelImport {
         String modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
         KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder()
                 .modelJson(modelJson)
-                .train(false)
+                .enforceTrainingConfig(false)
                 .buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }
@@ -334,37 +325,37 @@ public class KerasModelImport {
     /**
      * Get model configuration JSON.
      *
-     * @return
+     * @return      model configuration JSON as string
      */
     public String getModelJson() {
-        return modelJson;
+        return this.modelJson;
     }
 
     /**
      * Get training configuration JSON.
      *
-     * @return
+     * @return      training configuration JSON as string
      */
     public String getTrainingJson() {
-        return trainingJson;
+        return this.trainingJson;
     }
 
     /**
      * Get model class name (Model, Sequential, etc.).
      *
-     * @return
+     * @return      model class name as String
      */
     public String getModelClassName() {
-        return modelClassName;
+        return this.modelClassName;
     }
 
     /**
      * Get model weights stored as map from layer to parameter to INDArray.
      *
-     * @return
+     * @return      model weights as map from layer name to param name to INDArray
      */
     public Map<String, Map<String, INDArray>> getWeights() {
-        return weights;
+        return this.weights;
     }
 
     /**
