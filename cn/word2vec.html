@@ -9,7 +9,7 @@ redirect_from: /zh-word2vec
   <li><a href="#intro">简介</a></li>
   <li><a href="#embed">神经词向量</a></li>
   <li><a href="#crazy">有趣的Word2vec结果</a></li>
-  <li><a href="#just"><strong>直接看代码</strong></a></li>
+  <li><a href="#just">直接看代码</a></li>
   <li><a href="#anatomy">Word2Vec解析</a></li>
   <li><a href="#setup">设置、加载、定型</a></li>
   <li><a href="#code">代码示例</a></li>
@@ -35,7 +35,7 @@ redirect_from: /zh-word2vec
 <p>Word2vec神经网络的输出是一个词汇表，其中每个词都有一个对应的向量，可以将这些向量输入深度学习网络，也可以只是通过查询这些向量来识别词之间的关系。</p>
 <p>Word2vec衡量词的<a href="glossary.html#cosine">余弦相似性</a>，无相似性表示为90度角，而相似度为1的完全相似则表示为0度角，即完全重合；例如，瑞典与瑞典完全相同，而挪威与瑞典的余弦距离为0.760124，高于其他任何国家。</p>
 <p>以下是用Word2vec生成的&ldquo;瑞典&rdquo;的相关词列表：</p>
-<img class="img-responsive center-block" src="../img/sweden_cosine_distance.png" alt="deeplearning4j">
+<img class="img-responsive center-block" src="../img/sweden_cosine_distance.png" alt="deeplearning4j"><br>
 <p>前九位中包括斯堪的纳维亚半岛国家和几个富裕的北欧及日耳曼语系国家。</p><br>
 
 <p><h2><a name="embed">神经词向量</a></h2></p>
