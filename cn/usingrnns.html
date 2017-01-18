@@ -22,7 +22,7 @@ redirect_from: /zh-usingrnns
 <br>
 
 
-<p><h2>基础内容：数据和网络配置</h2></p>
+<p><h2><a name="basics">基础内容：数据和网络配置</a></h2></p>
 <p>DL4J目前支持以下各类循环神经网络 * GravesLSTM（长短期记忆） * BidirectionalGravesLSTM（双向长短期记忆） * BaseRecurrent</p>
 <p>每种网络均有Java文档可供参考：<a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesLSTM.html" target="_blank">GravesLSTM</a>、 <a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/GravesBidirectionalLSTM.html" target="_blank">BidirectionalGravesLSTM</a>、<a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/conf/layers/BaseRecurrentLayer.html" target="_blank">BaseRecurrent</a></p><br>
 
@@ -40,8 +40,8 @@ redirect_from: /zh-usingrnns
 </code></pre>
 <p>有关RnnOutputLayer的实际应用，可参考本页末尾处链接指向的相关示例。</p><br>
 
-<p><h2>RNN定型功能</h2></p>
-<p><h3>截断式沿时间反向传播</h3></p>
+<p><h2><a name="trainingfeatures">RNN定型功能</a></h2></p>
+<p><h3><a name="tbptt">截断式沿时间反向传播</a></h3></p>
 <p>神经网络（包括RNN）定型的运算能力要求可能相当高。循环网络在处理较长序列时（即定型数据有许多时间步时）尤其如此。</p>
 <p>采用截断式沿时间反向传播算法（BPTT）可以降低循环网络中每项参数更新的复杂度。简而言之，此种算法可以让我们以同样的运算能力更快地定型神经网络（提高参数更新的频率）。我们建议在输入较长序列时（通常指超过几百个时间步）使用截断式BPTT算法。</p>
 <p>假设用长度为12个时间步的时间序列定型一个循环网络。我们需要进行12步的正向传递，计算误差（基于预测与实际值对比），再进行12个时间步的反向传递：</p>
@@ -65,7 +65,7 @@ redirect_from: /zh-usingrnns
   <li>截断式BPTT的长度必须短于或等于时间序列的总长</li>
 </ul><br>
 
-<p><h3>掩模：一对多、多对一和序列分类</h3></p>
+<p><h3><a name="masking">掩模：一对多、多对一和序列分类</a></h3></p>
 <p>DL4J支持一系列基于填零和掩模操作的RNN定型功能。填零和掩模让我们能支持诸如一对多、多对一数据情景下的定型，同时也能支持长度可变的时间序列（同一批次内）。</p>
 <p>假设我们用于定型循环网络的输入和输出数据并不会在每个时间步都出现。具体示例（单个样例）见下图。DL4J支持以下所有情景的网络定型。</p>
 <img class="img-responsive center-block" src="../img/rnn_masking_1.png" alt="deeplearning4j">
@@ -87,12 +87,12 @@ Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMa
 <p>其中labels是实际输出（三维时间序列），predicted是网络的预测（三维时间序列，与labels形状相同），而outputMask则是输出的二维掩模数组。注意评估并不需要输入掩模数组。</p>
 <p>得分计算同样会通过MultiLayerNetwork.score(DataSet)方法用到掩模数组。如前文所述，如果DataSet包括一个输出掩模数组，计算网络得分（损失函数 - 均方差、负对数似然函数等）时就会自动使用掩模。</p><br>
 
-<p><h3>RNN层与其他神经网络层的结合应用</h3></p>
+<p><h3><a name="otherlayertypes">RNN层与其他神经网络层的结合应用</a></h3></p>
 <p>DL4J中的RNN层可以与其他类型的层结合使用。例如，可以在同一个网络结合使用DenseLayer和GravesLSTM层；或者将卷积（CNN）层与GravesLSTM层结合用于处理视频。</p>
 <p>当然，DenseLayer和卷积层并不处理时间序列数据－这些层要求的输入类型不同。为了解决这一问题，我们需要使用层预处理器功能：比如CnnToRnnPreProcessor和FeedForwardToRnnPreprocessor类。点击<a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor">此处</a>查看所有预处理器。大部分情况下，DL4J配置系统会自动添加所需的预处理器。但预处理器也可以手动添加（替代为每一层自动添加的预处理器）。</p>
 <p>例如，如需在第1和第2层之间添加预处理器，可在网络配置中添加下列代码：<code>.inputPreProcessor(2, new RnnToFeedForwardPreProcessor()).</code></p><br>
 
-<p><h2>测试时间：逐步预测</h2></p>
+<p><h2><a name="rnntimestep">测试时间：逐步预测</a></h2></p>
 <p>同其他类型的神经网络一样，RNN可以使用<code>MultiLayerNetwork.output()</code> 和<code>MultiLayerNetwork.feedForward()</code> 方法生成预测。这些方法适用于诸多情况；但它们的限制是，在生成时间序列的预测时，每次都只能从头开始运算。</p>
 <p>假设我们需要在一个实时系统中生成基于大量历史数据的预测。在这种情况下，使用output/feedForward方法是不实际的，因为这些方法每次被调用时都需要进行所有历史数据的正向传递。如果我们要在每个时间步进行单个时间步的预测，那么此类方法会导致(a)运算量很大，同时(b)由于重复同样的运算而造成浪费。</p>
 <p>对于此类情况，<code>MultiLayerNetwork</code>提供四种主要的方法：</p>
@@ -138,7 +138,7 @@ Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMa
   <li>RnnOutputLayer类型的层没有任何循环连接，因此不存在内部状态。</li>
 </ul><br>
 
-<p><h2>导入时间序列数据</h2></p>
+<p><h2><a name="data">导入时间序列数据</a></h2></p>
 <p>RNN的数据导入比较复杂，因为可能使用的数据类型较多：一对多、多对一、长度可变的时间序列等。本节将介绍DL4J目前已实现的数据导入机制。</p>
 <p>此处介绍的方法采用SequenceRecordReaderDataSetIterator class类，以及DataVec的CSVSequenceRecordReader类。该方法目前可加载来自文件的已分隔（用制表符或逗号）数据，每个时间序列为一个单独文件。 该方法还支持：</p>
 <ul>
@@ -246,7 +246,7 @@ DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(fea
 <br>
 
 
-<p><h2>示例</h2></p>
+<p><h2><a name="examples">示例</a></h2></p>
 <p>DL4J目前提供下列<a href="https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent" target="_blank">循环网络示例</a>：</p>
 <ul>
   <li><a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java" target="_blank">字符建模示例</a>，可逐个字符地生成莎士比亚风格的散文</li>
