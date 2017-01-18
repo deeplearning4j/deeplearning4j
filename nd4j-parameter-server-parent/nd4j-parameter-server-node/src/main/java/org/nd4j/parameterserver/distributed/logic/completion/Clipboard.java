@@ -50,7 +50,7 @@ public class Clipboard {
 
         int missing = existing.getMissingChunks();
         if (missing == 0) {
-            completedQueue.add(existing);
+          //  completedQueue.add(existing);
             completedCounter.incrementAndGet();
             return true;
         } else return false;
@@ -78,7 +78,8 @@ public class Clipboard {
             trackingCounter.decrementAndGet();
 
             // FIXME: we don't want this here
-            //completedQueue.clear();
+//            completedQueue.clear();
+
             return aggregation;
         } else return null;
     }
