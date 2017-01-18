@@ -129,8 +129,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     public void finishTraining(long originatorId, long taskId) {
         // TODO: real values needed here
 
-
-        SkipGramChain chain = chains.get(RequestDescriptor.createDescriptor(originatorId, taskId));
+        RequestDescriptor chainDesc = RequestDescriptor.createDescriptor(originatorId, taskId);
+        SkipGramChain chain = chains.get(chainDesc);
 
         if (chain == null)
             throw new RuntimeException("Unable to find chain for specified taskId: [" + taskId + "]");
@@ -202,7 +202,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             log.info("{} training rounds finished...", cntRounds.get());
 
         // don't forget to remove chain, it'll become a leak otherwise
-        chains.remove(taskId);
+        chains.remove(chainDesc);
     }
 
     @Override
