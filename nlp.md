@@ -1,9 +1,11 @@
 ---
-title: Deeplearning4j's NLP framework
+title: Deeplearning4j's NLP Functionality
 layout: default
 ---
 
-# Deeplearning4j's NLP framework
+# Deeplearning4j's NLP Functionality
+
+Although not designed to be comparable to tools such as Stanford CoreNLP or NLTK, deepLearning4J does include some core text processing tools that are described here.
 
 Deeplearning4j's NLP relies on [ClearTK](https://cleartk.github.io/cleartk/), an open-source machine learning and natural language processing framework for the Apache [Unstructured Information Management Architecture](https://uima.apache.org/), or UIMA. UIMA enables us to perform language identification, language-specific segmentation, sentence boundary detection and entity detection (proper nouns: persons, corporations, places and things). 
 
@@ -24,6 +26,7 @@ A Tokenizer is created and wrapped by a [TokenizerFactory](https://github.com/de
 Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode, and to render such text, say, as lowercase characters uniformly. 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=43:57"></script>
+
 
 
 ### Vocab
