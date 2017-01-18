@@ -29,13 +29,7 @@ layout: default
     <nav class="navbar navbar-default navbar-fixed-top">
       <div class="container">
         <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/"><i class="fa fa-terminal logo"></i> PROGUR!</a>
+          <!--a class="navbar-brand" href="/"><i class="fa fa-terminal logo"></i> PROGUR!</a -->
         </div>
       </div>
     </nav>
@@ -48,7 +42,6 @@ layout: default
                 <div>
                     <h1 class="post-title">How to Use Deeplearning4J in Android Apps</h1>
                     <div class="post-meta">Written by Ashraff Hathibelagal &bull; 14 January 2017</div>
-                    <p style="margin-bottom: 20px"><span class="label label-info"><i class="fa fa-tag"> </i> &nbsp; Programming </span></p>
                     <div class="post-actual-content">
                         <p>Generally speaking, training a neural network is a task best suited for powerful computers with multiple GPUs. But what if you want to do it on your humble Android phone or tablet? Well, it’s definitely possible. Considering an average Android device’s specifications, however, it will most likely be quite slow. If that’s not a problem for you, keep reading.</p>
 
