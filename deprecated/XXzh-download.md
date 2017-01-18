@@ -1,6 +1,6 @@
 ---
 title: 
-layout: zh-default
+layout: cn-default
 ---
 
 # ND4J

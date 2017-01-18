@@ -34,7 +34,7 @@ What kind of problems does deep learning solve, and more importantly, can it sol
 
 ## <a name="concrete">A Few Concrete Examples</a>
 
-Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. Here are a few examples of what deep learning can do. 
+Deep learning maps inputs to outputs. It finds correlations. It is known as a "universal approximator", because it can learn to approximate the function `f(x) = y` between any input `x` and any output `y`, assuming they are related through correlation or causation at all. In the process of learning, a neural network finds the right `f`, or the correct manner of transforming `x` into `y`, whether that be `f(x) = 3x + 12` or `f(x) = 9x - 0.1`. Here are a few examples of what deep learning can do. 
 
 ### Classification
 

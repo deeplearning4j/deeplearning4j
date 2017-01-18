@@ -1,0 +1,31 @@
+---
+title: 用定制的数据加工管道将图像载入深度神经网络
+layout: cn-default
+redirect_from: /zh-image-data-pipeline
+---
+<p><h1>针对图像等数据的定制数据加工管道</h1></p>
+<p>Deeplearning4j示例所使用的基准数据集不会对数据加工管道造成任何障碍，因为我们已通过抽象化将这些障碍去除。但在实际工作中，用户接触的是未经处理的杂乱数据，需要先预处理、向量化，再用于定型神经网络，进行聚类或分类。</p>
+<p><em>DataVec</em>是我们的机器学习向量化库，可以用于定制数据准备方法，便于神经网络学习。（<a href="https://deeplearning4j.org/datavecdoc/">DataVec Javadoc参见此处</a>。）</p>
+<p>本教程将具体介绍<em>自然脸部检测数据集</em>（LFW数据集）的加载方式，这个有监督的数据集包含5,749位名人的13,233张照片。</p>
+
+
+<p><h2>简介视频</h2></p>
+<div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=a0355x681pz&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div>
+<br>
+
+
+<p><h2>加载标签</h2></p>
+<p>我们的示例存储库有一个使用ParentPathLabelGenerator的示例。类（Class）是ImagePipelineExample.java</p>
+<pre class="line-numbers"><code class="language-java">
+File parentDir = new File(System.getProperty("user.dir"), "dl4j-examples/src/main/resources/DataExamples/ImagePipeline/");
+    //Files in directories under the parent dir that have "allowed extensions" plit needs a random number generator for reproducibility when splitting the files into train and test
+    FileSplit filesInDir = new FileSplit(parentDir, allowedExtensions, randNumGen);
+
+    //You do not have to manually specify labels. This class (instantiated as below) will
+    //parse the parent dir and use the name of the subdirectories as label/class names
+    ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+ </code></code>
+ <br>
+
+<p><h2>读取记录，对数据进行迭代</h2></p>
+<p>以下代码可将原始图像转换为DL4J和ND4J相兼容的格式：</p>

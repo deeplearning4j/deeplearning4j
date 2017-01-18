@@ -7,9 +7,9 @@ layout: default
 
 Where you start depends on what you already know. 
 
-The prerequisites for understanding and applying deep learning are linear algebra, calculus and statistics, as well as programming and machine learning. 
+The prerequisites for understanding and applying deep learning are linear algebra, calculus and statistics, as well as programming and some machine learning. 
 
-In the case of Deeplearning4j, you should know Java well and be comfortable with the IntelliJ IDE. 
+In the case of Deeplearning4j, you should know Java well and be comfortable with tools like the IntelliJ IDE and the automated build tool Maven. 
 
 Below you'll find a list of resources. The sections are roughly organized in the order they will be useful. 
 
@@ -19,6 +19,8 @@ Below you'll find a list of resources. The sections are roughly organized in the
 * [Geoff Hinton's Neural Networks Class on Coursera](http://class.coursera.org/neuralnets-2012-001/lecture) 
 * [Patrick Winston's Introduction to Artificial Intelligence @MIT](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/) (For those interested in a survey of artificial intelligence.)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](http://cs231n.github.io) (For those interested in image recognition.)
+* [ML@B: Machine Learning Crash Course: Part 1](https://ml.berkeley.edu/blog/2016/11/06/tutorial-1/)
+* [ML@B: Machine Learning Crash Course: Part 2](https://ml.berkeley.edu/blog/2016/12/24/tutorial-2/)
 
 ## Math
 
@@ -35,9 +37,11 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 ## Programming
 
-If you do not know how to program yet, you shouldn't start with Java. Python and Ruby convey the basic ideas much more easily in a faster feedback loop. 
+If you do not know how to program yet, you can start with Java, but you might find other languages easier. Python and Ruby resources convey the basic ideas in a faster feedback loop. 
 
 * [Learn Python the Hard Way](http://learnpythonthehardway.org/)
+* [Pyret: A Python Learning Environment](https://www.pyret.org/)
+* [Scratch: A Visual Programming Environment From MIT](https://scratch.mit.edu/)
 * [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
 * [Intro to the Command Line](http://cli.learncodethehardway.org/book/)
 * [Additional command-line tutorial](http://www.learnenough.com/command-line)

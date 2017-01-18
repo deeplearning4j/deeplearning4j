@@ -2,6 +2,31 @@
 
 <!-- Top Navigation -->
 <header class="site-header navbar-fullwidth navbar-transparent">
+  <!-- Offer First Chapter of O'Reilly Book -->
+  <div id="TopBanner" class="TopBanner">
+      <p><span>Download the first chapter of our practical guide to deep learning for free.</span> <a href="http://learn.skymind.io/deep-learning-textbook" target="_blank" class="TopBanner-download-link">Download »</a></p>
+  </div>
+  <style>
+  .TopBanner {
+      display: none;
+  }
+
+  @media only screen and (min-device-width : 667px) {
+    .TopBanner {
+        display: block;
+        background-color: #424242;
+        color: #ffffff;
+        font-weight: bold;
+        padding: 10px 0px 1px 0px;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+        text-align: center;
+    }
+    .site-header.navbar-transparent .navbar {
+        top: 40px !important;
+    }
+  }
+  </style>
   {% include navigation.html %}
 <!-- Banner -->
 <div class="banner banner-full-height overlay-black" style="background-image: url(assets/themes/thedocs/img/home_hero.jpeg);">
@@ -14,7 +39,6 @@
   <ul class="social-icons">
     <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j" data-icon="octicon-star" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/stargazers" data-count-api="/repos/deeplearning4j/deeplearning4j#stargazers_count" data-count-aria-label="# stargazers on GitHub" aria-label="Star deeplearning4j/deeplearning4j on GitHub">Star</a></li>
     <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j/fork" data-icon="octicon-repo-forked" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/network" data-count-api="/repos/deeplearning4j/deeplearning4j#forks_count" data-count-aria-label="# forks on GitHub" aria-label="Fork deeplearning4j/deeplearning4j on GitHub">Fork</a></li>
-    <li><a class="github-button" href="https://github.com/deeplearning4j/deeplearning4j" data-icon="octicon-eye" data-style="mega" data-count-href="/deeplearning4j/deeplearning4j/watchers" data-count-api="/repos/deeplearning4j/deeplearning4j#subscribers_count" data-count-aria-label="# watchers on GitHub" aria-label="Watch deeplearning4j/deeplearning4j on GitHub">Watch</a></li>
 <!-- End Banner -->
 </header>
 <!-- END Top Navigation -->
@@ -32,20 +56,20 @@
     <article class="col-md-9 col-sm-9 main-content" role="main">
 
       <header>
-        <h1>What is Deeplearning4j?</h1>
+        <h1><a href="https://deeplearning4j.org/overview">What is Deeplearning4j?</a></h1>
         <p>Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and Spark, DL4J is designed to be used in business environments on distributed GPUs and CPUs. <a href="https://www.skymind.io" target="_blank">Skymind</a> is its commercial support arm.</p>
       </header>
 
       <section>
         <h2>Welcome to Deeplearning4j</h2>
-        <p>Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.</p>
+        <p>Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. DL4J can <a href="https://deeplearning4j.org/model-import-keras" target="_blank">import neural net models</a> from most major frameworks via Keras, including TensorFlow, Caffe, Torch and Theano, bridging the gap between the Python ecosystem and the JVM with a cross-team toolkit for data scientists, data engineers and DevOps.</p>
 
         <div class="row">
           <div class="col-md-4 col-sm-6">
             <div class="promo small-icon left">
               <i class="fa fa-tv"></i>
               <h3>Distributed</h3>
-              <p>DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to improve training.</p>
+              <p>DL4J takes advantage of the latest distributed computing frameworks including Hadoop and Apache Spark to improve training. On multi-GPUs, it is equal to Caffe in performance.</p>
             </div>
           </div>
 
@@ -53,7 +77,7 @@
             <div class="promo small-icon left">
               <i class="fa fa-wrench"></i>
               <h3>Open-Source</h3>
-              <p>Completely open-source and is maintained by the community and its commercial arm, <a href="https://www.skymind.io">Skymind</a>.</p>
+              <p>Completely open-source and is maintained by the open-source community and the <a href="https://www.skymind.io">Skymind</a> team.</p>
             </div>
           </div>
 
@@ -61,7 +85,7 @@
             <div class="promo small-icon left">
               <i class="fa fa-cubes"></i>
               <h3>Java/Scala/JVM</h3>
-              <p>Deeplearning4j is written in Java and is compatible with any JVM language. Import into Clojure, Scala & Kotlin projects.</p>
+              <p>Deeplearning4j is written in Java and is compatible with any JVM language, such as Scala or Clojure. (The underlying computations are written in C, C++ and Cuda.)</p>
             </div>
           </div>
 
@@ -110,7 +134,7 @@
           <ul>
             <li>
               <h6>Use cases?</h6>
-              <div>DL4J is applied for <a href="http://www.skymind.io/finance" target="_blank">Fraud detection</a>, <a href="http://www.skymind.io/commerce" target="_blank">Recommender Systems (CRM, adtech, churn prevention)</a>, <a href="linear-regression.html" target="_blank">Regression and predictive analytics</a>, Face/image recognition, Voice search, Speech-to-text (transcription), and preventative hardware monitoring (anomaly detection).</div>
+              <div>DL4J is applied for <a href="http://www.skymind.io/finance" target="_blank">Fraud detection</a>, <a href="http://hypnotic-feeling.surge.sh/" target="_blank">network intrusion detection</a>, <a href="http://www.skymind.io/commerce" target="_blank">Recommender Systems (CRM, adtech, churn prevention)</a>, <a href="linear-regression.html" target="_blank">Regression and predictive analytics</a>, Face/image recognition, Voice search, Speech-to-text (transcription), and preventative hardware monitoring (anomaly detection).</div>
             </li>
             <li>
               <h6>Why Deeplearning4j?</h6>
@@ -152,7 +176,6 @@
             <a href="convolutionalnets.html">Convolutional Nets (images)</a>
               <a href="usingrnns.html">Recurrent Nets</a>
             <a href="lstm.html">LSTMs (time series and sensor data)</a>
-            <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java">Recursive autoencoders</a>
             <a href="deepbeliefnetwork.html">Deep-belief networks</a>
             <a href="deepautoencoder.html">Deep Autoencoders (Question-Answer/data compression)</a>
             <a href="stackeddenoisingautoencoder.html">Stacked Denoising Autoencoders</a>
@@ -173,4 +196,5 @@
   </div>
 </main>
 
+{% include gitterbtn.html %}
 {% include footer.html %}

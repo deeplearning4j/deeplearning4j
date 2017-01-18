@@ -109,15 +109,15 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 2. 인텔리J를 실행하고 Import Project 메뉴를 실행합니다. 그리고 'dl4j-examples' 디렉토리를 선택하십시오. 그림은 예전에 사용하던 이름인 dl4j-0.4-examples로 되어있습니다. 
 
-![select directory](./img/Install_IntJ_1.png)
+![select directory](../img/Install_IntJ_1.png)
 
 3. 'Import project from external model'를 선택하고 메이븐이 선택되어 있는지 확인하십시오.
-![import project](./img/Install_IntJ_2.png)
+![import project](../img/Install_IntJ_2.png)
 
 4. 계속 설정을 진행합니다. `jdk`로 시작하는 SDK를 선택하십시오. 그리고 완료 버튼을 누릅니다. 그러면 관련 의존 패키지 다운로드를 시작할 것입니다. 우측 하단의 진행 막대에서 진행 상황을 볼 수 있습니다.
 
 5. 왼쪽 파일 트리에서 원하는 예제를 고르고 우클릭으로 실행하십시오.
-![run IntelliJ example](./img/Install_IntJ_3.png)
+![run IntelliJ example](../img/Install_IntJ_3.png)
 
 ## 다른 프로젝트에서 DL4J 사용하기: POM.xml 구성 방법
 
@@ -133,11 +133,11 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 예제를 실행하려면 우클릭 후 메뉴에서 초록색 버튼을 클릭하십시오. 그러면 하단의 창에 여러 가지 숫자가 출력됩니다. 가장 우측에 있는 숫자는 현재 사용하는 신경망의 분류 결과의 오차율입니다. 만일 학습이 잘 되고 있다면 오차율은 감소하게 됩니다. 이 창으로 실행중인 신경망 모델이 얼마나 정확하게 학습중인지 알 수 있습니다. 
 
-![run IntelliJ example](./img/mlp_classifier_results.png)
+![run IntelliJ example](../img/mlp_classifier_results.png)
 
 다른 창에는 인공 신경망이 어떻게 데이터를 분류하고 있는지를 그래프로 보여줍니다. 
 
-![run IntelliJ example](./img/mlp_classifier_viz.png)
+![run IntelliJ example](../img/mlp_classifier_viz.png)
 
 축하합니다! 여기까지 나왔다면 Deeplearning4j로 인공 신경망을 학습시킨 것입니다. 다음 예제로 이미지 분류인 [**초보자용 MNIST**](./mnist-for-beginners)를 추천합니다.
 

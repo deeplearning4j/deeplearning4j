@@ -1,0 +1,201 @@
+---
+title: Deeplearning4j是什么？
+layout: cn-default
+redirect_from: /zh-index
+---
+
+<p><h1>Deeplearning4j</h1></p>
+<p>Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和<a href="spark">Spark</a>集成，支持分布式CPU和GPU，为商业环境（而非研究工具目的）所设计。<a href="http://www.skymind.io/?__hstc=3042607.a7ccacb889310ae8ee9e75399d132dd6.1464754825987.1480748718367.1480752621996.152&__hssc=3042607.4.1480752621996&__hsfp=4201184654">Skymind</a>是DL4J的商业支持机构。</p>
+<p>Deeplearning4j拥有先进的技术，以即插即用为目标，通过更多预设的使用，避免多余的配置，让非企业也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。</p>
+<p>您可以根据我们<a href="quickstart">在快速入门</a>页上的说明，在几分钟内运行您的首个定型神经网络示例。</p>
+
+<br />
+<p><h2>Deeplearning4j的功能</h2></p>
+<p>Deeplearning4j包括了分布式、多线程的深度学习框架，以及普通的单线程深度学习框架。定型过程以集群进行，也就是说，Deeplearning4j可以快速处理大量数据。神经网络可通过[迭代化简]平行定型，与 Java、 <a href="http://nd4j.org/scala.html" target="_blank">Scala</a> 和 <a href="https://github.com/wildermuthn/d4lj-iris-example-clj/blob/master/src/dl4j_clj_example/core.clj" target="_blank">Clojure</a> 均兼容。Deeplearning4j在开放堆栈中作为模块组件的功能，使之成为首个为<a href="http://microservices.io/patterns/microservices.html" target="_blank">微服务架构</a>打造的深度学习框架。</p>
+<ul class="categorized-view view-col-3">
+  <li>
+    <h5>兼容</h5>
+    <a href="http://www.cloudera.com/" target="_blank">Cloudera CDH</a>
+    <a href="http://hortonworks.com/" target="_blank">Hortonworks HDP</a>
+    <a href="http://www.nvidia.com/object/deep-learning-system.html" target="_blank">NVIDIA DGXs</a>
+    <a href="http://hadoop.apache.org/" target="_blank">Hadoop</a>
+    <a href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html" target="_blank">Hadoop Yarn</a>
+    <a href="http://spark.apache.org/" target="_blank">Apache Spark</a>
+    <a href="https://flink.apache.org/" target="_blank">Apache Flink</a>
+    <a href="http://storm.apache.org/" target="_blank">Apache Storm</a>
+    <a href="https://www.canonical.com/" target="_blank">Canonical</a>
+    <a href="https://www.lightbend.com/platform" target="_blank">Reacive Platform</a>    
+  </li>
+
+  <li>
+    <h5>神经网络</h5>
+    <a href="restrictedboltzmannmachine">受限玻尔兹曼机</a>
+    <a href="convolutionalnets">卷积网络</a>
+    <a href="lstm">循环网络/LSTMs</a>
+       <a href="deepbeliefnetwork">深度置信网络</a>
+    <a href="deepautoencoder">深度自动编码器</a>
+    <a href="usingrnns">递归神经传感器网络</a>
+    <a href="stackeddenoisingautoencoder">堆叠式降噪自动编码器</a>
+    <a href="https://github.com/deeplearning4j/rl4j" target="_blank">深度增强学习</a>
+  </li>
+
+  <li>
+    <h5>其他</h5>
+    <a href="gpu">支持分布式 GPUs </a>
+	  <a href="keras">通过Keras导入Python模型</a>
+    <a href="use_cases">DL4J用例</a>
+    <a href="compare-dl4j-torch7-pylearn">与其它平台比较</a>
+    <a href="releasenotes">版本更新与前未来发展</a>
+
+    
+  </li>
+</ul>
+<br />
+<p>
+<h2>Deeplearning4j系列工具</h2>
+</p>
+<p>深度神经网络能够实现<a href="accuracy">前所未有的准确度</a>。对神经网络的简介请参见<a href="neuralnet-overview">概览</a>页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为layer）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。</p>
+<p>此处为我们已经建立的各个库及其在系统整体中的所处位置：</p>
+<br />
+<p align="center"><a href="../img/dl4j-eco-cn.jpg.jpg" data-lity><img src="../img/dl4j-ecosystem-cn-small.png" alt="dl4j ecosystem"/></a></p>
+<hr color="#DBDBDB" />
+
+<div class="tabs tabs-text">
+
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs text-center" role="tablist">
+    <li role="presentation">
+      <a href="#datavec1" aria-controls="datavec" role="tab" data-toggle="tab">DataVec</a>
+    </li>
+    <li role="presentation" class="active">
+      <a href="#DL4J1" aria-controls="DL4J" role="tab" data-toggle="tab">DL4J</a>
+    </li>
+    <li role="presentation">
+      <a href="#ND4J1" aria-controls="ND4J" role="tab" data-toggle="tab">ND4J</a>
+    </li>
+    <li role="presentation">
+      <a href="#Arbiter1" aria-controls="Arbiter" role="tab" data-toggle="tab">Arbiter</a>
+    </li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane fade" id="datavec1">
+      
+      <ul><li>数据的的 ETL （抽取、转换、装载）和向量化</li>
+      <li>DataVec帮助克服机器学习及深度学习实现过程中最重大的障碍之一：将数据转化为神经网络能够识别的格式</li>
+      <li>DataVec使用Apache <a href="https://spark.apache.org/">Spark</a>来进行转换运算。</li>
+	  <li>开源工具  ASF 2.0许可证：<a href="https://github.com/deeplearning4j/datavec">github.com/deeplearning4j/DataVec</a></li>
+      <li>想了解更多关于DataVec的可以点击<a href="datavec" title="DataVec">这里</a></li></ul></div>    
+    <div role="tabpanel" class="tab-pane active fade in" id="DL4J1">
+     <ul>
+     <li>Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习</li>
+      <li>DL4J与Hadoop和Spark集成，为商业环境（而非研究工具目的）所设计。</li>
+      <li>支持GPU和CPU</li>
+      <li>受到 Cloudera, Hortonwork, NVIDIA, Intel, IBM 等认证，可以在Spark, Flink, Hadoop 上运行</li>
+      <li>支持并行迭代算法架构</li>
+      <li>开源工具  ASF 2.0许可证：<a href="https://github.com/deeplearning4j/deeplearning4j" title="Deeplearning4j" target="_blank">github.com/deeplearning4j/deeplearning4j</a>
+      </li>
+		</ul>
+    </div>
+    <div role="tabpanel" class="tab-pane fade" id="ND4J1"><ul><li><a href="http://nd4j.org/" title="ND4J" target="_blank">ND4J</a> 是 Java 科学运算引擎，用来驱动矩阵操作。</li>
+      <li>JavaCPP功能: Java 到 Objective-C 的桥，可像其他 Java 对象一样来使用 Objective-C 对象。</li>
+      <li>CPU 后瑞：OpenMP、OpenBlas 或 MKL、与SIMD的扩展
+</li>
+      <li>GPU 后瑞：最新CUDA 及 CuDNN
+</li>
+		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/nd4j">github.com/deeplearning4j/nd4j</a></li></ul>
+    </div>
+    <div role="tabpanel" class="tab-pane fade" id="Arbiter1"><ul><li>深度学习模型检测、评估器</li>
+      <li>调整及优化机器学习模型</li>
+      <li>使用Grid search和Random Search 作超参数寻优</li>
+		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/Arbiter">github.com/deeplearning4j/Arbiter</a></li></ul>
+    </div>
+  </div>
+</div>
+<br />
+<p>
+<h2>为Deeplearning4j作出贡献</h2>
+</p>
+<p>为DL4J作出贡献，让DL4J平台变得更完美！不管是一两行的代码，或是一系列的改动，对DL4J的使用者来说都是莫大的贡献：</p>
+<ul>
+  <li>为DL4J平台作出贡献：想要为Deeplearning4j作出贡献的开发人员可先阅读<a href="devguide">开发人员指南</a>。</li>
+	<li>为<a href="https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages" target="_blank">Deeplearning4j.org 网页</a>作出贡献。</li>
+</ul>
+<div align="center">
+<div class="code-window" align="center" style="max-width: 900px">
+<div id="carousel1" class="carousel slide">
+  <!-- Indicators -->
+  <ol class="carousel-indicators">
+    <li data-target="#GithubStep1" data-slide-to="0" class="active"></li>
+    <li data-target="#GithubStep2" data-slide-to="1"></li>
+    <li data-target="#GithubStep3" data-slide-to="2"></li>
+    <li data-target="#GithubStep4" data-slide-to="3"></li>
+    <li data-target="#GithubStep5" data-slide-to="4"></li>
+    <li data-target="#GithubStep6" data-slide-to="5"></li>
+    <li data-target="#GithubStep7" data-slide-to="6"></li>
+    <li data-target="#GithubStep8" data-slide-to="7"></li>
+    <li data-target="#GithubStep9" data-slide-to="8"></li>
+    <li data-target="#GithubStep10" data-slide-to="9"></li>
+    <li data-target="#GithubStep11" data-slide-to="10"></li>
+  </ol>
+
+  <!-- Wrapper for slides -->
+  <div class="carousel-inner" role="listbox">
+    <div class="item active">
+		<img src="../img/github-1.jpg" alt="signup github">
+    </div>
+
+    <div class="item">
+      <img src="../img/github-2.jpg" alt="github next step">
+    </div>
+
+    <div class="item">
+      <img src="../img/github-3-A.jpg" alt="github next step again">
+    </div>
+    
+    <div class="item">
+      <img src="../img/github-4.jpg" alt="github receive email">
+    </div>
+
+    <div class="item">
+      <img src="../img/github-5.jpg" alt="github verified email">
+    </div>       
+
+    <div class="item">
+      <img src="../img/github-6.jpg" alt="github search for dl4j">
+    </div>        
+                
+    <div class="item">
+      <img src="../img/github-7.jpg" alt="github select dl4j">
+    </div>                        
+                                
+    <div class="item">
+      <img src="../img/github-8.jpg" alt="github click fork">
+    </div>                                        
+ 
+    <div class="item">
+      <img src="../img/github-9.jpg" alt="github forking">
+    </div>
+    
+    <div class="item">
+      <img src="../img/github-10.jpg" alt="github start editing">
+    </div>
+    
+    <div class="item">
+      <img src="../img/github-11-cn.jpg" alt="github gh pages">
+    </div>
+	  
+  </div>
+
+  <!-- Controls -->
+  <a class="left carousel-control" href="#carousel1" role="button" data-slide="prev">
+    <i class="fa fa-angle-left"></i>
+  </a>
+  <a class="right carousel-control" href="#carousel1" role="button" data-slide="next">
+    <i class="fa fa-angle-right"></i>
+  </a>
+</div>
+</div>
+</div>
+<div align="center"><strong>加入 Github，使用DL4J，为DL4J作出贡献</strong></div>

@@ -24,7 +24,7 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 * [ND4J: N-dimensional arrays for the JVM](http://nd4j.org)
 * [libND4J: Native CPU/GPU operations for ND4J](https://github.com/deeplearning4j/libnd4j)
 * [DataVec: Data preperation for DL4J](https://github.com/deeplearning4j/DataVec)
-* [DeepLEarning4J:](https://github.com/deeplearning4j/deeplearning4j)
+* [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 
 ### Nets
 
@@ -80,16 +80,17 @@ Each of these optimization algorithms may be paired with training features (know
 
 ### Loss/objective functions
 
-* Reconstruction entropy
-* Squared loss
-* Mean squared error
-* Multi-class cross entropy for classification
-* Negative log likelihood
-* RMSE_XENT
+* MSE: Mean Squared Error: Linear Regression
+* EXPLL: Exponential log likelihood: Poisson Regression
+* XENT: Cross Entropy: Binary Classification
+* MCXENT: Multiclass Cross Entropy
+* RMSE_XENT: RMSE Cross Entropy
+* SQUARED_LOSS: Squared Loss
+* NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
 
 ### Activation functions 
 
-Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
+Activations functions are defined in ND4J [here](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/transforms)
 
 * ReLU
 * Leaky ReLU

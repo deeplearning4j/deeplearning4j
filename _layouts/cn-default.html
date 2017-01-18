@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+{% include header.html %}
+<!-- Article Specific CSS -->
+<style>
+/* Fix subscribe form formatting */
+li.subscribe-form {
+  padding: 2px 20px !important;
+}
+.hs-richtext {
+  margin-bottom: -30px;
+}
+.hs-button {
+  background-color: #2196f3;
+  border-color: #2196f3;
+  color: #fff;
+  margin-top: 10px;
+}
+</style>
+<!-- END Article Specific CSS -->
+
+<!-- Top Navigation -->
+<header class="site-header navbar-fullwidth">
+  {% include cn-navigation.html %}
+</header>
+<!-- END Top Navigation -->
+<!-- Sidebar -->
+<aside class="sidebar sidebar-boxed sidebar-dark">
+  <a class="sidebar-brand" href="../index.html"><img src="../assets/themes/thedocs/img/DL4J-LOGO-2.png" alt="Deeplearning4j"></a>
+    {% include cn-sidebar.html %}
+</aside>
+<!-- END Sidebar -->
+
+<main class="container-fluid">
+  <div class="row">
+
+    <!-- Main Content -->
+    <article class="main-content" role="main">
+      {{ content }}
+    </article>
+    <!-- END Main Content -->
+  </div>
+</main>
+
+{% include cn-gitterbtn.html %}
+{% include cn-footer.html %}

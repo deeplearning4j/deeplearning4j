@@ -34,7 +34,7 @@ A DataSetIterator can be used like this:
          	//do stuff with the data set
          }
 
-Typically, a DataSetIterator handles inputs and data-set-specific concerns like binarizing or normalization. For MNIST, the following does the trick:
+When handling raw image import you will apply tools from datavec to normalize and binarize or scale the images. Our examples have an Mnist Image Pipeline example that demonstrates the normalization, labelling and pre-processing of directories of images. In the case of Mnist data it is so widely used that a special pre-built iterator, MnistDataSetIterator takes care of that for us. 
          
          //Train on batches of 10 out of 60000
          DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
