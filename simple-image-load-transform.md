@@ -99,6 +99,21 @@ ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTran
 recordReader.initialize(trainData,transform);
 ~~~
 
+## JavaCV , OpenCV and ffmpeg Filters
+
+ffmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
+
+```
+<dependency> <groupId>org.bytedeco</groupId> <artifactId>javacv-platform</artifactId> <version>1.3</version> </dependency>
+```
+
+Documentation
+* [JavaCV](https://github.com/bytedeco/javacv)
+* [OpenCV](http://opencv.org/)
+* [ffmpeg](http://ffmpeg.org/)
+
+
+
 ## Handing off to fit
 dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
 

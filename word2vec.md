@@ -303,7 +303,7 @@ You'll want to save the model. The normal way to save models in Deeplearning4j i
         WordVectorSerializer.writeFullModel(vec, "pathToSaveModel.txt");
 ```
 
-This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
+This will save the vectors to a file called `pathToSaveModel.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should have one word per line, followed by a series of numbers that together are its vector representation.
 
 To keep working with the vectors, simply call methods on `vec` like this:
 
@@ -326,10 +326,10 @@ You can reload the vectors into memory like this:
 You can then use Word2vec as a lookup table:
 
 ``` java
-        WeightLookupTable weightLookupTable = wordVectors.lookupTable();
+        WeightLookupTable weightLookupTable = word2Vec.lookupTable();
         Iterator<INDArray> vectors = weightLookupTable.vectors();
-        INDArray wordVector = wordVectors.getWordVectorMatrix("myword");
-        double[] wordVector = wordVectors.getWordVector("myword");
+        INDArray wordVectorMatrix = word2Vec.getWordVectorMatrix("myword");
+        double[] wordVector = word2Vec.getWordVector("myword");
 ```
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
@@ -342,7 +342,7 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
 
 ``` java
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+    Word2Vec vec = WordVectorSerializer.readWord2VecModel(gModel);
 ```
 
 Remember to add `import java.io.File;` to your imported packages.
@@ -460,8 +460,8 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 ### Doc2vec & Other NLP Resources
 
-* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
-* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
+* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 * [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./doc2vec.html)
 * [Thought Vectors, Natural Language Processing & the Future of AI](./thoughtvectors.html)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)

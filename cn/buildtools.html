@@ -1,0 +1,51 @@
+---
+title: 配置自动化构建工具
+layout: cn-default
+---
+<p><h1>配置自动化构建工具</h1></p>
+<p>我们一般鼓励Deeplearning4j、ND4J和DataVec的用户选择Maven，但也有必要介绍如何为Ivy、Gradle和SBT等其他工具配置构建文件，这尤其是因为考虑到Google推荐使用Gradle而非Maven来构建Android项目。</p>
+<p>以下操作指南适用于DL4J和ND4J的所有子模块，包括deeplearning4j-api、deeplearning4j-scaleout和ND4J后端。所有项目及子模块的<strong>最新版本</strong>均可以在<a href="https://search.maven.org/" target="_blank">Maven中央仓库</a>中找到。截止到2016年10月，最新版本为<code>0.6.0</code>。如用源码构建，最新版本是<code>0.6.1-SNAPSHOT</code>。</p>
+<br />
+
+<p><h2>Maven</h2></p>
+<p>在Maven中使用Deeplearning4j时，需要为POM.xml添加以下代码：</p>
+<pre class="line-numbers"><code>
+&lt;dependencies&gt;
+  &lt;dependency&gt;
+      &lt;groupId>org.deeplearning4j&lt;/groupId&gt;
+      &lt;artifactId>deeplearning4j-core&lt;/artifactId&gt;
+      &lt;version>0.6.1-SNAPSHOT&lt;/version&gt;
+      &lt;scope>provided&lt;/scope&gt;
+  &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+<br />
+
+<p><h2>Ivy</h2></p>
+<p>在Ivy中使用lombok时，需要为ivy.xml添加以下代码：</p>
+<pre><code>
+&lt;dependency org="org.deeplearning4j" name="deeplearning4j-core" rev="0.6.0" conf="build" /&gt;
+</code></pre>
+<br />
+
+
+<p><h2>SBT</h2></p><br>
+<p>在SBT中使用Deeplearning4j时，需要为build.sbt添加以下代码：</p>
+<pre><code class="language-java">
+libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "0.6.0"
+</code></pre>
+<br />
+
+
+<p><h2>Gradle</h2></p>
+<p>在Gradle中使用Deeplearning4j时，需要在build.gradle文件的dependencies脚本块中添加以下代码：</p>
+<pre><code class="language-java">
+provided "org.deeplearning4j:deeplearning4j-core:0.6.0"
+</code></pre><br>
+
+<p><h2>Leiningen</h2></p>
+<p>Clojure程序员可以使用与Maven相兼容的 <a href="https://github.com/technomancy/leiningen/" target="_blank">Leiningen </a>或<a href="http://boot-clj.com/" target="_blank"> Boot</a>。Leiningen 教程参见<a href="https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md" target="_blank">此处</a>。</p>
+<p>注：您仍然需要下载ND4J、DataVec和Deeplearning4j，或者双击 Maven / Ivy / Gradle 下载的相应的JAR文件，以便在 Eclipse 安装过程中安装这些组件。</p><br>
+
+<p><h2>后端</h2></p>
+<p><a href="http://nd4j.org/cn/backend" target="_blank">ND4J后端</a>及其他<a href="http://nd4j.org/cn/dependencies" target="_blank">依赖项</a>在ND4J网站上均有介绍。</p>

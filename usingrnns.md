@@ -13,6 +13,7 @@ This document outlines the specifics training features and the practicalities of
 * [RNN Training Features](#trainingfeatures)
   * [Truncated Back Propagation Through Time](#tbptt)
   * [Masking: One-to-Many, Many-to-One, and Sequence Classification](#masking)
+    * [Masking and Sequence Classification After Training](#testtimemasking)
   * [Combining RNN Layers with Other Layer Types](#otherlayertypes)
 * [Test Time: Prediction One Step at a Time](#rnntimestep)
 * [Importing Time Series Data](#data)
@@ -115,6 +116,63 @@ Evaluation using the (output) mask arrays can be used during evaluation by passi
 where labels are the actual output (3d time series), predicted is the network predictions (3d time series, same shape as labels), and outputMask is the 2d mask array for the output. Note that the input mask array is not required for evaluation.
 
 Score calculation will also make use of the mask arrays, via the MultiLayerNetwork.score(DataSet) method. Again, if the DataSet contains an output masking array, it will automatically be used when calculating the score (loss function - mean squared error, negative log likelihood etc) for the network.
+
+#### <a name="testtimemasking">Masking and Sequence Classification After Training</a>
+
+Sequence classification is one common use of masking. The idea is that although we have a sequence (time series) as input, we only want to provide a single label for the entire sequence (rather than one label at each time step in the sequence).
+
+However, RNNs by design output sequences, of the same length of the input sequence. For sequence classification, masking allows us to train the network with this single label at the final time step - we essentially tell the network that there isn't *actually* label data anywhere except for the last time step.
+
+Now, suppose we've trained our network, and want to get the last time step for predictions, from the time series output array. How do we do that?
+
+
+To get the last time step, there are two cases to be aware of. First, when we have a single example, we don't actually need to use the mask arrays: we can just get the last time step in the output array:
+
+```
+    INDArray timeSeriesFeatures = ...;
+    INDArray timeSeriesOutput = myNetwork.output(timeSeriesFeatures);
+    int timeSeriesLength = timeSeriesOutput.size(2);		//Size of time dimension
+    INDArray lastTimeStepProbabilities = timeSeriesOutput.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(timeSeriesLength-1));
+```
+
+Assuming classification (same process for regression, however) the last line above gives us probabilities at the last time step - i.e., the class probabilities for our sequence classification.
+
+
+The slightly more complex case is when we have multiple examples in the one minibatch (features array), where the lengths of each example differ. (If all are the same length: we can use the same process as above).
+
+In this 'variable length' case, we need to get the last time step *for each example separately*. If we have the time series lengths for each example from our data pipeline, it becomes straightforward: we just iterate over examples, replacing the ```timeSeriesLength``` in the above code with the length of that example.
+
+If we don't have the lengths of the time series directly, we need to extract them from the mask array.
+
+If we have a labels mask array (which is a one-hot vector, like [0,0,0,1,0] for each time series):
+
+```
+    INDArray labelsMaskArray = ...;
+    INDArray lastTimeStepIndices = Nd4j.argMax(labelMaskArray,1);
+```
+
+Alternatively, if we have only the features mask: One quick and dirty approach is to use this:
+
+```
+    INDArray featuresMaskArray = ...;
+    int longestTimeSeries = featuresMaskArray.size(1);
+    INDArray linspace = Nd4j.linSpace(1,longestTimeSeries,longestTimeSeries);
+    INDArray temp = featuresMaskArray.mulColumnVector(linspace);
+    INDArray lastTimeStepIndices = Nd4j.argMax(temp,1);
+```
+To understand what is happening here, note that originally we have a features mask like [1,1,1,1,0], from which we want to get the last non-zero element. So we map [1,1,1,1,0] -> [1,2,3,4,0], and then get the largest element (which is the last time step).
+
+
+In either case, we can then do the following:
+
+```
+    int numExamples = timeSeriesFeatures.size(0);
+    for( int i=0; i<numExamples; i++ ){
+        int thisTimeSeriesLastIndex = lastTimeStepIndices.get(i);
+        INDArray thisExampleProbabilities = timeSeriesOutput.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(thisTimeSeriesLastIndex));
+    }
+```
+
 
 ### <a name="otherlayertypes">Combining RNN Layers with Other Layer Types</a>
 
