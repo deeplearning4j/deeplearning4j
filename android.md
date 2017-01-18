@@ -2,7 +2,6 @@
 title: Deploying Deeplearning4j to Android
 layout: default
 ---
-    <!-- Begin Jekyll SEO tag v2.0.0 -->
 <title>How to Use Deeplearning4J in Android Apps - Progur!</title>
 <meta property="og:title" content="How to Use Deeplearning4J in Android Apps" />
 <meta name="description" content="DeepLearning4J (DL4J) is a popular machine learning library that runs on the JVM. In this tutorial, I’ll show you how to use it to create and train neural networks in an Android app." />
@@ -27,7 +26,6 @@ layout: default
   }
 </script>
 <!-- End Jekyll SEO tag -->
-  </head>
   <body>
     <nav class="navbar navbar-default navbar-fixed-top">
       <div class="container">
