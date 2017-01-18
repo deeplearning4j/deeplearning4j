@@ -211,7 +211,14 @@ public class VoidParameterServer {
                             runner.set(true);
                             while (runner.get()) {
                                 try {
+                                    //VoidMessage message = transport.takeMessage();
+
+//                                    if (nodeRole == NodeRole.SHARD)
+//                                        log.info("Processing message: {}", message.getClass().getSimpleName());
+
                                     handleMessage(transport.takeMessage());
+
+
                                 } catch (ND4JIllegalStateException e) {
                                     throw new RuntimeException(e);
                                 } catch (Exception e) {

@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.distributed.messages;
 
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.input.ClassLoaderObjectInputStream;
 import org.apache.commons.lang3.SerializationUtils;

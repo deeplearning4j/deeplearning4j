@@ -138,7 +138,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         SkipGramRequestMessage sgrm = chain.getRequestMessage();
         double alpha = sgrm.getAlpha();
 
-      //og.info("Executing SkipGram round on shard_{}; taskId: {}", transport.getShardIndex(), taskId);
+        //log.info("Executing SkipGram round on shard_{}; taskId: {}", transport.getShardIndex(), taskId);
 
         // TODO: We DON'T want this code being here
         // TODO: We DO want this algorithm to be native

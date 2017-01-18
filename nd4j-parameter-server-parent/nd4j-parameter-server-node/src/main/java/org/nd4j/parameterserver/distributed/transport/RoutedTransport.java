@@ -49,7 +49,7 @@ public class RoutedTransport extends BaseTransport {
         this.clipboard = clipboard;
         this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
-        this.messages = new LinkedBlockingQueue<>(128);
+        this.messages = new LinkedBlockingQueue<>(16384);
 
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
@@ -153,7 +153,18 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-        // log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        //log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
+            try {
+//                log.info("Redirecting message to local endpoint: {}; messages: {}", message.getClass().getSimpleName(), messages.size());
+//                message.setTargetId((short) -1);
+                messages.put(message);
+                return;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
 
         // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
         shards.parallelStream().forEach((rc) ->{
@@ -360,30 +371,40 @@ public class RoutedTransport extends BaseTransport {
         } else if (message instanceof RequestMessage) {
             try {
                 messages.put((RequestMessage) message);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof DistributedMessage) {
             try {
                 messages.put((DistributedMessage) message);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof TrainingMessage) {
             try {
                 messages.put((TrainingMessage) message);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof VoidAggregation) {
             try {
                 messages.put((VoidAggregation) message);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof Frame) {
             try {
                 messages.put((Frame) message);
+            } catch (InterruptedException e) {
+                // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

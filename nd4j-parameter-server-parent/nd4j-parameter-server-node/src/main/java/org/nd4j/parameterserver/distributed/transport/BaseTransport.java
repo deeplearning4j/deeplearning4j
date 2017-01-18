@@ -68,6 +68,7 @@ public abstract class BaseTransport implements Transport {
 
     // TODO: make this configurable?
     protected IdleStrategy idler = new SleepingIdleStrategy(1000);
+    protected IdleStrategy feedbackIdler = new SleepingIdleStrategy(100000);
 
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
@@ -88,7 +89,8 @@ public abstract class BaseTransport implements Transport {
         MeaningfulMessage msg;
         while ((msg = completed.get((Long) taskId)) == null) {
             try {
-                Thread.sleep(voidConfiguration.getResponseTimeframe());
+                //Thread.sleep(voidConfiguration.getResponseTimeframe());
+                feedbackIdler.idle();
 
                 if (System.currentTimeMillis() - currentTime > voidConfiguration.getResponseTimeout()) {
                     log.info("Resending request for taskId [{}]", taskId);
