@@ -40,7 +40,7 @@ layout: default
             <div>
                 <div>
                     <h1 class="post-title">How to Use Deeplearning4J in Android Apps</h1>
-                    <div class="post-meta">Written by Ashraff Hathibelagal &bull; 14 January 2017</div><br><br>
+                    <div class="post-meta">Written by Ashraff Hathibelagal &bull; 14 January 2017</div><br>
                     <div class="post-actual-content">
                         <p>Generally speaking, training a neural network is a task best suited for powerful computers with multiple GPUs. But what if you want to do it on your humble Android phone or tablet? Well, it’s definitely possible. Considering an average Android device’s specifications, however, it will most likely be quite slow. If that’s not a problem for you, keep reading.</p>
 
@@ -207,6 +207,8 @@ layout: default
 <h3 id="conclusion">Conclusion</h3>
 
 <p>In this tutorial, you saw how easy it is to create and train a neural network using the Deeplearning4J library in an Android Studio project. I’d like to warn you, however, that training a neural network on a low-powered, battery operated device might not always be a good idea.</p>
+
+<p>This was originally posted at <a href="http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html" target="_blank" rel="nofollow">Progur</a> by Ashraff Hathibelagal.
 
                     </div>
                 </div>
