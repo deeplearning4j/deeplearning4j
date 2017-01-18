@@ -8,7 +8,7 @@ redirect_from: /kr-about
 
 Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소스 심층 학습(딥러닝) 프로젝트이며, 샌프란시스코의 소프트웨어 개발사 스카이마인드([Skymind](http://www.skymind.io))가 Deeplearning4j의 개발을 주도하고 있습니다. 스카이마인드의 구성원은 데이터 사이언티스트, 심층 학습 전문가 및 자바 시스템 엔지니어로 이루어져 있습니다.
 
-다들 빅 데이터(big data)라는 단어를 들어보았을 것 입니다. 저희는 Deeplearning4j를 통해 여러분을 본격적인 스마트 데이터 시대로 안내하고자 합니다. 그렇기 때문에 저희는 이 프레임워크를 자바에서 구현하고 있습니다. 이 프레임워크를 이용하면 누구나 구글, 페이스북, 마이크로소프트, 바이두, 넷플릭스 등의 심층 학습 연구팀에서 개발한 강력한 알고리즘을 직접 사용할 수 있습니다.
+다들 빅 데이터(big data)라는 단어를 들어보았을 것 입니다. 저희는 Deeplearning4j를 통해 여러분을 본격적인 스마트 데이터 시대로 안내하고자 합니다. 우리는 상용 서비스 구현을 이해 이 서비스를 자바에서 구현합니다. Deeplearning4j 프레임워크를 이용하면 누구나 구글, 페이스북, 마이크로소프트, 바이두, 넷플릭스 등의 심층 학습 연구팀에서 개발한 강력한 알고리즘을 직접 사용할 수 있습니다.다
 
 예를 들어, Deeplearning4j의 딥러닝 알고리즘을 사용해 비지도 학습(unsupervised learning)을 할 수 있습니다. 이 알고리즘을 이용하면 데이터 사이언티스트들은 번거롭고 시간만 잡아 먹는 단순한 특징값 추출(feature extraction) 업무에서 해방되어 더 중요한 일을 할 수 있게 됩니다. 저희는 궁극적으로 이런 알고리즘이 우리를 더욱 더 좋은 미래 - 더 안전하고, 스마트하고, 투명하고, 효율적인 사회로 이끌어 줄 것이라고 생각합니다.
 
@@ -16,7 +16,7 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소
 
 ## ND4J & ND4S
 
-[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/kr-index). ([Github repo](https://github.com/deeplearning4j/nd4j/)를 참조하십시오.) [ND4S](https://github.com/deeplearning4j/nd4s)는 ND4J의 스칼라 래퍼 입니다; [Deeplearing4s](https://github.com/deeplearning4j/deeplearning4s)는 DL4J의 스칼라 래퍼 입니다.
+[ND4J는 저희가 사용하는 자바 기반 연산 엔진입니다](http://nd4j.org/kr-index). ([Github repo](https://github.com/deeplearning4j/nd4j/)를 참조하십시오.) [ND4S](https://github.com/deeplearning4j/nd4s)는 ND4J의 스칼라 래퍼 입니다; [Deeplearing4s](https://github.com/deeplearning4j/deeplearning4s)는 DL4J의 스칼라 wrapper 입니다.
 
 ## 언론 보도
 
@@ -46,6 +46,7 @@ Deeplearning4j는 자바(Java)와 스칼라(Scala)를 위해 작성된 오픈소
 | Jeffrey Tang | jyt109 | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 (한국시간 +7시간) |
 | Melanie Warrick | nyghtowl  | [스카이마인드](http://skymind.io) | 그리니치 평균시 -8 (한국시간 +7시간) |
 | Eron Wright  |  EronWright | 이엠씨  | 그리니치 평균시 -8 (한국시간 +7시간) |
+
 
 # 스카이마인드의 인력 채용
 
