@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Created by Alex on 17/01/2017.
@@ -102,15 +103,21 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim){
         switch (poolingType){
             case MAX:
-                return input.max(poolDim);
+                return inputArray.max(poolDim);
             case AVG:
-                return input.mean(poolDim);
+                return inputArray.mean(poolDim);
             case SUM:
-                return input.sum(poolDim);
+                return inputArray.sum(poolDim);
             case PNORM:
+                //P norm: https://arxiv.org/pdf/1311.1780.pdf
+                //out = (1/N * sum( |in| ^ p) ) ^ (1/p)
                 int pnorm = layerConf().getPnorm();
 
-                throw new UnsupportedOperationException("Not yet implemeted");
+                INDArray abs = Transforms.abs(inputArray, true);
+                Transforms.pow(abs, pnorm, false);
+                INDArray mean = abs.mean(poolDim);
+
+                return Transforms.pow(mean, 1.0/pnorm);
             default:
                 throw new RuntimeException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -193,7 +200,28 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             case PNORM:
                 int pnorm = layerConf().getPnorm();
 
-                throw new UnsupportedOperationException("Not yet implemeted");
+                INDArray abs = Transforms.abs(inputArray, true);
+                Transforms.pow(abs, pnorm, false);
+                INDArray mean = abs.mean(poolDim);
+
+                INDArray pNorm = Transforms.pow(mean, 1.0/pnorm);
+
+                //dL/dIn = dL/dOut * dOut/dIn
+                //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
+
+                INDArray numerator;
+                if(pnorm == 2){
+                    numerator = inputArray.dup();
+                } else {
+                    INDArray absp2 = Transforms.pow(Transforms.abs(inputArray, true), pnorm-2, false);
+                    numerator = inputArray.mul(absp2);
+                }
+
+                INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                denom.rdivi(epsilon);
+                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(numerator,denom,numerator, broadcastDims));
+
+                return numerator;
             default:
                 throw new RuntimeException("Unknown or not supported pooling type: " + poolingType);
         }
