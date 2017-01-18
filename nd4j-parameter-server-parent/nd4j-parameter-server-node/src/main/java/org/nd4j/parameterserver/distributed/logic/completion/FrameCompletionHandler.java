@@ -43,9 +43,14 @@ public class FrameCompletionHandler {
     }
 
     public boolean isCompleted(RequestDescriptor descriptor) {
-        if (isTrackingFrame(descriptor))
-            return frames.get(descriptor).isFinished();
-        else return false;
+        if (isTrackingFrame(descriptor)) {
+            // FIXME: double spending possible here
+            FrameDescriptor frameDescriptor = frames.get(descriptor);
+            if (frameDescriptor == null)
+                return false;
+
+            return frameDescriptor.isFinished();
+        } else return false;
     }
 
     public boolean isCompleted(long originatorId, long frameId) {
