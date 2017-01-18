@@ -121,8 +121,10 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * and calling this method for training, instead implementing own routines
          */
 
-        if (workers > 1)
+        if (workers > 1) {
+            log.info("Repartitioning to {} workers...", workers);
             corpus.repartition(workers);
+        }
 
         if (storageLevel != null)
             corpus.persist(storageLevel);
