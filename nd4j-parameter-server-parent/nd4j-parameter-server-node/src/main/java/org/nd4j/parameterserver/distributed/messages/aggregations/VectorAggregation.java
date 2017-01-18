@@ -27,11 +27,11 @@ public class VectorAggregation extends BaseAggregation {
      */
     @Override
     public void processMessage() {
-        if (clipboard.isTracking(this.getTaskId())) {
+        if (clipboard.isTracking(this.originatorId, this.getTaskId())) {
             clipboard.pin(this);
 
-            if (clipboard.isReady(taskId)) {
-                VoidAggregation aggregation = clipboard.unpin(taskId);
+            if (clipboard.isReady(this.originatorId, taskId)) {
+                VoidAggregation aggregation = clipboard.unpin(this.originatorId, taskId);
 
                 // FIXME: probably there's better solution, then "screw-and-forget" one
                 if (aggregation == null)

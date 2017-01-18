@@ -363,8 +363,8 @@ public class VoidParameterServerTest {
         }
 
         // and at this moment, Shard_0 should contain aggregated vector for us
-        assertEquals(true, shards[0].clipboard.isTracking(1L));
-        assertEquals(true, shards[0].clipboard.isReady(1L));
+        assertEquals(true, shards[0].clipboard.isTracking(0L,1L));
+        assertEquals(true, shards[0].clipboard.isReady(0L,1L));
 
         INDArray jointVector = shards[0].clipboard.nextCandidate().getAccumulatedResult();
 
@@ -405,8 +405,8 @@ public class VoidParameterServerTest {
         // at this moment ot should be caclulated everywhere
         exp = Nd4j.create(new double[]{0.0, 30.0, 120.0});
         for (int t = 0; t< threads.length; t++) {
-            assertEquals(true, shards[t].clipboard.isReady(2L));
-            DotAggregation dot = (DotAggregation) shards[t].clipboard.unpin(2L);
+            assertEquals(true, shards[t].clipboard.isReady(0L, 2L));
+            DotAggregation dot = (DotAggregation) shards[t].clipboard.unpin(0L, 2L);
             INDArray aggregated = dot.getAccumulatedResult();
             assertEquals(exp, aggregated);
         }

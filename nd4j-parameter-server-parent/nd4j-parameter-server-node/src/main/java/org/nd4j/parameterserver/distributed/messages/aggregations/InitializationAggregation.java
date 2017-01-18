@@ -27,11 +27,11 @@ public class InitializationAggregation extends BaseAggregation {
     @Override
     public void processMessage() {
 //        log.info("sI_{} received init aggregation", transport.getShardIndex());
-        if (clipboard.isTracking(taskId)) {
+        if (clipboard.isTracking(this.originatorId, taskId)) {
             clipboard.pin(this);
 
-            if (clipboard.isReady(taskId)) {
-                InitializationAggregation aggregation = (InitializationAggregation) clipboard.unpin(taskId);
+            if (clipboard.isReady(this.originatorId, taskId)) {
+                InitializationAggregation aggregation = (InitializationAggregation) clipboard.unpin(this.originatorId, taskId);
 
                 InitializationCompleteMessage icm = new InitializationCompleteMessage(taskId);
                 icm.setOriginatorId(aggregation.getOriginatorId());

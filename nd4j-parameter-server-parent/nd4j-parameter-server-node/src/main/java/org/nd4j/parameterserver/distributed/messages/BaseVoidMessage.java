@@ -17,7 +17,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 @Data
 public abstract class BaseVoidMessage implements VoidMessage {
     protected int messageType = -1;
-    protected long originatorId;
+    protected long originatorId = 0L;
     protected long taskId;
     protected short targetId;
 

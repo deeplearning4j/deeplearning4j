@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Clipboard {
 
 
-    protected Map<Long, VoidAggregation> clipboard = new ConcurrentHashMap<>();
+    protected Map<RequestDescriptor, VoidAggregation> clipboard = new ConcurrentHashMap<>();
 
     protected Queue<VoidAggregation> completedQueue = new ConcurrentLinkedQueue<>();
 
@@ -35,11 +35,12 @@ public class Clipboard {
      * @return TRUE, if given VoidAggregation was the last chunk, FALSE otherwise
      */
     public boolean pin(@NonNull VoidAggregation aggregation) {
-        VoidAggregation existing = clipboard.get(aggregation.getTaskId());
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(aggregation.getOriginatorId(), aggregation.getTaskId());
+        VoidAggregation existing = clipboard.get(descriptor);
         if (existing == null) {
             existing = aggregation;
             trackingCounter.incrementAndGet();
-            clipboard.put(aggregation.getTaskId(), aggregation);
+            clipboard.put(descriptor, aggregation);
         }
 
         existing.accumulateAggregation(aggregation);
@@ -51,9 +52,6 @@ public class Clipboard {
         if (missing == 0) {
             completedQueue.add(existing);
             completedCounter.incrementAndGet();
-
-            // TODO: delete it from tracking table probably?
-
             return true;
         } else return false;
     }
@@ -64,7 +62,7 @@ public class Clipboard {
      * @param aggregation
      */
     public VoidAggregation unpin(@NonNull VoidAggregation aggregation) {
-        return unpin(aggregation.getTaskId());
+        return unpin(aggregation.getOriginatorId(), aggregation.getTaskId());
     }
 
     /**
@@ -72,14 +70,15 @@ public class Clipboard {
      *
      * @param taskId
      */
-    public VoidAggregation unpin(long taskId) {
+    public VoidAggregation unpin(long originatorId, long taskId) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, taskId);
         VoidAggregation aggregation;
-        if ((aggregation = clipboard.get(taskId)) != null) {
-            clipboard.remove(taskId);
+        if ((aggregation = clipboard.get(descriptor)) != null) {
+            clipboard.remove(descriptor);
             trackingCounter.decrementAndGet();
 
             // FIXME: we don't want this here
-            completedQueue.clear();
+            //completedQueue.clear();
             return aggregation;
         } else return null;
     }
@@ -99,27 +98,32 @@ public class Clipboard {
      * @return
      */
     public VoidAggregation nextCandidate() {
-        completedCounter.decrementAndGet();
-
         VoidAggregation result = completedQueue.poll();
 
         // removing aggregation from tracking table
-        if (result != null)
-            unpin(result.getTaskId());
+        if (result != null) {
+            completedCounter.decrementAndGet();
+            unpin(result.getOriginatorId(), result.getTaskId());
+        }
 
         return result;
     }
 
-    public boolean isReady(Long taskId) {
-        VoidAggregation aggregation = clipboard.get(taskId);
+    public boolean isReady(VoidAggregation aggregation) {
+        return isReady(aggregation.getOriginatorId(), aggregation.getTaskId());
+    }
+
+    public boolean isReady(long originatorId, long taskId) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, taskId);
+        VoidAggregation aggregation = clipboard.get(descriptor);
         if (aggregation == null)
             return false;
 
         return aggregation.getMissingChunks() == 0;
     }
 
-    public boolean isTracking(Long taskId) {
-        return clipboard.containsKey(taskId);
+    public boolean isTracking(long originatorId, long taskId) {
+        return clipboard.containsKey(RequestDescriptor.createDescriptor(originatorId, taskId));
     }
 
     public int getNumberOfPinnedStacks() {
@@ -130,7 +134,7 @@ public class Clipboard {
         return completedCounter.get();
     }
 
-    public VoidAggregation getStackFromClipboard(long taskId) {
-        return clipboard.get(taskId);
+    public VoidAggregation getStackFromClipboard(long originatorId, long taskId) {
+        return clipboard.get(RequestDescriptor.createDescriptor(originatorId, taskId));
     }
 }

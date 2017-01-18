@@ -72,7 +72,7 @@ public class ClipboardTest {
             clipboard.pin(aggregation);
         }
 
-        VoidAggregation aggregation = clipboard.getStackFromClipboard(validId);
+        VoidAggregation aggregation = clipboard.getStackFromClipboard(0L, validId);
         assertNotEquals(null, aggregation);
 
         assertEquals(0, aggregation.getMissingChunks());
@@ -95,8 +95,8 @@ public class ClipboardTest {
         InitializationAggregation aggregation = new InitializationAggregation(1, 0);
         clipboard.pin(aggregation);
 
-        assertTrue(clipboard.isTracking(aggregation.getTaskId()));
-        assertTrue(clipboard.isReady(aggregation.getTaskId()));
+        assertTrue(clipboard.isTracking(0L, aggregation.getTaskId()));
+        assertTrue(clipboard.isReady(0L, aggregation.getTaskId()));
     }
 
     /**
@@ -153,6 +153,7 @@ public class ClipboardTest {
                     INDArray payload = Nd4j.linspace((stepSize * s) + 1, (stepSize * (s+1)), stepSize);
 
                     VoidAggregation aggregation = new VectorAggregation(m, (short) NUM_SHARDS, (short) s, payload);
+                    aggregation.setOriginatorId(0L);
                     list.add(aggregation);
                 }
 
@@ -180,8 +181,9 @@ public class ClipboardTest {
                 boolean isLast = clipboard.pin(aggregation);
                 senderCount.incrementAndGet();
 
-                if (isLast)
+                if (isLast) {
                     aggregations.remove(keyIndex);
+                }
             }
 
             assertEquals(NUM_MESSAGES * NUM_SHARDS, senderCount.get());

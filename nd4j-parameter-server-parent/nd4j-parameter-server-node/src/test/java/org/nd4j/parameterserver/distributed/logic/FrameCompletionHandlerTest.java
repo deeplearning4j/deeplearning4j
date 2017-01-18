@@ -23,21 +23,26 @@ public class FrameCompletionHandlerTest {
     public void testCompletion1() throws Exception {
         FrameCompletionHandler handler = new FrameCompletionHandler();
         long[] frames = new long[]{15L, 17L};
-        for (Long frame: frames) {
-            for(int e = 1; e <= 512; e++) {
-                handler.addHook(1L, frame, (long) e);
+        long[] originators = new long[]{123L, 183L};
+        for (Long originator: originators) {
+            for (Long frame : frames) {
+                for (int e = 1; e <= 512; e++) {
+                    handler.addHook(originator, frame, (long) e);
+                }
+            }
+
+            for (Long frame : frames) {
+                for (int e = 1; e <= 512; e++) {
+                    handler.notifyFrame(originator, frame, (long) e);
+                }
             }
         }
 
-        for (Long frame: frames) {
-            for(int e = 1; e <= 512; e++) {
-                handler.notifyFrame(1L, frame, (long) e);
+
+        for (Long originator: originators) {
+            for (Long frame : frames) {
+                assertEquals(true, handler.isCompleted(originator, frame));
             }
-        }
-
-
-        for (Long frame: frames) {
-            assertEquals(true, handler.isCompleted(1L, frame));
         }
     }
 
