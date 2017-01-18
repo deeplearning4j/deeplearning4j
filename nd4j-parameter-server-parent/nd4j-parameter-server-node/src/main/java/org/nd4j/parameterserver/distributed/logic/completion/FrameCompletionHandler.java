@@ -16,40 +16,54 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class FrameCompletionHandler {
 
-    private Map<Long, FrameDescriptor> frames = new ConcurrentHashMap<>();
+    private Map<RequestDescriptor, FrameDescriptor> frames = new ConcurrentHashMap<>();
 
-    public boolean isTrackingFrame(long frameId) {
-        return frames.containsKey(frameId);
+    public boolean isTrackingFrame(RequestDescriptor descriptor) {
+        return frames.containsKey(descriptor);
+    }
+
+    public boolean isTrackingFrame(long originatorId, long frameId) {
+        return frames.containsKey(RequestDescriptor.createDescriptor(originatorId, frameId));
     }
 
     public void addHook(Long originatorId, Long frameId, Long messageId) {
-        if (!frames.containsKey(frameId))
-            frames.put(frameId, new FrameDescriptor(originatorId));
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, frameId);
+        if (!frames.containsKey(descriptor))
+            frames.put(descriptor, new FrameDescriptor(originatorId));
 
-        frames.get(frameId).addMessage(messageId);
+        frames.get(descriptor).addMessage(messageId);
+    }
+
+    public void notifyFrame(RequestDescriptor descriptor, Long messageId) {
+        frames.get(descriptor).finishedMessage(messageId);
     }
 
     public void notifyFrame(Long originatorId, Long frameId, Long messageId) {
-
-        frames.get(frameId).finishedMessage(messageId);
+        notifyFrame(RequestDescriptor.createDescriptor(originatorId, frameId), messageId);
     }
 
-    public boolean isCompleted(Long frameId) {
-        if (isTrackingFrame(frameId))
-            return frames.get(frameId).isFinished();
+    public boolean isCompleted(RequestDescriptor descriptor) {
+        if (isTrackingFrame(descriptor))
+            return frames.get(descriptor).isFinished();
         else return false;
     }
 
-    public int getIncompleteTasksNumber(Long frameId) {
-        return frames.get(frameId).getIncompleteNumber();
+    public boolean isCompleted(long originatorId, long frameId) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, frameId);
+        return isCompleted(descriptor);
     }
 
-    public FrameDescriptor getCompletedFrameInfo(Long frameId) {
+    public FrameDescriptor getCompletedFrameInfo(RequestDescriptor descriptor) {
         try {
-            return frames.get(frameId);
+            return frames.get(descriptor);
         } finally {
-            frames.remove(frameId);
+            frames.remove(descriptor);
         }
+    }
+
+    public FrameDescriptor getCompletedFrameInfo(long originatorId, long frameId) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, frameId);
+        return getCompletedFrameInfo(descriptor);
     }
 
 

@@ -69,8 +69,11 @@ public class RoutedTransport extends BaseTransport {
         /*
             Regardless of current role, we raise subscription for incoming messages channel
          */
-        ip = localIp;
-        port = localPort;
+        // we skip IPs assign process if they were defined externally
+        if (port == 0) {
+            ip = localIp;
+            port = localPort;
+        }
         unicastChannelUri = "aeron:udp?endpoint=" + ip + ":" + port;
         subscriptionForClients = aeron.addSubscription(unicastChannelUri, voidConfiguration.getStreamId());
 

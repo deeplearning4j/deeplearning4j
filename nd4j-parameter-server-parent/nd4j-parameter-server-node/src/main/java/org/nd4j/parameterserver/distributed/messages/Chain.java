@@ -7,6 +7,8 @@ package org.nd4j.parameterserver.distributed.messages;
  */
 public interface Chain {
 
+    long getOriginatorId();
+
     long getTaskId();
 
     void addElement(VoidMessage message);

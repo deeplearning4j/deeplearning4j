@@ -37,7 +37,7 @@ public class FrameCompletionHandlerTest {
 
 
         for (Long frame: frames) {
-            assertEquals(true, handler.isCompleted(frame));
+            assertEquals(true, handler.isCompleted(1L, frame));
         }
     }
 

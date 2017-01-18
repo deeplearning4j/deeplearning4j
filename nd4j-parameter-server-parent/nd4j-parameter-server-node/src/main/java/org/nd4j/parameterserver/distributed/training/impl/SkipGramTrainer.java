@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
+import org.nd4j.parameterserver.distributed.logic.completion.RequestDescriptor;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
@@ -49,7 +50,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
          * If we're on HS, we know pairs in advance: it's our points.
          */
         //log.info("sI_{} adding SkipGramChain frame: {}; task: {}", transport.getShardIndex(), message.getFrameId(), message.getTaskId());
-        SkipGramChain chain = new SkipGramChain(message.getTaskId(), message.getFrameId());
+        SkipGramChain chain = new SkipGramChain(message.getOriginatorId(), message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
         //log.info("Starting chain [{}]", chain.getTaskId());
@@ -74,6 +75,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     message.getNegSamples(),
                     (float) message.getAlpha());
             ddm.setTargetId((short) - 1);
+            ddm.setOriginatorId(message.getOriginatorId());
             transport.sendMessage(ddm);
         } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
@@ -169,11 +171,12 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
 
         // we send back confirmation message only from Shard which received this message
-        if (completionHandler.isTrackingFrame(chain.getFrameId())) {
+        RequestDescriptor descriptor = RequestDescriptor.createDescriptor(chain.getOriginatorId(), chain.getFrameId());
+        if (completionHandler.isTrackingFrame(descriptor)) {
             completionHandler.notifyFrame(0L, chain.getFrameId(), chain.getTaskId());
 
-            if (completionHandler.isCompleted(chain.getFrameId())) {
-                FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(chain.getFrameId());
+            if (completionHandler.isCompleted(descriptor)) {
+                FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
                 FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
                 fcm.setOriginatorId(frameDescriptor.getFrameOriginatorId());
                 transport.sendMessage(fcm);

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -507,6 +508,87 @@ public class VoidParameterServerStressTest {
         parameterServer.shutdown();
     }
 
+
+    /**
+     * This test checks multiple Clients hammering single Shard
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPerformanceUnicast4() throws Exception {
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                .unicastPort(49823)
+                .numberOfShards(1)
+                .shardAddresses(Arrays.asList("127.0.0.1:49823"))
+                .build();
+
+        Transport transport = new RoutedTransport();
+        transport.setIpAndPort("127.0.0.1", Integer.valueOf("49823"));
+
+        VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
+        parameterServer.setShardIndex((short) 0);
+        parameterServer.init(voidConfiguration, transport);
+
+        parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
+
+
+        VoidParameterServer[] clients = new VoidParameterServer[4];
+        for (int c = 0; c < clients.length; c++) {
+            clients[c] = new VoidParameterServer(NodeRole.CLIENT);
+
+            Transport clientTransport = new RoutedTransport();
+            clientTransport.setIpAndPort("127.0.0.1",Integer.valueOf("4872" + c));
+
+            clients[c].init(voidConfiguration, clientTransport);
+
+            assertEquals(NodeRole.CLIENT, clients[c].getNodeRole());
+        }
+
+        final List<Long> times = new CopyOnWriteArrayList<>();
+
+        Thread[] threads = new Thread[clients.length];
+        for (int t = 0; t < threads.length; t++) {
+            final int c = t;
+            threads[t] = new Thread(() -> {
+                List<Long> results = new ArrayList<>();
+                AtomicLong sequence = new AtomicLong(0);
+                for( int i = 0; i < 200; i++) {
+                    Frame<SkipGramRequestMessage> frame = new Frame<>(sequence.incrementAndGet());
+                    for (int f = 0; f < 128; f++) {
+                        frame.stackMessage(getSGRM());
+                    }
+                    long time1 = System.nanoTime();
+                    clients[c].execDistributed(frame);
+                    long time2 = System.nanoTime();
+
+                    results.add(time2 - time1);
+                }
+
+                times.addAll(results);
+            });
+
+            threads[t].setDaemon(true);
+            threads[t].start();
+        }
+
+
+
+        for (Thread thread: threads)
+            thread.join();
+
+        List<Long> newTimes = new ArrayList<>(times);
+
+        Collections.sort(newTimes);
+
+        log.info("p50: {} us", newTimes.get(newTimes.size() / 2) / 1000);
+
+        for (VoidParameterServer client: clients) {
+            client.shutdown();
+        }
+
+        parameterServer.shutdown();
+    }
+
     /**
      * This method just produces random SGRM requests, fot testing purposes.
      * No real sense could be found here.
@@ -517,7 +599,7 @@ public class VoidParameterServerStressTest {
         int w1 = RandomUtils.nextInt(0, NUM_WORDS);
         int w2 = RandomUtils.nextInt(0, NUM_WORDS);
 
-        byte[] codes = new byte[RandomUtils.nextInt(10, 50)];
+        byte[] codes = new byte[RandomUtils.nextInt(5, 50)];
         int[] points = new int[codes.length];
         for (int e = 0; e < codes.length; e++) {
             codes[e] = (byte) (e % 2 == 0 ? 0 : 1);

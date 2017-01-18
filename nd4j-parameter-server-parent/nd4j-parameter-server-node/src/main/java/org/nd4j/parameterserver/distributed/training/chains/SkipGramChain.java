@@ -18,15 +18,17 @@ import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMes
 @Slf4j
 public class SkipGramChain implements Chain {
 
+    protected long originatorId;
     protected long taskId;
     protected long frameId;
 
     protected SkipGramRequestMessage requestMessage;
     protected DotAggregation dotAggregation;
 
-    public SkipGramChain(long taskId, long frameId) {
+    public SkipGramChain(long originatorId, long taskId, long frameId) {
         this.taskId = taskId;
         this.frameId = frameId;
+        this.originatorId = originatorId;
     }
 
     public SkipGramChain(@NonNull SkipGramRequestMessage message) {
@@ -34,7 +36,7 @@ public class SkipGramChain implements Chain {
     }
 
     public SkipGramChain(long taskId, @NonNull SkipGramRequestMessage message) {
-        this(taskId, message.getFrameId());
+        this(message.getOriginatorId(), taskId, message.getFrameId());
         addElement(message);
     }
 
