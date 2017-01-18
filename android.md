@@ -2,7 +2,7 @@
 title: Deploying Deeplearning4j to Android
 layout: default
 ---
-<title>How to Use Deeplearning4J in Android Apps - Progur!</title>
+<title>How to Use Deeplearning4J in Android Apps</title>
 <meta property="og:title" content="How to Use Deeplearning4J in Android Apps" />
 <meta name="description" content="DeepLearning4J (DL4J) is a popular machine learning library that runs on the JVM. In this tutorial, I’ll show you how to use it to create and train neural networks in an Android app." />
 <meta property="og:description" content="DeepLearning4J (DL4J) is a popular machine learning library that runs on the JVM. In this tutorial, I’ll show you how to use it to create and train neural networks in an Android app." />
@@ -21,7 +21,6 @@ layout: default
     "headline": "How to Use Deeplearning4J in Android Apps",
     "datePublished": "2017-01-14T00:00:00+05:30",
     "description": "DeepLearning4J (DL4J) is a popular machine learning library that runs on the JVM. In this tutorial, I’ll show you how to use it to create and train neural networks in an Android app.",
-    "logo": "http://progur.com/assets/logo.jpg",
     "url": "http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html"
   }
 </script>
@@ -229,5 +228,3 @@ layout: default
   </div>
 </footer>
   </body>
-</html>
-
