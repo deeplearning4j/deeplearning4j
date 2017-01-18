@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
-import com.sun.tools.doclint.HtmlTag;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.hdf5;
