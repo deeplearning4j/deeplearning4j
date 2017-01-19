@@ -244,11 +244,11 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + epsilon);
-            double scorePlus = graph.score(mds);
+            double scorePlus = graph.score(mds, true);  //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
-            double scoreMinus = graph.score(mds);
+            double scoreMinus = graph.score(mds, true);
 
             //Reset original param value
             params.putScalar(i, origValue);
