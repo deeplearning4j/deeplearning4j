@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -735,6 +737,25 @@ public class NativeOpExecutionerTest {
             log.info("data: {}", Arrays.toString(recurrentWeightsIFOG.shapeInfoDataBuffer().asInt()));
             log.info("--------------");
         }
+    }
+
+    @Test
+    public void testInf() {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray x = Nd4j.create(10, 10);
+        x.minNumber();
+
+
+        MatchCondition condition = new MatchCondition(x, Conditions.isInfinite());
+        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+        log.info("Matches: {}", match);
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
+
+        x = Nd4j.create(10, 10);
+        x.minNumber();
+
     }
 
     @Test(expected = ND4JIllegalStateException.class)
