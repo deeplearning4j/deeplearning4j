@@ -733,8 +733,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testTadShape() {
         INDArray arr = Nd4j.linspace(1,12,12).reshape(4,3,1,1);
+        INDArray javaTad = arr.javaTensorAlongDimension(0,0,2,3);
+        assertArrayEquals(new int[]{4,1,1},javaTad.shape());
         INDArray tad = arr.tensorAlongDimension(0,0,2,3);
-        assertArrayEquals(new int[]{4,1,1},tad.shape());
+        assertEquals(javaTad.shapeInfoDataBuffer(),tad.shapeInfoDataBuffer());
     }
 
     @Test

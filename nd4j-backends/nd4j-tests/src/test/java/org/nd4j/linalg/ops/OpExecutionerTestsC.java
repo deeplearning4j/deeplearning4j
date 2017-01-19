@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
@@ -70,6 +71,17 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         super(backend);
     }
 
+
+    @Test
+    public void testBroadcastMultiDim() {
+        INDArray data = Nd4j.linspace(1,30,30).reshape(2,3,5);
+        System.out.println(data);
+        INDArray mask = Nd4j.create(new double[][]{{1.00, 1.00, 1.00, 1.00, 1.00},
+                {1.00, 1.00, 1.00, 0.00, 0.00}});
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(data, mask, data, 0,2));
+        INDArray assertion = Nd4j.create(new double[]{1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,0.0,0.0,21.0,22.0,23.0,0.0,0.0,26.0,27.0,28.0,0.0,0.0}).reshape(2,3,5);
+        assertEquals(assertion,data);
+    }
 
 
 

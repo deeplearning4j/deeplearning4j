@@ -5,6 +5,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -127,6 +128,7 @@ public class OperationProfilerTests {
     }
 
     @Test
+    @Ignore
     public void testBadCombos6() throws Exception {
         INDArray x = Nd4j.create(27).reshape('f', 3, 3, 3).slice(1);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);

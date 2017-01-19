@@ -82,24 +82,28 @@ public class NormalizerTests extends BaseNd4jTest {
     }
 
 
+
+
     @Test
-    public void testMasking(){
+    public void testMasking() {
+        Nd4j.getRandom().setSeed(235);
 
         DataNormalization[] normalizers = new DataNormalization[]{
                 new NormalizerMinMaxScaler(),
                 new NormalizerStandardize()};
 
-        DataNormalization[] normalizersNoMask = new DataNormalization[]{
+        DataNormalization[] normalizersNoMask = new DataNormalization[] {
                 new NormalizerMinMaxScaler(),
-                new NormalizerStandardize()};
+                new NormalizerStandardize()
+        };
 
-        DataNormalization[] normalizersByRow = new DataNormalization[]{
+        DataNormalization[] normalizersByRow = new DataNormalization[] {
                 new NormalizerMinMaxScaler(),
-                new NormalizerStandardize()};
+                new NormalizerStandardize()
+        };
 
 
-        for(int i=0; i<normalizers.length; i++ ){
-
+        for(int i = 0; i < normalizers.length; i++) {
             //First: check that normalization is the same with/without masking arrays
             DataNormalization norm = normalizers[i];
             DataNormalization normFitSubset = normalizersNoMask[i];
@@ -134,16 +138,18 @@ public class NormalizerTests extends BaseNd4jTest {
             normFitSubset.fit(new TestDataSetIterator(toFitTimeSeries1Ex,1));
 
             List<DataSet> toFitRows = new ArrayList<>();
-            for( int j=0; j<5; j++ ){
+            for(int j = 0; j < 5; j++) {
                 INDArray row = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
-            for( int j=0; j<3; j++ ){
+
+            for(int j = 0; j < 3; j++) {
                 INDArray row = arr.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(j,j,true)).transpose();
                 assertTrue(row.isRowVector());
                 toFitRows.add(new DataSet(row, row));
             }
+
             normByRow.fit(new TestDataSetIterator(toFitRows,1));
 
             norm.transform(ds);
@@ -160,7 +166,7 @@ public class NormalizerTests extends BaseNd4jTest {
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
-            for( int j=0; j<2; j++ ){
+            for(int j = 0; j < 2; j++) {
                 System.out.println(ds.getFeatureMatrix().get(NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()));
                 System.out.println();
             }

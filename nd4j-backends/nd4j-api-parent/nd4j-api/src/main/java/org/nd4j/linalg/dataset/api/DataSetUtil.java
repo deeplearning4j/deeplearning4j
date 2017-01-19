@@ -72,7 +72,7 @@ public class DataSetUtil {
             as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
 
-        if(mask == null){
+        if(mask == null) {
             return as2d;
         }
 

@@ -833,6 +833,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!Shape.isRowVectorShape(newShapeInfo))
             Shape.setElementWiseStride(newShapeInfo,-1);
         baseNDArray.setShapeInformation(newShapeInfo);
+        if(!toTad.equals(javaTensorAlongDimension(index,dimension)))
+            throw new IllegalStateException("Illegal tad. Not same.");
         return toTad;
     }
 
