@@ -1,7 +1,6 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -16,16 +15,18 @@ import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLea
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
+import org.nd4j.parameterserver.distributed.messages.Frame;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This is wrapper for SequenceVectors training over given Sequence<T>
- *
  * @author raver119@gmail.com
  */
-@Slf4j
-public class TrainingFunction<T extends SequenceElement> implements VoidFunction<Sequence<T>> {
+public class PartitionTrainingFunction<T extends SequenceElement> implements VoidFunction<Iterator<Sequence<T>>> {
     protected Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
     protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
@@ -37,17 +38,17 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
     protected transient SparkSequenceLearningAlgorithm sequenceLearningAlgorithm;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
-    public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
+    public PartitionTrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
     }
 
-    @Override
     @SuppressWarnings("unchecked")
-    public void call(Sequence<T> sequence) throws Exception {
+    @Override
+    public void call(Iterator<Sequence<T>> sequenceIterator) throws Exception {
         /**
-         * Depending on actual training mode, we'll either go for SkipGram/CBOW/PV-DM/PV-DBOW or whatever
+         * first we initialize
          */
         if (paramServer == null) {
             paramServer = VoidParameterServer.getInstance();
@@ -61,7 +62,6 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
 
         if (shallowVocabCache == null)
             shallowVocabCache = vocabCacheBroadcast.getValue();
-
 
         if (elementsLearningAlgorithm == null && vectorsConfiguration.getElementsLearningAlgorithm() != null) {
             // TODO: do ELA initialization
@@ -88,40 +88,54 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         }
 
 
-        /*
-         at this moment we should have everything ready for actual initialization
-         the only limitation we have - our sequence is detached from actual vocabulary, so we need to merge it back virtually
-        */
-        Sequence<ShallowSequenceElement> mergedSequence = new Sequence<>();
-        for (T element: sequence.getElements()) {
-            // it's possible to get null here, i.e. if frequency for this element is below minWordFrequency threshold
-            ShallowSequenceElement reduced = shallowVocabCache.tokenFor(element.getStorageId());
+        List<Sequence<ShallowSequenceElement>> sequences = new ArrayList<>();
 
-            if (reduced != null)
-                mergedSequence.addElement(reduced);
-        }
+        // now we roll throw Sequences and prepare/convert/"learn" them
+        while (sequenceIterator.hasNext()) {
+            Sequence<T> sequence = sequenceIterator.next();
 
-        // do the same with labels, transfer them, if any
-        if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()) {
-            for (T label: sequence.getSequenceLabels()) {
-                ShallowSequenceElement reduced = shallowVocabCache.tokenFor(label.getStorageId());
+            Sequence<ShallowSequenceElement> mergedSequence = new Sequence<>();
+            for (T element: sequence.getElements()) {
+                // it's possible to get null here, i.e. if frequency for this element is below minWordFrequency threshold
+                ShallowSequenceElement reduced = shallowVocabCache.tokenFor(element.getStorageId());
 
                 if (reduced != null)
-                    mergedSequence.addSequenceLabel(reduced);
+                    mergedSequence.addElement(reduced);
+            }
+
+            // do the same with labels, transfer them, if any
+            if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()){
+                for (T label: sequence.getSequenceLabels()) {
+                    ShallowSequenceElement reduced = shallowVocabCache.tokenFor(label.getStorageId());
+
+                    if (reduced != null)
+                        mergedSequence.addSequenceLabel(reduced);
+                }
+            }
+
+            sequences.add(mergedSequence);
+            if (sequences.size() >= 8) {
+                trainAllAtOnce(sequences);
+                sequences.clear();
             }
         }
 
+        if (sequences.size() > 0) {
+            // finishing training round, to make sure we don't have trails
+            trainAllAtOnce(sequences);
+            sequences.clear();
+        }
+    }
 
-        // now we have shallow sequence, which we'll use for training
-        /**
-         * All we want here, is uniform way to do training, that's matching both standalone and spark codebase.
-         * So we need some neat method, that takes sequence as input, and returns **something** that's either used for aggregation, or for ParamServer message
-         */
-        // FIXME: temporary hook
-        if (sequence.size() > 0)
-            paramServer.execDistributed(elementsLearningAlgorithm.frameSequence(mergedSequence, new AtomicLong(119), 25e-3));
-        else
-            log.warn("Skipping empty sequence...");
 
+    protected void trainAllAtOnce(List<Sequence<ShallowSequenceElement>> sequences) {
+        Frame bigFrame = new Frame(BasicSequenceProvider.getInstance().getNextValue());
+
+        for (Sequence<ShallowSequenceElement> sequence: sequences) {
+            Frame frame = elementsLearningAlgorithm.frameSequence(sequence, new AtomicLong(119L), 25e-3f);
+            bigFrame.stackMessages(frame.getMessages());
+        }
+
+        paramServer.execDistributed(bigFrame);
     }
 }

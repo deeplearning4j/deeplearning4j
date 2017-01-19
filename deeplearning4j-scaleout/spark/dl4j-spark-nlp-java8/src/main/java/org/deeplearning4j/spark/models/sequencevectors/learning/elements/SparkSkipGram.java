@@ -28,7 +28,7 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     protected transient ThreadLocal<Frame<SkipGramRequestMessage>> frame;
 
     @Override
-    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
         if (vectorsConfiguration.getSampling() > 0)
             sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
 
@@ -50,8 +50,8 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
             ShallowSequenceElement word = sequence.getElementByIndex(i);
-            if(word == null || sequence.isEmpty())
-                return 0.0;
+            if(word == null)
+                continue;
 
             int b = (int) (nextRandom.get() % currentWindow);
             int end =  currentWindow * 2 + 1 - b;
@@ -68,14 +68,13 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
         }
 
         // at this moment we should have something in ThreadLocal Frame, so we'll send it to VoidParameterServer for processing
-        if (frame.get().size() > 0) {
-            VoidParameterServer.getInstance().execDistributed(frame.get());
-            frame.set(new Frame<SkipGramRequestMessage>(BasicSequenceProvider.getInstance().getNextValue()));
-        }
 
+        Frame<SkipGramRequestMessage> currentFrame = frame.get();
+        frame.set(new Frame<SkipGramRequestMessage>(BasicSequenceProvider.getInstance().getNextValue()));
 
-        return 0;
+        return currentFrame;
     }
+
 
 
     protected void iterateSample(ShallowSequenceElement word, ShallowSequenceElement lastWord, AtomicLong nextRandom, double lr) {

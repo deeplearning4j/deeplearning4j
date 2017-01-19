@@ -24,6 +24,12 @@ public abstract class BaseSparkLearningAlgorithm implements SparkElementsLearnin
     }
 
     @Override
+    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+        // no-op
+        return 0;
+    }
+
+    @Override
     public void configure(VocabCache<ShallowSequenceElement> vocabCache, WeightLookupTable<ShallowSequenceElement> lookupTable, VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.vectorsConfiguration = configuration;
