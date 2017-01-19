@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -39,15 +40,17 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class NormalizeVertex extends BaseGraphVertex {
 
     private int[] dimension;
+    private double eps;
 
-    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension){
-        this(graph,name,vertexIndex,null,null,dimension);
+    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps){
+        this(graph,name,vertexIndex,null,null,dimension,eps);
     }
 
     public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                           VertexIndices[] outputVertices, int[] dimension) {
+                           VertexIndices[] outputVertices, int[] dimension, double eps) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.dimension = dimension;
+        this.eps = eps;
     }
 
     @Override
@@ -82,7 +85,10 @@ public class NormalizeVertex extends BaseGraphVertex {
             dimensions = dimension;
         }
 
-        return x.divColumnVector(x.norm2(dimensions));
+        x.diviColumnVector(x.norm2(dimensions));
+        Transforms.max(x, eps, false); // in case of div by 0
+
+        return x;
 
     }
 
@@ -104,8 +110,21 @@ public class NormalizeVertex extends BaseGraphVertex {
         INDArray norm = x.norm2(dimensions);
         INDArray norm3 = Transforms.pow(norm, 3.0, true);
 
-        INDArray dLdx = epsilon.divColumnVector(norm)
-            .sub(x.divColumnVector(norm3).muliColumnVector(epsilon.mul(x).sum(1)));
+        INDArray dLdx;
+        if (x.rank() == 2) {
+            // 2D case
+            dLdx = epsilon.divColumnVector(norm)
+                .sub(x.divColumnVector(norm3).muliColumnVector(epsilon.mul(x).sum(1)));
+        } else {
+            //RNN and CNN case - Broadcast along dimension 0
+            INDArray dx = epsilon.mul(x).sum(1);
+
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(x,norm3,x,0));
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(x,dx,x,0));
+            dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon,norm,epsilon,0));
+            dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(dLdx,x,dLdx,0));
+        }
+        Transforms.max(dLdx, eps); // in case of div by 0
 
         return new Pair<>(null, new INDArray[]{dLdx});
     }

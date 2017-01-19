@@ -38,17 +38,24 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 public class NormalizeVertex extends GraphVertex {
 
     protected int[] dimension;
+    protected double eps;
 
     public NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
         this.dimension = dimension;
     }
+
+    public NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
+        this.dimension = dimension;
+        this.eps = eps;
+    }
+
     public NormalizeVertex() {
         this.dimension = new int[]{};
     }
 
     @Override
     public NormalizeVertex clone() {
-        return new NormalizeVertex(dimension);
+        return new NormalizeVertex(dimension,eps);
     }
 
     @Override
