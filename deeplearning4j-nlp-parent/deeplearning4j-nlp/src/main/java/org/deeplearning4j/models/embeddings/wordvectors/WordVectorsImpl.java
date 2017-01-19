@@ -287,6 +287,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
         if (lookupTable != null) {
             modelUtils.init(lookupTable);
             this.modelUtils = modelUtils;
+            //0.25, -0.03, -0.47, 0.10, -0.25, 0.28, 0.37,
         }
     }
 
