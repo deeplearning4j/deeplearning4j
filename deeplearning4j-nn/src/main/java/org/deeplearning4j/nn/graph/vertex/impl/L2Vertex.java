@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -38,14 +39,16 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Justin Long (crockpotveggies)
  */
 public class L2Vertex extends BaseGraphVertex {
+    private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex){
-        this(graph,name,vertexIndex,null,null);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps){
+        this(graph,name,vertexIndex,null,null,eps);
     }
 
     public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
+                    VertexIndices[] outputVertices, double eps) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
+        this.eps = eps;
     }
 
     @Override
@@ -107,6 +110,9 @@ public class L2Vertex extends BaseGraphVertex {
             dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff,first,diff,0));
             dLdb = dLda.neg();
         }
+
+        Transforms.max(dLda, eps); // in case of 0
+        Transforms.max(dLdb, eps);
 
         return new Pair<>(null, new INDArray[]{dLda, dLdb});
     }
