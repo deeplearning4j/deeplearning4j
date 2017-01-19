@@ -129,6 +129,11 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return 65503.0f;
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 

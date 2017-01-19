@@ -19,11 +19,15 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 public class Adam implements Serializable, GradientUpdater {
+    public static final double DEFAULT_ADAM_EPSILON = 1e-8;
+    public static final double DEFAULT_ADAM_BETA1_MEAN_DECAY = 0.9;
+    public static final double DEFAULT_ADAM_BETA2_VAR_DECAY = 0.999;
+
 
     private double learningRate = 1e-3; // learning rate
-    private double beta1 = 0.9; // gradient moving avg decay rate
-    private double beta2 = 0.999; // gradient sqrd decay rate
-    private double epsilon = 1e-8;
+    private double beta1 = DEFAULT_ADAM_BETA1_MEAN_DECAY; // gradient moving avg decay rate
+    private double beta2 = DEFAULT_ADAM_BETA2_VAR_DECAY; // gradient sqrd decay rate
+    private double epsilon = DEFAULT_ADAM_EPSILON;
     private INDArray m, v; // moving avg & sqrd gradients
 
     @Override

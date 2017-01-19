@@ -42,13 +42,14 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 @Data
 @NoArgsConstructor
 public class AdaGrad implements Serializable, GradientUpdater {
+    public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
 
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
-    private double epsilon = 1e-6;
+    private double epsilon = DEFAULT_ADAGRAD_EPSILON;
 
     @Override
     public int stateSizeForInputSize(int inputSize) {
