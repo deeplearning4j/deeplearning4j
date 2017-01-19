@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * NormalizeVertex performs L2 normalization on a single input.
+ * L2NormalizeVertex performs L2 normalization on a single input.
  *
  * Can be configured to normalize a single dimension, or normalize across
  * all dimensions except zero by leaving dimension blank or setting it to -1.
@@ -35,33 +35,33 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black (AlexDBlack)
  */
 @Data
-public class NormalizeVertex extends GraphVertex {
+public class L2NormalizeVertex extends GraphVertex {
 
     protected int[] dimension;
     protected double eps;
 
-    public NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
+    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
         this.dimension = dimension;
     }
 
-    public NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
+    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
         this.dimension = dimension;
         this.eps = eps;
     }
 
-    public NormalizeVertex() {
+    public L2NormalizeVertex() {
         this.dimension = new int[]{};
     }
 
     @Override
-    public NormalizeVertex clone() {
-        return new NormalizeVertex(dimension,eps);
+    public L2NormalizeVertex clone() {
+        return new L2NormalizeVertex(dimension,eps);
     }
 
     @Override
     public boolean equals(Object o){
-        if(!(o instanceof NormalizeVertex)) return false;
-        return ((NormalizeVertex)o).dimension == dimension;
+        if(!(o instanceof L2NormalizeVertex)) return false;
+        return ((L2NormalizeVertex)o).dimension == dimension;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class NormalizeVertex extends GraphVertex {
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.NormalizeVertex(graph,name,idx,dimension,eps);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph,name,idx,dimension,eps);
     }
 
     @Override

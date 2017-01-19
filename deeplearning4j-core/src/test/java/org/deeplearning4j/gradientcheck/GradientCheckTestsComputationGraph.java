@@ -22,9 +22,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -259,7 +257,7 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
                 .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
                 .addVertex("scale", new ScaleVertex(0.17), "dense1")
-                .addVertex("normalize", new NormalizeVertex(new int[]{1}), "scale")
+                .addVertex("normalize", new L2NormalizeVertex(new int[]{1}), "scale")
                 .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "normalize")
                 .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
                 .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
@@ -449,7 +447,7 @@ public class GradientCheckTestsComputationGraph {
                 .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                 .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
                 .addLayer("d3", new DenseLayer.Builder().nIn(6).nOut(2).build(), "d0", "d1", "d2")
-                .addVertex("normalize", new NormalizeVertex(), "d3")
+                .addVertex("normalize", new L2NormalizeVertex(), "d3")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                     .nIn(2).nOut(2).build(), "normalize")
                 .setOutputs("out")

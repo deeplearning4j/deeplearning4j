@@ -32,22 +32,22 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * NormalizeVertex performs L2 normalization on a single input.
+ * L2NormalizeVertex performs L2 normalization on a single input.
  *
  * @author Justin Long (crockpotveggies)
  * @author Alex Black (AlexDBlack)
  */
-public class NormalizeVertex extends BaseGraphVertex {
+public class L2NormalizeVertex extends BaseGraphVertex {
 
     private int[] dimension;
     private double eps;
 
-    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps){
+    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps){
         this(graph,name,vertexIndex,null,null,dimension,eps);
     }
 
-    public NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                           VertexIndices[] outputVertices, int[] dimension, double eps) {
+    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
+                             VertexIndices[] outputVertices, int[] dimension, double eps) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.dimension = dimension;
         this.eps = eps;
@@ -70,7 +70,7 @@ public class NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: inputs not set (NormalizeVertex "+vertexName+" idx "+vertexIndex+")");
+        if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: inputs not set (L2NormalizeVertex "+vertexName+" idx "+vertexIndex+")");
 
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
@@ -94,7 +94,7 @@ public class NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set (NormalizeVertex "+vertexName+" idx "+vertexIndex+")");
+        if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex "+vertexName+" idx "+vertexIndex+")");
 
         INDArray x = inputs[0];
         int[] dimensions;
@@ -113,18 +113,20 @@ public class NormalizeVertex extends BaseGraphVertex {
         INDArray dLdx;
         if (x.rank() == 2) {
             // 2D case
-            dLdx = epsilon.divColumnVector(norm)
-                .sub(x.divColumnVector(norm3).muliColumnVector(epsilon.mul(x).sum(1)));
+            dLdx = epsilon.divColumnVector(norm);
+            x.diviColumnVector(norm3);
+            Transforms.max(x, eps, false);
+            dLdx.subi(x.muliColumnVector(epsilon.mul(x).sum(1)));
         } else {
             //RNN and CNN case - Broadcast along dimension 0
             INDArray dx = epsilon.mul(x).sum(1);
 
             Nd4j.getExecutioner().exec(new BroadcastDivOp(x,norm3,x,0));
+            Transforms.max(x, eps, false); // in case of div by 0
             Nd4j.getExecutioner().exec(new BroadcastMulOp(x,dx,x,0));
             dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon,norm,epsilon,0));
             dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(dLdx,x,dLdx,0));
         }
-        Transforms.max(dLdx, eps); // in case of div by 0
 
         return new Pair<>(null, new INDArray[]{dLdx});
     }
@@ -136,6 +138,6 @@ public class NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public String toString(){
-        return "NormalizeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ",dim=\""+dimension+"\")";
+        return "L2NormalizeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ",dim=\""+dimension+"\")";
     }
 }
