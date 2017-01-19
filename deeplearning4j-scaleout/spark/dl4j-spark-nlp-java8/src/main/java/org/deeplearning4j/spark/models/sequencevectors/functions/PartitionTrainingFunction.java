@@ -136,6 +136,7 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
             bigFrame.stackMessages(frame.getMessages());
         }
 
-        paramServer.execDistributed(bigFrame);
+        if (bigFrame.size() > 0)
+            paramServer.execDistributed(bigFrame);
     }
 }
