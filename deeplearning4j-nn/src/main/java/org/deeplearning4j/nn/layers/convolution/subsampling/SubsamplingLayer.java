@@ -200,6 +200,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 Transforms.pow(pNorm, pnorm, false);
                 pNorm = pNorm.sum(1);
                 Transforms.pow(pNorm, (1.0/pnorm), false);
+                double eps = layerConf().getEps();
+                Transforms.max(pNorm, eps);
 
                 //dL/dIn = dL/dOut * dOut/dIn
                 //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
