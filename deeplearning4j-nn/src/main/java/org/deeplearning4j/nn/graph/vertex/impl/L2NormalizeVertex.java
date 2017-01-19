@@ -85,7 +85,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             dimensions = dimension;
         }
 
-        INDArray xNorm2 = x.norm2(dimensions)
+        INDArray xNorm2 = x.norm2(dimensions);
         Transforms.max(xNorm2, eps, false); // in case of div by 0
         x.diviColumnVector(xNorm2);
 
