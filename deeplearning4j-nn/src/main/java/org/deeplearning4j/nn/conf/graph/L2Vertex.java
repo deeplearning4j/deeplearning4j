@@ -34,8 +34,14 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Justin Long (crockpotveggies)
  */
 public class L2Vertex extends GraphVertex {
+    protected double eps;
 
     public L2Vertex() {
+        this.eps = 1e-8;
+    }
+
+    public L2Vertex(double eps) {
+        this.eps = eps;
     }
 
     @Override
@@ -61,7 +67,7 @@ public class L2Vertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null, eps);
     }
 
     @Override
