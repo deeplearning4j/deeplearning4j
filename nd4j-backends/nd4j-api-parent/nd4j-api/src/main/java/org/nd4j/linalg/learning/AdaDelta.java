@@ -22,10 +22,13 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 public class AdaDelta implements Serializable, GradientUpdater {
+    public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;
+    public static final double DEFAULT_ADADELTA_RHO = 0.95;
+
     private INDArray msg;       //E[g^2]_t by arxiv paper, algorithm 1
     private INDArray msdx;      //E[delta x^2]_t by arxiv paper, algorithm 1
-    private double rho = 0.95;
-    private double epsilon = Nd4j.EPS_THRESHOLD;
+    private double rho = DEFAULT_ADADELTA_RHO;
+    private double epsilon = DEFAULT_ADADELTA_EPSILON;
 
 
     public AdaDelta(double rho) {
