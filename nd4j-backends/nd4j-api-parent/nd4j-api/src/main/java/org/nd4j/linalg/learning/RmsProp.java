@@ -24,11 +24,16 @@ public class RmsProp implements GradientUpdater {
     private INDArray lastGradient;
     private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
     private double learningRate = 1e-1;
-    private static final double epsilon = DEFAULT_RMSPROP_EPSILON;
+    private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
     public RmsProp(double learningRate, double rmsDecay) {
+        this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
+    }
+
+    public RmsProp(double learningRate, double rmsDecay, double epsilon){
         this.learningRate = learningRate;
         this.rmsDecay = rmsDecay;
+        this.epsilon = epsilon;
     }
 
     @Override
