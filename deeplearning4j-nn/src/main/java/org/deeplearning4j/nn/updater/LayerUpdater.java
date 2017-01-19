@@ -248,7 +248,8 @@ public class LayerUpdater implements Updater {
                 case ADAM:
                     updater = new Adam(layer.conf().getLearningRateByParam(variable),
                             layer.conf().getLayer().getAdamMeanDecay(),
-                            layer.conf().getLayer().getAdamVarDecay());
+                            layer.conf().getLayer().getAdamVarDecay(),
+                            layer.conf().getLayer().getEpsilon());
                     break;
                 case ADADELTA:
                     updater = new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
@@ -257,10 +258,13 @@ public class LayerUpdater implements Updater {
                     updater = new Nesterovs(layer.conf().getLayer().getMomentum(), layer.conf().getLearningRateByParam(variable));
                     break;
                 case ADAGRAD:
-                    updater = new AdaGrad(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
+                    updater = new AdaGrad(layer.conf().getLearningRateByParam(variable),
+                            layer.conf().getLayer().getEpsilon());
                     break;
                 case RMSPROP:
-                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getRmsDecay());
+                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
+                            layer.conf().getLayer().getRmsDecay(),
+                            layer.conf().getLayer().getEpsilon());
                     break;
                 case NONE:
                     updater = new NoOpUpdater();
