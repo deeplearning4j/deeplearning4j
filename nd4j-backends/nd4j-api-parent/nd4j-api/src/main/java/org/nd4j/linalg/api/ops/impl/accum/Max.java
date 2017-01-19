@@ -118,6 +118,11 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return -65503.0f;
+    }
+
+    @Override
     public float zeroFloat(){
         return -Float.MAX_VALUE;
     }

@@ -150,6 +150,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return 0.0f;
+    }
+
+    @Override
     public IComplexNumber zeroComplex() {
         return Nd4j.createComplexNumber(0.0,0.0);
     }

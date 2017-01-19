@@ -118,7 +118,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[]{1, 1};
         }
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret;
+        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+            ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        else
+            ret = Nd4j.valueArrayOf(retShape,op.zeroFloat());
+
         op.setZ(ret);
         //do op along all dimensions
         if (dimension.length == op.x().rank())
@@ -230,7 +235,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
             return op.noOp();
 
-        INDArray ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        INDArray ret;
+        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+            ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+        else
+            ret = Nd4j.valueArrayOf(retShape,op.zeroFloat());
+
         op.setZ(ret);
 
 

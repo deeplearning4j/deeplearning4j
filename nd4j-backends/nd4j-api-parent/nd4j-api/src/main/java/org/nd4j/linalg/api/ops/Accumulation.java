@@ -207,6 +207,12 @@ public interface Accumulation extends Op {
     /** Initial value (used to initialize the accumulation op) */
     float zeroFloat();
 
+    /**
+     * Initial value for half
+     * @return
+     */
+    float zeroHalf();
+
     /**Complex initial value
      *@return the complex initial value
      */

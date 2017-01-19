@@ -144,6 +144,11 @@ public class IAMin extends BaseIndexAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return zeroFloat();
+    }
+
+    @Override
     public IComplexNumber zeroComplex(){
         return Nd4j.createComplexNumber(0,0);
     }

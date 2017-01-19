@@ -147,6 +147,11 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return zeroFloat();
+    }
+
+    @Override
     public IComplexNumber zeroComplex() {
         return Nd4j.createComplexNumber(1.0, 0.0);
     }
