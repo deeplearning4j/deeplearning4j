@@ -198,7 +198,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
 
 
-        if (cntRounds.incrementAndGet() % 10000 == 0)
+        if (cntRounds.incrementAndGet() % 100000 == 0)
             log.info("{} training rounds finished...", cntRounds.get());
 
         // don't forget to remove chain, it'll become a leak otherwise

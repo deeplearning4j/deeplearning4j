@@ -67,6 +67,8 @@ public abstract class BaseTransport implements Transport {
 
     protected Clipboard clipboard;
 
+    protected AtomicLong frameCount = new AtomicLong(0);
+
     // TODO: make this configurable?
     protected IdleStrategy idler = new SleepingIdleStrategy(1000);
     protected IdleStrategy feedbackIdler = new SleepingIdleStrategy(100000);
@@ -115,7 +117,7 @@ public abstract class BaseTransport implements Transport {
         long endTime = System.currentTimeMillis();
         long timeSpent = endTime - startTime;
 
-        if (message instanceof Frame)
+        if (message instanceof Frame && frameCount.incrementAndGet() % 1000 == 0)
             log.info("Frame of {} messages [{}] processed in {} ms", ((Frame) message).size(), message.getTaskId(), timeSpent);
 
 

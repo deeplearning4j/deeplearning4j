@@ -180,7 +180,12 @@ public class VoidParameterServer {
 
                 // first we need to check, if our current IP matches designated shards or backup
                 if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
-                    Pair<NodeRole, String> pair = getRole(voidConfiguration, getLocalAddresses());
+                    Pair<NodeRole, String> pair = null;
+                    if (voidConfiguration.getShardAddresses().size() == 1 && voidConfiguration.getShardAddresses().get(0).contains("127.0.0.1")) {
+                        pair = Pair.create(NodeRole.SHARD, voidConfiguration.getShardAddresses().get(0));
+                    } else {
+                        pair = getRole(voidConfiguration, getLocalAddresses());
+                    }
                     nodeRole = pair.getFirst();
 
                     String ipAndPort = pair.getSecond();
