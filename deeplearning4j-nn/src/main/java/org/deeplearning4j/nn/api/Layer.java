@@ -278,5 +278,5 @@ public interface Layer extends Serializable,Cloneable,Model {
     boolean isPretrainLayer();
 
 
-    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState);
+    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 }
