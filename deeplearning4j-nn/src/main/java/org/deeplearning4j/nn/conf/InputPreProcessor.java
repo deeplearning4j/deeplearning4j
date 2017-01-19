@@ -81,5 +81,5 @@ public interface InputPreProcessor extends Serializable, Cloneable {
     InputType getOutputType(InputType inputType);
 
 
-    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState);
+    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 }
