@@ -213,7 +213,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                 INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
                 double eps = layerConf().getEps();
-                Transforms.max(epsilon1d, eps, false); // in case of 0
+                Transforms.max(denom, eps, false); // in case of 0
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
