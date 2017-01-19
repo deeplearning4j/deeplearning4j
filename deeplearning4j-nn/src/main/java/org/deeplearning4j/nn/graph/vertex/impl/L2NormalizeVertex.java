@@ -85,8 +85,9 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             dimensions = dimension;
         }
 
-        x.diviColumnVector(x.norm2(dimensions));
-        Transforms.max(x, eps, false); // in case of div by 0
+        INDArray xNorm2 = x.norm2(dimensions)
+        Transforms.max(xNorm2, eps, false); // in case of div by 0
+        x.diviColumnVector(xNorm2);
 
         return x;
 
@@ -109,20 +110,20 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
         INDArray norm = x.norm2(dimensions);
         INDArray norm3 = Transforms.pow(norm, 3.0, true);
+        Transforms.max(norm, eps, false); // in case of div/0
+        Transforms.max(norm3, eps, false);
 
         INDArray dLdx;
         if (x.rank() == 2) {
             // 2D case
             dLdx = epsilon.divColumnVector(norm);
             x.diviColumnVector(norm3);
-            Transforms.max(x, eps, false);
             dLdx.subi(x.muliColumnVector(epsilon.mul(x).sum(1)));
         } else {
             //RNN and CNN case - Broadcast along dimension 0
             INDArray dx = epsilon.mul(x).sum(1);
 
             Nd4j.getExecutioner().exec(new BroadcastDivOp(x,norm3,x,0));
-            Transforms.max(x, eps, false); // in case of div by 0
             Nd4j.getExecutioner().exec(new BroadcastMulOp(x,dx,x,0));
             dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon,norm,epsilon,0));
             dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(dLdx,x,dLdx,0));
