@@ -37,6 +37,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -807,7 +808,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
         /**
-         * Epsilon value for updaters: Adagrad and Adadelta.
+         * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
+         * Default values: {@link Adam#DEFAULT_ADAM_EPSILON}, {@link RmsProp#DEFAULT_RMSPROP_EPSILON}, {@link AdaGrad#DEFAULT_ADAGRAD_EPSILON},
+         * {@link AdaDelta#DEFAULT_ADADELTA_EPSILON}
          *
          * @param epsilon    Epsilon value to use for adagrad or
          */
@@ -909,8 +912,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             switch (layer.getUpdater()) {
                 case NESTEROVS:
                     if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
-                        layer.setMomentum(0.9);
-                        log.warn("Layer \"" + layerName + "\" momentum is automatically set to 0.9. Add momentum to configuration to change the value.");
+                        layer.setMomentum(Nesterovs.DEFAULT_NESTEROV_MOMENTUM);
+                        log.warn("Layer \"" + layerName + "\" momentum is automatically set to " + Nesterovs.DEFAULT_NESTEROV_MOMENTUM + ". Add momentum to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getMomentum()))
                         layer.setMomentum(momentum);
@@ -921,44 +924,60 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     break;
                 case ADAM:
                     if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
-                        layer.setAdamMeanDecay(0.9);
-                        log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to 0.9. Add adamVarDecay to configuration to change the value.");
+                        layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
+                        log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY + ". Add adamVarDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getAdamMeanDecay()))
                         layer.setAdamMeanDecay(adamMeanDecay);
+
                     if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
-                        layer.setAdamVarDecay(0.999);
-                        log.warn("Layer \"" + layerName + "\" adamVarDecay is automatically set to 0.999. Add adamVarDecay to configuration to change the value.");
+                        layer.setAdamVarDecay(Adam.DEFAULT_ADAM_BETA2_VAR_DECAY);
+                        log.warn("Layer \"" + layerName + "\" adamVarDecay is automatically set to " + Adam.DEFAULT_ADAM_BETA2_VAR_DECAY + ". Add adamVarDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getAdamVarDecay()))
                         layer.setAdamVarDecay(adamVarDecay);
+
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
+                        layer.setEpsilon(Adam.DEFAULT_ADAM_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
                     break;
                 case ADADELTA:
                     if (Double.isNaN(layer.getRho()))
                         layer.setRho(rho);
+
                     if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(1e-6);
-                        log.warn("Layer \"" + layerName + "\" AdaDelta epsilon is automatically set to 1e-6. Add epsilon to configuration to change the value.");
+                        layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
+                        log.warn("Layer \"" + layerName + "\" AdaDelta epsilon is automatically set to " + AdaDelta.DEFAULT_ADADELTA_EPSILON + ". Add epsilon to configuration to change the value.");
                     } else if (Double.isNaN(layer.getEpsilon())) {
                         layer.setEpsilon(epsilon);
                     }
                     break;
                 case ADAGRAD:
                     if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
-                        layer.setEpsilon(1e-6);
-                        //Do we warn here? When epsilon was not configurable, we didn't...
+                        layer.setEpsilon(AdaGrad.DEFAULT_ADAGRAD_EPSILON);
                     } else if (Double.isNaN(layer.getEpsilon())) {
                         layer.setEpsilon(epsilon);
                     }
                     break;
                 case RMSPROP:
                     if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
-                        layer.setRmsDecay(0.95);
+                        layer.setRmsDecay(RmsProp.DEFAULT_RMSPROP_RMSDECAY);
                         log.warn("Layer \"" + layerName + "\" rmsDecay is automatically set to 0.95. Add rmsDecay to configuration to change the value.");
                     }
                     else if (Double.isNaN(layer.getRmsDecay()))
                         layer.setRmsDecay(rmsDecay);
+
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())){
+                        layer.setEpsilon(RmsProp.DEFAULT_RMSPROP_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+
                     break;
+
+
             }
 
         }
@@ -1025,7 +1044,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     if (dist != null && layer.getDist() == null)
                         layer.setDist(dist);
                     else if (dist == null && layer.getDist() == null) {
-                        layer.setDist(new NormalDistribution(1e-3, 1));
+                        layer.setDist(new NormalDistribution(0, 1));
                         log.warn("Layer \"" + layerName + "\" distribution is automatically set to normalize distribution with mean 1e-3 and variance 1.");
                     }
                 } else if ((dist != null || layer.getDist() != null))
