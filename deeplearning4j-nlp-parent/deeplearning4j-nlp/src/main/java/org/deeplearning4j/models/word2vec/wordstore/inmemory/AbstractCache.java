@@ -104,8 +104,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementWordCount(String word, int increment) {
-        if (vocabulary.containsKey(word)) {
-            vocabulary.get(word).increaseElementFrequency(increment);
+        if (extendedVocabulary.containsKey(word)) {
+            extendedVocabulary.get(word).increaseElementFrequency(increment);
             totalWordCount.addAndGet(increment);
         }
 
@@ -120,8 +120,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public int wordFrequency(@NonNull String word) {
         // TODO: proper wordFrequency impl should return long, instead of int
-        if (vocabulary.containsKey(word))
-            return (int) vocabulary.get(word).getElementFrequency();
+        if (extendedVocabulary.containsKey(word))
+            return (int) extendedVocabulary.get(word).getElementFrequency();
         return 0;
     }
 
@@ -133,7 +133,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public boolean containsWord(String word) {
-        return vocabulary.containsKey(word);
+        return extendedVocabulary.containsKey(word);
     }
 
     /**
@@ -143,6 +143,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @return
      */
     public boolean containsElement(T element) {
+        // FIXME: lolwtf
         return vocabulary.values().contains(element);
     }
 
@@ -265,8 +266,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public int docAppearedIn(String word) {
-        if (vocabulary.containsKey(word)) {
-            return (int) vocabulary.get(word).getSequencesCount();
+        if (extendedVocabulary.containsKey(word)) {
+            return (int) extendedVocabulary.get(word).getSequencesCount();
         } else return -1;
     }
 
@@ -280,8 +281,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementDocCount(String word, int howMuch) {
-        if (vocabulary.containsKey(word)) {
-            vocabulary.get(word).setSequencesCount(vocabulary.get(word).getSequencesCount() + 1);
+        if (extendedVocabulary.containsKey(word)) {
+            extendedVocabulary.get(word).setSequencesCount(vocabulary.get(word).getSequencesCount() + 1);
         }
     }
 
@@ -295,8 +296,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void setCountForDoc(String word, int count) {
-        if (vocabulary.containsKey(word)) {
-            vocabulary.get(word).setSequencesCount(count);
+        if (extendedVocabulary.containsKey(word)) {
+            extendedVocabulary.get(word).setSequencesCount(count);
         }
     }
 
@@ -411,11 +412,12 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     @Override
     public void removeElement(String label) {
-        if (vocabulary.containsKey(label)) {
-            SequenceElement element = vocabulary.get(label);
+        if (extendedVocabulary.containsKey(label)) {
+            SequenceElement element = extendedVocabulary.get(label);
             totalWordCount.getAndAdd((long) element.getElementFrequency() * -1);
             idxMap.remove(element.getIndex());
-            vocabulary.remove(label);
+            extendedVocabulary.remove(label);
+            vocabulary.remove(element.getStorageId());
         } else throw new IllegalStateException("Can't get label: '" + label + "'");
     }
 
