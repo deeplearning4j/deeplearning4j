@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -66,6 +67,7 @@ public class LayerVertex extends BaseGraphVertex {
         this.layer = layer;
         this.layerPreProcessor = layerPreProcessor;
         this.outputVertex = outputVertex;
+        Transforms.max()
 
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
     }
