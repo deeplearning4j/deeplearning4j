@@ -49,7 +49,7 @@ public class RoutedTransport extends BaseTransport {
         this.clipboard = clipboard;
         this.voidConfiguration = voidConfiguration;
         this.shardIndex = shardIndex;
-        this.messages = new LinkedBlockingQueue<>(16384);
+        this.messages = new LinkedBlockingQueue<>();
 
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
