@@ -276,4 +276,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
      */
     boolean isPretrainLayer();
+
+
+    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState);
 }
