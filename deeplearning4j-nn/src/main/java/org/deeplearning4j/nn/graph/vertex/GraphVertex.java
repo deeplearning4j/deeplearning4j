@@ -148,5 +148,5 @@ public interface GraphVertex extends Serializable {
      */
     void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
 
-    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState);
+    Pair<INDArray,MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
 }

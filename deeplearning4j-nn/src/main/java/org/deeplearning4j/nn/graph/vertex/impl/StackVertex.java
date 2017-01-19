@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -131,6 +132,19 @@ public class StackVertex extends BaseGraphVertex {
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
         if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        //Cases here: no mask arrays, or all mask arrays - all of the same size
+        if(maskArrays == null ){
+            return new Pair<>(null, currentMaskState);
+        }
+
+        // stacking along dimension 0
+        //Given masks are all either 1d (column vector) or 2d (examples, timeSeriesLength) we can just vStack the masks
+
+        return new Pair<>(Nd4j.vstack(maskArrays), currentMaskState);
     }
 
     @Override
