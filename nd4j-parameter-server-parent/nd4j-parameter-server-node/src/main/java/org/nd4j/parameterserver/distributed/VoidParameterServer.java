@@ -203,7 +203,7 @@ public class VoidParameterServer {
 
                 // we launch message processing if we're not in debug mode
                 if (!manualMode.get()) {
-                    int numThreads = Runtime.getRuntime().availableProcessors();
+                    int numThreads = Runtime.getRuntime().availableProcessors() * 4;
                     processingThread = new Thread[numThreads];
 
                     for(int x = 0; x < numThreads; x++) {
