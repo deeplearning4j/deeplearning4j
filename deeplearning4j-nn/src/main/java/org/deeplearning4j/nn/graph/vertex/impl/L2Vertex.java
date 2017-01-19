@@ -90,6 +90,7 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
         INDArray out = doForward(tbptt);
+        Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon;      //dL/dlambda aka 'epsilon' - from layer above
 
@@ -110,9 +111,6 @@ public class L2Vertex extends BaseGraphVertex {
             dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff,first,diff,0));
             dLdb = dLda.neg();
         }
-
-        Transforms.max(dLda, eps); // in case of 0
-        Transforms.max(dLdb, eps);
 
         return new Pair<>(null, new INDArray[]{dLda, dLdb});
     }
