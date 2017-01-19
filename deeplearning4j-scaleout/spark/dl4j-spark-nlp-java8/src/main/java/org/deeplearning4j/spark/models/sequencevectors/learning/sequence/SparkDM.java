@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.models.sequencevectors.learning.sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.BaseSparkLearningAlgorithm;
+import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
@@ -18,8 +19,8 @@ public class SparkDM extends BaseSparkLearningAlgorithm {
     }
 
     @Override
-    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
-        return 0;
+    public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+        return null;
     }
 
     @Override
