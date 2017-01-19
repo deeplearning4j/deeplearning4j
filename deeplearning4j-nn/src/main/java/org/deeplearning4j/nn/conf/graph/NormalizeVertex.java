@@ -78,7 +78,7 @@ public class NormalizeVertex extends GraphVertex {
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.NormalizeVertex(graph,name,idx,dimension);
+        return new org.deeplearning4j.nn.graph.vertex.impl.NormalizeVertex(graph,name,idx,dimension,eps);
     }
 
     @Override
