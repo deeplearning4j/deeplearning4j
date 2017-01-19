@@ -39,10 +39,10 @@ public class DistributedFunction<T extends SequenceElement> implements Function<
 
         ExportContainer<T> container = new ExportContainer<>();
 
-        container.setElement(word);
-
         ShallowSequenceElement reduced = shallowVocabCache.tokenFor(word.getStorageId());
+        word.setIndex(reduced.getIndex());
 
+        container.setElement(word);
         container.setArray(VoidParameterServer.getInstance().getVector(reduced.getIndex()));
 
         return container;
