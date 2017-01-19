@@ -74,7 +74,8 @@ public class VoidParameterServer {
 
     protected Map<String, Frame<TrainingMessage>> frames = new ConcurrentHashMap<>();
 
-    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 8);
+    protected static final int numThreads = Runtime.getRuntime().availableProcessors() * 2;
+    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
 
     ////////////////////// SeqVec part
@@ -209,7 +210,6 @@ public class VoidParameterServer {
 
                 // we launch message processing if we're not in debug mode
                 if (!manualMode.get()) {
-                    int numThreads = Runtime.getRuntime().availableProcessors() * 8;
                     processingThreads = new Thread[numThreads];
                     processingRunnables = new Runnable[numThreads];
 

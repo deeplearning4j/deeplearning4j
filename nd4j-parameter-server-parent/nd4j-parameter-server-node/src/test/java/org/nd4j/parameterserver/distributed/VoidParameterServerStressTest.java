@@ -7,6 +7,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
@@ -510,7 +512,6 @@ public class VoidParameterServerStressTest {
         parameterServer.shutdown();
     }
 
-
     /**
      * This test checks multiple Clients hammering single Shard
      *
@@ -534,7 +535,7 @@ public class VoidParameterServerStressTest {
         parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
 
 
-        VoidParameterServer[] clients = new VoidParameterServer[4];
+        VoidParameterServer[] clients = new VoidParameterServer[1];
         for (int c = 0; c < clients.length; c++) {
             clients[c] = new VoidParameterServer(NodeRole.CLIENT);
 
@@ -554,7 +555,7 @@ public class VoidParameterServerStressTest {
             threads[t] = new Thread(() -> {
                 List<Long> results = new ArrayList<>();
                 AtomicLong sequence = new AtomicLong(0);
-                for( int i = 0; i < 200; i++) {
+                for( int i = 0; i < 20000; i++) {
                     Frame<SkipGramRequestMessage> frame = new Frame<>(sequence.incrementAndGet());
                     for (int f = 0; f < 128; f++) {
                         frame.stackMessage(getSGRM());
