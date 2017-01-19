@@ -244,10 +244,12 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         // proceed to training
         // also, training function is the place where we invoke ParameterServer
         TrainingFunction<T> trainer = new TrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
+        PartitionTrainingFunction<T> partitionTrainer = new PartitionTrainingFunction<>(shallowVocabCacheBroadcast, configurationBroadcast, paramServerConfigurationBroadcast);
 
         if (configuration != null)
             for (int e = 0; e < configuration.getEpochs(); e++)
-                corpus.foreach(trainer);
+                corpus.foreachPartition(partitionTrainer);
+                //corpus.foreach(trainer);
 
 
         // we're transferring vectors to ExportContainer
