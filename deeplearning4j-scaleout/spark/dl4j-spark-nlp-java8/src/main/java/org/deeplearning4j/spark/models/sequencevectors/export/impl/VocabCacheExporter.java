@@ -67,7 +67,5 @@ public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
 
         // this is bad & dirty, but we don't really need anything else for testing :)
         word2Vec = WordVectorSerializer.fromPair(Pair.<InMemoryLookupTable, VocabCache>makePair(lookupTable, vocabCache));
-
-        list.clear();
     }
 }
