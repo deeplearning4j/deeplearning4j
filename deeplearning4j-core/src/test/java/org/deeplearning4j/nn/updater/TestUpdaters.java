@@ -633,7 +633,42 @@ public class TestUpdaters {
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
+    }
+
+    @Test
+    public void testEpsilonAllUpdaters(){
+
+        double e = 7e-2;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .epsilon(e)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build())
+                .layer(2, new DenseLayer.Builder().nIn(2).nOut(2).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                .layer(3, new DenseLayer.Builder().nIn(2).nOut(2).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
 
 
+        MultiLayerUpdater updater = (MultiLayerUpdater)net.getUpdater();
+        Updater[] updaters = updater.getLayerUpdaters();
+
+        LayerUpdater u0 = (LayerUpdater) updaters[0];
+        Adam adam = (Adam) u0.updaterForVariable.get("W");
+        assertEquals(e, adam.getEpsilon(), 0.0);
+
+        LayerUpdater u1 = (LayerUpdater) updaters[1];
+        RmsProp rmsProp = (RmsProp) u1.updaterForVariable.get("W");
+        assertEquals(e, rmsProp.getEpsilon(), 0.0);
+
+        LayerUpdater u2 = (LayerUpdater) updaters[2];
+        AdaDelta adaDelta = (AdaDelta) u2.updaterForVariable.get("W");
+        assertEquals(e, adaDelta.getEpsilon(), 0.0);
+
+        LayerUpdater u3 = (LayerUpdater) updaters[3];
+        AdaGrad adaGrad = (AdaGrad) u3.updaterForVariable.get("W");
+        assertEquals(e, adaGrad.getEpsilon(), 0.0);
     }
 }
