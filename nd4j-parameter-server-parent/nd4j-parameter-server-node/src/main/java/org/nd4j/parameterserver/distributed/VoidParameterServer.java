@@ -24,6 +24,9 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -57,7 +60,8 @@ public class VoidParameterServer {
     protected transient AtomicBoolean manualMode = new AtomicBoolean(false);
     protected transient AtomicBoolean runner = new AtomicBoolean(false);
 
-    protected transient Thread[] processingThread;
+    protected transient Thread[] processingThreads;
+    protected transient Runnable[] processingRunnables;
 
     // FIXME: we want trainer to be configurable here
     protected transient TrainingDriver<? extends TrainingMessage> trainer = new SkipGramTrainer();
@@ -69,6 +73,8 @@ public class VoidParameterServer {
     protected Storage storage = new WordVectorStorage();
 
     protected Map<String, Frame<TrainingMessage>> frames = new ConcurrentHashMap<>();
+
+    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
 
     ////////////////////// SeqVec part
@@ -203,11 +209,12 @@ public class VoidParameterServer {
 
                 // we launch message processing if we're not in debug mode
                 if (!manualMode.get()) {
-                    int numThreads = Runtime.getRuntime().availableProcessors() * 4;
-                    processingThread = new Thread[numThreads];
+                    int numThreads = Runtime.getRuntime().availableProcessors() * 2;
+                    processingThreads = new Thread[numThreads];
+                    processingRunnables = new Runnable[numThreads];
 
                     for(int x = 0; x < numThreads; x++) {
-                        processingThread[x] = new Thread(() -> {
+                        processingRunnables[x] = () -> {
                             runner.set(true);
                             while (runner.get()) {
                                 try {
@@ -225,10 +232,15 @@ public class VoidParameterServer {
                                     throw new RuntimeException(e);
                                 }
                             }
-                        });
-                        processingThread[x].setDaemon(true);
-                        processingThread[x].setName("VoidParameterServer messages handling thread");
-                        processingThread[x].start();
+                        };
+
+                        executor.submit(processingRunnables[x]);
+
+                        /*
+                        processingThreads[x].setDaemon(true);
+                        processingThreads[x].setName("VoidParameterServer messages handling thread");
+                        processingThreads[x].start();
+                        */
                     }
                 }
 
