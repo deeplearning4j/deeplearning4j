@@ -173,6 +173,17 @@ public class TransformsTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testXor1() {
+        INDArray x = Nd4j.create(new double[]{0, 0, 1, 0, 0});
+        INDArray y = Nd4j.create(new double[]{0, 0, 1, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 0, 0, 1, 0});
+
+        INDArray z = Transforms.xor(x, y);
+
+        assertEquals(exp, z);
+    }
+
+    @Test
     public void testNot1() {
         INDArray x = Nd4j.create(new double[]{0, 0, 1, 0, 0});
         INDArray exp = Nd4j.create(new double[]{1, 1, 0, 1, 1});
