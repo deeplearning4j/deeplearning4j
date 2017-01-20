@@ -60,7 +60,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         if (message.getPoints() != null && message.getPoints().length > 0) {
             // we assume this is HS round
-            int row_syn0[] = replicate(message.getW1(), message.getPoints().length);
+            int row_syn0[] = replicate(message.getW2(), message.getPoints().length);
 
             if (message.getPoints().length != message.getCodes().length)
                 throw new RuntimeException("Mismatiching points/codes lengths here!");
@@ -169,10 +169,10 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             double g = (1 - code - f) * alpha;
 
             Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
-            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW1()), syn1.getRow(sgrm.getPoints()[e]));
+            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1.getRow(sgrm.getPoints()[e]));
         }
 
-        Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW1()));
+        Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW2()));
 
         // we send back confirmation message only from Shard which received this message
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(chain.getOriginatorId(), chain.getFrameId());
