@@ -1,6 +1,6 @@
 ---
 title: Doc2Vec, or Paragraph Vectors, in Deeplearning4j
-layout: default
+layout: cn-default
 ---
 
 ## Doc2Vec, or Paragraph Vectors, in Deeplearning4j
