@@ -104,7 +104,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                 GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
                 GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS,
-                gradientViews);
+                gradientViews,
+                maskArray);
 
 
 
@@ -124,7 +125,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                 GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                 GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS,
-                gradientViews);
+                gradientViews,
+                maskArray);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -203,7 +205,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS),
                 training,null,null,forBackprop,true,
-                GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS);
+                GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
+                maskArray);
 
         final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(
                 this,
@@ -214,7 +217,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                 getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS),
                 training,null,null,forBackprop,false,
-                GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS);
+                GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
+                maskArray);
 
 
         //sum outputs
@@ -254,7 +258,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer<org.deeplearning
                 prevMemCellState,
                 forBackprop,
                 forwards,
-                inputKey);
+                inputKey,
+                maskArray);
 
     }
 
