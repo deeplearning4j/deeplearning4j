@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -2029,7 +2030,38 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if(maskArray == null){
+            for( int i=0; i<layers.length; i++ ){
+                layers[i].feedForwardMaskArray(null, null, minibatchSize);
+            }
+        } else {
+            //Do a forward pass through each preprocessor and layer
+            for( int i=0; i<layers.length; i++ ){
+                InputPreProcessor preProcessor = getLayerWiseConfigurations().getInputPreProcess(i);
+
+                if(preProcessor != null){
+                    Pair<INDArray, MaskState> p = preProcessor.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+                    if(p != null){
+                        maskArray = p.getFirst();
+                        currentMaskState = p.getSecond();
+                    } else {
+                        maskArray = null;
+                        currentMaskState = null;
+                    }
+                }
+
+                Pair<INDArray,MaskState> p = layers[i].feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+                if(p != null){
+                    maskArray = p.getFirst();
+                    currentMaskState = p.getSecond();
+                } else {
+                    maskArray = null;
+                    currentMaskState = null;
+                }
+            }
+        }
+
+        return new Pair<>(maskArray, currentMaskState);
     }
 
     //==========
@@ -2325,6 +2357,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray){
         if(featuresMaskArray != null){
+
+            //New approach: use feedForwardMaskArray method
+            feedForwardMaskArray(featuresMaskArray, MaskState.Active, featuresMaskArray.size(0));
+
+
+            /*
             //feedforward layers below a RNN layer: need the input (features) mask array
             //Reason: even if the time series input is zero padded, the output from the dense layers are
             // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
@@ -2342,6 +2380,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 } else if( t == Type.RECURRENT ) break;
 
             }
+            */
         }
         if(labelsMaskArray != null ){
             if(!(getOutputLayer() instanceof IOutputLayer) ) return;
