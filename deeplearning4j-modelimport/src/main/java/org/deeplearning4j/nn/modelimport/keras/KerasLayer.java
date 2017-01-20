@@ -54,8 +54,6 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
     public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
-    public static final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
-    public static final String LAYER_CLASS_NAME_REPEATVECTOR = "RepeatVector";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
 
@@ -116,7 +114,6 @@ public class KerasLayer {
     public static final String DIM_ORDERING_TENSORFLOW = "tf";
 
     /* Keras loss functions. */
-    public static final String LAYER_CLASS_NAME_LOSS = "Loss"; // Not a Keras layer
     public static final String KERAS_LOSS_MEAN_SQUARED_ERROR = "mean_squared_error";
     public static final String KERAS_LOSS_MSE = "mse";
     public static final String KERAS_LOSS_MEAN_ABSOLUTE_ERROR = "mean_absolute_error";
@@ -152,6 +149,7 @@ public class KerasLayer {
     protected Map<String,INDArray> weights;     // Weights
     protected double weightL1Regularization = 0.0;   // L1 regularization
     protected double weightL2Regularization = 0.0;   // L2 regularization
+    protected double dropout = 1.0;             // Dropout
 
     /**
      * Build KerasLayer from a Keras layer configuration.
@@ -271,6 +269,7 @@ public class KerasLayer {
         this.weights = null;
         this.weightL1Regularization = getWeightL1RegularizationFromConfig(layerConfig, enforceTrainingConfig);
         this.weightL2Regularization = getWeightL2RegularizationFromConfig(layerConfig, enforceTrainingConfig);
+        this.dropout = getDropoutFromConfig(layerConfig);
         checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig);
     }
 
@@ -373,7 +372,9 @@ public class KerasLayer {
      *
      * @return  boolean
      */
-    public boolean usesRegularization() { return (this.weightL1Regularization > 0.0 || this.weightL2Regularization > 0.0); }
+    public boolean usesRegularization() {
+        return (this.weightL1Regularization > 0.0 || this.weightL2Regularization > 0.0 || this.dropout < 1.0);
+    }
 
     /**
      * Set weights for Keras layer.
