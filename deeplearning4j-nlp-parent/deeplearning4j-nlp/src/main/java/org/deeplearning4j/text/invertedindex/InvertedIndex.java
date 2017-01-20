@@ -222,8 +222,8 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
     long totalWords();
 
     /**
-     * For word vectors, this is the batch size for which to train on
-     * @return the batch size for which to train on
+     * For word vectors, this is the batch size for which to enforceTrainingConfig on
+     * @return the batch size for which to enforceTrainingConfig on
      */
     int batchSize();
 

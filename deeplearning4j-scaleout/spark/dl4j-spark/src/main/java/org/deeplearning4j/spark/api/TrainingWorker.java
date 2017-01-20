@@ -50,8 +50,8 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
     /**
      * Process (fit) a minibatch for a MultiLayerNetwork
      *
-     * @param dataSet Data set to train on
-     * @param network Network to train
+     * @param dataSet Data set to enforceTrainingConfig on
+     * @param network Network to enforceTrainingConfig
      * @param isLast  If true: last data set currently available. If false: more data sets will be processed for this executor
      * @return Null, or a training result if training should be terminated immediately.
      */
@@ -60,8 +60,8 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
     /**
      * Process (fit) a minibatch for a ComputationGraph
      *
-     * @param dataSet Data set to train on
-     * @param graph   Network to train
+     * @param dataSet Data set to enforceTrainingConfig on
+     * @param graph   Network to enforceTrainingConfig
      * @param isLast  If true: last data set currently available. If false: more data sets will be processed for this executor
      * @return Null, or a training result if training should be terminated immediately.
      */
@@ -70,8 +70,8 @@ public interface TrainingWorker<R extends TrainingResult> extends Serializable {
     /**
      * Process (fit) a minibatch for a ComputationGraph using a MultiDataSet
      *
-     * @param dataSet Data set to train on
-     * @param graph   Network to train
+     * @param dataSet Data set to enforceTrainingConfig on
+     * @param graph   Network to enforceTrainingConfig
      * @param isLast  If true: last data set currently available. If false: more data sets will be processed for this executor
      * @return Null, or a training result if training should be terminated immediately.
      */

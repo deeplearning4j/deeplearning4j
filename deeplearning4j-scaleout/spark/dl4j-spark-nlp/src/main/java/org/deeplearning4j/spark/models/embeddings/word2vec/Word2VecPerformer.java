@@ -97,7 +97,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
 
     /**
      * Train on a list of vocab words
-     * @param sentence the list of vocab words to train on
+     * @param sentence the list of vocab words to enforceTrainingConfig on
      */
     public void trainSentence(final List<VocabWord> sentence,double alpha) {
         if (sentence != null && !sentence.isEmpty()) {

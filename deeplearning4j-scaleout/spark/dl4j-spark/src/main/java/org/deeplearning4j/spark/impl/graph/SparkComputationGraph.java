@@ -150,7 +150,7 @@ public class SparkComputationGraph implements Serializable {
     /**
      * Fit the ComputationGraph with the given data set
      *
-     * @param rdd Data to train on
+     * @param rdd Data to enforceTrainingConfig on
      * @return Trained network
      */
     public ComputationGraph fit(RDD<DataSet> rdd) {
@@ -160,7 +160,7 @@ public class SparkComputationGraph implements Serializable {
     /**
      * Fit the ComputationGraph with the given data set
      *
-     * @param rdd Data to train on
+     * @param rdd Data to enforceTrainingConfig on
      * @return Trained network
      */
     public ComputationGraph fit(JavaRDD<DataSet> rdd) {
@@ -215,7 +215,7 @@ public class SparkComputationGraph implements Serializable {
     /**
      * Fit the ComputationGraph with the given data set
      *
-     * @param rdd Data to train on
+     * @param rdd Data to enforceTrainingConfig on
      * @return Trained network
      */
     public ComputationGraph fitMultiDataSet(RDD<MultiDataSet> rdd) {
@@ -225,7 +225,7 @@ public class SparkComputationGraph implements Serializable {
     /**
      * Fit the ComputationGraph with the given data set
      *
-     * @param rdd Data to train on
+     * @param rdd Data to enforceTrainingConfig on
      * @return Trained network
      */
     public ComputationGraph fitMultiDataSet(JavaRDD<MultiDataSet> rdd) {

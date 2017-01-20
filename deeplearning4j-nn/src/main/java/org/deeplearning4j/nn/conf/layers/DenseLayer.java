@@ -38,7 +38,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
-    private DenseLayer(Builder builder) {
+    protected DenseLayer(Builder builder) {
     	super(builder);
     }
 

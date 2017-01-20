@@ -312,10 +312,10 @@ public class LayerConfigTest {
 //        net = new MultiLayerNetwork(conf);
 //        net.init();
 //
-//        assertEquals("ADAM", conf.getConf(0).getLayer().getUpdater().toString());
-//        assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
-//        assertEquals(1.0, conf.getConf(0).getLayer().getAdamMeanDecay(), 0.0);
-//        assertEquals(0.5, conf.getConf(0).getLayer().getAdamVarDecay(), 0.0);
+//        assertEquals("ADAM", conf.getConf(0).getDl4jLayer().getUpdater().toString());
+//        assertEquals("ADADELTA", conf.getConf(1).getDl4jLayer().getUpdater().toString());
+//        assertEquals(1.0, conf.getConf(0).getDl4jLayer().getAdamMeanDecay(), 0.0);
+//        assertEquals(0.5, conf.getConf(0).getDl4jLayer().getAdamVarDecay(), 0.0);
     }
 
     @Test

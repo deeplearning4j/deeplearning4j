@@ -270,7 +270,7 @@ public class SparkDl4jMultiLayer implements Serializable {
 
     /**
      * Fit a MultiLayerNetwork using Spark MLLib LabeledPoint instances.
-     * This will convert the labeled points to the internal DL4J data format and train the model on that
+     * This will convert the labeled points to the internal DL4J data format and enforceTrainingConfig the model on that
      *
      * @param rdd the rdd to fitDataSet
      * @return the multi layer network that was fitDataSet
@@ -285,7 +285,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     /**
      * Fits a MultiLayerNetwork using Spark MLLib LabeledPoint instances
      * This will convert labeled points that have continuous labels used for regression to the internal
-     * DL4J data format and train the model on that
+     * DL4J data format and enforceTrainingConfig the model on that
      * @param rdd the javaRDD containing the labeled points
      * @return a MultiLayerNetwork
      */
