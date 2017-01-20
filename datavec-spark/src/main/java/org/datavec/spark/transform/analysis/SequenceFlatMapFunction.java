@@ -16,8 +16,8 @@
 
 package org.datavec.spark.transform.analysis;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 
@@ -27,10 +27,10 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class SequenceFlatMapFunction implements FlatMapFunction<List<List<Writable>>, List<Writable>> {
-    @Override
-    public Iterable<List<Writable>> call(List<List<Writable>> collections) throws Exception {
-        return collections;
+public class SequenceFlatMapFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>, List<Writable>> {
+
+    public SequenceFlatMapFunction() {
+        super(new SequenceFlatMapFunctionAdapter());
     }
 
 }

@@ -3,7 +3,6 @@ package org.datavec.spark.transform;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -16,11 +15,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 10/21/16.
- */
-public class DataFrameTests extends BaseSparkTest {
-
+public class DataFramesTests extends BaseSparkTest {
 
     @Test
     public void testMinMax() {
@@ -34,9 +29,9 @@ public class DataFrameTests extends BaseSparkTest {
         for(int i = 0; i < numColumns; i++)
             builder.addColumnDouble(String.valueOf(i));
         Schema schema = builder.build();
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,sc.parallelize(records));
-        dataFrame.show();
-        dataFrame.describe(DataFrames.toArray(schema.getColumnNames())).show();
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,sc.parallelize(records));
+        dataFrame.get().show();
+        dataFrame.get().describe(DataFrames.toArray(schema.getColumnNames())).show();
 //        System.out.println(Normalization.minMaxColumns(dataFrame,schema.getColumnNames()));
 //        System.out.println(Normalization.stdDevMeanColumns(dataFrame,schema.getColumnNames()));
 
@@ -65,12 +60,12 @@ public class DataFrameTests extends BaseSparkTest {
         assertEquals(schema,DataFrames.fromStructType(DataFrames.fromSchema(schema)));
         assertEquals(rdd.collect(),DataFrames.toRecords(DataFrames.toDataFrame(schema,rdd)).getSecond().collect());
 
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,rdd);
-        dataFrame.show();
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,rdd);
+        dataFrame.get().show();
         Column mean = DataFrames.mean(dataFrame,"0");
         Column std = DataFrames.std(dataFrame,"0");
-        dataFrame.withColumn("0",dataFrame.col("0").minus(mean)).show();
-        dataFrame.withColumn("0",dataFrame.col("0").divide(std)).show();
+        dataFrame.get().withColumn("0",dataFrame.get().col("0").minus(mean)).show();
+        dataFrame.get().withColumn("0",dataFrame.get().col("0").divide(std)).show();
 
         /*   DataFrame desc = dataFrame.describe(dataFrame.columns());
         dataFrame.show();
@@ -87,7 +82,6 @@ public class DataFrameTests extends BaseSparkTest {
 
         }*/
     }
-
     @Test
     public void testNormalize() {
         List<List<Writable>> data = new ArrayList<>();
@@ -265,5 +259,4 @@ public class DataFrameTests extends BaseSparkTest {
             return -Integer.compare(o1.size(), o2.size());
         }
     }
-
 }

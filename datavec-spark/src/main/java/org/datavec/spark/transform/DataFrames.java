@@ -5,7 +5,10 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Column;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -20,7 +23,6 @@ import org.datavec.spark.transform.sparkfunction.ToRow;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.spark.sql.functions;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceCreateCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeValue;
@@ -29,6 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.apache.spark.sql.functions.avg;
 import static org.apache.spark.sql.functions.col;
+import static org.datavec.spark.transform.DataRowsFacade.dataRows;
 
 
 /**
@@ -54,7 +57,7 @@ public class DataFrames {
      *                   deviation for
      * @return the column that represents the standard deviation
      */
-    public static Column std(DataFrame dataFrame, String columnName) {
+    public static Column std(DataRowsFacade dataFrame, String columnName) {
         return functions.sqrt(var(dataFrame, columnName));
     }
 
@@ -68,8 +71,8 @@ public class DataFrames {
      *                   deviation for
      * @return the column that represents the standard deviation
      */
-    public static Column var(DataFrame dataFrame, String columnName) {
-        return dataFrame.groupBy(columnName).agg(functions.variance(columnName)).col(columnName);
+    public static Column var(DataRowsFacade dataFrame, String columnName) {
+        return dataFrame.get().groupBy(columnName).agg(functions.variance(columnName)).col(columnName);
     }
 
     /**
@@ -80,8 +83,8 @@ public class DataFrames {
      * @param columnName the name of the column to get the min for
      * @return the column that represents the min
      */
-    public static Column min(DataFrame dataFrame, String columnName) {
-        return dataFrame.groupBy(columnName).agg(functions.min(columnName)).col(columnName);
+    public static Column min(DataRowsFacade dataFrame, String columnName) {
+        return dataFrame.get().groupBy(columnName).agg(functions.min(columnName)).col(columnName);
     }
 
     /**
@@ -93,8 +96,8 @@ public class DataFrames {
      *                   to get the max for
      * @return the column that represents the max
      */
-    public static Column max(DataFrame dataFrame, String columnName) {
-        return dataFrame.groupBy(columnName).agg(functions.max(columnName)).col(columnName);
+    public static Column max(DataRowsFacade dataFrame, String columnName) {
+        return dataFrame.get().groupBy(columnName).agg(functions.max(columnName)).col(columnName);
     }
 
     /**
@@ -105,8 +108,8 @@ public class DataFrames {
      * @param columnName the name of the column to get the mean for
      * @return the column that represents the mean
      */
-    public static Column mean(DataFrame dataFrame, String columnName) {
-        return dataFrame.groupBy(columnName).agg(avg(columnName)).col(columnName);
+    public static Column mean(DataRowsFacade dataFrame, String columnName) {
+        return dataFrame.get().groupBy(columnName).agg(avg(columnName)).col(columnName);
     }
 
     /**
@@ -147,7 +150,7 @@ public class DataFrames {
      * - Column 1: Sequence index (name: {@link #SEQUENCE_INDEX_COLUMN} - an index (integer, starting at 0) for the position
      * of this record in the original time series.<br>
      * These two columns are required if the data is to be converted back into a sequence at a later point, for example
-     * using {@link #toRecordsSequence(DataFrame)}
+     * using {@link #toRecordsSequence(DataRowsFacade)}
      *
      * @param schema Schema to convert
      * @return StructType for the schema
@@ -226,9 +229,9 @@ public class DataFrames {
      * @param dataFrame the dataframe to convert
      * @return the converted schema and rdd of writables
      */
-    public static Pair<Schema, JavaRDD<List<Writable>>> toRecords(DataFrame dataFrame) {
-        Schema schema = fromStructType(dataFrame.schema());
-        return new Pair<>(schema, dataFrame.javaRDD().map(new ToRecord(schema)));
+    public static Pair<Schema, JavaRDD<List<Writable>>> toRecords(DataRowsFacade dataFrame) {
+        Schema schema = fromStructType(dataFrame.get().schema());
+        return new Pair<>(schema, dataFrame.get().javaRDD().map(new ToRecord(schema)));
     }
 
     /**
@@ -243,11 +246,11 @@ public class DataFrames {
      * @param dataFrame Data frame to convert
      * @return Data in sequence (i.e., {@code List<List<Writable>>} form
      */
-    public static Pair<Schema, JavaRDD<List<List<Writable>>>> toRecordsSequence(DataFrame dataFrame) {
+    public static Pair<Schema, JavaRDD<List<List<Writable>>>> toRecordsSequence(DataRowsFacade dataFrame) {
 
         //Need to convert from flattened to sequence data...
         //First: Group by the Sequence UUID (first column)
-        JavaPairRDD<String, Iterable<Row>> grouped = dataFrame.javaRDD().groupBy(new Function<Row, String>() {
+        JavaPairRDD<String, Iterable<Row>> grouped = dataFrame.get().javaRDD().groupBy(new Function<Row, String>() {
             @Override
             public String call(Row row) throws Exception {
                 return row.getString(0);
@@ -255,7 +258,7 @@ public class DataFrames {
         });
 
 
-        Schema schema = fromStructType(dataFrame.schema());
+        Schema schema = fromStructType(dataFrame.get().schema());
 
         //Group by sequence UUID, and sort each row within the sequences using the time step index
         Function<Iterable<Row>, List<List<Writable>>> createCombiner = new DataFrameToSequenceCreateCombiner(schema);   //Function to create the initial combiner
@@ -291,12 +294,11 @@ public class DataFrames {
      * @param data   the data to convert
      * @return the dataframe object
      */
-    public static DataFrame toDataFrame(Schema schema, JavaRDD<List<Writable>> data) {
+    public static DataRowsFacade toDataFrame(Schema schema, JavaRDD<List<Writable>> data) {
         JavaSparkContext sc = new JavaSparkContext(data.context());
         SQLContext sqlContext = new SQLContext(sc);
         JavaRDD<Row> rows = data.map(new ToRow(schema));
-        DataFrame dataFrame = sqlContext.createDataFrame(rows, fromSchema(schema));
-        return dataFrame;
+        return dataRows(sqlContext.createDataFrame(rows, fromSchema(schema)));
     }
 
 
@@ -307,19 +309,18 @@ public class DataFrames {
      * - Column 1: Sequence index (name: {@link #SEQUENCE_INDEX_COLUMN} - an index (integer, starting at 0) for the position
      * of this record in the original time series.<br>
      * These two columns are required if the data is to be converted back into a sequence at a later point, for example
-     * using {@link #toRecordsSequence(DataFrame)}
+     * using {@link #toRecordsSequence(DataRowsFacade)}
      *
      * @param schema Schema for the data
      * @param data   Sequence data to convert to a DataFrame
      * @return The dataframe object
      */
-    public static DataFrame toDataFrameSequence(Schema schema, JavaRDD<List<List<Writable>>> data) {
+    public static DataRowsFacade toDataFrameSequence(Schema schema, JavaRDD<List<List<Writable>>> data) {
         JavaSparkContext sc = new JavaSparkContext(data.context());
 
         SQLContext sqlContext = new SQLContext(sc);
         JavaRDD<Row> rows = data.flatMap(new SequenceToRows(schema));
-        DataFrame dataFrame = sqlContext.createDataFrame(rows, fromSchemaSequence(schema));
-        return dataFrame;
+        return dataRows(sqlContext.createDataFrame(rows, fromSchemaSequence(schema)));
     }
 
     /**

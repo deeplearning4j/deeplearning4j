@@ -1,10 +1,8 @@
 package org.datavec.spark.transform;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.transform.normalize.Normalize;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
@@ -48,7 +46,7 @@ public class NormalizationTests extends BaseSparkTest {
 
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,rdd);
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,rdd);
 
         //assert equivalent to the ndarray pre processing
         NormalizerStandardize standardScaler = new NormalizerStandardize();
@@ -59,7 +57,7 @@ public class NormalizationTests extends BaseSparkTest {
         zeroToOne.fit(new DataSet(arr.dup(),arr.dup()));
         INDArray zeroToOnes = arr.dup();
         zeroToOne.transform(new DataSet(zeroToOnes,zeroToOnes));
-        List<Row> rows = Normalization.stdDevMeanColumns(dataFrame,dataFrame.columns());
+        List<Row> rows = Normalization.stdDevMeanColumns(dataFrame,dataFrame.get().columns());
         INDArray assertion = DataFrames.toMatrix(rows);
         //compare standard deviation
         assertTrue(standardScaler.getStd().equalsWithEps(assertion.getRow(0),1e-1));
@@ -94,10 +92,10 @@ public class NormalizationTests extends BaseSparkTest {
         assertEquals(schema,DataFrames.fromStructType(DataFrames.fromSchema(schema)));
         assertEquals(rdd.collect(),DataFrames.toRecords(DataFrames.toDataFrame(schema,rdd)).getSecond().collect());
 
-        DataFrame dataFrame = DataFrames.toDataFrame(schema,rdd);
-        dataFrame.show();
-        Normalization.zeromeanUnitVariance(dataFrame).show();
-        Normalization.normalize(dataFrame).show();
+        DataRowsFacade dataFrame = DataFrames.toDataFrame(schema,rdd);
+        dataFrame.get().show();
+        Normalization.zeromeanUnitVariance(dataFrame).get().show();
+        Normalization.normalize(dataFrame).get().show();
 
         //assert equivalent to the ndarray pre processing
         NormalizerStandardize standardScaler = new NormalizerStandardize();

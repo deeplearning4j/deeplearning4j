@@ -9,7 +9,7 @@
 
     <artifactId>datavec-spark-inference-server_2.10</artifactId>
     <packaging>jar</packaging>
-
+    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
     <name>datavec-spark-inference-server</name>
 
   <build>

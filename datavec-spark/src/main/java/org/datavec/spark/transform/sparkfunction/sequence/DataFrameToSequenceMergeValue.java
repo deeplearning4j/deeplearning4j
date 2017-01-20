@@ -19,7 +19,6 @@ package org.datavec.spark.transform.sparkfunction.sequence;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
@@ -31,10 +30,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Combiner function for use in {@link org.datavec.spark.transform.DataFrames#toRecordsSequence(DataFrame)}
+ * Combiner function for use in {@link DataFrames#toRecordsSequence(DataFrame)}
  * <p>
  * Assumption here: first two columns are the sequence UUID and the sequence index, as per
- * {@link org.datavec.spark.transform.DataFrames#toDataFrameSequence(Schema, JavaRDD)}
+ * {@link DataFrames#toDataFrameSequence(Schema, JavaRDD)}
  *
  * @author Alex Black
  */
