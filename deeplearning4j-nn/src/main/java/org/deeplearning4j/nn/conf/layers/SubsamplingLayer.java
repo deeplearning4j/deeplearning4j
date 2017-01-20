@@ -34,6 +34,7 @@ public class SubsamplingLayer extends Layer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
     protected int pnorm;
+    protected double eps;
 
     public enum PoolingType {
         MAX, AVG, SUM, PNORM, NONE;
@@ -67,6 +68,7 @@ public class SubsamplingLayer extends Layer {
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
         this.pnorm = builder.pnorm;
+        this.eps = builder.eps;
     }
 
     @Override
@@ -143,6 +145,8 @@ public class SubsamplingLayer extends Layer {
         return pnorm;
     }
 
+    public double getEps() { return eps; }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         private org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
@@ -151,6 +155,7 @@ public class SubsamplingLayer extends Layer {
         private int[] padding = new int[] {0, 0};
         private ConvolutionMode convolutionMode = null;
         private int pnorm;
+        private double eps = 1e-8;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.poolingType = poolingType.toPoolingType();
@@ -265,6 +270,12 @@ public class SubsamplingLayer extends Layer {
         public Builder pnorm(int pnorm){
             if(pnorm <= 0) throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
             this.pnorm = pnorm;
+            return this;
+        }
+
+        public Builder eps(double eps){
+            if(eps <= 0) throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
+            this.eps = eps;
             return this;
         }
     }
