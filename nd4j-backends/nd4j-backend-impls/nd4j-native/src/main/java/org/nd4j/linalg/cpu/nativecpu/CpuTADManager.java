@@ -53,7 +53,8 @@ public class CpuTADManager implements TADManager {
             if (!cache.containsKey(descriptor)) {
                 int dimensionLength = dimension.length;
 
-                int targetRank = dimensionLength <= 1 ? 2 : dimensionLength;
+                // FIXME: this is fast triage, remove it later
+                int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
                 int offsetLength;
                 int tadLength = 1;
                 for (int i = 0; i < dimensionLength; i++) {
