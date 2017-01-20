@@ -87,7 +87,8 @@
         (52,simdOps::HardSigmoidDerivative) ,\
         (53,simdOps::RationalTanh) ,\
         (54,simdOps::RationalTanhDerivative) ,\
-        (55,simdOps::LogX)
+        (55,simdOps::LogX) ,\
+        (59,simdOps::Not)
 
 
 

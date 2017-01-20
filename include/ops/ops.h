@@ -228,6 +228,74 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class And {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2 + d1;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T comp = params[0];
+
+			return d1 != comp && d2 != comp ? (T) 1.0f : (T) 0.0f;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+	};
+
+	template<typename T>
+	class Or {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2 + d1;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T comp = params[0];
+
+			return d1 != comp || d2 != comp ? (T) 1.0f : (T) 0.0f;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+	};
+
+	template<typename T>
+	class Xor {
+	public:
+		op_def static T op(T d1, T d2) {
+			return d2 + d1;
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T comp = params[0];
+
+			return ((d1 == comp && d2 != comp)||(d1 != comp && d2 == comp)) ? (T) 1.0f : (T) 0.0f;
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
+	};
+
+	template<typename T>
+	class Not {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T comp = params[0];
+
+			return d1 == comp ? (T) 1.0f : (T) 0.0f;
+		}
+	};
+
+
+	template<typename T>
 	class SetValOrLess {
 	public:
 		op_def static T op(T d1, T d2, T *params) {
