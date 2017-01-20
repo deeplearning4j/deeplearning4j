@@ -19,6 +19,7 @@ Lua
 
 Python Frameworks
 
+* <a href="#torch">Torch</a>
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
@@ -43,9 +44,11 @@ JVM Considerations
 
 ### <a name="torch">Torch</a>
 
-[**Torch**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
+[**Torch**](http://torch.ch/) is a computational framework with an API written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Facebook and Twitter, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm scripting language that was developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe scalability ought to be automated with open-source distributed run-times like Hadoop and Spark. And we believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community.
+
+A Python API for Torch, known as [Pytorch](https://github.com/pytorch/pytorch), was open-sourced by Facebook in January 2017. PyTorch offers dynamic computation graphs, which let you process variable-length inputs and outputs, which is useful when working with RNNs, for example. Other frameworks that support dynamic computation graphs are CMU's DyNet and PFN's Chainer. 
 
 Pros and Cons:
 
@@ -53,9 +56,9 @@ Pros and Cons:
 * (+) Easy to write your own layer types and run on GPU
 * (+) Lua. ;) (Most of the library code is in Lua, easy to read)
 * (+) Lots of pretrained models
+* (+) PyTorch
 * (-) Lua
 * (-) You usually write your own training code (Less plug and play)
-* (-) Not good for recurrent neural networks
 * (-) No commercial support
 * (-) Spotty documentation
 
