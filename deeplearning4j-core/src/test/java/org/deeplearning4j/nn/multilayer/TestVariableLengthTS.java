@@ -452,70 +452,82 @@ public class TestVariableLengthTS {
 
 
     @Test
-    public void testMaskingBidirectionalLSTMGlobalPooling(){
+    public void testMaskingLstmAndBidirectionalLstmGlobalPooling(){
         //Idea: mask some of the time steps, like [1,1,1,0,0]. We expect the activations out of the global pooling
         // to be the same as if we'd just fed in the in the present (1s) time steps only
 
         Nd4j.getRandom().setSeed(12345);
 
-        int nIn = 4;
-        int layerSize = 3;
+        int nIn = 2;
+        int layerSize = 4;
         int nOut = 3;
 
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG, PoolingType.MAX};
+//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG, PoolingType.MAX};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG};
 
-        for( PoolingType pt : poolingTypes ) {
+        boolean[] isBidirectional = new boolean[]{false, true};
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .weightInit(WeightInit.XAVIER)
-                    .activation(Activation.TANH)
-                    .list()
-                    .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build())
-                    .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
-                    .layer(2, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                    .layer(3, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(layerSize).nOut(nOut).build())
-                    .build();
+        for(boolean bidirectional : isBidirectional ) {
+            for (PoolingType pt : poolingTypes) {
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                System.out.println("Starting test: bidirectional = " + bidirectional + ", poolingType = " + pt);
 
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH)
+                        .list()
+                        .layer(0, bidirectional ?
+                                new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build() :
+                                new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                        .layer(1, bidirectional ?
+                                new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).build() :
+                                new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
+                        .layer(2, new GlobalPoolingLayer.Builder().poolingType(pt).build())
+                        .layer(3, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(layerSize).nOut(nOut).build())
+                        .build();
 
-            int tsLength = 5;
-            int minibatch = 3;
-
-            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, tsLength});
-            INDArray labels = Nd4j.rand(new int[]{minibatch, nOut});
-            INDArray featuresMask = Nd4j.create(new double[][]{
-                    {1, 1, 1, 1, 1},
-                    {1, 1, 1, 1, 0},
-                    {1, 1, 1, 0, 0}});
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
 
-            net.setLayerMaskArrays(featuresMask, null);
-            INDArray outMasked = net.output(input);
-            net.clearLayerMaskArrays();
+                int tsLength = 5;
+                int minibatch = 3;
 
-            for (int i = 0; i < minibatch; i++) {
-                INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()};
-                INDArray expExampleOut = net.output(input.get(idx));
-                INDArray actualExampleOut = outMasked.getRow(i);
-                System.out.println(i);
-                assertEquals(expExampleOut, actualExampleOut);
-            }
+                INDArray input = Nd4j.rand(new int[]{minibatch, nIn, tsLength});
+                INDArray labels = Nd4j.rand(new int[]{minibatch, nOut});
+                INDArray featuresMask = Nd4j.create(new double[][]{
+                        {1, 1, 1, 1, 1},
+                        {1, 1, 1, 1, 0},
+                        {1, 1, 1, 0, 0}});
 
-            //Also: check the score examples method...
-            DataSet ds = new DataSet(input, labels, featuresMask, null);
-            INDArray exampleScores = net.scoreExamples(ds, false);
-            for (int i = 0; i < minibatch; i++) {
-                INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength - i)};
-                DataSet dsSingle = new DataSet(input.get(idx),labels.getRow(i));
 
-                INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
-                double exp = exampleSingleScore.getDouble(i);
-                double act = exampleScores.getDouble(i);
+                net.setLayerMaskArrays(featuresMask, null);
+                INDArray outMasked = net.output(input);
+                net.clearLayerMaskArrays();
 
-                System.out.println(i + "\t" + exp + "\t" + act);
-                assertEquals(exp, act, 1e-6);
+                for (int i = 0; i < minibatch; i++) {
+                    INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength - i)};
+                    INDArray inputSubset = input.get(idx);
+                    INDArray expExampleOut = net.output(inputSubset);
+                    INDArray actualExampleOut = outMasked.getRow(i);
+                    System.out.println(i);
+                    assertEquals(expExampleOut, actualExampleOut);
+                }
+
+                //Also: check the score examples method...
+                DataSet ds = new DataSet(input, labels, featuresMask, null);
+                INDArray exampleScores = net.scoreExamples(ds, false);
+                for (int i = 0; i < minibatch; i++) {
+                    INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength - i)};
+                    DataSet dsSingle = new DataSet(input.get(idx), labels.getRow(i));
+
+                    INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
+                    double exp = exampleSingleScore.getDouble(0);
+                    double act = exampleScores.getDouble(i);
+
+                    System.out.println(i + "\t" + exp + "\t" + act);
+                    assertEquals(exp, act, 1e-6);
+                }
             }
         }
     }

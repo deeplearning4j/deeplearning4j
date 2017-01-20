@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.layers.pooling;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.util.MaskedReductionUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -90,7 +92,15 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Standard 'full array' global pooling op
             reduced2d = activateHelperFullArray(input, poolDim);
         } else {
-            throw new UnsupportedOperationException("Not yet implemeted");
+
+            if(input.rank() == 3){
+                //Masked time series
+
+                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray);
+
+            } else {
+                throw new UnsupportedOperationException("Not yet implemeted");
+            }
         }
 
         if(collapseDimensions){
@@ -227,4 +237,13 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
     }
 
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Global pooling layer: no masking is possible after this point... i.e., masks have been taken into account
+        // as part of the pooling
+        this.maskArray = maskArray;
+        this.maskState = null;  //Not used in global pooling - always applied
+
+        return null;
+    }
 }
