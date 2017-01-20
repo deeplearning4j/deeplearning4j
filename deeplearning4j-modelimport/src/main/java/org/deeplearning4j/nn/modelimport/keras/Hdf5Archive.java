@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -20,6 +21,16 @@ import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
  * Created by davekale on 1/17/17.
  */
 public class Hdf5Archive {
+
+    static {
+        try {
+            /* This is necessary for the call to the BytePointer constructor below. */
+            Loader.load(hdf5.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private hdf5.H5File file;
 
     public Hdf5Archive(String archiveFilename) {
