@@ -267,7 +267,7 @@ public class VocabConstructor<T extends SequenceElement> {
                  * Firing scavenger loop
                  */
                 if (enableScavenger && loopCounter.get() >= 1000000) {
-                    log.info("Starting scavenger...");
+                    log.debug("Starting scavenger...");
                     filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 3));
                     loopCounter.set(0);
                 }
@@ -326,15 +326,18 @@ public class VocabConstructor<T extends SequenceElement> {
     }
 
     protected void filterVocab(AbstractCache<T> cache, int minWordFrequency) {
+        int numWords = cache.numWords();
         LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
         for (T element : cache.vocabWords()) {
-            if (element.getElementFrequency() < minWordFrequency && !element.isSpecial() && !element.isLabel())
+            if (element.getElementFrequency() == 1 && !element.isSpecial() && !element.isLabel())
                 labelsToRemove.add(element.getLabel());
         }
 
         for (String label: labelsToRemove) {
             cache.removeElement(label);
         }
+
+        log.debug("Scavenger: Words before: {}; Words after: {};", numWords, cache.numWords());
     }
 
     public static class Builder<T extends SequenceElement> {
