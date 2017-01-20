@@ -264,7 +264,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     int getInputMiniBatchSize();
 
-
+    @Deprecated
     void setMaskArray(INDArray maskArray);
 
 

@@ -22,6 +22,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -65,6 +66,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     private double fullNetworkL1;
     private double fullNetworkL2;
+
+    protected INDArray inputMaskArray;
+    protected MaskState inputMaskArrayState;
 
     public BaseOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
