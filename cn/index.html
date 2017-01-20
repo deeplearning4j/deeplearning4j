@@ -5,7 +5,7 @@ redirect_from: /zh-index
 ---
 
 <p><h1>Deeplearning4j</h1></p>
-<p>Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习库。DL4J与Hadoop和<a href="spark">Spark</a>集成，支持分布式CPU和GPU，为商业环境（而非研究工具目的）所设计。<a href="http://www.skymind.io/?__hstc=3042607.a7ccacb889310ae8ee9e75399d132dd6.1464754825987.1480748718367.1480752621996.152&__hssc=3042607.4.1480752621996&__hsfp=4201184654">Skymind</a>是DL4J的商业支持机构。</p>
+<p>DeepLearning4J（DL4J）是一套基于Java语言的神经网络工具包，可以构建、定型和部署神经网络。DL4J与Hadoop和<a href="spark">Spark</a>集成，支持分布式CPU和GPU，为商业环境（而非研究工具目的）所设计。<a href="http://www.skymind.io/?__hstc=3042607.a7ccacb889310ae8ee9e75399d132dd6.1464754825987.1480748718367.1480752621996.152&__hssc=3042607.4.1480752621996&__hsfp=4201184654">Skymind</a>是DL4J的商业支持机构。</p>
 <p>Deeplearning4j拥有先进的技术，以即插即用为目标，通过更多预设的使用，避免多余的配置，让非企业也能够进行快速的原型制作。DL4J同时可以规模化定制。DL4J遵循Apache 2.0许可协议，一切以其为基础的衍生作品均属于衍生作品的作者。</p>
 <p>您可以根据我们<a href="quickstart">在快速入门</a>页上的说明，在几分钟内运行您的首个定型神经网络示例。</p>
 
@@ -52,7 +52,7 @@ redirect_from: /zh-index
 </ul>
 <br />
 <p>
-<h2>Deeplearning4j系列工具</h2>
+<h2>Deeplearning4j的组件</h2>
 </p>
 <p>深度神经网络能够实现<a href="accuracy">前所未有的准确度</a>。对神经网络的简介请参见<a href="neuralnet-overview">概览</a>页。简而言之，Deeplearning4j能够让你从各类浅层网络（其中每一层在英文中被称为layer）出发，设计深层神经网络。这一灵活性使用户可以根据所需，在分布式、生产级、能够在分布式CPU或GPU的基础上与Spark和Hadoop协同工作的框架内，整合受限玻尔兹曼机、其他自动编码器、卷积网络或递归网络。</p>
 <p>此处为我们已经建立的各个库及其在系统整体中的所处位置：</p>
@@ -81,12 +81,77 @@ redirect_from: /zh-index
   <!-- Tab panes -->
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane fade" id="datavec1">
+		<p>数据的摄取、清理、联接、缩放、标准化和转换是开展任何类型的数据分析时都必须完成的工作。这类工作可能有些无趣，但却是深度学习的先决条件。DataVec是专为这一流程设计的工具包。数据科学家和开发人员可以用其中的工具将图像、视频、声音、文本和时间序列等原始数据转变为特征向量，输入神经网络。</p>
+		<p><strong>概述：</strong>神经网络专门处理多维数组形式的数值数据。DataVec可以将来自一个CSV文件或一批图像的数据序列化，转换为数值数组。</p>
+		<br>
+    
+	  <p><strong>Github代码库</strong></p>
+		<p>DataVec的Github代码库请见<a href="https://github.com/deeplearning4j/datavec">此处</a>。代码库的结构如下。</p>
+		<ul>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe">datavec-dataframe</a>：相当于Pandas Dataframe的DataVec内置工具</li>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-api">datavec-api</a>：数据预处理和数据加工管道定义的规则。</li>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-data">datavec-data</a>：让系统知道如何理解声音、视频、图像、文本数据类型</li>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-spark">datavec-spark</a>：在Spark上运行分布式数据加工管道</li>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-local">datavec-local</a>：在桌面上独立运行DataVec。用于推断。</li>
+		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel">datavec-camel</a>：与外部Camel组件连接。Camel让您能定义路由，同多个数据来源进行集成。datavec-camel可以将DataVec作为目的地，把数据从任何您所指定的Camel来源发送至DataVec。</li>
+	  </ul><br>
+	  <p><strong>DataVec示例</strong></p> 
+		<p>我们在Github上的示例代码库中提供DataVec示例，详见<a href="https://github.com/deeplearning4j/dl4j-examples">此处</a>。</p>
+		<p>相关示例的简介汇总请见<a href="https://deeplearning4j.org/cn/examples-tour">此处</a>。</p><br>
+	  <p><strong>常用类</strong></p>
+		<p>以下是一些重要的DataVec类：</p>
+		<ul>
+		  <li>Input Split</li>
+	  </ul>
+		<p>将数据分为测试集和定型集</p>
+		<ul>
+		  <li><strong>InputSplit.sample</strong>将数据分为测试集和定型集</li>
+	  </ul>
+		<p>数据随机化</p>
+		<ul>
+		  <li><strong>FileSplit.random</strong>用于数据随机化</li>
+	  </ul>
+		<p>数据读取和序列化的基类。RecordReader摄取输入数据，返回一个可序列化对象（Writable）的列表。</p>
+		<ul>
+		  <li><strong>RecordReader</strong></li>
+	  </ul>
+		<p>具体的RecordReader实现类</p>
+		<ul>
+		  <li><strong>CSVRecordReader</strong>用于处理CSV数据</li>
+		  <li><strong>CSVNLinesSequenceRecordReader</strong>用于处理序列数据</li>
+		  <li><strong>ImageRecordReader</strong>用于处理图像</li>
+		  <li><strong>JacksonRecordReader</strong>用于处理JSON数据</li>
+		  <li><strong>RegexLineRecordReader</strong>用于解析日志文件</li>
+		  <li><strong>WavFileRecordReader</strong>用于处理音频文件</li>
+		  <li><strong>LibSvmRecordReader</strong>用于支持向量机</li>
+		  <li><strong>VideoRecordReader</strong>用于读取视频</li>
+	  </ul>
+		<p>数据的重新组织、联接、标准化和转换。</p>
+		<ul>
+		  <li><strong>Transform</strong></li>
+	  </ul>
+		<p>具体的Transform实现类</p>
+		<ul>
+		  <li><strong>CategoricalToIntegerTransform</strong>用于将类别名称转换为整数</li>
+		  <li><strong>CategoricalToOneHotTransform</strong>将类别名称转换为one-hot表示</li>
+		  <li><strong>ReorderColumnsTransform</strong>对列进行重排</li>
+		  <li><strong>RenameColumnsTransform</strong>对列进行重命名</li>
+		  <li><strong>StringToTimeTransform</strong>转换时间字符串</li>
+	  </ul>
+		<p>输入数据的标签可以基于图像存储的目录位置。</p>
+		<ul>
+		  <li><strong>ParentPathLabelGenerator</strong>基于父目录的标签</li>
+		  <li><strong>PatternPathLabelGenerator</strong>生成基于文件路径内一个字符串的标签</li>
+	  </ul>
+		<p>数据标准化</p>
+		<ul>
+		  <li><strong>Normalizer</strong>：虽然属于ND4J，但这里也应当提一下</li>
+	  </ul>
+
+    
+     
       
-      <ul><li>数据的的 ETL （抽取、转换、装载）和向量化</li>
-      <li>DataVec帮助克服机器学习及深度学习实现过程中最重大的障碍之一：将数据转化为神经网络能够识别的格式</li>
-      <li>DataVec使用Apache <a href="https://spark.apache.org/">Spark</a>来进行转换运算。</li>
-	  <li>开源工具  ASF 2.0许可证：<a href="https://github.com/deeplearning4j/datavec">github.com/deeplearning4j/DataVec</a></li>
-      <li>想了解更多关于DataVec的可以点击<a href="datavec" title="DataVec">这里</a></li></ul></div>    
+	  </div>    
     <div role="tabpanel" class="tab-pane active fade in" id="DL4J1">
      <ul>
      <li>Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习</li>
@@ -114,8 +179,15 @@ redirect_from: /zh-index
   </div>
 </div>
 <br />
-<p>
-<h2>为Deeplearning4j作出贡献</h2>
+<p><h3>其他组件</h3></p><br>
+<ul>
+  <li><strong>Keras Model Import</strong>（Keras模型导入）帮助用户将已定型的Python和Keras模型导入DeepLearning4J和Java环境。</li>
+  <li><strong>DL4J-Examples</strong>（DL4J示例）包含图像、时间序列及文本数据分类与聚类的工作示例。</li>
+  <li><strong>ScalNet</strong>是受Keras启发而为Deeplearning4j开发的Scala语言包装。它通过Spark在多个GPU上运行。</li>
+  <li><strong>RL4J</strong>用于在JVM上实现深度Q学习、A3C及其他强化学习算法。</li>
+</ul>
+
+<p><h2>为Deeplearning4j作出贡献</h2>
 </p>
 <p>为DL4J作出贡献，让DL4J平台变得更完美！不管是一两行的代码，或是一系列的改动，对DL4J的使用者来说都是莫大的贡献：</p>
 <ul>
