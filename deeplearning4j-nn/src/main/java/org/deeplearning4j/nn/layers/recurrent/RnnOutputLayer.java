@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -187,5 +188,20 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
         }
         this.maskArray = maskArray;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+
+        //If the *input* mask array is present and active, we should use it to mask the output
+        if(maskArray != null && currentMaskState == MaskState.Active){
+            this.inputMaskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
+            this.inputMaskArrayState = currentMaskState;
+        } else {
+            this.inputMaskArray = null;
+            this.inputMaskArrayState = null;
+        }
+
+        return null;    //Last layer in network
     }
 }
