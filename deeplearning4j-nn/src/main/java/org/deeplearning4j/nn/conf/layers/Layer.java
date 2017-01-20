@@ -213,8 +213,6 @@ public abstract class Layer implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
-//        @Deprecated
-//        protected String activationFunction = null;
         protected IActivation activationFn = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;

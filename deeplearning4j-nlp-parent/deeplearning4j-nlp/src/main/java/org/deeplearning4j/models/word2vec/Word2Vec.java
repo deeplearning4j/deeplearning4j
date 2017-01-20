@@ -473,6 +473,20 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method ebables/disables periodical vocab truncation during construction
+         *
+         * Default value: disabled
+         *
+         * @param reallyEnable
+         * @return
+         */
+        @Override
+        public Builder enableScavenger(boolean reallyEnable) {
+            super.enableScavenger(reallyEnable);
+            return this;
+        }
+
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
@@ -532,6 +546,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.unknownElement = this.unknownElement;
             ret.variableWindows = this.variableWindows;
             ret.seed = this.seed;
+            ret.enableScavenger = this.enableScavenger;
 
 
             ret.iterator = this.iterator;

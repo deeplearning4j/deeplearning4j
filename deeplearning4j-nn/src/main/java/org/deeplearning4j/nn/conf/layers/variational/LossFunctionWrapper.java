@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,6 +28,15 @@ public class LossFunctionWrapper implements ReconstructionDistribution {
     public LossFunctionWrapper(@JsonProperty("activationFn") IActivation activationFn, @JsonProperty("lossFunction") ILossFunction lossFunction){
         this.activationFn = activationFn;
         this.lossFunction = lossFunction;
+    }
+
+    public LossFunctionWrapper(Activation activation, ILossFunction lossFunction){
+        this(activation.getActivationFunction(), lossFunction);
+    }
+
+    @Override
+    public boolean hasLossFunction() {
+        return true;
     }
 
     @Override
