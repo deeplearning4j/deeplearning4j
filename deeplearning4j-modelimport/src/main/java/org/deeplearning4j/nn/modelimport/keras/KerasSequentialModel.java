@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -39,6 +41,7 @@ import java.util.Map;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class KerasSequentialModel extends KerasModel {
 
     /**
@@ -158,6 +161,8 @@ public class KerasSequentialModel extends KerasModel {
                     if (preprocessor != null)
                         listBuilder.inputPreProcessor(layerIndex-1, preprocessor);
                 }
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
             else if (layer.getVertex() != null)
                 throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name " + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
