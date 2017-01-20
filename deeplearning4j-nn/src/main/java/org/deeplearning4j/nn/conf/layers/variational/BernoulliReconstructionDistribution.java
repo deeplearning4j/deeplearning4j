@@ -62,6 +62,11 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     @Override
+    public boolean hasLossFunction() {
+        return false;
+    }
+
+    @Override
     public int distributionInputSize(int dataSize) {
         return dataSize;
     }
