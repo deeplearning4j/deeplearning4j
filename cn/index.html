@@ -85,7 +85,7 @@ redirect_from: /zh-index
 		<p><strong>概述：</strong>神经网络专门处理多维数组形式的数值数据。DataVec可以将来自一个CSV文件或一批图像的数据序列化，转换为数值数组。</p>
 		<br>
     
-	  <p><strong>Github代码库</strong></p>
+	  <p><h4>Github代码库</h4></p>
 		<p>DataVec的Github代码库请见<a href="https://github.com/deeplearning4j/datavec">此处</a>。代码库的结构如下。</p>
 		<ul>
 		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe">datavec-dataframe</a>：相当于Pandas Dataframe的DataVec内置工具</li>
@@ -95,10 +95,10 @@ redirect_from: /zh-index
 		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-local">datavec-local</a>：在桌面上独立运行DataVec。用于推断。</li>
 		  <li><a href="https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel">datavec-camel</a>：与外部Camel组件连接。Camel让您能定义路由，同多个数据来源进行集成。datavec-camel可以将DataVec作为目的地，把数据从任何您所指定的Camel来源发送至DataVec。</li>
 	  </ul><br>
-	  <p><strong>DataVec示例</strong></p> 
+	  <p><h4>DataVec示例</h4></p> 
 		<p>我们在Github上的示例代码库中提供DataVec示例，详见<a href="https://github.com/deeplearning4j/dl4j-examples">此处</a>。</p>
 		<p>相关示例的简介汇总请见<a href="https://deeplearning4j.org/cn/examples-tour">此处</a>。</p><br>
-	  <p><strong>常用类</strong></p>
+	  <p><h4>常用类</h4></p>
 		<p>以下是一些重要的DataVec类：</p>
 		<ul>
 		  <li>Input Split</li>
@@ -153,39 +153,128 @@ redirect_from: /zh-index
       
 	  </div>    
     <div role="tabpanel" class="tab-pane active fade in" id="DL4J1">
+	  <p>DeepLearning4J用于设计神经网络：</p>
      <ul>
      <li>Deeplearning4j（简称DL4J）是为Java和Scala编写的首个商业级开源分布式深度学习</li>
       <li>DL4J与Hadoop和Spark集成，为商业环境（而非研究工具目的）所设计。</li>
       <li>支持GPU和CPU</li>
       <li>受到 Cloudera, Hortonwork, NVIDIA, Intel, IBM 等认证，可以在Spark, Flink, Hadoop 上运行</li>
       <li>支持并行迭代算法架构</li>
+      <li>DeepLearning4J的JavaDoc可在<a href="http://deeplearning4j.org/doc/">此处</a>获取</li>
+      <li>DeepLearning4J示例的Github代码库请见<a href="https://github.com/deeplearning4j/dl4j-examples">此处</a>。相关示例的简介汇总请见<a href="https://deeplearning4j.org/cn/examples-tour">此处</a>。</li>
       <li>开源工具  ASF 2.0许可证：<a href="https://github.com/deeplearning4j/deeplearning4j" title="Deeplearning4j" target="_blank">github.com/deeplearning4j/deeplearning4j</a>
       </li>
-		</ul>
+		</ul><br>
+		<p><h4>Github代码库</h4><p>
+		<p>DeepLearning4J的Github代码库请见<a href="https://github.com/deeplearning4j/deeplearning4j">此处</a>。代码库的结构如下。</p>
+		<ul>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core">deeplearning4j-core</a>：包括datasetiterators和在桌面上运行DL4J所需的全部代码。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-cuda">deeplearning4j-cuda</a>：包括cudnn和所有同cuda相关的代码。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-graph">deeplearning4j-graph</a>用于deepwalk的图像处理。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport">deeplearning4j-modelimport</a>：导入来自Keras的神经网络模型，可以借此导入Theano、Tensorflow、Caffe、CNTK等主流学习框架的模型</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent">deeplearning4j-nlp-parent</a>：英语、日语、韩语文本分析以及UIMA等工具集的外部分词器和插件。UIMA原本即包括依赖解析、语义角色标记、关系提取和QA系统等功能。我们与UIMA等工具集进行集成，将数据传递给word2vec。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent/deeplearning4j-nlp">nlp</a>：Word2vec、Doc2vec及其他相关工具。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn">deeplearning4j-nn</a> ：精简版的神经网络领域专用语言（DSL），依赖项较少。可配置多层网络，用一种构建器模式来设置超参数。</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout">deeplearning4j-scaleout</a>：AWS预配置，用parallelwrapper进行桌面参数平均化（单机96核），不希望运行Spark时可不运行；一个版本采用参数服务器，另一个不用；streaming文件夹是基于Kafka和Spark的流式数据处理；spark文件夹是基于Spark的网络定型和自然语言处理：分布式Word2Vec</li>
+		  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui-parent">deeplearning4j-ui-parent</a>：神经网络定型的启发式评估和可视化</li>
+	  </ul><br>
+		<p><h4>DeepLearning4J的常用类</h4></p>
+      <ul>
+          <li><strong>MultiLayerConfiguration</strong> 配置一个网络</li>
+          <li><strong>MultiLayerConfiguration.Builder</strong>配置网络的构建器接口</li>
+          <li><strong>MultiLayerNetwork</strong>按配置构建网络</li>
+          <li><strong>ComputationGraph</strong>构建计算图式网络</li>
+          <li><strong>ComputationGraphConfiguration</strong>计算图配置</li>
+          <li><strong>ComputationGraphConfiguration.GraphBuilder</strong>计算图配置的构建器接口</li>
+          <li><strong>UiServer</strong>添加一个基于网页的GUI界面，以便查看定型参数进展以及网络配置</li>
+      </ul>
     </div>
-    <div role="tabpanel" class="tab-pane fade" id="ND4J1"><ul><li><a href="http://nd4j.org/" title="ND4J" target="_blank">ND4J</a> 是 Java 科学运算引擎，用来驱动矩阵操作。</li>
+    <div role="tabpanel" class="tab-pane fade" id="ND4J1">
+	  <p>ND4J是DeepLearning4J的数值处理库和张量库，在JVM中实现NumPy的功能：</p>
+     <ul><li><a href="http://nd4j.org/" title="ND4J" target="_blank">ND4J</a> 是 Java 科学运算引擎，用来驱动矩阵操作。</li>
       <li>JavaCPP功能: Java 到 Objective-C 的桥，可像其他 Java 对象一样来使用 Objective-C 对象。</li>
       <li>CPU 后瑞：OpenMP、OpenBlas 或 MKL、与SIMD的扩展
 </li>
       <li>GPU 后瑞：最新CUDA 及 CuDNN
 </li>
-		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/nd4j">github.com/deeplearning4j/nd4j</a></li></ul>
+      <li>ND4J的JavaDoc可在<a href="http://nd4j.org/doc/">此处</a>获取。</li>
+      <li>ND4J示例请见<a href="https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples">此处</a>。</li>
+		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/nd4j">github.com/deeplearning4j/nd4j</a></li></ul><br>
+		<p><h4>Github代码库</h4></p>
+		<p>ND4J的Github代码库请见<a href="https://github.com/deeplearning4j/nd4j">此处</a>。ND4J是用于处理n维数组（NDArrays）的DSL。</p>
+		<ul>
+		  <li><a href="https://github.com/deeplearning4j/nd4j/tree/master/nd4j-parameter-server-parent">nd4j-parameter-server-parent</a>：用于分布式神经网络定型的强大的参数服务器，基于Aeron。</li>
+		  <li><a href="https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends">nd4j-backends</a>：针对不同硬件的后端，为使用多个GPU和CPU运行而优化。</li>
+	  </ul>
+		<br>
+	<p><h4>ND4J的常用类</h4></p>
+<p>您可能不会直接使用下面的这些类，而是在配置神经网络时用到。在后台，您为OptimizationAlgorithm（优化算法）、Updater（更新器）、LossFunction（损失函数）设定的配置都是在ND4J之中完成的。</p>
+<ul>
+  <li><strong>DataSetPreProcessor</strong>：图像或数值数据标准化的工具</li>
+  <li><strong>BaseTransformOp</strong>：各类激活函数，包括tanh、sigmoid、relu、Softmax……</li>
+  <li><strong>GradientUpdater</strong>：随机梯度下降、AdaGrad、Adam、Nesterov……</li>
+</ul>
     </div>
-    <div role="tabpanel" class="tab-pane fade" id="Arbiter1"><ul><li>深度学习模型检测、评估器</li>
+    <div role="tabpanel" class="tab-pane fade" id="Arbiter1">
+		<p>Arbiter帮助您搜索超参数空间，为神经网络寻找最理想的参数组合及架构。这非常重要，因为寻找恰当的架构和超参数是一个很大的组合问题。来自微软研发部等企业实验室的ImageNet大赛获胜团队正是通过搜索超参数空间才得出了ResNet这样的150层神经网络：</p>
+     <ul><li>深度学习模型检测、评估器</li>
       <li>调整及优化机器学习模型</li>
       <li>使用Grid search和Random Search 作超参数寻优</li>
-		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/Arbiter">github.com/deeplearning4j/Arbiter</a></li></ul>
+		<li>开源工具 ASF 2.0许可证：<a href="https://github.com/deeplearning4j/Arbiter">github.com/deeplearning4j/Arbiter</a></li></ul><br>
+		<p><h4>Github代码库</h4></p>
+<p>Github代码库请见<a href="https://github.com/deeplearning4j/Arbiter">此处</a>。</p>
+<ul>
+  <li><a href="https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-core">arbiter-core</a>：Aribter-core用网格搜索等算法来搜索超参数空间。它会提供一个GUI界面。</li>
+  <li><a href="https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-deeplearning4j">arbiter-deeplearning4j</a>：Arbiter可以同DL4J模型互动。在进行模型搜索时，您需要能运行模型。这样可以对模型进行试点，进而找出最佳的模型。</li>
+</ul>
+
     </div>
   </div>
 </div>
 <br />
 <p><h3>其他组件</h3></p><br>
 <ul>
-  <li><strong>Keras Model Import</strong>（Keras模型导入）帮助用户将已定型的Python和Keras模型导入DeepLearning4J和Java环境。</li>
-  <li><strong>DL4J-Examples</strong>（DL4J示例）包含图像、时间序列及文本数据分类与聚类的工作示例。</li>
-  <li><strong>ScalNet</strong>是受Keras启发而为Deeplearning4j开发的Scala语言包装。它通过Spark在多个GPU上运行。</li>
-  <li><strong>RL4J</strong>用于在JVM上实现深度Q学习、A3C及其他强化学习算法。</li>
+	<li><strong>Keras Model Import</strong>（Keras模型导入）帮助用户将已定型的Python和Keras模型导入DeepLearning4J和Java环境。参考<a href="#modelimport">模型导入</a></li>
+  <li><strong>DL4J-Examples</strong>（DL4J示例）包含图像、时间序列及文本数据分类与聚类的工作示例。
+    <ul>
+		<li>Github 上的<a href="https://github.com/deeplearning4j/dl4j-examples">DL4J 实例</a></li>
+    </ul>
+  </li>
+  <li><strong>ScalNet</strong>是受Keras启发而为Deeplearning4j开发的Scala语言包装。它通过Spark在多个GPU上运行。
+    <ul>
+      <li>ScalNet针对Scala语言开发，功能相当于Keras。它是DeepLearning4J的Scala语言包装，可以在多个GPU上运行Spark。</li>
+      <li><a href="https://github.com/deeplearning4j/ScalNet">Github上的ScalNet代码库</a></li>
+    </ul>
+  </li>
+  <li><strong>RL4J</strong>用于在JVM上实现深度Q学习、A3C及其他强化学习算法。
+    <ul>
+      <li>RL4J是在Java中实现深度Q学习、A3C及其他强化学习算法的库和环境，与DL4J和ND4J相集成。</li>
+      <li>Github代码库：
+        <ul>
+          <li><a href="https://github.com/deeplearning4j/rl4j">RL4J</a></li>
+          <li><a href="https://github.com/deeplearning4j/rl4j/tree/master/rl4j-gym">Gym集成</a></li>
+          <li><a href="https://github.com/deeplearning4j/rl4j/tree/master/rl4j-doom">RL4J玩《Doom》</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
 </ul>
+<br>
+<p><h2><a name="modelimport">模型导入</a></h2></p>
+<p>如果您曾经用过Python的深度学习库Keras，希望将已定型的模型或模型配置导入DeepLearning4J，那么请使用&ldquo;模型导入&rdquo;功能。</p><br>
+<p><h3>Github代码库</h3></p>
+<p>模型导入其实是DeepLearning4J的一部分，但很有必要将其单独列为一段。Github文件夹请见<a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport">此处</a>。</p><br>
+
+<p><h3>模型导入示例</h3></p>
+<p>我们将在<a href="https://github.com/deeplearning4j/dl4j-examples/">此处</a>添加示例</p><br>
+
+<p><h3>模型导入的常用类</h3></p>
+可以用<strong>KerasModel.Import</strong>将已保存的Keras模型导入至DeepLearning4J的MultiLayerNetwork或计算图中<br>
+
+<p><h3>视频</h3></p>
+<div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=l0366tap001&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div>
+<br>
+
 
 <p><h2>为Deeplearning4j作出贡献</h2>
 </p>
