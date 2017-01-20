@@ -277,7 +277,7 @@ WeightLookupTable weightLookupTable = word2Vec.lookupTable();
 <p>如果你是使用<a href="https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit">C向量</a>或Gensimm定型的，那么可以用下面这行代码导入模型。</p>
 <pre class="line-numbers"><code class="language-java">
 File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+    Word2Vec vec = WordVectorSerializer.readWord2VecModel(gModel);
 </code></pre>
 <p>记得为导入的包添加<code>import java.io.File;</code>。</p>
 <p>较大的模型可能会遇到堆空间的问题。谷歌模型可能会占据多达10G的RAM，而JVM只能以256MB的RAM启动，所以必须调整你的堆空间。方法可以是使用一个<code>bash_profile</code>文件（参见<a href="hgettingstarted.html#trouble">疑难解答</a>），或通过IntelliJ本身来解决：</p>
