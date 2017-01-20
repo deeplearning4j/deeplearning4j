@@ -79,7 +79,7 @@ public class HistogramIterationListener extends StatsListener {
 
     private static StatsUpdateConfiguration getUpdateConfiguration(int iterations){
         //Note: we don't *need* all of these stats just for histogram listener - but other info
-        // is still available at /train
+        // is still available at /enforceTrainingConfig
         return new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(iterations).build();
     }
 }

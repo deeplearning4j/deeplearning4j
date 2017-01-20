@@ -1,7 +1,7 @@
-train.nav.overview=개요
-train.nav.model=모델
-train.nav.system=시스템
-train.nav.userguide=사용자 가이드
-train.nav.language=언어
-train.session.label=Session
-train.session.worker.label=Worker
+enforceTrainingConfig.nav.overview=개요
+enforceTrainingConfig.nav.model=모델
+enforceTrainingConfig.nav.system=시스템
+enforceTrainingConfig.nav.userguide=사용자 가이드
+enforceTrainingConfig.nav.language=언어
+enforceTrainingConfig.session.label=Session
+enforceTrainingConfig.session.worker.label=Worker

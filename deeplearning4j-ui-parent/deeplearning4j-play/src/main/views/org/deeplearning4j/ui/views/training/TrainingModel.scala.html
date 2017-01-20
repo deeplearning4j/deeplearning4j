@@ -4,7 +4,7 @@
     <head>
 
         <meta charset="utf-8">
-        <title>@i18n.getMessage("train.pagetitle")</title>
+        <title>@i18n.getMessage("enforceTrainingConfig.pagetitle")</title>
             <!-- start: Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
@@ -37,15 +37,15 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                    <a class="brand" href="index.html"><span>@i18n.getMessage("enforceTrainingConfig.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        @i18n.getMessage("train.session.label")
+                        @i18n.getMessage("enforceTrainingConfig.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
                     </div>
                     <div id="workerSelectDiv" style="display:none; float:right;">
-                        @i18n.getMessage("train.session.worker.label")
+                        @i18n.getMessage("enforceTrainingConfig.session.worker.label")
                         <select id="workerSelect" onchange='selectNewWorker()'>
                             <option>(Worker ID)</option>
                         </select>
@@ -62,13 +62,13 @@
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.overview")</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.model")</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.system")</span></a></li>
-                            @*<li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">@i18n.getMessage("train.nav.userguide")</span></a></li>*@
+                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">@i18n.getMessage("enforceTrainingConfig.nav.overview")</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">@i18n.getMessage("enforceTrainingConfig.nav.model")</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">@i18n.getMessage("enforceTrainingConfig.nav.system")</span></a></li>
+                            @*<li><a href="help"><i class="icon-star"></i> <span class="hidden-tablet">@i18n.getMessage("enforceTrainingConfig.nav.userguide")</span></a></li>*@
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet">
-                                @i18n.getMessage("train.nav.language")</span></a>
+                                @i18n.getMessage("enforceTrainingConfig.nav.language")</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
                                         English</span></a></li>
@@ -121,7 +121,7 @@
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.model.layerInfoTable.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.model.layerInfoTable.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
@@ -130,39 +130,39 @@
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle")</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitle")</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>
                                 <ul class="nav tab-menu nav-tabs" style="position:absolute; margin-top: -36px; right: 27px;">
-                                    <li id="mmRatioTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('ratios')">@i18n.getMessage("train.model.meanmag.btn.ratio")</a></li>
-                                    <li id="mmParamTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('paramMM')">@i18n.getMessage("train.model.meanmag.btn.param")</a></li>
-                                    <li id="mmUpdateTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('updateMM')">@i18n.getMessage("train.model.meanmag.btn.update")</a></li>
+                                    <li id="mmRatioTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('ratios')">@i18n.getMessage("enforceTrainingConfig.model.meanmag.btn.ratio")</a></li>
+                                    <li id="mmParamTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('paramMM')">@i18n.getMessage("enforceTrainingConfig.model.meanmag.btn.param")</a></li>
+                                    <li id="mmUpdateTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('updateMM')">@i18n.getMessage("enforceTrainingConfig.model.meanmag.btn.update")</a></li>
                                 </ul>
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
                                 <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>
-                                    10</sub> @i18n.getMessage("train.overview.chart.updateRatioTitleShort")</b></span> <span id="yMeanMagnitudes">
+                                    10</sub> @i18n.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitleShort")</b></span> <span id="yMeanMagnitudes">
                                     0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                    , <b>@i18n.getMessage("enforceTrainingConfig.overview.charts.iteration")
                                         :</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.model.activationsChart.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.model.activationsChart.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="activations" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.model.activationsChart.titleShort")
+                                <p id="hoverdata"><b>@i18n.getMessage("enforceTrainingConfig.model.activationsChart.titleShort")
                                     :</b> <span id="yActivations">0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                    , <b>@i18n.getMessage("enforceTrainingConfig.overview.charts.iteration")
                                         :</b> <span id="xActivations">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.model.paramHistChart.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.model.paramHistChart.title")</b></h2>
                                 <div id="paramhistSelected" style="float: left"></div>
                                 <div id="paramHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -173,7 +173,7 @@
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.model.updateHistChart.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.model.updateHistChart.title")</b></h2>
                                 <div id="updatehistSelected" style="float: left"></div>
                                 <div id="updateHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -184,13 +184,13 @@
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.model.lrChart.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.model.lrChart.title")</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="learningrate" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>@i18n.getMessage("train.model.lrChart.titleShort")
+                                <p id="hoverdata"><b>@i18n.getMessage("enforceTrainingConfig.model.lrChart.titleShort")
                                     :</b> <span id="yLearningRate">0</span>
-                                    , <b>@i18n.getMessage("train.overview.charts.iteration")
+                                    , <b>@i18n.getMessage("enforceTrainingConfig.overview.charts.iteration")
                                         :</b> <span id="xLearningRate">0</span></p>
                             </div>
                         </div>
@@ -267,9 +267,9 @@
         <script src="/assets/js/cytoscape.min.js"></script>
         <script src="/assets/js/dagre.min.js"></script>
         <script src="/assets/js/cytoscape-dagre.js"></script>
-        <script src="/assets/js/train/model.js"></script> <!-- Charts and tables are generated here! -->
-        <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
-        <script src="/assets/js/train/train.js"></script> <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/enforceTrainingConfig/model.js"></script> <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/model-graph.js"></script> <!-- Layer graph generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/enforceTrainingConfig.js"></script> <!-- Common (lang selection, etc) -->
 
             <!-- Execute once on page load -->
        <script>
