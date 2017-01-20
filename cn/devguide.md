@@ -1,6 +1,6 @@
 ---
 title: Developer Guide for Deeplearning4j
-layout: default
+layout: cn-default
 ---
 
 # Developer Guide

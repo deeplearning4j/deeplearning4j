@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j Version Check
-layout: default
+layout: cn-default
 ---
 
 # Deeplearning4j's Version Check

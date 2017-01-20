@@ -1,6 +1,6 @@
 ---
 title: Deep Learning and Neural Network Glossary
-layout: default
+layout: cn-default
 ---
 
 # Deep Learning and Neural Network Glossary

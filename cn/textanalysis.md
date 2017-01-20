@@ -1,6 +1,6 @@
 ---
 title: Textual analysis and deep learning
-layout: default
+layout: cn-default
 ---
 
 # Textual analysis and deep learning

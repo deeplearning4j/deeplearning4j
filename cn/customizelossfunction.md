@@ -1,6 +1,6 @@
 ---
 title: Customized Loss Functions
-layout: default
+layout: cn-default
 ---
 
 # Customized Loss Functions With DL4J

@@ -1,6 +1,6 @@
 ---
 title: Running Deep Learning on Distributed GPUs With Spark
-layout: default
+layout: cn-default
 ---
 
 # Running Deep Learning on Distributed GPUs With Spark

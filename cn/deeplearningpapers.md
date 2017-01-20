@@ -1,6 +1,6 @@
 ---
 title: Deep Learning Resources (Papers, Online Courses, Books)
-layout: default
+layout: cn-default
 ---
 
 # Deep Learning Resources

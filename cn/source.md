@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: cn-default
 title: Working With Source
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Deep-Belief Network Tutorial for Iris
-layout: default
+layout: cn-default
 ---
 
 # Deep-Belief Network Tutorial for Iris

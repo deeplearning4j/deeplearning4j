@@ -1,6 +1,6 @@
 ---
 title: Deep Learning Workflows
-layout: default
+layout: cn-default
 ---
 
 # Deep Learning Workflows Explained ... With Cats

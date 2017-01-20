@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j With GPUs
-layout: default
+layout: cn-default
 ---
 
 # Deeplearning4j With GPUs

@@ -1,6 +1,6 @@
 ---
 title: 
-layout: default
+layout: cn-default
 ---
 
 A non-exhaustive list of prominent and/or interesting media stories about deep learning, with salient snippets. 

@@ -1,6 +1,6 @@
 ---
 title: MultiLayerConfiguration class
-layout: default
+layout: cn-default
 ---
 
 # MultiLayerConfiguration class:

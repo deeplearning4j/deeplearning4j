@@ -1,6 +1,6 @@
 ---
 title: Tokenization
-layout: default
+layout: cn-default
 ---
 
 # Tokenization

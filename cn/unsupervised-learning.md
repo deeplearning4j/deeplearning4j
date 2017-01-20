@@ -1,6 +1,6 @@
 ---
 title: "Machine Learning: Use Cases"
-layout: default
+layout: cn-default
 ---
 
 # Machine Learning: Use Cases

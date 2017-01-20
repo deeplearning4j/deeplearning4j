@@ -1,0 +1,15 @@
+---
+title: 将Keras模型导入Deeplearning4j 
+layout: cn-default
+---
+<p><h1>Keras的生产应用：将Python模型导入Deeplearning4j</h1></p>
+<div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=l0366tap001&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div>
+
+<br>
+<p>本教程的代码可以在<a href="https://gist.github.com/tomthetrainer/f6e073444286e5d97d976bd77292a064">Github</a>上找到。</p>
+<p><a href="https://keras.io/" target="_blank">Keras</a>是目前使用最广泛的为Python编写的开源深度学习工具之一。Keras有一套受Torch启发的API，在Theano和TensorFlow的基础上再提供一个抽象层，让此二者更易于使用。Keras允许用户导入来自Theano、TensorFlow、Caffe和Torch等最先进的深度学习框架的模型。而同样的模型可以从Keras导入到Deeplearning4j中。</p>
+<p>这一点很重要，因为不同的学习框架擅长解决不同的问题，而深度学习工作流的各个阶段也都由不同的编程语言所主导。Python虽然主导了数据探索和原型开发阶段，却并不一定最适合生产部署。Deeplearning4j与Hadoop、Spark、Kafka、ElasticSearch、Hive和Pig等大数据技术栈中常见的开源库高度集成。</p>
+<p>Deeplearning4j也获得了两种Hadoop生态系统发行版 — Cloudera CDH和Hortonworks HDP的认证。导入Keras模型的功能让Deeplearning4j可以帮助深度学习用户将自己的神经网络模型转移到大型企业生产栈中运行。</p>
+<p>目前我们还不能支持其他深度学习框架提供的所有网络架构，但我们正在不断增加可以从Keras导入到DL4J的网络类型。</p>
+<p>Python程序员如果希望直接与Deeplearning4j对接，可以考虑使用<a href="https://github.com/deeplearning4j/scalnet" target="_blank">它的Scala API：ScalNet</a>。</p>
+<p>更多详情请参阅<a href="model-import-keras">模型导入指南</a>。</p>

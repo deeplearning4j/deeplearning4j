@@ -1,6 +1,6 @@
 ---
 title: "Recommender Systems With Deep Learning"
-layout: default
+layout: cn-default
 ---
 
 # Recommender Systems With Deep Learning
