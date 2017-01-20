@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.CompositeReconstructionDistribution;
@@ -831,6 +832,13 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public boolean isPretrainLayer() {
         return true;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+
+
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 
