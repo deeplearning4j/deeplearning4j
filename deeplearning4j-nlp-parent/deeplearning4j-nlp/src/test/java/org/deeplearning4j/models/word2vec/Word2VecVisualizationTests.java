@@ -38,7 +38,5 @@ public class Word2VecVisualizationTests {
                 .build();
 
         //vectors.lookupTable().plotVocab(tsne);
-
-
     }
 }

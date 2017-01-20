@@ -39,7 +39,8 @@ public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
         Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
         for (String label: document.getLabels()) {
-            sequence.addSequenceLabel(new VocabWord(1.0, label));
+            if (label != null && !label.isEmpty())
+                sequence.addSequenceLabel(new VocabWord(1.0, label));
         }
                 /*
                 if (document.getLabel() != null && !document.getLabel().isEmpty()) {
