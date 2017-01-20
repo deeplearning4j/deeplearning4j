@@ -67,7 +67,7 @@ public class KerasBatchNormalization extends KerasLayer {
 
         this.layer = new BatchNormalization.Builder()
             .name(this.layerName)
-            .dropOut(getDropoutFromConfig(layerConfig))
+            .dropOut(this.dropout)
             .minibatch(true)
             .lockGammaBeta(false)
             .eps(getEpsFromConfig(layerConfig))

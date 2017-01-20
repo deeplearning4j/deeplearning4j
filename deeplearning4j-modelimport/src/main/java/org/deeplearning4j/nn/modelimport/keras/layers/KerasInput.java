@@ -124,34 +124,6 @@ public class KerasInput extends KerasLayer {
     }
 
     /**
-     * Set layer backend dimension order. For Input layers with three dimensions
-     * (e.g., images), this determines the location of the channels dimension.
-     *
-     * @return
-     */
-//    @Override
-//    public void setDimOrder(DimOrder dimOrder) {
-//        if (this.inputShape.length == 3) {
-//            DimOrder dimOrderOld = this.dimOrder;
-//            DimOrder dimOrderNew = dimOrder;
-////            if (dimOrderOld != DimOrder.THEANO && dimOrderNew == DimOrder.THEANO) {
-//            if (dimOrderOld == DimOrder.TENSORFLOW && dimOrderNew != DimOrder.TENSORFLOW) {
-//                int numChannels = this.inputShape[0];
-//                this.inputShape[0] = this.inputShape[1];
-//                this.inputShape[1] = this.inputShape[2];
-//                this.inputShape[2] = numChannels;
-////            } else if (dimOrderOld == DimOrder.THEANO && dimOrderNew != DimOrder.THEANO) {
-//            } else if (dimOrderOld != DimOrder.TENSORFLOW && dimOrderNew == DimOrder.TENSORFLOW) {
-//                int numChannels = this.inputShape[2];
-//                this.inputShape[2] = this.inputShape[1];
-//                this.inputShape[1] = this.inputShape[0];
-//                this.inputShape[0] = numChannels;
-//            }
-//        }
-//        this.dimOrder = dimOrder;
-//    }
-
-    /**
      * Returns value of truncated BPTT, if any found.
      *
      * TODO: figure out how to infer truncated BPTT value for non-sequence inputs
