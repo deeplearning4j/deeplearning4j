@@ -118,6 +118,9 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 return inputArray.mean(poolDim);
             case SUM:
                 return inputArray.sum(poolDim);
+//                System.out.println("Full array sum:");
+//                System.out.println(inputArray.sum(poolDim));
+//                return inputArray.sum(poolDim);
             case PNORM:
                 //P norm: https://arxiv.org/pdf/1311.1780.pdf
                 //out = (1/N * sum( |in| ^ p) ) ^ (1/p)

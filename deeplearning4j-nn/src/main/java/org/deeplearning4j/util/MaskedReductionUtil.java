@@ -38,6 +38,7 @@ public class MaskedReductionUtil {
                 INDArray masked = Nd4j.createUninitialized(toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked, 0,2));
                 INDArray summed = masked.sum(2);
+//                System.out.println(summed);
                 if(poolingType == PoolingType.SUM){
                     return summed;
                 }
