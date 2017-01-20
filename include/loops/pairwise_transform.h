@@ -46,7 +46,11 @@
         (16,simdOps::Copy),\
         (17,simdOps::Axpy),\
         (45,simdOps::CompareAndSet),\
-        (46,simdOps::CompareAndReplace)
+        (46,simdOps::CompareAndReplace),\
+        (56,simdOps::And),\
+        (57,simdOps::Or),\
+        (58,simdOps::Xor)
+
 
 
 
