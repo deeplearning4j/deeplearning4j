@@ -18,11 +18,14 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -56,9 +59,9 @@ public class GradientCheckTestsComputationGraph {
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
+                .addLayer("firstLayer", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").nIn(5).nOut(3).build(), "firstLayer")
+                        .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(), "firstLayer")
                 .setOutputs("outputLayer")
                 .pretrain(false).backprop(true)
                 .build();
@@ -100,11 +103,11 @@ public class GradientCheckTestsComputationGraph {
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
-                .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
+                .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input")
+                .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input")
                 .addVertex("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").nIn(5+5).nOut(3).build(), "merge")
+                        .activation(Activation.SOFTMAX).nIn(5+5).nOut(3).build(), "merge")
                 .setOutputs("outputLayer")
                 .pretrain(false).backprop(true)
                 .build();
@@ -154,11 +157,11 @@ public class GradientCheckTestsComputationGraph {
                     .updater(Updater.NONE).learningRate(1.0)
                     .graphBuilder()
                     .addInputs("input")
-                    .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input")
-                    .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation("sigmoid").build(), "input")
+                    .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input")
+                    .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.SIGMOID).build(), "input")
                     .addVertex("elementwise", new ElementWiseVertex(op), "l1", "l2")
                     .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                            .activation("softmax").nIn(5).nOut(3).build(), "elementwise")
+                            .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(), "elementwise")
                     .setOutputs("outputLayer")
                     .pretrain(false).backprop(true)
                     .build();
@@ -208,13 +211,13 @@ public class GradientCheckTestsComputationGraph {
                 .addInputs("input")
                 .addLayer("l1", new ConvolutionLayer.Builder()
                         .kernelSize(2, 2).stride(1, 1).padding(0,0)
-                        .nIn(2).nOut(2).activation("tanh").build(), "input")
+                        .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
                 .addLayer("l2", new ConvolutionLayer.Builder()
                         .kernelSize(2, 2).stride(1, 1).padding(0,0)
-                        .nIn(2).nOut(2).activation("tanh").build(), "input")
+                        .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
                 .addVertex("merge", new MergeVertex(), "l1", "l2")
                 .addLayer("outputLayer", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").nIn(5*5*(2+2)).nOut(3).build(), "merge")
+                        .activation(Activation.SOFTMAX).nIn(5*5*(2+2)).nOut(3).build(), "merge")
                 .setOutputs("outputLayer")
                 .inputPreProcessor("outputLayer",new CnnToFeedForwardPreProcessor(5,5,4))
                 .pretrain(false).backprop(true)
@@ -253,14 +256,12 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input")
                 .setOutputs("out")
-                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
-                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "lstm1")
-                .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation("sigmoid").build(), "lstm1")
-                .addVertex("scale", new ScaleVertex(0.17), "dense1")
-                .addVertex("normalize", new L2NormalizeVertex(new int[]{1}), "scale")
-                .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation("tanh").build(), "normalize")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(), "input")
+                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(4).activation(Activation.TANH).build(), "lstm1")
+                .addLayer("dense1", new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.SIGMOID).build(), "lstm1")
+                .addLayer("lstm3", new GravesLSTM.Builder().nIn(4).nOut(4).activation(Activation.TANH).build(), "dense1")
                 .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
-                .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "merge")
                 .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor())
                 .pretrain(false).backprop(true).build();
@@ -301,9 +302,9 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input")
                 .setOutputs("out")
-                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation("tanh").build(), "input")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation(Activation.TANH).build(), "input")
                 .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
-                .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation("softmax").lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
                 .pretrain(false).backprop(true).build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -343,9 +344,9 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input")
                 .setOutputs("out")
-                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(), "input")
                 .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
-                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
                 .pretrain(false).backprop(true).build();
 
@@ -396,11 +397,11 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input1","input2")
                 .setOutputs("out")
-                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation("tanh").build(), "input1")
-                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(5).activation("softsign").build(), "input2")
+                .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(), "input1")
+                .addLayer("lstm2", new GravesLSTM.Builder().nIn(4).nOut(5).activation(Activation.SOFTSIGN).build(), "input2")
                 .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
                 .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
-                .addLayer("out", new RnnOutputLayer.Builder().nIn(5+4).nOut(3).activation("softmax")
+                .addLayer("out", new RnnOutputLayer.Builder().nIn(5+4).nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lstm1","duplicate")
                 .pretrain(false).backprop(true).build();
 
@@ -440,16 +441,15 @@ public class GradientCheckTestsComputationGraph {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .graphBuilder()
                 .addInputs("i0","i1","i2")
                 .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                 .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                 .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
                 .addLayer("d3", new DenseLayer.Builder().nIn(6).nOut(2).build(), "d0", "d1", "d2")
-                .addVertex("normalize", new L2NormalizeVertex(), "d3")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                    .nIn(2).nOut(2).build(), "normalize")
+                    .nIn(2).nOut(2).build(), "d3")
                 .setOutputs("out")
                 .pretrain(false).backprop(true).build();
 
@@ -458,7 +458,7 @@ public class GradientCheckTestsComputationGraph {
 
         int[] minibatchSizes = {1,3};
         for( int mb : minibatchSizes) {
-            INDArray[] inputs =  new INDArray[3];
+            INDArray[] inputs = new INDArray[3];
             for (int i = 0; i < 3; i++) {
                 inputs[i] = Nd4j.rand(mb, 2);
             }
@@ -487,7 +487,7 @@ public class GradientCheckTestsComputationGraph {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .graphBuilder()
                 .addInputs("i0")
                 .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
@@ -530,7 +530,7 @@ public class GradientCheckTestsComputationGraph {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .graphBuilder()
                 .addInputs("i0", "i1", "i2")
                 .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
@@ -582,15 +582,15 @@ public class GradientCheckTestsComputationGraph {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .updater(Updater.NONE).learningRate(1.0)
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "input")
-                .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "l0")
-                .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation("tanh").build(), "l0")
+                .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
+                .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
+                .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
                 .addVertex("m", new MergeVertex(), "l1", "l2")
-                .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation("tanh").build(), "m")
-                .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation("tanh").build(), "m")
+                .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
+                .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0,0).nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2).build(), "l3", "l4")
                 .setOutputs("out")
                 .setInputTypes(InputType.convolutional(inH,inW,2))
@@ -630,14 +630,14 @@ public class GradientCheckTestsComputationGraph {
                 .graphBuilder()
                 .addInputs("input1","input2","input3")
                 .addVertex("stack1", new StackVertex(), "input1","input2","input3")
-                .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "stack1")
+                .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "stack1")
                 .addVertex("unstack0", new UnstackVertex(0,3), "l1")
                 .addVertex("unstack1", new UnstackVertex(1,3), "l1")
                 .addVertex("unstack2", new UnstackVertex(2,3), "l1")
                 .addVertex("l2-1", new L2Vertex(), "unstack1", "unstack0") // x - x-
                 .addVertex("l2-2", new L2Vertex(), "unstack1", "unstack2") // x - x+
                 .addLayer("lossLayer", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").build(), "l2-1", "l2-2")
+                        .activation(Activation.SOFTMAX).build(), "l2-1", "l2-2")
                 .setOutputs("lossLayer")
                 .pretrain(false).backprop(true)
                 .build();
@@ -689,7 +689,7 @@ public class GradientCheckTestsComputationGraph {
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("in1","in2")
@@ -698,7 +698,7 @@ public class GradientCheckTestsComputationGraph {
                 .addVertex("l2", new L2Vertex(), "d0", "d1")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                         .nIn(1).nOut(1)
-                        .activation("identity").build(), "l2")
+                        .activation(Activation.IDENTITY).build(), "l2")
                 .setOutputs("out")
                 .pretrain(false).backprop(true)
                 .build();
@@ -746,7 +746,7 @@ public class GradientCheckTestsComputationGraph {
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("in1","in2")
@@ -758,10 +758,10 @@ public class GradientCheckTestsComputationGraph {
                 .addVertex("u2", new UnstackVertex(1,2), "d2")
                 .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                         .nIn(layerSizes).nOut(layerSizes)
-                        .activation("identity").build(), "u1")
+                        .activation(Activation.IDENTITY).build(), "u1")
                 .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                         .nIn(layerSizes).nOut(2)
-                        .activation("identity").build(), "u2")
+                        .activation(Activation.IDENTITY).build(), "u2")
                 .setOutputs("out1", "out2")
                 .pretrain(false).backprop(true)
                 .build();
@@ -807,7 +807,7 @@ public class GradientCheckTestsComputationGraph {
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("in1","in2")
@@ -818,10 +818,10 @@ public class GradientCheckTestsComputationGraph {
                 .addVertex("u1", new UnstackVertex(1,2), "stack")
                 .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                         .nIn(2).nOut(2)
-                        .activation("identity").build(), "u0")
+                        .activation(Activation.IDENTITY).build(), "u0")
                 .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
                         .nIn(2).nOut(2)
-                        .activation("identity").build(), "u1")
+                        .activation(Activation.IDENTITY).build(), "u1")
                 .setOutputs("out1", "out2")
                 .pretrain(false).backprop(true)
                 .build();
@@ -869,16 +869,16 @@ public class GradientCheckTestsComputationGraph {
                 .seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .activation("tanh")
+                .activation(Activation.TANH)
                 .updater(Updater.NONE).learningRate(1.0)
                 .graphBuilder()
                 .addInputs("in1","in2")
                 .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
                 .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
                 .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(2).nOut(2).activation("identity").build(), "d0")
+                        .nIn(2).nOut(2).activation(Activation.IDENTITY).build(), "d0")
                 .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(2).nOut(2).activation("identity").build(), "d1")
+                        .nIn(2).nOut(2).activation(Activation.IDENTITY).build(), "d1")
                 .setOutputs("out1", "out2")
                 .pretrain(false).backprop(true)
                 .build();
