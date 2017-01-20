@@ -1,6 +1,6 @@
 ---
 title: Creating deep-learning networks
-layout: default
+layout: cn-default
 ---
 
 # Creating deep-learning networks

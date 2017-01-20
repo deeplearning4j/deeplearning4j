@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j's NLP framework
-layout: default
+layout: cn-default
 ---
 
 # Deeplearning4j's NLP framework

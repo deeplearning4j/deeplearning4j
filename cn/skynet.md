@@ -1,6 +1,6 @@
 ---
 title: How Can We Control AI?
-layout: default
+layout: cn-default
 ---
 
 # The Skynet Issue: How Can We Control AI?

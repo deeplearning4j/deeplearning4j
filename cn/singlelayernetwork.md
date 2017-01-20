@@ -1,6 +1,6 @@
 ---
 title: Single-layer neural network
-layout: default
+layout: cn-default
 ---
 
 # Single-layer neural network

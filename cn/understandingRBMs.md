@@ -1,6 +1,6 @@
 ---
 title: Understanding RBMs
-layout: default
+layout: cn-default
 ---
 
 # Understanding RBMs

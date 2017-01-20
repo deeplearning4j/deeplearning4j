@@ -1,6 +1,6 @@
 ---
 title: Sentence iterator
-layout: default
+layout: cn-default
 ---
 
 # Sentence iterator

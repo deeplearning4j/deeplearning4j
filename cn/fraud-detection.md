@@ -1,6 +1,6 @@
 ---
 title: "Fraud and Anomaly Detection With Deep Learning"
-layout: default
+layout: cn-default
 ---
 
 # Fraud and Anomaly Detection With Deep Learning

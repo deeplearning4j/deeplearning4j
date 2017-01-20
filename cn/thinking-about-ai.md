@@ -1,6 +1,6 @@
 ---
 title: How to Think About AI
-layout: default
+layout: cn-default
 ---
 
 # How to Think About AI

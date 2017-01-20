@@ -1,6 +1,6 @@
 ---
 title: How to Visualize, Monitor and Debug Neural Network Learning
-layout: default
+layout: cn-default
 ---
 
 # Visualize, Monitor and Debug Network Learning 

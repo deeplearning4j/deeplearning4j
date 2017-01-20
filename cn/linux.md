@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: cn-default
 title: Getting Started on Linux
 ---
 

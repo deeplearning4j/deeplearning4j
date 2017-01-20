@@ -1,6 +1,6 @@
 ---
 title: When to Choose Deep Learning
-layout: default
+layout: cn-default
 ---
 
 # When to Choose Deep Learning

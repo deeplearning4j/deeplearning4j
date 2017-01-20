@@ -1,6 +1,6 @@
 ---
 title: NeuralNetConfiguration Class
-layout: default
+layout: cn-default
 ---
 
 # NeuralNetConfiguration Class:
