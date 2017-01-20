@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j Keras Model Import
-layout: default
+layout: cn-default
 ---
 
 # DL4J Keras Model Import
