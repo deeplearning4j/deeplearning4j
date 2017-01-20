@@ -210,6 +210,23 @@ public class MergeVertex extends BaseGraphVertex {
             return new Pair<>(null, currentMaskState);
         }
 
-        
+        //Most common case: all or none.
+        //If there's only *some* mask arrays: assume the others (missing) are equivalent to all 1s
+        //And for handling multiple masks: best strategy seems to be an OR operation
+        //i.e., output is 1 if any of the input are 1s
+        //Which means: if any masks are missing, output null (equivalent to no mask)
+        //Otherwise do an element-wise OR operation
+
+        for(INDArray arr : maskArrays){
+            if(arr == null){
+                return new Pair<>(null, currentMaskState);
+            }
+        }
+
+        //At this point: all present. Do OR operation
+        INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
+
+
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }
