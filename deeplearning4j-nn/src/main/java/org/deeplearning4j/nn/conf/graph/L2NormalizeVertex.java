@@ -42,6 +42,7 @@ public class L2NormalizeVertex extends GraphVertex {
 
     public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
         this.dimension = dimension;
+        this.eps = 1e-8;
     }
 
     public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
@@ -51,6 +52,7 @@ public class L2NormalizeVertex extends GraphVertex {
 
     public L2NormalizeVertex() {
         this.dimension = new int[]{};
+        this.eps = 1e-8;
     }
 
     @Override
