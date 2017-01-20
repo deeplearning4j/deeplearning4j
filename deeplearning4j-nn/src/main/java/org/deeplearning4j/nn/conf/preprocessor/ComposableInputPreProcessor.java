@@ -82,7 +82,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         for(InputPreProcessor preproc : inputPreProcessors){
-            Pair<INDArray, MaskState> p = preproc.feedForwardMaskArray(maskArray, currentMaskState, );
+            Pair<INDArray, MaskState> p = preproc.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
             maskArray = p.getFirst();
             currentMaskState = p.getSecond();
         }

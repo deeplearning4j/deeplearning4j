@@ -68,7 +68,6 @@ public class LayerVertex extends BaseGraphVertex {
         this.layer = layer;
         this.layerPreProcessor = layerPreProcessor;
         this.outputVertex = outputVertex;
-        Transforms.max()
 
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
     }
