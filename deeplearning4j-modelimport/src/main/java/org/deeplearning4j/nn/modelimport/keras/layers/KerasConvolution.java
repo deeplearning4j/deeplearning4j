@@ -54,7 +54,7 @@ public class KerasConvolution extends KerasLayer {
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder()
             .name(this.layerName)
             .nOut(getNOutFromConfig(layerConfig))
-            .dropOut(getDropoutFromConfig(layerConfig))
+            .dropOut(this.dropout)
             .activation(getActivationFromConfig(layerConfig))
             .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig))
             .biasInit(0.0)
