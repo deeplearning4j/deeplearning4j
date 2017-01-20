@@ -1,6 +1,6 @@
 ---
 title: Deep Learning in Other Languages
-layout: default
+layout: cn-default
 ---
 
 # Deep Learning in Other Languages

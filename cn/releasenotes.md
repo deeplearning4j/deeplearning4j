@@ -1,6 +1,6 @@
 ---
 title: Release Notes
-layout: default
+layout: cn-default
 ---
 
 # <a name="zerosevenzero">Release Notes for Version 0.7.0</a>

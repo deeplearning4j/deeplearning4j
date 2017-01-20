@@ -1,6 +1,6 @@
 ---
 title: Introduction to the Core DL4J Concepts
-layout: default
+layout: cn-default
 ---
 
 # Introduction to the Core DL4J Concepts

@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting Neural Net Training
-layout: default
+layout: cn-default
 ---
 
 # Troubleshooting Neural Net Training

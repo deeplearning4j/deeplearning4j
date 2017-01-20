@@ -1,6 +1,6 @@
 ---
 title: Building Complex Network Architectures with Computation Graph
-layout: default
+layout: cn-default
 ---
 
 # Building Complex Network Architectures with Computation Graph

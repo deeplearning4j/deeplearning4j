@@ -1,6 +1,6 @@
 ---
 title: Using Deeplearning4j with cuDNN
-layout: default
+layout: cn-default
 ---
 
 # Using Deeplearning4j with cuDNN

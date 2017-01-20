@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j's Features
-layout: default
+layout: cn-default
 ---
 
 # Features

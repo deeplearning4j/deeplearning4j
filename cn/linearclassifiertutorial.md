@@ -1,6 +1,6 @@
 ---
 title: Linear Classifier Tutorial
-layout: default
+layout: cn-default
 ---
 
 # Linear Classifier Tutorial

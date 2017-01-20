@@ -1,6 +1,6 @@
 ---
 title: Scala, Spark and Deeplearning4j
-layout: default
+layout: cn-default
 ---
 
 # Scala, Spark and Deeplearning4j

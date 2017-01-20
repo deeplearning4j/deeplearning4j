@@ -1,6 +1,6 @@
 ---
 title: Maven Configuration for IntelliJ
-layout: default
+layout: cn-default
 ---
 # Rough Draft
 

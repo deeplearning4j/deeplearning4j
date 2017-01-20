@@ -1,6 +1,6 @@
 ---
 title: A Beginner's Guide to Reinforcement Learning (for Java)
-layout: default
+layout: cn-default
 ---
 
 # A Beginner's Guide to Reinforcement Learning (for Java)

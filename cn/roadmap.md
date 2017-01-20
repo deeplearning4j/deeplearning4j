@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j Roadmap
-layout: default
+layout: cn-default
 ---
 
 # Deeplearning4j Roadmap

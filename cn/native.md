@@ -1,6 +1,6 @@
 ---
 title: Native CPU Optimization on Deeplearning4j
-layout: default
+layout: cn-default
 ---
 
 # Native CPU Optimization on Deeplearning4j & ND4J

@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j Model Zoo
-layout: default
+layout: cn-default
 ---
 
 # DL4J Model Zoo

@@ -1,6 +1,6 @@
 ---
 title: Markov Chain Monte Carlo and Deep Learning
-layout: default
+layout: cn-default
 ---
 
 # Monte Carlo Methods, Markov Chains and Deep Learning
