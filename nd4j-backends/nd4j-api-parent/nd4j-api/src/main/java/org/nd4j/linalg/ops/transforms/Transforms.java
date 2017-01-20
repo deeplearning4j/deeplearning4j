@@ -692,6 +692,24 @@ public class Transforms {
         return exec(dup ? new Negative(ndArray, ndArray.dup()) : new Negative(ndArray));
     }
 
+    public static INDArray and(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(),x.ordering());
+        Nd4j.getExecutioner().exec(new And(x, y, z, 0.0));
+        return z;
+    }
+
+    public static INDArray or(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(),x.ordering());
+        Nd4j.getExecutioner().exec(new Or(x, y, z, 0.0));
+        return z;
+    }
+
+    public static INDArray xor(INDArray x, INDArray y) {
+        INDArray z = Nd4j.createUninitialized(x.shape(),x.ordering());
+        Nd4j.getExecutioner().exec(new Xor(x, y, z, 0.0));
+        return z;
+    }
+
     /**
      * Apply the given elementwise op
      *
