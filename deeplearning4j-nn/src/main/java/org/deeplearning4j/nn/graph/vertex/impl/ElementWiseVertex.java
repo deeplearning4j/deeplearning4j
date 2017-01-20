@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Or;
+import org.nd4j.linalg.factory.Nd4j;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication.
@@ -137,10 +139,16 @@ public class ElementWiseVertex extends BaseGraphVertex {
         }
 
         //At this point: all present. Do OR operation
-        INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
-
-
-        throw new UnsupportedOperationException("Not yet implemented");
+        if(maskArrays.length == 1){
+            return new Pair<>(maskArrays[0], currentMaskState);
+        } else {
+            INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
+            Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
+            for( int i=2; i<maskArrays.length; i++ ){
+                Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
+            }
+            return new Pair<>(ret, currentMaskState);
+        }
     }
 
     @Override

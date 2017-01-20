@@ -465,7 +465,8 @@ public class TestVariableLengthTS {
 //        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG, PoolingType.MAX};
         PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG};
 
-        boolean[] isBidirectional = new boolean[]{false, true};
+//        boolean[] isBidirectional = new boolean[]{false, true};
+        boolean[] isBidirectional = new boolean[]{true};
 
         for(boolean bidirectional : isBidirectional ) {
             for (PoolingType pt : poolingTypes) {

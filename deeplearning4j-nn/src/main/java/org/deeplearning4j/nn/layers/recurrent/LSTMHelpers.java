@@ -67,7 +67,9 @@ public class LSTMHelpers {
                                                final INDArray originalPrevMemCellState,
                                                boolean forBackprop,
                                                boolean forwards,
-                                               final String inputWeightKey) {
+                                               final String inputWeightKey,
+                                               INDArray maskArray                   //Input mask: should only be used with bidirectional RNNs + variable length
+                                               ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
@@ -227,6 +229,14 @@ public class LSTMHelpers {
                 currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
             }
 
+            if(maskArray != null){
+                //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
+                // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
+                //Mask array has shape [minibatch, timeSeriesLength] -> get column
+                INDArray timeStepMaskColumn = maskArray.getColumn(iTimeIndex);
+                currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
+            }
+
             if (forBackprop) {
                 toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
                 toReturn.memCellState[time] = currentMemoryCellState;
@@ -258,7 +268,9 @@ public class LSTMHelpers {
                                                                   final String inputWeightKey,
                                                                   final String recurrentWeightKey,
                                                                   final String biasWeightKey,
-                                                                  final Map<String,INDArray> gradientViews) {
+                                                                  final Map<String,INDArray> gradientViews,
+                                                                  INDArray maskArray                   //Input mask: should only be used with bidirectional RNNs + variable length
+                                                                  ) {
 
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
@@ -334,6 +346,15 @@ public class LSTMHelpers {
 
             //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
             INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0));        //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
+
+//            if(maskArray != null){
+//                //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
+//                // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
+//                //Mask array has shape [minibatch, timeSeriesLength] -> get column
+//                INDArray timeStepMaskColumn = maskArray.getColumn(iTimeIndex);
+//                currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
+//            }
+
             INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
             if (iTimeIndex != timeSeriesLength - 1) {
                 //if t == timeSeriesLength-1 then deltaiNext etc are zeros
