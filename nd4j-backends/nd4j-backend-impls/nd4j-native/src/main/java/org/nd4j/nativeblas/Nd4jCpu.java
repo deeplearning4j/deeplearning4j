@@ -50,14 +50,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #endif
 // #include <dll.h>
 
-public static native int tad_threshold(); public static native void tad_threshold(int tad_threshold);
-public static native int element_threshold(); public static native void element_threshold(int element_threshold);
-
-public static native @Cast("bool") boolean debug(); public static native void debug(boolean debug);
-public static native @Cast("bool") boolean verbose(); public static native void verbose(boolean verbose);
-
-
-
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
     /** Default native constructor. */
@@ -71,7 +63,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     @Override public NativeOps position(long position) {
         return (NativeOps)super.position(position);
     }
-
 
 
 
