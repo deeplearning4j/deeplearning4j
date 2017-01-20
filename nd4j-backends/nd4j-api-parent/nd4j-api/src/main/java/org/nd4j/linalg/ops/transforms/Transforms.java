@@ -710,6 +710,14 @@ public class Transforms {
         return z;
     }
 
+    public static INDArray not(INDArray x) {
+        INDArray z = Nd4j.createUninitialized(x.shape(),x.ordering());
+        Nd4j.getExecutioner().exec(new Not(x,z, 0.0));
+        return z;
+    }
+
+
+
     /**
      * Apply the given elementwise op
      *
