@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -163,10 +164,6 @@ public class KerasModel {
 
         /* Infer output types for each layer. */
         helperInferOutputTypes();
-
-        /* Store weights in layers. */
-        if (weightsArchive != null)
-            helperImportWeights(weightsArchive, weightsRoot);
     }
 
     /**
@@ -373,13 +370,17 @@ public class KerasModel {
             if (layer.usesRegularization())
                 modelBuilder.setUseRegularization(true);
 
-            if (layer.getLayer() != null) {
+            if (layer.isLayer()) {
                 /* Add DL4J layer. */
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
-            } else if (layer.getVertex() != null) { // Ignore "preprocessor" layers for now
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
+            } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
                 /* Add DL4J vertex. */
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
-            } else if (!(layer instanceof KerasInput)){
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getVertex() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output vertex " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
+            } else if (layer.isInputPreProcessor()){
                 /* Add DL4J preprocessor vertex. */
                 List<InputType> inboundTypeList = new ArrayList<InputType>();
                 for (String layerName : inboundLayerNames)
@@ -392,6 +393,9 @@ public class KerasModel {
                 if (preprocessor == null)
                     throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName() + " could not be mapped to Layer, Vertex, or InputPreProcessor");
                 graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor), inboundLayerNamesArray);
+
+                if (this.outputLayerNames.contains(layer.getLayerName()))
+                    log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
         }
 
