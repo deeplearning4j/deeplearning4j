@@ -341,7 +341,7 @@ public class TestGraphNodes {
     @Test
     public void testL2Node(){
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex l2 = new L2Vertex(null,"",-1);
+        GraphVertex l2 = new L2Vertex(null,"",-1, 1e-8);
 
         INDArray in1 = Nd4j.rand(5,2);
         INDArray in2 = Nd4j.rand(5,2);
