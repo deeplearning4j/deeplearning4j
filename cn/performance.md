@@ -1,6 +1,6 @@
 ---
 title: Performance and practical considerations
-layout: default
+layout: cn-default
 ---
 
 # Performance and practical considerations

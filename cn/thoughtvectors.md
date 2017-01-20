@@ -1,6 +1,6 @@
 ---
 title: Thought Vectors, Deep Learning & the Future of AI
-layout: default
+layout: cn-default
 ---
 
 # Thought Vectors, Deep Learning & the Future of AI

@@ -1,6 +1,6 @@
 ---
 title: Deep-Belief Networks in Java
-layout: default
+layout: cn-default
 ---
 
 # Tutorial: Deep-Belief Networks & MNIST

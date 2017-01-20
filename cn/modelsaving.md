@@ -1,6 +1,6 @@
 ---
 title: Deeplearning4j model saving
-layout: default
+layout: cn-default
 ---
 
 # Model saving

@@ -1,6 +1,6 @@
 ---
 title: MNIST for restricted Boltzmann machines
-layout: default
+layout: cn-default
 ---
 
 # MNIST for restricted Boltzmann machines

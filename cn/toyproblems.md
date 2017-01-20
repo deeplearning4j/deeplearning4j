@@ -1,6 +1,6 @@
 ---
 title: Toy problems
-layout: default
+layout: cn-default
 ---
 
 ## Toy problems 

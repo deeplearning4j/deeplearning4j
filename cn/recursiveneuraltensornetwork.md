@@ -1,6 +1,6 @@
 ---
 title: Recursive Neural Tensor Network
-layout: default
+layout: cn-default
 ---
 
 # Recursive Neural Tensor Network

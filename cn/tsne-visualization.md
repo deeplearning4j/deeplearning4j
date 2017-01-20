@@ -1,6 +1,6 @@
 ---
 title: t-SNE's Data Visualization
-layout: default
+layout: cn-default
 ---
 
 # t-SNE's Data Visualization

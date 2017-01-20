@@ -1,6 +1,6 @@
 ---
 title: How the Vocab Cache Works
-layout: default
+layout: cn-default
 ---
 
 # How the Vocab Cache Works

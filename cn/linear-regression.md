@@ -1,6 +1,6 @@
 ---
 title: Using Neural Networks With Regression
-layout: default
+layout: cn-default
 ---
 
 # Using Neural Networks With Regression

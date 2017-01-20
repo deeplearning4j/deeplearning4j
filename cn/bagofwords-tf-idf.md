@@ -1,6 +1,6 @@
 ---
 title: Bag of Words - TF-IDF
-layout: default
+layout: cn-default
 ---
 
 # Bag of Words & TF-IDF 

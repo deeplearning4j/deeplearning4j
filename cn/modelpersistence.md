@@ -1,6 +1,6 @@
 ---
 title: Saving and Loading a Neural Network
-layout: default
+layout: cn-default
 ---
 
 # Saving and Loading a Neural Network
