@@ -1002,6 +1002,8 @@ __device__ void concatKernelGeneric(int dimension,
 //				delete inputTAD;
 		}
 
+		__syncthreads();
+
 		if (threadIdx.x == 0 && tad != NULL)
 			delete tad;
 }

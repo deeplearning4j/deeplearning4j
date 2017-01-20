@@ -4995,8 +4995,8 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	if (debug && verbose)
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -5081,8 +5081,8 @@ void NativeOps::concatHalf(
 	if (debug && verbose)
 		printf("sharedMemory requested for concatHalf: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 
@@ -5168,10 +5168,10 @@ void NativeOps::concatDouble(
 		concatKernelDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	}
 	if (debug && verbose)
-		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
+		printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
-	if (debug)
-		checkCudaErrors(cudaStreamSynchronize(*stream));
+
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 /**
