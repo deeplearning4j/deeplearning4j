@@ -56,13 +56,16 @@ public class TADTests extends BaseNd4jTest {
 
                     int[] shape = new int[]{e, x};
                     Arrays.sort(shape);
-
-                    DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
+                    INDArray assertion = array.javaTensorAlongDimension(0,shape);
+                    INDArray test = array.tensorAlongDimension(0,shape);
+                    assertEquals(assertion,test);
+                    assertEquals(assertion.shapeInfoDataBuffer(),test.shapeInfoDataBuffer());
+                    /*DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
                     DataBuffer tadShape_J = array.tensorAlongDimension(0, shape).shapeInfoDataBuffer();
                     log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
                     log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
                     System.out.println();
-                    assertEquals(tadShape_J,tadShape_N);
+                    assertEquals("TAD asertadShape_J,tadShape_N);*/
                 }
             }
         }
@@ -73,14 +76,18 @@ public class TADTests extends BaseNd4jTest {
             for (int[] shape: dim_3) {
                 Arrays.sort(shape);
                 log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape " + array.shapeInfoToString());
-                DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
-                DataBuffer tadShape_J = array.tensorAlongDimension(0, shape).shapeInfoDataBuffer();
+                INDArray assertion = array.javaTensorAlongDimension(0,shape);
+                INDArray test = array.tensorAlongDimension(0,shape);
+                assertEquals(assertion,test);
+                assertEquals(assertion.shapeInfoDataBuffer(),test.shapeInfoDataBuffer());
+
+/*
+
 
                 log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
                 log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
                 System.out.println();
-
-                assertEquals(true, compareShapes(tadShape_N, tadShape_J));
+                assertEquals(true, compareShapes(tadShape_N, tadShape_J));*/
             }
         }
     }

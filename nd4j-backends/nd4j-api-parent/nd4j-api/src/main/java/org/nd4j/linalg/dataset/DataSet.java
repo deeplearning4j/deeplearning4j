@@ -234,8 +234,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet dataset = new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
 
         List<Serializable> meta = null;
-        for(DataSet ds : data){
-            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()){
+        for(DataSet ds : data) {
+            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()) {
                 meta = null;
                 break;
             }
@@ -249,7 +249,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return dataset;
     }
 
-    private static INDArray merge2d(INDArray[] data){
+    private static INDArray merge2d(INDArray[] data) {
         if(data.length == 0) return data[0];
         int totalRows = 0;
         for(INDArray arr : data) totalRows += arr.rows();
@@ -270,7 +270,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(data.length == 1) return data[0];
         int[] outSize = Arrays.copyOf(data[0].shape(),4);   //[examples,depth,width,height]
 
-        for( int i=1; i<data.length; i++ ){
+        for( int i = 1; i < data.length; i++) {
             outSize[0] += data[i].size(0);
         }
 
@@ -280,19 +280,19 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         indexes[1] = NDArrayIndex.all();
         indexes[2] = NDArrayIndex.all();
         indexes[3] = NDArrayIndex.all();
-        for( int i=0; i<data.length; i++ ){
+        for(int i = 0; i < data.length; i++) {
             //Check shapes:
             int[] thisShape = data[i].shape();
             if(thisShape.length != 4) throw new IllegalStateException("Cannot merge CNN data: first DataSet data has shape " + Arrays.toString(data[0].shape())
                     + ", " + i + "th example has shape " + Arrays.toString(thisShape));
-            for( int j=1; j<4; j++ ){
+            for( int j = 1; j < 4; j++) {
                 if(outSize[j] != thisShape[j]) throw new IllegalStateException("Cannot merge CNN data: first DataSet data has shape " + Arrays.toString(data[0].shape())
                         + ", " + i + "th example has shape " + Arrays.toString(thisShape));
             }
 
             int thisNumExamples = data[i].size(0);
             //Put:
-            indexes[0] = NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNumExamples);
+            indexes[0] = NDArrayIndex.interval(examplesSoFar,examplesSoFar + thisNumExamples);
             out.put(indexes,data[i]);
 
             examplesSoFar += thisNumExamples;
