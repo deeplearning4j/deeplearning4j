@@ -66,7 +66,7 @@ public class TrainedModelHelper {
      */
     public ComputationGraph loadModel() throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         download();
-        return KerasModelImport.importKerasModelAndWeights(jsonFile.getAbsolutePath(), h5File.getAbsolutePath());
+        return KerasModelImport.importKerasModelAndWeights(jsonFile.getAbsolutePath(), h5File.getAbsolutePath(), false);
     }
 
     private void download() throws IOException {
