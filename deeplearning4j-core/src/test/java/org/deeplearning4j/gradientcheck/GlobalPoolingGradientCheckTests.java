@@ -43,7 +43,7 @@ public class GlobalPoolingGradientCheckTests {
         int[] minibatchSizes = new int[]{3};
 //        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 //        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.MAX};
 
         for( int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
