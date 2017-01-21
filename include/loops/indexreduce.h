@@ -240,18 +240,20 @@ template<typename OpType>
             }
             __syncthreads();
 
-			if (dimensionLength > 1) {
+			if (dimensionLength > 1 || tadEWS < 1) {
                 int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					int tadOffsetForBlock = tadOffsets[r];
 
+					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
+
                     for(unsigned int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                        shape::ind2subC(tadRank,tadShape, i, xCoord);
+                        shape::ind2sub(tadRank,tadShape, i, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 						IndexValue<T> comp {dx[xOffset], i};
 
-                    	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x],OpType::op(sPartials[threadIdx.x], comp,extraParams),extraParams);
+                    	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
                     }
 
                     __syncthreads();
