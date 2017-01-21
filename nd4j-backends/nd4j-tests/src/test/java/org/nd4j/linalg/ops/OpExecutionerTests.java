@@ -438,8 +438,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testMeanSumSimple() {
-        System.out.println("3d");
+    public void testMeanSumSimple() {System.out.println("3d");
         INDArray arr = Nd4j.ones(1,4,4);
         assertEquals(Nd4j.ones(1),arr.mean(1, 2));
         assertEquals(Nd4j.ones(1).muli(16), arr.sum(1,2));
@@ -463,6 +462,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
             assertEquals(arr5s.getDouble(i),16,1e-1);
         System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1,1,4,4,4,4);
+        INDArray arr6Tad = arr6.javaTensorAlongDimension(0,2,3);
         INDArray arr6s = arr6.sum(2,3);
         for( int i = 0; i < arr6s.length(); i++)
             assertEquals(arr6s.getDouble(i),16,1e-1);

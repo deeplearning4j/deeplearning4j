@@ -367,8 +367,8 @@ public class DataSetTest extends BaseNd4jTest {
         int nExamples1 = 2;
         int nExamples2 = 1;
 
-        int length1 = width*height*depth*nExamples1;
-        int length2 = width*height*depth*nExamples2;
+        int length1 = width*height * depth * nExamples1;
+        int length2 = width*height * depth * nExamples2;
 
         INDArray first = Nd4j.linspace(1,length1,length1).reshape('c',nExamples1,depth,width,height);
         INDArray second = Nd4j.linspace(1,length2,length2).reshape('c',nExamples2,depth,width,height).addi(0.1);
@@ -384,8 +384,8 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray fMerged = merged.getFeatureMatrix();
         INDArray lMerged = merged.getLabels();
 
-        assertArrayEquals(new int[]{nExamples1+nExamples2,depth,width,height}, fMerged.shape());
-        assertArrayEquals(new int[]{nExamples1+nExamples2,nOut}, lMerged.shape());
+        assertArrayEquals(new int[]{nExamples1 + nExamples2,depth,width,height}, fMerged.shape());
+        assertArrayEquals(new int[]{nExamples1 + nExamples2,nOut}, lMerged.shape());
 
         assertEquals(first, fMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(second, fMerged.get(NDArrayIndex.interval(nExamples1,nExamples1+nExamples2), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));

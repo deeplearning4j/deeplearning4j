@@ -771,7 +771,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testEuclideanManhattanDistanceAlongDimension_Rank4(){
+    public void testEuclideanManhattanDistanceAlongDimension_Rank4() {
         DataBuffer.Type initialType = Nd4j.dataType();
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
@@ -782,7 +782,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         double[] d2 = secondOneExample.data().asDouble();
         double sumSquaredDiff = 0.0;
         double expManhattanDistance = 0.0;
-        for( int i=0; i<d1.length; i++ ){
+        for( int i = 0; i < d1.length; i++) {
             double diff = d1[i] - d2[i];
             sumSquaredDiff += diff * diff;
             expManhattanDistance += Math.abs(diff);
@@ -794,7 +794,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         int mb = 2;
         INDArray firstOrig = Nd4j.create(mb, 2, 2, 2);
         INDArray secondOrig = Nd4j.create(mb, 2, 2, 2);
-        for( int i=0; i<mb; i++ ){
+        for( int i = 0; i < mb; i++) {
             firstOrig.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, firstOneExample);
             secondOrig.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()}, secondOneExample);
         }

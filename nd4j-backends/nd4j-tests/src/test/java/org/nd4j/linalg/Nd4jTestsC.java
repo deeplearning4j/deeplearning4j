@@ -1078,6 +1078,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray zC = Nd4j.create(shape,'c');
             zC.setData(Nd4j.linspace(1,24,24).data());
             for(int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+                INDArray javaTad = zC.javaTensorAlongDimension(tad,dim);
                 System.out.println("Tad " + tad + " is " + zC.tensorAlongDimension(tad,dim));
             }
 
