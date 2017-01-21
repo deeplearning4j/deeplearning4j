@@ -50,22 +50,22 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
         this(batchSize, useSubset ? LFWLoader.SUB_NUM_IMAGES :LFWLoader.NUM_IMAGES, imgDim, useSubset ? LFWLoader.SUB_NUM_LABELS : LFWLoader.NUM_LABELS, useSubset, LFWLoader.LABEL_PATTERN, true, 1, null, new Random(System.currentTimeMillis()));
     }
 
-    /** Loads images with given  batchSize, numExamples, imgDim, train, & splitTrainTest returned by the generator. */
+    /** Loads images with given  batchSize, numExamples, imgDim, enforceTrainingConfig, & splitTrainTest returned by the generator. */
 	public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, boolean train, double splitTrainTest) {
         this(batchSize, numExamples, imgDim, LFWLoader.NUM_LABELS, false, LFWLoader.LABEL_PATTERN, train, splitTrainTest, null, new Random(System.currentTimeMillis()));
 	}
 
-	/** Loads images with given  batchSize, numExamples, numLabels, train, & splitTrainTest returned by the generator. */
+	/** Loads images with given  batchSize, numExamples, numLabels, enforceTrainingConfig, & splitTrainTest returned by the generator. */
 	public LFWDataSetIterator(int batchSize, int numExamples, int numLabels, boolean train, double splitTrainTest) {
         this(batchSize, numExamples, new int[] {LFWLoader.HEIGHT, LFWLoader.WIDTH, LFWLoader.CHANNELS}, numLabels, false, null, train, splitTrainTest, null, new Random(System.currentTimeMillis()));
 	}
 
-	/** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */
+	/** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, enforceTrainingConfig, splitTrainTest & Random returned by the generator. */
     public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, boolean train,  double splitTrainTest,  Random rng) {
         this(batchSize, numExamples, imgDim, numLabels, useSubset, LFWLoader.LABEL_PATTERN, train, splitTrainTest, null, rng);
     }
 
-    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, train, splitTrainTest & Random returned by the generator. */
+    /** Loads images with given  batchSize, numExamples, imgDim, numLabels, useSubset, enforceTrainingConfig, splitTrainTest & Random returned by the generator. */
     public LFWDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numLabels, boolean useSubset, PathLabelGenerator labelGenerator, boolean train, double splitTrainTest, Random rng) {
         this(batchSize, numExamples, imgDim, numLabels, useSubset, labelGenerator, train, splitTrainTest, null, rng);
     }
@@ -78,8 +78,8 @@ public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 	 * @param numLabels the overall number of examples
      * @param useSubset use a subset of the LFWDataSet
      * @param labelGenerator path label generator to use
-     * @param train true if use train value
-     * @param splitTrainTest the percentage to split data for train and remainder goes to test
+     * @param train true if use enforceTrainingConfig value
+     * @param splitTrainTest the percentage to split data for enforceTrainingConfig and remainder goes to test
      * @param imageTransform how to transform the image
 
      * @param rng random number to lock in batch shuffling

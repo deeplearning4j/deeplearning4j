@@ -120,7 +120,7 @@ public class VaeGradientCheckTests {
 
                             String msg = "testVaeAsMLP() - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                     + ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
-                                    + ", l2=" + l2 + ", l1=" + l1;
+                                    + ", weightL2Regularization=" + l2 + ", weightL1Regularization=" + l1;
                             if (PRINT_RESULTS) {
                                 System.out.println(msg);
                                 for (int j = 0; j < mln.getnLayers(); j++)
@@ -163,7 +163,7 @@ public class VaeGradientCheckTests {
                     String afn = activFns[j];
                     String pzxAfn = pzxAfns[j];
                     String pxzAfn = pxzAfns[j];
-                    double l2 = l2vals[j];  //Ideally we'd do the cartesian product of l1/l2 and the activation functions, but that takes too long...
+                    double l2 = l2vals[j];  //Ideally we'd do the cartesian product of weightL1Regularization/weightL2Regularization and the activation functions, but that takes too long...
                     double l1 = l1vals[j];
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -194,7 +194,7 @@ public class VaeGradientCheckTests {
 
                     String msg = "testVaePretrain() - activationFn=" + afn + ", p(z|x) afn = " + pzxAfn + ", p(x|z) afn = " + pxzAfn +
                             ", encLayerSizes = " + Arrays.toString(encoderSizes) + ", decLayerSizes = " + Arrays.toString(decoderSizes)
-                            + ", l2=" + l2 + ", l1=" + l1;
+                            + ", weightL2Regularization=" + l2 + ", weightL1Regularization=" + l1;
                     if (PRINT_RESULTS) {
                         System.out.println(msg);
                         for (int l = 0; l < mln.getnLayers(); l++)

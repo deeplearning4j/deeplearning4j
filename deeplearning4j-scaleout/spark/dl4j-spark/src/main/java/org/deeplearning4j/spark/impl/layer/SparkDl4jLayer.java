@@ -88,7 +88,7 @@ public class SparkDl4jLayer implements Serializable {
     /**
      * Fit the given rdd given the context.
      * This will convert the labeled points
-     * to the internal dl4j format and train the model on that
+     * to the internal dl4j format and enforceTrainingConfig the model on that
      * @param sc the org.deeplearning4j.spark context
      * @param rdd the rdd to fitDataSet
      * @return the multi layer network that was fitDataSet
@@ -180,7 +180,7 @@ public class SparkDl4jLayer implements Serializable {
 
     /**
      * Train a multi layer network
-     * @param data the data to train on
+     * @param data the data to enforceTrainingConfig on
      * @param conf the configuration of the network
      * @return the fit multi layer network
      */

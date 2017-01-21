@@ -42,7 +42,7 @@ public class KerasDropout extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         this.layer = new DropoutLayer.Builder()
             .name(this.layerName)
-            .dropOut(getDropoutFromConfig(layerConfig))
+            .dropOut(this.dropout)
             .build();
     }
 

@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Conduct parallel early stopping training with ParallelWrapper under the hood.<br>
- * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping.
+ * Can be used to enforceTrainingConfig a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -144,7 +144,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
 
         // iterate through epochs
         while (true) {
-            // note that we don't call train.reset() because ParallelWrapper does it already
+            // note that we don't call enforceTrainingConfig.reset() because ParallelWrapper does it already
             try {
                 if (train != null) {
                     wrapper.fit(train);

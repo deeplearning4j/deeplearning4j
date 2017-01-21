@@ -1,8 +1,8 @@
-train.pagetitle=Интерфейс визуализации DeepLearning4j
-train.nav.overview=Общая информация
-train.nav.model=Модель
-train.nav.system=Система
-train.nav.userguide=Доп. информация
-train.nav.language=Язык
-train.session.label=Сессия
-train.session.worker.label=Поток
+enforceTrainingConfig.pagetitle=Интерфейс визуализации DeepLearning4j
+enforceTrainingConfig.nav.overview=Общая информация
+enforceTrainingConfig.nav.model=Модель
+enforceTrainingConfig.nav.system=Система
+enforceTrainingConfig.nav.userguide=Доп. информация
+enforceTrainingConfig.nav.language=Язык
+enforceTrainingConfig.session.label=Сессия
+enforceTrainingConfig.session.worker.label=Поток

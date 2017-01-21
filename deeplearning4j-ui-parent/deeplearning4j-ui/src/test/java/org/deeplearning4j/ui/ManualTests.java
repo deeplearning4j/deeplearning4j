@@ -235,7 +235,7 @@ public class ManualTests {
         while(lfw.hasNext()) {
             lfwNext = lfw.next();
             lfwNext.scale();
-            trainTest = lfwNext.splitTestAndTrain(splitTrainNum, new Random(seed)); // train set that is the result
+            trainTest = lfwNext.splitTestAndTrain(splitTrainNum, new Random(seed)); // enforceTrainingConfig set that is the result
             trainInput = trainTest.getTrain(); // get feature matrix and labels for training
             testInput.add(trainTest.getTest().getFeatureMatrix());
             testLabels.add(trainTest.getTest().getLabels());

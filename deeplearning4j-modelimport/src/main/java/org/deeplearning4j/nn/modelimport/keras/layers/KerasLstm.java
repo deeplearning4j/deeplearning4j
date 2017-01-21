@@ -91,7 +91,7 @@ public class KerasLstm extends KerasLayer {
             .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
             .name(this.layerName)
             .nOut(getNOutFromConfig(layerConfig))
-            .dropOut(getDropoutFromConfig(layerConfig))
+            .dropOut(this.dropout)
             .activation(getActivationFromConfig(layerConfig))
             .weightInit(weightInit)
             .biasInit(0.0)

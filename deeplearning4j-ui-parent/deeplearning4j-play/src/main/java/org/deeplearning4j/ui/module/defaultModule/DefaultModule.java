@@ -28,7 +28,7 @@ public class DefaultModule implements UIModule {
     public List<Route> getRoutes() {
         //TODO
 //        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
-        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
+        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/enforceTrainingConfig/overview"));
 
         return Collections.singletonList(r);
     }

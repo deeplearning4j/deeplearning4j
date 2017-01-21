@@ -112,11 +112,11 @@ public class Glove implements Serializable {
 
     /**
      * Train on the corpus
-     * @param rdd the rdd to train
+     * @param rdd the rdd to enforceTrainingConfig
      * @return the vocab and weights
      */
     public Pair<VocabCache<VocabWord>,GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception{
-        // Each `train()` can use different parameters
+        // Each `enforceTrainingConfig()` can use different parameters
         final JavaSparkContext sc = new JavaSparkContext(rdd.context());
         final SparkConf conf = sc.getConf();
         final int vectorLength = assignVar(VECTOR_LENGTH, conf, Integer.class);

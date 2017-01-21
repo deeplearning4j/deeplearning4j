@@ -1,8 +1,8 @@
-train.pagetitle=DL4J学習UI
-train.nav.overview=概要
-train.nav.model=モデル
-train.nav.system=システム
-train.nav.userguide=ユーザーガイド
-train.nav.language=言語
-train.session.label=Session
-train.session.worker.label=Worker
+enforceTrainingConfig.pagetitle=DL4J学習UI
+enforceTrainingConfig.nav.overview=概要
+enforceTrainingConfig.nav.model=モデル
+enforceTrainingConfig.nav.system=システム
+enforceTrainingConfig.nav.userguide=ユーザーガイド
+enforceTrainingConfig.nav.language=言語
+enforceTrainingConfig.session.label=Session
+enforceTrainingConfig.session.worker.label=Worker

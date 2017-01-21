@@ -4,7 +4,7 @@
     <head>
 
         <meta charset="utf-8">
-        <title>@i18n.getMessage("train.pagetitle")</title>
+        <title>@i18n.getMessage("enforceTrainingConfig.pagetitle")</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -38,9 +38,9 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                    <a class="brand" href="index.html"><span>@i18n.getMessage("enforceTrainingConfig.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        @i18n.getMessage("train.session.label")
+                        @i18n.getMessage("enforceTrainingConfig.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
@@ -57,13 +57,13 @@
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.overview")</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.model")</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.system")</span></a></li>
-                            @*<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.userguide")</span></a></li>*@
+                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> @i18n.getMessage("enforceTrainingConfig.nav.overview")</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> @i18n.getMessage("enforceTrainingConfig.nav.model")</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> @i18n.getMessage("enforceTrainingConfig.nav.system")</span></a></li>
+                            @*<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("enforceTrainingConfig.nav.userguide")</span></a></li>*@
                             <li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">
-                                    @i18n.getMessage("train.nav.language")</span></a>
+                                    @i18n.getMessage("enforceTrainingConfig.nav.language")</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('de', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> Deutsch</span></a></li>
@@ -94,9 +94,9 @@
 
                         <div class="box span12">
                             <div class="box-header">
-                                <h2><b>@i18n.getMessage("train.system.title")</b></h2>
+                                <h2><b>@i18n.getMessage("enforceTrainingConfig.system.title")</b></h2>
                                 <div class="btn-group" style="margin-top: -11px; position:absolute; right: 40px;">
-                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">@i18n.getMessage("train.system.selectMachine") <span class="caret"></span></button>
+                                <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">@i18n.getMessage("enforceTrainingConfig.system.selectMachine") <span class="caret"></span></button>
                                     <ul class="dropdown-menu" id="systemTab"></ul>
                                 </div>
                             </div>
@@ -111,24 +111,24 @@
 
                                             <div class="box span12" id="systemMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.systemMemoryTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("enforceTrainingConfig.system.chart.systemMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="systemMemoryChartPlot" class="center" style="height: 300px;" ></div>
-                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y">0</span>, <b>
-                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x">0</span></p>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("enforceTrainingConfig.system.chart.memoryShort"):</b> <span id="y">0</span>, <b>
+                                                        @i18n.getMessage("enforceTrainingConfig.overview.charts.iteration"):</b> <span id="x">0</span></p>
                                                 </div>
                                             </div>
 
                                             <!-- GPU Memory Utlization Chart -->
                                             <div class="box span6" id="gpuMemoryChart">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.chart.gpuMemoryTitle") %</b></h2>
+                                                    <h2><b>@i18n.getMessage("enforceTrainingConfig.system.chart.gpuMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <div id="gpuMemoryChartPlot" class="center" style="height: 300px;" ></div>
-                                                    <p id="hoverdata"><b>@i18n.getMessage("train.system.chart.memoryShort"):</b> <span id="y2">0</span>, <b>
-                                                        @i18n.getMessage("train.overview.charts.iteration"):</b> <span id="x2">0</span></p>
+                                                    <p id="hoverdata"><b>@i18n.getMessage("enforceTrainingConfig.system.chart.memoryShort"):</b> <span id="y2">0</span>, <b>
+                                                        @i18n.getMessage("enforceTrainingConfig.overview.charts.iteration"):</b> <span id="x2">0</span></p>
                                                 </div>
                                             </div>
 
@@ -140,18 +140,18 @@
                                                 <!-- Hardware Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.hwTable.title")</b></h2>
+                                                    <h2><b>@i18n.getMessage("enforceTrainingConfig.system.hwTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>@i18n.getMessage("train.system.hwTable.jvmCurrent")</th>
-                                                                <th>@i18n.getMessage("train.system.hwTable.jvmMax")</th>
-                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapCurrent")</th>
-                                                                <th>@i18n.getMessage("train.system.hwTable.offHeapMax")</th>
-                                                                <th>@i18n.getMessage("train.system.hwTable.jvmProcs")</th>
-                                                                <th>@i18n.getMessage("train.system.hwTable.computeDevices")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmCurrent")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmMax")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.offHeapCurrent")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.offHeapMax")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmProcs")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.hwTable.computeDevices")</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -175,19 +175,19 @@
                                                 <!-- Software Information -->
                                             <div class="box span12">
                                                 <div class="box-header">
-                                                    <h2><b>@i18n.getMessage("train.system.swTable.title")</b></h2>
+                                                    <h2><b>@i18n.getMessage("enforceTrainingConfig.system.swTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
                                                     <table class="table table-striped">
                                                         <thead>
                                                             <tr>
-                                                                <th>@i18n.getMessage("train.system.swTable.hostname")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.os")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.osArch")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.jvmName")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.jvmVersion")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.nd4jBackend")</th>
-                                                                <th>@i18n.getMessage("train.system.swTable.nd4jDataType")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.hostname")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.os")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.osArch")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.jvmName")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.jvmVersion")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.nd4jBackend")</th>
+                                                                <th>@i18n.getMessage("enforceTrainingConfig.system.swTable.nd4jDataType")</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -270,8 +270,8 @@
         <script src="/assets/js/jquery.sparkline.min.js"></script>
         <script src="/assets/js/counter.js"></script>
         <script src="/assets/js/retina.js"></script>
-        <script src="/assets/js/train/system.js"></script> <!-- Charts and tables are generated here! -->
-        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/enforceTrainingConfig/system.js"></script> <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/enforceTrainingConfig.js"></script>   <!-- Common (lang selection, etc) -->
 
         <!-- Execute once on page load -->
         <script>

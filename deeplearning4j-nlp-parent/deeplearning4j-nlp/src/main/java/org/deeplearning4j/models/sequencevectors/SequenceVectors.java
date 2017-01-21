@@ -294,7 +294,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (sequence.getElements().isEmpty()) return;
 
         /*
-            we do NOT train elements separately if sequnceLearningAlgorithm isn't CBOW
+            we do NOT enforceTrainingConfig elements separately if sequnceLearningAlgorithm isn't CBOW
             we skip that, because PV-DM includes CBOW
           */
         if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {

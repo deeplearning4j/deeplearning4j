@@ -1,8 +1,8 @@
-train.pagetitle=DL4J Training UI
-train.nav.overview=Overview
-train.nav.model=Model
-train.nav.system=System
-train.nav.userguide=User Guide
-train.nav.language=Language
-train.session.label=Session
-train.session.worker.label=Worker
+enforceTrainingConfig.pagetitle=DL4J Training UI
+enforceTrainingConfig.nav.overview=Overview
+enforceTrainingConfig.nav.model=Model
+enforceTrainingConfig.nav.system=System
+enforceTrainingConfig.nav.userguide=User Guide
+enforceTrainingConfig.nav.language=Language
+enforceTrainingConfig.session.label=Session
+enforceTrainingConfig.session.worker.label=Worker

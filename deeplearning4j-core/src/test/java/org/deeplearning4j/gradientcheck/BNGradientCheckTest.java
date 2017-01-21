@@ -145,7 +145,7 @@ public class BNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        // (d) l1 and l2 values
+        // (d) weightL1Regularization and weightL2Regularization values
         String[] activFns = {"sigmoid","tanh","identity"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
@@ -227,7 +227,7 @@ public class BNGradientCheckTest {
 
                         if (PRINT_RESULTS) {
                             System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                    + ", doLearningFirst=" + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+                                    + ", doLearningFirst=" + doLearningFirst + ", weightL1Regularization=" + l1vals[j] + ", weightL2Regularization=" + l2vals[j]);
                             for (int k = 0; k < mln.getnLayers(); k++)
                                 System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
                         }
@@ -249,7 +249,7 @@ public class BNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        // (d) l1 and l2 values
+        // (d) weightL1Regularization and weightL2Regularization values
         String[] activFns = {"sigmoid","tanh","identity"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
@@ -320,7 +320,7 @@ public class BNGradientCheckTest {
 
                         if (PRINT_RESULTS) {
                             System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                    + ", doLearningFirst=" + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+                                    + ", doLearningFirst=" + doLearningFirst + ", weightL1Regularization=" + l1vals[j] + ", weightL2Regularization=" + l2vals[j]);
                             for (int k = 0; k < mln.getnLayers(); k++)
                                 System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
                         }
