@@ -151,7 +151,7 @@
 
   <profiles>
     <profile>
-      <id>assembly</id>
+      <id>server-jar</id>
       <dependencies>
         <dependency>
           <groupId>ch.qos.logback</groupId>
