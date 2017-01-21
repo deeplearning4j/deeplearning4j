@@ -232,9 +232,11 @@ public class LSTMHelpers {
             if(maskArray != null){
                 //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
                 // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
+                //We *also* need to apply this to the memory cells, as they are carried forward
                 //Mask array has shape [minibatch, timeSeriesLength] -> get column
-                INDArray timeStepMaskColumn = maskArray.getColumn(iTimeIndex);
+                INDArray timeStepMaskColumn = maskArray.getColumn(time);
                 currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
+                currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
             }
 
             if (forBackprop) {
