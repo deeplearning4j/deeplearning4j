@@ -19,11 +19,9 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -423,17 +421,20 @@ public class TestVariableLengthTS {
 
         net.clearLayerMaskArrays();
 
+        //Check forward pass:
         for( int i=0; i<minibatch; i++ ){
             INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength-i)};
             INDArray expExampleOut = net.output(input.get(idx));
             INDArray actualExampleOut = outMasked.get(idx);
-            System.out.println(i);
+//            System.out.println(i);
             assertEquals(expExampleOut, actualExampleOut);
         }
 
         //Also: check the score examples method...
         DataSet ds = new DataSet(input, labels, featuresMask, labelsMask);
         INDArray exampleScores = net.scoreExamples(ds, false);
+        assertArrayEquals(new int[]{minibatch, 1}, exampleScores.shape());   //One score per time series (added over each time step)
+
         for( int i=0; i<minibatch; i++ ){
             INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength-i)};
             DataSet dsSingle = new DataSet(
@@ -441,10 +442,10 @@ public class TestVariableLengthTS {
                     labels.get(idx));
 
             INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
-            double exp = exampleSingleScore.getDouble(i);
+            double exp = exampleSingleScore.getDouble(0);
             double act = exampleScores.getDouble(i);
 
-            System.out.println(i + "\t" + exp + "\t" + act);
+//            System.out.println(i + "\t" + exp + "\t" + act);
             assertEquals(exp, act, 1e-6);
         }
     }
