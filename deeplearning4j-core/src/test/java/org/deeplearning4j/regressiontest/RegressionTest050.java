@@ -4,10 +4,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
@@ -150,7 +147,7 @@ public class RegressionTest050 {
         assertArrayEquals(new int[]{2,2}, l1.getKernelSize());
         assertArrayEquals(new int[]{1,1}, l1.getStride());
         assertArrayEquals(new int[]{0,0}, l1.getPadding());
-        assertEquals(l1.getPoolingType(), SubsamplingLayer.PoolingType.MAX);
+        assertEquals(PoolingType.MAX, l1.getPoolingType());
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate);        //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         OutputLayer l2 = (OutputLayer)conf.getConf(2).getLayer();

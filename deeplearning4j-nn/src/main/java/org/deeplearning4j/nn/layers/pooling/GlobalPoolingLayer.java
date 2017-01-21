@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
+
 /**
  * Created by Alex on 17/01/2017.
  */
@@ -93,10 +95,44 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             reduced2d = activateHelperFullArray(input, poolDim);
         } else {
 
-            if(input.rank() == 3){
+            if(input.rank() == 3) {
                 //Masked time series
 
                 reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray);
+            } else if(input.rank() == 4){
+                //Masked convolutions. 4d convolution data, shape [minibatch, depth, h, w]
+                //and 2d mask array.
+                //Because of this: for now we'll support *masked* CNN global pooling on either
+                // [minibatch, depth, 1, X] or [minibatch, depth, X, 1] data
+                // with a mask array of shape [minibatch, X]
+
+                if(maskArray.rank() == 2){
+                    throw new UnsupportedOperationException("Only 2d mask arrays are currently supported for masked global reductions "
+                            + "on CNN data. Got 4d activations array (shape " + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
+                            + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ")");
+                }
+
+                int h = input.size(2);
+                int w = input.size(3);
+                int maskLength = maskArray.size(1);
+                if( (h != 1 && w != 1) || (h != maskLength && w != maskLength) )){
+                    throw new UnsupportedOperationException("Masked global pooling with on CNN data currently only supports data with h=1 or w=1:"
+                            + " input activations must have shape [minibatchSize,depth,height=1,width] or [minibatchSize,depth,height,width=1] with "
+                            + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively."
+                            + " Got 4d activations array (shape " + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
+                            + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ")");
+                }
+
+                //Valid combinations of global pooling + masking for CNNs:
+                //dimensinos [2,3] with or without reduction
+                if(DEFAULT_CNN_POOL_DIMS != poolDim && !Arrays.equals(DEFAULT_CNN_POOL_DIMS, poolDim)){
+                    throw new UnsupportedOperationException("Masked global pooling with on CNN data currently only supports poolling over dimensions "
+                            + "[2,3] (i.e., width and height - both required). Got pooling dimensions " + Arrays.toString(poolDim) + ")");
+                }
+
+                boolean maskAlongHeight = (h == maskLength);
+
+                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, maskAlongHeight);
 
             } else {
                 throw new UnsupportedOperationException("Not yet implemeted");
@@ -193,8 +229,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         switch (poolingType){
             case MAX:
+//                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
+//                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
+                INDArray toReturn = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
+                return toReturn;
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;
