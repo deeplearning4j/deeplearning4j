@@ -568,8 +568,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dummy.put(0, tad);
             dummy.put(1, off);
 
-            log.info("Dimension: {}; TADShape: {}", Arrays.toString(dimension), Arrays.toString(tadBuffers.getFirst().asInt()) );
-
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else st = profilingHookIn(op);
 

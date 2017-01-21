@@ -1732,6 +1732,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer z = allocator.getPointer(op.z(), context);
         Pointer zShapeInfo = allocator.getPointer(op.z().shapeInfoDataBuffer(), context);
 
+
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
@@ -1750,7 +1751,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devMaxTadOffsets, // 14
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer, // special pointer for IsMax  // 16
-                retPointer // special pointer for IsMax // 17
+                retPointer,// special pointer for IsMax // 17
+                new CudaPointer(dimension == null ? 0 : dimension.length)
         );
 
 
