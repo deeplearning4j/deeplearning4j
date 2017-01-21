@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -755,11 +757,68 @@ public class NativeOpExecutionerTest {
         }
     }
 
+    @Test
+    public void testInf() {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        INDArray x = Nd4j.create(10, 10);
+        x.minNumber();
+
+
+        MatchCondition condition = new MatchCondition(x, Conditions.isInfinite());
+        int match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+        log.info("Matches: {}", match);
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
+
+        x = Nd4j.create(10, 10);
+        x.minNumber();
+
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testMismatch() {
         INDArray y = Nd4j.create(100, 100);
         INDArray x = Nd4j.create(50, 50);
 
         x.add(1.0, y);
+    }
+
+
+    @Test
+    public void testIsMax2Of3d(){
+        double[][][] slices = new double[3][][];
+        double[][][] isMax = new double[3][][];
+
+        slices[0] = new double[][]{
+                {1,10,2},
+                {3,4,5}};
+        slices[1] = new double[][]{
+                {-10,-9,-8},
+                {-7,-6,-5}};
+        slices[2] = new double[][]{
+                {4,3,2},
+                {1,0,-1}};
+
+        isMax[0] = new double[][]{
+                {0,1,0},
+                {0,0,0}};
+        isMax[1] = new double[][]{
+                {0,0,0},
+                {0,0,1}};
+        isMax[2] = new double[][]{
+                {1,0,0},
+                {0,0,0}};
+
+        INDArray arr = Nd4j.create(3,2,3);
+        INDArray expected = Nd4j.create(3,2,3);
+        for( int i=0; i<3; i++ ){
+            arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
+            expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(isMax[i]));
+        }
+
+        Nd4j.getExecutioner().exec(new IsMax(arr, 1,2));
+
+        assertEquals(expected, arr);
     }
 }

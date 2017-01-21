@@ -156,6 +156,11 @@ public class FirstIndex extends BaseIndexAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return zeroFloat();
+    }
+
+    @Override
     public double zeroDouble(){
         return 0.0;
     }

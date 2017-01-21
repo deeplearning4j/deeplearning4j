@@ -107,6 +107,11 @@ public interface IndexAccumulation extends Op {
      * */
     float zeroFloat();
 
+    /** Initial value for the index accumulation.
+     * @return the initial value
+     * */
+    float zeroHalf();
+
     /** The initial value and initial index to use
      * for the accumulation
      * @return

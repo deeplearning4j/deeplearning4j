@@ -148,6 +148,11 @@ public class IMax extends BaseIndexAccumulation {
     }
 
     @Override
+    public float zeroHalf() {
+        return zeroFloat();
+    }
+
+    @Override
     public IComplexNumber zeroComplex(){
         return Nd4j.createComplexNumber(-Double.MAX_VALUE,0);
     }

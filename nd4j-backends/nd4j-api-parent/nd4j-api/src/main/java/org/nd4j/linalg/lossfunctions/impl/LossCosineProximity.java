@@ -64,6 +64,12 @@ public class LossCosineProximity implements ILossFunction {
 
         INDArray dLda = labels.mulColumnVector(yhatL2normSq);
         dLda.subi(yhat.mulColumnVector(yhatDotyL1norm));
+
+        // transform vals to avoid nans before div
+        yL2norm = Transforms.max(yL2norm, Nd4j.EPS_THRESHOLD,false);
+        yhatL2norm = Transforms.max(yhatL2norm,  Nd4j.EPS_THRESHOLD,false);
+        yhatL2normSq = Transforms.max(yhatL2normSq,  Nd4j.EPS_THRESHOLD,false);
+
         dLda.diviColumnVector(yL2norm);
         dLda.diviColumnVector(yhatL2norm.mul(yhatL2normSq));
         dLda.muli(-1);

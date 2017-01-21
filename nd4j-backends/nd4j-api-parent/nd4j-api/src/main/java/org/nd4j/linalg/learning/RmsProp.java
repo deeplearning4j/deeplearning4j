@@ -18,14 +18,22 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 @Data
 @NoArgsConstructor
 public class RmsProp implements GradientUpdater {
+    public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
+    public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;
+
     private INDArray lastGradient;
-    private double rmsDecay = 0.95;
+    private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
     private double learningRate = 1e-1;
-    private static final double epsilon = 1e-8;
+    private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
     public RmsProp(double learningRate, double rmsDecay) {
+        this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
+    }
+
+    public RmsProp(double learningRate, double rmsDecay, double epsilon){
         this.learningRate = learningRate;
         this.rmsDecay = rmsDecay;
+        this.epsilon = epsilon;
     }
 
     @Override

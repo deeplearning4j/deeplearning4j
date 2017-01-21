@@ -569,10 +569,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return op.noOp();
 
         INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
-            ret= Nd4j.zeros(retShape);
+        if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
+            ret = Nd4j.zeros(retShape);
         } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroFloat());
+            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroHalf());
         }
         op.setZ(ret);
 
@@ -628,10 +633,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
+        if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroFloat());
+            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroHalf());
         }
 
         op.setZ(ret);
@@ -1104,10 +1114,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return null;
 
         INDArray ret = null;
-        if (op.zeroDouble() > -0.01f && op.zeroDouble() < 0.01f) {
-            ret= Nd4j.zeros(retShape);
+        if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
+            ret = Nd4j.zeros(retShape);
         } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroDouble());
+            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroFloat());
+            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                ret = Nd4j.valueArrayOf(retShape,op.zeroHalf());
         }
         op.setZ(ret);
 
@@ -1634,7 +1649,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.opNum() == 41 && op.extraArgs() != null) {
             // for IsMax along dimension we need special temporary buffer
-            dimension = new int[] {(int) op.extraArgs()[1] };
+            dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i+1];
+            }
+
+
             for(int i = 0; i < dimension.length; i++) {
                 if(dimension[i] < 0)
                     dimension[i] += op.x().rank();
@@ -1711,6 +1732,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer z = allocator.getPointer(op.z(), context);
         Pointer zShapeInfo = allocator.getPointer(op.z().shapeInfoDataBuffer(), context);
 
+
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
@@ -1729,7 +1751,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devMaxTadOffsets, // 14
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer, // special pointer for IsMax  // 16
-                retPointer // special pointer for IsMax // 17
+                retPointer,// special pointer for IsMax // 17
+                new CudaPointer(dimension == null ? 0 : dimension.length)
         );
 
 
