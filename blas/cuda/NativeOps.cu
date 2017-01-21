@@ -1624,15 +1624,16 @@ void   NativeOps::execTransformDouble(
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<double *>(extraPointers[17]);
+                        int dimensionLength = getDeviceId(extraPointers[18]);
 
 						// we call for IMax on specified dimension
-						execIndexReduceDouble(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
+						execIndexReduceDouble(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, dimensionLength);
 
 						if (debug)
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute filler
-						fillDimensionalIsMaxDouble<<<blockLimit, 16, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxDouble<<<blockLimit, 64, funcAttributes[37].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
 
                         checkCudaErrors(cudaStreamSynchronize(*stream));
 					}
@@ -3765,15 +3766,16 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<float *>(extraPointers[17]);
+                        int dimensionLength = getDeviceId(extraPointers[18]);
 
 						// we call for IMax on specified dimension
-						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
+						execIndexReduceFloat(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, dimensionLength);
 
 						if (debug)
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxFloat<<<blockLimit, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxFloat<<<blockLimit, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
 
 
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -4010,15 +4012,16 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<float16 *>(extraPointers[17]);
+                        int dimensionLength = getDeviceId(extraPointers[18]);
 
 						// we call for IMax on specified dimension
-						execIndexReduceHalf(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, 1);
+						execIndexReduceHalf(extraPointers, 0, dx, xShapeInfo, extraParams, special, hostYShapeInfo, dimension, dimensionLength);
 
 						if (debug)
 							checkCudaErrors(cudaStreamSynchronize(*stream));
 
 						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxHalf<<<blockLimit, 16, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, 1, tadMaxOffsets );
+						fillDimensionalIsMaxHalf<<<blockLimit, 64, funcAttributes[36].sharedSizeBytes, *stream>>>(special, hostYShapeInfo, result, resultShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
 
 
                         checkCudaErrors(cudaStreamSynchronize(*stream));

@@ -229,6 +229,8 @@ template<typename OpType>
             __shared__ int numTads;
             __shared__ int *tadShape;
             __shared__ int *tadStride;
+            __shared__ char tadOrder;
+
             if (threadIdx.x == 0) {
           	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
@@ -237,6 +239,7 @@ template<typename OpType>
 
                 tadShape = shape::shapeOf(tadOnlyShapeInfo);
                 tadStride = shape::stride(tadOnlyShapeInfo);
+                tadOrder = shape::order(tadOnlyShapeInfo);
             }
             __syncthreads();
 
@@ -249,7 +252,8 @@ template<typename OpType>
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
                     for(unsigned int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                        shape::ind2sub(tadRank,tadShape, i, xCoord);
+                       	shape::ind2sub(tadRank,tadShape, i, xCoord);
+
                         Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 						IndexValue<T> comp {dx[xOffset], i};
 

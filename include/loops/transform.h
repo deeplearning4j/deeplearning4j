@@ -757,30 +757,23 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
     __shared__ int tadEWS;
     __shared__ int numTads;
 
-    if (threadIdx.x == 0) {
+    __shared__ int *tadShape;
+    __shared__ int *tadStride;
+    __shared__ int tadRank;
+    __shared__ char tadOrder;
 
+    if (threadIdx.x == 0) {
         tadLength = shape::tadLength(zShapeInfo, dimension, dimensionLength);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
         numTads = shape::length(zShapeInfo) / tadLength;
-/*
-        if (blockIdx.x == 0) {
-            printf("original X shape: \n");
-            shape::printShapeInfoLinear(xShapeInfo);
 
-            printf("original Z shape: \n");
-            shape::printShapeInfoLinear(zShapeInfo);
-
-            printf("Target dimension: [%i], dimensionLength: [%i], numTads: [%i], rnumTads: [%i]\n", dimension[0], dimensionLength, numTads, tad->numTads);
-
-            printf("TAD shape: \n");
-            shape::printShapeInfoLinear(tadOnlyShapeInfo);
-
-            printf("TAD shape2: \n");
-            shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
-        }
-        */
+        tadShape = shape::shapeOf(tadOnlyShapeInfo);
+        tadStride = shape::stride(tadOnlyShapeInfo);
+        tadRank = shape::rank(tadOnlyShapeInfo);
+        tadOrder = shape::order(tadOnlyShapeInfo);
     }
     __syncthreads();
+
 
 
     for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
@@ -788,14 +781,25 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
 
         int highestElement = (int) dX[r];
 
-//        if (threadIdx.x == 0)
-//            printf("TAD: [%i], highestElement: [%i], numTads: [%i], tadLength: [%i], tadOffset: [%i], tadEWS: [%i]\n", r, highestElement, numTads, tadLength, tadOffsetForBlock, tadEWS);
+        if (dimensionLength > 1 || tadEWS < 1) {
+            int xCoord[MAX_RANK];
 
+            for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
+  //              if (tadOrder == 'c')
+//                    shape::ind2subC(tadRank,tadShape, e, xCoord);
+                //else
+                    shape::ind2sub(tadRank,tadShape, e, xCoord);
 
-        for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-            // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
-            int idx = tadOffsetForBlock + (e * tadEWS);
-            dZ[idx] = (e == highestElement? (T) 1.0 : (T) 0.0);
+                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+
+                dZ[xOffset] = (e == highestElement? (T) 1.0f : (T) 0.0f);
+            }
+        } else {
+            for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
+                // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
+                int idx = tadOffsetForBlock + (e * tadEWS);
+                dZ[idx] = (e == highestElement? (T) 1.0f : (T) 0.0f);
+            }
         }
 
     }
