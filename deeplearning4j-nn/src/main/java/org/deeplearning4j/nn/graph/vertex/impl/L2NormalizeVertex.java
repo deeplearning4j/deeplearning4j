@@ -39,6 +39,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 public class L2NormalizeVertex extends BaseGraphVertex {
 
+    private static final int[] DEFAULT_RANK2_DIMS = new int[]{1};
+    private static final int[] DEFAULT_RANK3_DIMS = new int[]{1,2};
+    private static final int[] DEFAULT_RANK4_DIMS = new int[]{1,2,3};
+
     private int[] dimension;
     private double eps;
 
@@ -75,22 +79,17 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
         INDArray x = inputs[0];
-        int[] dimensions;
-        if(dimension.length<1) {
-            dimensions = new int[x.rank()-1];
-            for( int i=1; i<x.rank(); i++ ){
-                dimensions[i-1] = i;
-            }
-        } else {
-            dimensions = dimension;
-        }
+        int[] dimensions = getDimensions(x);
 
         INDArray xNorm2 = x.norm2(dimensions);
-        Transforms.max(xNorm2, eps, false); // in case of div by 0
-        x.diviColumnVector(xNorm2);
+        Transforms.max(xNorm2, eps, false);
 
-        return x;
-
+        if(x.rank() == 2){
+            return x.divColumnVector(xNorm2);
+        } else {
+            INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
+            return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+        }
     }
 
     @Override
@@ -98,15 +97,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         if(!canDoBackward()) throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex "+vertexName+" idx "+vertexIndex+")");
 
         INDArray x = inputs[0];
-        int[] dimensions;
-        if(dimension.length<1) {
-            dimensions = new int[x.rank()-1];
-            for( int i=1; i<x.rank(); i++ ){
-                dimensions[i-1] = i;
-            }
-        } else {
-            dimensions = dimension;
-        }
+        int[] dimensions = getDimensions(x);
 
         INDArray norm = x.norm2(dimensions);
         INDArray norm3 = Transforms.pow(norm, 3.0, true);
@@ -117,19 +108,40 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         if (x.rank() == 2) {
             // 2D case
             dLdx = epsilon.divColumnVector(norm);
-            x.diviColumnVector(norm3);
-            dLdx.subi(x.muliColumnVector(epsilon.mul(x).sum(1)));
+            INDArray xDivNorm3 = x.divColumnVector(norm3);
+            dLdx.subi(xDivNorm3.muliColumnVector(epsilon.mul(x).sum(1)));
         } else {
             //RNN and CNN case - Broadcast along dimension 0
-            INDArray dx = epsilon.mul(x).sum(1);
+            INDArray dx = epsilon.mul(x).sum(dimensions);
 
-            Nd4j.getExecutioner().exec(new BroadcastDivOp(x,norm3,x,0));
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(x,dx,x,0));
-            dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon,norm,epsilon,0));
-            dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(dLdx,x,dLdx,0));
+            //x / |x|_2^3 * sum_k (dLda*x)
+            INDArray xDivNorm3 = Nd4j.createUninitialized(x.shape(), x.ordering());
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(x,norm3,xDivNorm3,0));
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(xDivNorm3,dx,xDivNorm3,0));
+
+            //1/|x|_2 * dLda - above
+            dLdx = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(epsilon,norm,dLdx,0));
+            dLdx.subi(xDivNorm3);
         }
 
         return new Pair<>(null, new INDArray[]{dLdx});
+    }
+
+    private int[] getDimensions(INDArray x){
+        if(dimension == null || dimension.length<1) {
+            switch (x.rank()){
+                case 2:
+                    return DEFAULT_RANK2_DIMS;
+                case 3:
+                    return DEFAULT_RANK3_DIMS;
+                case 4:
+                    return DEFAULT_RANK4_DIMS;
+                default:
+                    throw new RuntimeException();
+            }
+        }
+        return dimension;
     }
 
     @Override
