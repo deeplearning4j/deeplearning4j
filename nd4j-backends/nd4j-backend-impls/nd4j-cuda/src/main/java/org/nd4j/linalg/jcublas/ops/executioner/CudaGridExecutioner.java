@@ -411,7 +411,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 // we enable this only for PairwisetTransforms.Set followed by scalar
                 if (last.getOp() instanceof TransformOp && last.getOp().y() != null) {
                     // FIXME: get rid of those instanceof
-                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null && !(op instanceof ScalarMax) && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11) && op.opNum() != 16 && op.opNum() != 13 ) {
+                    if (op instanceof ScalarOp && ((ScalarOp) op).getDimension() == null && !(op instanceof ScalarMax) && !(op instanceof ScalarMin) && !(op.opNum() >= 7 && op.opNum() <= 11) && op.opNum() != 16 && op.opNum() != 13 && !(op.opNum() >= 56 && op.opNum() <= 59) ) {
                         return isMatchingZX(last.getOp(), op) ? MetaType.INVERTED_PREDICATE : MetaType.NOT_APPLICABLE;
                     }
                 }

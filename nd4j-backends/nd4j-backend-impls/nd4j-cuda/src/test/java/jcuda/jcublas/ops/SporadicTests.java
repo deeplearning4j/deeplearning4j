@@ -24,6 +24,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.io.File;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.api.shape.Shape.newShapeNoCopy;
@@ -36,7 +38,7 @@ public class SporadicTests {
 
     @Before
     public void setUp() throws Exception {
-        CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
+        //CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
     }
 
     @Test
@@ -562,5 +564,38 @@ public class SporadicTests {
         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
         System.out.println("Z: " + z);
+    }
+
+    @Test
+    public void testCrash() throws Exception {
+        System.out.println("Executor: " + Nd4j.getExecutioner().getClass().getSimpleName());
+        int shape[] = new int[]{1, 3, 150, 150};
+        INDArray img = Nd4j.create(shape);
+        INDArray lbl = Nd4j.create(205);
+        AtomicInteger cnt = new AtomicInteger(0);
+
+        while (cnt.get() < 16) {
+            System.out.println("Iteration: " + cnt.getAndIncrement());
+            getBatch(img, lbl, 128);
+        }
+    }
+
+
+
+    public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
+        List<INDArray> inp = new ArrayList<>();
+        List<INDArray> lab = new ArrayList<>();
+        for (int i = 0; i < batchSize; i++) {
+            inp.add(input);
+            lab.add(label);
+        }
+
+        DataSet ds = getTransformation(inp, inp);
+        return ds;
+    }
+
+    public DataSet getTransformation(List<INDArray> inp , List<INDArray> lab){
+        DataSet ret =  new DataSet(Nd4j.vstack(inp.toArray(new INDArray[0])), Nd4j.vstack(lab.toArray(new INDArray[0])));
+        return ret;
     }
 }
