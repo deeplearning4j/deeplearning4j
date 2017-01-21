@@ -286,7 +286,7 @@ public class LayerConfigValidationTest {
         double expectedAdamMeanDecay = 0.9;
         double expectedAdamVarDecay = 0.999;
         double expectedRmsDecay = 0.95;
-        Distribution expectedDist = new NormalDistribution(1e-3, 1);
+        Distribution expectedDist = new NormalDistribution(0, 1);
         double expectedL1 = 0.0;
         double expectedL2 = 0.0;
 

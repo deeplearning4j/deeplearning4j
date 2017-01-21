@@ -63,6 +63,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
     protected transient boolean configured = false;
 
+    protected boolean enableScavenger = false;
+
 
     @Setter protected transient Set<VectorsListener<T>> eventListeners;
 
@@ -86,6 +88,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 .setTargetVocabCache(vocab)
                 .fetchLabels(trainSequenceVectors)
                 .setStopWords(stopWords)
+                .enableScavenger(enableScavenger)
                 .build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable && existingModel.lookupTable() instanceof InMemoryLookupTable) {
@@ -351,6 +354,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected transient T unknownElement;
         protected String UNK = configuration.getUNK();
         protected String STOP = configuration.getSTOP();
+
+        protected boolean enableScavenger = false;
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
@@ -849,6 +854,19 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
+         * This method ebables/disables periodical vocab truncation during construction
+         *
+         * Default value: disabled
+         *
+         * @param reallyEnable
+         * @return
+         */
+        public Builder<T> enableScavenger(boolean reallyEnable) {
+            this.enableScavenger = reallyEnable;
+            return this;
+        }
+
+        /**
          * Build SequenceVectors instance with defined settings/options
          * @return
          */
@@ -894,6 +912,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             vectors.existingModel = this.existingVectors;
+            vectors.enableScavenger = this.enableScavenger;
 
             vectors.setUNK(this.UNK);
 
