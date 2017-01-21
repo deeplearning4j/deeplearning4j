@@ -118,7 +118,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
-        //INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
         INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if(l1l2 != 0.0){

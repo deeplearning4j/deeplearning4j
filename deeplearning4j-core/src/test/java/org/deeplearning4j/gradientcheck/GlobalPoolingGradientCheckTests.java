@@ -222,7 +222,6 @@ public class GlobalPoolingGradientCheckTests {
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(gradOK);
-
         }
     }
 
