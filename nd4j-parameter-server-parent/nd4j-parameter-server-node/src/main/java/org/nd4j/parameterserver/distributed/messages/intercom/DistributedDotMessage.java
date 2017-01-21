@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
@@ -90,9 +91,19 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
 
         //TODO: make this thing a single op, even specialOp is ok
         // we calculate dot for all involved rows
-        INDArray result = Nd4j.createUninitialized(rowsA.length, 1);
-        for (int e = 0; e < rowsA.length; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(keyA).getRow(rowsA[e]), storage.getArray(keyB).getRow(rowsB[e]));
+
+        int resultLength = codes.length + (negSamples > 0 ? (negSamples + 1) : 0);
+
+        INDArray result = Nd4j.createUninitialized(resultLength, 1);
+        int e = 0;
+        for (; e < codes.length; e++) {
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(keyA).getRow(w2), storage.getArray(keyB).getRow(rowsB[e]));
+            result.putScalar(e, dot);
+        }
+
+        // negSampling round
+        for (; e< resultLength; e++) {
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(keyA).getRow(w2), storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 

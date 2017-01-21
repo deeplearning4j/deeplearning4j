@@ -58,9 +58,10 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
 
-        if (message.getPoints() != null && message.getPoints().length > 0) {
-            // we assume this is HS round
-            int row_syn0[] = replicate(message.getW2(), message.getPoints().length);
+        // we assume this is HS round
+        //if (message.getPoints() != null && message.getPoints().length > 0) {
+
+            int row_syn0[] = new int[0]; //replicate(message.getW2(), message.getPoints().length);
 
             if (message.getPoints().length != message.getCodes().length)
                 throw new RuntimeException("Mismatiching points/codes lengths here!");
@@ -78,12 +79,9 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             ddm.setOriginatorId(message.getOriginatorId());
 
             transport.sendMessage(ddm);
-        } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
+      //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
-        // negSampling round
-        if (message.getNegSamples() > 0) {
 
-        }
     }
 
     /**
@@ -148,31 +146,69 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         INDArray syn0 = storage.getArray(WordVectorStorage.SYN_0);
         INDArray syn1 = storage.getArray(WordVectorStorage.SYN_1);
+        INDArray syn1Neg = storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
 
         INDArray neu1e = Nd4j.create(syn1.columns());
 
-        for (int e = 0; e < dots.length(); e++) {
-            float dot = dots.getFloat(e);
+        int e = 0;
 
-            if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
-                continue;
+        boolean updated = false;
+
+        // apply optional SkipGram HS gradients
+        if (sgrm.getCodes().length > 0) {
+            for (; e < sgrm.getCodes().length; e++) {
+                float dot = dots.getFloat(e);
+
+                if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
+                    continue;
+                }
+
+                int idx = (int) ((dot + HS_MAX_EXP) * ((float) expTable.length() / HS_MAX_EXP / 2.0));
+
+                if (idx >= expTable.length() || idx < 0) {
+                    continue;
+                }
+
+                int code = chain.getRequestMessage().getCodes()[e];
+                double f = expTable.getFloat(idx);
+                double g = (1 - code - f) * alpha;
+
+                updated = true;
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e);
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1.getRow(sgrm.getPoints()[e]));
             }
-
-            int idx = (int) ((dot + HS_MAX_EXP) * ((float) expTable.length() / HS_MAX_EXP / 2.0));
-
-            if (idx >= expTable.length() || idx < 0) {
-                continue;
-            }
-
-            int code = chain.getRequestMessage().getCodes()[e];
-            double f = expTable.getFloat(idx);
-            double g = (1 - code - f) * alpha;
-
-            Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(sgrm.getPoints()[e]), neu1e );
-            Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1.getRow(sgrm.getPoints()[e]));
         }
 
-        Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW2()));
+        // apply optional NegSample gradients
+        if (sgrm.getNegSamples() > 0) {
+            // here we assume that we already
+            int cnt = 0;
+            for (; e < sgrm.getNegSamples() + 1; e++, cnt++) {
+                float dot = dots.getFloat(e);
+
+                float code = cnt == 0 ? 1.0f : 0.0f;
+                double g = 0.0f;
+
+                if (dot > HS_MAX_EXP)
+                    g = (code - 1 ) * alpha;
+                else if (dot <- HS_MAX_EXP)
+                    g = (code - 0 ) * alpha;
+                else {
+                    int idx = (int) ((dot + HS_MAX_EXP) * (expTable.length() / HS_MAX_EXP / 2.0));
+                    if (idx >= expTable.length() || idx < 0)
+                        continue;
+
+                    g = (code - expTable.getDouble(idx)) * alpha;
+                }
+
+                updated = true;
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn1Neg.getRow(sgrm.getPoints()[e]), neu1e);
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1Neg.getRow(sgrm.getPoints()[e]));
+            }
+        }
+
+        if (updated)
+            Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(sgrm.getW2()));
 
         // we send back confirmation message only from Shard which received this message
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(chain.getOriginatorId(), chain.getFrameId());
