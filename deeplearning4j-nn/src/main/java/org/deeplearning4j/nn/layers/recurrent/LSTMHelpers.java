@@ -322,6 +322,7 @@ public class LSTMHelpers {
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = conf.getLayer().getActivationFn();
 
+        INDArray timeStepMaskColumn = null;
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             int time = iTimeIndex;
             int inext = 1;
@@ -348,14 +349,6 @@ public class LSTMHelpers {
 
             //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
             INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0));        //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
-
-//            if(maskArray != null){
-//                //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
-//                // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
-//                //Mask array has shape [minibatch, timeSeriesLength] -> get column
-//                INDArray timeStepMaskColumn = maskArray.getColumn(iTimeIndex);
-//                currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
-//            }
 
             INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
             if (iTimeIndex != timeSeriesLength - 1) {
@@ -430,6 +423,16 @@ public class LSTMHelpers {
             //TODO activation functions with params; also: optimize this (no assign)
             //Shape: [m,n^L]
 
+
+            //Handle masking
+            if (maskArray != null) {
+                //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid using errors from a masked time step
+                // to calculate the parameter gradients.  Mask array has shape [minibatch, timeSeriesLength] -> get column(this time step)
+                timeStepMaskColumn = maskArray.getColumn(time);
+                deltaifogNext.muliColumnVector(timeStepMaskColumn);
+                //Later, the deltaifogNext is used to calculate: input weight gradients, recurrent weight gradients, bias gradients
+            }
+
             INDArray prevLayerActivationSlice = Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
             if(iTimeIndex > 0){
                 //Again, deltaifog_current == deltaifogNext at this point... same array
@@ -481,6 +484,12 @@ public class LSTMHelpers {
                 INDArray wog = inputWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(2*hiddenLayerSize,4*hiddenLayerSize));
                 Nd4j.gemm(deltaog, wog, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltao.mmul(woTranspose)).addi(deltag.mmul(wgTranspose));
             }
+
+            if (maskArray != null) {
+                //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid sending anything
+                // but 0s to the layer below at this time step (for the given example)
+                epsilonNextSlice.muliColumnVector(timeStepMaskColumn);
+            }
         }
 
         Gradient retGradient = new DefaultGradient();
@@ -490,5 +499,4 @@ public class LSTMHelpers {
 
         return new Pair<>(retGradient, epsilonNext);
     }
-
 }
