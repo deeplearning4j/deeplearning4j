@@ -1714,7 +1714,6 @@ namespace simdOps {
                 for (int i = 0; i < dimensionLength; i++) {
                     dimension[i] = (int) extraParams[i + 1];
                 }
-
 /*
                 shape::TAD tad(xShapeBuffer, dimension, dimensionLength);
                 tad.createTadOnlyShapeInfo();
@@ -1739,7 +1738,6 @@ namespace simdOps {
 
                 int span = (tads / num_threads) + 8;
 
-//#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                 {
                     int tid = omp_get_thread_num();
@@ -1748,7 +1746,7 @@ namespace simdOps {
                     if (end > tads) end = tads;
 
                     for (int r = start; r < end; r++) {
-                        if (tadEWS > 0 && zEWS > 0) {
+                        if (tadEWS > 0 && zEWS > 0 && dimensionLength == 1) {
                             T *rX = dx + tadOffsets[r];
                             T *rZ = result + tadOffsets[r];
 
@@ -1788,56 +1786,53 @@ namespace simdOps {
                             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                             num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                            for (int i = 0; i < tads; i++) {
-                                int offset = tadOffsets[i];
-                                int shapeIter[MAX_RANK];
-                                int coord[MAX_RANK];
-                                int dim;
-                                int xStridesIter[MAX_RANK];
-                                int resultStridesIter[MAX_RANK];
-                                int *xShape = shape::shapeOf(tadShapeShapeInfo);
-                                int *xStride = shape::stride(tadShapeShapeInfo);
-                                int *resultStride = shape::stride(tadShapeShapeInfo);
-                                int rank = shape::rank(tadShapeShapeInfo);
-                                T *xPointer = dx + offset;
-                                T *resultPointer = result + offset;
-                                T maxValue = xPointer[0];
+                            int offset = tadOffsets[r];
+                            int shapeIter[MAX_RANK];
+                            int coord[MAX_RANK];
+                            int dim;
+                            int xStridesIter[MAX_RANK];
+                            int resultStridesIter[MAX_RANK];
+                            int *xShape = shape::shapeOf(tadShapeShapeInfo);
+                            int *xStride = shape::stride(tadShapeShapeInfo);
+                            int *resultStride = shape::stride(tadShapeShapeInfo);
+                            int rank = shape::rank(tadShapeShapeInfo);
+                            T *xPointer = dx + offset;
+                            T *resultPointer = result + offset;
+                            T maxValue = xPointer[0];
 
-                                T *maxCursor = resultPointer;
-                                Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
-                                if (PrepareTwoRawArrayIter<T>(rank,
-                                                              xShape,
-                                                              xPointer,
-                                                              xStride,
-                                                              resultPointer,
-                                                              resultStride,
-                                                              &rank,
-                                                              shapeIter,
-                                                              &xPointer,
-                                                              xStridesIter,
-                                                              &resultPointer,
-                                                              resultStridesIter) >= 0) {
-                                    ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                        if (maxValue < xPointer[0]) {
-                                            maxCursor = resultPointer;
-                                            maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
-                                            maxValue = xPointer[0];
-                                        }
+                            T *maxCursor = resultPointer;
+                            Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
+                            if (PrepareTwoRawArrayIter<T>(rank,
+                                                             xShape,
+                                                             xPointer,
+                                                             xStride,
+                                                             resultPointer,
+                                                             resultStride,
+                                                             &rank,
+                                                             shapeIter,
+                                                             &xPointer,
+                                                             xStridesIter,
+                                                             &resultPointer,
+                                                             resultStridesIter) >= 0) {
+                                   ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                       if (maxValue < xPointer[0]) {
+                                           maxCursor = resultPointer;
+                                           maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
+                                           maxValue = xPointer[0];
+                                       }
 
-                                        resultPointer[0] = 0.0;
-                                    }
-                                    ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                           rank,
-                                                           coord,
-                                                           shapeIter,
-                                                           xPointer,
-                                                           xStridesIter,
-                                                           resultPointer,
-                                                           resultStridesIter);
-                                    maxCursor = reinterpret_cast<T *>(maxCursorLong);
-                                    maxCursor[0] = 1.0;
-                                }
+                                       resultPointer[0] = 0.0;
+                                   }
+                                   ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                          rank,
+                                                          coord,
+                                                          shapeIter,
+                                                          xPointer,
+                                                          xStridesIter,
+                                                          resultPointer,
+                                                          resultStridesIter);
+                                   maxCursor = reinterpret_cast<T *>(maxCursorLong);
+                                   maxCursor[0] = 1.0;
                             }
                         }
                     }
