@@ -765,4 +765,42 @@ public class NativeOpExecutionerTest {
 
         x.add(1.0, y);
     }
+
+
+    @Test
+    public void testIsMax2Of3d(){
+        double[][][] slices = new double[3][][];
+        double[][][] isMax = new double[3][][];
+
+        slices[0] = new double[][]{
+                {1,10,2},
+                {3,4,5}};
+        slices[1] = new double[][]{
+                {-10,-9,-8},
+                {-7,-6,-5}};
+        slices[2] = new double[][]{
+                {4,3,2},
+                {1,0,-1}};
+
+        isMax[0] = new double[][]{
+                {0,1,0},
+                {0,0,0}};
+        isMax[1] = new double[][]{
+                {0,0,0},
+                {0,0,1}};
+        isMax[2] = new double[][]{
+                {1,0,0},
+                {0,0,0}};
+
+        INDArray arr = Nd4j.create(3,2,3);
+        INDArray expected = Nd4j.create(3,2,3);
+        for( int i=0; i<3; i++ ){
+            arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
+            expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(isMax[i]));
+        }
+
+        Nd4j.getExecutioner().exec(new IsMax(arr, 1,2));
+
+        assertEquals(expected, arr);
+    }
 }

@@ -1649,7 +1649,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.opNum() == 41 && op.extraArgs() != null) {
             // for IsMax along dimension we need special temporary buffer
-            dimension = new int[] {(int) op.extraArgs()[1] };
+            dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i+1];
+            }
+
+
             for(int i = 0; i < dimension.length; i++) {
                 if(dimension[i] < 0)
                     dimension[i] += op.x().rank();

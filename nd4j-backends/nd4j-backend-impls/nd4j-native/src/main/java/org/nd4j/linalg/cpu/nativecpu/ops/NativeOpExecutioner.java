@@ -551,7 +551,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer dummy = new PointerPointer(4);
 
         if(op.opNum() == 41 && op.extraArgs() != null) {
-            int[] dimension = new int[] {(int) op.extraArgs()[1] };
+            int[] dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i+1];
+            }
+
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
@@ -562,6 +567,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Pointer off = offsets == null ? null : offsets.addressPointer();
             dummy.put(0, tad);
             dummy.put(1, off);
+
+            log.info("Dimension: {}; TADShape: {}", Arrays.toString(dimension), Arrays.toString(tadBuffers.getFirst().asInt()) );
 
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else st = profilingHookIn(op);
