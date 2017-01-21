@@ -424,7 +424,7 @@ public class TestVariableLengthTS {
         net.clearLayerMaskArrays();
 
         for( int i=0; i<minibatch; i++ ){
-            INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.all()};
+            INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength-i)};
             INDArray expExampleOut = net.output(input.get(idx));
             INDArray actualExampleOut = outMasked.get(idx);
             System.out.println(i);
@@ -447,6 +447,91 @@ public class TestVariableLengthTS {
             System.out.println(i + "\t" + exp + "\t" + act);
             assertEquals(exp, act, 1e-6);
         }
+    }
+
+    @Test
+    public void testMaskingBidirectionalRnn_DEBUG(){
+        //Idea: mask some of the time steps, like [1,1,1,0,0]. We expect the activations for the first 3 time steps
+        // to be the same as if we'd just fed in [1,1,1] for that example
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 4;
+        int layerSize = 3;
+        int nOut = 3;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
+                .layer(2, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(layerSize).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+
+        int tsLength = 4;
+        int minibatch = 1;
+
+        INDArray input = Nd4j.rand(new int[]{minibatch, nIn, tsLength});
+        INDArray labels = Nd4j.rand(new int[]{minibatch, nOut, tsLength});
+        INDArray featuresMask = Nd4j.create(new double[][]{{1,1,1,0}});
+
+        INDArray labelsMask = featuresMask.dup();
+
+        net.setLayerMaskArrays(featuresMask, labelsMask);
+        List<INDArray> ff = net.feedForward(input);
+
+        INDArray l0 = ff.get(1);
+        System.out.println(l0);
+
+        INDArray l1 = ff.get(2);
+        System.out.println(l1);
+
+        net.clearLayerMaskArrays();
+
+        System.out.println("------------");
+        INDArray inputSubset = input.get(new INDArrayIndex[]{NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.interval(0, 3)});
+        List<INDArray> ff2 = net.feedForward(inputSubset);
+        l0 = ff2.get(1);
+        System.out.println(l0);
+
+        l1 = ff2.get(2);
+        System.out.println(l1);
+
+//
+//        INDArray outMasked = net.output(input);
+//
+//        net.clearLayerMaskArrays();
+//
+//        for( int i=0; i<minibatch; i++ ){
+//            INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, 2)};
+//            INDArray expExampleOut = net.output(input.get(idx));
+//            INDArray actualExampleOut = outMasked.get(idx);
+//            System.out.println(i);
+//            assertEquals(expExampleOut, actualExampleOut);
+//        }
+//
+//        //Also: check the score examples method...
+//        DataSet ds = new DataSet(input, labels, featuresMask, labelsMask);
+//        INDArray exampleScores = net.scoreExamples(ds, false);
+//        for( int i=0; i<minibatch; i++ ){
+//            INDArrayIndex[] idx = new INDArrayIndex[]{NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, 2)};
+//            DataSet dsSingle = new DataSet(
+//                    input.get(idx),
+//                    labels.get(idx));
+//
+//            INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
+//            double exp = exampleSingleScore.getDouble(i);
+//            double act = exampleScores.getDouble(i);
+//
+//            System.out.println(i + "\t" + exp + "\t" + act);
+//            assertEquals(exp, act, 1e-6);
+//        }
     }
 
 
