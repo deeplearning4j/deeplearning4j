@@ -551,7 +551,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer dummy = new PointerPointer(4);
 
         if(op.opNum() == 41 && op.extraArgs() != null) {
-            int[] dimension = new int[] {(int) op.extraArgs()[1] };
+            int[] dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i+1];
+            }
+
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
