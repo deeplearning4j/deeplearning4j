@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.spark.transform.model.BatchRecord;
 import org.datavec.spark.transform.model.CSVRecord;
 import play.Mode;
 import play.libs.Json;
@@ -12,6 +13,7 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
+import java.util.List;
 
 import static play.mvc.Controller.request;
 import static play.mvc.Results.internalServerError;
@@ -62,6 +64,21 @@ public class CSVSparkTransformServer {
             }
         })));
 
+        //return the host information for a given id
+        routingDsl.POST("/transformbatch").routeTo(FunctionUtil.function0((() -> {
+            try {
+                return ok(Json.toJson(transform.transform(request().body().as(BatchRecord.class))));
+            } catch (Exception e) {
+                return internalServerError();
+            }
+        })));
+        routingDsl.POST("/transformedbatcharray").routeTo(FunctionUtil.function0((() -> {
+            try {
+                return ok(Json.toJson(transform.toArray(request().body().as(BatchRecord.class))));
+            } catch (Exception e) {
+                return internalServerError();
+            }
+        })));
         routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 return ok(Json.toJson(transform.toArray(request().body().as(CSVRecord.class))));
