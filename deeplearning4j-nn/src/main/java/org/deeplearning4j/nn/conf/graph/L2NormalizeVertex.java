@@ -45,10 +45,6 @@ public class L2NormalizeVertex extends GraphVertex {
         this(null, DEFAULT_EPS);
     }
 
-    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
-        this(dimension, DEFAULT_EPS);
-    }
-
     public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
         this.dimension = dimension;
         this.eps = eps;
