@@ -23,8 +23,10 @@ mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$
 
 source change-scala-versions.sh 2.10
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.version=2.1.0 -Dspark.major.version=2
 source change-scala-versions.sh 2.11
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.version=2.1.0 -Dspark.major.version=2
 
 source change-scala-versions.sh 2.10
 git commit -a -m "Update to version $RELEASE_VERSION"
