@@ -34,6 +34,8 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @RunWith(Parameterized.class)
 public class DataSetTest extends BaseNd4jTest {
@@ -147,8 +149,8 @@ public class DataSetTest extends BaseNd4jTest {
             INDArray expIn = exp.getFeatureMatrix();
             INDArray expL = exp.getLabels();
 
-            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+            INDArray fSubset = f.get(interval(i,i+1), all(), all());
+            INDArray lSubset = l.get(interval(i,i+1), all(),all());
 
             assertEquals(expIn, fSubset);
             assertEquals(expL,lSubset);
@@ -197,8 +199,8 @@ public class DataSetTest extends BaseNd4jTest {
 
             int thisRowOriginalLength = minTSLength + i;
 
-            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+            INDArray fSubset = f.get(interval(i,i+1), all(), all());
+            INDArray lSubset = l.get(interval(i,i+1), all(),all());
 
             for( int j=0; j<inSize; j++ ) {
                 for (int k = 0; k < thisRowOriginalLength; k++) {
@@ -302,10 +304,10 @@ public class DataSetTest extends BaseNd4jTest {
 
             int thisRowOriginalLength = minTSLength + i;
 
-            INDArray fSubset = f.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray lSubset = l.get(NDArrayIndex.interval(i,i+1), NDArrayIndex.all(),NDArrayIndex.all());
+            INDArray fSubset = f.get(interval(i,i + 1), all(), all());
+            INDArray lSubset = l.get(interval(i,i+1), all(),all());
 
-            for( int j=0; j<inSize; j++ ) {
+            for( int j=0; j < inSize; j++) {
                 for (int k = 0; k < thisRowOriginalLength; k++) {
                     double expected = expIn.getDouble(0,j,k);
                     double act = fSubset.getDouble(0,j,k);
@@ -373,8 +375,8 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray first = Nd4j.linspace(1,length1,length1).reshape('c',nExamples1,depth,width,height);
         INDArray second = Nd4j.linspace(1,length2,length2).reshape('c',nExamples2,depth,width,height).addi(0.1);
 
-        INDArray labels1 = Nd4j.linspace(1,nExamples1*nOut,nExamples1 * nOut).reshape('c',nExamples1,nOut);
-        INDArray labels2 = Nd4j.linspace(1,nExamples2*nOut,nExamples2 * nOut).reshape('c',nExamples2,nOut);
+        INDArray labels1 = Nd4j.linspace(1,nExamples1 * nOut,nExamples1 * nOut).reshape('c',nExamples1,nOut);
+        INDArray labels2 = Nd4j.linspace(1,nExamples2 * nOut,nExamples2 * nOut).reshape('c',nExamples2,nOut);
 
         DataSet ds1 = new DataSet(first,labels1);
         DataSet ds2 = new DataSet(second,labels2);
@@ -387,14 +389,15 @@ public class DataSetTest extends BaseNd4jTest {
         assertArrayEquals(new int[]{nExamples1 + nExamples2,depth,width,height}, fMerged.shape());
         assertArrayEquals(new int[]{nExamples1 + nExamples2,nOut}, lMerged.shape());
 
-        assertEquals(first, fMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(second, fMerged.get(NDArrayIndex.interval(nExamples1,nExamples1 + nExamples2), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-        assertEquals(labels1, lMerged.get(NDArrayIndex.interval(0,nExamples1), NDArrayIndex.all()));
-        assertEquals(labels2, lMerged.get(NDArrayIndex.interval(nExamples1,nExamples1+nExamples2), NDArrayIndex.all()));
+
+        assertEquals(first, fMerged.get(interval(0,nExamples1), all(), all(), all()));
+        assertEquals(second, fMerged.get(interval(nExamples1,nExamples1 + nExamples2), all(), all(), all()));
+        assertEquals(labels1, lMerged.get(interval(0,nExamples1), all()));
+        assertEquals(labels2, lMerged.get(interval(nExamples1,nExamples1 + nExamples2), all()));
     }
 
     @Test
-    public void testMixedRnn2d(){
+    public void testMixedRnn2d() {
         //RNN input with 2d label output
         //Basic test for time series, all of the same length + no masking arrays
         int numExamples = 10;
@@ -418,13 +421,13 @@ public class DataSetTest extends BaseNd4jTest {
         assertArrayEquals(new int[]{numExamples, inSize, tsLength}, f.shape());
         assertArrayEquals(new int[]{numExamples, labelSize}, l.shape());
 
-        for( int i=0; i<numExamples; i++ ){
+        for( int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
             INDArray expIn = exp.getFeatureMatrix();
             INDArray expL = exp.getLabels();
 
-            INDArray fSubset = f.get(NDArrayIndex.interval(i,i + 1), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray lSubset = l.get(NDArrayIndex.interval(i,i + 1), NDArrayIndex.all());
+            INDArray fSubset = f.get(interval(i,i + 1), all(), all());
+            INDArray lSubset = l.get(interval(i,i + 1), all());
 
             assertEquals(expIn, fSubset);
             assertEquals(expL,lSubset);
@@ -521,7 +524,7 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray l = Nd4j.zeros(nExamples, nColumns);
         List<Integer> meta = new ArrayList<>();
 
-        for( int i=0; i<nExamples; i++ ){
+        for( int i=0; i<nExamples; i++) {
             f.getRow(i).assign(i);
             l.getRow(i).assign(i);
             meta.add(i);
@@ -530,14 +533,14 @@ public class DataSetTest extends BaseNd4jTest {
         DataSet ds = new DataSet(f,l);
         ds.setExampleMetaData(meta);
 
-        for( int i=0; i<10; i++ ){
+        for( int i= 0; i < 10; i++ ){
             ds.shuffle();
             INDArray fCol = f.getColumn(0);
             INDArray lCol = l.getColumn(0);
             System.out.println(fCol + "\t" + ds.getExampleMetaData());
-            for( int j=0; j<nExamples; j++ ){
-                int fVal = (int)fCol.getDouble(j);
-                int lVal = (int)lCol.getDouble(j);
+            for( int j = 0; j<nExamples; j++ ){
+                int fVal = (int) fCol.getDouble(j);
+                int lVal = (int) lCol.getDouble(j);
                 int metaVal = (Integer)ds.getExampleMetaData().get(j);
 
                 assertEquals(fVal, lVal);
@@ -611,12 +614,12 @@ public class DataSetTest extends BaseNd4jTest {
         //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(),newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
-        assertEquals(Nd4j.linspace(numExamples+from,numExamples+to-1,to-from), newDs.getLabelsMaskArray().sum(1));
+        assertEquals(Nd4j.linspace(numExamples+from,numExamples + to - 1,to - from), newDs.getLabelsMaskArray().sum(1));
     }
 
     @Test
     public void testAsList() {
-        org.nd4j.linalg.dataset.api.DataSet ds = new DataSet();
+        org.nd4j.linalg.dataset.api.DataSet ds;
         //Comparing merge with asList
         int numExamples = 10;
         int inSize = 13;
@@ -642,8 +645,8 @@ public class DataSetTest extends BaseNd4jTest {
             DataSet iDataSet = new DataSet(in, out);
 
             //Checking if the features and labels are equal
-            assertEquals(iDataSet.getFeatures(), dsList.get(i).getFeatures().get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,minTSLength+i)));
-            assertEquals(iDataSet.getLabels(), dsList.get(i).getLabels().get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,minTSLength+i)));
+            assertEquals(iDataSet.getFeatures(), dsList.get(i).getFeatures().get(all(),all(),interval(0,minTSLength+i)));
+            assertEquals(iDataSet.getLabels(), dsList.get(i).getLabels().get(all(),all(),interval(0,minTSLength+i)));
         }
     }
 
