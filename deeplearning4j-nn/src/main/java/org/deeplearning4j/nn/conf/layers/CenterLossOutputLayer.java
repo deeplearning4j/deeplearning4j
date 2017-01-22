@@ -88,7 +88,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
-        private double alpha = 0.01;
+        private double alpha = 0.05;
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
