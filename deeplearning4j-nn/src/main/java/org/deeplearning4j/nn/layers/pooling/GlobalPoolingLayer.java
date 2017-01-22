@@ -30,6 +30,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     private final int[] poolingDimensions;
     private final boolean collapseDimensions;
     private final PoolingType poolingType;
+    private final int pNorm;
 
     public GlobalPoolingLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -40,6 +41,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
         poolingDimensions = layerConf.getPoolingDimensions();
         collapseDimensions = layerConf.isCollapseDimensions();
         poolingType = layerConf.getPoolingType();
+        pNorm = layerConf.getPnorm();
     }
 
     @Override
@@ -98,7 +100,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(input.rank() == 3) {
                 //Masked time series
 
-                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray);
+                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm);
             } else if(input.rank() == 4){
                 //Masked convolutions. 4d convolution data, shape [minibatch, depth, h, w]
                 //and 2d mask array.
@@ -115,7 +117,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 int h = input.size(2);
                 int w = input.size(3);
                 int maskLength = maskArray.size(1);
-                if( (h != 1 && w != 1) || (h != maskLength && w != maskLength) )){
+                if( (h != 1 && w != 1) || (h != maskLength && w != maskLength) ){
                     throw new UnsupportedOperationException("Masked global pooling with on CNN data currently only supports data with h=1 or w=1:"
                             + " input activations must have shape [minibatchSize,depth,height=1,width] or [minibatchSize,depth,height,width=1] with "
                             + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively."
@@ -154,9 +156,6 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 return inputArray.mean(poolDim);
             case SUM:
                 return inputArray.sum(poolDim);
-//                System.out.println("Full array sum:");
-//                System.out.println(inputArray.sum(poolDim));
-//                return inputArray.sum(poolDim);
             case PNORM:
                 //P norm: https://arxiv.org/pdf/1311.1780.pdf
                 //out = (1/N * sum( |in| ^ p) ) ^ (1/p)
@@ -164,9 +163,9 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
                 INDArray abs = Transforms.abs(inputArray, true);
                 Transforms.pow(abs, pnorm, false);
-                INDArray mean = abs.mean(poolDim);
+                INDArray pNorm = abs.sum(poolDim);
 
-                return Transforms.pow(mean, 1.0/pnorm);
+                return Transforms.pow(pNorm, 1.0/pnorm);
             default:
                 throw new RuntimeException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -206,7 +205,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Standard 'full array' global pooling op
             epsilonNd = epsilonHelperFullArray(input, epsilon, poolDim);
         } else {
-            throw new UnsupportedOperationException("Not yet implemeted");
+            epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon);
         }
 
         if(collapseDimensions){
@@ -229,11 +228,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         switch (poolingType){
             case MAX:
-//                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
-//                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
-                INDArray toReturn = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
-                return toReturn;
+                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax,epsilon,isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;
@@ -252,11 +248,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             case PNORM:
                 int pnorm = layerConf().getPnorm();
 
+                //First: do forward pass to get pNorm array
                 INDArray abs = Transforms.abs(inputArray, true);
                 Transforms.pow(abs, pnorm, false);
-                INDArray mean = abs.mean(poolDim);
 
-                INDArray pNorm = Transforms.pow(mean, 1.0/pnorm);
+                INDArray pNorm = Transforms.pow(abs.sum(poolDim), 1.0/pnorm);
 
                 //dL/dIn = dL/dOut * dOut/dIn
                 //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
