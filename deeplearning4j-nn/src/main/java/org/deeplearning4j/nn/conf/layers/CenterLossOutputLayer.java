@@ -84,10 +84,12 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public Updater getUpdaterByParam(String paramName) {
-        if(paramName == CenterLossParamInitializer.CENTER_KEY) {
-            return Updater.NONE; // center loss utilizes alpha directly for this so any updater can be used for other layers
-        } else {
-            return updater;
+        // center loss utilizes alpha directly for this so any updater can be used for other layers
+        switch(paramName) {
+            case CenterLossParamInitializer.CENTER_KEY:
+                return Updater.NONE;
+            default:
+                return updater;
         }
     }
 
