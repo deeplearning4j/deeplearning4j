@@ -59,6 +59,11 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
     }
 
     @Override
+    public boolean hasLossFunction() {
+        return false;
+    }
+
+    @Override
     public int distributionInputSize(int dataSize) {
         return 2*dataSize;
     }

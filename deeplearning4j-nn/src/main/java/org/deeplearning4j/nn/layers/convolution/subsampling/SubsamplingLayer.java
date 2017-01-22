@@ -212,6 +212,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 }
 
                 INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                double eps = layerConf().getEps();
+                Transforms.max(denom, eps, false); // in case of 0
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
@@ -294,6 +296,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 // applying the exponent to the input and recovering the signal by multiplying the kernel of
                 // the pooling layer and then applying the same inverse exponent
                 int pnorm = layerConf().getPnorm();
+
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
