@@ -77,8 +77,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wOffset, bOffset));
         INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, cLOffset)).reshape('f', layerConf.getNOut(), layerConf.getNIn());
 
-        params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
+        params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         params.put(CENTER_KEY, createCenterLossMatrix(conf, centerLossView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
@@ -101,7 +101,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
         INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nBiasParams));    //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nBiasParams, nCenterLossParams)).reshape('c',nIn,nOut);
+        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nBiasParams, nCenterLossParams)).reshape('f',nIn,nOut);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
