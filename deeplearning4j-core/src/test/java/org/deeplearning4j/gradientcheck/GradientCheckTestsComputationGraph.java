@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -693,11 +694,11 @@ public class GradientCheckTestsComputationGraph {
             .updater(Updater.NONE).learningRate(1.0)
             .graphBuilder()
             .addInputs("input1")
-            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input1")
+            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input1")
             .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
                 .nIn(5).nOut(numLabels).alpha(1.0)
-                .activation("softmax").build(), "l1")
+                .activation(Activation.SOFTMAX).build(), "l1")
             .setOutputs("lossLayer")
             .pretrain(false).backprop(true)
             .build();

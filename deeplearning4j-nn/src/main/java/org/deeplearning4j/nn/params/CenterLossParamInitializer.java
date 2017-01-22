@@ -117,8 +117,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
             (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         if(initializeParameters) {
-            INDArray ret = Nd4j.zeros(layerConf.getNOut(), layerConf.getNIn()); // nOut is numClasses, nIn is embeddingSize
-            centerLossView.assign(ret);
+            centerLossView.assign(0.0);
         }
         return centerLossView;
     }
