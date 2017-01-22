@@ -77,7 +77,7 @@ public class MaskedReductionUtil {
         }
     }
 
-    public static INDArray maskedPoolingEpsilonTimeSeries(PoolingType poolingType, INDArray input, INDArray mask, INDArray epsilon2d){
+    public static INDArray maskedPoolingEpsilonTimeSeries(PoolingType poolingType, INDArray input, INDArray mask, INDArray epsilon2d, int pnorm){
 
         if(input.rank() != 3){
             throw new IllegalArgumentException("Expect rank 3 input activation array: got " + input.rank());
@@ -127,17 +127,28 @@ public class MaskedReductionUtil {
                 return out;
 
             case PNORM:
-//                //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-//                INDArray masked2 = Nd4j.createUninitialized(toReduce.shape());
-//                Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, 0,2));
-//
-//                INDArray abs = Transforms.abs(masked2, true);
-//                Transforms.pow(abs, pnorm, false);
-//                INDArray pNorm = abs.sum(2);
-//
-//                return Transforms.pow(pNorm, 1.0/pnorm);
+                //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
+                INDArray masked2 = Nd4j.createUninitialized(input.shape());
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(input, mask, masked2, 0,2));
 
-                throw new UnsupportedOperationException("Not yet implemented");
+                INDArray abs = Transforms.abs(masked2, true);
+                Transforms.pow(abs, pnorm, false);
+                INDArray pNorm = Transforms.pow(abs.sum(2), 1.0/pnorm);
+
+                INDArray numerator;
+                if(pnorm == 2){
+                    numerator = input.dup();
+                } else {
+                    INDArray absp2 = Transforms.pow(Transforms.abs(input, true), pnorm-2, false);
+                    numerator = input.mul(absp2);
+                }
+
+                INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                denom.rdivi(epsilon2d);
+                Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(numerator,denom,numerator, 0,1));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, 0,2));        //Apply mask
+
+                return numerator;
             case NONE:
                 throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
