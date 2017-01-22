@@ -69,13 +69,13 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
 
-        int bOffset = nOut;
-        int wOffset = nOut + numParams(conf);
-        int cLOffset = wOffset + nIn*nOut;
+        int wOffset = nIn*nOut;
+        int bOffset = wOffset + nOut;
+        int cLOffset = bOffset + nIn*nOut;
 
-        INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, bOffset));
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, wOffset));
-        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wOffset, cLOffset));
+        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,wOffset));
+        INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wOffset, bOffset));
+        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, cLOffset));
 
         params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
@@ -94,12 +94,14 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
+        
         int nWeightParams = nIn*nOut;
-        int nCenterLossParams = nIn*nOut; // note: numClasses == nOut
+        int nBiasParams = nWeightParams + nOut;
+        int nCenterLossParams = nBiasParams + nIn*nOut; // note: numClasses == nOut
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));    //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nCenterLossParams));
+        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nBiasParams));    //Already a row vector
+        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nBiasParams, nCenterLossParams));
 
         Map<String,INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
