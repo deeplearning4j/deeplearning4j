@@ -199,7 +199,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
-        INDArray diff = centersForExamples.sub(input).muli(1-alpha);
+        INDArray diff = centersForExamples.sub(input).muli(alpha);
         INDArray numerator = labels.transpose().mmul(diff);
         INDArray denominator = labels.sum(0).addi(1.0).transpose();
         INDArray deltaC = numerator.diviColumnVector(denominator);
