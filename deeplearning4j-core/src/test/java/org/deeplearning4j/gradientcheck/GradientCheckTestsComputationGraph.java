@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
@@ -684,13 +685,13 @@ public class GradientCheckTestsComputationGraph {
 
 
     @Test
-    public void testBasicIrisCenterLoss(){
+    public void testBasicCenterLoss(){
         Nd4j.getRandom().setSeed(12345);
         int numLabels = 2;
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
             .seed(12345)
             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+            .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 1))
             .updater(Updater.NONE).learningRate(1.0)
             .graphBuilder()
             .addInputs("input1")
@@ -705,11 +706,6 @@ public class GradientCheckTestsComputationGraph {
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
-
-        Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1,nParams);
-        graph.setParams(newParams);
 
         INDArray example = Nd4j.rand(150,4);
 
@@ -727,14 +723,14 @@ public class GradientCheckTestsComputationGraph {
         }
 
         if( PRINT_RESULTS ){
-            System.out.println("testBasicIrisCenterLoss()" );
+            System.out.println("testBasicCenterLoss()" );
             for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
             PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{example}, new INDArray[]{labels});
 
-        String msg = "testBasicIrisCenterLoss()";
+        String msg = "testBasicCenterLoss()";
         assertTrue(msg,gradOK);
     }
 
