@@ -449,7 +449,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         Pair<DataBuffer, DataBuffer> tadBuffersC = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, new int[] {2,3});
 
         log.info("Got TADShapeF: {}",Arrays.toString(tadBuffersF.getFirst().asInt()));
-        log.info("Got TADShapeC: {}",Arrays.toString(tadBuffersF.getFirst().asInt()));
+        log.info("Got TADShapeC: {}",Arrays.toString(tadBuffersC.getFirst().asInt()));
     }
 
     @Test
