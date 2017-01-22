@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
@@ -53,10 +54,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class CenterLossOutputLayer extends BaseOutputLayer {
     protected double alpha;
+    protected double lambda;
 
     protected CenterLossOutputLayer(Builder builder) {
         super(builder);
-        this.alpha = builder.getAlpha();
+        this.alpha = builder.alpha;
+        this.lambda = builder.lambda;
     }
 
     @Override
@@ -81,14 +84,21 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public Updater getUpdaterByParam(String paramName) {
-        return Updater.NONE; // center loss utilizes alpha directly for this so any updater can be used for other layers
+        if(paramName == CenterLossParamInitializer.CENTER_KEY) {
+            return Updater.NONE; // center loss utilizes alpha directly for this so any updater can be used for other layers
+        } else {
+            return updater;
+        }
     }
 
     public double getAlpha() { return alpha; }
 
+    public double getLambda() { return lambda; }
+
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
-        private double alpha = 0.05;
+        protected double alpha = 0.05;
+        protected double lambda = 2e-4;
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
@@ -100,8 +110,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
         public Builder alpha(double alpha) { this.alpha = alpha; return this; }
 
-        public double getAlpha() { return alpha; }
-        
+        public Builder lambda(double lambda) { this.lambda = lambda; return this; }
+
         @Override
         @SuppressWarnings("unchecked")
         public CenterLossOutputLayer build() {
