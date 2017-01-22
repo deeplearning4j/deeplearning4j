@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-
+import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -26,52 +26,69 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * L2Vertex calculates the L2 least squares error of two inputs.
+ * L2NormalizeVertex performs L2 normalization on a single input.
  *
- * For example, in Triplet Embedding you can input an anchor and a pos/neg class and use two parallel
- * L2 vertices to calculate two real numbers which can be fed into a LossLayer to calculate TripletLoss.
+ * Can be configured to normalize a single dimension, or normalize across
+ * all dimensions except zero by leaving dimension blank or setting it to -1.
  *
  * @author Justin Long (crockpotveggies)
+ * @author Alex Black (AlexDBlack)
  */
-public class L2Vertex extends GraphVertex {
+@Data
+public class L2NormalizeVertex extends GraphVertex {
+    public static final double DEFAULT_EPS = 1e-8;
+
+    protected int[] dimension;
     protected double eps;
 
-    public L2Vertex() {
-        this.eps = 1e-8;
+    public L2NormalizeVertex() {
+        this(null, DEFAULT_EPS);
     }
 
-    public L2Vertex(double eps) {
+    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension) {
+        this(dimension, DEFAULT_EPS);
+    }
+
+    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
+        this.dimension = dimension;
         this.eps = eps;
     }
 
+
+
     @Override
-    public L2Vertex clone() {
-        return new L2Vertex();
+    public L2NormalizeVertex clone() {
+        return new L2NormalizeVertex(dimension,eps);
     }
 
     @Override
-    public boolean equals(Object o) {
-        return o instanceof L2Vertex;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
+    public boolean equals(Object o){
+        if(!(o instanceof L2NormalizeVertex)) return false;
+        return ((L2NormalizeVertex)o).dimension == dimension;
     }
 
     @Override
     public int hashCode(){
-        return 433682566;
+        return 123081189;
+    }
+
+    @Override
+    public int numParams(boolean backprop){
+        return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null, eps);
+
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph,name,idx,dimension,eps);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        return InputType.feedForward(1);
+        if(vertexInputs.length == 1) return vertexInputs[0];
+        InputType first = vertexInputs[0];
+
+        return first;   //Same output shape/size as
     }
 }

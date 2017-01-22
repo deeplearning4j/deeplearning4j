@@ -13,21 +13,22 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 26/11/2016.
@@ -293,13 +294,13 @@ public class TestVAE {
         int inOutSize = 6;
 
         ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
-                new GaussianReconstructionDistribution("identity"),
-                new GaussianReconstructionDistribution("tanh"),
-                new BernoulliReconstructionDistribution("sigmoid"),
+                new GaussianReconstructionDistribution(Activation.IDENTITY),
+                new GaussianReconstructionDistribution(Activation.TANH),
+                new BernoulliReconstructionDistribution(Activation.SIGMOID),
                 new CompositeReconstructionDistribution.Builder()
-                        .addDistribution(2, new GaussianReconstructionDistribution("identity"))
+                        .addDistribution(2, new GaussianReconstructionDistribution(Activation.IDENTITY))
                         .addDistribution(2, new BernoulliReconstructionDistribution())
-                        .addDistribution(2, new GaussianReconstructionDistribution("tanh")).build()};
+                        .addDistribution(2, new GaussianReconstructionDistribution(Activation.TANH)).build()};
 
         Nd4j.getRandom().setSeed(12345);
         for (int minibatch : new int[]{1, 5}) {
@@ -338,7 +339,7 @@ public class TestVAE {
                                 .nIn(inOutSize).nOut(3)
                                 .encoderLayerSizes(5)
                                 .decoderLayerSizes(6)
-                                .pzxActivationFunction("tanh")
+                                .pzxActivationFunction(Activation.TANH)
                                 .reconstructionDistribution(reconstructionDistributions[i])
                                 .activation(new ActivationTanH())
                                 .updater(Updater.SGD)
@@ -352,7 +353,7 @@ public class TestVAE {
                 mln.fit(data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
-
+                assertFalse(layer.hasLossFunction());
 
                 Nd4j.getRandom().setSeed(12345);
                 INDArray reconstructionProb = layer.reconstructionProbability(data, 50);
@@ -371,6 +372,64 @@ public class TestVAE {
 
                     double pFromLogP = Math.exp(logp);
                     assertEquals(p, pFromLogP, 1e-6);
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testReconstructionErrorSimple(){
+
+        int inOutSize = 6;
+
+        ReconstructionDistribution[] reconstructionDistributions = new ReconstructionDistribution[]{
+                new LossFunctionWrapper(Activation.TANH, new LossMSE()),
+                new LossFunctionWrapper(Activation.IDENTITY, new LossMAE()),
+                new CompositeReconstructionDistribution.Builder()
+                        .addDistribution(3, new LossFunctionWrapper(Activation.TANH, new LossMSE()))
+                        .addDistribution(3, new LossFunctionWrapper(Activation.IDENTITY, new LossMAE())).build()};
+
+        Nd4j.getRandom().setSeed(12345);
+        for (int minibatch : new int[]{1, 5}) {
+            for (int i = 0; i < reconstructionDistributions.length; i++) {
+                INDArray data = Nd4j.rand(minibatch, inOutSize).muli(2).subi(1);
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(true)
+                        .l2(0.2).l1(0.3)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(1.0)
+                        .seed(12345L)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .list()
+                        .layer(0, new VariationalAutoencoder.Builder()
+                                .nIn(inOutSize).nOut(3)
+                                .encoderLayerSizes(5)
+                                .decoderLayerSizes(6)
+                                .pzxActivationFunction(Activation.TANH)
+                                .reconstructionDistribution(reconstructionDistributions[i])
+                                .activation(new ActivationTanH())
+                                .updater(Updater.SGD)
+                                .build())
+                        .pretrain(true).backprop(false)
+                        .build();
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
+                mln.initGradientsView();
+                mln.fit(data);
+
+                org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer = (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
+                assertTrue(layer.hasLossFunction());
+
+                Nd4j.getRandom().setSeed(12345);
+                INDArray reconstructionError = layer.reconstructionError(data);
+                assertArrayEquals(new int[]{minibatch, 1}, reconstructionError.shape());
+
+                for( int j=0; j<minibatch; j++ ){
+                    double re = reconstructionError.getDouble(j);
+                    assertTrue(re >= 0.0 );
                 }
             }
         }

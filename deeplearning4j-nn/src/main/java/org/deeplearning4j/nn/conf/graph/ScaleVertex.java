@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-
+import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -26,52 +26,54 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * L2Vertex calculates the L2 least squares error of two inputs.
+ * A ScaleVertex is used to scale the size of activations of a single layer<br>
+ * For example, ResNet activations can be scaled in repeating blocks to keep variance
+ * under control.
  *
- * For example, in Triplet Embedding you can input an anchor and a pos/neg class and use two parallel
- * L2 vertices to calculate two real numbers which can be fed into a LossLayer to calculate TripletLoss.
- *
- * @author Justin Long (crockpotveggies)
+ * @author Justin Long (@crockpotveggies)
  */
-public class L2Vertex extends GraphVertex {
-    protected double eps;
+@Data
+public class ScaleVertex extends GraphVertex {
 
-    public L2Vertex() {
-        this.eps = 1e-8;
+    public ScaleVertex(@JsonProperty("scaleFactor") double scaleFactor) {
+        this.scaleFactor = scaleFactor;
     }
 
-    public L2Vertex(double eps) {
-        this.eps = eps;
+    protected double scaleFactor;
+
+    @Override
+    public ScaleVertex clone() {
+        return new ScaleVertex(scaleFactor);
     }
 
     @Override
-    public L2Vertex clone() {
-        return new L2Vertex();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof L2Vertex;
-    }
-
-    @Override
-    public int numParams(boolean backprop) {
-        return 0;
+    public boolean equals(Object o){
+        if(!(o instanceof ScaleVertex)) return false;
+        return ((ScaleVertex)o).scaleFactor == scaleFactor;
     }
 
     @Override
     public int hashCode(){
-        return 433682566;
+        return 123073088;
+    }
+
+    @Override
+    public int numParams(boolean backprop){
+        return 0;
     }
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2Vertex(graph, name, idx, null, null, eps);
+
+        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph,name,idx,scaleFactor);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        return InputType.feedForward(1);
+        if(vertexInputs.length == 1) return vertexInputs[0];
+        InputType first = vertexInputs[0];
+
+        return first;   //Same output shape/size as
     }
 }
