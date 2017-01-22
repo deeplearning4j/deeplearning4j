@@ -55,8 +55,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
             (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
         int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        return nIn*nOut + nOut + nIn*numClasses;     //weights + bias + embeddings
+        int nOut = layerConf.getNOut(); // also equal to numClasses
+        return nIn*nOut + nOut + nIn*nOut;     //weights + bias + embeddings
     }
 
     @Override
@@ -67,11 +67,11 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        int nOut = layerConf.getNOut(); // also equal to numClasses
 
         int bOffset = nOut;
         int wOffset = nOut + numParams(conf);
-        int cLOffset = wOffset + nIn*numClasses;
+        int cLOffset = wOffset + nIn*nOut;
 
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, bOffset));
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, wOffset));
@@ -93,9 +93,9 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
             (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        int nOut = layerConf.getNOut(); // also equal to numClasses
         int nWeightParams = nIn*nOut;
-        int nCenterLossParams = nIn*numClasses; // note: numClasses == nOut
+        int nCenterLossParams = nIn*nOut; // note: numClasses == nOut
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
         INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));    //Already a row vector
@@ -115,7 +115,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
             (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         if(initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(layerConf.getNumClasses(), layerConf.getEmbeddingSize());
+            INDArray ret = Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getNIn()); // nOut is numClasses, nIn is embeddingSize
             centerLossView.assign(ret);
         }
         return centerLossView;

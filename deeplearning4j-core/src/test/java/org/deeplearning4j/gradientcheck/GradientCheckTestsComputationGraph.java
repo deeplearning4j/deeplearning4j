@@ -677,7 +677,66 @@ public class GradientCheckTestsComputationGraph {
         boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{pos, anc, neg}, new INDArray[]{labels});
 
-        String msg = "testBasicIrisWithMerging()";
+        String msg = "testBasicIrisTripletStackingL2Loss()";
+        assertTrue(msg,gradOK);
+    }
+
+
+    @Test
+    public void testBasicIrisCenterLoss(){
+        Nd4j.getRandom().setSeed(12345);
+        int numLabels = 2;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(12345)
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+            .updater(Updater.NONE).learningRate(1.0)
+            .graphBuilder()
+            .addInputs("input1")
+            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation("tanh").build(), "input1")
+            .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
+                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                .nIn(5).nOut(numLabels)
+                .activation("softmax").build(), "l1")
+            .setOutputs("lossLayer")
+            .pretrain(false).backprop(true)
+            .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        int numParams = (4*5+5);
+        assertEquals(numParams, graph.numParams());
+
+        Nd4j.getRandom().setSeed(12345);
+        int nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(1,nParams);
+        graph.setParams(newParams);
+
+        INDArray example = Nd4j.rand(150,4);
+
+        INDArray labels = Nd4j.zeros(150,numLabels);
+        Random r = new Random(12345);
+        for( int i=0; i<150; i++ ){
+            labels.putScalar(i,r.nextInt(numLabels),1.0);
+        }
+
+
+        Map<String,INDArray> out = graph.feedForward(new INDArray[]{example}, true);
+
+        for(String s : out.keySet()){
+            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
+        }
+
+        if( PRINT_RESULTS ){
+            System.out.println("testBasicIrisCenterLoss()" );
+            for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{example}, new INDArray[]{labels});
+
+        String msg = "testBasicIrisCenterLoss()";
         assertTrue(msg,gradOK);
     }
 
