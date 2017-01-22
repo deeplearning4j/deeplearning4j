@@ -95,7 +95,8 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if (!canDoBackward()) {
-            throw new IllegalStateException("Cannot do backward pass: all epsilons not set");
+            throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer "+vertexName+" (idx "+vertexIndex+") numInputs "+
+                getNumInputArrays()+"; numOutputs "+getNumOutputConnections());
         }
 
         Pair<Gradient, INDArray> pair;
