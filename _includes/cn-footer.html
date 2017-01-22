@@ -36,5 +36,13 @@
   })();
 </script>
 
+<script>
+jQuery(function($) {
+$(".sidenav a").filter(function() {
+return this.href == window.location;
+}).addClass('active').closest('ul').prev('a').click();
+});
+</script>
+
 </body>
 </html>
