@@ -622,7 +622,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * dimension to do the ismax along
          */
         if(op.opNum() == 41 && op.extraArgs() != null) {
-            int[] dimension = new int[] {(int) op.extraArgs()[1] };
+            int[] dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i + 1];
+            }
+
+
             /**
              * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
              * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
@@ -779,11 +785,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
-        log.trace("Broascast dimension: {}", Arrays.toString(dimension));
-        log.trace("x shape: {}; x TAD: {}; comp TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()), Arrays.toString(op.x().tensorAlongDimension(0, dimension).shapeInfoDataBuffer().asInt()));
-        log.trace("z shape: {}; z TAD: {}", Arrays.toString(op.z().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
-        log.trace("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
-        log.trace("-------------");
+/*
+        log.info("Broascast dimension: {}", Arrays.toString(dimension));
+        log.info("x shape: {}; x TAD: {}; comp TAD: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()), Arrays.toString(op.x().tensorAlongDimension(0, dimension).shapeInfoDataBuffer().asInt()));
+        log.info("z shape: {}; z TAD: {}", Arrays.toString(op.z().shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
+        log.info("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
+        log.info("-------------");
+*/
         PointerPointer dummy = new PointerPointer(
                 hostTadShapeInfo,
                 hostTadOffsets,
