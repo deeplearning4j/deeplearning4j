@@ -3707,6 +3707,218 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         return true;
     }
 
+
+    @Test
+    public void testIsMax2Of3d(){
+        double[][][] slices = new double[3][][];
+        double[][][] isMax = new double[3][][];
+
+        slices[0] = new double[][]{
+                {1,10,2},
+                {3,4,5}};
+        slices[1] = new double[][]{
+                {-10,-9,-8},
+                {-7,-6,-5}};
+        slices[2] = new double[][]{
+                {4,3,2},
+                {1,0,-1}};
+
+        isMax[0] = new double[][]{
+                {0,1,0},
+                {0,0,0}};
+        isMax[1] = new double[][]{
+                {0,0,0},
+                {0,0,1}};
+        isMax[2] = new double[][]{
+                {1,0,0},
+                {0,0,0}};
+
+        INDArray arr = Nd4j.create(3,2,3);
+        INDArray expected = Nd4j.create(3,2,3);
+        for( int i=0; i<3; i++ ){
+            arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
+            expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(isMax[i]));
+        }
+
+        Nd4j.getExecutioner().exec(new IsMax(arr, 1,2));
+
+        assertEquals(expected, arr);
+    }
+
+    @Test
+    public void testIsMax2of4d(){
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] s = new int[]{2,3,4,5};
+        INDArray arr = Nd4j.rand(s);
+
+        //Test 0,1
+        INDArray exp = Nd4j.create(s);
+        for( int i=0; i<4; i++ ){
+            for( int j=0; j<5; j++ ){
+                INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.point(j));
+                INDArray subsetExp = exp.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.point(j));
+                assertArrayEquals(new int[]{2,3}, subset.shape());
+
+                NdIndexIterator iter = new NdIndexIterator(2,3);
+                int[] maxIdx = {0,0};
+                double max = -Double.MAX_VALUE;
+                while(iter.hasNext()){
+                    int[] next = iter.next();
+                    double d = subset.getDouble(next);
+                    if(d > max){
+                        max = d;
+                        maxIdx[0] = next[0];
+                        maxIdx[1] = next[1];
+                    }
+                }
+
+                subsetExp.putScalar(maxIdx, 1.0);
+            }
+        }
+
+        INDArray actC = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('c'), 0,1));
+        INDArray actF = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('f'), 0,1));
+
+        assertEquals(exp, actC);
+        assertEquals(exp, actF);
+
+
+
+        //Test 2,3
+        exp = Nd4j.create(s);
+        for( int i=0; i<2; i++ ){
+            for( int j=0; j<3; j++ ){
+                INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray subsetExp = exp.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                assertArrayEquals(new int[]{4,5}, subset.shape());
+
+                NdIndexIterator iter = new NdIndexIterator(4,5);
+                int[] maxIdx = {0,0};
+                double max = -Double.MAX_VALUE;
+                while(iter.hasNext()){
+                    int[] next = iter.next();
+                    double d = subset.getDouble(next);
+                    if(d > max){
+                        max = d;
+                        maxIdx[0] = next[0];
+                        maxIdx[1] = next[1];
+                    }
+                }
+
+                subsetExp.putScalar(maxIdx, 1.0);
+            }
+        }
+
+        actC = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('c'), 2,3));
+        actF = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('f'), 2,3));
+
+        assertEquals(exp, actC);
+        assertEquals(exp, actF);
+    }
+
+    @Test
+    public void testIMax2Of3d(){
+        double[][][] slices = new double[3][][];
+
+        slices[0] = new double[][]{
+                {1,10,2},
+                {3,4,5}};
+        slices[1] = new double[][]{
+                {-10,-9,-8},
+                {-7,-6,-5}};
+        slices[2] = new double[][]{
+                {4,3,2},
+                {1,0,-1}};
+
+        //Based on a c-order traversal of each tensor
+        double[] imax = new double[]{1, 5, 0};
+
+        INDArray arr = Nd4j.create(3,2,3);
+        for( int i=0; i<3; i++ ){
+            arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
+        }
+
+        INDArray out = Nd4j.getExecutioner().exec(new IMax(arr), 1,2);
+
+        INDArray exp = Nd4j.create(imax);
+
+        assertEquals(exp, out);
+    }
+
+
+    @Test
+    public void testIMax2of4d(){
+
+        Nd4j.getRandom().setSeed(12345);
+        int[] s = new int[]{2,3,4,5};
+        INDArray arr = Nd4j.rand(s);
+
+        //Test 0,1
+        INDArray exp = Nd4j.create(new int[]{4,5});
+        for( int i=0; i<4; i++ ){
+            for( int j=0; j<5; j++ ){
+                INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.point(j));
+                assertArrayEquals(new int[]{2,3}, subset.shape());
+
+                NdIndexIterator iter = new NdIndexIterator('c',2,3);
+                double max = -Double.MAX_VALUE;
+                int maxIdxPos = -1;
+                int count = 0;
+                while(iter.hasNext()){
+                    int[] next = iter.next();
+                    double d = subset.getDouble(next);
+                    if(d > max){
+                        max = d;
+                        maxIdxPos = count;
+                    }
+                    count++;
+                }
+
+                exp.putScalar(i,j,maxIdxPos);
+            }
+        }
+
+        INDArray actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c')), 0,1);
+        INDArray actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f')), 0,1);
+//
+        assertEquals(exp, actC);
+        assertEquals(exp, actF);
+
+
+
+        //Test 2,3
+        exp = Nd4j.create(new int[]{2,3});
+        for( int i=0; i<2; i++ ){
+            for( int j=0; j<3; j++ ){
+                INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                assertArrayEquals(new int[]{4,5}, subset.shape());
+
+                NdIndexIterator iter = new NdIndexIterator('c',4,5);
+                int maxIdxPos = -1;
+                double max = -Double.MAX_VALUE;
+                int count = 0;
+                while(iter.hasNext()){
+                    int[] next = iter.next();
+                    double d = subset.getDouble(next);
+                    if(d > max){
+                        max = d;
+                        maxIdxPos = count;
+                    }
+                    count++;
+                }
+
+                exp.putScalar(i,j,maxIdxPos);
+            }
+        }
+
+        actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c')), 2,3);
+        actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f')), 2,3);
+
+        assertEquals(exp, actC);
+        assertEquals(exp, actF);
+    }
+
     @Override
     public char ordering() {
         return 'c';
