@@ -16,6 +16,7 @@ import java.io.File;
 import java.util.List;
 
 import static play.mvc.Controller.request;
+import static play.mvc.Results.badRequest;
 import static play.mvc.Results.internalServerError;
 import static play.mvc.Results.ok;
 
@@ -35,7 +36,7 @@ public class CSVSparkTransformServer {
     private String jsonPath = null;
     @Parameter(names = {"-dp","--dataVecPort"},arity = 1)
     private int port = 9000;
-
+    private Server server;
     public void runMain(String[] args) throws Exception {
         JCommander jcmdr = new JCommander(this);
 
@@ -58,8 +59,12 @@ public class CSVSparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
-                return ok(Json.toJson(transform.transform(request().body().as(CSVRecord.class))));
+                CSVRecord record = Json.fromJson(request().body().asJson(),CSVRecord.class);
+                if(record == null)
+                    return badRequest();
+                return ok(Json.toJson(transform.transform(record)));
             } catch (Exception e) {
+                e.printStackTrace();
                 return internalServerError();
             }
         })));
@@ -67,30 +72,48 @@ public class CSVSparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformbatch").routeTo(FunctionUtil.function0((() -> {
             try {
-                return ok(Json.toJson(transform.transform(request().body().as(BatchRecord.class))));
+                BatchRecord batch = transform.transform(Json.fromJson(request().body().asJson(),BatchRecord.class));
+                if(batch == null)
+                    return badRequest();
+                return ok(Json.toJson(batch));
             } catch (Exception e) {
+                e.printStackTrace();
                 return internalServerError();
             }
         })));
         routingDsl.POST("/transformedbatcharray").routeTo(FunctionUtil.function0((() -> {
             try {
-                return ok(Json.toJson(transform.toArray(request().body().as(BatchRecord.class))));
+                BatchRecord batchRecord = Json.fromJson(request().body().asJson(),BatchRecord.class);
+                if(batchRecord == null)
+                    return badRequest();
+                return ok(Json.toJson(transform.toArray(batchRecord)));
             } catch (Exception e) {
                 return internalServerError();
             }
         })));
+
         routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                return ok(Json.toJson(transform.toArray(request().body().as(CSVRecord.class))));
+                CSVRecord record = Json.fromJson(request().body().asJson(),CSVRecord.class);
+                if(record == null)
+                    return badRequest();
+                return ok(Json.toJson(transform.toArray(record)));
             } catch (Exception e) {
                 return internalServerError();
             }
         })));
-        Server.forRouter( routingDsl.build(), Mode.DEV, port);
+        server = Server.forRouter( routingDsl.build(), Mode.DEV, port);
 
 
     }
 
+    /**
+     * Stop the server
+     */
+    public void stop() {
+        if(server != null)
+            server.stop();
+    }
 
     public static void main(String[] args) throws Exception {
         new CSVSparkTransformServer().runMain(args);
