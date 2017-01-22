@@ -705,9 +705,6 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        int numParams = (4*5+5);
-        assertEquals(numParams, graph.numParams());
-
         Nd4j.getRandom().setSeed(12345);
         int nParams = graph.numParams();
         INDArray newParams = Nd4j.rand(1,nParams);
