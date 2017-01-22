@@ -205,7 +205,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Standard 'full array' global pooling op
             epsilonNd = epsilonHelperFullArray(input, epsilon, poolDim);
         } else {
-            epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon);
+            epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon, pNorm);
         }
 
         if(collapseDimensions){
