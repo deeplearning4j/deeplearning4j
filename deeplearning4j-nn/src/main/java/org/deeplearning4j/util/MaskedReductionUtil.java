@@ -2,8 +2,15 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  *
@@ -18,12 +25,12 @@ public class MaskedReductionUtil {
     private static final int[] CNN_DIM_MASK_W = new int[]{0,3};
 
 
-    public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask){
+    public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask, int pnorm){
         if(toReduce.rank() != 3){
             throw new IllegalArgumentException("Expect rank 3 array: got " + toReduce.rank());
         }
         if(mask.rank() != 2){
-            throw new IllegalArgumentException("Expect rank 2 array for mask: got " + toReduce.rank());
+            throw new IllegalArgumentException("Expect rank 2 array for mask: got " + mask.rank());
         }
 
         //Sum pooling: easy. Multiply by mask, then sum as normal
@@ -32,16 +39,20 @@ public class MaskedReductionUtil {
 
         switch (poolingType){
             case MAX:
-                INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
-                //Need something like a Broadcast CAS op
+                //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
+                INDArray negInfMask = Transforms.not(mask);
+                BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                throw new UnsupportedOperationException("Not yet implemented");
+                INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
+                Nd4j.getExecutioner().exec(new BroadcastAddOp(toReduce, negInfMask, withInf, 0,2));
+                //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
+
+                return withInf.max(2);
             case AVG:
             case SUM:
                 INDArray masked = Nd4j.createUninitialized(toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked, 0,2));
                 INDArray summed = masked.sum(2);
-//                System.out.println(summed);
                 if(poolingType == PoolingType.SUM){
                     return summed;
                 }
@@ -50,12 +61,89 @@ public class MaskedReductionUtil {
                 summed.diviColumnVector(maskCounts);
                 return summed;
             case PNORM:
+                //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
+                INDArray masked2 = Nd4j.createUninitialized(toReduce.shape());
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, 0,2));
+
+                INDArray abs = Transforms.abs(masked2, true);
+                Transforms.pow(abs, pnorm, false);
+                INDArray pNorm = abs.sum(2);
+
+                return Transforms.pow(pNorm, 1.0/pnorm);
+            case NONE:
+                throw new UnsupportedOperationException("NONE pooling type not supported");
+            default:
+                throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
+        }
+    }
+
+    public static INDArray maskedPoolingEpsilonTimeSeries(PoolingType poolingType, INDArray input, INDArray mask, INDArray epsilon2d){
+
+        if(input.rank() != 3){
+            throw new IllegalArgumentException("Expect rank 3 input activation array: got " + input.rank());
+        }
+        if(mask.rank() != 2){
+            throw new IllegalArgumentException("Expect rank 2 array for mask: got " + mask.rank());
+        }
+        if(epsilon2d.rank() != 2){
+            throw new IllegalArgumentException("Expected rank 2 array for errors: got " + epsilon2d.rank());
+        }
+
+        //Mask: [minibatch, tsLength]
+        //Epsilon: [minibatch, vectorSize]
+
+        switch (poolingType){
+            case MAX:
+                //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
+                INDArray negInfMask = Transforms.not(mask);
+                BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
+
+                INDArray withInf = Nd4j.createUninitialized(input.shape());
+                Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, 0,2));
+                //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
+
+                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(withInf, 2));
+
+                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax, epsilon2d, isMax, 0,1));
+            case AVG:
+            case SUM:
+                //if out = sum(in,dims) then dL/dIn = dL/dOut -> duplicate to each step and mask
+                //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
+                //With masking: N differs for different time series
+
+                INDArray out = Nd4j.createUninitialized(input.shape(), 'f');
+
+                //Broadcast copy op, then divide and mask to 0 as appropriate
+                Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, epsilon2d, out, 0,1));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(out, mask, out, 0,2));
+
+                if(poolingType == PoolingType.SUM){
+                    return out;
+                }
+
+                INDArray nEachTimeSeries = mask.sum(1); //[minibatchSize,tsLength] -> [minibatchSize,1]
+                Nd4j.getExecutioner().exec(new BroadcastDivOp(out, nEachTimeSeries, out, 0));
+
+                return out;
+
+            case PNORM:
+//                //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
+//                INDArray masked2 = Nd4j.createUninitialized(toReduce.shape());
+//                Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, 0,2));
+//
+//                INDArray abs = Transforms.abs(masked2, true);
+//                Transforms.pow(abs, pnorm, false);
+//                INDArray pNorm = abs.sum(2);
+//
+//                return Transforms.pow(pNorm, 1.0/pnorm);
+
                 throw new UnsupportedOperationException("Not yet implemented");
             case NONE:
                 throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
+
     }
 
 

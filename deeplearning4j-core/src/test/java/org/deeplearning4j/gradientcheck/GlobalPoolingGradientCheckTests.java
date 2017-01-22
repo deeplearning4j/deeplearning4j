@@ -39,11 +39,8 @@ public class GlobalPoolingGradientCheckTests {
         int layerSize = 4;
         int nOut = 2;
 
-//        int[] minibatchSizes = new int[]{1,3};
-        int[] minibatchSizes = new int[]{3};
-//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
-//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.MAX};
+        int[] minibatchSizes = new int[]{1,3};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
         for( int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
@@ -106,10 +103,8 @@ public class GlobalPoolingGradientCheckTests {
         int layerDepth = 4;
         int nOut = 2;
 
-//        int[] minibatchSizes = new int[]{1,3};
-        int[] minibatchSizes = new int[]{3};
-//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.MAX};
+        int[] minibatchSizes = new int[]{1,3};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
         for( int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
@@ -154,9 +149,9 @@ public class GlobalPoolingGradientCheckTests {
         }
     }
 
-//    @Test(expected = Exception.class)   //At least until masking is properly implemented and fixed!
     @Test
     public void testLSTMGlobalPoolingBasicMultiLayerVariableLength() {
+
         //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
@@ -166,8 +161,7 @@ public class GlobalPoolingGradientCheckTests {
         int nOut = 2;
 
         int miniBatchSize = 3;
-//        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
-        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.PNORM};
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
         for (PoolingType pt : poolingTypes) {
 
