@@ -66,8 +66,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("CenterLossOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.OutputLayer ret
-                = new org.deeplearning4j.nn.layers.OutputLayer(conf);
+        Layer ret
+                = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -79,7 +79,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public ParamInitializer initializer() {
-        return DefaultParamInitializer.getInstance();
+        return CenterLossParamInitializer.getInstance();
     }
 
     @Override
@@ -88,6 +88,53 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
             return Updater.NONE; // center loss utilizes alpha directly for this so any updater can be used for other layers
         } else {
             return updater;
+        }
+    }
+
+    @Override
+    public double getLearningRateByParam(String paramName) {
+        switch (paramName){
+            case CenterLossParamInitializer.WEIGHT_KEY:
+                return learningRate;
+            case CenterLossParamInitializer.BIAS_KEY:
+                if(!Double.isNaN(biasLearningRate)){
+                    //Bias learning rate has been explicitly set
+                    return biasLearningRate;
+                } else {
+                    return learningRate;
+                }
+            case CenterLossParamInitializer.CENTER_KEY:
+                return 0;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL1ByParam(String paramName) {
+        switch (paramName){
+            case CenterLossParamInitializer.WEIGHT_KEY:
+                return l1;
+            case CenterLossParamInitializer.BIAS_KEY:
+                return 0.0;
+            case CenterLossParamInitializer.CENTER_KEY:
+                return 0.0;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public double getL2ByParam(String paramName) {
+        switch (paramName){
+            case CenterLossParamInitializer.WEIGHT_KEY:
+                return l2;
+            case CenterLossParamInitializer.BIAS_KEY:
+                return 0.0;
+            case CenterLossParamInitializer.CENTER_KEY:
+                return 0.0;
+            default:
+                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
     }
 
