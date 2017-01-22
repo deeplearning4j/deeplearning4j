@@ -150,7 +150,7 @@ public class GlobalPoolingGradientCheckTests {
     }
 
     @Test
-    public void testLSTMGlobalPoolingBasicMultiLayerVariableLength() {
+    public void testLSTMWithMasking() {
         //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
