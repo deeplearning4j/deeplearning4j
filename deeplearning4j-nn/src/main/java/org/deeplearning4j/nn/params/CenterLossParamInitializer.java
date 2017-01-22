@@ -75,7 +75,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,wOffset));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wOffset, bOffset));
-        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, cLOffset));
+        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bOffset, cLOffset)).reshape('f', layerConf.getNOut(), layerConf.getNIn());
 
         params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
@@ -94,14 +94,14 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut(); // also equal to numClasses
-        
+
         int nWeightParams = nIn*nOut;
         int nBiasParams = nWeightParams + nOut;
         int nCenterLossParams = nBiasParams + nIn*nOut; // note: numClasses == nOut
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nWeightParams)).reshape('f',nIn,nOut);
         INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nWeightParams, nBiasParams));    //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nBiasParams, nCenterLossParams));
+        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nBiasParams, nCenterLossParams)).reshape('c',nIn,nOut);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
@@ -117,7 +117,7 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
             (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         if(initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getNIn()); // nOut is numClasses, nIn is embeddingSize
+            INDArray ret = Nd4j.zeros(layerConf.getNOut(), layerConf.getNIn()); // nOut is numClasses, nIn is embeddingSize
             centerLossView.assign(ret);
         }
         return centerLossView;
