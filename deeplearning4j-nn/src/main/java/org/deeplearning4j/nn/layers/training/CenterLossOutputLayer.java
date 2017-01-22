@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -82,7 +83,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
 
-        double intraClassScore = intraClassLoss.computeScore(getLabels2d(), input.subColumnVector(centersForExamples), layerConf().getActivationFn(), maskArray, false);
+        double intraClassScore = intraClassLoss.computeScore(getLabels2d(), input.sub(centersForExamples), Activation.IDENTITY.getActivationFunction(), maskArray, false);
 
 
         // now calculate the inter-class score component
@@ -113,7 +114,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
-        INDArray intraClassScoreArray = input.subColumnVector(centersForExamples);
+        INDArray intraClassScoreArray = input.sub(centersForExamples);
 
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
