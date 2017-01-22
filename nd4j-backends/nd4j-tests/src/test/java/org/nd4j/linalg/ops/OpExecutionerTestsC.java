@@ -21,6 +21,7 @@
 package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -451,6 +452,17 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testMysteriousCrash() {
+        INDArray arrayF = Nd4j.create(new int[] {1,1, 4, 4}, 'f');
+        INDArray arrayC = Nd4j.create(new int[] {1,1, 4, 4}, 'c');
+        Pair<DataBuffer, DataBuffer> tadBuffersF = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, new int[] {2,3});
+        Pair<DataBuffer, DataBuffer> tadBuffersC = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, new int[] {2,3});
+
+        log.info("Got TADShapeF: {}",Arrays.toString(tadBuffersF.getFirst().asInt()));
+        log.info("Got TADShapeC: {}",Arrays.toString(tadBuffersF.getFirst().asInt()));
+    }
+
+    @Test
     public void testMeanSumSimple() {
         System.out.println("3d");
         INDArray arr = Nd4j.ones(1,4,4);
@@ -459,8 +471,11 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         System.out.println("4d");
         INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
+        System.out.println("A0");
         INDArray arr4m = arr4.mean(2, 3);
+        System.out.println("A1");
         INDArray arr4s = arr4.sum(2, 3);
+        System.out.println("A2");
         for(int i = 0; i < arr4m.length(); i++)
             assertEquals(arr4m.getDouble(i),1,1e-1);
         for(int i = 0; i < arr4s.length(); i++)

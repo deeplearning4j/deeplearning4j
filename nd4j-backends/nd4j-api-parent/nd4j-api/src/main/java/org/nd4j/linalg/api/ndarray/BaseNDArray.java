@@ -826,16 +826,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = offset() + tadInfo.getSecond().getInt(index);
         INDArray toTad = Nd4j.create(data(),shape,stride,offset);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
+
         //preserve immutability
-        DataBuffer newShapeInfo = baseNDArray.shapeInfoDataBuffer().dup();
-        newShapeInfo.put(newShapeInfo.length() - 1,Shape.getOrder(shape,stride,1));
+        char newOrder = Shape.getOrder(shape,stride,1);
+
+        int ews = baseNDArray.shapeInfoDataBuffer().getInt(baseNDArray.shapeInfoDataBuffer().length() - 2);
+
         //TAD always calls permute. Permute EWS is always -1. This is not true for row vector shapes though.
-        if(!Shape.isRowVectorShape(newShapeInfo))
-            Shape.setElementWiseStride(newShapeInfo,-1);
-        baseNDArray.setShapeInformation(newShapeInfo);
+        if(!Shape.isRowVectorShape(baseNDArray.shapeInfoDataBuffer()))
+            ews = -1;
+
+        // we create new shapeInfo with possibly new ews & order
+        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
+
         INDArray javaTad = javaTensorAlongDimension(index,dimension);
-        if(!toTad.equals(javaTensorAlongDimension(index,dimension)))
+        if(!toTad.equals(javaTensorAlongDimension(index,dimension))) {
             throw new IllegalStateException("Illegal tad. Not same.");
+        }
         return toTad;
     }
 
