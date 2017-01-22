@@ -75,10 +75,15 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         LossFunctions.LossFunction interClassLoss = LossFunctions.LossFunction.MCXENT;
         LossFunctions.LossFunction intraClassLoss = LossFunctions.LossFunction.L2;
 
-        // TODO
+        // calculate the intra-class score component
+        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centersForExamples = labels.mmul(centers);
 
-        double interClassScore = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
-        double intraClassScore = ;
+        double intraClassScore = intraClassLoss.computeScore(getLabels2d(), input.subColumnVector(centersForExamples), layerConf().getActivationFn(), maskArray, false);
+
+
+        // now calculate the inter-class score component
+        double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
 
         double score = interClassScore + intraClassScore;
 
@@ -102,10 +107,18 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
             throw new IllegalStateException("Cannot calculate score without input and labels");
         INDArray preOut = preOutput2d(false);
 
-        ILossFunction lossFunction = layerConf().getLossFn();
-        //INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
-        INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
+        // calculate the intra-class score component
+        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centersForExamples = labels.mmul(centers);
+        INDArray intraClassScoreArray = input.subColumnVector(centersForExamples);
+
+        // calculate the inter-class score component
+        LossFunctions.LossFunction interClassLoss = LossFunctions.LossFunction.MCXENT;
+        INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
+        scoreArray.addi(intraClassScoreArray);
+
         double l1l2 = fullNetworkL1 + fullNetworkL2;
+
         if(l1l2 != 0.0){
             scoreArray.addi(l1l2);
         }
@@ -168,7 +181,20 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         INDArray weightGradView = gradientViews.get(CenterLossParamInitializer.WEIGHT_KEY);
         INDArray biasGradView = gradientViews.get(CenterLossParamInitializer.BIAS_KEY);
+        INDArray centersGradView = gradientViews.get(CenterLossParamInitializer.CENTER_KEY);
 
+        // centers delta
+        // TODO something with this for updater
+        double alpha = layerConf().getAlpha();
+
+        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centersForExamples = labels.mmul(centers);
+        INDArray diff = centersForExamples.sub(input).muli(alpha);
+        INDArray deltaC = labels.transpose().mmul(diff);
+        deltaC.sum(0).addi(1.0).transpose();
+        centersGradView.assign(deltaC);
+
+        // other standard calculations
         Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
         biasGradView.assign(delta.sum(0));
 
@@ -177,5 +203,4 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         return new Pair<>(gradient, delta);
     }
-
 }

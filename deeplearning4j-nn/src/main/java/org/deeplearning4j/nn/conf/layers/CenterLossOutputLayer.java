@@ -25,6 +25,7 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
@@ -45,14 +46,17 @@ import java.util.Map;
  * average(embedding(y)) for all examples y in Y"
  *
  * @author Justin Long (@crockpotveggies)
+ * @author Alex Black (@AlexDBlack)
  */
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class CenterLossOutputLayer extends BaseOutputLayer {
+    protected double alpha;
 
     protected CenterLossOutputLayer(Builder builder) {
-    	super(builder);
+        super(builder);
+        this.alpha = builder.getAlpha();
     }
 
     @Override
@@ -75,8 +79,16 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         return DefaultParamInitializer.getInstance();
     }
 
+    @Override
+    public Updater getUpdaterByParam(String paramName) {
+        return Updater.NONE; // center loss utilizes alpha directly for this so any updater can be used for other layers
+    }
+
+    public double getAlpha() { return alpha; }
+
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
+        private double alpha = 0.01;
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
@@ -85,6 +97,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         public Builder(ILossFunction lossFunction){
             this.lossFn = lossFunction;
         }
+
+        public Builder alpha(double alpha) { this.alpha = alpha; return this; }
+
+        public double getAlpha() { return alpha; }
         
         @Override
         @SuppressWarnings("unchecked")

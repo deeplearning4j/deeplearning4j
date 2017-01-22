@@ -37,6 +37,7 @@ import java.util.Map;
  * Initialize Center Loss params.
  *
  * @author Justin Long (@crockpotveggies)
+ * @author Alex Black (@AlexDBlack)
  */
 public class CenterLossParamInitializer extends DefaultParamInitializer {
 
@@ -110,13 +111,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
 
     protected INDArray createCenterLossMatrix(NeuralNetConfiguration conf, INDArray centerLossView, boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-            (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
+            (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
         if(initializeParameters) {
-            // TODO
-//            INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
-//            centerLossView.assign(ret);
+            INDArray ret = Nd4j.valueArrayOf(layerConf.getNumClasses(), layerConf.getEmbeddingSize());
+            centerLossView.assign(ret);
         }
         return centerLossView;
     }
