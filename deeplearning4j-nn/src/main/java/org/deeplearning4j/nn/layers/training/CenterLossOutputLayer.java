@@ -189,15 +189,19 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersGradView = gradientViews.get(CenterLossParamInitializer.CENTER_KEY);
 
         // centers delta
-        // TODO something with this for updater
         double alpha = layerConf().getAlpha();
 
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
-        INDArray diff = centersForExamples.sub(input).muli(alpha);
-        INDArray deltaC = labels.transpose().mmul(diff);
-        deltaC.sum(0).addi(1.0).transpose();
+        INDArray centersForExamples = labels2d.mmul(centers);
+        INDArray diff = centersForExamples.sub(input).muli(1-alpha);
+        INDArray numerator = labels2d.transpose().mmul(diff);
+        INDArray denominator = labels2d.sum(0).addi(1.0).transpose();
+        INDArray deltaC = numerator.diviColumnVector(denominator);
         centersGradView.assign(deltaC);
+
+        // add to delta
+    //        INDArray dLcdai = input.sub(centersForExamples);
+    //        delta.addi(dLcdai.muli(layerConf().getLambda()));
 
         // other standard calculations
         Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
