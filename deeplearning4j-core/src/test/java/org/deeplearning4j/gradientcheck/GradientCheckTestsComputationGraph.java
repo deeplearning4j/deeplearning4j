@@ -698,7 +698,7 @@ public class GradientCheckTestsComputationGraph {
             .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input1")
             .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .nIn(5).nOut(numLabels).alpha(1.0)
+                .nIn(5).nOut(numLabels).alpha(1.0).lambda(0.5)
                 .activation(Activation.SOFTMAX).build(), "l1")
             .setOutputs("lossLayer")
             .pretrain(false).backprop(true)
