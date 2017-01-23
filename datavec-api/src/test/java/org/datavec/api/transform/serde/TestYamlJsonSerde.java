@@ -16,10 +16,7 @@
 
 package org.datavec.api.transform.serde;
 
-import org.datavec.api.transform.DataAction;
-import org.datavec.api.transform.MathOp;
-import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.*;
 import org.datavec.api.transform.condition.BooleanCondition;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -31,6 +28,7 @@ import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceComparator;
@@ -47,6 +45,7 @@ import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
 import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
 import org.datavec.api.transform.transform.column.RenameColumnsTransform;
 import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
+import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
@@ -127,6 +126,67 @@ public class TestYamlJsonSerde {
             Transform t3 = j.deserializeTransform(json);
             assertEquals(t,t2);
             assertEquals(t,t3);
+        }
+
+
+        String tArrAsYaml = y.serialize(transforms);
+        String tArrAsJson = j.serialize(transforms);
+        String tListAsYaml = y.serializeTransformList(Arrays.asList(transforms));
+        String tListAsJson = j.serializeTransformList(Arrays.asList(transforms));
+
+//        System.out.println("\n\n\n\n");
+//        System.out.println(tListAsYaml);
+
+        List<Transform> lFromYaml = y.deserializeTransformList(tListAsYaml);
+        List<Transform> lFromJson = j.deserializeTransformList(tListAsJson);
+
+        assertEquals(Arrays.asList(transforms), y.deserializeTransformList(tArrAsYaml));
+        assertEquals(Arrays.asList(transforms), j.deserializeTransformList(tArrAsJson));
+        assertEquals(Arrays.asList(transforms), lFromYaml);
+        assertEquals(Arrays.asList(transforms), lFromJson);
+    }
+
+
+    @Test
+    public void testTransformsRegexBrackets(){
+
+        Schema schema = new Schema.Builder()
+                .addColumnString("someCol")
+                .addColumnString("otherCol")
+                .build();
+
+        Transform[] transforms = new Transform[]{
+                new ConditionalCopyValueTransform("someCol", "otherCol", new StringRegexColumnCondition("someCol","\\d")),
+                new ConditionalCopyValueTransform("someCol", "otherCol", new StringRegexColumnCondition("someCol","\\D+")),
+                new ConditionalCopyValueTransform("someCol", "otherCol", new StringRegexColumnCondition("someCol","\".*\"")),
+                new ConditionalCopyValueTransform("someCol", "otherCol", new StringRegexColumnCondition("someCol","[]{}()][}{)("))
+        };
+
+        for(Transform t : transforms){
+            String yaml = y.serialize(t);
+            String json = j.serialize(t);
+
+//            System.out.println(yaml);
+//            System.out.println(json);
+//            System.out.println();
+
+            Transform t2 = y.deserializeTransform(yaml);
+            Transform t3 = j.deserializeTransform(json);
+            assertEquals(t,t2);
+            assertEquals(t,t3);
+
+            TransformProcess tp = new TransformProcess.Builder(schema)
+                    .transform(t)
+                    .build();
+
+            String tpYaml = y.serialize(tp);
+            String tpJson = j.serialize(tp);
+
+            TransformProcess fromYaml = TransformProcess.fromYaml(tpYaml);
+            TransformProcess fromJson = TransformProcess.fromJson(tpJson);
+
+            assertEquals(tp, fromYaml);
+            assertEquals(tp, fromJson);
         }
 
 
