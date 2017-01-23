@@ -73,15 +73,15 @@ Record Readers are part of the DataVec library, which the Skymind team created t
 
 ## Image Basics
 
-When reading images for a Neural Network at some point all the imagedata must be scaled to the same dimensions. The initial scaling of images is handled by the ImageRecordReader. 
+When reading images for a neural network, at some point all the image data must be scaled to the same dimensions. The initial scaling of images is handled by the `ImageRecordReader` 
 
-For loading a collection of records for training, testing or inference. For grayscale images set chanels to 1. 
+The code below shows how to load a collection of records for training, testing or inference. For grayscale images, set `channels` to 1. 
 
 ```
 ImageRecordReader recordReader = new ImageRecordReader(height,width,channels);
 ```
 
-Loading a single image for inference. 
+Loading a single image for inference: 
 
 ```
 NativeImageLoader loader = new NativeImageLoader(height, width, channels); \\ load and scale
