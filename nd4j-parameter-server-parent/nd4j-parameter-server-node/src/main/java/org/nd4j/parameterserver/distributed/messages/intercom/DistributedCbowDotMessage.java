@@ -72,7 +72,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
     public void processMessage() {
         // this only picks up new training round
 
-        CbowRequestMessage cbrm = new CbowRequestMessage(rowsA, rowsB, w1, negSamples, alpha, 119 );
+        CbowRequestMessage cbrm = new CbowRequestMessage(rowsA, rowsB, w1, codes, negSamples, alpha, 119 );
         cbrm.setTaskId(this.taskId);
         cbrm.setOriginatorId(this.getOriginatorId());
 
