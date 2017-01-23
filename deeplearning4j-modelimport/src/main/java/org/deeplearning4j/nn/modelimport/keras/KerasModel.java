@@ -71,7 +71,6 @@ public class KerasModel {
     /* Training configuration field. */
     public static final String TRAINING_CONFIG_FIELD_LOSS = "loss";
     public static final String HDF5_MODEL_WEIGHTS_ROOT = "model_weights";
-    public static final String HDF5_ROOT = "";
     public static final String HDF5_MODEL_CONFIG_ATTRIBUTE = "model_config";
     public static final String HDF5_TRAINING_CONFIG_ATTRIBUTE = "training_config";
 
@@ -84,7 +83,6 @@ public class KerasModel {
     protected ArrayList<String> outputLayerNames; // list of output layers
     protected boolean useTruncatedBPTT = false;   // whether to use truncated BPTT
     protected int truncatedBPTT = 0;              // truncated BPTT value
-    protected Map<String,INDArray> weights;       //
 
     /**
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
