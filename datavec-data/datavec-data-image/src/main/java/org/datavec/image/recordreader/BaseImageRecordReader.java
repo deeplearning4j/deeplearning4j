@@ -25,6 +25,7 @@ import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.util.files.FileFromPathIterator;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
@@ -33,6 +34,7 @@ import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.collection.CompactHeapStringList;
 
 import java.io.*;
 import java.net.URI;
@@ -44,6 +46,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public abstract class BaseImageRecordReader extends BaseRecordReader {
+    protected List<String> allPaths;
     protected Iterator<File> iter;
     protected Configuration conf;
     protected File currentFile;
@@ -60,7 +63,6 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected Map<String, String> fileNameMap = new LinkedHashMap<>();
     protected String pattern; // Pattern to split and segment file name, pass in regex
     protected int patternPosition = 0;
-    protected double normalizeValue = 0;
 
     public final static String HEIGHT = NAME_SPACE + ".height";
     public final static String WIDTH = NAME_SPACE + ".width";
@@ -98,15 +100,15 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         inputSplit = split;
-        Collection<File> allFiles;
         URI[] locations = split.locations();
         if (locations != null && locations.length >= 1) {
             if (locations.length > 1 || containsFormat(locations[0].getPath())) {
-                allFiles = new ArrayList<>();
+                allPaths = new CompactHeapStringList();
                 for (URI location : locations) {
                     File imgFile = new File(location);
-                    if (!imgFile.isDirectory() && containsFormat(imgFile.getAbsolutePath()))
-                        allFiles.add(imgFile);
+                    if (!imgFile.isDirectory() && containsFormat(imgFile.getAbsolutePath())) {
+                        allPaths.add(imgFile.getPath());
+                    }
                     if (appendLabel) {
                         File parentDir = imgFile.getParentFile();
                         String name = parentDir.getName();
@@ -127,13 +129,17 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 if (!curr.exists())
                     throw new IllegalArgumentException("Path " + curr.getAbsolutePath() + " does not exist!");
                 if (curr.isDirectory()) {
-                    allFiles = FileUtils.listFiles(curr, null, true);
+                    Collection<File> temp = FileUtils.listFiles(curr, null, true);
+                    allPaths = new CompactHeapStringList();
+                    for(File f : temp){
+                        allPaths.add(f.getPath());
+                    }
                 } else {
-                    allFiles = Collections.singletonList(curr);
+                    allPaths = Collections.singletonList(curr.getPath());
                 }
 
             }
-            iter = allFiles.iterator();
+            iter = new FileFromPathIterator(allPaths.iterator());
         }
         if (split instanceof FileSplit) {
             //remove the root directory
@@ -170,7 +176,6 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
      * @param split          the split that defines the range of records to read
      * @param imageTransform the image transform to use to transform images while loading them
      * @throws java.io.IOException
-     * @throws InterruptedException
      */
     public void initialize(InputSplit split, ImageTransform imageTransform) throws IOException {
         this.imageLoader = null;
@@ -308,10 +313,10 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public void reset() {
         if (inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
-        try {
-            initialize(inputSplit);
-        } catch (Exception e) {
-            throw new RuntimeException("Error during LineRecordReader reset", e);
+        if (iter != null) {
+            iter = new FileFromPathIterator(allPaths.iterator());
+        } else if (record != null) {
+            hitImage = false;
         }
     }
 
