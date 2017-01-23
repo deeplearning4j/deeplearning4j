@@ -6,11 +6,13 @@ import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestCollections extends BaseNd4jTest {
 
@@ -20,8 +22,6 @@ public class TestCollections extends BaseNd4jTest {
 
     @Test
     public void testCompactHeapStringList() {
-
-        System.out.println(((double)2L * Integer.MAX_VALUE) / (1024L * 1024L * 1024L));
 
         int[] reallocSizeBytes = new int[]{1024, 1048576};
         int[] intReallocSizeBytes = new int[]{1024, 1048576};
@@ -46,8 +46,11 @@ public class TestCollections extends BaseNd4jTest {
 
         for (int rb : reallocSizeBytes) {
             for (int irb : intReallocSizeBytes) {
-                System.out.println(rb + "\t" + irb);
+//                System.out.println(rb + "\t" + irb);
                 List<String> list = new CompactHeapStringList(rb, irb);
+
+                assertTrue(list.isEmpty());
+                assertEquals(0, list.size());
 
 
                 for (int i = 0; i < numElementsToTest; i++) {
@@ -57,14 +60,17 @@ public class TestCollections extends BaseNd4jTest {
                     assertEquals(i+1, list.size());
                     String s2 = list.get(i);
                     assertEquals(s, s2);
-                    if(i % 1000 == 0){
-                        System.out.println(" - " + i );
-                    }
                 }
 
                 assertEquals(numElementsToTest, list.size());
 
                 assertEquals(list, compare);
+                assertEquals(compare, list);
+                assertEquals(compare, Arrays.asList(list.toArray()));
+
+                for( int i=0; i<numElementsToTest; i++ ){
+                    assertEquals(i, list.indexOf(compare.get(i)));
+                }
             }
         }
     }

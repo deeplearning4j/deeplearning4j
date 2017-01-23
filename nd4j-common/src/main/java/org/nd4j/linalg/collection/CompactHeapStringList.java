@@ -4,17 +4,18 @@ import java.util.*;
 
 /**
  * A {@code List<String>} that stores all contents in a single char[], to avoid the GC load for a large number of String
- * objects.
+ * objects.<br>
  * <p>
  * Some restrictions to be aware of with the current implementation:<br>
+ * - The list is intended to be write-once (append only), except for clear() operations. That is: new Strings can be added
+ *   at the end, but they cannot be replaced or removed.<br>
  * - There is a limit of a maximum of {@link Integer#MAX_VALUE}/2 = 1073741823 Strings<br>
  * - There is a limit of the maximum total characters of {@link Integer#MAX_VALUE} (i.e., 2147483647 chars). This corresponds
- *   to a maximum of approximately 4GB of Strings.
+ *   to a maximum of approximately 4GB of Strings.<br>
  *
  * @author Alex Black
  */
 public class CompactHeapStringList implements List<String> {
-
     public static final int DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES = 8*1024*1024;        //8MB
     public static final int DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES = 1024*1024;  //1MB - 262144 ints, 131k entries
 
@@ -29,6 +30,11 @@ public class CompactHeapStringList implements List<String> {
         this(DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES, DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES);
     }
 
+    /**
+     *
+     * @param reallocationBlockSizeBytes    Number of bytes by which to increase the char[], when allocating a new storage array
+     * @param intReallocationBlockSizeBytes Number of bytes by which to increase the int[], when allocating a new storage array
+     */
     public CompactHeapStringList(int reallocationBlockSizeBytes, int intReallocationBlockSizeBytes){
         this.reallocationBlockSizeBytes = reallocationBlockSizeBytes;
         this.reallocationIntegerBlockSizeBytes = intReallocationBlockSizeBytes;
@@ -162,13 +168,13 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public String set(int index, String element) {
-        //Actually: this *could* be done with array copy ops...
+        //This *could* be done with array copy ops...
         throw new UnsupportedOperationException("Set specified index: not supported due to serialized storage structure");
     }
 
     @Override
     public void add(int index, String element) {
-        //Actually: this *could* be done with array copy ops...
+        //This *could* be done with array copy ops...
         throw new UnsupportedOperationException("Set specified index: not supported due to serialized storage structure");
     }
 
