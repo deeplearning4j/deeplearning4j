@@ -55,11 +55,13 @@ import java.util.Map;
 public class CenterLossOutputLayer extends BaseOutputLayer {
     protected double alpha;
     protected double lambda;
+    protected boolean gradientCheck;
 
     protected CenterLossOutputLayer(Builder builder) {
         super(builder);
         this.alpha = builder.alpha;
         this.lambda = builder.lambda;
+        this.gradientCheck = builder.gradientCheck;
     }
 
     @Override
@@ -144,10 +146,13 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     public double getLambda() { return lambda; }
 
+    public boolean getGradientCheck() { return gradientCheck; }
+
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
         protected double alpha = 0.05;
         protected double lambda = 2e-4;
+        protected boolean gradientCheck = false;
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
@@ -160,6 +165,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         public Builder alpha(double alpha) { this.alpha = alpha; return this; }
 
         public Builder lambda(double lambda) { this.lambda = lambda; return this; }
+
+        public Builder gradientCheck(boolean isGradientCheck) { this.gradientCheck = isGradientCheck; return this; }
 
         @Override
         @SuppressWarnings("unchecked")
