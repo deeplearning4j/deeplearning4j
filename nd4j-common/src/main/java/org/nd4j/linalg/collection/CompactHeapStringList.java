@@ -5,6 +5,11 @@ import java.util.*;
 /**
  * A {@code List<String>} that stores all contents in a single char[], to avoid the GC load for a large number of String
  * objects.
+ * <p>
+ * Some restrictions to be aware of with the current implementation:<br>
+ * - There is a limit of a maximum of {@link Integer#MAX_VALUE}/2 = 1073741823 Strings<br>
+ * - There is a limit of the maximum total characters of {@link Integer#MAX_VALUE} (i.e., 2147483647 chars). This corresponds
+ *   to a maximum of approximately 4GB of Strings.
  *
  * @author Alex Black
  */
@@ -27,6 +32,9 @@ public class CompactHeapStringList implements List<String> {
     public CompactHeapStringList(int reallocationBlockSizeBytes, int intReallocationBlockSizeBytes){
         this.reallocationBlockSizeBytes = reallocationBlockSizeBytes;
         this.reallocationIntegerBlockSizeBytes = intReallocationBlockSizeBytes;
+
+        this.data = new char[this.reallocationBlockSizeBytes/2];
+        this.offsetAndLength = new int[this.reallocationIntegerBlockSizeBytes/4];
     }
 
     @Override
@@ -76,7 +84,8 @@ public class CompactHeapStringList implements List<String> {
             if( nextDataOffset > Integer.MAX_VALUE - length){
                 throw new UnsupportedOperationException("Cannot allocate new data char[]: required array size exceeds Integer.MAX_VALUE");
             }
-            int newLength = data.length + Math.min(reallocationBlockSizeBytes, Integer.MAX_VALUE - data.length);
+            int toAdd = Math.max(reallocationBlockSizeBytes/2, length);
+            int newLength = data.length + Math.min(toAdd, Integer.MAX_VALUE - data.length);
             data = Arrays.copyOf(data, newLength);
         }
         if(2*(usedCount + 1) >= offsetAndLength.length){
@@ -84,13 +93,16 @@ public class CompactHeapStringList implements List<String> {
                 //Should normally never happen
                 throw new UnsupportedOperationException("Cannot allocate new offset int[]: required array size exceeds Integer.MAX_VALUE");
             }
-            int newLength = offsetAndLength.length + Math.min(reallocationIntegerBlockSizeBytes, Integer.MAX_VALUE - offsetAndLength.length);
+            int newLength = offsetAndLength.length + Math.min(reallocationIntegerBlockSizeBytes/4, Integer.MAX_VALUE - offsetAndLength.length);
             offsetAndLength = Arrays.copyOf(offsetAndLength, newLength);
         }
 
 
         s.getChars(0,length,data,nextDataOffset);
+        offsetAndLength[2*usedCount] = nextDataOffset;
+        offsetAndLength[2*usedCount+1] = length;
         nextDataOffset += length;
+        usedCount++;
 
         return true;
     }
@@ -133,8 +145,9 @@ public class CompactHeapStringList implements List<String> {
     @Override
     public void clear() {
         usedCount = 0;
-        data = new char[reallocationBlockSizeBytes];
-        offsetAndLength = new int[reallocationIntegerBlockSizeBytes];
+        nextDataOffset = 0;
+        data = new char[reallocationBlockSizeBytes/2];
+        offsetAndLength = new int[reallocationIntegerBlockSizeBytes/4];
     }
 
     @Override
@@ -241,5 +254,23 @@ public class CompactHeapStringList implements List<String> {
     @Override
     public List<String> subList(int fromIndex, int toIndex) {
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof List))
+            return false;
+
+        ListIterator<String> e1 = listIterator();
+        ListIterator<?> e2 = ((List<?>) o).listIterator();
+        while (e1.hasNext() && e2.hasNext()) {
+            String o1 = e1.next();
+            Object o2 = e2.next();
+            if (!(o1==null ? o2==null : o1.equals(o2)))
+                return false;
+        }
+        return !(e1.hasNext() || e2.hasNext());
     }
 }
