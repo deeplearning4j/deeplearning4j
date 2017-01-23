@@ -89,8 +89,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         // now calculate the inter-class score component
         double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
 
-        layerConf().getLambda();
-        double score = interClassScore + (intraClassScore*layerConf().getLambda());
+        double score = interClassScore + (intraClassScore*layerConf().getLambda()/2);
 
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
@@ -120,7 +119,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
         INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
-        scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda()));
+        scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda()/2));
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
 
@@ -203,6 +202,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray numerator = labels.transpose().mmul(diff);
         INDArray denominator = labels.sum(0).addi(1.0).transpose();
         INDArray deltaC = numerator.diviColumnVector(denominator);
+
         centersGradView.assign(deltaC);
 
         // other standard calculations
