@@ -84,12 +84,16 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
 
         double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
+        intraClassScore = intraClassScore * layerConf().getLambda() / 2;
+        if(System.getenv("PRINT_CENTERLOSS")!=null) {
+            System.out.println("Center loss is "+intraClassLoss);
+        }
 
 
         // now calculate the inter-class score component
         double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray, false);
 
-        double score = interClassScore + (intraClassScore*layerConf().getLambda()/2);
+        double score = interClassScore + intraClassScore;
 
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
