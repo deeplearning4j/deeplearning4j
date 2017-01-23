@@ -19,7 +19,24 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Arrays;
 
 /**
- * Created by Alex on 17/01/2017.
+ * Global pooling layer - used to do pooling over time for RNNs, and 2d pooling for CNNs.<br>
+ * Supports the following {@link PoolingType}s: SUM, AVG, MAX, PNORM<br>
+ * Global pooling layer can also handle mask arrays when dealing with variable length inputs. Mask arrays are assumed
+ * to be 2d, and are fed forward through the network during training or post-training forward pass:<br>
+ * - Time series: mask arrays are shape [minibatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br>
+ * - CNNs: mask have shape [minibatchSize, height] or [minibatchSize, width]. Important: the current implementation assumes
+ *   that for CNNs + variable length (masking), the input shape is [minibatchSize, depth, height, 1] or
+ *   [minibatchSize, depth, 1, width] respectively. This is the case with global pooling in architectures like CNN for
+ *   sentence classification.<br>
+ * <p>
+ * Behaviour with default settings:<br>
+ * - 3d (time series) input with shape [minibatchSize, vectorSize, timeSeriesLength] -> 2d output [minibatchSize, vectorSize]<br>
+ * - 4d (CNN) input with shape [minibatchSize, depth, height, width] -> 2d output [minibatchSize, depth]<br>
+ * <p>
+ * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced dimensions
+ * as 1s: this gives [minibatchSize, vectorSize, 1] for RNN output, and [minibatchSize, depth, 1, 1] for CNN output.<br>
+ *
+ * @author Alex Black
  */
 public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
