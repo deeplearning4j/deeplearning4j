@@ -210,7 +210,7 @@ public abstract class Nd4jBackend {
 
         }
 
-        Collections.sort(backends, new Comparator<Nd4jBackend>() {
+        Collections.sort(reflectionBackends, new Comparator<Nd4jBackend>() {
             @Override
             public int compare(Nd4jBackend o1, Nd4jBackend o2) {
                 // high-priority first
