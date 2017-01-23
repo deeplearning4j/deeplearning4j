@@ -156,7 +156,7 @@ Alternatively, if we have only the features mask: One quick and dirty approach i
 ```
     INDArray featuresMaskArray = ...;
     int longestTimeSeries = featuresMaskArray.size(1);
-    INDArray linspace = Nd4j.linSpace(1,longestTimeSeries,longestTimeSeries);
+    INDArray linspace = Nd4j.linspace(1,longestTimeSeries,longestTimeSeries);
     INDArray temp = featuresMaskArray.mulColumnVector(linspace);
     INDArray lastTimeStepIndices = Nd4j.argMax(temp,1);
 ```
@@ -168,7 +168,7 @@ In either case, we can then do the following:
 ```
     int numExamples = timeSeriesFeatures.size(0);
     for( int i=0; i<numExamples; i++ ){
-        int thisTimeSeriesLastIndex = lastTimeStepIndices.get(i);
+        int thisTimeSeriesLastIndex = lastTimeStepIndices.getInt(i);
         INDArray thisExampleProbabilities = timeSeriesOutput.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(thisTimeSeriesLastIndex));
     }
 ```
