@@ -166,3 +166,7 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 ```
 -Djava.library.path=""
 ```
+
+### Eclipse setup without Maven
+
+We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven here is a nice [blog post](http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html) to walk you through an Eclipse configuration.
