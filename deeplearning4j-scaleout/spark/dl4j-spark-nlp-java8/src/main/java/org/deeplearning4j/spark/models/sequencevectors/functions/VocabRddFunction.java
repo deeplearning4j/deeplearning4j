@@ -30,17 +30,12 @@ public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunct
     public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
         this.paramServerConfigurationBroadcast = paramServerConfigurationBroadcast;
-
-        log.info("VocabRDDFunction constructor");
     }
 
     @Override
     public Iterable<T> call(Sequence<T> sequence) throws Exception {
         if (configuration == null)
             configuration = vectorsConfigurationBroadcast.getValue();
-
-        log.info("Initializing VoidParameterServer...");
-        System.out.println("Initializing VPS...");
 
         // we just silently initialize server
         VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue());
