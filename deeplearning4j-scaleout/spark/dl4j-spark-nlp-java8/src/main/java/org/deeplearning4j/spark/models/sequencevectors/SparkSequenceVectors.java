@@ -32,6 +32,7 @@ import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -172,16 +173,23 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             Set<NetworkInformation> availableHosts = spareReference.getNetworkInformation();
 
             log.info("availableHosts: {}", availableHosts);
+            if (availableHosts.size() > 1) {
+                // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
+                NetworkOrganizer organizer = new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
 
-            // now we have to pick N shards and optionally N backup nodes, and pass them within configuration bean
-            NetworkOrganizer organizer = new NetworkOrganizer(availableHosts, paramServerConfiguration.getNetworkMask());
+                paramServerConfiguration.setShardAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards()));
 
-            paramServerConfiguration.setShardAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards()));
-
-            // backup shards are optional
-            if (paramServerConfiguration.getFaultToleranceStrategy() != FaultToleranceStrategy.NONE) {
-                paramServerConfiguration.setBackupAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.getShardAddresses()));
+                // backup shards are optional
+                if (paramServerConfiguration.getFaultToleranceStrategy() != FaultToleranceStrategy.NONE) {
+                    paramServerConfiguration.setBackupAddresses(organizer.getSubset(paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.getShardAddresses()));
+                }
+            } else {
+                // for single host (aka driver-only, aka spark-local) just run on loopback interface
+                paramServerConfiguration.setShardAddresses(Arrays.asList("127.0.0.1:" + paramServerConfiguration.getUnicastPort()));
+                paramServerConfiguration.setFaultToleranceStrategy(FaultToleranceStrategy.NONE);
             }
+
+
 
             log.info("Got Shards so far: {}", paramServerConfiguration.getShardAddresses());
 

@@ -129,6 +129,12 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         }
 
 
+        public Builder epochs(int numEpochs) {
+            super.epochs(numEpochs);
+            return this;
+        }
+
+
         /**
          * This method returns you SparkWord2Vec instance ready for training
          *
