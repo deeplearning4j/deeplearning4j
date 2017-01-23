@@ -60,7 +60,7 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public Iterator<String> iterator() {
-        return Arrays.asList(toArray()).iterator();
+        return new CompactHeapStringListIterator();
     }
 
     @Override
@@ -249,7 +249,7 @@ public class CompactHeapStringList implements List<String> {
 
     @Override
     public ListIterator<String> listIterator() {
-        return Arrays.asList(toArray()).listIterator();
+        return new CompactHeapStringListIterator();
     }
 
     @Override
@@ -278,5 +278,60 @@ public class CompactHeapStringList implements List<String> {
                 return false;
         }
         return !(e1.hasNext() || e2.hasNext());
+    }
+
+    private class CompactHeapStringListIterator implements Iterator<String>, ListIterator<String> {
+        private int currIdx = 0;
+
+        @Override
+        public boolean hasNext() {
+            return currIdx < usedCount;
+        }
+
+        @Override
+        public String next() {
+            if(!hasNext()){
+                throw new NoSuchElementException("No next element");
+            }
+            return get(currIdx++);
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return currIdx > 0;
+        }
+
+        @Override
+        public String previous() {
+            if(!hasPrevious()){
+                throw new NoSuchElementException();
+            }
+            return get(currIdx--);
+        }
+
+        @Override
+        public int nextIndex() {
+            return currIdx;
+        }
+
+        @Override
+        public int previousIndex() {
+            return currIdx;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void set(String s) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add(String s) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

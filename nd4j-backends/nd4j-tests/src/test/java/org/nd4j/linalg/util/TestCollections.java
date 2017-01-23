@@ -5,10 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -71,6 +68,14 @@ public class TestCollections extends BaseNd4jTest {
                 for( int i=0; i<numElementsToTest; i++ ){
                     assertEquals(i, list.indexOf(compare.get(i)));
                 }
+
+                Iterator<String> iter = list.iterator();
+                int count = 0;
+                while(iter.hasNext()){
+                    String s = iter.next();
+                    assertEquals(s, compare.get(count++));
+                }
+                assertEquals(numElementsToTest, count);
             }
         }
     }
