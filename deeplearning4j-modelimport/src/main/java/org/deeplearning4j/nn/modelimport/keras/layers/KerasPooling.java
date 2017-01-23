@@ -6,9 +6,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
