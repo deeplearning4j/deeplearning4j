@@ -2,6 +2,7 @@ package org.deeplearning4j.spark.models.sequencevectors.export.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -28,6 +29,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
 
     @Getter protected VocabCache<VocabWord> vocabCache;
@@ -47,27 +49,33 @@ public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
         if (vocabCache == null)
             vocabCache = new AbstractCache<>();
 
+        INDArray syn0 = null;
 
         // just roll through list
         for (ExportContainer<VocabWord> element: list) {
             VocabWord word = element.getElement();
             INDArray weights = element.getArray();
 
-            if (lookupTable == null)
-                lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
-                        .cache(vocabCache)
-                        .vectorLength(weights.length())
-                        .build();
+            if (syn0 == null)
+                syn0 = Nd4j.create(list.size(), weights.length());
 
-            if (lookupTable.getSyn0() == null)
-                lookupTable.setSyn0(Nd4j.create(list.size(), weights.length()));
 
-            lookupTable.getSyn0().getRow(word.getIndex()).assign(weights);
+            vocabCache.addToken(word);
+            vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
+
+
+            syn0.getRow(word.getIndex()).assign(weights);
         }
+
+        if (lookupTable == null)
+            lookupTable = new InMemoryLookupTable.Builder<VocabWord>()
+                    .cache(vocabCache)
+                    .vectorLength(syn0.columns())
+                    .build();
+
+        lookupTable.setSyn0(syn0);
 
         // this is bad & dirty, but we don't really need anything else for testing :)
         word2Vec = WordVectorSerializer.fromPair(Pair.<InMemoryLookupTable, VocabCache>makePair(lookupTable, vocabCache));
-
-        list.clear();
     }
 }
