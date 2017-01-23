@@ -1,12 +1,10 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Specialized CnnToFeedForwardInputPreProcessor for use with
@@ -15,6 +13,7 @@ import java.util.Arrays;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreProcessor {
 
     @JsonCreator
