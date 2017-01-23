@@ -200,9 +200,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray diff = centersForExamples.sub(input).muli(alpha);
         INDArray numerator = labels.transpose().mmul(diff);
-//        INDArray denominator = labels.sum(0).addi(1.0).transpose();
-//        INDArray deltaC = numerator.diviColumnVector(denominator);
-        INDArray deltaC = numerator.divi(2);
+        INDArray denominator = labels.sum(0).addi(1.0).transpose();
+        INDArray deltaC = numerator.diviColumnVector(denominator);
+//        deltaC = numerator.divi(2); // uncomment this if you want gradient checks to pass
 
         centersGradView.assign(deltaC);
 
