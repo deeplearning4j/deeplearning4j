@@ -27,8 +27,12 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     protected transient AtomicLong counter;
     protected transient ThreadLocal<Frame<SkipGramRequestMessage>> frame;
 
+    TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
+
     @Override
     public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
+
+        // FIXME: totalElementsCount should have real value
         if (vectorsConfiguration.getSampling() > 0)
             sequence = BaseSparkLearningAlgorithm.applySubsampling(sequence, nextRandom, 10L, vectorsConfiguration.getSampling());
 
@@ -106,22 +110,10 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
 
         // we just stackfor now
         frame.get().stackMessage(sgrm);
-
-/*
-        if (counter == null)
-            synchronized (this) {
-                if (counter == null)
-                    counter = new AtomicLong(0);
-            }
-
-        if (counter.incrementAndGet() % 10000 == 0)
-            log.info("Counter: {}", counter.get());
-    */
     }
 
     @Override
     public TrainingDriver<? extends TrainingMessage>  getTrainingDriver() {
-        TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
         return driver;
     }
 }

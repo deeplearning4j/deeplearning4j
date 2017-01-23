@@ -29,29 +29,36 @@ public class ExtraCounter<E> extends Counter<E> {
 
     public void buildNetworkSnapshot() {
         try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-
             NetworkInformation netInfo = new NetworkInformation();
             netInfo.setTotalMemory(Runtime.getRuntime().maxMemory());
             netInfo.setAvailableMemory(Runtime.getRuntime().freeMemory());
 
-            for (NetworkInterface networkInterface : interfaces) {
-                if (networkInterface.isLoopback() || !networkInterface.isUp())
-                    continue;
+            String sparkIp = System.getenv("SPARK_PUBLIC_DNS");
+            if (sparkIp != null) {
+                // if spark ip is defined, we just use it, and don't bother with other interfaces
 
-                for(InterfaceAddress address: networkInterface.getInterfaceAddresses()) {
-                    String addr = address.getAddress().getHostAddress();
+                netInfo.addIpAddress(sparkIp);
+            } else {
+                // sparkIp wasn't defined, so we'll go for heuristics here
+                List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
 
-                    if (addr == null || addr.isEmpty() || addr.contains(":"))
+                for (NetworkInterface networkInterface : interfaces) {
+                    if (networkInterface.isLoopback() || !networkInterface.isUp())
                         continue;
 
-                    netInfo.getIpAddresses().add(addr);
+                    for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+                        String addr = address.getAddress().getHostAddress();
+
+                        if (addr == null || addr.isEmpty() || addr.contains(":"))
+                            continue;
+
+                        netInfo.getIpAddresses().add(addr);
+                    }
                 }
             }
-
             networkInformation.add(netInfo);
         } catch (Exception e) {
-            // do nothing
+            throw new RuntimeException(e);
         }
     }
 
