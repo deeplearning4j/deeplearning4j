@@ -7,7 +7,7 @@ layout: default
 
 While we encourage Deeplearning4j, ND4J and DataVec users to employ Maven, it's worthwhile documenting how to configure build files for other tools, like Ivy, Gradle and SBT -- particularly since Google prefers Gradle over Maven for Android projects. 
 
-The instructions below apply to all DL4J and ND4J submodules, such as deeplearning4j-api, deeplearning4j-scaleout, and ND4J backends. You can find the **latest version** of any project or submodule on [Maven Central](https://search.maven.org/). As of October 2016, the latest version is `0.6.0`. Building from source, the latest version is `0.6.1-SNAPSHOT`.
+The instructions below apply to all DL4J and ND4J submodules, such as deeplearning4j-api, deeplearning4j-scaleout, and ND4J backends. You can find the **latest version** of any project or submodule on [Maven Central](https://search.maven.org/). As of January 2017, the latest version is `0.7.2`. Building from source, the latest version is `0.7.3-SNAPSHOT`.
 
 ## Maven
 
@@ -20,6 +20,8 @@ You can use Deeplearning4j with Maven by adding the following to your POM.xml:
           <version>${FIND THE VERSION FROM OUR EXAMPLES http://github.com/deeplearning4j/dl4j-examples}</version>
       </dependency>
     </dependencies>
+
+Note that deeplearning4J will have dependencies on nd4J and DataVec, for a working example of proper Maven configurations please see our [examples](http://github.com/deeplearning4j/dl4j-examples)
 
 ## Ivy
 
