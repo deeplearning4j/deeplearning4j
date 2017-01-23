@@ -6,11 +6,9 @@ layout: default
 
 # DeepLearning4J: ETL Users Guide
 
-Data can come from many sources, Log files, text documents, tabular data, images and video are some examples. The end goal for each source is to convert the data into a collection of numerical values in a MultiDimensional Array. 
+Data can come from many sources and in many types: log files, text documents, tabular data, images and video are a few examples. When working with neural nets, the end goal is to convert each data type into a collection of numerical values in a MultiDimensional Array. 
 
-Data may also need to be transformed, scaled, converted, joined, split into training and testing datasets, shuffled and more. 
-
-This Page covers the available tools and using them. 
+Data may also need to be pre-processed in other ways: transformed, scaled, normalized, converted, joined, split into training and testing datasets, shuffled and more. This page covers the available tools and how to use them. 
 
 * Record Readers 
 * Normalizers
@@ -19,9 +17,6 @@ This Page covers the available tools and using them.
 ## Diagram of available ETL paths
 
 ![Alt text](./img/ETL.svg)
-
-
-
 
 ## Record Readers
 
@@ -39,10 +34,9 @@ th
 
 </style>
 
+Record Readers are part of the DataVec library, which the Skymind team created to manage ETL processes. Their class is `RecordReader`.
 
-Record Readers are part of the DataVec library that we built to manage ETL processes. 
-
-Available RecordReaders
+### Available RecordReaders
 
 <!-- table generated with http://www.tablesgenerator.com/markdown_tables from CSV export of google sheets -->
 
@@ -97,12 +91,13 @@ INDArray output = model.output(image);   \\ get model prediction for image
 
 ## Image Data Augmentation
 
-With Image data you can generate additional training data by transforming, sampling or cropping the data to generate additional useful inputs.
-
+When you're working with image data and have too little to train a neural net properly, you can generate additional training data by transforming, sampling or cropping the images you have to generate additional useful inputs. 
 
 ## Applying Labels
 
-Labels may be part of the record in the case of a CSV file. CSVRecordReader allows you to specify the field that is the label. To convert text labels to numeric use a datavec transform process. Labels may need to be generated based on the file path, examples would be a collection of directories with images where the directory name determines the label. Or a directory where the filename determines the label. 
+When building a classifier, labels are the output value you're trying to predict, and the data those labels correlate with is the input. In the case of a CSV file, labels may be part of the record itself, stored in the same row next to the relevant input. `CSVRecordReader` allows you to specify the field that is the label. 
+
+To convert text labels to numeric values, use a Datavec transform process. Labels may need to be generated based on the file path; for example, a collection of directories containing images, where the directory name represents the label. Or you may have data gathered in a directory where the filename itself represents the label. 
 
 [ParentPathLabelGenerator](http://github.com/deeplearning4j/DataVec/blob/master/datavec-api/src/main/java/org/datavec/api/io/labels/ParentPathLabelGenerator.java) and [PathLabelGenerator](https://github.com/deeplearning4j/DataVec/blob/master/datavec-api/src/main/java/org/datavec/api/io/labels/PathLabelGenerator.java) are the two classes used to add labels using DataVec. 
 
@@ -117,13 +112,13 @@ ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, 
 
 ## Image Transform
 
-Images are read in as array of pixel values. Pixel values are often 8 bit so an image of a 2 pixels one black and one white would become the array [0,255] . Although it is possible for a Neural Network to train on the data as is, it is better to center the values around 0, we can scale them to values between -1 and 1, or subtract the mean to shift the values to have a 0 center. 
+Images are read in as array of pixel values. Pixel values are often 8-bit, so an image of 2 pixels - one black and one white - would become the array `[0,255]`. Although it is possible for a neural network to train on data as is, it is better to normalize it. "Zero mean unit variance" means you center the values around 0 by subtracting the actual mean from all values, and scale them to values between -1 and 1. 
 
-Also image training data can be augmented by rotating sampling, or applying skew to the image. 
+Image training data can be augmented by rotating samples, or applying skew to the image. 
 
-Available Image Transforms
+### Available Image Transforms
 
-| Transfrom Name           | Transform Details                                                                 |
+| Transform Name           | Transform Details                                                                 |
 |--------------------------|-----------------------------------------------------------------------------------|
 | BaseImageTransform       | Base Class                                                                        |
 | ColorConversionTransform | Color conversion transform using CVT (cvtcolor)                                   |
@@ -141,16 +136,11 @@ Available Image Transforms
 
 
 
-
-
-
-
 ## Data Transforms
 
-As Data is ingested through DataVec you can apply a Transform Process with a collection of steps to transform the data. 
+As data is ingested through DataVec, you can apply a transform process of several steps to transform the data. 
 
-Here is what is currently available 
-
+Here is what is currently possible with DataVec:
 
 | Transform Name                        | Transform Details                                                                   |
 |---------------------------------------|-------------------------------------------------------------------------------------|
@@ -195,14 +185,11 @@ Here is what is currently available
 | TimeMathOpTransform                   | Time conversions                                                                    |
 
 
-
-
-
 ## Scaling and Normalizing 
 
-From the Record Reader data travels typically to a dataset Iterator that prepares the data for the Neural Net. At this point the data is an INDarray and is no longer an iterator over a Sequence of Records. There are tools to transform and scale at this stage as well. At this point the data is an INDarray so the tools described here are part of ND4j and the documentation is [here])http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html)
+From the `RecordReader` data typically travels to a dataset iterator that traverses the data and prepares it to be fed to the neural net. When data is ready to be ingested, it is an INDarray and is no longer an iterator over a Sequence of Records. There are tools to transform and scale at this stage as well. Since the data is an INDarray, the tools described here are part of Skymind's scientific computing library, ND4J. The documentation is [here])http://nd4j.org/doc/org/nd4j/linalg/dataset/api/preprocessor/DataNormalization.html)
 
-Example code
+### Example code
 
 ```
 	DataNormalization scaler = new ImagePreProcessingScaler(0,1);
@@ -220,13 +207,10 @@ Example code
 | NormalizerStandardize      | Standard scaler calculates a moving column wise variance and mean                                                                             |
 
 
-		
-
-
+	
 ## Image Transformations with JavaCV, OpenCV and ffmpeg Filters
 
-
-ffmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
+ffmpeg and OpenCV are open-source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your `pom.xml` file, replacing the version with the current version. 
 
 ```
 <dependency> <groupId>org.bytedeco</groupId> <artifactId>javacv-platform</artifactId> <version>1.3</version> </dependency>
@@ -240,16 +224,15 @@ Documentation
 
 ## Natural Language Processing
 
-DeepLearning4J has tools for NLP. See [this page](https://deeplearning4j.org/bagofwords-tf-idf)
+DeepLearning4J includes a toolkit for NLP. See [this page](https://deeplearning4j.org/bagofwords-tf-idf). 
 
+## Time Series, or Sequence Data
 
-## Sequence Data
+Recurrent neural networks are useful for analyzing sequence or time series data. DataVec provides the `CSVSequenceReader` class for reading sequence data from files. A good example is the `UCISequenceClassificationExample`. 
 
-Recurrent Neural Networks are useful for analyzing sequence or time series data. DataVec provides the CSVSequenceReader class for reading Sequence Data from files. A good example is the UCISequenceClassificationExample. 
+The data is split into testing and training sets so that the code creates a seperate iterator for each set. 
 
-The data is split into testing and training sets so the code creates a seperate iterator for each. 
-
-In this data set there are 6 possible labels. For each file of data in the features directory there is a corresponding file in the labels directory. The label files have a single entry while the feature files have the sequence of activity recorded at that device. 
+In this data set, there are six possible labels. For each file containing data in the features directory, there is a corresponding file in the labels directory. The label files have a single entry, while the feature files have the sequence of activity recorded at that device. 
 
 ```
 private static File baseDir = new File("src/main/resources/uci/");
@@ -262,8 +245,7 @@ private static File labelsDirTest = new File(baseTestDir, "labels");
 
 ```
 
-NumberedFileInputFormat uses String.Format to extract the index from the filename. 
-The data directory contains files 0.csv->449.csv
+`NumberedFileInputFormat` uses `String.Format` to extract the index from the filename. The data directory contains files 0.csv->449.csv
 
 Here is the code to read the feature and the labels. 
 
@@ -274,9 +256,9 @@ SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
         trainLabels.initialize(new NumberedFileInputSplit(labelsDirTrain.getAbsolutePath() + "/%d.csv", 0, 449));
 ```
 
-## Ingesting Image Data to feed to a pre-trained model
+## Ingesting image data to feed to a pre-trained model
 
-NativeImageLoader allows the reading of an image and conversion to an INDArray. Note when importing images you will need to size and scale them in the same manner as they where sized, scaled and normalized when the network was trained. 
+`NativeImageLoader` allows the reading of an image and conversion to an INDArray. Note that when importing images, you will need to size and scale them in the same manner as they were sized, scaled and normalized when the network was trained. 
 
 ### Diagram of Single Image Path
 
