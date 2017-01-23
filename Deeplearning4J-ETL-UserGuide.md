@@ -4,7 +4,7 @@ layout: default
 ---
 
 
-# DeepLearning4J: ETL Users Guide
+# DeepLearning4J: ETL User Guide
 
 Data can come from many sources and in many types: log files, text documents, tabular data, images and video are a few examples. When working with neural nets, the end goal is to convert each data type into a collection of numerical values in a MultiDimensional Array. 
 
