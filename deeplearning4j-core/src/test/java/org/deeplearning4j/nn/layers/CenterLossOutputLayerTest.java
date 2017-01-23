@@ -27,9 +27,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -90,6 +89,33 @@ public class CenterLossOutputLayerTest {
 				return graph;
 		}
 
+		public ComputationGraph getCNNMnistConfig()  {
+			ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+					.seed(123)
+					.activation(Activation.RELU)
+					.iterations(5)
+					.optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+					.graphBuilder()
+					.addInputs("input")
+					.setInputTypes(InputType.convolutionalFlat(28,28,1))
+					.addLayer("1", new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9},new int[]{1,1})
+							.nOut(20)
+							.build(), "input")
+					.addLayer("2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
+							.build(), "1")
+					.addLayer("3", new org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer.Builder(LossFunction.MCXENT)
+							.nOut(10)
+							.activation(Activation.SOFTMAX)
+							.build(), "2")
+					.setOutputs("3")
+					.build();
+
+			ComputationGraph graph = new ComputationGraph(conf);
+			graph.init();
+
+			return graph;
+		}
+
     @Test
     public void testLambdaConf() {
 			double[] lambdas = new double[]{0.1, 0.01};
@@ -114,4 +140,9 @@ public class CenterLossOutputLayerTest {
 
 			assertNotEquals(results[0], results[1]);
 		}
+
+	@Test
+	public void testMNISTConf() {
+
+	}
 }
