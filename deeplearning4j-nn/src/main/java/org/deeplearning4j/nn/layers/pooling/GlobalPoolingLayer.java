@@ -106,6 +106,9 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 poolDim = poolingDimensions;
             }
+        } else {
+            throw new UnsupportedOperationException("Received rank " + input.rank() + " input (shape = " + Arrays.toString(input.shape())
+                    + "). Only rank 3 (time series) and rank 4 (images/CNN data) are currently supported for global pooling");
         }
 
         INDArray reduced2d;
@@ -152,16 +155,21 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 boolean maskAlongHeight = (h == maskLength);    //At this point: can't confuse w and h, as one has to be 1...
 
                 reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, maskAlongHeight, pNorm);
-
             } else {
-                throw new UnsupportedOperationException("Not yet implemeted");
+                throw new UnsupportedOperationException("Invalid input: is rank " + input.rank());
             }
         }
 
         if(collapseDimensions){
+            //Standard/common case
             return reduced2d;
         } else {
-            throw new UnsupportedOperationException("Not yet implemeted");
+            int[] inputShape = input.shape();
+            if(input.rank() == 3){
+                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1);
+            } else {
+                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
+            }
         }
     }
 
@@ -191,13 +199,17 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
+        if(!collapseDimensions && epsilon.rank() != 2){
+            int[] origShape = epsilon.shape();
+            //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, depth, 1, 1]
+            //Reshape it to 2d, to get rid of the 1s
+            epsilon = epsilon.reshape(epsilon.ordering(), origShape[0], origShape[1]);
+        }
+
         Gradient retGradient = new DefaultGradient();   //Empty: no params
 
         int[] poolDim = null;
         if(input.rank() == 3){
-            //TODO validation on pooling dimensions
-
-
             if(poolingDimensions == null){
                 //Use default pooling dimensions;
                 poolDim = DEFAULT_TIMESERIES_POOL_DIMS;
@@ -234,11 +246,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         }
 
-        if(collapseDimensions){
-            return new Pair<>(retGradient, epsilonNd);
-        } else {
-            throw new UnsupportedOperationException("Not yet implemeted");
-        }
+        return new Pair<>(retGradient, epsilonNd);
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim){
