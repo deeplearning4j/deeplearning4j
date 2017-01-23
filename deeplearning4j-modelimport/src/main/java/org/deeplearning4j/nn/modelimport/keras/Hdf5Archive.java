@@ -1,5 +1,24 @@
+/*
+ *
+ *  * Copyright 2016 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
+
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
@@ -18,8 +37,12 @@ import static org.bytedeco.javacpp.hdf5.H5O_TYPE_DATASET;
 import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
 
 /**
- * Created by davekale on 1/17/17.
+ * Class for reading ND4J arrays and JSON strings from HDF5
+ * achive files.
+ *
+ * @author dave@skymind.io
  */
+@Slf4j
 public class Hdf5Archive {
 
     static {
@@ -37,6 +60,14 @@ public class Hdf5Archive {
         this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
     }
 
+    /**
+     * Read data set as ND4J array from group path.
+     *
+     * @param datasetName   Name of data set
+     * @param groups        Array of zero or more ancestor groups from root to parent.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
     public INDArray readDataSet(String datasetName, String... groups) throws UnsupportedKerasConfigurationException {
         hdf5.CommonFG group = this.file.asCommonFG();
         for (int i = 0; i < groups.length; i++)
@@ -44,6 +75,14 @@ public class Hdf5Archive {
         return readDataSet(group, datasetName);
     }
 
+    /**
+     * Read JSON-formatted string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
     public String readAttributeAsJson(String attributeName, String... groups) throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
@@ -53,6 +92,12 @@ public class Hdf5Archive {
         return readAttributeAsJson(group.openAttribute(attributeName));
     }
 
+    /**
+     * Get list of data sets from group path.
+     *
+     * @param groups    Array of zero or more ancestor groups from root to parent.
+     * @return
+     */
     public List<String> getDataSets(String... groups) {
         hdf5.CommonFG group = this.file.asCommonFG();
         for (int i = 0; i < groups.length; i++)
@@ -60,6 +105,12 @@ public class Hdf5Archive {
         return getObjects(group, H5O_TYPE_DATASET);
     }
 
+    /**
+     * Get list of groups from group path.
+     *
+     * @param groups    Array of zero or more ancestor groups from root to parent.
+     * @return
+     */
     public List<String> getGroups(String... groups) {
         hdf5.CommonFG group = this.file.asCommonFG();
         for (int i = 0; i < groups.length; i++)
@@ -67,6 +118,14 @@ public class Hdf5Archive {
         return getObjects(group, H5O_TYPE_GROUP);
     }
 
+    /**
+     * Read data set as ND4J array from HDF5 group.
+     *
+     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param datasetName   Name of data set
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
     private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName) throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
@@ -118,6 +177,13 @@ public class Hdf5Archive {
         return data;
     }
 
+    /**
+     * Get list of objects with a given type from a file group.
+     *
+     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param objType       Type of object as integer
+     * @return
+     */
     private List<String> getObjects(hdf5.CommonFG fileGroup, int objType) {
         List<String> groups = new ArrayList<String>();
         for (int i = 0; i < fileGroup.getNumObjs(); i++) {
@@ -128,6 +194,13 @@ public class Hdf5Archive {
         return groups;
     }
 
+    /**
+     * Read JSON-formatted string attribute.
+     *
+     * @param attribute     HDF5 attribute to read as JSON formatted string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
     private String readAttributeAsJson(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
         hdf5.VarLenType vl = attribute.getVarLenType();
         int bufferSizeMult = 1;
