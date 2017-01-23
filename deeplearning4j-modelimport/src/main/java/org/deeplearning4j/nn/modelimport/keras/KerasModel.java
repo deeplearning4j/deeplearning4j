@@ -164,6 +164,10 @@ public class KerasModel {
 
         /* Infer output types for each layer. */
         helperInferOutputTypes();
+
+        /* Store weights in layers. */
+        if (weightsArchive != null)
+            helperImportWeights(weightsArchive, weightsRoot);
     }
 
     /**
