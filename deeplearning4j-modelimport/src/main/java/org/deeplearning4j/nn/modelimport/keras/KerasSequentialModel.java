@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 import java.util.ArrayList;
