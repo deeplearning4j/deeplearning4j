@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -38,6 +40,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -90,24 +93,49 @@ public class CenterLossOutputLayerTest {
 		}
 
 		public ComputationGraph getCNNMnistConfig()  {
+
+			int nChannels = 1; // Number of input channels
+			int outputNum = 10; // The number of possible outcomes
+
 			ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-					.seed(123)
-					.activation(Activation.RELU)
-					.iterations(5)
-					.optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+					.seed(12345)
+					.iterations(1) // Training iterations as above
+					.regularization(true).l2(0.0005)
+					.learningRate(0.01)
+					.weightInit(WeightInit.XAVIER)
+					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+					.updater(Updater.NESTEROVS).momentum(0.9)
 					.graphBuilder()
 					.addInputs("input")
 					.setInputTypes(InputType.convolutionalFlat(28,28,1))
-					.addLayer("1", new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9},new int[]{1,1})
+					.addLayer("0", new ConvolutionLayer.Builder(5, 5)
+							//nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+							.nIn(nChannels)
+							.stride(1, 1)
 							.nOut(20)
+							.activation(Activation.IDENTITY)
 							.build(), "input")
-					.addLayer("2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
+					.addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+							.kernelSize(2,2)
+							.stride(2,2)
+							.build(), "0")
+					.addLayer("2", new ConvolutionLayer.Builder(5, 5)
+							//Note that nIn need not be specified in later layers
+							.stride(1, 1)
+							.nOut(50)
+							.activation(Activation.IDENTITY)
 							.build(), "1")
-					.addLayer("3", new org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer.Builder(LossFunction.MCXENT)
-							.nOut(10)
-							.activation(Activation.SOFTMAX)
+					.addLayer("3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+							.kernelSize(2,2)
+							.stride(2,2)
 							.build(), "2")
-					.setOutputs("3")
+					.addLayer("4", new DenseLayer.Builder().activation(Activation.RELU)
+							.nOut(500).build(), "3")
+					.addLayer("output", new org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer.Builder(LossFunction.MCXENT)
+							.nOut(outputNum)
+							.activation(Activation.SOFTMAX)
+							.build(), "4")
+					.setOutputs("output")
 					.build();
 
 			ComputationGraph graph = new ComputationGraph(conf);
@@ -141,8 +169,22 @@ public class CenterLossOutputLayerTest {
 			assertNotEquals(results[0], results[1]);
 		}
 
-	@Test
-	public void testMNISTConf() {
 
-	}
+
+		@Test @Ignore   //Should be run manually
+		public void testMNISTConfig() throws Exception {
+			int batchSize = 64; // Test batch size
+			DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize,true,12345);
+
+			ComputationGraph net = getCNNMnistConfig();
+			net.init();
+			net.setListeners(new ScoreIterationListener(1));
+
+			for( int i=0; i<50; i++ ){
+				net.fit(mnistTrain.next());
+				Thread.sleep(1000);
+			}
+
+			Thread.sleep(100000);
+		}
 }
