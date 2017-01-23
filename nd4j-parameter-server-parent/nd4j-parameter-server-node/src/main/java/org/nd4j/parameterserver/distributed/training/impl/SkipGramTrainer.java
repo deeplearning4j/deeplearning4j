@@ -241,8 +241,4 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         chains.remove(chainDesc);
     }
 
-    @Override
-    public void addCompletionHook(long originatorId, long frameId, long messageId) {
-        completionHandler.addHook(originatorId, frameId, messageId);
-    }
 }

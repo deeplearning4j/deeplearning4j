@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -15,6 +16,8 @@ public abstract class BaseTrainer<T extends TrainingMessage> implements Training
     protected Transport transport;
     protected Clipboard clipboard;
     protected Storage storage;
+
+    protected FrameCompletionHandler completionHandler = new FrameCompletionHandler();
 
     @Override
     public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, @NonNull Storage storage, @NonNull Clipboard clipboard) {
@@ -30,5 +33,10 @@ public abstract class BaseTrainer<T extends TrainingMessage> implements Training
             result[e] = value;
 
         return result;
+    }
+
+    @Override
+    public void addCompletionHook(long originatorId, long frameId, long messageId) {
+        completionHandler.addHook(originatorId, frameId, messageId);
     }
 }
