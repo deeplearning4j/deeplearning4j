@@ -295,23 +295,39 @@ public class KerasModel {
             Map<String, INDArray> weights = new HashMap<String,INDArray>();
             List<String> layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName) : weightsArchive.getDataSets(layerName);
             for (String layerParamName : layerParamNames) {
-                /* Keras parameter names are typically formatted as [layer name]_[layer no]_[parameter].
-                 * For example, the weight matrix in the first Dense layer will be named "dense_1_W."
+                /* TODO: push this logic into KerasLayer subclasses. Layers know what
+                 * parameters they have and should be looking for, so let them handle
+                 * it in a layer-specific manner.
                  */
-                Pattern paramNamePattern = Pattern.compile("_([^_]+?)$");
-                Matcher paramNameMatcher = paramNamePattern.matcher(layerParamName);
-                if (!paramNameMatcher.find())
-                    throw new InvalidKerasConfigurationException("Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
-                String paramName = paramNameMatcher.group(1);
 
-                /* TensorFlow backend often appends ":" followed by one
-                 * or more digits to parameter names, but this is not
-                 * reflected in the model config. We must strip it off.
+                /* Keras parameter names are typically formatted as [layer name]_[parameter]. For
+                 * example, the weight matrix in the first Dense layer with the TensorFlow backend
+                 * will be named "dense_1_W:0."
                  */
-                Pattern p = Pattern.compile(":\\d+?$");
-                Matcher m = p.matcher(paramName);
-                if (m.find())
-                    paramName = m.replaceFirst("");
+                Matcher layerNameMatcher = Pattern.compile(layerName).matcher(layerParamName);
+                if (!layerNameMatcher.find())
+                    throw new InvalidKerasConfigurationException("Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
+                String paramName = layerNameMatcher.replaceFirst("");
+
+                /* Usually layer name is separated from parameter name by an underscore. */
+                Matcher paramNameMatcher = Pattern.compile("^_(.+)$").matcher(paramName);
+                if (paramNameMatcher.find())
+                    paramName = paramNameMatcher.group(1);
+
+                /* TensorFlow backend often appends ":" followed by one or more digits to parameter
+                 * names. We strip it off here.
+                 */
+                Matcher tfSuffixMatcher = Pattern.compile(":\\d+?$").matcher(paramName);
+                if (tfSuffixMatcher.find())
+                    paramName = tfSuffixMatcher.replaceFirst("");
+
+                /* TensorFlow backend also may append "_" followed by one or more digits to parameter
+                 * names. We strip it off here.
+                 */
+                Matcher tfParamNbMatcher = Pattern.compile("_\\d+$").matcher(paramName);
+                if (tfParamNbMatcher.find())
+                    paramName = tfParamNbMatcher.replaceFirst("");
+
                 INDArray paramValue = weightsRoot != null ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName) : weightsArchive.readDataSet(layerParamName, layerName);
                 weights.put(paramName, paramValue);
             }
