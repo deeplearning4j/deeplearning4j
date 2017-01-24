@@ -31,8 +31,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Created by Alex on 27/09/2016.
@@ -104,5 +106,58 @@ public class TestImageRecordReader {
 //        System.out.println(labels1);
 
         assertEquals(labels0, labels1);
+    }
+
+
+    @Test
+    public void testImageRecordReaderRandomization() throws Exception {
+        //Order of FileSplit+ImageRecordReader should be different after reset
+
+        //Idea: labels order should be consistent regardless of input file order
+        File f0 = new ClassPathResource("/testimages/").getFile();
+
+        FileSplit fs = new FileSplit(f0, new Random(12345));
+
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+        ImageRecordReader rr = new ImageRecordReader(32,32,3, labelMaker);
+        rr.initialize(fs);
+
+        List<List<Writable>> out1 = new ArrayList<>();
+        List<File> order1 = new ArrayList<>();
+        while(rr.hasNext()){
+            out1.add(rr.next());
+            order1.add(rr.getCurrentFile());
+        }
+        assertEquals(6, out1.size());
+        assertEquals(6, order1.size());
+
+        rr.reset();
+        List<List<Writable>> out2 = new ArrayList<>();
+        List<File> order2 = new ArrayList<>();
+        while(rr.hasNext()){
+            out2.add(rr.next());
+            order2.add(rr.getCurrentFile());
+        }
+        assertEquals(6, out2.size());
+        assertEquals(6, order2.size());
+
+        assertNotEquals(out1, out2);
+        assertNotEquals(order1, order2);
+
+        //Check that different seed gives different order for the initial iteration
+        FileSplit fs2 = new FileSplit(f0, new Random(999999999));
+
+        ParentPathLabelGenerator labelMaker2 = new ParentPathLabelGenerator();
+        ImageRecordReader rr2 = new ImageRecordReader(32,32,3, labelMaker2);
+        rr2.initialize(fs2);
+
+        List<File> order3 = new ArrayList<>();
+        while(rr2.hasNext()){
+            rr2.next();
+            order3.add(rr2.getCurrentFile());
+        }
+        assertEquals(6, order3.size());
+
+        assertNotEquals(order1, order3);
     }
 }

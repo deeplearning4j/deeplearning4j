@@ -139,7 +139,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 }
 
             }
-            iter = new FileFromPathIterator(allPaths.iterator());
+            iter = new FileFromPathIterator(inputSplit.locationsPathIterator());    //This handles randomization internally if necessary
         }
         if (split instanceof FileSplit) {
             //remove the root directory
@@ -202,7 +202,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public List<Writable> next() {
         if (iter != null) {
-            List<Writable> ret = new ArrayList<>();
+            List<Writable> ret;
             File image =  iter.next();
             currentFile = image;
 
