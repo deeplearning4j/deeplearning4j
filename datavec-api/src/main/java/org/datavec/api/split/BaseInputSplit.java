@@ -17,11 +17,15 @@
 package org.datavec.api.split;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.datavec.api.io.filters.PathFilter;
+import org.datavec.api.util.files.ShuffledListIterator;
+import org.datavec.api.util.files.UriFromPathIterator;
 
 /**
  * Base input split
@@ -30,12 +34,35 @@ import org.datavec.api.io.filters.PathFilter;
  */
 public abstract class BaseInputSplit implements InputSplit {
 
-    protected URI[] locations;
+    protected List<String> uriStrings;  //URIs, as a String, via toString() method (which includes file:/ etc)
+    protected int[] iterationOrder;
     protected long length = 0;
 
     @Override
     public URI[] locations() {
-        return locations;
+        URI[] uris = new URI[uriStrings.size()];
+        int i=0;
+        for(String s : uriStrings){
+            try{
+                uris[i++] = new URI(s);
+            }catch (URISyntaxException e){
+                throw new RuntimeException(e);
+            }
+        }
+        return uris;
+    }
+
+    @Override
+    public Iterator<URI> locationsIterator(){
+        return new UriFromPathIterator(locationsPathIterator());
+    }
+
+    @Override
+    public Iterator<String> locationsPathIterator(){
+        if(iterationOrder == null){
+            return uriStrings.iterator();
+        }
+        return new ShuffledListIterator<>(uriStrings, iterationOrder);
     }
 
     @Override

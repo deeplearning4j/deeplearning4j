@@ -20,6 +20,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.Iterator;
 
 /**
  * String split used for single line inputs
@@ -40,6 +42,21 @@ public class StringSplit implements InputSplit {
     @Override
     public URI[] locations() {
         return new URI[0];
+    }
+
+    @Override
+    public Iterator<URI> locationsIterator() {
+        return Collections.emptyIterator();
+    }
+
+    @Override
+    public Iterator<String> locationsPathIterator() {
+        return Collections.emptyIterator();
+    }
+
+    @Override
+    public void reset() {
+        //No op
     }
 
     @Override

@@ -20,6 +20,7 @@ package org.datavec.api.split;
 import org.datavec.api.writable.Writable;
 
 import java.net.URI;
+import java.util.Iterator;
 
 /**
  * An input split
@@ -41,4 +42,15 @@ public interface InputSplit extends Writable {
      * @return
      */
     URI[] locations();
+
+    Iterator<URI> locationsIterator();
+
+    Iterator<String> locationsPathIterator();
+
+    /**
+     * Reset the InputSplit without reinitializing it from scratch.
+     * In many cases, this is a no-op.
+     * For InputSplits that have randomization: reset should shuffle the order.
+     */
+    void reset();
 }

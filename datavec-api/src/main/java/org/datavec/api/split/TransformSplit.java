@@ -1,12 +1,14 @@
 package org.datavec.api.split;
 
 import lombok.NonNull;
+import org.nd4j.linalg.collection.CompactHeapStringList;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Iterator;
 
 /**
  * InputSplit implementation that maps the URIs of a given BaseInputSplit to new URIs. Useful when features and labels
@@ -58,10 +60,12 @@ public class TransformSplit extends BaseInputSplit {
 
     private void initialize() throws URISyntaxException {
         length = sourceSplit.length();
-        locations = new URI[sourceSplit.locations().length];
-        URI[] sourceLocations = sourceSplit.locations();
-        for (int i = 0; i < sourceLocations.length; i++) {
-            locations[i] = transform.apply(sourceLocations[i]);
+        uriStrings = new CompactHeapStringList();
+        Iterator<URI> iter = sourceSplit.locationsIterator();
+        while(iter.hasNext()){
+            URI uri = iter.next();
+            uri = transform.apply(uri);
+            uriStrings.add(uri.toString());
         }
     }
 
@@ -73,6 +77,11 @@ public class TransformSplit extends BaseInputSplit {
     @Override
     public void readFields(DataInput in) throws IOException {
 
+    }
+
+    @Override
+    public void reset() {
+        //No op: BaseInputSplit doesn't support randomization directly, and TransformSplit doesn't either
     }
 
     public interface URITransform {

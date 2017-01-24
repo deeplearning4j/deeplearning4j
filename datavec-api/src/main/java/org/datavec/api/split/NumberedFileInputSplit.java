@@ -16,11 +16,15 @@
 
 package org.datavec.api.split;
 
+import org.datavec.api.util.files.UriFromPathIterator;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**InputSplit for sequences of numbered files.
  * Example usages:<br>
@@ -65,6 +69,21 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
+    public Iterator<URI> locationsIterator() {
+        return new UriFromPathIterator(locationsPathIterator());
+    }
+
+    @Override
+    public Iterator<String> locationsPathIterator() {
+        return new NumberedFileIterator();
+    }
+
+    @Override
+    public void reset() {
+        //No op
+    }
+
+    @Override
     public void write(DataOutput out) throws IOException {
 
     }
@@ -92,5 +111,32 @@ public class NumberedFileInputSplit implements InputSplit {
     @Override
     public long toLong(){
         throw new UnsupportedOperationException();
+    }
+
+    private class NumberedFileIterator implements Iterator<String> {
+
+        private int currIdx;
+
+        private NumberedFileIterator(){
+            currIdx = minIdx;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currIdx <= maxIdx;
+        }
+
+        @Override
+        public String next() {
+            if(!hasNext()){
+                throw new NoSuchElementException();
+            }
+            return String.format(baseString, currIdx++);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

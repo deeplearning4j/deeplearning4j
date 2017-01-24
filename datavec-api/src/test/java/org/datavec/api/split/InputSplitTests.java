@@ -15,21 +15,20 @@
  */
 package org.datavec.api.split;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Random;
-
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
+import org.junit.Test;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
 
 /**
  *
@@ -55,10 +54,15 @@ public class InputSplitTests {
                     "label4/group2_img.jpg",
                     "label5/group2_img.wtf" };
 
-                locations = new URI[paths.length];
-                for (int i = 0; i < paths.length; i++) {
-                    locations[i] = new URI("file:///" + paths[i]);
+                uriStrings = new ArrayList<>(paths.length);
+                for(String s : paths){
+                    uriStrings.add("file:///" + s);
                 }
+            }
+
+            @Override
+            public void reset() {
+                //No op
             }
 
             @Override

@@ -17,14 +17,16 @@
 package org.datavec.api.split;
 
 import org.apache.commons.io.FileUtils;
+import org.datavec.api.util.RandomUtils;
+import org.nd4j.linalg.collection.CompactHeapStringList;
 
 
 import java.io.*;
-import java.net.URI;
 import java.util.*;
 
 /**
  * File input split. Splits up a root directory in to files.
+ *
  * @author Adam Gibson
  */
 public class FileSplit extends BaseInputSplit {
@@ -40,7 +42,7 @@ public class FileSplit extends BaseInputSplit {
         this.allowFormat = allowFormat;
         this.recursive = recursive;
         this.rootDir = rootDir;
-        if (random != null){
+        if (random != null) {
             this.random = random;
             this.randomize = true;
         }
@@ -56,7 +58,7 @@ public class FileSplit extends BaseInputSplit {
     }
 
     public FileSplit(File rootDir, String[] allowFormat) {
-        this(rootDir, allowFormat, true,  null, true);
+        this(rootDir, allowFormat, true, null, true);
     }
 
     public FileSplit(File rootDir, String[] allowFormat, Random rng) {
@@ -71,31 +73,28 @@ public class FileSplit extends BaseInputSplit {
     protected void initialize() {
         Collection<File> subFiles;
 
-        if(rootDir == null)
+        if (rootDir == null)
             throw new IllegalArgumentException("File must not be null");
 
-        if(rootDir.isDirectory()) {
+        if (rootDir.isDirectory()) {
             subFiles = FileUtils.listFiles(rootDir, allowFormat, recursive);
-            locations = new URI[subFiles.size()];
+            uriStrings = new CompactHeapStringList();
 
-            if (randomize) Collections.shuffle((List<File>) subFiles, random);
-            int count = 0;
-            for(File f : subFiles) {
-                if(f.getPath().startsWith("file:"))
-                    locations[count++] = URI.create(f.getPath());
-                else
-                    locations[count++] = f.toURI();
+            if (randomize) {
+                iterationOrder = new int[subFiles.size()];
+                for (int i = 0; i < iterationOrder.length; i++) {
+                    iterationOrder[i] = i;
+                }
+                RandomUtils.shuffleInPlace(iterationOrder, random);
+            }
+            for (File f : subFiles) {
+                uriStrings.add(f.toURI().toString());
                 length += f.length();
             }
-        }
-        else {
+        } else {
             // Lists one file
-            String path = rootDir.getPath();
-            locations = new URI[1];
-            if(path.startsWith("file:"))
-                 locations[0] = URI.create(path);
-            else
-                locations[0] = rootDir.toURI();
+            String toString = rootDir.toURI().toString();   //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
+            uriStrings = Collections.singletonList(toString);
             length += rootDir.length();
         }
     }
@@ -103,6 +102,14 @@ public class FileSplit extends BaseInputSplit {
     @Override
     public long length() {
         return length;
+    }
+
+    @Override
+    public void reset() {
+        if (randomize) {
+            //Shuffle the iteration order
+            RandomUtils.shuffleInPlace(iterationOrder, random);
+        }
     }
 
 
