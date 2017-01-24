@@ -6,7 +6,8 @@ import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.Op;
 
 /**
  * POJO describing OP

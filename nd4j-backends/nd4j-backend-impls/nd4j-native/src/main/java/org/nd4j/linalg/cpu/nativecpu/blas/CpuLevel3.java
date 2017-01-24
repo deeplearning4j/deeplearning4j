@@ -10,8 +10,8 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
+
 import static org.bytedeco.javacpp.openblas.*;
 import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
 

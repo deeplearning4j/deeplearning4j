@@ -4,9 +4,7 @@ import org.agrona.DirectBuffer;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.util.BufferUtil;
-import org.nd4j.aeron.ipc.chunk.NDArrayMessageChunk;
 import org.nd4j.linalg.factory.Nd4j;
-
 
 import java.nio.ByteBuffer;
 

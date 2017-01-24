@@ -1,41 +1,26 @@
 package org.nd4j.linalg.jcublas.blas;
 
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.Allocator;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-
-
-import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.Allocator;
-import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
-import org.nd4j.jita.allocator.impl.AtomicAllocator ;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-
-
-
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.IntPointer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
-import static org.bytedeco.javacpp.cuda.*;
+import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cusolver.*;
 
 /**

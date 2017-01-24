@@ -10,7 +10,6 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 
 import java.util.ArrayList;
 import java.util.List;

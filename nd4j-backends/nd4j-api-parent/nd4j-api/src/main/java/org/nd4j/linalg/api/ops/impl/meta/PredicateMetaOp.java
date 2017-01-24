@@ -1,7 +1,9 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 /**

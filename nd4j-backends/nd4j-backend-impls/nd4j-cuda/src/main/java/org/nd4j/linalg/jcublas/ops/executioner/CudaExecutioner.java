@@ -20,7 +20,6 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-
 import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
@@ -31,23 +30,21 @@ import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.rng.*;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
@@ -1649,7 +1646,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.opNum() == 41 && op.extraArgs() != null) {
             // for IsMax along dimension we need special temporary buffer
-            dimension = new int[] {(int) op.extraArgs()[1] };
+            dimension = new int[(int) op.extraArgs()[0]];
+
+            for (int i = 0; i < dimension.length; i++) {
+                dimension[i] = (int) op.extraArgs()[i+1];
+            }
+
+
             for(int i = 0; i < dimension.length; i++) {
                 if(dimension[i] < 0)
                     dimension[i] += op.x().rank();
@@ -1726,6 +1729,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer z = allocator.getPointer(op.z(), context);
         Pointer zShapeInfo = allocator.getPointer(op.z().shapeInfoDataBuffer(), context);
 
+
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),  // 0
                 context.getOldStream(),      // 1
@@ -1744,7 +1748,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devMaxTadOffsets, // 14
                 dimensionDevPointer, // special pointer for IsMax  // 15
                 dimensionHostPointer, // special pointer for IsMax  // 16
-                retPointer // special pointer for IsMax // 17
+                retPointer,// special pointer for IsMax // 17
+                new CudaPointer(dimension == null ? 0 : dimension.length)
         );
 
 

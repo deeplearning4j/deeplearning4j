@@ -2,7 +2,6 @@ package org.nd4j.jita.allocator.garbage;
 
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;

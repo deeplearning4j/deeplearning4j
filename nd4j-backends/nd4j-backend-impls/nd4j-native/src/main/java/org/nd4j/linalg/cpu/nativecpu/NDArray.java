@@ -29,9 +29,6 @@ import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-
 import java.util.List;
 
 

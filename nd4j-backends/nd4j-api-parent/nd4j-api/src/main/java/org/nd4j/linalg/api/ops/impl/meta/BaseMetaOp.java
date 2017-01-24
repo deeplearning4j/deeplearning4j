@@ -1,11 +1,8 @@
 package org.nd4j.linalg.api.ops.impl.meta;
 
-import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.MetaOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.grid.BaseGridOp;

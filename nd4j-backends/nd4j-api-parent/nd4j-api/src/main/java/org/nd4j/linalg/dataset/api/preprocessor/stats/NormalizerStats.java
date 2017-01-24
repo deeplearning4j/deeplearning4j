@@ -28,6 +28,10 @@ public interface NormalizerStats extends Serializable {
          */
         Builder<S> add(INDArray data, INDArray mask);
 
+        /**
+         * Builder pattern
+         * @return
+         */
         S build();
     }
 }

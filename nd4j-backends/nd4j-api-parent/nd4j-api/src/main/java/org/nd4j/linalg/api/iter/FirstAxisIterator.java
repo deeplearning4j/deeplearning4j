@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.iter;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Iterator;
 

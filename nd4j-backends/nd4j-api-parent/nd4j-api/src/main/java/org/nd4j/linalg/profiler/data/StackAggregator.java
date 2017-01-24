@@ -1,11 +1,7 @@
 package org.nd4j.linalg.profiler.data;
 
-import org.nd4j.linalg.profiler.data.primitives.ComparableAtomicLong;
 import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 import org.nd4j.linalg.profiler.data.primitives.StackTree;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is utility class, provides stack traces collection, used in OpProfiler, to count events occurrences based on their position in code

@@ -23,8 +23,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import javax.annotation.Nullable;
-
 /**
  * Random generation based on commons math.
  * This is mean to be an independent.
