@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.keras.api.*;
 import org.deeplearning4j.keras.hdf5.HDF5MiniBatchDataSetIterator;
 import org.deeplearning4j.keras.model.KerasModelSerializer;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -30,7 +30,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void compile(CompileParams compileParams) throws Exception {
         // TODO
-        ComputationGraph model = kerasModelSerializer.read(writeParams.getModelFilePath(), writeParams.getType());
+        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.read(writeParams.getModelFilePath(), writeParams.getType());
     }
 
     /**
@@ -40,7 +40,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void fit(FitParams fitParams) throws Exception {
         try {
-            ComputationGraph model = fitParams.getModel();
+            MultiLayerNetwork model = fitParams.getModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
                 fitParams.getTrainFeaturesDirectory(),
@@ -68,7 +68,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void evaluate(EvaluateParams evaluateParams) throws Exception {
         try {
-            ComputationGraph model = evaluateParams.getModel();
+            MultiLayerNetwork model = evaluateParams.getModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
                 fitParams.getTrainFeaturesDirectory(),
@@ -92,7 +92,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void predict(PredictParams predictParams) throws Exception {
         try {
-            ComputationGraph model = predictParams.getModel();
+            MultiLayerNetwork model = predictParams.getModel();
 
             model.predict(x);
 
@@ -111,7 +111,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void predict_on_batch(PredictBatchParams predictParams) throws Exception {
         try {
-            ComputationGraph model = predictParams.getModel();
+            MultiLayerNetwork model = predictParams.getModel();
 
             model.predict(dataSet);
 
@@ -128,8 +128,8 @@ public class DeepLearning4jEntryPoint {
      *
      * @param configParams Keras model config and associated parameters.
      */
-    public void from_config(FromConfigParams configParams) throws Exception {
-        ComputationGraph model;
+    public MultiLayerNetwork from_config(FromConfigParams configParams) throws Exception {
+        MultiLayerNetwork model;
         try {
             model = kerasModelSerializer.readConfig(configParams);
 
