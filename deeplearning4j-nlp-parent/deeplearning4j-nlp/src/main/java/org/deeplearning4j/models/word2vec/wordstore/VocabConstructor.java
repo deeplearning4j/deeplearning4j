@@ -13,10 +13,7 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -196,12 +193,14 @@ public class VocabConstructor<T extends SequenceElement> {
             final AtomicLong finCounter = new AtomicLong(0);
 
 
+            List<Long> timesHasNext = new ArrayList<>();
+            List<Long> timesNext = new ArrayList<>();
             int sequences = 0;
             long time3 = 0;
             while (iterator.hasMoreSequences()) {
-                long time1 = System.currentTimeMillis();
+                long time1 = System.nanoTime();
                 Sequence<T> document = iterator.nextSequence();
-                long time2 = System.currentTimeMillis();
+                long time2 = System.nanoTime();
 
                 seqCount.incrementAndGet();
                 parsedCount.addAndGet(document.size());
@@ -221,6 +220,8 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
                 */
 
+
+
                 sequences++;
                 if (seqCount.get() % 10000 == 0) {
                     long currentTime = System.currentTimeMillis();
@@ -229,13 +230,19 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seconds = (currentTime - lastTime) / (double) 1000;
 
+                    Collections.sort(timesHasNext);
+                    Collections.sort(timesNext);
+
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
-                    log.info("Document time: {} ms; hasNext time: {} ms", time2 - time1, time1 - time3);
+                    log.info("Document time: {} us; hasNext time: {} us", timesNext.get(timesNext.size() / 2), timesNext.get(timesHasNext.size() / 2));
                     log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
                     lastSequences = currentSequences;
+
+                    timesHasNext.clear();
+                    timesNext.clear();
                 }
 
                 /**
@@ -253,7 +260,10 @@ public class VocabConstructor<T extends SequenceElement> {
                     loopCounter.set(0);
                 }
 
-                time3 = System.currentTimeMillis();
+                timesNext.add((time2 - time1) / 1000L);
+                timesHasNext.add((time1 - time3) / 1000L);
+
+                time3 = System.nanoTime();
             }
 
             // block untill all threads are finished
