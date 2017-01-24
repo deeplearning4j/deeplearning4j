@@ -207,7 +207,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 executorService.submit(runnable);
 
                 // block untill all threads are finished
-                while (execCounter.get() - finCounter.get() > numProc * 2) {
+                while (execCounter.get() - finCounter.get() > numProc) {
                     try {
                         Thread.sleep(2);
                     } catch (Exception e) { }
