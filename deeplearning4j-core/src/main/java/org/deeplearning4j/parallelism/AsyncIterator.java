@@ -99,7 +99,10 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
         public void run() {
             try {
                 while (iterator.hasNext() && shouldWork.get()) {
-                    buffer.put(iterator.next());
+                    T smth = iterator.next();
+
+                    if (smth != null)
+                        buffer.put(smth);
                 }
                 buffer.put(terminator);
             } catch (InterruptedException e) {
