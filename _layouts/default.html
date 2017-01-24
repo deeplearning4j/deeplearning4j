@@ -2,7 +2,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 
 {% include header.html %}
-<!-- Article Specific CSS -->
+<!-- Promote Skymind Academy Workshop -->
+<div id="TopBanner" class="TopBanner">
+    <p><span>Attend a 3-Day Introductory Deep Learning Workshop</span> <a href="https://skymind.ai/academy#university" target="_blank" class="TopBanner-download-link">View Upcoming Workshops »</a></p>
+</div>
 <style>
 /* Fix subscribe form formatting */
 li.subscribe-form {
@@ -17,8 +20,27 @@ li.subscribe-form {
   color: #fff;
   margin-top: 10px;
 }
+/* Top Banner Formatting*/
+.TopBanner {
+    display: none;
+}
+
+@media only screen and (min-device-width : 667px) {
+  .TopBanner {
+      display: block;
+      background-color: #424242;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 10px 0px 1px 0px;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      text-align: center;
+  }
+  .site-header.navbar-transparent .navbar {
+      top: 40px !important;
+  }
+}
 </style>
-<!-- END Article Specific CSS -->
 
 <!-- Top Navigation -->
 <header class="site-header navbar-fullwidth">
