@@ -226,6 +226,8 @@ public class SubsamplingLayer extends Layer {
         @Override
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
+            if(poolingType==PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+
             return new SubsamplingLayer(this);
         }
 
