@@ -39,7 +39,7 @@ public enum TrainedModels {
                 return "https://raw.githubusercontent.com/deeplearning4j/dl4j-examples/f9da30063c1636e1de515f2ac514e9a45c1b32cd/dl4j-examples/src/main/resources/trainedModels/VGG16.json";
             case VGG16NOTOP:
                 //FIXME
-                return "https://raw.githubusercontent.com/deeplearning4j/dl4j-examples/f9da30063c1636e1de515f2ac514e9a45c1b32cd/dl4j-examples/src/main/resources/trainedModels/VGG16.json";
+                return "https://raw.githubusercontent.com/deeplearning4j/dl4j-examples/de0087d3b16357d4bc1edbdb6b16f55d2c3da8c9/dl4j-examples/src/main/resources/trainedModels/VGG16NoTop.json";
             default:
                 throw new UnsupportedOperationException("Unknown or not supported trained model " + this);
         }
