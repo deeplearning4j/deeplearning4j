@@ -11,9 +11,7 @@ import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
-    protected LinkedBlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
-    protected LinkedBlockingQueue<LabelledDocument> stringBuffer;
+    protected BlockingQueue<Sequence<VocabWord>> buffer = new LinkedTransferQueue<>();
+    protected BlockingQueue<LabelledDocument> stringBuffer;
     protected TokenizerThread[] threads;
     protected boolean underlyingHas = true;
     protected AtomicInteger processing = new AtomicInteger(0);
@@ -43,7 +41,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer, boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
         this.allowMultithreading = allowMultithreading;
-        this.stringBuffer = new LinkedBlockingQueue<>();
+        this.stringBuffer = new LinkedTransferQueue<>();
 
         threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2) : 1];
 
@@ -62,7 +60,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
                 cnt++;
             }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             //
         }
 
@@ -117,13 +115,13 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
 
     private static class TokenizerThread extends Thread implements Runnable {
-        protected LinkedBlockingQueue<Sequence<VocabWord>> sequencesBuffer;
-        protected LinkedBlockingQueue<LabelledDocument> stringsBuffer;
+        protected BlockingQueue<Sequence<VocabWord>> sequencesBuffer;
+        protected BlockingQueue<LabelledDocument> stringsBuffer;
         protected SentenceTransformer sentenceTransformer;
         protected AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected AtomicInteger processing;
 
-        public TokenizerThread(int threadIdx, SentenceTransformer transformer, LinkedBlockingQueue<LabelledDocument> stringsBuffer, LinkedBlockingQueue<Sequence<VocabWord>> sequencesBuffer, AtomicInteger processing) {
+        public TokenizerThread(int threadIdx, SentenceTransformer transformer, BlockingQueue<LabelledDocument> stringsBuffer, BlockingQueue<Sequence<VocabWord>> sequencesBuffer, AtomicInteger processing) {
             this.stringsBuffer = stringsBuffer;
             this.sequencesBuffer = sequencesBuffer;
             this.sentenceTransformer = transformer;
