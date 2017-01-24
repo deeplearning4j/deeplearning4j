@@ -1,4 +1,4 @@
-package org.deeplearning4j.keras;
+package org.deeplearning4j.keras.hdf5;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;

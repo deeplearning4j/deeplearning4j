@@ -1,6 +1,8 @@
-package org.deeplearning4j.keras;
+package org.deeplearning4j.keras.model;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.keras.model.KerasModelRef;
+import org.deeplearning4j.keras.model.KerasModelType;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
@@ -14,19 +16,21 @@ import java.io.IOException;
  * @author pkoperek@gmail.com
  */
 @Slf4j
-public class NeuralNetworkReader {
+public class KerasModelSerializer {
 
-    public MultiLayerNetwork readNeuralNetwork(EntryPointFitParameters entryPointFitParameters)
+    public MultiLayerNetwork read(String modelFilePath, String modelType)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         MultiLayerNetwork multiLayerNetwork;
-        if (KerasModelType.SEQUENTIAL.equals(entryPointFitParameters.getType())) {
-            multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(entryPointFitParameters.getModelFilePath());
+        if (KerasModelType.SEQUENTIAL.equals(modelType)) {
+            multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(modelFilePath);
             multiLayerNetwork.init();
         } else {
-            throw new RuntimeException("Model type unsupported! (" + entryPointFitParameters.getType() + ")");
+            throw new RuntimeException("Model type unsupported! (" + modelType + ")");
         }
 
         return multiLayerNetwork;
     }
+
+    // TODO write method that writes back to keras format
 }

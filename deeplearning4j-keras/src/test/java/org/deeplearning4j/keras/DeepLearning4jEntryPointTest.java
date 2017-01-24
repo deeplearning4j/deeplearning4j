@@ -1,22 +1,21 @@
 package org.deeplearning4j.keras;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.keras.api.FitParams;
+import org.deeplearning4j.keras.api.SaveParams;
+import org.deeplearning4j.keras.model.KerasModelType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import static org.deeplearning4j.keras.StringsEndsWithPredicate.endsWith;
 
@@ -35,7 +34,7 @@ public class DeepLearning4jEntryPointTest {
         final Path features = prepareFeatures("theano_mnist");
         final Path labels = prepareLabels("theano_mnist");
 
-        EntryPointFitParameters entryPointParameters = EntryPointFitParameters
+        FitParams entryPointParameters = FitParams
                 .builder()
                 .modelFilePath(model.getAbsolutePath())
                 .trainFeaturesDirectory(features.toAbsolutePath().toString())
@@ -47,6 +46,41 @@ public class DeepLearning4jEntryPointTest {
 
         // When
         deepLearning4jEntryPoint.fit(entryPointParameters);
+
+        // Then
+        // fall through - the rule will fail the test execution if an exception is thrown
+    }
+
+    @Test
+    public void shouldFitTheSampleSequentialModelAndWrite() throws Exception {
+        // Given
+        final File model = prepareResource("theano_mnist/model.h5");
+        final Path features = prepareFeatures("theano_mnist");
+        final Path labels = prepareLabels("theano_mnist");
+        final String modelWritePath = System.getProperty("user.dir")+"/keras_dl4j_serialized.zip";
+
+        // When
+        FitParams fitParams = FitParams
+            .builder()
+            .modelFilePath(model.getAbsolutePath())
+            .trainFeaturesDirectory(features.toAbsolutePath().toString())
+            .trainLabelsDirectory(labels.toAbsolutePath().toString())
+            .batchSize(128)
+            .nbEpoch(2)
+            .type(KerasModelType.SEQUENTIAL)
+            .build();
+
+        deepLearning4jEntryPoint.fit(fitParams);
+
+
+        SaveParams entryPointParameters = SaveParams
+            .builder()
+            .model(model)
+            .writePath(modelWritePath)
+            .saveUpdaterState(true)
+            .build();
+
+        deepLearning4jEntryPoint.writeModel(entryPointParameters);
 
         // Then
         // fall through - the rule will fail the test execution if an exception is thrown
