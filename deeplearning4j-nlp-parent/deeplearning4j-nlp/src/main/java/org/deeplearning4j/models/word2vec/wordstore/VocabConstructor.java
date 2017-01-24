@@ -188,7 +188,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
             int numProc = Runtime.getRuntime().availableProcessors();
-            int numThreads = Math.max(numProc, 2);
+            int numThreads = Math.max(numProc / 2, 2);
             ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads,
                     0L, TimeUnit.MILLISECONDS,
                     new LinkedTransferQueue<Runnable>());//Executors.newFixedThreadPool(Math.max(numProc / 2, 2));
