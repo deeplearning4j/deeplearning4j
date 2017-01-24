@@ -197,6 +197,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
             int sequences = 0;
+            long time3 = 0;
             while (iterator.hasMoreSequences()) {
                 long time1 = System.currentTimeMillis();
                 Sequence<T> document = iterator.nextSequence();
@@ -221,7 +222,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 */
 
                 sequences++;
-                if (seqCount.get() % 100000 == 0) {
+                if (seqCount.get() % 10000 == 0) {
                     long currentTime = System.currentTimeMillis();
                     long currentSequences = seqCount.get();
                     long currentElements = parsedCount.get();
@@ -230,7 +231,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
-                    log.info("Document time: {} ms", time2 - time1);
+                    log.info("Document time: {} ms; hasNext time: {} ms", time2 - time1, time1 - time3);
                     log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
@@ -251,6 +252,8 @@ public class VocabConstructor<T extends SequenceElement> {
                     filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 2));
                     loopCounter.set(0);
                 }
+
+                time3 = System.currentTimeMillis();
             }
 
             // block untill all threads are finished
