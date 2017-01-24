@@ -3,7 +3,6 @@ package org.nd4j.jita.allocator.pointers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 
 /**

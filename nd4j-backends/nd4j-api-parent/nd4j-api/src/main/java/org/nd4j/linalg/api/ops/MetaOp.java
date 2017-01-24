@@ -1,7 +1,5 @@
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.grid.GridDescriptor;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 

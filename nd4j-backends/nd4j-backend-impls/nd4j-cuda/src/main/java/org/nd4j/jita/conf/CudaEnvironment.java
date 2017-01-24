@@ -1,6 +1,5 @@
 package org.nd4j.jita.conf;
 
-import lombok.NonNull;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -8,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

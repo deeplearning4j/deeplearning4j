@@ -11,8 +11,6 @@ import org.nd4j.linalg.indexing.conditions.Or;
 import org.nd4j.linalg.indexing.functions.StableNumber;
 import org.nd4j.linalg.indexing.functions.Value;
 
-import java.util.Arrays;
-
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 

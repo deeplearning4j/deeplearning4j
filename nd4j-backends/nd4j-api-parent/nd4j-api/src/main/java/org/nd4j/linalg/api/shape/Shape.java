@@ -20,11 +20,9 @@
 package org.nd4j.linalg.api.shape;
 
 
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,13 +30,13 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to
@@ -48,7 +46,6 @@ import java.util.*;
  */
 public class Shape {
 
-    private static Logger logger = LoggerFactory.getLogger(Shape.class);
 
     private Shape() {
     }
@@ -1670,7 +1667,7 @@ public class Shape {
      */
     public static void setElementWiseStride(IntBuffer buffer,int elementWiseStride) {
         int length2 = shapeInfoLength(buffer.get(0));
-        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
+//        if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + bufferToString(buffer));
         buffer.put(length2 - 2, elementWiseStride);
     }
 
@@ -1687,6 +1684,12 @@ public class Shape {
         buffer.put(length2 - 2, elementWiseStride);
     }
 
+    /**
+     * Prints the {@link IntBuffer}
+     * @param buffer the buffer to print
+     * @return the to string for the buffer
+     *
+     */
     public static String bufferToString(IntBuffer buffer) {
         StringBuilder builder = new StringBuilder();
         int rank = buffer.get(0);

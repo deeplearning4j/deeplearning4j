@@ -40,6 +40,10 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -48,14 +52,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -66,7 +69,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * NDArrayTests
@@ -731,8 +733,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testTadShape() {
         INDArray arr = Nd4j.linspace(1,12,12).reshape(4,3,1,1);
+        INDArray javaTad = arr.javaTensorAlongDimension(0,0,2,3);
+        assertArrayEquals(new int[]{4,1,1},javaTad.shape());
         INDArray tad = arr.tensorAlongDimension(0,0,2,3);
-        assertArrayEquals(new int[]{4,1,1},tad.shape());
+        assertEquals(javaTad.shapeInfoDataBuffer(),tad.shapeInfoDataBuffer());
     }
 
     @Test
@@ -744,8 +748,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testVStackDifferentOrders(){
-
+    public void testVStackDifferentOrders() {
         INDArray expected = Nd4j.linspace(1,9,9).reshape('c',3,3);
 
         for(char order : new char[]{'c','f'}){
@@ -1075,6 +1078,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             INDArray zC = Nd4j.create(shape,'c');
             zC.setData(Nd4j.linspace(1,24,24).data());
             for(int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+                INDArray javaTad = zC.javaTensorAlongDimension(tad,dim);
                 System.out.println("Tad " + tad + " is " + zC.tensorAlongDimension(tad,dim));
             }
 
@@ -3538,8 +3542,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result01 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc01,result01, 0, 1));
 
-                for( int i=0; i<5; i++ ){
-                    INDArray subset = result01.tensorAlongDimension(i, 0,1);;//result01.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
+                for( int i = 0; i < 5; i++) {
+                    INDArray subset = result01.tensorAlongDimension(i, 0,1);//result01.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
                     assertEquals(bc01, subset);
                 }
 
@@ -3552,7 +3556,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result02 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc02,result02, 0, 2));
 
-                for( int i=0; i<4; i++ ){
+                for( int i = 0; i < 4; i++) {
                     INDArray subset = result02.tensorAlongDimension(i, 0,2); //result02.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all());
                     assertEquals(bc02, subset);
                 }
@@ -3567,7 +3571,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result12 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(arrOrig,bc12,result12, 1, 2));
 
-                for( int i=0; i<3; i++ ){
+                for( int i = 0; i < 3; i++) {
                     INDArray subset = result12.tensorAlongDimension(i, 1,2);//result12.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
                     assertEquals("Failed for subset " + i,bc12, subset);
                 }
@@ -3579,8 +3583,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testBroadcast4d2d(){
         char[] orders = {'c', 'f'};
 
-        for( char orderArr : orders){
-            for(char orderbc : orders ){
+        for( char orderArr : orders) {
+            for(char orderbc : orders) {
                 System.out.println(orderArr + "\t" + orderbc);
                 INDArray arrOrig = Nd4j.ones(3,4,5,6).dup(orderArr);
 
@@ -3593,8 +3597,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result01 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result01,bc01,result01, 0, 1));
 
-                for( int d2=0; d2<5; d2++ ){
-                    for( int d3=0; d3<6; d3++ ) {
+                for( int d2 = 0; d2 < 5; d2++ ) {
+                    for( int d3 = 0; d3 < 6; d3++) {
                         INDArray subset = result01.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(d2), NDArrayIndex.point(d3));
                         assertEquals(bc01, subset);
                     }
@@ -3609,8 +3613,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result02 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result02,bc02,result02, 0, 2));
 
-                for( int d1=0; d1<4; d1++ ){
-                    for( int d3=0; d3<6; d3++ ) {
+                for( int d1 = 0; d1 < 4; d1++) {
+                    for( int d3 = 0; d3 < 6; d3++) {
                         INDArray subset = result02.get(NDArrayIndex.all(), NDArrayIndex.point(d1), NDArrayIndex.all(), NDArrayIndex.point(d3));
                         assertEquals(bc02, subset);
                     }
@@ -3625,8 +3629,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result03 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result03,bc03,result03, 0, 3));
 
-                for( int d1=0; d1<4; d1++ ){
-                    for( int d2=0; d2<5; d2++ ){
+                for( int d1 = 0; d1 < 4; d1++) {
+                    for( int d2 = 0; d2 < 5; d2++) {
                         INDArray subset = result03.get(NDArrayIndex.all(), NDArrayIndex.point(d1), NDArrayIndex.point(d2), NDArrayIndex.all());
                         assertEquals(bc03, subset);
                     }
@@ -3642,8 +3646,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result12 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result12,bc12,result12, 1, 2));
 
-                for( int d0=0; d0<3; d0++ ){
-                    for( int d3=0; d3<6; d3++ ) {
+                for(int d0 = 0; d0 < 3; d0++){
+                    for(int d3=0; d3 < 6; d3++) {
                         INDArray subset = result12.get(NDArrayIndex.point(d0), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(d3));
                         assertEquals(bc12, subset);
                     }
@@ -3659,8 +3663,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result13 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result13,bc13,result13, 1, 3));
 
-                for( int d0=0; d0<3; d0++ ){
-                    for( int d2=0; d2<5; d2++ ) {
+                for( int d0 = 0; d0 < 3; d0++) {
+                    for( int d2 = 0; d2 < 5; d2++) {
                         INDArray subset = result13.get(NDArrayIndex.point(d0), NDArrayIndex.all(), NDArrayIndex.point(d2), NDArrayIndex.all());
                         assertEquals(bc13, subset);
                     }
@@ -3677,8 +3681,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 INDArray result23 = arrOrig.dup(orderArr);
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(result23,bc23,result23, 2, 3));
 
-                for( int d0=0; d0<3; d0++ ){
-                    for( int d1=0; d1<4; d1++ ) {
+                for(int d0 = 0; d0 < 3; d0++){
+                    for(int d1 = 0; d1 < 4; d1++) {
                         INDArray subset = result23.get(NDArrayIndex.point(d0), NDArrayIndex.point(d1), NDArrayIndex.all(), NDArrayIndex.all());
                         assertEquals(bc23, subset);
                     }
@@ -3705,7 +3709,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testIsMax2Of3d(){
+    public void testIsMax2Of3d() {
         double[][][] slices = new double[3][][];
         double[][][] isMax = new double[3][][];
 
@@ -3844,16 +3848,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testIMax2of4d(){
-
+    public void testIMax2of4d() {
         Nd4j.getRandom().setSeed(12345);
         int[] s = new int[]{2,3,4,5};
         INDArray arr = Nd4j.rand(s);
 
         //Test 0,1
         INDArray exp = Nd4j.create(new int[]{4,5});
-        for( int i=0; i<4; i++ ){
-            for( int j=0; j<5; j++ ){
+        for( int i = 0; i < 4; i++) {
+            for( int j = 0; j < 5; j++) {
                 INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.point(j));
                 assertArrayEquals(new int[]{2,3}, subset.shape());
 
@@ -3861,10 +3864,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 double max = -Double.MAX_VALUE;
                 int maxIdxPos = -1;
                 int count = 0;
-                while(iter.hasNext()){
+                while(iter.hasNext()) {
                     int[] next = iter.next();
                     double d = subset.getDouble(next);
-                    if(d > max){
+                    if(d > max) {
                         max = d;
                         maxIdxPos = count;
                     }
@@ -3885,8 +3888,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         //Test 2,3
         exp = Nd4j.create(new int[]{2,3});
-        for( int i=0; i<2; i++ ){
-            for( int j=0; j<3; j++ ){
+        for( int i = 0; i < 2; i++) {
+            for( int j = 0; j < 3; j++) {
                 INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
                 assertArrayEquals(new int[]{4,5}, subset.shape());
 
@@ -3894,7 +3897,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 int maxIdxPos = -1;
                 double max = -Double.MAX_VALUE;
                 int count = 0;
-                while(iter.hasNext()){
+                while(iter.hasNext()) {
                     int[] next = iter.next();
                     double d = subset.getDouble(next);
                     if(d > max){

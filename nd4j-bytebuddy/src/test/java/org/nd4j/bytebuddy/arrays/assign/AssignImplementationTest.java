@@ -15,7 +15,8 @@ import org.nd4j.bytebuddy.stackmanipulation.StackManipulationImplementation;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 /**
  * @author Adam Gibson
  */

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.concurrent.atomic.AtomicBoolean;

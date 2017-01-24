@@ -7,10 +7,8 @@ import org.nd4j.jita.allocator.context.ContextPool;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.CUcontext;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
-import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -21,8 +19,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-import static org.bytedeco.javacpp.cublas.*;
-import static org.bytedeco.javacpp.cusolver.*;
+import static org.bytedeco.javacpp.cublas.cublasContext;
+import static org.bytedeco.javacpp.cublas.cublasCreate_v2;
+import static org.bytedeco.javacpp.cusolver.cusolverDnContext;
+import static org.bytedeco.javacpp.cusolver.cusolverDnCreate;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools

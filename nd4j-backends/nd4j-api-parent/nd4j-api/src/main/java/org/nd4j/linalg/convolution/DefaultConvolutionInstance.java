@@ -21,11 +21,11 @@ package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.NDArrayUtil;
 
 import java.util.Arrays;

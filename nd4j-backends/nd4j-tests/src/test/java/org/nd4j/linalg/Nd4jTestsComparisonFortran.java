@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg;
 
-import static org.junit.Assert.*;
-
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.Pair;
@@ -42,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests comparing Nd4j ops to other libraries

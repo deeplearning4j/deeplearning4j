@@ -1,7 +1,6 @@
 package org.nd4j.parameterserver.updater.storage;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.nd4j.aeron.ipc.AeronNDArraySerde;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.rocksdb.Options;

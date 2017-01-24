@@ -2,7 +2,6 @@ package org.nd4j.rng.deallocator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.ref.ReferenceQueue;

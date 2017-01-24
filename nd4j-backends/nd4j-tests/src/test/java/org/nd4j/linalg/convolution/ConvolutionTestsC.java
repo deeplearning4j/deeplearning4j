@@ -18,7 +18,6 @@
  */
 
 package org.nd4j.linalg.convolution;
-import static org.junit.Assert.*;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,6 +32,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 9/6/14.

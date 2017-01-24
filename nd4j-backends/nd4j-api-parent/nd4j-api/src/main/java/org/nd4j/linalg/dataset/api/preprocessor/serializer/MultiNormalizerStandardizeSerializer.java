@@ -1,8 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor.serializer;
 
 import lombok.NonNull;
-import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;

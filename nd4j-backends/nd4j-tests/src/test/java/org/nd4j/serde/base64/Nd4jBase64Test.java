@@ -6,7 +6,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 6/17/16.

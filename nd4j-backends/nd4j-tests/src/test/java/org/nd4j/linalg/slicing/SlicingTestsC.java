@@ -10,7 +10,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Adam Gibson
@@ -24,11 +25,16 @@ public class SlicingTestsC extends BaseNd4jTest  {
 
 
     @Test
+    public void testSliceRowVector() {
+        INDArray arr = Nd4j.zeros(5);
+        System.out.println(arr.slice(1));
+
+    }
+
+    @Test
     public void testSliceAssertion() {
         INDArray arr = Nd4j.linspace(1,30,30).reshape(3, 5, 2);
         INDArray firstRow = arr.slice(0).slice(0);
-        INDArray secondROw = arr.slice(0);
-        secondROw = secondROw.slice(1);
         for(int i = 0; i < firstRow.length(); i++) {
             System.out.println(firstRow.getDouble(i));
         }

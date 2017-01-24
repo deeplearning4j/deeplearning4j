@@ -1,11 +1,7 @@
 package org.nd4j.parameterserver.util;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.net.*;
 
 /**
  * Credit: http://stackoverflow.com/questions/5226905/test-if-remote-port-is-in-use

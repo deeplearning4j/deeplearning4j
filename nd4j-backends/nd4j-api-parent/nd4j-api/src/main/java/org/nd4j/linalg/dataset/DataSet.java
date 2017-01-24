@@ -21,6 +21,7 @@ package org.nd4j.linalg.dataset;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -33,11 +34,13 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.io.*;
 import java.util.*;
+
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 
 /**
@@ -47,10 +50,10 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     private static final long serialVersionUID = 1935520764586513365L;
-    private static final Logger log = LoggerFactory.getLogger(DataSet.class);
 
     private static final byte BITMASK_FEATURES_PRESENT = 1;
     private static final byte BITMASK_LABELS_PRESENT = 1 << 1;
@@ -234,8 +237,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet dataset = new DataSet(featuresOut,labelsOut,featuresMaskOut,labelsMaskOut);
 
         List<Serializable> meta = null;
-        for(DataSet ds : data){
-            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()){
+        for(DataSet ds : data) {
+            if(ds.getExampleMetaData() == null || ds.getExampleMetaData().size() != ds.numExamples()) {
                 meta = null;
                 break;
             }
@@ -249,7 +252,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return dataset;
     }
 
-    private static INDArray merge2d(INDArray[] data){
+    private static INDArray merge2d(INDArray[] data) {
         if(data.length == 0) return data[0];
         int totalRows = 0;
         for(INDArray arr : data) totalRows += arr.rows();
@@ -259,40 +262,40 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (INDArray i : data) {
             if (i.size(0) == 1) out.putRow(totalRows++, i);
             else {
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(totalRows, totalRows + i.size(0)), NDArrayIndex.all()}, i);
+                out.put(new INDArrayIndex[]{interval(totalRows, totalRows + i.size(0)), all()}, i);
                 totalRows += i.size(0);
             }
         }
         return out;
     }
 
-    private static INDArray merge4dCnnData(INDArray[] data){
+    private static INDArray merge4dCnnData(INDArray[] data) {
         if(data.length == 1) return data[0];
         int[] outSize = Arrays.copyOf(data[0].shape(),4);   //[examples,depth,width,height]
 
-        for( int i=1; i<data.length; i++ ){
+        for( int i = 1; i < data.length; i++) {
             outSize[0] += data[i].size(0);
         }
 
-        INDArray out = Nd4j.create(outSize);
+        INDArray out = Nd4j.create(outSize,'c');
         int examplesSoFar = 0;
         INDArrayIndex[] indexes = new INDArrayIndex[4];
-        indexes[1] = NDArrayIndex.all();
-        indexes[2] = NDArrayIndex.all();
-        indexes[3] = NDArrayIndex.all();
-        for( int i=0; i<data.length; i++ ){
+        indexes[1] = all();
+        indexes[2] = all();
+        indexes[3] = all();
+        for(int i = 0; i < data.length; i++) {
             //Check shapes:
             int[] thisShape = data[i].shape();
             if(thisShape.length != 4) throw new IllegalStateException("Cannot merge CNN data: first DataSet data has shape " + Arrays.toString(data[0].shape())
                     + ", " + i + "th example has shape " + Arrays.toString(thisShape));
-            for( int j=1; j<4; j++ ){
+            for( int j = 1; j < 4; j++) {
                 if(outSize[j] != thisShape[j]) throw new IllegalStateException("Cannot merge CNN data: first DataSet data has shape " + Arrays.toString(data[0].shape())
                         + ", " + i + "th example has shape " + Arrays.toString(thisShape));
             }
 
             int thisNumExamples = data[i].size(0);
             //Put:
-            indexes[0] = NDArrayIndex.interval(examplesSoFar,examplesSoFar+thisNumExamples);
+            indexes[0] = interval(examplesSoFar,examplesSoFar + thisNumExamples);
             out.put(indexes,data[i]);
 
             examplesSoFar += thisNumExamples;
@@ -333,35 +336,35 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if(!needMask ) {
             //Simplest case: no masking arrays, all same length
             INDArrayIndex[] indexes = new INDArrayIndex[3];
-            indexes[1] = NDArrayIndex.all();
-            indexes[2] = NDArrayIndex.all();
+            indexes[1] = all();
+            indexes[2] = all();
             for (INDArray arr : data) {
                 int nEx = arr.size(0);
-                indexes[0] = NDArrayIndex.interval(rowCount, rowCount + nEx);
+                indexes[0] = interval(rowCount, rowCount + nEx);
                 out.put(indexes, arr);
                 rowCount += nEx;
             }
         } else {
             //Different lengths, and/or mask arrays
             INDArrayIndex[] indexes = new INDArrayIndex[3];
-            indexes[1] = NDArrayIndex.all();
+            indexes[1] = all();
 
             for( int i=0; i<data.length; i++ ){
                 INDArray arr = data[i];
                 int nEx = arr.size(0);
                 int thisLength = arr.size(2);
-                indexes[0] = NDArrayIndex.interval(rowCount, rowCount + nEx);
-                indexes[2] = NDArrayIndex.interval(0,thisLength);
+                indexes[0] = interval(rowCount, rowCount + nEx);
+                indexes[2] = interval(0,thisLength);
                 out.put(indexes, arr);
 
                 //Need to add a mask array...
                 if(mask != null && mask[i] != null){
                     //By merging the existing mask array
 
-                    outMask.put(new INDArrayIndex[]{NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength)}, mask[i]);
+                    outMask.put(new INDArrayIndex[]{interval(rowCount, rowCount + nEx), interval(0,thisLength)}, mask[i]);
                 } else {
                     //Because of different length data
-                    outMask.get(new INDArrayIndex[]{NDArrayIndex.interval(rowCount, rowCount + nEx), NDArrayIndex.interval(0,thisLength)}).assign(1.0);
+                    outMask.get(new INDArrayIndex[]{interval(rowCount, rowCount + nEx), interval(0,thisLength)}).assign(1.0);
                 }
 
                 rowCount += nEx;
@@ -374,11 +377,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public org.nd4j.linalg.dataset.api.DataSet getRange(int from, int to) {
         if (hasMaskArrays()) {
-            INDArray featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(from, to)) : null;
-            INDArray labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(from, to)) : null;
-            return new DataSet(features.get(NDArrayIndex.interval(from, to)), labels.get(NDArrayIndex.interval(from, to)), featureMaskHere, labelMaskHere);
+            INDArray featureMaskHere = featuresMask != null ? featuresMask.get(interval(from, to)) : null;
+            INDArray labelMaskHere = labelsMask != null ? labelsMask.get(interval(from, to)) : null;
+            return new DataSet(features.get(interval(from, to)), labels.get(interval(from, to)), featureMaskHere, labelMaskHere);
         }
-        return new DataSet(features.get(NDArrayIndex.interval(from,to)),labels.get(NDArrayIndex.interval(from,to)));
+        return new DataSet(features.get(interval(from,to)),labels.get(interval(from,to)));
     }
 
 
@@ -492,9 +495,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (labels == null)
             return ret;
         int nTensors = labels.tensorssAlongDimension(1);
-        for( int i=0; i<nTensors; i++ ) {
+        for( int i = 0; i < nTensors; i++) {
             INDArray row = labels.tensorAlongDimension(i, 1);
+            INDArray javaRow = labels.javaTensorAlongDimension(i,1);
             int maxIdx = Nd4j.getBlasWrapper().iamax(row);
+            int maxIdxJava = Nd4j.getBlasWrapper().iamax(javaRow);
             if (maxIdx < 0)
                 throw new IllegalStateException("Please check the iamax implementation for " + Nd4j.getBlasWrapper().getClass().getName());
             if (ret.get(maxIdx) == null)
@@ -911,32 +916,32 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (int i = 0; i < numExamples(); i++) {
             switch (rank){
                 case 2:
-                    featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    featuresHere = getFeatures().get(interval(i,i,true), all());
+                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i,i,true), all()) : null;
                     break;
                 case 3:
-                    featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    featuresHere = getFeatures().get(interval(i,i,true), all(),all());
+                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i,i,true), all()) : null;
                     break;
                 case 4:
-                    featuresHere = getFeatures().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    featuresHere = getFeatures().get(interval(i,i,true), all(),all(),all());
+                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i,i,true), all()) : null;
                     break;
                 default:
                     throw new IllegalStateException("Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(getFeatures().shape()));
             }
             switch (labelsRank) {
                 case 2:
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    labelsHere = getLabels().get(interval(i,i,true), all());
+                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i,i,true), all()) : null;
                     break;
                 case 3:
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    labelsHere = getLabels().get(interval(i,i,true), all(),all());
+                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i,i,true), all()) : null;
                     break;
                 case 4:
-                    labelsHere = getLabels().get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()) : null;
+                    labelsHere = getLabels().get(interval(i,i,true), all(),all(),all());
+                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i,i,true), all()) : null;
                     break;
                 default:
                     throw new IllegalStateException("Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: " + Arrays.toString(getFeatures().shape()));
@@ -983,44 +988,44 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet second = new DataSet();
         switch(features.rank()){
             case 2:
-                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
-                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                first.setFeatures(features.get(interval(0,numHoldout), all()));
+                second.setFeatures(features.get(interval(numHoldout,numExamples), all()));
                 break;
             case 3:
-                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
-                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                first.setFeatures(features.get(interval(0,numHoldout), all(), all()));
+                second.setFeatures(features.get(interval(numHoldout, numExamples), all(), all()));
                 break;
             case 4:
-                first.setFeatures(features.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-                second.setFeatures(features.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                first.setFeatures(features.get(interval(0,numHoldout), all(), all(), all()));
+                second.setFeatures(features.get(interval(numHoldout,numExamples), all(), all(), all()));
                 break;
             default:
                 throw new UnsupportedOperationException("Features rank: " + features.rank());
         }
         switch(labels.rank()){
             case 2:
-                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
-                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all()));
+                first.setLabels(labels.get(interval(0,numHoldout), all()));
+                second.setLabels(labels.get(interval(numHoldout,numExamples), all()));
                 break;
             case 3:
-                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all()));
-                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout,numExamples), NDArrayIndex.all(), NDArrayIndex.all()));
+                first.setLabels(labels.get(interval(0,numHoldout), all(), all()));
+                second.setLabels(labels.get(interval(numHoldout,numExamples), all(), all()));
                 break;
             case 4:
-                first.setLabels(labels.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
-                second.setLabels(labels.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+                first.setLabels(labels.get(interval(0,numHoldout), all(), all(), all()));
+                second.setLabels(labels.get(interval(numHoldout, numExamples), all(), all(), all()));
                 break;
             default:
                 throw new UnsupportedOperationException("Labels rank: " + features.rank());
         }
 
         if(featuresMask != null){
-            first.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(0,numHoldout), NDArrayIndex.all()));
-            second.setFeaturesMaskArray(featuresMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+            first.setFeaturesMaskArray(featuresMask.get(interval(0,numHoldout), all()));
+            second.setFeaturesMaskArray(featuresMask.get(interval(numHoldout, numExamples), all()));
         }
         if(labelsMask != null){
-            first.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(0, numHoldout), NDArrayIndex.all()));
-            second.setLabelsMaskArray(labelsMask.get(NDArrayIndex.interval(numHoldout, numExamples), NDArrayIndex.all()));
+            first.setLabelsMaskArray(labelsMask.get(interval(0, numHoldout), all()));
+            second.setLabelsMaskArray(labelsMask.get(interval(numHoldout, numExamples), all()));
         }
 
         if(exampleMetaData != null){

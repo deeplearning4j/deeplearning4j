@@ -4,7 +4,6 @@ import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

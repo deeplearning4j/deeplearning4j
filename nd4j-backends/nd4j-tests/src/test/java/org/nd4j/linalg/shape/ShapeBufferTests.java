@@ -10,12 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+import java.nio.IntBuffer;
 
 import static org.junit.Assert.*;
-
-
-import java.nio.IntBuffer;
 
 /**
  * Created by agibsoncccc on 1/30/16.

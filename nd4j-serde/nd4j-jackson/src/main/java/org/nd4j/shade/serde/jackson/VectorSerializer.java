@@ -1,12 +1,12 @@
 package org.nd4j.shade.serde.jackson;
 
 
-import org.nd4j.shade.jackson.core.JsonGenerator;
-import org.nd4j.shade.jackson.databind.JsonSerializer;
-import org.nd4j.shade.jackson.databind.SerializerProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.core.JsonGenerator;
+import org.nd4j.shade.jackson.databind.JsonSerializer;
+import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 

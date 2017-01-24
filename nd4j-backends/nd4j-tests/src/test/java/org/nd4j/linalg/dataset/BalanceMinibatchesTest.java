@@ -7,7 +7,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 6/24/16.
  */

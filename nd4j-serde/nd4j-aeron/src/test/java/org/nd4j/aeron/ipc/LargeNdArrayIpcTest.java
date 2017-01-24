@@ -2,21 +2,14 @@ package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.aeron.util.AeronStat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
