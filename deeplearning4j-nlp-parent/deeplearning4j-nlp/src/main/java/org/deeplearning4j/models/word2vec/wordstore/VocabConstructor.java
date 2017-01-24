@@ -505,7 +505,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (!targetVocab.containsWord(token)) {
                     T element = document.getElementByLabel(token);
                     element.setElementFrequency(1);
-                    //targetVocab.addToken(element);
+                    targetVocab.addToken(element);
 //                    elementsCounter.incrementAndGet();
                     loopCounter.incrementAndGet();
 
