@@ -19,12 +19,14 @@ package org.datavec.api.util.files;
 import lombok.AllArgsConstructor;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
  * A simple utility method to convert a {@code Iterator<String>} to an {@code Iterator<File>}, where each
- * String in the original iterator is a Path
+ * String in the original iterator is created via URI.toString()
  *
  * @author Alex Black
  */
@@ -43,7 +45,11 @@ public class FileFromPathIterator implements Iterator<File> {
         if(!hasNext()){
             throw new NoSuchElementException("No next element");
         }
-        return new File(paths.next());
+        try{
+            return new File(new URI(paths.next()));
+        }catch (URISyntaxException e){
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -107,7 +107,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 for (URI location : locations) {
                     File imgFile = new File(location);
                     if (!imgFile.isDirectory() && containsFormat(imgFile.getAbsolutePath())) {
-                        allPaths.add(imgFile.getPath());
+                        allPaths.add(imgFile.toURI().toString());
                     }
                     if (appendLabel) {
                         File parentDir = imgFile.getParentFile();
@@ -215,7 +215,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 if (appendLabel)
                     ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
             return ret;
         } else if (record != null) {
