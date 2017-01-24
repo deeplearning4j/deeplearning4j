@@ -198,16 +198,16 @@ public class VocabConstructor<T extends SequenceElement> {
             int sequences = 0;
             long time3 = 0;
             while (iterator.hasMoreSequences()) {
-                long time1 = System.nanoTime();
+//                long time1 = System.nanoTime();
                 Sequence<T> document = iterator.nextSequence();
-                long time2 = System.nanoTime();
+//                long time2 = System.nanoTime();
 
                 seqCount.incrementAndGet();
                 parsedCount.addAndGet(document.size());
                 tempHolder.incrementTotalDocCount();
                 execCounter.incrementAndGet();
                 VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
-                /*
+
                 executorService.submit(runnable);
 
                 // as we see in profiler, this lock isn't really happen too often
@@ -218,20 +218,20 @@ public class VocabConstructor<T extends SequenceElement> {
                         Thread.sleep(2);
                     } catch (Exception e) { }
                 }
-                */
+
 
 
 
                 sequences++;
-                if (seqCount.get() % 10000 == 0) {
+                if (seqCount.get() % 100000 == 0) {
                     long currentTime = System.currentTimeMillis();
                     long currentSequences = seqCount.get();
                     long currentElements = parsedCount.get();
 
                     double seconds = (currentTime - lastTime) / (double) 1000;
 
-                    Collections.sort(timesHasNext);
-                    Collections.sort(timesNext);
+//                    Collections.sort(timesHasNext);
+//                    Collections.sort(timesNext);
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
@@ -241,8 +241,8 @@ public class VocabConstructor<T extends SequenceElement> {
                     lastElements = currentElements;
                     lastSequences = currentSequences;
 
-                    timesHasNext.clear();
-                    timesNext.clear();
+//                    timesHasNext.clear();
+//                    timesNext.clear();
                 }
 
                 /**
@@ -260,10 +260,10 @@ public class VocabConstructor<T extends SequenceElement> {
                     loopCounter.set(0);
                 }
 
-                timesNext.add((time2 - time1) / 1000L);
-                timesHasNext.add((time1 - time3) / 1000L);
+//                timesNext.add((time2 - time1) / 1000L);
+//                timesHasNext.add((time1 - time3) / 1000L);
 
-                time3 = System.nanoTime();
+//                time3 = System.nanoTime();
             }
 
             // block untill all threads are finished
