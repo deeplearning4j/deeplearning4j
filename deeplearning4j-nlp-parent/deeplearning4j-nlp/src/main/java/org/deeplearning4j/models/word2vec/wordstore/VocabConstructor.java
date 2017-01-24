@@ -206,12 +206,19 @@ public class VocabConstructor<T extends SequenceElement> {
                 VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
                 executorService.submit(runnable);
 
+                boolean isSleep = false;
+                long sleepStart = System.currentTimeMillis();
+
                 // we don't want too much left in tail
                 while (execCounter.get() - finCounter.get() > numProc) {
+                    isSleep = true;
                     try {
                         Thread.sleep(2);
                     } catch (Exception e) { }
                 }
+
+                if (isSleep)
+                    log.info("Was sleeping for {} ms", (System.currentTimeMillis() - sleepStart));
 
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
