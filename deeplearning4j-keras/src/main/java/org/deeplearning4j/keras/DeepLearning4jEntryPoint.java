@@ -30,7 +30,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void compile(CompileParams compileParams) throws Exception {
         // TODO
-        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.read(writeParams.getModelFilePath(), writeParams.getType());
+        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.readSequential(writeParams.getModelFilePath(), writeParams.getType());
     }
 
     /**

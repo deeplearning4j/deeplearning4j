@@ -1,8 +1,8 @@
 package org.deeplearning4j.keras.model;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.keras.model.KerasModelRef;
 import org.deeplearning4j.keras.model.KerasModelType;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
@@ -18,18 +18,32 @@ import java.io.IOException;
 @Slf4j
 public class KerasModelSerializer {
 
-    public MultiLayerNetwork read(String modelFilePath, String modelType)
+    public MultiLayerNetwork readSequential(String modelFilePath, KerasModelType modelType)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
-        MultiLayerNetwork multiLayerNetwork;
+        MultiLayerNetwork model;
         if (KerasModelType.SEQUENTIAL.equals(modelType)) {
-            multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(modelFilePath);
-            multiLayerNetwork.init();
+            model = KerasModelImport.importKerasSequentialModelAndWeights(modelFilePath);
+            model.init();
         } else {
-            throw new RuntimeException("Model type unsupported! (" + modelType + ")");
+            throw new RuntimeException("Model type unsupported! (" + modelType + ") Did you mean to use .readFunctional()?");
         }
 
-        return multiLayerNetwork;
+        return model;
+    }
+
+    public ComputationGraph readFunctional(String modelFilePath, KerasModelType modelType)
+        throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+
+        ComputationGraph model;
+        if (KerasModelType.SEQUENTIAL.equals(modelType)) {
+            model = KerasModelImport.importKerasModelAndWeights(modelFilePath);
+            model.init();
+        } else {
+            throw new RuntimeException("Model type unsupported! (" + modelType + ") Did you mean to use .readSequential()?");
+        }
+
+        return model;
     }
 
     // TODO write method that writes back to keras format
