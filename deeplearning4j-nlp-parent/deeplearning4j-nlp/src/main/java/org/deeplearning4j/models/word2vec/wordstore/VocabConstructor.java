@@ -235,7 +235,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
-                    log.info("Document time: {} us; hasNext time: {} us", timesNext.get(timesNext.size() / 2), timesHasNext.get(timesHasNext.size() / 2));
+//                    log.info("Document time: {} us; hasNext time: {} us", timesNext.get(timesNext.size() / 2), timesHasNext.get(timesHasNext.size() / 2));
                     log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
