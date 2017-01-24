@@ -198,21 +198,27 @@ public class VocabConstructor<T extends SequenceElement> {
 
             int sequences = 0;
             while (iterator.hasMoreSequences()) {
+                long time1 = System.currentTimeMillis();
                 Sequence<T> document = iterator.nextSequence();
+                long time2 = System.currentTimeMillis();
+
                 seqCount.incrementAndGet();
                 parsedCount.addAndGet(document.size());
                 tempHolder.incrementTotalDocCount();
                 execCounter.incrementAndGet();
                 VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
+                /*
                 executorService.submit(runnable);
 
                 // as we see in profiler, this lock isn't really happen too often
                 // we don't want too much left in tail
+
                 while (execCounter.get() - finCounter.get() > numProc) {
                     try {
                         Thread.sleep(2);
                     } catch (Exception e) { }
                 }
+                */
 
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
@@ -224,6 +230,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
+                    log.info("Document time: {} ms", time2 - time1);
                     log.info("Sequences checked: [{}]; Current vocabulary size: [{}]; Sequences/sec: {}; Words/sec: {};", seqCount.get(), tempHolder.numWords(), String.format("%.2f", seqPerSec), String.format("%.2f", elPerSec));
                     lastTime = currentTime;
                     lastElements = currentElements;
