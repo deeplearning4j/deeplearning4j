@@ -17,10 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -191,7 +188,10 @@ public class VocabConstructor<T extends SequenceElement> {
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
             int numProc = Runtime.getRuntime().availableProcessors();
-            ExecutorService executorService = Executors.newFixedThreadPool(Math.max(numProc / 2, 2));
+            int numThreads = Math.max(numProc / 2, 2);
+            ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads,
+                    0L, TimeUnit.MILLISECONDS,
+                    new LinkedTransferQueue<Runnable>());//Executors.newFixedThreadPool(Math.max(numProc / 2, 2));
             final AtomicLong execCounter = new AtomicLong(0);
             final AtomicLong finCounter = new AtomicLong(0);
 
