@@ -2,6 +2,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,6 +91,20 @@ public class TADTests extends BaseNd4jTest {
                 assertEquals(true, compareShapes(tadShape_N, tadShape_J));*/
             }
         }
+    }
+
+    @Test
+    public void testMysteriousCrash() {
+        INDArray arrayF = Nd4j.create(new int[] {1,1, 4, 4}, 'f');
+        INDArray arrayC = Nd4j.create(new int[] {1,1, 4, 4}, 'c');
+        INDArray javaCTad = arrayC.javaTensorAlongDimension(0,2,3);
+        INDArray javaFTad = arrayF.javaTensorAlongDimension(0,2,3);
+        Pair<DataBuffer, DataBuffer> tadBuffersF = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, new int[] {2,3});
+        Pair<DataBuffer, DataBuffer> tadBuffersC = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, new int[] {2,3});
+
+        log.info("Got TADShapeF: {}",Arrays.toString(tadBuffersF.getFirst().asInt()) + " with java "  + javaFTad.shapeInfoDataBuffer());
+        log.info("Got TADShapeC: {}",Arrays.toString(tadBuffersC.getFirst().asInt()) + " with java " + javaCTad.shapeInfoDataBuffer());
+
     }
 
     @Override

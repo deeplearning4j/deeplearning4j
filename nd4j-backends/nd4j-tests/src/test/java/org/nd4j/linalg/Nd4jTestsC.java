@@ -3709,7 +3709,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testIsMax2Of3d(){
+    public void testIsMax2Of3d() {
         double[][][] slices = new double[3][][];
         double[][][] isMax = new double[3][][];
 
@@ -3848,16 +3848,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testIMax2of4d(){
-
+    public void testIMax2of4d() {
         Nd4j.getRandom().setSeed(12345);
         int[] s = new int[]{2,3,4,5};
         INDArray arr = Nd4j.rand(s);
 
         //Test 0,1
         INDArray exp = Nd4j.create(new int[]{4,5});
-        for( int i=0; i<4; i++ ){
-            for( int j=0; j<5; j++ ){
+        for( int i = 0; i < 4; i++) {
+            for( int j = 0; j < 5; j++) {
                 INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.point(j));
                 assertArrayEquals(new int[]{2,3}, subset.shape());
 
@@ -3865,10 +3864,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 double max = -Double.MAX_VALUE;
                 int maxIdxPos = -1;
                 int count = 0;
-                while(iter.hasNext()){
+                while(iter.hasNext()) {
                     int[] next = iter.next();
                     double d = subset.getDouble(next);
-                    if(d > max){
+                    if(d > max) {
                         max = d;
                         maxIdxPos = count;
                     }
@@ -3889,8 +3888,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         //Test 2,3
         exp = Nd4j.create(new int[]{2,3});
-        for( int i=0; i<2; i++ ){
-            for( int j=0; j<3; j++ ){
+        for( int i = 0; i < 2; i++) {
+            for( int j = 0; j < 3; j++) {
                 INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
                 assertArrayEquals(new int[]{4,5}, subset.shape());
 
@@ -3898,7 +3897,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 int maxIdxPos = -1;
                 double max = -Double.MAX_VALUE;
                 int count = 0;
-                while(iter.hasNext()){
+                while(iter.hasNext()) {
                     int[] next = iter.next();
                     double d = subset.getDouble(next);
                     if(d > max){

@@ -441,16 +441,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(9, minIdx);
     }
 
-    @Test
-    public void testMysteriousCrash() {
-        INDArray arrayF = Nd4j.create(new int[] {1,1, 4, 4}, 'f');
-        INDArray arrayC = Nd4j.create(new int[] {1,1, 4, 4}, 'c');
-        Pair<DataBuffer, DataBuffer> tadBuffersF = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, new int[] {2,3});
-        Pair<DataBuffer, DataBuffer> tadBuffersC = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, new int[] {2,3});
 
-        log.info("Got TADShapeF: {}",Arrays.toString(tadBuffersF.getFirst().asInt()));
-        log.info("Got TADShapeC: {}",Arrays.toString(tadBuffersC.getFirst().asInt()));
-    }
 
     @Test
     public void testMeanSumSimple() {

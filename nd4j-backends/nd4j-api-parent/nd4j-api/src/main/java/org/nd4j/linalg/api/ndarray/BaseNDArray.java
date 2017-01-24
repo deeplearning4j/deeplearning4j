@@ -902,6 +902,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray ret2 = permuted.slice(sliceIdx);
         if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()) {
             if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            if(finalPermuteDims.length != ret2.rank()) {
+                finalPermuteDims = new int[ret2.rank()];
+                int count = 0;
+                for(int i = finalPermuteDims.length - 1; i >= 0; i--)
+                    finalPermuteDims[count++] = i;
+            }
             return ret2.permutei(finalPermuteDims);
         }
 
