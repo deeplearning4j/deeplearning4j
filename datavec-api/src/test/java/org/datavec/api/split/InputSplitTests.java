@@ -54,9 +54,9 @@ public class InputSplitTests {
                     "label4/group2_img.jpg",
                     "label5/group2_img.wtf" };
 
-                locationStrings = new ArrayList<>(paths.length);
+                uriStrings = new ArrayList<>(paths.length);
                 for(String s : paths){
-                    locationStrings.add("file:///" + s);
+                    uriStrings.add("file:///" + s);
                 }
             }
 

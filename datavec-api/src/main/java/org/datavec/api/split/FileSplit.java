@@ -22,7 +22,6 @@ import org.nd4j.linalg.collection.CompactHeapStringList;
 
 
 import java.io.*;
-import java.net.URI;
 import java.util.*;
 
 /**
@@ -79,7 +78,7 @@ public class FileSplit extends BaseInputSplit {
 
         if (rootDir.isDirectory()) {
             subFiles = FileUtils.listFiles(rootDir, allowFormat, recursive);
-            locationStrings = new CompactHeapStringList();
+            uriStrings = new CompactHeapStringList();
 
             if (randomize) {
                 iterationOrder = new int[subFiles.size()];
@@ -89,19 +88,13 @@ public class FileSplit extends BaseInputSplit {
                 RandomUtils.shuffleInPlace(iterationOrder, random);
             }
             for (File f : subFiles) {
-                if (f.getPath().startsWith("file:"))
-                    locationStrings.add(f.getPath().substring(5));
-                else
-                    locationStrings.add(f.getPath());
+                uriStrings.add(f.toURI().toString());
                 length += f.length();
             }
         } else {
             // Lists one file
-            String path = rootDir.getPath();
-            if (path.startsWith("file:"))
-                locationStrings = Collections.singletonList(path.substring(5));
-            else
-                locationStrings = Collections.singletonList(path);
+            String toString = rootDir.toURI().toString();   //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
+            uriStrings = Collections.singletonList(toString);
             length += rootDir.length();
         }
     }

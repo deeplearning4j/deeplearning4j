@@ -34,15 +34,15 @@ import org.datavec.api.util.files.UriFromPathIterator;
  */
 public abstract class BaseInputSplit implements InputSplit {
 
-    protected List<String> locationStrings;
+    protected List<String> uriStrings;  //URIs, as a String, via toString() method (which includes file:/ etc)
     protected int[] iterationOrder;
     protected long length = 0;
 
     @Override
     public URI[] locations() {
-        URI[] uris = new URI[locationStrings.size()];
+        URI[] uris = new URI[uriStrings.size()];
         int i=0;
-        for(String s : locationStrings){
+        for(String s : uriStrings){
             try{
                 uris[i++] = new URI(s);
             }catch (URISyntaxException e){
@@ -60,9 +60,9 @@ public abstract class BaseInputSplit implements InputSplit {
     @Override
     public Iterator<String> locationsPathIterator(){
         if(iterationOrder == null){
-            return locationStrings.iterator();
+            return uriStrings.iterator();
         }
-        return new ShuffledListIterator<>(locationStrings, iterationOrder);
+        return new ShuffledListIterator<>(uriStrings, iterationOrder);
     }
 
     @Override

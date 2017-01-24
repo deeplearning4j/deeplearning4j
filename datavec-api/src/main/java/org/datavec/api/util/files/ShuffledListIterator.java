@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 
 /**
  * A very simple iterator over a list, that takes an optional int[] for the order.
- * If the order array is not present, elements are returned in sequentual order.
+ * If the order array is not present, elements are returned in sequential order.
  *
  * @author Alex Black
  */

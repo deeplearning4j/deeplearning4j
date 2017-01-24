@@ -8,7 +8,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * InputSplit implementation that maps the URIs of a given BaseInputSplit to new URIs. Useful when features and labels
@@ -60,12 +60,12 @@ public class TransformSplit extends BaseInputSplit {
 
     private void initialize() throws URISyntaxException {
         length = sourceSplit.length();
-        List<String> origLocations = locationStrings;
-        locationStrings = new CompactHeapStringList();
-        for(String s : origLocations){
-            URI uri = new URI(s);
+        uriStrings = new CompactHeapStringList();
+        Iterator<URI> iter = sourceSplit.locationsIterator();
+        while(iter.hasNext()){
+            URI uri = iter.next();
             uri = transform.apply(uri);
-            locationStrings.add(uri.getPath());
+            uriStrings.add(uri.toString());
         }
     }
 

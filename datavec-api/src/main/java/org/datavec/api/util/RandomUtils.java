@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2016 Skymind, Inc.
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -23,16 +23,18 @@ import java.util.Random;
  */
 public class RandomUtils {
 
-
-    public static void shuffleInPlace(int[] iterationOrder, Random random){
+    /**
+     * Randomly shuffle the specified integer array using a Fisher-Yates shuffle algorithm
+     * @param toShuffle Array to shuffle
+     * @param random    RNG to use for shuffling
+     */
+    public static void shuffleInPlace(int[] toShuffle, Random random){
         //Fisher-Yates shuffle: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-        for( int i=0; i<iterationOrder.length-1; i++ ){
-            int j = i + random.nextInt(iterationOrder.length-i);
-            int temp = iterationOrder[i];
-            iterationOrder[i] = iterationOrder[j];
-            iterationOrder[j] = temp;
+        for( int i=0; i<toShuffle.length-1; i++ ){
+            int j = i + random.nextInt(toShuffle.length-i);
+            int temp = toShuffle[i];
+            toShuffle[i] = toShuffle[j];
+            toShuffle[j] = temp;
         }
-
     }
-
 }

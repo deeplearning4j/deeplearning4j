@@ -32,15 +32,15 @@ import java.util.Collection;
 public class CollectionInputSplit extends BaseInputSplit {
 
     public CollectionInputSplit(Collection<URI> list){
-        locationStrings = new CompactHeapStringList();
+        uriStrings = new CompactHeapStringList();
         for(URI uri : list){
-            locationStrings.add(uri.getPath());
+            uriStrings.add(uri.toString());
         }
     }
 
     @Override
     public long length() {
-        return locationStrings.size();
+        return uriStrings.size();
     }
 
     @Override
