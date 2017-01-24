@@ -24,6 +24,7 @@ typedef union {
 } PAIR;
 #else
 #define math_def
+#include <types/float16.h>
 #endif
 
 namespace nd4j {

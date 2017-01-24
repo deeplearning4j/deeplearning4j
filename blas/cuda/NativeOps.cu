@@ -1,7 +1,4 @@
 
-int tad_threshold = 1;
-int element_threshold = 32;
-
 #include "../NativeOps.h"
 #include <cuda.h>
 #include <cuda_launch_config.h>
@@ -40,8 +37,6 @@ cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
 int maxThreads = 512;
-bool debug = false;
-bool verbose = true;
 bool allowedP2P = false;
 bool supportedP2P = false;
 #ifdef __EXPERIMENTAL__

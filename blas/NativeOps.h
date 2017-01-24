@@ -37,10 +37,19 @@
 #endif
 #include <dll.h>
 
+int tad_threshold = 1;
+int element_threshold = 32;
+
+bool debug = false;
+bool verbose = true;
+
+
+
 class ND4J_EXPORT NativeOps {
 
 
 public:
+
 
 
     void setElementThreshold(int num);

@@ -2,8 +2,6 @@
 // Created by agibsonccc on 2/21/16.
 //
 
-int tad_threshold = 32;
-int element_threshold = 16384;
 
 #define __STDC_CONSTANT_MACROS
 
@@ -16,6 +14,7 @@ int element_threshold = 16384;
 #include <loops/type_conversions.h>
 #include <loops/aggregates.h>
 #include <helpers/helper_ptrmap.h>
+#include <helpers/logger.h>
 
 char *name;
 bool nameSet = false;
@@ -45,11 +44,15 @@ void NativeOps::setTADThreshold(int num) {
  * @param xShapeInfo
  * @param extraParams
  */
-double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int opNum,
+double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,
+                                                int opNum,
                                                 double *x,
                                                 int *xShapeInfo,
                                                 double *extraParams) {
-	return NativeOpExcutioner<double>::execIndexReduceScalar(opNum,x,xShapeInfo,extraParams);
+	return NativeOpExcutioner<double>::execIndexReduceScalar(opNum,
+                                                             x,
+                                                             xShapeInfo,
+                                                             extraParams);
 
 }
 
@@ -70,10 +73,20 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                         double *extraParams,
                                         double *result,
                                         int *resultShapeInfo,
-                                        int *dimension, int dimensionLength) {
+                                        int *dimension,
+                                        int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-	NativeOpExcutioner<double>::execIndexReduce(opNum,x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,tadShapeInfo,tadOffsets);
+	NativeOpExcutioner<double>::execIndexReduce(opNum,
+                                                x,
+                                                xShapeInfo,
+                                                extraParams,
+                                                result,
+                                                resultShapeInfo,
+                                                dimension,
+                                                dimensionLength,
+                                                tadShapeInfo,
+                                                tadOffsets);
 }
 
 
@@ -126,15 +139,25 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
  * @param extraParams
  * @param n
  */
-void   NativeOps::execPairwiseTransformDouble(Nd4jPointer *extraPointers,int opNum,
+void   NativeOps::execPairwiseTransformDouble(Nd4jPointer *extraPointers,
+                                              int opNum,
                                               double *dx,
                                               int xStride,
                                               double *y,
                                               int yStride,
                                               double *result,
                                               int resultStride,
-                                              double *extraParams, Nd4jIndex n) {
-	NativeOpExcutioner<double>::execPairwiseTransform(opNum,dx,xStride,y,yStride,result,resultStride,extraParams,n);
+                                              double *extraParams,
+                                              Nd4jIndex n) {
+	NativeOpExcutioner<double>::execPairwiseTransform(opNum,
+                                                      dx,
+                                                      xStride,
+                                                      y,
+                                                      yStride,
+                                                      result,
+                                                      resultStride,
+                                                      extraParams,
+                                                      n);
 }
 
 /**
@@ -255,7 +278,16 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                    int *dimension,int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
     int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
-	NativeOpExcutioner<double>::execReduce(opNum,x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength, tadShapeInfo, tadOffsets);
+	NativeOpExcutioner<double>::execReduce(opNum,
+                                           x,
+                                           xShapeInfo,
+                                           extraParams,
+                                           result,
+                                           resultShapeInfo,
+                                           dimension,
+                                           dimensionLength,
+                                           tadShapeInfo,
+                                           tadOffsets);
 }
 
 void   NativeOps::execReduceHalf(Nd4jPointer *extraPointers,int opNum,
@@ -264,7 +296,8 @@ void   NativeOps::execReduceHalf(Nd4jPointer *extraPointers,int opNum,
                                    float16 *extraParams,
                                    float16 *result,
                                    int *resultShapeInfo,
-                                   int *dimension,int dimensionLength) {
+                                   int *dimension,
+                                 int dimensionLength) {
     // no-op
 }
 
@@ -861,7 +894,16 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,int opNum,
                                   float *result,
                                   int *resultShapeInfo) {
     int dimension[1] = {MAX_DIMENSION};
-	NativeOpExcutioner<float>::execReduce(opNum,x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,1, nullptr, nullptr);
+	NativeOpExcutioner<float>::execReduce(opNum,
+                                          x,
+                                          xShapeInfo,
+                                          extraParams,
+                                          result,
+                                          resultShapeInfo,
+                                          dimension,
+                                          1,
+                                          nullptr,
+                                          nullptr);
 }
 
 void   NativeOps::execReduceHalf(Nd4jPointer *extraPointers,int opNum,
@@ -1077,7 +1119,14 @@ void   NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
                                   float scalar,
                                   float *extraParams,
                                   Nd4jIndex n) {
-	NativeOpExcutioner<float>::execScalar(opNum,x,xStride,result,resultStride,scalar,extraParams,n);
+	NativeOpExcutioner<float>::execScalar(opNum,
+                                          x,
+                                          xStride,
+                                          result,
+                                          resultStride,
+                                          scalar,
+                                          extraParams,
+                                          n);
 
 }
 
@@ -2104,11 +2153,11 @@ int NativeOps::getAvailableDevices() {
 }
 
 void NativeOps::enableDebugMode(bool reallyEnable) {
-    // no-op?
+    debug = reallyEnable;
 }
 
 void NativeOps::enableVerboseMode(bool reallyEnable) {
-    // no-op?
+    verbose = reallyEnable;
 }
 
 void NativeOps::setGridLimit(int gridSize) {
@@ -2354,7 +2403,15 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
     }
 }
 
-void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *xShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
+void NativeOps::shuffleFloat(Nd4jPointer *extras,
+                             Nd4jPointer *dx,
+                             Nd4jPointer *xShapeInfo,
+                             Nd4jPointer *dz,
+                             Nd4jPointer *zShapeInfo,
+                             int N,
+                             int *shuffleMap,
+                             Nd4jPointer *tadShapeInfo,
+                             Nd4jPointer *tadOffsets) {
     float **x = reinterpret_cast<float **>(dx);
     float **z = reinterpret_cast<float **>(dz);
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
@@ -2362,10 +2419,25 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
-    shuffleGeneric<float>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
+    shuffleGeneric<float>(x,
+                          xShape,
+                          z,
+                          zShape,
+                          N,
+                          shuffleMap,
+                          tadOnlyShapeInfo,
+                          tadOffset);
 }
 
-void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *xShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
+void NativeOps::shuffleDouble(Nd4jPointer *extras,
+                              Nd4jPointer *dx,
+                              Nd4jPointer *xShapeInfo,
+                              Nd4jPointer *dz,
+                              Nd4jPointer *zShapeInfo,
+                              int N,
+                              int *shuffleMap,
+                              Nd4jPointer *tadShapeInfo,
+                              Nd4jPointer *tadOffsets) {
     double **x = reinterpret_cast<double **>(dx);
     double **z = reinterpret_cast<double **>(dz);
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
@@ -2373,14 +2445,48 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer 
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     int **tadOffset = reinterpret_cast<int **>(tadOffsets);
 
-    shuffleGeneric<double>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
+    shuffleGeneric<double>(x,
+                           xShape,
+                           z,
+                           zShape,
+                           N,
+                           shuffleMap,
+                           tadOnlyShapeInfo,
+                           tadOffset);
 }
 
-void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *xShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
+void NativeOps::shuffleHalf(Nd4jPointer *extras,
+                            Nd4jPointer *dx,
+                            Nd4jPointer *xShapeInfo,
+                            Nd4jPointer *dz,
+                            Nd4jPointer *zShapeInfo,
+                            int N,
+                            int *shuffleMap,
+                            Nd4jPointer *tadShapeInfo,
+                            Nd4jPointer *tadOffsets) {
     // no-op
 }
 
-void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, float *extraA, float *extraB, float scalarA, float scalarB, bool scalarReturned) {
+void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras,
+                                             const int opTypeA,
+                                             const int opNumA,
+                                             const int opTypeB,
+                                             const int opNumB,
+                                             float *dx,
+                                             int *xShapeInfo,
+                                             float *dy,
+                                             int *yShapeInfo,
+                                             float *dz,
+                                             int *zShapeInfo,
+                                             int *dimension,
+                                             int dimensionLength,
+                                             int *tadShapeInfo,
+                                             int *tadOffsets,
+                                             float *extraA,
+                                             float *extraB,
+                                             float scalarA,
+                                             float scalarB,
+                                             bool scalarReturned) {
     // no-op
 }
 
@@ -2444,7 +2550,11 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
             zShapeInfo,
             scalars,
             dimension,
-            dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+            dimensionLength,
+            tadShapeInfo,
+            tadOffsets,
+            tadShapeInfoZ,
+            tadOffsetsZ);
 }
 
 void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
@@ -2470,7 +2580,11 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
             zShapeInfo,
             scalars,
             dimension,
-            dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+            dimensionLength,
+            tadShapeInfo,
+            tadOffsets,
+            tadShapeInfoZ,
+            tadOffsetsZ);
 }
 
 void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
@@ -2516,7 +2630,17 @@ void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
                                    float *realArguments,
                                    int numRealArguments) {
 
-    NativeOpExcutioner<float>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    NativeOpExcutioner<float>::execAggregate(opNum,
+                                             arguments,
+                                             numArguments,
+                                             shapeArguments,
+                                             numShapeArguments,
+                                             indexArguments,
+                                             numIndexArguments,
+                                             intArrays,
+                                             numIntArrays,
+                                             realArguments,
+                                             numRealArguments);
 }
 
 void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
@@ -2531,7 +2655,17 @@ void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
                                    double *realArguments,
                                    int numRealArguments) {
 
-    NativeOpExcutioner<double>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    NativeOpExcutioner<double>::execAggregate(opNum,
+                                              arguments,
+                                              numArguments,
+                                              shapeArguments,
+                                              numShapeArguments,
+                                              indexArguments,
+                                              numIndexArguments,
+                                              intArrays,
+                                              numIntArrays,
+                                              realArguments,
+                                              numRealArguments);
 }
 
 void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
@@ -2552,12 +2686,28 @@ void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
 
 
 
-void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
+void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
+                                        int numAggregates,
+                                        int opNum,
+                                        int maxArgs,
+                                        int maxShapes,
+                                        int maxIntArrays,
+                                        int maxIntArraySize,
+                                        int maxIdx,
+                                        int maxReals,
+                                        void *ptrToArguments) {
 
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
-    nd4j::PointersHelper<float> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+    nd4j::PointersHelper<float> helper(ptrToArguments,
+                                       numAggregates,
+                                       maxArgs,
+                                       maxShapes,
+                                       maxIntArrays,
+                                       maxIntArraySize,
+                                       maxIdx,
+                                       maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
 #pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
@@ -2573,19 +2723,46 @@ void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers, int numAggre
             intArrays[e] = helper.getIntArrayArguments(i, e);
         }
 
-        execAggregateFloat(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
+        execAggregateFloat(extraPointers,
+                           opNum,
+                           arguments,
+                           helper.getNumArguments(i),
+                           shapes,
+                           helper.getNumShapeArguments(i),
+                           idxArg,
+                           helper.getNumIndexArguments(i),
+                           (int **) intArrays,
+                           helper.getNumIntArrayArguments(i),
+                           realArg,
+                           helper.getNumRealArguments(i));
 
         delete [] intArrays;
     }
 }
 
 
-void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
+void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers,
+                                         int numAggregates,
+                                         int opNum,
+                                         int maxArgs,
+                                         int maxShapes,
+                                         int maxIntArrays,
+                                         int maxIntArraySize,
+                                         int maxIdx,
+                                         int maxReals,
+                                         void *ptrToArguments) {
 
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
-    nd4j::PointersHelper<double> helper(ptrToArguments, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
+    nd4j::PointersHelper<double> helper(ptrToArguments,
+                                        numAggregates,
+                                        maxArgs,
+                                        maxShapes,
+                                        maxIntArrays,
+                                        maxIntArraySize,
+                                        maxIdx,
+                                        maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
 #pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
@@ -2601,7 +2778,18 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
             intArrays[e] = helper.getIntArrayArguments(i, e);
         }
 
-        execAggregateDouble(extraPointers, opNum, arguments, helper.getNumArguments(i), shapes, helper.getNumShapeArguments(i), idxArg, helper.getNumIndexArguments(i), (int **) intArrays, helper.getNumIntArrayArguments(i), realArg, helper.getNumRealArguments(i));
+        execAggregateDouble(extraPointers,
+                            opNum,
+                            arguments,
+                            helper.getNumArguments(i),
+                            shapes,
+                            helper.getNumShapeArguments(i),
+                            idxArg,
+                            helper.getNumIndexArguments(i),
+                            (int **) intArrays,
+                            helper.getNumIntArrayArguments(i),
+                            realArg,
+                            helper.getNumRealArguments(i));
 
         delete [] intArrays;
     }
@@ -2609,45 +2797,152 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers, int numAggr
 
 }
 
-void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments) {
+void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers,
+                                       int numAggregates,
+                                       int opNum,
+                                       int maxArgs,
+                                       int maxShapes,
+                                       int maxIntArrays,
+                                       int maxIntArraySize,
+                                       int maxIdx,
+                                       int maxReals,
+                                       void *ptrToArguments) {
     // TODO: add support for fp16
 }
 
-void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments) {
-    NativeOpExcutioner<float>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers,
+                                int opNum,
+                                Nd4jPointer state,
+                                float *z,
+                                int *zShapeBuffer,
+                                float *extraArguments) {
+    NativeOpExcutioner<float>::execRandom(opNum,
+                                          state,
+                                          z,
+                                          zShapeBuffer,
+                                          extraArguments);
 }
 
-void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *y, int *yShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
-	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers,
+                                int opNum,
+                                Nd4jPointer state,
+                                float *x,
+                                int *xShapeBuffer,
+                                float *y,
+                                int *yShapeBuffer,
+                                float *z,
+                                int *zShapeBuffer,
+                                float *extraArguments) {
+	NativeOpExcutioner<float>::execRandom(opNum,
+                                          state,
+                                          x,
+                                          xShapeBuffer,
+                                          y,
+                                          yShapeBuffer,
+                                          z,
+                                          zShapeBuffer,
+                                          extraArguments);
 }
 
-void NativeOps::execRandomFloat(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float *x, int *xShapeBuffer, float *z, int *zShapeBuffer, float *extraArguments) {
-	NativeOpExcutioner<float>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomFloat(Nd4jPointer *extraPointers,
+                                int opNum,
+                                Nd4jPointer state,
+                                float *x,
+                                int *xShapeBuffer,
+                                float *z,
+                                int *zShapeBuffer, float *extraArguments) {
+	NativeOpExcutioner<float>::execRandom(opNum,
+                                          state,
+                                          x,
+                                          xShapeBuffer,
+                                          z,
+                                          zShapeBuffer,
+                                          extraArguments);
 }
 
 
-void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *z, int *zShapeBuffer, double *extraArguments) {
-	NativeOpExcutioner<double>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers,
+                                 int opNum,
+                                 Nd4jPointer state,
+                                 double *z,
+                                 int *zShapeBuffer,
+                                 double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum,
+                                           state,
+                                           z,
+                                           zShapeBuffer,
+                                           extraArguments);
 }
 
-void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *y, int *yShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
-	NativeOpExcutioner<double>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers,
+                                 int opNum,
+                                 Nd4jPointer state,
+                                 double *x,
+                                 int *xShapeBuffer,
+                                 double *y,
+                                 int *yShapeBuffer,
+                                 double *z,
+                                 int *zShapeBuffer,
+                                 double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum,
+                                           state,
+                                           x,
+                                           xShapeBuffer,
+                                           y,
+                                           yShapeBuffer,
+                                           z,
+                                           zShapeBuffer,
+                                           extraArguments);
 }
 
-void NativeOps::execRandomDouble(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, double *x, int *xShapeBuffer, double *z, int *zShapeBuffer, double *extraArguments) {
-	NativeOpExcutioner<double>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOps::execRandomDouble(Nd4jPointer *extraPointers,
+                                 int opNum,
+                                 Nd4jPointer state,
+                                 double *x,
+                                 int *xShapeBuffer,
+                                 double *z,
+                                 int *zShapeBuffer,
+                                 double *extraArguments) {
+	NativeOpExcutioner<double>::execRandom(opNum,
+                                           state,
+                                           x,
+                                           xShapeBuffer,
+                                           z,
+                                           zShapeBuffer,
+                                           extraArguments);
 }
 
 
-void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers,
+                               int opNum,
+                               Nd4jPointer state,
+                               float16 *z,
+                               int *zShapeBuffer,
+                               float16 *extraArguments) {
 	//NativeOpExcutioner<float16>::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
 }
 
-void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *y, int *yShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers,
+                               int opNum,
+                               Nd4jPointer state,
+                               float16 *x,
+                               int *xShapeBuffer,
+                               float16 *y,
+                               int *yShapeBuffer,
+                               float16 *z,
+                               int *zShapeBuffer,
+                               float16 *extraArguments) {
 	//NativeOpExcutioner<float16>::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
 }
 
-void NativeOps::execRandomHalf(Nd4jPointer *extraPointers, int opNum, Nd4jPointer state, float16 *x, int *xShapeBuffer, float16 *z, int *zShapeBuffer, float16 *extraArguments) {
+void NativeOps::execRandomHalf(Nd4jPointer *extraPointers,
+                               int opNum,
+                               Nd4jPointer state,
+                               float16 *x,
+                               int *xShapeBuffer,
+                               float16 *z,
+                               int *zShapeBuffer,
+                               float16 *extraArguments) {
 	//NativeOpExcutioner<float16>::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
 }
 

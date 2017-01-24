@@ -15,6 +15,7 @@
 #include <templatemath.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include "helpers/logger.h"
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -280,48 +281,55 @@ template<typename OpType>
 		}
 #endif
 
-        static void transform(int opNum,
-                              T *x,
-                              int *xShapeInfo,
-                              T *extraParams,
-                              T *z,
-                              int *zShapeInfo,
-                              T *scalars,
-                              int *dimension,
-                              int dimensionLength,
-                              int *tadShapeInfo,
-                              int *tadOffsets,
-                              int *tadShapeInfoZ,
-                              int *tadOffsetsZ) {
+            static void transform(int opNum,
+                                  T *x,
+                                  int *xShapeInfo,
+                                  T *extraParams,
+                                  T *z,
+                                  int *zShapeInfo,
+                                  T *scalars,
+                                  int *dimension,
+                                  int dimensionLength,
+                                  int *tadShapeInfo,
+                                  int *tadOffsets,
+                                  int *tadShapeInfoZ,
+                                  int *tadOffsetsZ) {
 
-            DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
-        }
+                DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
+            }
 
-		static void transform(const int opNum,
-			T *x,
-			int *xShapeInfo,
-			T *result,
-			int *resultShapeInfo,
-			T scalar,
-			T *extraParams,
-			int *indexes,
-			int *resultIndexes) {
-                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes), SCALAR_OPS);
-		}
+            static void transform(const int opNum,
+                                  T *x,
+                                  int *xShapeInfo,
+                                  T *result,
+                                  int *resultShapeInfo,
+                                  T scalar,
+                                  T *extraParams,
+                                  int *indexes,
+                                  int *resultIndexes) {
+                DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, indexes, resultIndexes), SCALAR_OPS);
+            }
 
-		static void transform(const int opNum, T *x, int xStride, T *result, int resultStride,
-			T scalar, T *extraParams, const Nd4jIndex n) {
-                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xStride, result, resultStride, scalar, extraParams, n), SCALAR_OPS);
-		}
+            static void transform(const int opNum, T *x, int xStride, T *result, int resultStride,
+                                  T scalar, T *extraParams, const Nd4jIndex n) {
+                DISPATCH_BY_OPNUM(transform,
+                                  PARAMS(x,
+                                         xStride,
+                                         result,
+                                         resultStride,
+                                         scalar,
+                                         extraParams, n),
+                                  SCALAR_OPS);
+            }
 
-		static void transform(const int opNum,
-			T *x,
-			int *xShapeInfo,
-			T *result,
-			int *resultShapeInfo,
-			T scalar, T *extraParams) {
-                    DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
-		}
+            static void transform(const int opNum,
+                                  T *x,
+                                  int *xShapeInfo,
+                                  T *result,
+                                  int *resultShapeInfo,
+                                  T scalar, T *extraParams) {
+                DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
+            }
 
             /**
          * CPU implementation of scalar operation
@@ -336,15 +344,15 @@ template<typename OpType>
          */
 
 
-		 template<typename OpType>
-		 static void transform(T *x,
-                           int *xShapeInfo,
-                           T *result,
-                           int *resultShapeInfo,
-                           T scalar,
-                           T *extraParams,
-                           int *indexes,
-                           int *resultIndexes) {
+            template<typename OpType>
+            static void transform(T *x,
+                                  int *xShapeInfo,
+                                  T *result,
+                                  int *resultShapeInfo,
+                                  T scalar,
+                                  T *extraParams,
+                                  int *indexes,
+                                  int *resultIndexes) {
                 const Nd4jIndex n = shape::length(xShapeInfo);
 #pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                 for (Nd4jIndex i = 0; i < n; i++) {
@@ -355,7 +363,7 @@ template<typename OpType>
             /*
              * ScalarOp along dimension
              */
-template<typename OpType>
+            template<typename OpType>
             static void transform(T *x,
                                   int *xShapeInfo,
                                   T *extraParams,
@@ -419,7 +427,7 @@ template<typename OpType>
                     }
                 }
 
-}
+            }
 
             /**
          * CPU implementation of scalar operation
@@ -433,15 +441,19 @@ template<typename OpType>
          * @param n the number of elements to loop over
          */
 
-		  template<typename OpType>
-		  static  void transform(T *x,
-                           int *xShapeInfo,
-                           T *result,
-                           int *resultShapeInfo,
-                           T scalar, T *extraParams) {
+            template<typename OpType>
+            static  void transform(T *x,
+                                   int *xShapeInfo,
+                                   T *result,
+                                   int *resultShapeInfo,
+                                   T scalar, T *extraParams) {
                 char xOrdering = shape::order(xShapeInfo);
                 char resultOrdering = shape::order(resultShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+
+                if (debug && verbose)
+                    nd4j::Logger::info("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
+
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {
                     int shapeIter[MAX_RANK];
@@ -486,7 +498,6 @@ template<typename OpType>
                 }
                 else {
                     const Nd4jIndex n = shape::length(xShapeInfo);
-
 
                     if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
                         transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);

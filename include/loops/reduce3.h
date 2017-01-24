@@ -37,26 +37,26 @@
         (3, simdOps::Dot), \
         (4, simdOps::EqualsWithEps)
 
-        
+
 namespace functions {
-	namespace reduce3 {
+    namespace reduce3 {
 
 /**
  * Reduce involving
  * 2 arrays
  */
-		template<typename T>
-		class Reduce3 {
+        template<typename T>
+        class Reduce3 {
 
-		public:
+        public:
 #ifdef __CUDACC__
-			virtual __device__
+            virtual __device__
 
 			inline T opAtomic(T d1, T d2, T *extraParamsRef) = 0;
 #endif
 
 #ifdef __CUDACC__
-			/**
+            /**
      * Aggregate shared memory
      * @param sPartialsRef
      * @param tid
@@ -482,7 +482,7 @@ template<typename OpType>
 #endif
 
 #ifdef __CUDACC__
-			__device__
+            __device__
 			static inline void exec(
 				const int opNum,
 				T *dx,
@@ -524,222 +524,238 @@ template<typename OpType>
 
 
 #ifdef __CUDACC__
-	__host__
+            __host__
 #endif
 
-			static T execScalar(
-				const int opNum,
-				T *x,
-				int *xShapeInfo,
-				T *extraParamsVals,
-				T *y,
-				int *yShapeInfo) {
-                            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x, xShapeInfo, extraParamsVals, y, yShapeInfo), REDUCE3_OPS);
-			}
+            static T execScalar(
+                    const int opNum,
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParamsVals,
+                    T *y,
+                    int *yShapeInfo) {
+                RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x,
+                                                               xShapeInfo,
+                                                               extraParamsVals,
+                                                               y,
+                                                               yShapeInfo), REDUCE3_OPS);
+            }
 
-			static void exec( const int opNum,
-				T *x, int *xShapeInfo,
-				T *extraParamsVals,
-				T *y,
-				int *yShapeInfo,
-				T *result,
-				int *resultShapeInfoBuffer,
-				int *dimension,
-				int dimensionLength) {
-                            DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength), REDUCE3_OPS);
-			}
-			
+            static void exec( const int opNum,
+                              T *x, int *xShapeInfo,
+                              T *extraParamsVals,
+                              T *y,
+                              int *yShapeInfo,
+                              T *result,
+                              int *resultShapeInfoBuffer,
+                              int *dimension,
+                              int dimensionLength) {
+                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                                               xShapeInfo,
+                                               extraParamsVals,
+                                               y, yShapeInfo,
+                                               result,
+                                               resultShapeInfoBuffer,
+                                               dimension,
+                                               dimensionLength), REDUCE3_OPS);
+            }
 
-template<typename OpType>
+
+            template<typename OpType>
 #ifdef __CUDACC__
-			__host__
+            __host__
 #endif
-			static T execScalar(
-					T *x,
-					int *xShapeInfo,
-					T *extraParams,
-					T *y,
-					int *yShapeInfo) {
-				T startingVal = OpType::startingValue(x);
-				Nd4jIndex length = shape::length(xShapeInfo);
-				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+            static T execScalar(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *y,
+                    int *yShapeInfo) {
+                T startingVal = OpType::startingValue(x);
+                Nd4jIndex length = shape::length(xShapeInfo);
+                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-				T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
+                T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
                 // it's possible case for EqualsWithEps op
-				if (extraParams != NULL) {
+                if (extraParams != nullptr) {
                     extraParamsVals[2] = extraParams[0];
                 }
 
 
-				char xOrder = shape::order(xShapeInfo);
-				char yOrder = shape::order(yShapeInfo);
-				if(xOrder == yOrder && (xElementWiseStride  >= 1 && yElementWiseStride >= 1)) {
-					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+                char xOrder = shape::order(xShapeInfo);
+                char yOrder = shape::order(yShapeInfo);
+                if(xOrder == yOrder && (xElementWiseStride  >= 1 && yElementWiseStride >= 1)) {
+                    if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 
 // TODO:: proper reduction required here
-						for(int i = 0; i < length; i++) {
-							startingVal = OpType::update(startingVal, OpType::op(x[i],y[i], extraParamsVals), extraParamsVals);
-						}
+                        for(int i = 0; i < length; i++) {
+                            startingVal = OpType::update(startingVal,
+                                                         OpType::op(x[i],y[i],
+                                                                    extraParamsVals),
+                                                         extraParamsVals);
+                        }
 
-						return  OpType::postProcess(startingVal, length, extraParamsVals);
+                        return  OpType::postProcess(startingVal, length, extraParamsVals);
 
-					}
+                    }
 
-					else {
+                    else {
 // TODO:: proper reduction required here
-						for(Nd4jIndex i = 0; i < length; i++) {
-							startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
-						}
+                        for(Nd4jIndex i = 0; i < length; i++) {
+                            startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
+                        }
 
-						return  OpType::postProcess(startingVal, length, extraParamsVals);
-					}
+                        return  OpType::postProcess(startingVal, length, extraParamsVals);
+                    }
 
-				}
-
-
-				else {
-					int *xShape = shape::shapeOf(xShapeInfo);
-					int *xStride = shape::stride(xShapeInfo);
-					int *yStride = shape::stride(yShapeInfo);
-					T startingVal = OpType::startingValue(x);
-					Nd4jIndex n = shape::length(xShapeInfo);
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int xStridesIter[MAX_RANK];
-					int yStridesIter[MAX_RANK];
-					int rank = shape::rank(xShapeInfo);
-					if(PrepareTwoRawArrayIter<T>(rank,
-												 xShape,
-												 x,
-												 xStride,
-												 y,
-												 yStride,
-												 &rank,
-												 shapeIter,
-												 &x,
-												 xStridesIter,
-												 &y,
-												 yStridesIter) >= 0) {
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-								/* Process the innermost dimension */
-								T *xIter = x;
-								T *yIter = y;
-								startingVal = OpType::update(startingVal, OpType::op(xIter[0],yIter[0], extraParamsVals), extraParamsVals);
-							} ND4J_RAW_ITER_TWO_NEXT(dim,
-													 rank,
-													 coord,
-													 shapeIter,
-													 x,
-													 xStridesIter,
-													 y,
-													 yStridesIter);
-
-						return OpType::postProcess(startingVal, n, extraParamsVals);
-					}
-					else {
-						printf("Unable to prepare array\n");
-					}
-
-				}
-
-				return startingVal;
+                }
 
 
-			}
+                else {
+                    int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *yStride = shape::stride(yShapeInfo);
+                    T startingVal = OpType::startingValue(x);
+                    Nd4jIndex n = shape::length(xShapeInfo);
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 y,
+                                                 yStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &y,
+                                                 yStridesIter) >= 0) {
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                /* Process the innermost dimension */
+                                startingVal = OpType::update(startingVal, OpType::op(x[0],y[0], extraParamsVals), extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 
-template<typename OpType>
-			static void exec(T *x, int *xShapeInfo,
-					  T *extraParams,
-					  T *y,
-					  int *yShapeInfo,
-					  T *result,
-					  int *resultShapeInfoBuffer,
-					  int *dimension,
-					  int dimensionLength) {
+                        return OpType::postProcess(startingVal, n, extraParamsVals);
+                    }
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
 
-				T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
+                }
+
+                return startingVal;
 
 
-				if(shape::isScalar(resultShapeInfoBuffer)) {
-					result[0] = execScalar<OpType>(
-							x,
-							xShapeInfo,
-							extraParamsVals,
-							y,
-							yShapeInfo);
-					return;
-				}
+            }
+
+            template<typename OpType>
+            static void exec(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *y,
+                    int *yShapeInfo,
+                    T *result,
+                    int *resultShapeInfoBuffer,
+                    int *dimension,
+                    int dimensionLength) {
+
+                T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
+
+
+                if(shape::isScalar(resultShapeInfoBuffer)) {
+                    result[0] = execScalar<OpType>(
+                            x,
+                            xShapeInfo,
+                            extraParamsVals,
+                            y,
+                            yShapeInfo);
+                    return;
+                }
 
 
 
-				char xOrder = shape::order(xShapeInfo);
-				char yOrder = shape::order(yShapeInfo);
-				if(xOrder != yOrder) {
-					int shapeIter[MAX_RANK];
-					int coord[MAX_RANK];
-					int dim;
-					int xStridesIter[MAX_RANK];
-					int yStridesIter[MAX_RANK];
+                char xOrder = shape::order(xShapeInfo);
+                char yOrder = shape::order(yShapeInfo);
+                if(xOrder != yOrder) {
+                    int shapeIter[MAX_RANK];
+                    int coord[MAX_RANK];
+                    int dim;
+                    int xStridesIter[MAX_RANK];
+                    int yStridesIter[MAX_RANK];
 
-					int *xShape = shape::shapeOf(xShapeInfo);
+                    int *xShape = shape::shapeOf(xShapeInfo);
 
-					int *xStride = shape::stride(xShapeInfo);
-					int *yStride = shape::stride(yShapeInfo);
+                    int *xStride = shape::stride(xShapeInfo);
+                    int *yStride = shape::stride(yShapeInfo);
 
-					int rank = shape::rank(xShapeInfo);
-					if(PrepareTwoRawArrayIter<T>(rank,
-												 xShape,
-												 x,
-												 xStride,
-												 y,
-												 yStride,
-												 &rank,
-												 shapeIter,
-												 &x,
-												 xStridesIter,
-												 &y,
-												 yStridesIter) >= 0) {
+                    int rank = shape::rank(xShapeInfo);
+                    if(PrepareTwoRawArrayIter<T>(rank,
+                                                 xShape,
+                                                 x,
+                                                 xStride,
+                                                 y,
+                                                 yStride,
+                                                 &rank,
+                                                 shapeIter,
+                                                 &x,
+                                                 xStridesIter,
+                                                 &y,
+                                                 yStridesIter) >= 0) {
 
-						Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
-						Nd4jIndex tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
-						ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-								/* Process the innermost dimension */
-								T *xIter = x;
-								T *yIter = y;
-								Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
-								int reductionIndex = xOffset / resultLength;
-								result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(xIter[0],yIter[0], extraParamsVals), extraParamsVals);
-							} ND4J_RAW_ITER_TWO_NEXT(dim,
-													 rank,
-													 coord,
-													 shapeIter,
-													 x,
-													 xStridesIter,
-													 y,
-													 yStridesIter);
+                        Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
+                        Nd4jIndex tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
+                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
+                                Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
+                                int reductionIndex = xOffset / resultLength;
+                                result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(x[0],y[0], extraParamsVals), extraParamsVals);
+                            } ND4J_RAW_ITER_TWO_NEXT(dim,
+                                                     rank,
+                                                     coord,
+                                                     shapeIter,
+                                                     x,
+                                                     xStridesIter,
+                                                     y,
+                                                     yStridesIter);
 
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-						for(Nd4jIndex i = 0; i < resultLength ;i++) {
-							result[i] = OpType::postProcess(result[i],tadLength, extraParamsVals);
-						}
-					}
+                        for(Nd4jIndex i = 0; i < resultLength ;i++) {
+                            result[i] = OpType::postProcess(result[i],tadLength, extraParamsVals);
+                        }
+                    }
 
-					else {
-						printf("Unable to prepare array\n");
-					}
-				}
-				else {
-					T startingVal = OpType::startingValue(x);
+                    else {
+                        printf("Unable to prepare array\n");
+                    }
+                }
+                else {
+                    T startingVal = OpType::startingValue(x);
 
-					Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
-					shape::TAD xTad(yShapeInfo,dimension,dimensionLength);
-					xTad.createTadOnlyShapeInfo();
-					xTad.createOffsets();
+                    Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
+                    shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+                    xTad.createTadOnlyShapeInfo();
+                    xTad.createOffsets();
 
-					/**
+
+                    shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+                    yTad.createTadOnlyShapeInfo();
+                    yTad.createOffsets();
+
+                    /**
                      * The element wise stride belong longs to a reduction index.
                      * When used out of order, we can get rid of the data
                      * dependencies and rely on using the max dimension
@@ -748,35 +764,80 @@ template<typename OpType>
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-					int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
-					int tadLength = shape::length(xTad.tadOnlyShapeInfo);
-
+                    int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+                    int yElementWiseStride = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
+                    int tadLength = shape::length(xTad.tadOnlyShapeInfo);
+                    if (tadElementWiseStride >= 1 && yElementWiseStride >= 1) {
 #pragma omp parallel for proc_bind(AFFINITY) default(shared)
-					for(Nd4jIndex i = 0; i < resultLength; i++) {
-						T *localExtraParams = nullptr;
-						if(OpType::extraParamsLen > 0)
-							localExtraParams = new T[OpType::extraParamsLen];
-						for(int extraParamsIdx = 0; extraParamsIdx <  OpType::extraParamsLen; extraParamsIdx++) {
-							localExtraParams[extraParamsIdx] = startingVal;
-						}
+                        for (Nd4jIndex i = 0; i < resultLength; i++) {
+                            T *localExtraParams = nullptr;
+                            if (OpType::extraParamsLen > 0)
+                                localExtraParams = new T[OpType::extraParamsLen];
+                            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
+                                localExtraParams[extraParamsIdx] = startingVal;
+                            }
 
-						Nd4jIndex offset = xTad.tadOffsets[i];
-						result[i] = OpType::op(x[offset], y[offset], localExtraParams);
-						for(int j = 1; j < tadLength; j++) {
-							result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],y[offset + tadElementWiseStride * j], localExtraParams), localExtraParams);
-						}
+                            Nd4jIndex offset = xTad.tadOffsets[i];
+                            Nd4jIndex yOffset = yTad.tadOffsets[i];
+                            result[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
+                            for (int j = 1; j < tadLength; j++) {
+                                result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],
+                                                                                 y[yOffset + yElementWiseStride * j],
+                                                                                 localExtraParams), localExtraParams);
+                            }
 
-						result[i] = OpType::postProcess(result[i],tadLength, localExtraParams);
+                            result[i] = OpType::postProcess(result[i], tadLength, localExtraParams);
 
-						if(localExtraParams != nullptr)
-							delete[] localExtraParams;
-					}
-				}
+                            if (localExtraParams != nullptr)
+                                delete[] localExtraParams;
+                        }
+                    } else {
+                        int shapeIter[MAX_RANK];
+                        int coord[MAX_RANK];
+                        int dim;
+                        int xStridesIter[MAX_RANK];
+                        int yStridesIter[MAX_RANK];
+                        shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+                        xTad.createTadOnlyShapeInfo();
+                        xTad.createOffsets();
 
-			}
 
-		};
-	}
+                        shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+                        yTad.createTadOnlyShapeInfo();
+                        yTad.createOffsets();
+                        int tads = shape::tensorsAlongDimension(xShapeInfo,dimension,dimensionLength);
+                        int idx[MAX_RANK];
+                        int tadsPerThread = resultLength / TAD_THRESHOLD;
+                        int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                        num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+
+#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                        for (int i = 0; i < resultLength; i++) {
+                            Nd4jIndex xOffset = xTad.tadOffsets[i];
+                            Nd4jIndex yOffset = yTad.tadOffsets[i];
+                            int coord[MAX_RANK];
+
+                            T start = OpType::startingValue(x + xOffset);
+
+                            for (int j = 0; j < shape::length(xTad.tadOnlyShapeInfo); j++) {
+                                shape::ind2subC(shape::rank(xTad.tadOnlyShapeInfo), shape::shapeOf(xTad.tadOnlyShapeInfo), j, coord);
+                                int xOffset2 = shape::getOffset(xOffset,shape::shapeOf(xTad.tadOnlyShapeInfo),shape::stride(xTad.tadOnlyShapeInfo),coord,shape::rank(xTad.tadOnlyShapeInfo));
+                                int yOffset2 = shape::getOffset(yOffset,shape::shapeOf(yTad.tadOnlyShapeInfo),shape::stride(yTad.tadOnlyShapeInfo),coord,shape::rank(yTad.tadOnlyShapeInfo));
+                                start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParams);
+                            }
+
+                            result[i] = OpType::postProcess(start, shape::length(xTad.tadOnlyShapeInfo), extraParams);
+                        }
+                    }
+
+
+                }
+            }
+
+
+        };
+    }
 }
 
 #ifdef __CUDACC__

@@ -30,7 +30,7 @@
 
 #define SUMMARY_STATS_OPS \
         (0, simdOps::SummaryStatsVariance), \
-        (1, simdOps::SummaryStatsStandardDeviation)
+        (1,     simdOps::SummaryStatsStandardDeviation)
 
 
 namespace functions {
