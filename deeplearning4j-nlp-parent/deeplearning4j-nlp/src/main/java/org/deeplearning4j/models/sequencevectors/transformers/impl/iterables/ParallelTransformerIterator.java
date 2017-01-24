@@ -41,15 +41,15 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     }
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer, boolean allowMultithreading) {
-        super(new AsyncLabelAwareIterator(iterator, 256), transformer);
+        super(new AsyncLabelAwareIterator(iterator, 512), transformer);
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>();
 
-        threads = new TokenizerThread[allowMultithreading ? Runtime.getRuntime().availableProcessors() : 1];
+        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2) : 1];
 
         try {
             int cnt = 0;
-            while (cnt < 64) {
+            while (cnt < 256) {
                 boolean before = underlyingHas;
 
                 if (before)
@@ -58,7 +58,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                 if (underlyingHas)
                     stringBuffer.put(this.iterator.nextDocument());
                 else
-                    cnt += 65;
+                    cnt += 257;
 
                 cnt++;
             }
