@@ -26,7 +26,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     protected AtomicBoolean shouldWork = new AtomicBoolean(true);
 
     public AsyncIterator(@NonNull Iterator<T> iterator, int bufferSize) {
-        this.buffer = new LinkedBlockingQueue<>(bufferSize);
+        this.buffer = new LinkedTransferQueue<>();
         this.iterator = iterator;
 
         thread = new ReaderThread<>(iterator, this.buffer, terminator);
