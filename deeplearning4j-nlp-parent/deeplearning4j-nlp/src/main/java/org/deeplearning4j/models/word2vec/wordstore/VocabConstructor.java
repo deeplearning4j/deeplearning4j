@@ -232,12 +232,18 @@ public class VocabConstructor<T extends SequenceElement> {
                 /**
                  * Firing scavenger loop
                  */
-            /*    if (enableScavenger && loopCounter.get() >= 1000000) {
-                    log.debug("Starting scavenger...");
+                if (enableScavenger && loopCounter.get() >= 10000000 && tempHolder.numWords() > 10000000) {
+                    log.info("Starting scavenger...");
+                    while (execCounter.get() != finCounter.get()) {
+                        try {
+                            Thread.sleep(2);
+                        } catch (Exception e) { }
+                    }
+
                     filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 3));
                     loopCounter.set(0);
                 }
-                */
+
             }
 
             // block untill all threads are finished
