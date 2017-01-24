@@ -103,8 +103,10 @@ public class LabelsSource implements Serializable {
     public void storeLabel(String label) {
         if (labels == null) labels = new ArrayList<>();
 
-        if (!uniq.contains(label))
+        if (!uniq.contains(label)) {
+            uniq.add(label);
             labels.add(label);
+        }
     }
 
     /**
