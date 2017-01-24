@@ -214,7 +214,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
 
                 sequences++;
-                if (seqCount.get() % 100000 == 0) {
+                if (seqCount.get() % 1000 == 0) {
                     long currentTime = System.currentTimeMillis();
                     long currentSequences = seqCount.get();
                     long currentElements = parsedCount.get();
