@@ -313,8 +313,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public void reset() {
         if (inputSplit == null) throw new UnsupportedOperationException("Cannot reset without first initializing");
+        inputSplit.reset();
         if (iter != null) {
-            iter = new FileFromPathIterator(allPaths.iterator());
+            iter = new FileFromPathIterator(inputSplit.locationsPathIterator());
         } else if (record != null) {
             hitImage = false;
         }
