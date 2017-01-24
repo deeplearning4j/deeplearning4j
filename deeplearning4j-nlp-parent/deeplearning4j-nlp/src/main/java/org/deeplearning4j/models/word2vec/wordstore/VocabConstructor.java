@@ -206,19 +206,13 @@ public class VocabConstructor<T extends SequenceElement> {
                 VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
                 executorService.submit(runnable);
 
-                boolean isSleep = false;
-                long sleepStart = System.currentTimeMillis();
-
+                // as we see in profiler, this lock isn't really happen too often
                 // we don't want too much left in tail
                 while (execCounter.get() - finCounter.get() > numProc) {
-                    isSleep = true;
                     try {
                         Thread.sleep(2);
                     } catch (Exception e) { }
                 }
-
-                if (isSleep)
-                    log.info("Was sleeping for {} ms", (System.currentTimeMillis() - sleepStart));
 
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
@@ -239,7 +233,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 /**
                  * Firing scavenger loop
                  */
-                if (enableScavenger && loopCounter.get() >= 10000000 && tempHolder.numWords() > 10000000) {
+                if (enableScavenger && loopCounter.get() >= 2000000 && tempHolder.numWords() > 10000000) {
                     log.info("Starting scavenger...");
                     while (execCounter.get() != finCounter.get()) {
                         try {
@@ -247,14 +241,13 @@ public class VocabConstructor<T extends SequenceElement> {
                         } catch (Exception e) { }
                     }
 
-                    filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 3));
+                    filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 2));
                     loopCounter.set(0);
                 }
-
             }
 
             // block untill all threads are finished
-            log.info("Wating till all process stop...");
+            log.info("Wating till all processes stop...");
             while (execCounter.get() != finCounter.get()) {
                 try {
                     Thread.sleep(2);
@@ -319,7 +312,7 @@ public class VocabConstructor<T extends SequenceElement> {
         int numWords = cache.numWords();
         LinkedBlockingQueue<String> labelsToRemove = new LinkedBlockingQueue<>();
         for (T element : cache.vocabWords()) {
-            if (element.getElementFrequency() == 1 && !element.isSpecial() && !element.isLabel())
+            if (element.getElementFrequency() < minWordFrequency && !element.isSpecial() && !element.isLabel())
                 labelsToRemove.add(element.getLabel());
         }
 
