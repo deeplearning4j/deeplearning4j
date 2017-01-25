@@ -1,8 +1,9 @@
-package org.deeplearning4j.keras.api;
+package org.deeplearning4j.keras.api.sequential;
 
 import lombok.Builder;
 import lombok.Data;
 import org.deeplearning4j.keras.model.KerasModelType;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 /**
  * POJO with parameters of the `fit` method of available through the py4j Python-Java bridge
@@ -10,8 +11,7 @@ import org.deeplearning4j.keras.model.KerasModelType;
 @Data
 @Builder
 public class FitParams {
-    private String modelFilePath;
-    private KerasModelType type;
+    private MultiLayerNetwork model;
     private String trainFeaturesDirectory;
     private String trainLabelsDirectory;
     private int batchSize;

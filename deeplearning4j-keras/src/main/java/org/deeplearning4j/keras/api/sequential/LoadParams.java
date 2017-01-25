@@ -1,4 +1,4 @@
-package org.deeplearning4j.keras.api;
+package org.deeplearning4j.keras.api.sequential;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
  */
 @Data
 @Builder
-public class SaveParams {
+public class LoadParams {
     private MultiLayerNetwork model;
     private String writePath;
     private boolean saveUpdaterState;

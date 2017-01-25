@@ -1,8 +1,8 @@
 package org.deeplearning4j.keras;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.keras.api.FitParams;
-import org.deeplearning4j.keras.api.SaveParams;
+import org.deeplearning4j.keras.api.sequential.FitParams;
+import org.deeplearning4j.keras.api.sequential.SaveParams;
 import org.deeplearning4j.keras.model.KerasModelType;
 import org.junit.Rule;
 import org.junit.Test;

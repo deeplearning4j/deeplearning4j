@@ -1,7 +1,7 @@
 package org.deeplearning4j.keras;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.keras.api.*;
+import org.deeplearning4j.keras.api.sequential.*;
 import org.deeplearning4j.keras.hdf5.HDF5MiniBatchDataSetIterator;
 import org.deeplearning4j.keras.model.KerasModelSerializer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -23,14 +23,23 @@ public class DeepLearning4jEntryPoint {
     private final KerasModelSerializer kerasModelSerializer = new KerasModelSerializer();
 
     /**
-     * Keras compile is hijacked to return a DL4J Model instance.
+     * Converts a Keras model to a DL4J reference.
      *
-     * @param compileParams Parameters for the model compile operation
-     * @throws Exception
+     * @param modelRef Reference to temporary model serialized on disk.
      */
-    public void compile(CompileParams compileParams) throws Exception {
-        // TODO
-        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.readSequential(writeParams.getModelFilePath(), writeParams.getType());
+    public MultiLayerNetwork convert_to_dl4j(SequentialModelRef modelRef) throws Exception {
+        MultiLayerNetwork model;
+        try {
+            model = kerasModelSerializer.readSequential(modelRef.getModelFilePath(), modelRef.getType());
+
+            log.info("model.convert_to_dl4j() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.convert_to_dl4j()", e);
+            throw e;
+        }
+
+        return model;
     }
 
     /**
@@ -109,7 +118,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A dataset and assocated parameters
      */
-    public void predict_on_batch(PredictBatchParams predictParams) throws Exception {
+    public void predict_on_batch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getModel();
 
@@ -161,6 +170,17 @@ public class DeepLearning4jEntryPoint {
             log.error("Error while performing model.save_model()", e);
             throw e;
         }
+    }
+
+    /**
+     * Keras compile is hijacked to return a DL4J Model instance.
+     *
+     * @param compileParams Parameters for the model compile operation
+     * @throws Exception
+     */
+    public void compile(CompileParams compileParams) throws Exception {
+        // TODO
+        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.readSequential(writeParams.getModelFilePath(), writeParams.getType());
     }
 
 }

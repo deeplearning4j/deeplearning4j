@@ -1,4 +1,4 @@
-package org.deeplearning4j.keras.api;
+package org.deeplearning4j.keras.api.sequential;
 
 import lombok.Builder;
 import lombok.Data;
@@ -6,7 +6,7 @@ import org.deeplearning4j.keras.model.KerasModelType;
 
 @Data
 @Builder
-public class PredictBatchParams {
+public class CompileParams {
     private String modelFilePath;
     private KerasModelType type;
     private String trainFeaturesDirectory;
