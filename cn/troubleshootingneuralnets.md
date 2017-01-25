@@ -1,106 +1,105 @@
 ---
-title: Troubleshooting Neural Net Training
+title: 神经网络定型问题排查
 layout: cn-default
 ---
 
-# Troubleshooting Neural Net Training
+# 神经网络定型问题排查
 
-Neural networks can be difficult to tune. If the network hyperparameters are poorly chosen, the network may learn slowly, or perhaps not at all. This page aims to provide some baseline steps you should take when tuning your network.
+神经网络的调试可能比较困难。如果网络超参数设定不当，那么学习速度可能会偏慢，甚至完全没有进展。本页旨在介绍网络调试中应当使用的一些基本步骤。
 
-Many of these tips have already been discussed in the academic literature. Our purpose is to consolidate them in one site and express them as clearly as possible.
+以下的建议大多已在学术论文中讨论过。我们希望将这些建议汇集到同一个网页中，并且用尽可能清晰的方式加以表述。
 
-## Data Normalization
+## 数据标准化
 
-What's distribution of your data? Are you scaling it properly? As a general rule:
+数据的分布情况如何？数据是否经过适当的缩放？总体上的规则是：
 
-- For continuous values: you want these to be in the range of -1 to 1, 0 to 1 or ditributed normally with mean 0 and standard deviation 1. This does not have to be exact, but ensuring your inputs are approximately in this range can help during training. Scale down large inputs, and scale up small inputs.
-- For discrete classes (and, for classification problems for the output), generally use a one-hot representation. That is, if you have 3 classes, then your data will be represeted as [1,0,0], [0,1,0] or [0,0,1] for each of the 3 classes respectively.
+- 如果数据是连续值：范围应当在-1到1、0到1，或者呈平均值为0、标准差为1的正态分布。实际的范围不用如此精确，但确保输入数据大致处于上述区间内会有助于定型。缩小过大的输入，放大过小的输入。
+- 如果数据是离散的类别（以及对于分类问题的输出而言），则通常使用one-hot表示。也就是说，如果有三种类别，那么这三种不同类别的数据将分别以[1,0,0]、[0,1,0]、[0,0,1]的方式表示。
 
-Note that it's very important to use the exact same normalization method for both the training data and testing data.
+请注意：定型数据和测试数据的标准化方法必须完全相同，这非常重要。
 
-## Weight Initialization
+## 权重初始化
 
-Deeplearning4j supports several different kinds of weight initializations with the weightInit parameter. These are set using the .weightInit(WeightInit) method in your configuration.
+Deeplearning4j的weightInit参数支持几种不同的权重初始化方式，可以在配置中用.weightInit(WeightInit)方法来设置。
 
-You need to make sure your weights are neither too big nor too small. Xavier weight initialization is usually a good choice for this. For networks with rectified linear (relu) or leaky relu activations, RELU weight initialization is a sensible choice.
+您需要确保权重不会过大，也不会过小。Xavier权重初始化方法通常是比较好的选择。对于使用修正线性（relu）或带泄露的修正线性（leaky relu）激活函数的网络而言，RELU权重初始化方法比较合适。
 
-## Number of Epochs and Number of Iterations
+## Epoch数量和迭代次数
 
-An epoch is defined as a full pass of the data set. An iteration in DL4J is defined as the number of parameter updates in a row, for each minibatch.
+一个epoch周期的定义是完整地遍历数据集一次。DL4J将迭代次数定义为每个微批次中的参数更新次数。
 
-Generally, you want to use multiple epochs and one iteration (.iterations(1) option) when training; multiple iterations are generally only used when doing full-batch training on very small data sets.
+在定型中，一般应让定型持续多个epoch，而将迭代次数设为一次（.iterations(1)选项）；一般仅在对非常小的数据集进行完整批次的定型时才会采用大于1的迭代次数。
 
-Too few epochs don't give your network enough time to learn good parameters; too many and you might overfit the training data. One way to choose the number of epochs is to use early stopping. [Early stopping](http://deeplearning4j.org/earlystopping) can also help to prevent the neural network from overfitting (i.e., can help the net generalize better to unseen data).
+如果epoch数量太少，网络就没有足够的时间学会合适的参数；epoch数量太多则有可能导致网络对定型数据过拟合。选择epoch数量的方式之一是早停法。[早停法](http://deeplearning4j.org/cn/earlystopping)还可以避免神经网络发生过拟合（即可以帮助网络更好地适应未曾见过的数据）。
 
-## Learning Rate
+## 学习速率
 
-The learning rate is one of, if not the most important hyperparameter. If this is too large or too small, your network may learn very poorly, very slowly, or not at all. Typical values for the learning rate are in the range of 0.1 to 1e-6, though the optimal learning rate is usually data (and network architecture) specific. Some simple advice is to start by trying three different learning rates – 1e-1, 1e-3, and 1e-6 – to get a rough idea of what it should be, before further tuning this. Ideally, they run models with different learning rates simultaneously to save time.
+学习速率是最重要的超参数之一。如果学习速率过高或过低，网络可能学习效果非常差、学习速度非常慢，甚至完全没有进展。学习速率的取值范围一般在0.1到1e-6之间，最理想的速率通常取决于具体的数据（以及网络架构）。一种简单的建议是，一开始可以尝试三种不同的学习速率：1e-1、1e-3、1e-6，先大致了解一下应该设为怎样的值，然后再进一步微调。理想状态下，可以同时以不同的学习速率运行模型，以便节省时间。
 
-The usual approach to selecting an appropriate learning rate is to use [DL4J's visualization interface](http://deeplearning4j.org/visualization) to visualize the progress of training. You want to pay attention to both the loss over time, and the ratio of update magnitudes to parameter magnitudes (a ratio of approximately 1:1000 is a good place to start). For more information on tuning the learning rate, see [this link](http://cs231n.github.io/neural-networks-3/#baby).
+选择合适的学习速率的常用方法是借助[DL4J的可视化界面](http://deeplearning4j.org/visualization)来将定型进程可视化。您需要关注损失随时间变化的情况以及更新值与参数的绝对值之比（通常可以先考虑1:1000左右的比例）。有关学习速率调试的更多信息请参见[此处](http://cs231n.github.io/neural-networks-3/#baby)。
 
-For training neural networks in a distributed manner, you may need a different (frequently higher) learning rate compared to training the same network on a single machine.
+在对同样的神经网络进行分布式定型时，需要的学习速率可能与单机定型不同（通常需要更高的速率）。
 
-## Activation Function
+## 激活函数
 
-There are two aspects to be aware of, with regard to the choice of activation function.
+在激活函数的选择上需要注意两个方面。
 
-First, the activation function of the hidden (non-output) layers. As a general rule, 'relu' or 'leakyrelu' activations are good choices for this. Some other activation functions (tanh, sigmoid, etc) are more prone to vanishing gradient problems, which can make learning much harder in deep neural networks. However, for LSTM layers, the tanh activation function is still commonly used.
+首先是隐藏（非输出）层的激活函数。“relu”或“leakyrelu”激活函数一般是比较好的选择。其他一些激活函数（tanh、sigmoid等）更容易出现梯度消失问题，进而大幅增加深度神经网络学习的难度。但是，LSTM层仍然普遍使用tanh激活函数。
 
-Second, regarding the activation function for the output layer: this is usually application specific. For classification problems, you generally want to use the softmax activation function, combined with the negative log likelihood / MCXENT (multi-class cross entropy). The softmax activation function gives you a probability distribution over classes (i.e., outputs sum to 1.0). For regression problems, the "identity" activation function is frequently a good choice, in conjunction with the MSE (mean squared error) loss function.
+其次是输出层的激活函数：这通常取决于具体的应用。对分类问题而言，通常需要使用softmax激活函数，与负对数似然函数/MCXENT（多类叉熵）相结合。softmax激活函数给出的是各个类别的概率分布（即输出和为1.0）。对回归问题而言，“恒等”激活函数通常是比较好的选择，可以结合MSE（均方差）损失函数使用。
 
-## Loss Function
+## 损失函数
 
-Loss functions for each neural network layer can either be used in pretraining, to learn better weights, or in classification (on the output layer) for achieving some result. (In the example above, classification happens in the override section.)
+神经网络不同层中的损失函数的作用包括预定型、学习改善权重，以及在分类问题中得出结果（位于输出层上）。（在上述例子中，分类发生在重写段中。）
 
-Your net's purpose will determine the loss funtion you use. For pretraining, choose reconstruction entropy. For classification, use multiclass cross entropy.
+网络目的决定了所用的损失函数类型。预定型可选择重构熵函数。分类可选择多类叉熵函数。
 
-## Regularization
+## 正则化
 
-Regularization methods can help to avoid overfitting during training. Overfitting occurs when the network predicts the training set very well, but makes poor predictions on data the network has never seen. One way to think about overfitting is that the network memorizes the training data (instead of learning the general relationships in it).
+正则化方法有助于避免在定型时发生过拟合。过拟合指网络对定型数据集的预测效果非常好，但对于从未见过的数据无法给出很好的预测。可以把过拟合理解成网络在“死记”定型数据（而非学习其中存在的一般关联）。
 
-Common types of regularization include:
+常见的正则化方法包括：
 
-- l1 and l2 regularization penalizes large network weights, and avoids weights becoming too large. Some level of l2 regularization is commonly used in practice. However, note that if the l1 or l2 regularization coefficients are too high, they may over-penalize the network, and stop it from learning. Common values for l2 regularization are 1e-3 to 1e-6.
-- [Dropout](./glossary.html#dropout), is a frequently used regularization method can be very effective. Dropout is most commoly used with a dropout rate of 0.5.
-- Dropconnect (conceptually similar to dropout, but used much less frequently)
-- Restricting the total number of network size (i.e., limit the number of layers and size of each layer)
-- [Early stopping](http://deeplearning4j.org/earlystopping)
+- L1和L2正则化会惩罚较大的网络权重，避免权重变得过大。实践中普遍采用一定程度的L2正则化。但要注意的是，如果L1和L2正则化系数过高，就有可能过度惩罚网络，导致网络停止学习。L2正则化的常用值为1e-3到1e-6。
+- [丢弃法](./glossary.html#dropout)（dropout）是一种常用且很有效的正则化方法。丢弃法通常采用0.5的丢弃率。
+- Dropconnect（概念上与丢弃法相似，但使用频率低很多）
+- 限制网络总体大小（即限制层的数量和每个层的大小）
+- [早停法](http://deeplearning4j.org/earlystopping)
 
-To use l1/l2/dropout regularization, use .regularization(true) followed by .l1(x), .l2(y), .dropout(z) respectively. Note that z in dropout(z) is the probability of retaining an activation.
+如要使用L1/L2/丢弃法正则化，可先设置.regularization(true)，随后分别指定.l1(x)、.l2(y)或.dropout(z)。注意dropout(z)中的z是保留一项激活值的概率。
 
-## Minibatch Size
+## 微批次大小
 
-A minibatch refers to the number of examples used at a time, when computing gradients and parameter updates. In practice (for all but the smallest data sets), it is standard to break your data set up into a number of minibatches.
+微批次大小指计算梯度和参数更新值时一次使用的样例数量。在实践中（除了最小的数据集之外）通常都要将数据集切分成一定数量的微批次。
 
-The ideal minibatch size will vary. For example, a minibatch size of 10 is frequently too small for GPUs, but can work on CPUs. A minibatch size of 1 will allow a network to train, but will not reap the benefits of parallelism. 32 may be a sensible starting point to try, with minibatches in the range of 16-128 (sometimes smaller or larger, depending on the application and type of network) being common.
+理想的微批次大小并非唯一。例如，如果微批次大小为10，对GPU而言一般太小，但可以用于CPU。微批次大小为1的网络可以定型，但无法获得并行计算的种种益处。通常可以从32开始尝试，常见的微批次大小范围在16～128之间（有时也可能更大或更小，取决于具体的应用和网络类型）。
 
-## Updater and Optimization Algorithm
+## 更新器和优化算法
 
-In DL4J, the term 'updater' refers to training mechanisms such as momentum, RMSProp, adagrad, and others. Using one of these methods can result in much faster network training companed to 'vanilla' stochastic gradient descent. You can set the updater using the .updater(Updater) configuration option.
+在DL4J中，“更新器”一词指动量、RMSProp、adagrad等定型机制。相比于“普通”的随机梯度下降，使用这些方法可以大大提高网络定型速度。您可以用.updater(Updater)配置选项设置更新器。
 
-The optimization algorithm is how updates are made, given the gradient. The simplest (and most commonly used) method is stochastic gradient descent (SGD), however DL4J also provides SGD with line search, conjugate gradient and LBFGS optimization algorithms. These latter algorithms are more powerful compared to SGD, but considerably more costly per parameter update due to a line search component, and aren't used as much in practice. Note that you can in principle combine any updater with any optimization algorithm.
+优化算法是对给定梯度进行更新的方法。最简单（也最常用）的方法是随机梯度下降（SGD），但DL4J也提供带线搜索的SGD、共轭梯度和LBFGS优化算法。这些算法比SGD更强大，但由于包含线搜索组件，每次参数更新的成本也大幅增加，实践中的使用频率不如SGD。原则上，任意一种更新器都可以和任意一种优化算法组合起来。
 
-A good default choice in most cases is to use the stochastic gradient descent optimization algorithm combined with one of the momentum/rmsprop/adagrad updaters, with momentum frequently being used in practice. Note that for momentum, the updater is called NESTEROVS (a reference to the Nesterovs variant of momentum), and the momentum rate can be set by the .momentum(double) option.
+多数情况下比较好的默认选择是使用随机梯度下降优化算法，与动量/rmsprop/adagrad更新器中的一种相结合，实践中常常使用动量更新器。注意动量更新器称为NESTEROVS（指Nesterov提出的动量），可以用.momentum(double)选项来设置动量。
 
-## Gradient Normalization
+## 梯度标准化
 
-When training a neural network, it can sometimes be helpful to apply gradient normalization, to avoid the gradients being too large (the so-called exploding gradient problem, common in recurrent neural networks) or too small. This can be applied using the .gradientNormalization(GradientNormalization) and .gradientNormalizationThreshould(double) methods. See [this, for more details](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/conf/GradientNormalization.java).
+梯度标准化有时可以帮助避免梯度在神经网络定型过程中变得过大（即所谓的梯度膨胀问题，在循环神经网络中较常见）或过小。应用梯度标准化的方法是.gradientNormalization(GradientNormalization)和.gradientNormalizationThreshould(double)。梯度标准化的示例参见[GradientNormalization.java](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/GradientNormalization.java)。该示例的测试代码见[此处](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/nn/updater/TestGradientNormalization.java)。
 
-## Recurrent Neural Networks: Truncated Backpropagation through Time
+## 循环神经网络：截断式沿时间反向传播
 
-When training recurrent networks with long time series, it is generally advisable to use truncated backpropagation through time. With 'standard' backpropagation through time (the default in DL4J) the cost per parameter update can become prohibative. For more details, see [this page](http://deeplearning4j.org/usingrnns) and [this glossary entry](./glossary.html#backprop).
+在定型有较长时间序列的循环网络时，通常建议采用截断式沿时间反向传播算法。“标准的”沿时间反向传播算法（DL4J的默认选项）可能会使每次参数更新的成本变得极高。详情参见[此页](http://deeplearning4j.org/cn/usingrnns)以及[术语表中的说明](./glossary.html#backprop)。
 
-## Visible/Hidden Unit
+## 可见/隐藏单元
 
-When using a deep-belief network, pay close attention here. An RBM (the component of the DBN used for feature extraction) is stochastic and will sample from different probability distributions relative to the visible or hidden units specified. 
+使用深度置信网络（DBN）时请特别注意以下问题。受限玻尔兹曼机（DBN用于提取特征的组成部分）是随机的网络，它会从指定的可见或隐藏单元相对应的不同概率分布中采样。 
 
-See Geoff Hinton's definitive work, [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf), for a list of all of the different probability distributions.
+Geoff Hinton的权威著作[《受限玻尔兹曼机定型实用指南》](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf)中列出了所有不同的概率分布。
 
-## Restricted Boltzmann Machines (RBMs)
+## 受限玻尔兹曼机（RBM）
 
-When creating hidden layers for autoencoders that perform compression, give them fewer neurons than your input data. If the hidden-layer nodes are too close to the number of input nodes, you risk reconstructing the identity function. Too many hidden-layer neurons increase the likelihood of noise and overfitting. For an input layer of 784, you might choose an initial hidden layer of 500, and a second hidden layer of 250. No hidden layer should be less than a quarter of the input layer’s nodes. And the output layer will simply be the number of labels.
+为用于压缩数据的自动编码器创建隐藏层时，神经元的数量应少于输入数据。如果隐藏层节点数与输入节点数太接近，就会有重构恒等函数的风险。隐藏层节点数过多会增加噪声和过拟合的可能性。如果输入层节点数为784，第一个隐藏层的节点数可设为500，第二个隐藏层则设为250。任何隐藏层的节点数均不应少于输入层的四分之一。输出层的节点数应等于标签数。
 
-Larger datasets require more hidden layers. Facebook’s Deep Face uses nine hidden layers on what we can only presume to be an immense corpus. Many smaller datasets might only require three or four hidden layers, with their accuracy decreasing beyond that depth. As a rule: larger data sets contain more variation, which require more features/neurons for the net to obtain accurate results. Typical machine learning, of course, has one hidden layer, and those shallow nets are called Perceptrons.
+较大的数据集需要更多隐藏层。Facebook的Deep Face使用9个隐藏层，它所处理的数据量想必是极其庞大的。许多较小的数据集可能只需要三到四个隐藏层，再加大深度会导致准确率下降。一般的规则是：数据集越大，差异也越多，网络需要更多的特征/神经元才能获得准确的结果。当然，普通的机器学习只有一个隐藏层，这类浅层网络称为感知器。
 
-Large datasets require that you pretrain your RBM several times. Only with multiple pretrainings will the algorithm learn to correctly weight features in the context of the dataset. That said, you can run the data in parallel or through a cluster to speed up the pretraining.
-
+处理大型数据集时，您需要对RBM进行多次预定型。只有进行多次预定型后，算法才能学会如何在该数据集的语境中准确地判定特征权重。您可以依靠数据并行或者集群来加快预定型的速度。
