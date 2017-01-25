@@ -148,7 +148,7 @@ public class LoneTest extends BaseNd4jTest {
         assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
     }
 
-    @Test
+    @Test(expected =  IllegalStateException.class)
     public void opsNotAllowed() {
         INDArray A = Nd4j.ones(2,3,1);
         INDArray B = Nd4j.ones(2,3);
