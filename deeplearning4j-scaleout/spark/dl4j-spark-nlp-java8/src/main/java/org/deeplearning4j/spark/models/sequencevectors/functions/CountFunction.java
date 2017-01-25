@@ -7,10 +7,15 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 /**
  * This accumulator function does count individual elements, using provided Accumulator
@@ -22,11 +27,16 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
     protected Accumulator<Counter<Long>> accumulator;
     protected boolean fetchLabels;
     protected Broadcast<VoidConfiguration> voidConfigurationBroadcast;
+    protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
 
-    public CountFunction(@NonNull Broadcast<VoidConfiguration> voidConfigurationBroadcast, @NonNull  Accumulator<Counter<Long>>  accumulator, boolean fetchLabels) {
+    protected transient SparkElementsLearningAlgorithm ela;
+    protected transient TrainingDriver<? extends TrainingMessage> driver;
+
+    public CountFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> voidConfigurationBroadcast, @NonNull  Accumulator<Counter<Long>>  accumulator, boolean fetchLabels) {
         this.accumulator = accumulator;
         this.fetchLabels = fetchLabels;
         this.voidConfigurationBroadcast = voidConfigurationBroadcast;
+        this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
     }
 
     @Override
@@ -36,8 +46,17 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
         Counter<Long> localCounter = new Counter<>();
         long seqLen = 0;
 
+        if (ela == null) {
+            try {
+                ela = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfigurationBroadcast.getValue().getElementsLearningAlgorithm()).newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        driver = ela.getTrainingDriver();
+
         //System.out.println("Initializing VoidParameterServer in CountFunction");
-        VoidParameterServer.getInstance().init(voidConfigurationBroadcast.getValue());
+        VoidParameterServer.getInstance().init(voidConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
 
         for (T element: sequence.getElements()) {
             if (element == null)

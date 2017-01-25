@@ -31,6 +31,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,6 +61,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
     protected SparkModelExporter<T> exporter;
 
+    protected SparkElementsLearningAlgorithm ela;
+    protected SparkSequenceLearningAlgorithm sla;
+
     protected VoidConfiguration paramServerConfiguration;
 
     protected SparkSequenceVectors() {
@@ -73,6 +77,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     protected VocabCache<ShallowSequenceElement> getShallowVocabCache() {
         return shallowVocabCache;
     }
+
 
     /**
      * PLEASE NOTE: This method isn't supported for Spark implementation. Consider using fitLists() or fitSequences() instead.
@@ -122,8 +127,17 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * and calling this method for training, instead implementing own routines
          */
 
+        if (ela == null) {
+            try {
+                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm()).newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
         if (workers > 1) {
-            log.info("Repartitioning to {} workers...", workers);
+            log.info("Repartitioning corpus to {} parts...", workers);
             corpus.repartition(workers);
         }
 
@@ -212,7 +226,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
             // set up freqs accumulator
             elementsFreqAccum = corpus.context().accumulator(new Counter<Long>(), new ElementsFrequenciesAccumulator());
-            CountFunction<T> elementsCounter = new CountFunction<>(paramServerConfigurationBroadcast, elementsFreqAccum, configuration.isTrainSequenceVectors());
+            CountFunction<T> elementsCounter = new CountFunction<>(configurationBroadcast, paramServerConfigurationBroadcast, elementsFreqAccum, configuration.isTrainSequenceVectors());
 
             // count all sequence elements and their sum
             JavaRDD<Pair<Sequence<T>, Long>> countedCorpus = corpus.map(elementsCounter);
@@ -246,7 +260,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         /**
          * now we initialize Shards with values. That call should be started from driver which is either Client or Shard in standalone mode.
          */
-        VoidParameterServer.getInstance().init(paramServerConfiguration);
+        VoidParameterServer.getInstance().init(paramServerConfiguration, new RoutedTransport(), ela.getTrainingDriver());
         VoidParameterServer.getInstance().initializeSeqVec(configuration.getLayersSize(), (int) numberOfUniqueElements, 119, configuration.getLayersSize() / paramServerConfiguration.getNumberOfShards(), paramServerConfiguration.isUseHS(), paramServerConfiguration.isUseNS());
 
         // proceed to training
