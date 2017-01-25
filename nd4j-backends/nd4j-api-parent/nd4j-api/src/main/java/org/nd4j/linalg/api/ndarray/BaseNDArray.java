@@ -4577,13 +4577,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), -1 , newOrder);
         }
 
+        this.shape = null;
+        this.stride = null;
+
         this.rows = size(0);
         this.columns = size(1);
         this.numLeadingOnes = -1;
         this.numTrailingOnes = -1;
-
-        this.shape = null;
-        this.stride = null;
 
         return this;
     }
