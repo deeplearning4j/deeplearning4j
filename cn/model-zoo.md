@@ -1,11 +1,11 @@
 ---
-title: Deeplearning4j Model Zoo
+title: Deeplearning4j模型库
 layout: cn-default
 ---
 
-# DL4J Model Zoo
+# DL4J模型库
 
-Similar to Caffe's model zoo, this repository provides common model configurations. Currently, it contains computer vision configurations:
+与Caffe的模型库（model zoo）相类似，DL4J模型库提供了常见的模型配置，目前包括多种计算机视觉网络配置：
 
 * [AlexNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/AlexNet.java)
 * [LeNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/LeNet.java)
@@ -13,4 +13,4 @@ Similar to Caffe's model zoo, this repository provides common model configuratio
 * [VGGNetD](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/VGGNetD.java)
 * [GoogleLeNet](https://github.com/deeplearning4j/dl4j-model-z/blob/master/src/main/java/org/deeplearning4j/GoogleLeNet.java)
 
-The configurations will give you a headstart when creating models for image recognition. The plans are to also add pretrained models to our model zoo, and we welcome contributions.
+在创建图像识别模型时，上述网络配置可以助您一臂之力。我们计划在模型库中添加预定型的模型，欢迎投稿。
