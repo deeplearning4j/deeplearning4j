@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
-    protected BlockingQueue<Sequence<VocabWord>> buffer = new LinkedTransferQueue<>();
+    protected BlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
     protected BlockingQueue<LabelledDocument> stringBuffer;
     protected TokenizerThread[] threads;
     protected boolean underlyingHas = true;
@@ -41,7 +41,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer, boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
         this.allowMultithreading = allowMultithreading;
-        this.stringBuffer = new LinkedTransferQueue<>();
+        this.stringBuffer = new LinkedBlockingQueue<>(512);
 
         threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors() / 2, 2) : 1];
 
