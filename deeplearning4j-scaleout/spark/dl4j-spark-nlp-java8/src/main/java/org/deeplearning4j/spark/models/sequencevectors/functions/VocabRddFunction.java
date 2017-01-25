@@ -7,8 +7,12 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +30,8 @@ public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunct
     protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;
 
     protected transient VectorsConfiguration configuration;
+    protected transient SparkElementsLearningAlgorithm ela;
+    protected transient TrainingDriver<? extends TrainingMessage> driver;
 
     public VocabRddFunction(@NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vectorsConfigurationBroadcast = vectorsConfigurationBroadcast;
@@ -37,8 +43,17 @@ public class VocabRddFunction<T extends SequenceElement> implements FlatMapFunct
         if (configuration == null)
             configuration = vectorsConfigurationBroadcast.getValue();
 
+        if (ela == null) {
+            try {
+                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm()).newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        driver = ela.getTrainingDriver();
+
         // we just silently initialize server
-        VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue());
+        VoidParameterServer.getInstance().init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
 
         // TODO: call for initializeSeqVec here
 

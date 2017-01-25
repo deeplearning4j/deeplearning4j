@@ -16,6 +16,9 @@ import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLea
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,6 +40,8 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
     protected transient SparkSequenceLearningAlgorithm sequenceLearningAlgorithm;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
+    protected transient TrainingDriver<? extends TrainingMessage> driver;
+
     public TrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
@@ -49,11 +54,24 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         /**
          * Depending on actual training mode, we'll either go for SkipGram/CBOW/PV-DM/PV-DBOW or whatever
          */
+        if (vectorsConfiguration == null)
+            vectorsConfiguration = configurationBroadcast.getValue();
+
         if (paramServer == null) {
             paramServer = VoidParameterServer.getInstance();
 
+            if (elementsLearningAlgorithm == null) {
+                try {
+                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            driver = elementsLearningAlgorithm.getTrainingDriver();
+
             // FIXME: init line should probably be removed, basically init happens in VocabRddFunction
-            paramServer.init(paramServerConfigurationBroadcast.getValue());
+            paramServer.init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
         }
 
         if (vectorsConfiguration == null)
