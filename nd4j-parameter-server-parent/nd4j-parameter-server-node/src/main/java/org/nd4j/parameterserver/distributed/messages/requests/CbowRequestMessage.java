@@ -16,7 +16,7 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 @Data
 @Slf4j
 public class CbowRequestMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
-    protected byte counter;
+    protected byte counter = 1;
 
     long frameId;
 

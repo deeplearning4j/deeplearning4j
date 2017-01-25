@@ -75,7 +75,7 @@ public class VoidParameterServer {
     protected Map<String, Frame<TrainingMessage>> frames = new ConcurrentHashMap<>();
 
     protected static final int numThreads = Runtime.getRuntime().availableProcessors() * 2;
-    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+    protected ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
 
     ////////////////////// SeqVec part
@@ -220,7 +220,7 @@ public class VoidParameterServer {
                     processingRunnables = new Runnable[numThreads];
 
                     for(int x = 0; x < numThreads; x++) {
-                        processingRunnables[x] = () -> {
+                        processingThreads[x] = new Thread(() -> {
                             runner.set(true);
                             while (runner.get()) {
                                 try {
@@ -231,22 +231,23 @@ public class VoidParameterServer {
 
                                     handleMessage(transport.takeMessage());
 
-
                                 } catch (ND4JIllegalStateException e) {
                                     throw new RuntimeException(e);
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
                                 }
                             }
-                        };
+                        });
 
-                        executor.submit(processingRunnables[x]);
+                        //executor.submit(processingRunnables[x);
 
-                        /*
+
+
+
+
                         processingThreads[x].setDaemon(true);
                         processingThreads[x].setName("VoidParameterServer messages handling thread");
                         processingThreads[x].start();
-                        */
                     }
                 }
 

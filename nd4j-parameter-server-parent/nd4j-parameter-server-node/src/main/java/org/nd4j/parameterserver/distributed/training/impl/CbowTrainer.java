@@ -39,7 +39,6 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
 
         chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
 
-
         DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), message.getSyn1rows(), message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
         dcdm.setTargetId((short) - 1);
         dcdm.setOriginatorId(message.getOriginatorId());
@@ -92,16 +91,43 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         INDArray syn1Neg = storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
 
         INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1, cbr.getSyn0rows(), 'c' );
-        INDArray neue = words.mean(1);
+        INDArray neue = words.mean(0);
 
         INDArray neu1e = Nd4j.create(syn1.columns());
 
+        int e = 0;
+
+        boolean updated = false;
+
         // probably applying HS part
         if (cbr.getCodes().length > 0) {
+            for (; e < cbr.getCodes().length; e++) {
+                float dot = dots.getFloat(e);
 
+                if (dot < -HS_MAX_EXP || dot >= HS_MAX_EXP) {
+                    continue;
+                }
+
+                int idx = (int) ((dot + HS_MAX_EXP) * ((float) expTable.length() / HS_MAX_EXP / 2.0));
+
+                if (idx >= expTable.length() || idx < 0) {
+                    continue;
+                }
+
+                int code = cbr.getCodes()[e];
+                double f = expTable.getFloat(idx);
+                double g = (1 - code - f) * alpha;
+
+                updated = true;
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(cbr.getSyn1rows()[e]), neu1e);
+                Nd4j.getBlasWrapper().axpy(new Double(g), neue, syn1.getRow(cbr.getSyn1rows()[e]));
+            }
         }
 
-
+        if (updated)
+            for (int i = 0; i < cbr.getSyn0rows().length; i++) {
+                Nd4j.getBlasWrapper().axpy(new Double(1.0), neu1e, syn0.getRow(cbr.getSyn0rows()[i]));
+            }
 
         // we send back confirmation message only from Shard which received this message
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(chain.getOriginatorId(), chain.getFrameId());

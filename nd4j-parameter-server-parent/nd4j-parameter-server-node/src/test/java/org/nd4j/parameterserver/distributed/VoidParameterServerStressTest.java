@@ -7,14 +7,17 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.Frame;
+import org.nd4j.parameterserver.distributed.messages.requests.CbowRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
+import org.nd4j.parameterserver.distributed.training.impl.CbowTrainer;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
@@ -487,16 +490,16 @@ public class VoidParameterServerStressTest {
 
         VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
         parameterServer.setShardIndex((short) 0);
-        parameterServer.init(voidConfiguration, transport, new SkipGramTrainer());
+        parameterServer.init(voidConfiguration, transport, new CbowTrainer());
 
         parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
 
         final List<Long> times = new ArrayList<>();
 
         for (int i = 0; i < 200; i++) {
-            Frame<SkipGramRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
+            Frame<CbowRequestMessage> frame = new Frame<>(BasicSequenceProvider.getInstance().getNextValue());
             for(int f = 0; f < 128; f++) {
-                frame.stackMessage(getSGRM());
+                frame.stackMessage(getCRM());
             }
             long time1 = System.nanoTime();
             parameterServer.execDistributed(frame);
@@ -614,5 +617,25 @@ public class VoidParameterServerStressTest {
         }
 
         return new SkipGramRequestMessage(w1, w2, points, codes, (short) 0, 0.025, 213412L);
+    }
+
+
+    protected static CbowRequestMessage getCRM() {
+        int w1 = RandomUtils.nextInt(0, NUM_WORDS);
+
+        int syn0[] = new int[5];
+
+        for (int e = 0; e < syn0.length; e++) {
+            syn0[e] = RandomUtils.nextInt(0, NUM_WORDS);
+        }
+
+        byte[] codes = new byte[RandomUtils.nextInt(15, 45)];
+        int[] points = new int[codes.length];
+        for (int e = 0; e < codes.length; e++) {
+            codes[e] = (byte) (e % 2 == 0 ? 0 : 1);
+            points[e] = RandomUtils.nextInt(0, NUM_WORDS);
+        }
+
+        return new CbowRequestMessage(syn0, points, w1, codes, 0, 0.025, 119);
     }
 }

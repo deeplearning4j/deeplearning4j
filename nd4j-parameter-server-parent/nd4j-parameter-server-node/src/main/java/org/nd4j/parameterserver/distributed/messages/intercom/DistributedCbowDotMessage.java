@@ -71,6 +71,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
     @Override
     public void processMessage() {
         // this only picks up new training round
+        //log.info("sI_{} Starting CBOW dot...", transport.getShardIndex());
 
         CbowRequestMessage cbrm = new CbowRequestMessage(rowsA, rowsB, w1, codes, negSamples, alpha, 119 );
         cbrm.setTaskId(this.taskId);
@@ -84,7 +85,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
 
         // we calculate dot for all involved rows, and first of all we get mean word
         INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1,rowsA, 'c' );
-        INDArray mean = words.mean(1);
+        INDArray mean = words.mean(0);
 
         int resultLength = codes.length + (negSamples > 0 ? (negSamples + 1) : 0);
 
