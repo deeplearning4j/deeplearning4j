@@ -141,4 +141,20 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println(b);
     }
 
+    @Test
+    public void testTad() {
+        int[] someShape = {2,1,3,3};
+        INDArray a = Nd4j.linspace(1,18,18).reshape(someShape);
+        assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
+    }
+
+    @Test
+    public void opsNotAllowed() {
+        INDArray A = Nd4j.ones(2,3,1);
+        INDArray B = Nd4j.ones(2,3);
+
+        System.out.println(A.add(B));
+        System.out.println(B.add(A));
+
+    }
 }
