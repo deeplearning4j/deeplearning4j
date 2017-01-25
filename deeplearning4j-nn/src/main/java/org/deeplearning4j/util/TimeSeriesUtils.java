@@ -61,4 +61,18 @@ public class TimeSeriesUtils {
         return timeSeriesMask.reshape('f',new int[]{timeSeriesMask.length(),1});
     }
 
+
+    /**
+     * Reshape time series mask arrays. This should match the assumptions (f order, etc) in RnnOutputLayer
+     * @param timeSeriesMaskAsVector    Mask array to reshape to a column vector
+     * @return                  Mask array as a column vector
+     */
+    public static INDArray reshapeVectorToTimeSeriesMask(INDArray timeSeriesMaskAsVector, int minibatchSize ){
+        if(!timeSeriesMaskAsVector.isVector()) throw new IllegalArgumentException("Cannot reshape mask: expected vector");
+
+        int timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
+
+        return timeSeriesMaskAsVector.reshape('f',new int[]{minibatchSize,timeSeriesLength});
+    }
+
 }

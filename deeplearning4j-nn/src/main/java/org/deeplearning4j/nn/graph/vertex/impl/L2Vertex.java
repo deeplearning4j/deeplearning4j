@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -69,8 +70,6 @@ public class L2Vertex extends BaseGraphVertex {
     @Override
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
-
-//        System.out.println("l2 vertex input sizes: " + Arrays.toString(inputs[0].shape()) + "\t" + Arrays.toString(inputs[1].shape()));
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
@@ -123,5 +122,15 @@ public class L2Vertex extends BaseGraphVertex {
     @Override
     public String toString(){
         return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        //No op
+        if(maskArrays == null || maskArrays.length == 0){
+            return null;
+        }
+
+        return new Pair<>(maskArrays[0], currentMaskState);
     }
 }

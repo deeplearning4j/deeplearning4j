@@ -4,11 +4,14 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -101,4 +104,71 @@ public class GradientCheckTestsMasking {
         }
     }
 
+    @Test
+    public void testBidirectionalLSTMMasking() {
+        //Basic test of GravesLSTM layer
+        Nd4j.getRandom().setSeed(12345L);
+
+        int timeSeriesLength = 5;
+        int nIn = 5;
+        int layerSize = 4;
+        int nOut = 3;
+
+        int miniBatchSize = 3;
+
+        INDArray[] masks = new INDArray[]{
+                null,
+                Nd4j.create(new double[][]{{1,1,1,1,1}, {1,1,1,1,1}, {1,1,1,1,1}}),
+                Nd4j.create(new double[][]{{1,1,1,1,1}, {1,1,1,1,0}, {1,1,1,0,0}}),
+                Nd4j.create(new double[][]{{1,1,1,1,1}, {0,1,1,1,1}, {0,0,1,1,1}})};
+
+        int testNum = 0;
+        for(INDArray mask : masks){
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .regularization(false)
+                    .updater(Updater.NONE)
+                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                    .seed(12345L)
+                    .list()
+                    .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
+                    .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.TANH).build())
+                    .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+            mln.init();
+
+            Random r = new Random(12345L);
+            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
+            for (int i = 0; i < miniBatchSize; i++) {
+                for (int j = 0; j < nIn; j++) {
+                    for (int k = 0; k < timeSeriesLength; k++) {
+                        input.putScalar(new int[]{i, j, k}, r.nextDouble() - 0.5);
+                    }
+                }
+            }
+
+            INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
+            for (int i = 0; i < miniBatchSize; i++) {
+                for (int j = 0; j < nIn; j++) {
+                    labels.putScalar(i,r.nextInt(nOut),j, 1.0);
+                }
+            }
+
+            mln.setLayerMaskArrays(mask, mask);
+
+            if (PRINT_RESULTS) {
+                System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
+                for (int j = 0; j < mln.getnLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(gradOK);
+        }
+    }
 }
