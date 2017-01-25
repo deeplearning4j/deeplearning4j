@@ -17,6 +17,9 @@ import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.Frame;
+import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
+import org.nd4j.parameterserver.distributed.training.TrainingDriver;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,6 +41,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
     protected transient SparkSequenceLearningAlgorithm sequenceLearningAlgorithm;
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
 
+    protected transient TrainingDriver<? extends TrainingMessage> driver;
+
     public PartitionTrainingFunction(@NonNull Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast, @NonNull Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast, @NonNull Broadcast<VoidConfiguration> paramServerConfigurationBroadcast) {
         this.vocabCacheBroadcast = vocabCacheBroadcast;
         this.configurationBroadcast = vectorsConfigurationBroadcast;
@@ -50,15 +55,25 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
         /**
          * first we initialize
          */
+        if (vectorsConfiguration == null)
+            vectorsConfiguration = configurationBroadcast.getValue();
+
         if (paramServer == null) {
             paramServer = VoidParameterServer.getInstance();
 
-            // FIXME: init line should probably be removed, basically init happens in VocabRddFunction
-            paramServer.init(paramServerConfigurationBroadcast.getValue());
-        }
+            if (elementsLearningAlgorithm == null) {
+                try {
+                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
 
-        if (vectorsConfiguration == null)
-            vectorsConfiguration = configurationBroadcast.getValue();
+            driver = elementsLearningAlgorithm.getTrainingDriver();
+
+            // FIXME: init line should probably be removed, basically init happens in VocabRddFunction
+            paramServer.init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
+        }
 
         if (shallowVocabCache == null)
             shallowVocabCache = vocabCacheBroadcast.getValue();
@@ -67,11 +82,13 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
             // TODO: do ELA initialization
             try {
                 elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class.forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
-                elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
+
+        if (elementsLearningAlgorithm != null)
+            elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
 
         if (sequenceLearningAlgorithm == null && vectorsConfiguration.getSequenceLearningAlgorithm() != null) {
             // TODO: do SLA initialization
@@ -82,6 +99,8 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
                 throw new RuntimeException(e);
             }
         }
+        if (sequenceLearningAlgorithm != null)
+            sequenceLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
 
         if (elementsLearningAlgorithm == null && sequenceLearningAlgorithm == null) {
             throw new ND4JIllegalStateException("No LearningAlgorithms specified!");
