@@ -19,7 +19,6 @@ Lua
 
 Python Frameworks
 
-* <a href="#torch">Torch</a>
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
@@ -66,7 +65,7 @@ Pros and Cons:
 
 ### <a name="theano">Theano and Ecosystem</a>
 
-Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in Python. Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
+Many academic researchers in the field of deep learning rely on [**Theano**](http://deeplearning.net/software/theano/), the grand-daddy of deep-learning frameworks, which is written in [Python](http://darkf.github.io/posts/problems-i-have-with-python.html). Theano is a library that handles multidimensional arrays, like Numpy. Used with other libs, it is well suited to data exploration and intended for research. 
 
 Numerous open-source deep-libraries have been built on top of Theano, including [Keras](https://github.com/fchollet/keras),  [Lasagne](https://lasagne.readthedocs.org/en/latest/) and [Blocks](https://github.com/mila-udem/blocks). These libs attempt to layer an easier to use API on top of Theano's occasionally non-intuitive interface. (As of March 2016, another Theano-related library, [Pylearn2, appears to be dead](https://github.com/lisa-lab/pylearn2).)
 
