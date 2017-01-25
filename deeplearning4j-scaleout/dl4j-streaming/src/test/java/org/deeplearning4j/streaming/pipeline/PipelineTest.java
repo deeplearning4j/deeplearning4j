@@ -9,6 +9,7 @@ import org.deeplearning4j.streaming.embedded.EmbeddedZookeeper;
 import org.deeplearning4j.streaming.embedded.TestUtils;
 import org.deeplearning4j.streaming.pipeline.spark.PrintDataSet;
 import org.deeplearning4j.streaming.pipeline.spark.SparkStreamingPipeline;
+import org.deeplearning4j.streaming.pipeline.spark.StreamingContextUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class PipelineTest {
          //NOTE THAT YOU NEED TO DO SOMETHING WITH THE STREAM OTHERWISE IT ERRORS OUT.
         //ALSO NOTE HERE THAT YOU NEED TO HAVE THE FUNCTION BE AN OBJECT NOT AN ANONYMOUS
         //CLASS BECAUSE OF TASK SERIALIZATION
-        dataSetJavaDStream.foreach(new PrintDataSet());
+        StreamingContextUtils.foreach(dataSetJavaDStream, new PrintDataSet());
 
         pipeline.startStreamingConsumption(1000);
 
