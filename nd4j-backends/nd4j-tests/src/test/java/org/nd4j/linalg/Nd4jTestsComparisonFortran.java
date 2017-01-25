@@ -79,6 +79,16 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     }
 
     @Test
+    public void testCrash() {
+        INDArray array3d = Nd4j.ones(1, 10, 10);
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[]{0});
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[]{1});
+
+        INDArray array4d = Nd4j.ones(1, 10, 10, 10);
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, new int[]{0});
+    }
+
+    @Test
     public void testMmulWithOpsCommonsMath(){
         List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
