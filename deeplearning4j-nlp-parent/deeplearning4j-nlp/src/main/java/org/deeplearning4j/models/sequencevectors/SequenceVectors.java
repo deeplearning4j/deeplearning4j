@@ -246,9 +246,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
 
             //final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
+            final AtomicLong timer = new AtomicLong(System.currentTimeMillis());
             final List<VectorCalculationsThread> threads = new ArrayList<>();
             for (int x = 0; x < workers; x++) {
-                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter,  sequencer));
+                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter,  sequencer, timer));
                 threads.get(x).start();
             }
 
@@ -1054,17 +1055,21 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         private final AsyncSequencer digitizer;
         private final AtomicLong nextRandom;
+        private final AtomicLong timer;
+        private final long startTime;
 
         /*
                 Long constructors suck, so this should be reduced to something reasonable later
          */
-        public VectorCalculationsThread(int threadId, int epoch, AtomicLong wordsCounter, long totalWordsCount, AtomicLong linesCounter, AsyncSequencer digitizer) {
+        public VectorCalculationsThread(int threadId, int epoch, AtomicLong wordsCounter, long totalWordsCount, AtomicLong linesCounter, AsyncSequencer digitizer, AtomicLong timer) {
             this.threadId = threadId;
             this.epochNumber = epoch;
             this.wordsCounter = wordsCounter;
             this.totalWordsCount = totalWordsCount;
             this.totalLines = linesCounter;
             this.digitizer = digitizer;
+            this.timer = timer;
+            this.startTime = timer.get();
             this.nextRandom = new AtomicLong(this.threadId);
             this.setName("VectorCalculationsThread " + this.threadId);
         }
@@ -1109,7 +1114,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             totalLines.incrementAndGet();
                             this.wordsCounter.addAndGet(sequence.getElements().size());
 
-                            if (totalLines.get() % 100000 == 0) log.info("Epoch: [" + this.epochNumber+ "]; Words vectorized so far: [" + this.wordsCounter.get() + "];  Lines vectorized so far: [" + this.totalLines.get() + "]; learningRate: [" + alpha + "]");
+                            if (totalLines.get() % 100000 == 0) {
+                                long currentTime = System.currentTimeMillis();
+                                timer.set(currentTime);
+
+                                long timeSpent = currentTime - timer.get();
+                                long totalTimeSpent = currentTime - startTime;
+
+                                double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
+                                double wordsSecTotal = this.wordsCounter.get() / ((double) totalTimeSpent / 1000.0);
+
+                                log.info("Epoch: [{}]; Words vectorized so far: [{}];  Lines vectorized so far: [{}]; Seq/sec: [{}]; Words/sec: [{}]; learningRate: [{}]", this.epochNumber, this.wordsCounter.get(), this.totalLines.get(), String.format("%.2f", seqSec), String.format("%.2f", wordsSecTotal), alpha);
+                            }
                             if (eventListeners != null && !eventListeners.isEmpty()) {
                                 for (VectorsListener listener: eventListeners) {
                                     if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
