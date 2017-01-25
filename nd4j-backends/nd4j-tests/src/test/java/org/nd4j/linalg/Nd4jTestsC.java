@@ -2282,6 +2282,39 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testPermuteiShape(){
+
+        INDArray row = Nd4j.create(1,10);
+
+        INDArray permutedCopy = row.permute(1,0);
+        INDArray permutedInplace = row.permutei(1,0);
+
+        assertArrayEquals(new int[]{10,1}, permutedCopy.shape());
+        assertArrayEquals(new int[]{10,1}, permutedInplace.shape());
+
+        assertEquals(10, permutedCopy.rows());
+        assertEquals(10, permutedInplace.rows());
+
+        assertEquals(1, permutedCopy.columns());
+        assertEquals(1, permutedInplace.columns());
+
+
+        INDArray col = Nd4j.create(10, 1);
+        INDArray cPermutedCopy = col.permute(1,0);
+        INDArray cPermutedInplace = col.permutei(1,0);
+
+        assertArrayEquals(new int[]{1,10}, cPermutedCopy.shape());
+        assertArrayEquals(new int[]{1,10}, cPermutedInplace.shape());
+
+        assertEquals(1, cPermutedCopy.rows());
+        assertEquals(1, cPermutedInplace.rows());
+
+        assertEquals(10, cPermutedCopy.columns());
+        assertEquals(10, cPermutedInplace.columns());
+    }
+
+
 
     @Test
     public void testSwapAxes() {
