@@ -14,8 +14,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  *
- * This is a TEMPORARY class that will be removed in a future release (once these approaches are formally implemented
- * in nd4j).
+ * This is a TEMPORARY class for implementing global pooling with masking. Note that it may be removed in a future release,
+ * if and when these approaches are formally implemented as native operations in ND4J. Consequently, this should not
+ * be considered part of the public API.
  *
  * @author Alex Black
  */
