@@ -839,10 +839,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // we create new shapeInfo with possibly new ews & order
         baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
 
-        INDArray javaTad = javaTensorAlongDimension(index,dimension);
-        if(!toTad.equals(javaTensorAlongDimension(index,dimension))) {
-            throw new IllegalStateException("Illegal tad. Not same.");
-        }
         return toTad;
     }
 
