@@ -16,6 +16,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.deeplearning4j.streaming.conversion.ndarray.RecordToNDArray;
 import org.deeplearning4j.streaming.pipeline.kafka.BaseKafkaPipeline;
+import org.deeplearning4j.streaming.pipeline.spark.StreamingContextUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collections;
@@ -90,9 +91,6 @@ public class SparkStreamingInferencePipeline extends BaseKafkaPipeline<JavaDStre
     @Override
     public void startStreamingConsumption(long timeout) {
         jssc.start();
-        if(timeout < 0)
-            jssc.awaitTermination();
-        else
-            jssc.awaitTermination(timeout);
+        StreamingContextUtils.awaitTermination(jssc, timeout);
     }
 }

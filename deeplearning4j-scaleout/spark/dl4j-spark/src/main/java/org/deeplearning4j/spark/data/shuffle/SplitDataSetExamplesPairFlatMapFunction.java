@@ -1,8 +1,8 @@
 package org.deeplearning4j.spark.data.shuffle;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.PairFlatMapFunction;
+import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
+import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.dataset.DataSet;
 import scala.Tuple2;
 
@@ -18,12 +18,27 @@ import java.util.Random;
  *
  * @author Alex Black
  */
-public class SplitDataSetExamplesPairFlatMapFunction implements PairFlatMapFunction<DataSet, Integer, DataSet> {
+public class SplitDataSetExamplesPairFlatMapFunction extends BasePairFlatMapFunctionAdaptee<DataSet, Integer, DataSet> {
+
+    public SplitDataSetExamplesPairFlatMapFunction(int maxKeyIndex) {
+        super(new SplitDataSetExamplesPairFlatMapFunctionAdapter(maxKeyIndex));
+    }
+}
+
+/**
+ * A PairFlatMapFunction that splits each example in a {@link DataSet} object into its own {@link DataSet}.
+ * Also adds a random key (integer value) in the range 0 to maxKeyIndex-1.<br>
+ *
+ * Used in {@link org.deeplearning4j.spark.util.SparkUtils#shuffleExamples(JavaRDD, int, int)}
+ *
+ * @author Alex Black
+ */
+class SplitDataSetExamplesPairFlatMapFunctionAdapter implements PairFlatMapFunctionAdapter<DataSet, Integer, DataSet> {
 
     private transient Random r;
     private int maxKeyIndex;
 
-    public SplitDataSetExamplesPairFlatMapFunction(int maxKeyIndex){
+    public SplitDataSetExamplesPairFlatMapFunctionAdapter(int maxKeyIndex){
         this.maxKeyIndex = maxKeyIndex;
     }
 

@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
+import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -44,7 +45,24 @@ import java.util.List;
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @see ScoreExamplesFunction
  */
-public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K,MultiDataSet>>,K,Double> {
+public class ScoreExamplesWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K,MultiDataSet>>,K,Double> {
+
+    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
+                                        int batchSize) {
+        super(new ScoreExamplesWithKeyFunctionAdapter<K>(params, jsonConfig, addRegularizationTerms, batchSize));
+    }
+}
+
+/**Function to score examples individually, where each example is associated with a particular key<br>
+ * Note that scoring is batched for computational efficiency.<br>
+ * This is the Spark implementation of the {@link ComputationGraph#scoreExamples(MultiDataSet, boolean)} method<br>
+ * <b>Note:</b> The MultiDataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
+ * between keys and data sets to score)
+ * @author Alex Black
+ * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
+ * @see ScoreExamplesFunction
+ */
+class ScoreExamplesWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K,MultiDataSet>>,K,Double> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesWithKeyFunction.class);
 
@@ -59,7 +77,7 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
      * @param addRegularizationTerms if true: add regularization terms (l1/l2) if applicable; false: don't add regularization terms
      * @param batchSize Batch size to use when scoring examples
      */
-    public ScoreExamplesWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
+    public ScoreExamplesWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean addRegularizationTerms,
                                         int batchSize){
         this.params = params;
         this.jsonConfig = jsonConfig;

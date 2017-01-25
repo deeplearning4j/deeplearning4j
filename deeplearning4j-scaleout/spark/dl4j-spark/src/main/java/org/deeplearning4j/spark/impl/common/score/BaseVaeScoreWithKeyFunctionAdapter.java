@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
+import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,7 +44,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseVaeScoreWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray>>, K, Double> {
+public abstract class BaseVaeScoreWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, K, Double> {
 
     protected final Broadcast<INDArray> params;
     protected final Broadcast<String> jsonConfig;
@@ -54,7 +56,7 @@ public abstract class BaseVaeScoreWithKeyFunction<K> implements PairFlatMapFunct
      * @param jsonConfig             MultiLayerConfiguration, as json
      * @param batchSize              Batch size to use when scoring
      */
-    public BaseVaeScoreWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public BaseVaeScoreWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.batchSize = batchSize;

@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
-import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
+import org.deeplearning4j.spark.util.PairFlatMapFunctionAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,7 +43,21 @@ import java.util.List;
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
+public class GraphFeedForwardWithKeyFunction<K> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
+
+    public GraphFeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+        super(new GraphFeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
+    }
+}
+
+/**
+ * Function to feed-forward examples, and get the network output (for example, class probabilities).
+ * A key value is used to keey track of which output corresponds to which input.
+ *
+ * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
+ * @author Alex Black
+ */
+class GraphFeedForwardWithKeyFunctionAdapter<K> implements PairFlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
 
     protected static Logger log = LoggerFactory.getLogger(GraphFeedForwardWithKeyFunction.class);
 
@@ -55,7 +70,7 @@ public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<I
      * @param jsonConfig MultiLayerConfiguration, as json
      * @param batchSize  Batch size to use for forward pass (use > 1 for efficiency)
      */
-    public GraphFeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public GraphFeedForwardWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.batchSize = batchSize;

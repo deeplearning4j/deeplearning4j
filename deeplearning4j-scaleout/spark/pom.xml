@@ -42,6 +42,24 @@
 
     <build>
         <plugins>
+            <!-- added source folder containing the code specific to the spark version -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.12</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>add-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/spark-${spark.major.version}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
@@ -58,8 +76,6 @@
                     <scalaVersion>2.10.6</scalaVersion>
                 </configuration>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -101,4 +117,65 @@
 
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>spark-default</id>
+            <activation>
+                <property>
+                    <name>!spark.major.version</name>
+                </property>
+            </activation>
+            <properties>
+                <spark.version>1.6.2</spark.version>
+                <hadoop.version>2.2.0</hadoop.version>
+                <spark.major.version>1</spark.major.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>spark-1</id>
+            <activation>
+                <property>
+                    <name>spark.major.version</name>
+                    <value>1</value>
+                </property>
+            </activation>
+            <properties>
+                <spark.version>1.6.2</spark.version>
+                <hadoop.version>2.2.0</hadoop.version>
+            </properties>
+        </profile>
+        <profile>
+          <id>spark-2</id>
+            <activation>
+                <property>
+                    <name>spark.major.version</name>
+                    <value>2</value>
+                </property>
+            </activation>
+            <properties>
+                <spark.version>2.1.0</spark.version>
+                <hadoop.version>2.2.0</hadoop.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.typesafe.akka</groupId>
+                    <artifactId>akka-remote_2.11</artifactId>
+                    <version>2.3.11</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>cdh5</id>
+            <repositories>
+                <repository>
+                    <id>org.apache.hadoop</id>
+                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+                </repository>
+            </repositories>
+            <properties>
+                <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
+                <spark.version>1.2.0-cdh5.3.0</spark.version>
+            </properties>
+        </profile>
+    </profiles>
 </project>

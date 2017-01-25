@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
  * @author Alex Black
  */
-public abstract class BaseVaeReconstructionProbWithKeyFunction<K> extends BaseVaeScoreWithKeyFunction<K> {
+public abstract class BaseVaeReconstructionProbWithKeyFunctionAdapter<K> extends BaseVaeScoreWithKeyFunctionAdapter<K> {
 
     private final boolean useLogProbability;
     private final int numSamples;
@@ -23,8 +23,8 @@ public abstract class BaseVaeReconstructionProbWithKeyFunction<K> extends BaseVa
      * @param batchSize              Batch size to use when scoring
      * @param numSamples             Number of samples to use when calling {@link VariationalAutoencoder#reconstructionLogProbability(INDArray, int)}
      */
-    public BaseVaeReconstructionProbWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean useLogProbability,
-                                                    int batchSize, int numSamples){
+    public BaseVaeReconstructionProbWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, boolean useLogProbability,
+                                                           int batchSize, int numSamples){
         super(params, jsonConfig, batchSize);
         this.useLogProbability = useLogProbability;
         this.numSamples = numSamples;
