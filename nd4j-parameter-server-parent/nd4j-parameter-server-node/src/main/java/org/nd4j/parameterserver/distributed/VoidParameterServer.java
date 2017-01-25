@@ -64,7 +64,7 @@ public class VoidParameterServer {
     protected transient Runnable[] processingRunnables;
 
     // FIXME: we want trainer to be configurable here
-    protected transient TrainingDriver<? extends TrainingMessage> trainer = new SkipGramTrainer();
+    protected transient TrainingDriver<? extends TrainingMessage> trainer;
 
     protected short shardIndex;
 
@@ -148,8 +148,8 @@ public class VoidParameterServer {
         return storage.getArray(WordVectorStorage.NEGATIVE_TABLE);
     }
 
-    public void init(@NonNull VoidConfiguration voidConfiguration) {
-        init(voidConfiguration, new RoutedTransport());
+    protected void init(@NonNull VoidConfiguration voidConfiguration) {
+        init(voidConfiguration, new RoutedTransport(), new SkipGramTrainer());
     }
 
     /**
@@ -157,7 +157,7 @@ public class VoidParameterServer {
      *
      * PLEASE NOTE: This method is blocking for first caller only
      */
-    public void init(@NonNull VoidConfiguration voidConfiguration, Transport transport){
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, TrainingDriver<? extends TrainingMessage> trainer){
         /**
          * Basic plan here:
          *      start publishers/listeners/subscribers
@@ -174,6 +174,7 @@ public class VoidParameterServer {
 
         synchronized (this) {
             if (initLocker.compareAndSet(false, true)) {
+                this.trainer = trainer;
                 this.voidConfiguration = voidConfiguration;
 
                 this.transport = transport;

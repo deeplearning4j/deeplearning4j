@@ -153,7 +153,7 @@ public class RoutedTransport extends BaseTransport {
     @Override
     protected void sendCoordinationCommand(VoidMessage message) {
 
-        //log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+//        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
             try {
 //                log.info("Redirecting message to local endpoint: {}; messages: {}", message.getClass().getSimpleName(), messages.size());

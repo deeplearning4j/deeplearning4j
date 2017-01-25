@@ -65,10 +65,6 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
         this.negSamples = negSamples;
         this.alpha = alpha;
         this.codes = codes;
-
-
-        if (this.rowsA.length != this.rowsB.length)
-            throw new ND4JIllegalStateException("Length of X should match length of Y");
     }
 
     /**

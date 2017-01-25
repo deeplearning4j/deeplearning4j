@@ -71,7 +71,7 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
          * This method in reality just delegates training to specific TrainingDriver, based on message type.
          * In this case - SkipGram training
          */
-        //log.info("sI_{} starts training...", transport.getShardIndex());
+        //log.info("sI_{} starts SkipGram round...", transport.getShardIndex());
 
         // FIXME: we might use something better then unchecked type cast here
         TrainingDriver<SkipGramRequestMessage> sgt = (TrainingDriver<SkipGramRequestMessage>) trainer;

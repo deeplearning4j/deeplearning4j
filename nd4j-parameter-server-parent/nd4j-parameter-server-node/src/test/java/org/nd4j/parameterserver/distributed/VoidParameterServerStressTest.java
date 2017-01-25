@@ -15,6 +15,7 @@ import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider
 import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
+import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
@@ -205,7 +206,7 @@ public class VoidParameterServerStressTest {
             transport.setIpAndPort("192.168.1.35", Integer.valueOf("3789" + s));
             shards[s] =  new VoidParameterServer(false);
             shards[s].setShardIndex((short) s);
-            shards[s].init(voidConfigurations[s], transport);
+            shards[s].init(voidConfigurations[s], transport, new SkipGramTrainer());
 
             assertEquals(NodeRole.SHARD, shards[s].getNodeRole());
         }
@@ -294,7 +295,7 @@ public class VoidParameterServerStressTest {
             transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
 
             shards[t].setShardIndex((short) t);
-            shards[t].init(voidConfiguration, transport);
+            shards[t].init(voidConfiguration, transport, new SkipGramTrainer());
 
 
             assertEquals(NodeRole.SHARD, shards[t].getNodeRole());
@@ -309,7 +310,7 @@ public class VoidParameterServerStressTest {
 
         router.init(voidConfiguration, transport);
 
-        clientNode.init(voidConfiguration, transport);
+        clientNode.init(voidConfiguration, transport, new SkipGramTrainer());
         assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
 
         final List<Long> times = new CopyOnWriteArrayList<>();
@@ -392,7 +393,7 @@ public class VoidParameterServerStressTest {
             transport.setIpAndPort("127.0.0.1",Integer.valueOf("3838" + t));
 
             shards[t].setShardIndex((short) t);
-            shards[t].init(voidConfiguration, transport);
+            shards[t].init(voidConfiguration, transport, new SkipGramTrainer());
 
 
             assertEquals(NodeRole.SHARD, shards[t].getNodeRole());
@@ -407,7 +408,7 @@ public class VoidParameterServerStressTest {
 
         router.init(voidConfiguration, transport);
 
-        clientNode.init(voidConfiguration, transport);
+        clientNode.init(voidConfiguration, transport, new SkipGramTrainer());
         assertEquals(NodeRole.CLIENT, clientNode.getNodeRole());
 
         final List<Long> times = new CopyOnWriteArrayList<>();
@@ -486,7 +487,7 @@ public class VoidParameterServerStressTest {
 
         VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
         parameterServer.setShardIndex((short) 0);
-        parameterServer.init(voidConfiguration, transport);
+        parameterServer.init(voidConfiguration, transport, new SkipGramTrainer());
 
         parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
 
@@ -530,7 +531,7 @@ public class VoidParameterServerStressTest {
 
         VoidParameterServer parameterServer = new VoidParameterServer(NodeRole.SHARD);
         parameterServer.setShardIndex((short) 0);
-        parameterServer.init(voidConfiguration, transport);
+        parameterServer.init(voidConfiguration, transport, new SkipGramTrainer());
 
         parameterServer.initializeSeqVec(100, NUM_WORDS, 123L, 100, true, false);
 
@@ -542,7 +543,7 @@ public class VoidParameterServerStressTest {
             Transport clientTransport = new RoutedTransport();
             clientTransport.setIpAndPort("127.0.0.1",Integer.valueOf("4872" + c));
 
-            clients[c].init(voidConfiguration, clientTransport);
+            clients[c].init(voidConfiguration, clientTransport, new SkipGramTrainer());
 
             assertEquals(NodeRole.CLIENT, clients[c].getNodeRole());
         }

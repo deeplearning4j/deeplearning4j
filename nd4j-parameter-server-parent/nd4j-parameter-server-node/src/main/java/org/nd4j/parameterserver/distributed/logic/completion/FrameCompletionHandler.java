@@ -26,6 +26,13 @@ public class FrameCompletionHandler {
         return frames.containsKey(RequestDescriptor.createDescriptor(originatorId, frameId));
     }
 
+    /**
+     *
+     *
+     * @param originatorId
+     * @param frameId
+     * @param messageId
+     */
     public void addHook(Long originatorId, Long frameId, Long messageId) {
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(originatorId, frameId);
         if (!frames.containsKey(descriptor))
@@ -53,7 +60,10 @@ public class FrameCompletionHandler {
                 return false;
 
             return frameDescriptor.isFinished();
-        } else return false;
+        } else {
+            log.warn("DOUBLE SPENDING!!!");
+            return false;
+        }
     }
 
     public boolean isCompleted(long originatorId, long frameId) {

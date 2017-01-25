@@ -38,8 +38,6 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     protected Map<RequestDescriptor, SkipGramChain> chains = new ConcurrentHashMap<>();
     protected AtomicLong cntRounds = new AtomicLong(0);
 
-    protected FrameCompletionHandler completionHandler = new FrameCompletionHandler();
-
     @Override
     public void startTraining(SkipGramRequestMessage message) {
         /**
@@ -49,11 +47,11 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         /**
          * If we're on HS, we know pairs in advance: it's our points.
          */
-        //log.info("sI_{} adding SkipGramChain originator: {}; frame: {}; task: {}", transport.getShardIndex(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
+//        log.info("sI_{} adding SkipGramChain originator: {}; frame: {}; task: {}", transport.getShardIndex(), message.getOriginatorId(), message.getFrameId(), message.getTaskId());
         SkipGramChain chain = new SkipGramChain(message.getOriginatorId(), message.getTaskId(), message.getFrameId());
         chain.addElement(message);
 
-        //log.info("Starting chain [{}]", chain.getTaskId());
+//        log.info("Starting chain [{}]", chain.getTaskId());
 
 
         chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
@@ -66,6 +64,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             if (message.getPoints().length != message.getCodes().length)
                 throw new RuntimeException("Mismatiching points/codes lengths here!");
 
+//            log.info("trying to go for DDM");
+
             // FIXME: taskId should be real here, since it'll be used for task chain tracking
             // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
             DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, message.getPoints(),
@@ -75,9 +75,14 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                     message.getCodes() != null && message.getCodes().length > 0,
                     message.getNegSamples(),
                     (float) message.getAlpha());
+
+  //          log.info("DDM created");
+
             ddm.setTargetId((short) - 1);
             ddm.setOriginatorId(message.getOriginatorId());
 
+
+//            log.info("sI_{} is trying to send DistributedDotMessage...", transport.getShardIndex());
             transport.sendMessage(ddm);
       //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
@@ -125,8 +130,6 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
     @Override
     public void finishTraining(long originatorId, long taskId) {
-        // TODO: real values needed here
-
         RequestDescriptor chainDesc = RequestDescriptor.createDescriptor(originatorId, taskId);
         SkipGramChain chain = chains.get(chainDesc);
 
@@ -142,7 +145,6 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         // TODO: We DO want this algorithm to be native
         INDArray expTable = storage.getArray(WordVectorStorage.EXP_TABLE);
         INDArray dots = chain.getDotAggregation().getAccumulatedResult();
-
 
         INDArray syn0 = storage.getArray(WordVectorStorage.SYN_0);
         INDArray syn1 = storage.getArray(WordVectorStorage.SYN_1);
@@ -219,6 +221,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             if (completionHandler.isCompleted(descriptor)) {
                 FrameCompletionHandler.FrameDescriptor frameDescriptor = completionHandler.getCompletedFrameInfo(descriptor);
 
+
                 // TODO: there is possible race condition here
                 if (frameDescriptor != null) {
                     FrameCompleteMessage fcm = new FrameCompleteMessage(chain.getFrameId());
@@ -229,7 +232,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 }
             }
         } else {
-        //    log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
+            log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
         }
 
 

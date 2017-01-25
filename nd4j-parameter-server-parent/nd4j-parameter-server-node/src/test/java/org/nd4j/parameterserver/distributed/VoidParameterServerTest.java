@@ -20,6 +20,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignM
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSolidMessage;
+import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -67,7 +68,7 @@ public class VoidParameterServerTest {
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf, transport);
+        node.init(conf, transport, new SkipGramTrainer());
 
         assertEquals(NodeRole.SHARD, node.getNodeRole());
         node.shutdown();
@@ -86,7 +87,7 @@ public class VoidParameterServerTest {
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf, transport);
+        node.init(conf, transport, new SkipGramTrainer());
 
         assertEquals(NodeRole.BACKUP, node.getNodeRole());
         node.shutdown();
@@ -105,7 +106,7 @@ public class VoidParameterServerTest {
                 .build();
 
         VoidParameterServer node = new VoidParameterServer();
-        node.init(conf, transport);
+        node.init(conf, transport, new SkipGramTrainer());
 
         assertEquals(NodeRole.CLIENT, node.getNodeRole());
         node.shutdown();
@@ -131,7 +132,7 @@ public class VoidParameterServerTest {
                 @Override
                 public void run() {
                     VoidParameterServer node = new VoidParameterServer();
-                    node.init(conf, transport);
+                    node.init(conf, transport, new SkipGramTrainer());
 
                     if (node.getNodeRole() != NodeRole.SHARD)
                         failCnt.incrementAndGet();
