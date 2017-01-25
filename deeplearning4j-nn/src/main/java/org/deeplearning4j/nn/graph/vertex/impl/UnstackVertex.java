@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -122,6 +123,19 @@ public class UnstackVertex extends BaseGraphVertex {
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
         if(backpropGradientsViewArray != null) throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        if(maskArrays == null || maskArrays.length == 0){
+            return new Pair<>(null, currentMaskState);
+        }
+
+        //Mask arrays are either 1d (column vector) or 2d...
+        int start = from*step;
+        int end = (from+1)*step;
+        INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
+        return new Pair<>(outMask, currentMaskState);
     }
 
     @Override
