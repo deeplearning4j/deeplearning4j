@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -121,5 +123,12 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
+    }
+
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
+        return new Pair<>(maskArray, currentMaskState);
     }
 }
