@@ -29,6 +29,8 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import scala.Tuple2;
 
 import java.util.*;
@@ -87,12 +89,12 @@ public final class JavaDirectKafkaWordCount {
             }
         });
 
-        JavaDStream<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
+        JavaDStream<String> words = lines.flatMap(new BaseFlatMapFunctionAdaptee<>(new FlatMapFunctionAdapter<String, String>() {
             @Override
             public Iterable<String> call(String x) {
                 return Arrays.asList(SPACE.split(x));
             }
-        });
+        }));
         JavaPairDStream<String, Integer> wordCounts = words.mapToPair(
                 new PairFunction<String, String, Integer>() {
                     @Override

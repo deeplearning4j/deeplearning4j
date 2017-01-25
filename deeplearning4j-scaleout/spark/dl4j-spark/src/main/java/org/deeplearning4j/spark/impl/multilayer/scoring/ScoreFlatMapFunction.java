@@ -1,7 +1,8 @@
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -19,21 +20,30 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>,Tuple2<Integer,Double>> {
+public class ScoreFlatMapFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>,Tuple2<Integer,Double>> {
+
+    public ScoreFlatMapFunction(String json, Broadcast<INDArray> params, int minibatchSize){
+        super(new ScoreFlatMapFunctionAdapter(json, params, minibatchSize));
+    }
+
+}
+
+class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>,Tuple2<Integer,Double>> {
+
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunction.class);
 
     private String json;
     private Broadcast<INDArray> params;
     private int minibatchSize;
 
-    public ScoreFlatMapFunction(String json, Broadcast<INDArray> params, int minibatchSize){
+    public ScoreFlatMapFunctionAdapter(String json, Broadcast<INDArray> params, int minibatchSize){
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
     }
 
     @Override
-    public Iterable<Tuple2<Integer,Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<Tuple2<Integer, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if(!dataSetIterator.hasNext()) {
             return Collections.singletonList(new Tuple2<>(0,0.0));
         }

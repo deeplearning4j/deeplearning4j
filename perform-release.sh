@@ -25,9 +25,11 @@ mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$
 source change-scala-versions.sh 2.10
 source change-cuda-versions.sh 7.5
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
 source change-scala-versions.sh 2.11
 source change-cuda-versions.sh 8.0
 mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
 
 source change-scala-versions.sh 2.10
 source change-cuda-versions.sh 8.0

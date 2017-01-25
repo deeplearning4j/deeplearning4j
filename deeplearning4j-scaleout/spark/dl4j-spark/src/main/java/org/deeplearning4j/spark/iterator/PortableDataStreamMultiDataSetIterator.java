@@ -72,8 +72,6 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
             ds.load(is);
         } catch(IOException e){
             throw new RuntimeException(e);
-        } finally {
-            pds.close();
         }
 
         if(preprocessor != null) preprocessor.preProcess(ds);

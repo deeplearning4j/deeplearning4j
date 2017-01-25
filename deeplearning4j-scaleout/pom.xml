@@ -17,21 +17,25 @@
   ~  */
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.deeplearning4j</groupId>
-		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.7.3-SNAPSHOT</version>
-	</parent>
-	<artifactId>deeplearning4j-scaleout</artifactId>
-	<packaging>pom</packaging>
-	<name>DeepLearning4j-scaleout-parent</name>
-	<modules>
-		<module>dl4j-streaming</module>
-		<module>deeplearning4j-aws</module>
-		<module>spark</module>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-parent</artifactId>
+        <version>0.7.3-SNAPSHOT</version>
+    </parent>
+    <artifactId>deeplearning4j-scaleout</artifactId>
+    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>DeepLearning4j-scaleout-parent</name>
+
+    <modules>
+        <module>dl4j-streaming</module>
+        <module>deeplearning4j-aws</module>
+        <module>spark</module>
         <module>deeplearning4j-scaleout-parallelwrapper</module>
         <module>deeplearning4j-scaleout-parallelwrapper-parameter-server</module>
     </modules>
+
 </project>

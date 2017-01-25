@@ -8,6 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dl4j-spark-parameterserver_2.10</artifactId>
+    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-parameterserver</name>
@@ -20,7 +21,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-aeron</artifactId>
-            <version>${project.version}</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
