@@ -32,7 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
  * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * In all cases, the shape of the input arrays must be identical.
  * @author Alex Black
- * @author Mingda Li (12/25/2016: add output member and implement Product)
  */
 public class ElementWiseVertex extends BaseGraphVertex {
 
