@@ -5,7 +5,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class AsyncIterator<T extends Object> implements Iterator<T> {
-    @Getter protected LinkedBlockingQueue<T> buffer;
+    @Getter protected BlockingQueue<T> buffer;
     protected ReaderThread<T> thread;
     protected Iterator<T> iterator;
     @Getter protected T terminator = (T) new Object();
@@ -80,11 +82,11 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
 
 
     private class ReaderThread<T> extends Thread implements Runnable {
-        private LinkedBlockingQueue<T> buffer;
+        private BlockingQueue<T> buffer;
         private Iterator<T> iterator;
         private T terminator;
 
-        public ReaderThread(Iterator<T> iterator, LinkedBlockingQueue<T> buffer, T terminator) {
+        public ReaderThread(Iterator<T> iterator, BlockingQueue<T> buffer, T terminator) {
             this.buffer = buffer;
             this.iterator = iterator;
             this.terminator = terminator;
@@ -97,7 +99,10 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
         public void run() {
             try {
                 while (iterator.hasNext() && shouldWork.get()) {
-                    buffer.put(iterator.next());
+                    T smth = iterator.next();
+
+                    if (smth != null)
+                        buffer.put(smth);
                 }
                 buffer.put(terminator);
             } catch (InterruptedException e) {
