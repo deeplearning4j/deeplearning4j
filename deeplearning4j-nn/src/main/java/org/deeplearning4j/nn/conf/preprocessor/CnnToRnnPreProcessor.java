@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
@@ -102,5 +105,18 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
         int outSize = c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize);
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+        if(maskArray == null){
+            return new Pair<>(maskArray, currentMaskState);
+        } else if(maskArray.isVector()){
+            //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
+            return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize), currentMaskState);
+        } else {
+            throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape()) + "; expected vector.");
+        }
     }
 }

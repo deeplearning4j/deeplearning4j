@@ -24,7 +24,7 @@ import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -117,7 +117,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon,
-            int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
+                                                     int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);

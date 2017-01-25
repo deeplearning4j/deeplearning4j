@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -88,5 +89,15 @@ public class ScaleVertex extends BaseGraphVertex {
     @Override
     public String toString() {
         return "ScaleVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",scaleFactor=" + scaleFactor + ")";
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        //No op
+        if(maskArrays == null || maskArrays.length == 0){
+            return null;
+        }
+
+        return new Pair<>(maskArrays[0], currentMaskState);
     }
 }
