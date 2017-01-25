@@ -1116,9 +1116,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                             if (totalLines.get() % 100000 == 0) {
                                 long currentTime = System.currentTimeMillis();
-                                timer.set(currentTime);
-
                                 long timeSpent = currentTime - timer.get();
+
+                                timer.set(currentTime);
                                 long totalTimeSpent = currentTime - startTime;
 
                                 double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
