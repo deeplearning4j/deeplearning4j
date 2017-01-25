@@ -24,50 +24,43 @@ public class ModelConfigurationTest {
     public void importKerasMlpSequentialConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/mlp_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        ModelConfiguration.importSequentialModelConfigFromInputStream(resource.getInputStream());
     }
 
     @Test
     public void importKerasMlpModelConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/mlp_fapi_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importFunctionalApiConfigFromFile(configFilename);
+        ModelConfiguration.importFunctionalApiConfigFromInputStream(resource.getInputStream());
     }
 
     @Test
     public void importKerasMlpModelMultilossConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/mlp_fapi_multiloss_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importFunctionalApiConfigFromFile(configFilename);
+        ModelConfiguration.importFunctionalApiConfigFromInputStream(resource.getInputStream());
     }
 
     @Test
     public void importKerasConvnetTensorflowConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/cnn_tf_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        ModelConfiguration.importSequentialModelConfigFromInputStream(resource.getInputStream());
     }
 
     @Test
     public void importKerasConvnetTheanoConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/cnn_th_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        ModelConfiguration.importSequentialModelConfigFromInputStream(resource.getInputStream());
     }
 
-    @Test
+    @Test(expected=IllegalStateException.class)
     public void importKerasLstmFixedLenConfigTest() throws Exception {
         ClassPathResource resource = new ClassPathResource("keras/simple/lstm_fixed_config.json",
                 ModelConfigurationTest.class.getClassLoader());
-        String configFilename = resource.getFile().getAbsolutePath();
-        MultiLayerConfiguration config = ModelConfiguration.importSequentialModelConfigFromFile(configFilename);
+        MultiLayerConfiguration config = ModelConfiguration.importSequentialModelConfigFromInputStream(resource.getInputStream());
         MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
-        int a = 1;
     }
 }
