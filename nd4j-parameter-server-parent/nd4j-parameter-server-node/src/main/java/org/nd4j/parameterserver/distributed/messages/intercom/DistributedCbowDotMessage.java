@@ -61,8 +61,8 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
         this.codes = codes;
 
 
-        if (this.rowsA.length != this.rowsB.length)
-            throw new ND4JIllegalStateException("Length of X should match length of Y");
+        //if (this.rowsA.length != this.rowsB.length)
+        //    throw new ND4JIllegalStateException("Length of X should match length of Y");
     }
 
     /**
