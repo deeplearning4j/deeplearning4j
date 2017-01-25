@@ -956,21 +956,25 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final SequenceIterator<T> iterator;
         private final LinkedBlockingQueue<Sequence<T>> buffer;
    //     private final AtomicLong linesCounter;
-        private final int limitUpper = 10000;
-        private final int limitLower = 5000;
+        private final int limitUpper;
+        private final int limitLower;
         private AtomicBoolean isRunning = new AtomicBoolean(true);
         private AtomicLong nextRandom;
         private List<String> stopList;
 
         public AsyncSequencer(SequenceIterator<T> iterator, @NonNull List<String> stopList) {
             this.iterator = iterator;
-            this.buffer = new LinkedBlockingQueue<>();
 //            this.linesCounter = linesCounter;
             this.setName("AsyncSequencer thread");
             this.nextRandom = new AtomicLong(workers + 1);
             this.iterator.reset();
             this.stopList = stopList;
             this.setDaemon(true);
+
+            limitLower = workers * batchSize;
+            limitUpper = workers * batchSize * 2;
+
+            this.buffer = new LinkedBlockingQueue<>(limitUpper);
         }
 
         @Override
@@ -1009,7 +1013,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         }
 
                         // due to subsampling and null words, new sequence size CAN be 0, so there's no need to insert empty sequence into processing chain
-                        if (!newSequence.getElements().isEmpty()) buffer.add(newSequence);
+                        if (!newSequence.getElements().isEmpty())
+                            try {
+                                buffer.put(newSequence);
+                            } catch (InterruptedException e) {
+                                //
+                            }
 
                         linesLoaded.incrementAndGet();
                     }
