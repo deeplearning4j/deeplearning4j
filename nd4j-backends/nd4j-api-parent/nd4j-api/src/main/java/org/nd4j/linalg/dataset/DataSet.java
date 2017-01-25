@@ -227,7 +227,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
                 break;
             case 4:
-                labelsOut = merge4dCnnData(featuresToMerge);
+                labelsOut = merge4dCnnData(labelsToMerge);
                 labelsMaskOut = null;
                 break;
             default:
