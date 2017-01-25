@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -60,6 +61,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
+    protected MaskState maskState;
     protected Solver solver;
 
     public BaseLayer(NeuralNetConfiguration conf) {
@@ -682,5 +684,24 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray getMaskArray(){
         return maskArray;
+    }
+
+    protected String layerNameAndIndex(){
+        String name = layerConf().getLayerName();
+        if(name == null){
+            name = "(not named)";
+        }
+        return "layerName=" + name + ", layerIndex=" + index;
+    }
+
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
+
+        this.maskArray = maskArray;
+        this.maskState = currentMaskState;
+
+        return new Pair<>(maskArray, currentMaskState);
     }
 }

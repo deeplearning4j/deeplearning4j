@@ -8,6 +8,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -127,31 +128,57 @@ public class ConvolutionalIterationListener implements IterationListener {
             List<INDArray> tensors = new ArrayList<>();
             int cnt = 0;
             Random rnd = new Random();
-            MultiLayerNetwork l = (MultiLayerNetwork) model;
             BufferedImage sourceImage = null;
-            for (Layer layer: l.getLayers()) {
-                if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                    INDArray output = layer.activate();
-                    int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
-                    if (cnt == 0) {
-                        INDArray inputs = ((ConvolutionLayer) layer).input();
+            if(model instanceof MultiLayerNetwork) {
+                MultiLayerNetwork l = (MultiLayerNetwork) model;
+                for (Layer layer : l.getLayers()) {
+                    if (layer.type() == Layer.Type.CONVOLUTIONAL) {
+                        INDArray output = layer.activate();
+                        int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        if (cnt == 0) {
+                            INDArray inputs = ((ConvolutionLayer) layer).input();
 
-                        try {
-                            sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            try {
+                                sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[]{3, 2, 1}));
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
+
+                        INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
+
+                        tensors.add(tad);
+
+                        cnt++;
                     }
+                }
 
-                    INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
+            } else if(model instanceof ComputationGraph) {
+                ComputationGraph l = (ComputationGraph) model;
+                for (Layer layer : l.getLayers()) {
+                    if (layer.type() == Layer.Type.CONVOLUTIONAL) {
+                        INDArray output = layer.activate();
+                        int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        if (cnt == 0) {
+                            INDArray inputs = ((ConvolutionLayer) layer).input();
 
-                    tensors.add(tad);
+                            try {
+                                sourceImage = restoreRGBImage(inputs.tensorAlongDimension(sampleDim, new int[]{3, 2, 1}));
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
 
-                    cnt++;
+                        INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
+
+                        tensors.add(tad);
+
+                        cnt++;
+                    }
                 }
             }
             BufferedImage render = rasterizeConvoLayers(tensors, sourceImage);
-            Persistable p = new ConvolutionListenerPersistable(sessionID,workerID,System.currentTimeMillis(),render);
+            Persistable p = new ConvolutionListenerPersistable(sessionID, workerID, System.currentTimeMillis(), render);
             ssr.putStaticInfo(p);
 
             minibatchNum++;
