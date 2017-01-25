@@ -175,6 +175,14 @@ public class VocabConstructor<T extends SequenceElement> {
                 .build();
 
         int cnt = 0;
+        int numProc = Runtime.getRuntime().availableProcessors();
+        int numThreads = Math.max(numProc / 2, 2);
+        ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedTransferQueue<Runnable>());
+        final AtomicLong execCounter = new AtomicLong(0);
+        final AtomicLong finCounter = new AtomicLong(0);
+
         for(VocabSource<T> source: sources) {
             SequenceIterator<T> iterator = source.getIterator();
             iterator.reset();
@@ -184,13 +192,7 @@ public class VocabConstructor<T extends SequenceElement> {
             cnt++;
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
-            int numProc = Runtime.getRuntime().availableProcessors();
-            int numThreads = Math.max(numProc / 2, 2);
-            ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads,
-                    0L, TimeUnit.MILLISECONDS,
-                    new LinkedTransferQueue<Runnable>());//Executors.newFixedThreadPool(Math.max(numProc / 2, 2));
-            final AtomicLong execCounter = new AtomicLong(0);
-            final AtomicLong finCounter = new AtomicLong(0);
+
 
 
             List<Long> timesHasNext = new ArrayList<>();
@@ -327,6 +329,8 @@ public class VocabConstructor<T extends SequenceElement> {
                 }
             }
         }
+
+        executorService.shutdown();
 
         System.gc();
         System.gc();
