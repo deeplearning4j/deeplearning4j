@@ -3918,6 +3918,31 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, actF);
     }
 
+    @Test
+    public void testTadPermuteEquals(){
+        INDArray d3c = Nd4j.linspace(1,5,5).reshape('c',1,5,1);
+        INDArray d3f = d3c.dup('f');
+
+        INDArray tadCi = d3c.tensorAlongDimension(0, 1, 2).permutei(1,0);
+        INDArray tadFi = d3f.tensorAlongDimension(0, 1, 2).permutei(1,0);
+
+        INDArray tadC = d3c.tensorAlongDimension(0, 1, 2).permute(1,0);
+        INDArray tadF = d3f.tensorAlongDimension(0, 1, 2).permute(1,0);
+
+        assertArrayEquals(tadCi.shape(), tadC.shape());
+        assertArrayEquals(tadCi.stride(), tadC.stride());
+        assertArrayEquals(tadCi.data().asDouble(), tadC.data().asDouble(), 1e-8);
+        assertEquals(tadC, tadCi.dup());
+        assertEquals(tadC, tadCi);
+
+        assertArrayEquals(tadFi.shape(), tadF.shape());
+        assertArrayEquals(tadFi.stride(), tadF.stride());
+        assertArrayEquals(tadFi.data().asDouble(), tadF.data().asDouble(), 1e-8);
+
+        assertEquals(tadF, tadFi.dup());
+        assertEquals(tadF, tadFi);
+    }
+
     @Override
     public char ordering() {
         return 'c';
