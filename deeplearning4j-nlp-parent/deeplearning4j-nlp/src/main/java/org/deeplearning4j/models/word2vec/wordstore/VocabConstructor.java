@@ -269,7 +269,7 @@ public class VocabConstructor<T extends SequenceElement> {
             }
 
             // block untill all threads are finished
-            log.info("Wating till all processes stop...");
+            log.debug("Wating till all processes stop...");
             while (execCounter.get() != finCounter.get()) {
                 try {
                     Thread.sleep(2);
