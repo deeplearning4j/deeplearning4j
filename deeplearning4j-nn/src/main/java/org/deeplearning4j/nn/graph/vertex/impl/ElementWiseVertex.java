@@ -25,12 +25,14 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication.
  * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * In all cases, the shape of the input arrays must be identical.
  * @author Alex Black
+ * @author Mingda Li (12/25/2016: add output member and implement Product)
  */
 public class ElementWiseVertex extends BaseGraphVertex {
 
@@ -38,6 +40,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     private Op op;
     private int nInForwardPass;
+    private INDArray output;
 
     public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op){
         this(graph,name,vertexIndex,null,null,op);
@@ -81,7 +84,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 if(inputs.length != 2) throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
                 return inputs[0].sub(inputs[1]);
             case Product:
-                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
+            	// if(inputs.length != 2) throw new IllegalArgumentException("[Mingda] ElementWise production only supports 2 inputs");
+            	INDArray product = inputs[0].dup();
+            	for (int i = 1; i < inputs.length; i++) {
+            		product.muli(inputs[i]);
+            	}
+            	output = product;
+                return product;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
@@ -105,7 +114,19 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 out2[1] = epsilon.neg();
                 return new Pair<>(null,out2);
             case Product:
-                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
+            	//if x = mul_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx * x/a_i
+                INDArray[] out3 = new INDArray[nInForwardPass];
+                for (int i = 0; i < nInForwardPass; i++) {
+                	INDArray subProduct = Nd4j.ones(inputs[0].length());
+                	for (int j = 0; j < nInForwardPass; j++) {
+                		if (i != j) {
+                			subProduct.muli(inputs[j]);
+                		}
+                	}
+                	out3[i] = epsilon.mul(subProduct);
+                }
+                return new Pair<>(null, out3);
+                
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
