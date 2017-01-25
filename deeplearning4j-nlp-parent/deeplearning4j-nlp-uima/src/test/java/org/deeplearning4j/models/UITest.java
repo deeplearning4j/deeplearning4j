@@ -12,6 +12,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.standalone.ClassPathResource;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 /**
  * Created by Alex on 10/01/2017.
  */
+@Ignore
 public class UITest {
 
     @Test
