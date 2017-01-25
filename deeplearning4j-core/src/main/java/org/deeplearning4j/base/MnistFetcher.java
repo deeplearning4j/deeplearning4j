@@ -40,10 +40,10 @@ public class MnistFetcher {
 	protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
 	private File fileDir;
-	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
+	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/enforceTrainingConfig-images-idx3-ubyte.gz";
 	private static final String trainingFilesFilename = "images-idx3-ubyte.gz";
 	public static final String trainingFilesFilename_unzipped = "images-idx3-ubyte";
-	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
+	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/enforceTrainingConfig-labels-idx1-ubyte.gz";
 	private static final String trainingFileLabelsFilename = "labels-idx1-ubyte.gz";
 	public static final String trainingFileLabelsFilename_unzipped = "labels-idx1-ubyte";
 

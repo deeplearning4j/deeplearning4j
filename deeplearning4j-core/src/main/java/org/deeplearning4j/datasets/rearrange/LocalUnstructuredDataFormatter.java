@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Rearrange an unstructured dataset
- * in to split test/train
+ * in to split test/enforceTrainingConfig
  * on the file system
  *
  * @author Adam Gibson
@@ -37,7 +37,7 @@ public class LocalUnstructuredDataFormatter {
      *  @param destinationRootDir the destination root directory
      * @param rootDir the root directory of the original data
      * @param labelingType the labeling type to use (NAME/Label)
-     * @param percentTrain the percent train to hold out
+     * @param percentTrain the percent enforceTrainingConfig to hold out
      */
     public LocalUnstructuredDataFormatter(File destinationRootDir,File rootDir,LabelingType labelingType,double percentTrain) {
         this.percentTrain = percentTrain;
@@ -45,7 +45,7 @@ public class LocalUnstructuredDataFormatter {
         splitRootDir = new File(destinationRootDir,"split");
         if(splitRootDir.exists())
             throw new IllegalStateException("Train/test split already exists");
-        train = new File(splitRootDir,"train");
+        train = new File(splitRootDir,"enforceTrainingConfig");
         test = new File(splitRootDir,"test");
         train.mkdirs();
         test.mkdirs();
@@ -60,7 +60,7 @@ public class LocalUnstructuredDataFormatter {
         }
 
         numExamplesTotal = allFiles.size();
-        //randomly partition the data; afterwards split in to test train
+        //randomly partition the data; afterwards split in to test enforceTrainingConfig
         //based on the current position in the files
         int numExampleForTrain = (int) (percentTrain * (double) numExamplesTotal);
         this.numExamplesToTrainOn = numExampleForTrain;

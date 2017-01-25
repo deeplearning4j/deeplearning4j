@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
     <head>
 
         <meta charset="utf-8">
-        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("train.pagetitle")),format.raw/*7.51*/("""</title>
+        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*7.51*/("""</title>
             <!-- start: Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
@@ -61,15 +61,15 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>"""),_display_(/*40.63*/i18n/*40.67*/.getMessage("train.pagetitle")),format.raw/*40.97*/("""</span></a>
+                    <a class="brand" href="index.html"><span>"""),_display_(/*40.63*/i18n/*40.67*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*40.97*/("""</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        """),_display_(/*42.26*/i18n/*42.30*/.getMessage("train.session.label")),format.raw/*42.64*/("""
+                        """),_display_(/*42.26*/i18n/*42.30*/.getMessage("enforceTrainingConfig.session.label")),format.raw/*42.64*/("""
                         """),format.raw/*43.25*/("""<select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
                     </div>
                     <div id="workerSelectDiv" style="display:none; float:right;">
-                        """),_display_(/*48.26*/i18n/*48.30*/.getMessage("train.session.worker.label")),format.raw/*48.71*/("""
+                        """),_display_(/*48.26*/i18n/*48.30*/.getMessage("enforceTrainingConfig.session.worker.label")),format.raw/*48.71*/("""
                         """),format.raw/*49.25*/("""<select id="workerSelect" onchange='selectNewWorker()'>
                             <option>(Worker ID)</option>
                         </select>
@@ -86,13 +86,13 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">"""),_display_(/*65.112*/i18n/*65.116*/.getMessage("train.nav.overview")),format.raw/*65.149*/("""</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">"""),_display_(/*66.134*/i18n/*66.138*/.getMessage("train.nav.model")),format.raw/*66.168*/("""</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">"""),_display_(/*67.110*/i18n/*67.114*/.getMessage("train.nav.system")),format.raw/*67.145*/("""</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i> <span class="hidden-tablet">"""),_display_(/*65.112*/i18n/*65.116*/.getMessage("enforceTrainingConfig.nav.overview")),format.raw/*65.149*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-tasks"></i> <span class="hidden-tablet">"""),_display_(/*66.134*/i18n/*66.138*/.getMessage("enforceTrainingConfig.nav.model")),format.raw/*66.168*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i> <span class="hidden-tablet">"""),_display_(/*67.110*/i18n/*67.114*/.getMessage("enforceTrainingConfig.nav.system")),format.raw/*67.145*/("""</span></a></li>
                             """),format.raw/*68.161*/("""
                             """),format.raw/*69.29*/("""<li>
                                 <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i> <span class="hidden-tablet">
-                                """),_display_(/*71.34*/i18n/*71.38*/.getMessage("train.nav.language")),format.raw/*71.71*/("""</span></a>
+                                """),_display_(/*71.34*/i18n/*71.38*/.getMessage("enforceTrainingConfig.nav.language")),format.raw/*71.71*/("""</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'model')"><i class="icon-file-alt"></i> <span class="hidden-tablet">
                                         English</span></a></li>
@@ -145,7 +145,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*124.41*/i18n/*124.45*/.getMessage("train.model.layerInfoTable.title")),format.raw/*124.92*/("""</b></h2>
+                                <h2><b>"""),_display_(/*124.41*/i18n/*124.45*/.getMessage("enforceTrainingConfig.model.layerInfoTable.title")),format.raw/*124.92*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed" id="layerInfo"></table>
@@ -154,39 +154,39 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*133.41*/i18n/*133.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*133.97*/("""</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>
+                                <h2><b>"""),_display_(/*133.41*/i18n/*133.45*/.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitle")),format.raw/*133.97*/("""</b></h2><p id="updateRatioTitleLog10"><b>: log<sub>10</sub></b></p>
                                 <ul class="nav tab-menu nav-tabs" style="position:absolute; margin-top: -36px; right: 27px;">
-                                    <li id="mmRatioTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('ratios')">"""),_display_(/*135.130*/i18n/*135.134*/.getMessage("train.model.meanmag.btn.ratio")),format.raw/*135.178*/("""</a></li>
-                                    <li id="mmParamTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('paramMM')">"""),_display_(/*136.131*/i18n/*136.135*/.getMessage("train.model.meanmag.btn.param")),format.raw/*136.179*/("""</a></li>
-                                    <li id="mmUpdateTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('updateMM')">"""),_display_(/*137.133*/i18n/*137.137*/.getMessage("train.model.meanmag.btn.update")),format.raw/*137.182*/("""</a></li>
+                                    <li id="mmRatioTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('ratios')">"""),_display_(/*135.130*/i18n/*135.134*/.getMessage("enforceTrainingConfig.model.meanmag.btn.ratio")),format.raw/*135.178*/("""</a></li>
+                                    <li id="mmParamTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('paramMM')">"""),_display_(/*136.131*/i18n/*136.135*/.getMessage("enforceTrainingConfig.model.meanmag.btn.param")),format.raw/*136.179*/("""</a></li>
+                                    <li id="mmUpdateTab"><a href="javascript:void(0);" onclick="setSelectMeanMagChart('updateMM')">"""),_display_(/*137.133*/i18n/*137.137*/.getMessage("enforceTrainingConfig.model.meanmag.btn.update")),format.raw/*137.182*/("""</a></li>
                                 </ul>
                             </div>
                             <div class="box-content">
                                 <div id="meanmag" class="center" style="height: 300px;" ></div>
                                 <p id="hoverdata"><span id="updateRatioTitleSmallLog10"><b>log<sub>
-                                    10</sub> """),_display_(/*143.47*/i18n/*143.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*143.108*/("""</b></span> <span id="yMeanMagnitudes">
+                                    10</sub> """),_display_(/*143.47*/i18n/*143.51*/.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitleShort")),format.raw/*143.108*/("""</b></span> <span id="yMeanMagnitudes">
                                     0</span>
-                                    , <b>"""),_display_(/*145.43*/i18n/*145.47*/.getMessage("train.overview.charts.iteration")),format.raw/*145.93*/("""
+                                    , <b>"""),_display_(/*145.43*/i18n/*145.47*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*145.93*/("""
                                         """),format.raw/*146.41*/(""":</b> <span id="xMeanMagnitudes">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*152.41*/i18n/*152.45*/.getMessage("train.model.activationsChart.title")),format.raw/*152.94*/("""</b></h2>
+                                <h2><b>"""),_display_(/*152.41*/i18n/*152.45*/.getMessage("enforceTrainingConfig.model.activationsChart.title")),format.raw/*152.94*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="activations" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*156.55*/i18n/*156.59*/.getMessage("train.model.activationsChart.titleShort")),format.raw/*156.113*/("""
+                                <p id="hoverdata"><b>"""),_display_(/*156.55*/i18n/*156.59*/.getMessage("enforceTrainingConfig.model.activationsChart.titleShort")),format.raw/*156.113*/("""
                                     """),format.raw/*157.37*/(""":</b> <span id="yActivations">0</span>
-                                    , <b>"""),_display_(/*158.43*/i18n/*158.47*/.getMessage("train.overview.charts.iteration")),format.raw/*158.93*/("""
+                                    , <b>"""),_display_(/*158.43*/i18n/*158.47*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*158.93*/("""
                                         """),format.raw/*159.41*/(""":</b> <span id="xActivations">0</span></p>
                             </div>
                         </div>
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*165.41*/i18n/*165.45*/.getMessage("train.model.paramHistChart.title")),format.raw/*165.92*/("""</b></h2>
+                                <h2><b>"""),_display_(/*165.41*/i18n/*165.45*/.getMessage("enforceTrainingConfig.model.paramHistChart.title")),format.raw/*165.92*/("""</b></h2>
                                 <div id="paramhistSelected" style="float: left"></div>
                                 <div id="paramHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -197,7 +197,7 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*176.41*/i18n/*176.45*/.getMessage("train.model.updateHistChart.title")),format.raw/*176.93*/("""</b></h2>
+                                <h2><b>"""),_display_(/*176.41*/i18n/*176.45*/.getMessage("enforceTrainingConfig.model.updateHistChart.title")),format.raw/*176.93*/("""</b></h2>
                                 <div id="updatehistSelected" style="float: left"></div>
                                 <div id="updateHistButtonsDiv" style="float: right"></div>
                             </div>
@@ -208,13 +208,13 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*187.41*/i18n/*187.45*/.getMessage("train.model.lrChart.title")),format.raw/*187.85*/("""</b></h2>
+                                <h2><b>"""),_display_(/*187.41*/i18n/*187.45*/.getMessage("enforceTrainingConfig.model.lrChart.title")),format.raw/*187.85*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="learningrate" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*191.55*/i18n/*191.59*/.getMessage("train.model.lrChart.titleShort")),format.raw/*191.104*/("""
+                                <p id="hoverdata"><b>"""),_display_(/*191.55*/i18n/*191.59*/.getMessage("enforceTrainingConfig.model.lrChart.titleShort")),format.raw/*191.104*/("""
                                     """),format.raw/*192.37*/(""":</b> <span id="yLearningRate">0</span>
-                                    , <b>"""),_display_(/*193.43*/i18n/*193.47*/.getMessage("train.overview.charts.iteration")),format.raw/*193.93*/("""
+                                    , <b>"""),_display_(/*193.43*/i18n/*193.47*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*193.93*/("""
                                         """),format.raw/*194.41*/(""":</b> <span id="xLearningRate">0</span></p>
                             </div>
                         </div>
@@ -291,9 +291,9 @@ Seq[Any](format.raw/*1.40*/("""
         <script src="/assets/js/cytoscape.min.js"></script>
         <script src="/assets/js/dagre.min.js"></script>
         <script src="/assets/js/cytoscape-dagre.js"></script>
-        <script src="/assets/js/train/model.js"></script> <!-- Charts and tables are generated here! -->
-        <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
-        <script src="/assets/js/train/train.js"></script> <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/enforceTrainingConfig/model.js"></script> <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/model-graph.js"></script> <!-- Layer graph generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/enforceTrainingConfig.js"></script> <!-- Common (lang selection, etc) -->
 
             <!-- Execute once on page load -->
        <script>

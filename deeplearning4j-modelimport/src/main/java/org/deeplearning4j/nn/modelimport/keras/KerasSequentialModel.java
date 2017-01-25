@@ -18,9 +18,14 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.conf.BackpropType;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -36,6 +41,7 @@ import java.util.Map;
  *
  * @author dave@skymind.io
  */
+@Slf4j
 public class KerasSequentialModel extends KerasModel {
 
     /**
@@ -47,68 +53,75 @@ public class KerasSequentialModel extends KerasModel {
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasSequentialModel(ModelBuilder modelBuilder) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
-        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.trainingJson, modelBuilder.weights, modelBuilder.train);
+        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.weightsArchive, modelBuilder.weightsRoot,
+                modelBuilder.trainingJson, modelBuilder.trainingArchive, modelBuilder.enforceTrainingConfig);
     }
 
     /**
      * (Not recommended) Constructor for Sequential model from model configuration
      * (JSON or YAML), training configuration (JSON), weights, and "training mode"
      * boolean indicator. When built in training mode, certain unsupported configurations
-     * (e.g., unknown regularizers) will throw Exceptions. When train=false, these
+     * (e.g., unknown regularizers) will throw Exceptions. When enforceTrainingConfig=false, these
      * will generate warnings but will be otherwise ignored.
      *
      * @param modelJson       model configuration JSON string
      * @param modelYaml       model configuration YAML string
      * @param trainingJson    training configuration JSON string
-     * @param weights         map from layer to parameter to weights
      * @throws IOException
      */
-    public KerasSequentialModel(String modelJson, String modelYaml, String trainingJson, Map<String,
-                                Map<String,INDArray>> weights, boolean train)
+    public KerasSequentialModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
+                                String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String,Object> classNameAndLayers;
+        Map<String,Object> modelConfig;
         if (modelJson != null)
-            classNameAndLayers = parseJsonString(modelJson);
+            modelConfig = parseJsonString(modelJson);
         else if (modelYaml != null)
-            classNameAndLayers = parseYamlString(modelYaml);
+            modelConfig = parseYamlString(modelYaml);
         else
             throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
 
-        this.className = (String) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CLASS_NAME);
+        /* Whether to enforce training-related configurations. */
+        this.enforceTrainingConfig = enforceTrainingConfig;
+
+        /* Determine model configuration type. */
+        if (!modelConfig.containsKey(MODEL_FIELD_CLASS_NAME))
+            throw new InvalidKerasConfigurationException("Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
+        this.className = (String)modelConfig.get(MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
             throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL + " (found " + this.className + ")");
-        this.train = train;
 
-        /* Convert layer configuration objects into KerasLayers. */
-        helperPrepareLayers((List<Object>) checkAndGetModelField(classNameAndLayers, MODEL_FIELD_CONFIG));
+        /* Process layer configurations. */
+        if (!modelConfig.containsKey(MODEL_FIELD_CONFIG))
+            throw new InvalidKerasConfigurationException("Could not find layer configurations (no " + MODEL_FIELD_CONFIG + " field found)");
+        helperPrepareLayers((List<Object>)modelConfig.get(MODEL_FIELD_CONFIG));
 
         /* Add placeholder input layer and update lists of input and output layers. */
-        int[] kerasInputShape = this.layers.get(this.layerNamesOrdered.get(0)).getKerasInputShape();
-        KerasLayer inputLayer = KerasLayer.createInputLayer("input1", kerasInputShape);
-        this.layers.put(inputLayer.getName(), inputLayer);
-        this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getName()));
-        this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layerNamesOrdered.get(this.layerNamesOrdered.size()-1)));
-        this.layerNamesOrdered.add(0, inputLayer.getName());
+        int[] inputShape = this.layersOrdered.get(0).getInputShape();
+        KerasLayer inputLayer = new KerasInput("input1", inputShape);
+        inputLayer.setDimOrder(this.layersOrdered.get(0).getDimOrder());
+        this.layers.put(inputLayer.getLayerName(), inputLayer);
+        this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getLayerName()));
+        this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layersOrdered.get(this.layersOrdered.size()-1).getLayerName()));
+        this.layersOrdered.add(0, inputLayer);
 
         /* Update each layer's inbound layer list to include (only) previous layer. */
-        String prevLayerName = null;
-        for (String layerName : this.layerNamesOrdered) {
-            if (prevLayerName != null)
-                this.layers.get(layerName).setInboundLayerNames(Arrays.asList(prevLayerName));
-            prevLayerName = layerName;
+        KerasLayer prevLayer = null;
+        for (KerasLayer layer : this.layersOrdered) {
+            if (prevLayer != null)
+                layer.setInboundLayerNames(Arrays.asList(prevLayer.getLayerName()));
+            prevLayer = layer;
         }
-
-        /* Construct graph. */
-        helperPrepareGraph();
 
         /* Import training configuration. */
         if (trainingJson != null)
             helperImportTrainingConfiguration(trainingJson);
 
-        /* Store weights map (even if null).
-         * TODO: should we copy these to prevent user from changing them?
-         */
-        this.weights = weights;
+        /* Infer output types for each layer. */
+        helperInferOutputTypes();
+
+        /* Store weights in layers. */
+        if (weightsArchive != null)
+            helperImportWeights(weightsArchive, weightsRoot);
     }
 
     protected KerasSequentialModel() {}
@@ -131,31 +144,42 @@ public class KerasSequentialModel extends KerasModel {
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
 
         /* Add layers one at a time. */
+        KerasLayer prevLayer = null;
         int layerIndex = 0;
-        for (String layerName : this.layerNamesOrdered) {
-            KerasLayer layer = this.layers.get(layerName);
-            if (layer.isDl4jLayer()) { // Ignore "preprocessor" layers for now
-                listBuilder.layer(layerIndex++, layer.getDl4jLayer());
+        for (KerasLayer layer : this.layersOrdered) {
+            if (layer.usesRegularization())
+                modelBuilder.setUseRegularization(true);
+            if (layer.isLayer()) {
+                int nbInbound = layer.getInboundLayerNames().size();
+                if (nbInbound != 1)
+                    throw new InvalidKerasConfigurationException("Layers in MultiLayerConfiguration must have exactly one inbound layer (found " + nbInbound + " for layer " + layer.getLayerName() + ")");
+                listBuilder.layer(layerIndex++, layer.getLayer());
+                if (prevLayer != null && prevLayer.isInputPreProcessor()) {
+                    InputType[] inputTypes = new InputType[1];
+                    inputTypes[0] = this.outputTypes.get(prevLayer.getInboundLayerNames().get(0));
+                    InputPreProcessor preprocessor = prevLayer.getInputPreprocessor(inputTypes);
+                    if (preprocessor != null)
+                        listBuilder.inputPreProcessor(layerIndex-1, preprocessor);
+                }
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
+            else if (layer.getVertex() != null)
+                throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name " + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
+            prevLayer = layer;
         }
 
-        InputType inputType = inferInputType(this.inputLayerNames.get(0));
+        InputType inputType = this.layersOrdered.get(0).getOutputType();
         if (inputType != null)
             listBuilder.setInputType(inputType);
 
-        /* Handle truncated BPTT:
-         * - less than zero if no recurrent layerNamesOrdered found
-         * - greater than zero if found recurrent layer and truncation length was set
-         * - equal to zero if found recurrent layer but no truncation length set (e.g., the
-         *   model was built with Theano backend and used scan symbolic loop instead of
-         *   unrolling the RNN for a fixed number of steps.
-         *
-         * TODO: should we not throw an error for truncatedBPTT==0?
-         */
-        if (this.truncatedBPTT == 0)
-            throw new UnsupportedKerasConfigurationException("Cannot import recurrent models without fixed length sequence input.");
-        else if (this.truncatedBPTT > 0)
-            listBuilder.tBPTTForwardLength(truncatedBPTT).tBPTTBackwardLength(truncatedBPTT);
+        /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
+        if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
+            listBuilder.backpropType(BackpropType.TruncatedBPTT)
+                    .tBPTTForwardLength(truncatedBPTT)
+                    .tBPTTBackwardLength(truncatedBPTT);
+        else
+            listBuilder.backpropType(BackpropType.Standard);
         return listBuilder.build();
     }
 
@@ -180,7 +204,7 @@ public class KerasSequentialModel extends KerasModel {
         MultiLayerNetwork model = new MultiLayerNetwork(getMultiLayerConfiguration());
         model.init();
         if (importWeights)
-            model = (MultiLayerNetwork)copyWeightsToModel(model, this.weights, this.layers);
+            model = (MultiLayerNetwork)helperCopyWeightsToModel(model);
         return model;
     }
 }

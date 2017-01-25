@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
     <head>
 
         <meta charset="utf-8">
-        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("train.pagetitle")),format.raw/*7.51*/("""</title>
+        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*7.51*/("""</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -62,7 +62,7 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="#"><span>"""),_display_(/*41.54*/i18n/*41.58*/.getMessage("train.pagetitle")),format.raw/*41.88*/("""</span></a>
+                    <a class="brand" href="#"><span>"""),_display_(/*41.54*/i18n/*41.58*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*41.88*/("""</span></a>
                 </div>
             </div>
         </div>
@@ -75,12 +75,12 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> """),_display_(/*54.112*/i18n/*54.116*/.getMessage("train.nav.overview")),format.raw/*54.149*/("""</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> """),_display_(/*55.105*/i18n/*55.109*/.getMessage("train.nav.model")),format.raw/*55.139*/("""</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> """),_display_(/*56.110*/i18n/*56.114*/.getMessage("train.nav.system")),format.raw/*56.145*/("""</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-star"></i><span class="hidden-tablet"> """),_display_(/*57.133*/i18n/*57.137*/.getMessage("train.nav.userguide")),format.raw/*57.171*/("""</span></a></li>
+                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> """),_display_(/*54.112*/i18n/*54.116*/.getMessage("enforceTrainingConfig.nav.overview")),format.raw/*54.149*/("""</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> """),_display_(/*55.105*/i18n/*55.109*/.getMessage("enforceTrainingConfig.nav.model")),format.raw/*55.139*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet"> """),_display_(/*56.110*/i18n/*56.114*/.getMessage("enforceTrainingConfig.nav.system")),format.raw/*56.145*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-star"></i><span class="hidden-tablet"> """),_display_(/*57.133*/i18n/*57.137*/.getMessage("enforceTrainingConfig.nav.userguide")),format.raw/*57.171*/("""</span></a></li>
                             <li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">"""),_display_(/*59.146*/i18n/*59.150*/.getMessage("train.nav.language")),format.raw/*59.183*/("""</span></a>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">"""),_display_(/*59.146*/i18n/*59.150*/.getMessage("enforceTrainingConfig.nav.language")),format.raw/*59.183*/("""</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'help')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'help')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
@@ -380,7 +380,7 @@ format.raw("""          <!-- End Content -->
         <script src="/assets/js/jquery.sparkline.min.js"></script>
         <script src="/assets/js/counter.js"></script>
         <script src="/assets/js/retina.js"></script>
-        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/enforceTrainingConfig/enforceTrainingConfig.js"></script>   <!-- Common (lang selection, etc) -->
         <!-- End JavaScript-->
 
     </body>

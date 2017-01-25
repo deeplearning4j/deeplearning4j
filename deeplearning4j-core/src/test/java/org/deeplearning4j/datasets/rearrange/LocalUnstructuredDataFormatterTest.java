@@ -24,7 +24,7 @@ public class LocalUnstructuredDataFormatterTest {
             FileUtils.deleteDirectory(destinationDir);
         LocalUnstructuredDataFormatter formatter = new LocalUnstructuredDataFormatter(destinationDir,new File(System.getProperty("user.home"),"lfw"), LocalUnstructuredDataFormatter.LabelingType.DIRECTORY,0.8);
         formatter.rearrange();
-        //train and test in the split directory
+        //enforceTrainingConfig and test in the split directory
         File splitRoot = new File(destinationDir,"split");
         assertEquals(2,splitRoot.listFiles().length);
         Iterator<File> files = FileUtils.iterateFiles(splitRoot,null,true);
@@ -34,14 +34,14 @@ public class LocalUnstructuredDataFormatterTest {
             count++;
         }
 
-        Iterator<File> trainFiles = FileUtils.iterateFiles(new File(splitRoot,"train"),null,true);
+        Iterator<File> trainFiles = FileUtils.iterateFiles(new File(splitRoot,"enforceTrainingConfig"),null,true);
         int trainFilesCount = 0;
         while(trainFiles.hasNext()) {
             trainFiles.next();
             trainFilesCount++;
         }
 
-        //assert the number of files is the same in the split test train as the original dataset
+        //assert the number of files is the same in the split test enforceTrainingConfig as the original dataset
         assertEquals(formatter.getNumExamplesTotal(),count);
         assertEquals(formatter.getNumExamplesToTrainOn(),trainFilesCount);
 

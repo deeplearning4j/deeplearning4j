@@ -28,7 +28,7 @@ Seq[Any](format.raw/*1.40*/("""
     <head>
 
         <meta charset="utf-8">
-        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("train.pagetitle")),format.raw/*7.51*/("""</title>
+        <title>"""),_display_(/*7.17*/i18n/*7.21*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*7.51*/("""</title>
             <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
@@ -62,15 +62,15 @@ Seq[Any](format.raw/*1.40*/("""
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="#"><span>"""),_display_(/*41.54*/i18n/*41.58*/.getMessage("train.pagetitle")),format.raw/*41.88*/("""</span></a>
+                    <a class="brand" href="#"><span>"""),_display_(/*41.54*/i18n/*41.58*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*41.88*/("""</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
-                        """),_display_(/*43.26*/i18n/*43.30*/.getMessage("train.session.label")),format.raw/*43.64*/("""
+                        """),_display_(/*43.26*/i18n/*43.30*/.getMessage("enforceTrainingConfig.session.label")),format.raw/*43.64*/("""
                         """),format.raw/*44.25*/("""<select id="sessionSelect" onchange='selectNewSession()'>
                             <option>(Session ID)</option>
                         </select>
                     </div>
                     <div id="workerSelectDiv" style="display:none; float:right;">
-                        """),_display_(/*49.26*/i18n/*49.30*/.getMessage("train.session.worker.label")),format.raw/*49.71*/("""
+                        """),_display_(/*49.26*/i18n/*49.30*/.getMessage("enforceTrainingConfig.session.worker.label")),format.raw/*49.71*/("""
                         """),format.raw/*50.25*/("""<select id="workerSelect" onchange='selectNewWorker()'>
                             <option>(Worker ID)</option>
                         </select>
@@ -87,12 +87,12 @@ Seq[Any](format.raw/*1.40*/("""
                 <div id="sidebar-left" class="span2">
                     <div class="nav-collapse sidebar-nav">
                         <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">"""),_display_(/*66.137*/i18n/*66.141*/.getMessage("train.nav.overview")),format.raw/*66.174*/("""</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">"""),_display_(/*67.104*/i18n/*67.108*/.getMessage("train.nav.model")),format.raw/*67.138*/("""</span></a></li>
-                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">"""),_display_(/*68.109*/i18n/*68.113*/.getMessage("train.nav.system")),format.raw/*68.144*/("""</span></a></li>
+                            <li class="active"><a href="javascript:void(0);"><i class="icon-bar-chart"></i><span class="hidden-tablet">"""),_display_(/*66.137*/i18n/*66.141*/.getMessage("enforceTrainingConfig.nav.overview")),format.raw/*66.174*/("""</span></a></li>
+                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet">"""),_display_(/*67.104*/i18n/*67.108*/.getMessage("enforceTrainingConfig.nav.model")),format.raw/*67.138*/("""</span></a></li>
+                            <li><a href="system"><i class="icon-dashboard"></i><span class="hidden-tablet">"""),_display_(/*68.109*/i18n/*68.113*/.getMessage("enforceTrainingConfig.nav.system")),format.raw/*68.144*/("""</span></a></li>
                             """),format.raw/*69.160*/("""
                             """),format.raw/*70.29*/("""<li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">"""),_display_(/*71.146*/i18n/*71.150*/.getMessage("train.nav.language")),format.raw/*71.183*/("""</span></a>
+                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">"""),_display_(/*71.146*/i18n/*71.150*/.getMessage("enforceTrainingConfig.nav.language")),format.raw/*71.183*/("""</span></a>
                                 <ul>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
                                         English</span></a></li>
@@ -130,12 +130,12 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box span8">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*109.41*/i18n/*109.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*109.91*/("""</b></h2>
+                                <h2><b>"""),_display_(/*109.41*/i18n/*109.45*/.getMessage("enforceTrainingConfig.overview.chart.scoreTitle")),format.raw/*109.91*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*113.55*/i18n/*113.59*/.getMessage("train.overview.chart.scoreTitleShort")),format.raw/*113.110*/("""
-                                    """),format.raw/*114.37*/(""":</b> <span id="y">0</span>, <b>"""),_display_(/*114.70*/i18n/*114.74*/.getMessage("train.overview.charts.iteration")),format.raw/*114.120*/("""
+                                <p id="hoverdata"><b>"""),_display_(/*113.55*/i18n/*113.59*/.getMessage("enforceTrainingConfig.overview.chart.scoreTitleShort")),format.raw/*113.110*/("""
+                                    """),format.raw/*114.37*/(""":</b> <span id="y">0</span>, <b>"""),_display_(/*114.70*/i18n/*114.74*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*114.120*/("""
                                     """),format.raw/*115.37*/(""":</b> <span id="x">
                                     0</span></p>
                             </div>
@@ -144,44 +144,44 @@ Seq[Any](format.raw/*1.40*/("""
                             <!-- Start Model Table-->
                         <div class="box span4">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*123.41*/i18n/*123.45*/.getMessage("train.overview.perftable.title")),format.raw/*123.90*/("""</b></h2>
+                                <h2><b>"""),_display_(/*123.41*/i18n/*123.45*/.getMessage("enforceTrainingConfig.overview.perftable.title")),format.raw/*123.90*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
                                     <tr>
-                                        <td>"""),_display_(/*128.46*/i18n/*128.50*/.getMessage("train.overview.modeltable.modeltype")),format.raw/*128.100*/("""</td>
+                                        <td>"""),_display_(/*128.46*/i18n/*128.50*/.getMessage("enforceTrainingConfig.overview.modeltable.modeltype")),format.raw/*128.100*/("""</td>
                                         <td id="modelType">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*132.46*/i18n/*132.50*/.getMessage("train.overview.modeltable.nLayers")),format.raw/*132.98*/("""</td>
+                                        <td>"""),_display_(/*132.46*/i18n/*132.50*/.getMessage("enforceTrainingConfig.overview.modeltable.nLayers")),format.raw/*132.98*/("""</td>
                                         <td id="nLayers">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*136.46*/i18n/*136.50*/.getMessage("train.overview.modeltable.nParams")),format.raw/*136.98*/("""</td>
+                                        <td>"""),_display_(/*136.46*/i18n/*136.50*/.getMessage("enforceTrainingConfig.overview.modeltable.nParams")),format.raw/*136.98*/("""</td>
                                         <td id="nParams">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*140.46*/i18n/*140.50*/.getMessage("train.overview.perftable.startTime")),format.raw/*140.99*/("""</td>
+                                        <td>"""),_display_(/*140.46*/i18n/*140.50*/.getMessage("enforceTrainingConfig.overview.perftable.startTime")),format.raw/*140.99*/("""</td>
                                         <td id="startTime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*144.46*/i18n/*144.50*/.getMessage("train.overview.perftable.totalRuntime")),format.raw/*144.102*/("""</td>
+                                        <td>"""),_display_(/*144.46*/i18n/*144.50*/.getMessage("enforceTrainingConfig.overview.perftable.totalRuntime")),format.raw/*144.102*/("""</td>
                                         <td id="totalRuntime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*148.46*/i18n/*148.50*/.getMessage("train.overview.perftable.lastUpdate")),format.raw/*148.100*/("""</td>
+                                        <td>"""),_display_(/*148.46*/i18n/*148.50*/.getMessage("enforceTrainingConfig.overview.perftable.lastUpdate")),format.raw/*148.100*/("""</td>
                                         <td id="lastUpdate">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*152.46*/i18n/*152.50*/.getMessage("train.overview.perftable.totalParamUpdates")),format.raw/*152.107*/("""</td>
+                                        <td>"""),_display_(/*152.46*/i18n/*152.50*/.getMessage("enforceTrainingConfig.overview.perftable.totalParamUpdates")),format.raw/*152.107*/("""</td>
                                         <td id="totalParamUpdates">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*156.46*/i18n/*156.50*/.getMessage("train.overview.perftable.updatesPerSec")),format.raw/*156.103*/("""</td>
+                                        <td>"""),_display_(/*156.46*/i18n/*156.50*/.getMessage("enforceTrainingConfig.overview.perftable.updatesPerSec")),format.raw/*156.103*/("""</td>
                                         <td id="updatesPerSec">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*160.46*/i18n/*160.50*/.getMessage("train.overview.perftable.examplesPerSec")),format.raw/*160.104*/("""</td>
+                                        <td>"""),_display_(/*160.46*/i18n/*160.50*/.getMessage("enforceTrainingConfig.overview.perftable.examplesPerSec")),format.raw/*160.104*/("""</td>
                                         <td id="examplesPerSec">Loading...</td>
                                     </tr>
                                 </table>
@@ -195,15 +195,15 @@ Seq[Any](format.raw/*1.40*/("""
                             <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*174.41*/i18n/*174.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*174.97*/(""": log<sub>10</sub></b></h2>
+                                <h2><b>"""),_display_(/*174.41*/i18n/*174.45*/.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitle")),format.raw/*174.97*/(""": log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*178.55*/i18n/*178.59*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*178.116*/("""
+                                <p id="hoverdata"><b>"""),_display_(/*178.55*/i18n/*178.59*/.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitleShort")),format.raw/*178.116*/("""
                                     """),format.raw/*179.37*/(""":</b> <span id="yRatio">0</span>, <b>log<sub>
-                                    10</sub> """),_display_(/*180.47*/i18n/*180.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*180.108*/("""
+                                    10</sub> """),_display_(/*180.47*/i18n/*180.51*/.getMessage("enforceTrainingConfig.overview.chart.updateRatioTitleShort")),format.raw/*180.108*/("""
                                     """),format.raw/*181.37*/(""":</b> <span id="yLogRatio">0</span>
-                                    , <b>"""),_display_(/*182.43*/i18n/*182.47*/.getMessage("train.overview.charts.iteration")),format.raw/*182.93*/(""":</b> <span id="xRatio">
+                                    , <b>"""),_display_(/*182.43*/i18n/*182.47*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*182.93*/(""":</b> <span id="xRatio">
                                         0</span></p>
                             </div>
                         </div>
@@ -211,20 +211,20 @@ Seq[Any](format.raw/*1.40*/("""
                             <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*190.41*/i18n/*190.45*/.getMessage("train.overview.chart.stdevTitle")),format.raw/*190.91*/(""": log<sub>10</sub></b></h2>
+                                <h2><b>"""),_display_(/*190.41*/i18n/*190.45*/.getMessage("enforceTrainingConfig.overview.chart.stdevTitle")),format.raw/*190.91*/(""": log<sub>10</sub></b></h2>
                                 <ul class="nav tab-menu nav-tabs" style="position:absolute; margin-top: -11px; right: 22px;">
-                                    <li class="active" id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">"""),_display_(/*192.156*/i18n/*192.160*/.getMessage("train.overview.chart.stdevBtn.activations")),format.raw/*192.216*/("""</a></li>
-                                    <li id="stdevGradients"><a href="javascript:void(0);" onclick="selectStdevChart('stdevGradients')">"""),_display_(/*193.137*/i18n/*193.141*/.getMessage("train.overview.chart.stdevBtn.gradients")),format.raw/*193.195*/("""</a></li>
-                                    <li id="stdevUpdates"><a href="javascript:void(0);" onclick="selectStdevChart('stdevUpdates')">"""),_display_(/*194.133*/i18n/*194.137*/.getMessage("train.overview.chart.stdevBtn.updates")),format.raw/*194.189*/("""</a></li>
+                                    <li class="active" id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">"""),_display_(/*192.156*/i18n/*192.160*/.getMessage("enforceTrainingConfig.overview.chart.stdevBtn.activations")),format.raw/*192.216*/("""</a></li>
+                                    <li id="stdevGradients"><a href="javascript:void(0);" onclick="selectStdevChart('stdevGradients')">"""),_display_(/*193.137*/i18n/*193.141*/.getMessage("enforceTrainingConfig.overview.chart.stdevBtn.gradients")),format.raw/*193.195*/("""</a></li>
+                                    <li id="stdevUpdates"><a href="javascript:void(0);" onclick="selectStdevChart('stdevUpdates')">"""),_display_(/*194.133*/i18n/*194.137*/.getMessage("enforceTrainingConfig.overview.chart.stdevBtn.updates")),format.raw/*194.189*/("""</a></li>
                                 </ul>
                             </div>
                             <div class="box-content">
                                 <div id="stdevChart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*199.55*/i18n/*199.59*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*199.110*/("""
+                                <p id="hoverdata"><b>"""),_display_(/*199.55*/i18n/*199.59*/.getMessage("enforceTrainingConfig.overview.chart.stdevTitleShort")),format.raw/*199.110*/("""
                                     """),format.raw/*200.37*/(""":</b> <span id="yStdev">0</span>, <b>log<sub>
-                                    10</sub> """),_display_(/*201.47*/i18n/*201.51*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*201.102*/("""
+                                    10</sub> """),_display_(/*201.47*/i18n/*201.51*/.getMessage("enforceTrainingConfig.overview.chart.stdevTitleShort")),format.raw/*201.102*/("""
                                     """),format.raw/*202.37*/(""":</b> <span id="yLogStdev">0</span>
-                                    , <b>"""),_display_(/*203.43*/i18n/*203.47*/.getMessage("train.overview.charts.iteration")),format.raw/*203.93*/(""":</b> <span id="xStdev">
+                                    , <b>"""),_display_(/*203.43*/i18n/*203.47*/.getMessage("enforceTrainingConfig.overview.charts.iteration")),format.raw/*203.93*/(""":</b> <span id="xStdev">
                                         0</span></p>
                             </div>
                         </div>
@@ -265,8 +265,8 @@ Seq[Any](format.raw/*1.40*/("""
         <script src="/assets/js/jquery.sparkline.min.js"></script>
         <script src="/assets/js/counter.js"></script>
         <script src="/assets/js/retina.js"></script>
-        <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
-        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/enforceTrainingConfig/overview.js"></script>    <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/enforceTrainingConfig/enforceTrainingConfig.js"></script>   <!-- Common (lang selection, etc) -->
 
         <!-- Execute once on page load -->
         <script>

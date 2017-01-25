@@ -90,22 +90,22 @@ public class TrainModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
-        Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
-        Route r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
-        Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
-        Route r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
-        Route r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
-        Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
-        Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
-        Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
-        Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
-        Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
-        Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
-        Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
-        Route r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function, this::getLastUpdateForSession);
-        Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier, () -> ok(String.valueOf(currentWorkerIdx)));
-        Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function, this::setWorkerByIdx);
+        Route r = new Route("/enforceTrainingConfig", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/enforceTrainingConfig/overview"));
+        Route r2 = new Route("/enforceTrainingConfig/overview", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
+        Route r2a = new Route("/enforceTrainingConfig/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
+        Route r3 = new Route("/enforceTrainingConfig/model", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
+        Route r3a = new Route("/enforceTrainingConfig/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
+        Route r3b = new Route("/enforceTrainingConfig/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
+        Route r4 = new Route("/enforceTrainingConfig/system", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
+        Route r4a = new Route("/enforceTrainingConfig/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
+        Route r5 = new Route("/enforceTrainingConfig/help", HttpMethod.GET, FunctionType.Supplier, () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
+        Route r6 = new Route("/enforceTrainingConfig/sessions/current", HttpMethod.GET, FunctionType.Supplier, () -> ok(currentSessionID == null ? "" : currentSessionID));
+        Route r6a = new Route("/enforceTrainingConfig/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
+        Route r6b = new Route("/enforceTrainingConfig/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
+        Route r6c = new Route("/enforceTrainingConfig/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+        Route r6d = new Route("/enforceTrainingConfig/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function, this::getLastUpdateForSession);
+        Route r7 = new Route("/enforceTrainingConfig/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier, () -> ok(String.valueOf(currentWorkerIdx)));
+        Route r7a = new Route("/enforceTrainingConfig/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function, this::setWorkerByIdx);
 
 
         return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r6d, r7, r7a);
@@ -504,12 +504,12 @@ public class TrainModule implements UIModule {
 
         //----- Performance Info -----
         String[][] perfInfo = new String[][]{
-                {i18N.getMessage("train.overview.perftable.startTime"), ""},
-                {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
-                {i18N.getMessage("train.overview.perftable.lastUpdate"), ""},
-                {i18N.getMessage("train.overview.perftable.totalParamUpdates"), ""},
-                {i18N.getMessage("train.overview.perftable.updatesPerSec"), ""},
-                {i18N.getMessage("train.overview.perftable.examplesPerSec"), ""}
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.startTime"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.totalRuntime"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.lastUpdate"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.totalParamUpdates"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.updatesPerSec"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.perftable.examplesPerSec"), ""}
         };
 
         if (last != null) {
@@ -524,9 +524,9 @@ public class TrainModule implements UIModule {
 
         // ----- Model Info -----
         String[][] modelInfo = new String[][]{
-                {i18N.getMessage("train.overview.modeltable.modeltype"), ""},
-                {i18N.getMessage("train.overview.modeltable.nLayers"), ""},
-                {i18N.getMessage("train.overview.modeltable.nParams"), ""}
+                {i18N.getMessage("enforceTrainingConfig.overview.modeltable.modeltype"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.modeltable.nLayers"), ""},
+                {i18N.getMessage("enforceTrainingConfig.overview.modeltable.nParams"), ""}
         };
         if (!noData) {
             Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
@@ -808,8 +808,8 @@ public class TrainModule implements UIModule {
 
     private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData, StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerName"), gi.getVertexNames().get(layerIdx)});
-        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerType"), ""});
+        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerName"), gi.getVertexNames().get(layerIdx)});
+        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerType"), ""});
 
         if (!noData) {
             Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
@@ -866,23 +866,23 @@ public class TrainModule implements UIModule {
                     String activationFn = null;
                     if (layer instanceof FeedForwardLayer) {
                         FeedForwardLayer ffl = (FeedForwardLayer) layer;
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNIn"), String.valueOf(ffl.getNIn())});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerNIn"), String.valueOf(ffl.getNIn())});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerSize"), String.valueOf(ffl.getNOut())});
                         activationFn = layer.getActivationFn().toString();
                     }
                     int nParams = layer.initializer().numParams(nnc);
-                    layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"), String.valueOf(nParams)});
+                    layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerNParams"), String.valueOf(nParams)});
                     if (nParams > 0) {
                         WeightInit wi = layer.getWeightInit();
                         String str = wi.toString();
                         if (wi == WeightInit.DISTRIBUTION) {
                             str += layer.getDist();
                         }
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerWeightInit"), str});
 
                         Updater u = layer.getUpdater();
                         String us = (u == null ? "" : u.toString());
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerUpdater"), us});
 
                         //TODO: Maybe L1/L2, dropout, updater-specific values etc
                     }
@@ -902,15 +902,15 @@ public class TrainModule implements UIModule {
                             stride = ssl.getStride();
                             padding = ssl.getPadding();
                             activationFn = null;
-                            layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerSubsamplingPoolingType"), ssl.getPoolingType().toString()});
+                            layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerSubsamplingPoolingType"), ssl.getPoolingType().toString()});
                         }
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnKernel"), Arrays.toString(kernel)});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnStride"), Arrays.toString(stride)});
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerCnnPadding"), Arrays.toString(padding)});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerCnnKernel"), Arrays.toString(kernel)});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerCnnStride"), Arrays.toString(stride)});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerCnnPadding"), Arrays.toString(padding)});
                     }
 
                     if (activationFn != null) {
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerActivationFn"), activationFn});
+                        layerInfoRows.add(new String[]{i18N.getMessage("enforceTrainingConfig.model.layerinfotable.layerActivationFn"), activationFn});
                     }
                 }
                 layerInfoRows.get(1)[1] = layerType;
@@ -1286,8 +1286,8 @@ public class TrainModule implements UIModule {
             fracUtilized.add(fracOffHeap);
 
             String[] seriesNames = new String[2 + numDevices];
-            seriesNames[0] = i18n.getMessage("train.system.hwTable.jvmCurrent");
-            seriesNames[1] = i18n.getMessage("train.system.hwTable.offHeapCurrent");
+            seriesNames[0] = i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmCurrent");
+            seriesNames[1] = i18n.getMessage("enforceTrainingConfig.system.hwTable.offHeapCurrent");
             boolean[] isDevice = new boolean[2 + numDevices];
             String[] devNames = deviceNames.get(wid);
             for (int i = 0; i < numDevices; i++) {
@@ -1339,16 +1339,16 @@ public class TrainModule implements UIModule {
             String[] deviceDescription = sr.getHwDeviceDescription();
             long[] devTotalMem = sr.getHwDeviceTotalMemory();
 
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmMax"), String.valueOf(sr.getHwJvmMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.offHeapMax"), String.valueOf(sr.getHwOffHeapMaxMemory())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.jvmProcs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
-            hwInfo.add(new String[]{i18n.getMessage("train.system.hwTable.computeDevices"), String.valueOf(numDevices)});
+            hwInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmMax"), String.valueOf(sr.getHwJvmMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.hwTable.offHeapMax"), String.valueOf(sr.getHwOffHeapMaxMemory())});
+            hwInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.hwTable.jvmProcs"), String.valueOf(sr.getHwJvmAvailableProcessors())});
+            hwInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.hwTable.computeDevices"), String.valueOf(numDevices)});
             for (int i = 0; i < numDevices; i++) {
-                String label = i18n.getMessage("train.system.hwTable.deviceName") + " (" + i + ")";
+                String label = i18n.getMessage("enforceTrainingConfig.system.hwTable.deviceName") + " (" + i + ")";
                 String name = (deviceDescription == null || i >= deviceDescription.length ? String.valueOf(i) : deviceDescription[i]);
                 hwInfo.add(new String[]{label, name});
 
-                String memLabel = i18n.getMessage("train.system.hwTable.deviceMemory") + " (" + i + ")";
+                String memLabel = i18n.getMessage("enforceTrainingConfig.system.hwTable.deviceMemory") + " (" + i + ")";
                 String memBytes = (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
                 hwInfo.add(new String[]{memLabel, memBytes});
             }
@@ -1380,13 +1380,13 @@ public class TrainModule implements UIModule {
             else datatype = datatype.toLowerCase();
 
             List<String[]> swInfo = new ArrayList<>();
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.os"), sr.getSwOsName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.hostname"), sr.getSwHostName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.osArch"), sr.getSwArch()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmName"), sr.getSwJvmName()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.jvmVersion"), sr.getSwJvmVersion()});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jBackend"), nd4jBackend});
-            swInfo.add(new String[]{i18n.getMessage("train.system.swTable.nd4jDataType"), datatype});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.os"), sr.getSwOsName()});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.hostname"), sr.getSwHostName()});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.osArch"), sr.getSwArch()});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.jvmName"), sr.getSwJvmName()});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.jvmVersion"), sr.getSwJvmVersion()});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.nd4jBackend"), nd4jBackend});
+            swInfo.add(new String[]{i18n.getMessage("enforceTrainingConfig.system.swTable.nd4jDataType"), datatype});
 
             retSw.put(String.valueOf(count), swInfo);
 

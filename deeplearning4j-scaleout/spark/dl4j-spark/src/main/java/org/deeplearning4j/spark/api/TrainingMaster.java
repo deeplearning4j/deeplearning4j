@@ -71,7 +71,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Train the SparkDl4jMultiLayer with the specified data set
      *
      * @param network      Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      */
     void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData);
 
@@ -81,7 +81,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * here is that the PortableDataStreams are for DataSet objects, one per file.
      *
      * @param network      Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      * @deprecated Deprecated due to poor performance
      */
     @Deprecated
@@ -93,7 +93,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Fit the network using a list of paths for serialized DataSet objects.
      *
      * @param network           Current network state
-     * @param trainingDataPaths Data to train on
+     * @param trainingDataPaths Data to enforceTrainingConfig on
      */
     @Experimental
     void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths);
@@ -102,7 +102,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Train the SparkComputationGraph with the specified data set
      *
      * @param graph        Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      */
     void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData);
 
@@ -112,7 +112,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * serialized using {@link DataSet#save(OutputStream)}
      *
      * @param network      Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      * @deprecated Deprecated due to poor performance
      */
     @Deprecated
@@ -123,7 +123,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Fit the network using a list of paths for serialized DataSet objects.
      *
      * @param network           Current network state
-     * @param trainingDataPaths Data to train on
+     * @param trainingDataPaths Data to enforceTrainingConfig on
      */
     @Experimental
     void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths);
@@ -133,7 +133,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Fit the network using a list of paths for serialized MultiDataSet objects.
      *
      * @param network                   Current network state
-     * @param trainingMultiDataSetPaths Data to train on
+     * @param trainingMultiDataSetPaths Data to enforceTrainingConfig on
      */
     @Experimental
     void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths);
@@ -142,7 +142,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * Train the SparkComputationGraph with the specified data set
      *
      * @param graph        Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      */
     void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData);
 
@@ -151,7 +151,7 @@ public interface TrainingMaster<R extends TrainingResult, W extends TrainingWork
      * here is that the PortableDataStreams are for MultiDataSet objects, one per file.
      *
      * @param network      Current network state
-     * @param trainingData Data to train on
+     * @param trainingData Data to enforceTrainingConfig on
      * @deprecated Deprecated due to poor performance
      */
     @Deprecated

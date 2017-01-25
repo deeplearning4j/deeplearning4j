@@ -25,8 +25,8 @@ class Training extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Fo
 Seq[Any](format.raw/*1.40*/("""
 """),format.raw/*2.1*/("""<html>
 <head>
-    <link rel="stylesheet" type="text/css" href="assets/css/train.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <title>"""),_display_(/*5.13*/i18n/*5.17*/.getMessage("train.pagetitle")),format.raw/*5.47*/("""</title>
+    <link rel="stylesheet" type="text/css" href="assets/css/enforceTrainingConfig.css"/><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>"""),_display_(/*5.13*/i18n/*5.17*/.getMessage("enforceTrainingConfig.pagetitle")),format.raw/*5.47*/("""</title>
     <!-- jQuery, D3.js, etc -->
     <script src="/assets/jquery-2.2.0.min.js"></script>
     <script src="/assets/notify.js"></script>
@@ -35,7 +35,7 @@ Seq[Any](format.raw/*1.40*/("""
 </head>
 <script>
         function onPageLoad()"""),format.raw/*13.30*/("""{"""),format.raw/*13.31*/("""
-            """),format.raw/*14.13*/("""onNavClick('overview', '"""),_display_(/*14.38*/i18n/*14.42*/.getMessage("train.nav.errormsg")),format.raw/*14.75*/("""');
+            """),format.raw/*14.13*/("""onNavClick('overview', '"""),_display_(/*14.38*/i18n/*14.42*/.getMessage("enforceTrainingConfig.nav.errormsg")),format.raw/*14.75*/("""');
             setSessionIDDivContents();
             setLanguageSelectorValue();
             setInterval(getAndProcessUpdate,2000);
@@ -52,49 +52,49 @@ Seq[Any](format.raw/*1.40*/("""
     <div class="navDiv">
         <div class="navTopSpacer"></div>
         <div class="navSessionID">
-            <strong>"""),_display_(/*31.22*/i18n/*31.26*/.getMessage("train.nav.sessionid")),format.raw/*31.60*/(""":</strong><br>
+            <strong>"""),_display_(/*31.22*/i18n/*31.26*/.getMessage("enforceTrainingConfig.nav.sessionid")),format.raw/*31.60*/(""":</strong><br>
         </div>
         <div class="navSessionID" id="navSessionIDValue">
             -
         </div>
         <div class="navTopSpacer"></div>
-        <div class="navElement" id="overviewNavDiv" onclick="onNavClick('overview', '"""),_display_(/*37.87*/i18n/*37.91*/.getMessage("train.nav.errormsg")),format.raw/*37.124*/("""')">
+        <div class="navElement" id="overviewNavDiv" onclick="onNavClick('overview', '"""),_display_(/*37.87*/i18n/*37.91*/.getMessage("enforceTrainingConfig.nav.errormsg")),format.raw/*37.124*/("""')">
         <div class="navHorizontalSpacer"></div>
-        <img src="assets/img/train/nav_icon_home_28.png">
+        <img src="assets/img/enforceTrainingConfig/nav_icon_home_28.png">
         <div class="navHorizontalSpacer"></div>
-        """),_display_(/*41.10*/i18n/*41.14*/.getMessage("train.nav.overview")),format.raw/*41.47*/("""
+        """),_display_(/*41.10*/i18n/*41.14*/.getMessage("enforceTrainingConfig.nav.overview")),format.raw/*41.47*/("""
     """),format.raw/*42.5*/("""</div>
     <div class="navElementSpacer"></div>
-    <div class="navElement" id="modelNavDiv" onclick="onNavClick('model', '"""),_display_(/*44.77*/i18n/*44.81*/.getMessage("train.nav.errormsg")),format.raw/*44.114*/("""')">
+    <div class="navElement" id="modelNavDiv" onclick="onNavClick('model', '"""),_display_(/*44.77*/i18n/*44.81*/.getMessage("enforceTrainingConfig.nav.errormsg")),format.raw/*44.114*/("""')">
     <div class="navHorizontalSpacer"></div>
-    <img src="assets/img/train/nav_icon_model_28.png">
+    <img src="assets/img/enforceTrainingConfig/nav_icon_model_28.png">
     <div class="navHorizontalSpacer"></div>
-    """),_display_(/*48.6*/i18n/*48.10*/.getMessage("train.nav.model")),format.raw/*48.40*/("""
+    """),_display_(/*48.6*/i18n/*48.10*/.getMessage("enforceTrainingConfig.nav.model")),format.raw/*48.40*/("""
 """),format.raw/*49.1*/("""</div>
 <div class="navElementSpacer"></div>
-<div class="navElement" id="systemNavDiv" onclick="onNavClick('system', '"""),_display_(/*51.75*/i18n/*51.79*/.getMessage("train.nav.errormsg")),format.raw/*51.112*/("""')">
+<div class="navElement" id="systemNavDiv" onclick="onNavClick('system', '"""),_display_(/*51.75*/i18n/*51.79*/.getMessage("enforceTrainingConfig.nav.errormsg")),format.raw/*51.112*/("""')">
 <div class="navHorizontalSpacer"></div>
-<img src="assets/img/train/nav_icon_system_28.png">
+<img src="assets/img/enforceTrainingConfig/nav_icon_system_28.png">
 <div class="navHorizontalSpacer"></div>
-"""),_display_(/*55.2*/i18n/*55.6*/.getMessage("train.nav.hwsw")),format.raw/*55.35*/("""
+"""),_display_(/*55.2*/i18n/*55.6*/.getMessage("enforceTrainingConfig.nav.hwsw")),format.raw/*55.35*/("""
 """),format.raw/*56.1*/("""</div>
 <div class="navElementSpacer"></div>
-<div class="navElement" id="helpNavDiv" onclick="onNavClick('help', '"""),_display_(/*58.71*/i18n/*58.75*/.getMessage("train.nav.errormsg")),format.raw/*58.108*/("""')">
+<div class="navElement" id="helpNavDiv" onclick="onNavClick('help', '"""),_display_(/*58.71*/i18n/*58.75*/.getMessage("enforceTrainingConfig.nav.errormsg")),format.raw/*58.108*/("""')">
 <div class="navHorizontalSpacer"></div>
-<img src="assets/img/train/nav_icon_help_28.png">
+<img src="assets/img/enforceTrainingConfig/nav_icon_help_28.png">
 <div class="navHorizontalSpacer"></div>
-"""),_display_(/*62.2*/i18n/*62.6*/.getMessage("train.nav.help")),format.raw/*62.35*/("""
+"""),_display_(/*62.2*/i18n/*62.6*/.getMessage("enforceTrainingConfig.nav.help")),format.raw/*62.35*/("""
 """),format.raw/*63.1*/("""</div>
 <div class="navBottom">
-    """),_display_(/*65.6*/i18n/*65.10*/.getMessage("train.nav.language")),format.raw/*65.43*/(""":
-    <select class="languageSelect" id="navLangSelect" onchange="changeLanguage('"""),_display_(/*66.82*/i18n/*66.86*/.getMessage("train.nav.langChangeErrorMsg")),format.raw/*66.129*/("""')">
+    """),_display_(/*65.6*/i18n/*65.10*/.getMessage("enforceTrainingConfig.nav.language")),format.raw/*65.43*/(""":
+    <select class="languageSelect" id="navLangSelect" onchange="changeLanguage('"""),_display_(/*66.82*/i18n/*66.86*/.getMessage("enforceTrainingConfig.nav.langChangeErrorMsg")),format.raw/*66.129*/("""')">
     <option value="en">English</option>
     <option value="ja">日本語</option>
     <option value="zh">中文</option>
     <option value="kr">한글</option>
     </select>
     <div class="navElementSpacer"></div>
-    <a href=""""),_display_(/*73.15*/i18n/*73.19*/.getMessage("train.nav.websitelink")),format.raw/*73.55*/("""" class="textlink">"""),_display_(/*73.75*/i18n/*73.79*/.getMessage("train.nav.websitelinktext")),format.raw/*73.119*/("""</a>
+    <a href=""""),_display_(/*73.15*/i18n/*73.19*/.getMessage("enforceTrainingConfig.nav.websitelink")),format.raw/*73.55*/("""" class="textlink">"""),_display_(/*73.75*/i18n/*73.79*/.getMessage("enforceTrainingConfig.nav.websitelinktext")),format.raw/*73.119*/("""</a>
     <div class="navElementSpacer"></div>
 </div>
 </div>

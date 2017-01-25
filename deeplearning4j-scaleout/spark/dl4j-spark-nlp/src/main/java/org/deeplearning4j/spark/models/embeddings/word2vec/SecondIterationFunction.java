@@ -243,7 +243,7 @@ public class SecondIterationFunction
         Nd4j.getBlasWrapper().level1().axpy(vectorLength, 1.0f, neu1e, l1);
 
         //VocabWord word = vocab.elementAtIndex(currentWordIndex);
-        //indexSyn0VecMap.put(word, l1);
+        //indexSyn0VecMap.put(word, weightL1Regularization);
     }
 
     private INDArray getRandomSyn0Vec(int vectorLength, long lseed) {

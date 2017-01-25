@@ -53,7 +53,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
 
     /**
      * Train on a list of vocab words
-     * @param sentence the list of vocab words to train on
+     * @param sentence the list of vocab words to enforceTrainingConfig on
      */
     public void trainSentence(Word2VecParam param, final List<VocabWord> sentence, double alpha,
                               List<Triple<Integer,Integer,Integer>> changed) {
@@ -72,7 +72,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
     /**
      * Train via skip gram
      * @param i the current word
-     * @param sentence the sentence to train on
+     * @param sentence the sentence to enforceTrainingConfig on
      * @param b
      * @param alpha the learning rate
      */
