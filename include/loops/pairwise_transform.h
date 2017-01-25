@@ -322,7 +322,15 @@ template<typename OpType>
 				int *indexes,
 				int *yIndexes,
 				int *resultIndexes) {
-                            DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams, indexes, yIndexes, resultIndexes), PAIRWISE_TRANSFORM_OPS);
+                            DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+                                                           xShapeBuffer,
+                                                           y,
+                                                           yShapeBuffer,
+                                                           result, resultShapeBuffer,
+                                                           extraParams,
+                                                           indexes,
+                                                           yIndexes,
+                                                           resultIndexes), PAIRWISE_TRANSFORM_OPS);
 			}
 
 			static void exec(
@@ -334,7 +342,14 @@ template<typename OpType>
 				T *result,
 				int *resultShapeBuffer,
 				T *extraParams) {
-				DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeBuffer, y, yShapeBuffer, result, resultShapeBuffer, extraParams), PAIRWISE_TRANSFORM_OPS);
+				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+                                               xShapeBuffer,
+                                               y,
+                                               yShapeBuffer,
+                                               result,
+                                               resultShapeBuffer,
+                                               extraParams),
+                                  PAIRWISE_TRANSFORM_OPS);
 			}
 			
 			static void exec(
@@ -347,7 +362,14 @@ template<typename OpType>
 				Nd4jIndex resultStride,
 				T *extraParams,
 				Nd4jIndex n) {
-				DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, y, yStride, result, resultStride, extraParams, n), PAIRWISE_TRANSFORM_OPS);
+				DISPATCH_BY_OPNUM(exec, PARAMS(dx,
+                                               xStride,
+                                               y,
+                                               yStride,
+                                               result,
+                                               resultStride,
+                                               extraParams,
+                                               n), PAIRWISE_TRANSFORM_OPS);
 			}
 
 			template<typename OpType>

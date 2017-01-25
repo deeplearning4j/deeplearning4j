@@ -4007,7 +4007,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
     INLINEDEF int * removeIndex(int *data, int *indexes, int dataLength, int indexesLength) {
         int lengthOfArr = dataLength - indexesLength;
-        if(lengthOfArr <= 0) {
+        if(lengthOfArr < 0) {
             printf("Remove index call created a <= 0 length array. This was likely not intended.");
         }
         int *ret = new int[lengthOfArr];
