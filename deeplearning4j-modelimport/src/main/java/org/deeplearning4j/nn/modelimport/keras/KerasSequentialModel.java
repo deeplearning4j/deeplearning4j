@@ -94,14 +94,19 @@ public class KerasSequentialModel extends KerasModel {
             throw new InvalidKerasConfigurationException("Could not find layer configurations (no " + MODEL_FIELD_CONFIG + " field found)");
         helperPrepareLayers((List<Object>)modelConfig.get(MODEL_FIELD_CONFIG));
 
-        /* Add placeholder input layer and update lists of input and output layers. */
-        int[] inputShape = this.layersOrdered.get(0).getInputShape();
-        KerasLayer inputLayer = new KerasInput("input1", inputShape);
-        inputLayer.setDimOrder(this.layersOrdered.get(0).getDimOrder());
-        this.layers.put(inputLayer.getLayerName(), inputLayer);
+        KerasLayer inputLayer;
+        if (this.layersOrdered.get(0) instanceof KerasInput) {
+            inputLayer = this.layersOrdered.get(0);
+	    } else {
+            /* Add placeholder input layer and update lists of input and output layers. */
+            int[] inputShape = this.layersOrdered.get(0).getInputShape();
+            inputLayer = new KerasInput("input1", inputShape);
+            inputLayer.setDimOrder(this.layersOrdered.get(0).getDimOrder());
+            this.layers.put(inputLayer.getLayerName(), inputLayer);
+            this.layersOrdered.add(0, inputLayer);
+        }
         this.inputLayerNames = new ArrayList<String>(Arrays.asList(inputLayer.getLayerName()));
         this.outputLayerNames = new ArrayList<String>(Arrays.asList(this.layersOrdered.get(this.layersOrdered.size()-1).getLayerName()));
-        this.layersOrdered.add(0, inputLayer);
 
         /* Update each layer's inbound layer list to include (only) previous layer. */
         KerasLayer prevLayer = null;
