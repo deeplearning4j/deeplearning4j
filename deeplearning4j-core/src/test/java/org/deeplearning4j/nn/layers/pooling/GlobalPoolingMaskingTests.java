@@ -35,55 +35,60 @@ public class GlobalPoolingMaskingTests {
         int nIn = 5;
         int layerSize = 4;
         int nOut = 2;
-        int miniBatchSize = 1;
+        int[] minibatchSizes = new int[]{1,3};
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .regularization(false)
-                .updater(Updater.NONE)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                .seed(12345L)
-                .list()
-                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true)
-                .build();
+        for( int miniBatchSize : minibatchSizes ) {
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .regularization(false)
+                    .updater(Updater.NONE)
+                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                    .seed(12345L)
+                    .list()
+                    .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build())
+                    .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
+                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
+                    .pretrain(false).backprop(true)
+                    .build();
 
-        Random r = new Random(12345L);
-        INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < nIn; j++) {
-                for (int k = 0; k < timeSeriesLength; k++) {
-                    input.putScalar(new int[]{i, j, k}, r.nextDouble() - 0.5);
-                }
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            Random r = new Random(12345L);
+            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}).subi(0.5);
+
+            INDArray mask;
+            if(miniBatchSize == 1){
+                mask = Nd4j.create(new double[]{1,1,1,1,0});
+            } else {
+                mask = Nd4j.create(new double[][]{
+                        {1,1,1,1,1},
+                        {1,1,1,1,0},
+                        {1,1,1,0,0}});
+            }
+
+            INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
+            for (int i = 0; i < miniBatchSize; i++) {
+                int idx = r.nextInt(nOut);
+                labels.putScalar(i, idx, 1.0);
+            }
+
+            net.setLayerMaskArrays(mask, null);
+            INDArray outputMasked = net.output(input);
+
+            net.clearLayerMaskArrays();
+
+            for( int i=0; i<miniBatchSize; i++ ) {
+                INDArray maskRow = mask.getRow(i);
+                int tsLength = maskRow.sumNumber().intValue();
+                INDArray inputSubset = input.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0, tsLength));
+
+                INDArray outSubset = net.output(inputSubset);
+                INDArray outputMaskedSubset = outputMasked.getRow(i);
+
+                assertEquals(outSubset, outputMaskedSubset);
             }
         }
-
-        INDArray mask = Nd4j.create(miniBatchSize, timeSeriesLength-1);
-        for( int i=0; i<miniBatchSize; i++ ){
-            for( int j=0; j<timeSeriesLength-1; j++ ){
-                mask.putScalar(i,j,1.0);
-            }
-        }
-
-        INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
-        for (int i = 0; i < miniBatchSize; i++) {
-            int idx = r.nextInt(nOut);
-            labels.putScalar(i, idx, 1.0);
-        }
-
-
-        INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,timeSeriesLength-1));
-
-        INDArray outSubset = net.output(inputSubset);
-
-        net.setLayerMaskArrays(mask, null);
-        INDArray outMask = net.output(input);
-
-        assertEquals(outSubset, outMask);
     }
 
     @Test
@@ -267,6 +272,69 @@ public class GlobalPoolingMaskingTests {
                 int numSteps = width - i;
                 INDArray subset = inToBeMasked.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,numSteps));
                 assertArrayEquals(new int[]{1,depthIn, height, width-i}, subset.shape());
+
+                INDArray outSubset = net.output(subset);
+                INDArray outMaskedSubset = outMasked.getRow(i);
+
+                assertEquals(outSubset, outMaskedSubset);
+            }
+        }
+    }
+
+
+    @Test
+    public void testMaskingCnnDim2(){
+        //Test masking, where mask is along dimension 2
+
+        int minibatch = 3;
+        int depthIn = 3;
+        int depthOut = 4;
+        int nOut = 5;
+        int height = 5;
+        int width = 4;
+
+        PoolingType[] poolingTypes = new PoolingType[]{PoolingType.SUM, PoolingType.AVG, PoolingType.MAX, PoolingType.PNORM};
+
+        for(PoolingType pt : poolingTypes) {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .weightInit(WeightInit.XAVIER)
+                    .convolutionMode(ConvolutionMode.Same)
+                    .seed(12345L)
+                    .list()
+                    .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut)
+                            .kernelSize(2, width).stride(1, width)
+                            .activation(Activation.TANH).build())
+                    .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt).build())
+                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
+                    .pretrain(false).backprop(true)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray inToBeMasked = Nd4j.rand(new int[]{minibatch, depthIn, height, width});
+
+            //Shape for mask: [minibatch, width]
+            INDArray maskArray = Nd4j.create(new double[][]{
+                    {1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 0},
+                    {1, 1, 1, 0, 0}});
+
+            //Multiply the input by the mask array, to ensure the 0s in the mask correspond to 0s in the input vector
+            // as would be the case in practice...
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(inToBeMasked, maskArray, inToBeMasked, 0, 2));
+
+
+            net.setLayerMaskArrays(maskArray, null);
+
+            INDArray outMasked = net.output(inToBeMasked);
+            net.clearLayerMaskArrays();
+
+            for( int i=0; i<minibatch; i++ ){
+                System.out.println(i);
+                int numSteps = height - i;
+                INDArray subset = inToBeMasked.get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all(), NDArrayIndex.interval(0,numSteps), NDArrayIndex.all());
+                assertArrayEquals(new int[]{1,depthIn, height-i, width}, subset.shape());
 
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i);
