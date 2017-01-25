@@ -2,10 +2,15 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+
+import java.util.Arrays;
 
 /**
  * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
@@ -72,6 +77,19 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         } else {
             InputType.InputTypeConvolutionalFlat cf = (InputType.InputTypeConvolutionalFlat) inputType;
             return InputType.recurrent(cf.getFlattenedSize());
+        }
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+        if(maskArray == null){
+            return new Pair<>(maskArray, currentMaskState);
+        } else if(maskArray.isVector()){
+            //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
+            return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize), currentMaskState);
+        } else {
+            throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape()) + "; expected vector.");
         }
     }
 }
