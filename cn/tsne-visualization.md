@@ -1,60 +1,43 @@
 ---
-title: t-SNE's Data Visualization
+title: t-SNE的数据可视化
 layout: cn-default
 ---
 
-# t-SNE's Data Visualization
+# t-SNE的数据可视化
 
-[t-Distributed Stochastic Neighbor Embedding](http://homepage.tudelft.nl/19j49/t-SNE.html) (t-SNE) is a data-visualization tool created by Laurens van der Maaten at Delft University of Technology. 
+[t-分布邻域嵌入算法](http://homepage.tudelft.nl/19j49/t-SNE.html)（t-SNE）是代尔夫特理工大学的Laurens van der Maaten发明的数据可视化工具。 
 
-While it can be used for any data, t-SNE (pronounced Tee-Snee) is only really meaningful with labeled data, which clarify how the input is clustering. Below, you can see the kind of graphic you can generate in DL4J with t-SNE working on [MNIST data](http://deeplearning4j.org/deepbeliefnetwork.html). 
+虽然t-SNE（读作“Tee-Snee”）能处理任何数据，但它只在用于已标记数据时才真正有意义，可以明确显示出输入的聚类状况。以下是在DL4J中用t-SNE处理[MNIST数据](http://deeplearning4j.org/cn/deepbeliefnetwork.html)时生成的图像示例。 
 
-![Alt text](./img/tsne.png)
+![Alt text](../img/tsne.png)
 
-Look closely and you can see the numerals clustered near their likes, alongside the dots. 
+仔细观察上图，您会发现每个数字及其相应的点都聚集在一起。 
 
-Here's how t-SNE appears in Deeplearning4j code. 
+以下是在Deeplearning4j中使用t-SNE的代码示例。 
 <pre><code class="language-java">
-import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.plot.BarnesHutTsne;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Created by agibsonccc on 9/20/14.
- *
- * Dimensionality reduction for high-dimension datasets
- */
 public class TSNEStandardExample {
 
     private static Logger log = LoggerFactory.getLogger(TSNEStandardExample.class);
 
     public static void main(String[] args) throws Exception  {
+        //第1步：初始化
         int iterations = 100;
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        List<String> cacheList = new ArrayList<>();
+        //创建一个double类型的n维数组
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
+        //第2步：将文本输入转换为一个词列表
         log.info("Load & Vectorize data....");
-        File wordFile = new ClassPathResource("words.txt").getFile();
+        File wordFile = new ClassPathResource("words.txt").getFile();   //打开文件
+        //获取所有唯一词向量的数据
         Pair<InMemoryLookupTable,VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
         VocabCache cache = vectors.getSecond();
-        INDArray weights = vectors.getFirst().getSyn0();
+        INDArray weights = vectors.getFirst().getSyn0();    //将每个唯一词的权重分到该词的列表中
 
-        for(int i = 0; i < cache.numWords(); i++)
+        for(int i = 0; i < cache.numWords(); i++)   //将每个唯一词的字符串分到该词的列表中
             cacheList.add(cache.wordAtIndex(i));
 
+        //第3步：建立一个双树tsne供之后使用
         log.info("Build model....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .setMaxIter(iterations).theta(0.5)
@@ -64,10 +47,14 @@ public class TSNEStandardExample {
 //                .usePca(false)
                 .build();
 
+        //第4步：确定tsne值并将其保存至文件
         log.info("Store TSNE Coordinates for Plotting....");
         String outputFile = "target/archive-tmp/tsne-standard-coords.csv";
         (new File(outputFile)).getParentFile().mkdirs();
         tsne.plot(weights,2,cacheList,outputFile);
+        //该tsne将把向量的权重作为矩阵，有两个维度，将词字符串作为标签，
+        //写入前一行创建的outputFile
+
     }
 
 
@@ -76,10 +63,10 @@ public class TSNEStandardExample {
 
 </code></pre> 
 
-Here is an image of the tsne-standard-coords.csv file plotted using gnuplot.
+以下是一幅用gnuplot所作的tsne-standard-coords.csv文件的图像。
 
 
-![Tsne data plot](./img/tsne_output.png)
+![Tsne data plot](../img/tsne_output.png)
 
 <!-- was this??
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/tsne/TsneExample.java?slice=14:27"></script>
