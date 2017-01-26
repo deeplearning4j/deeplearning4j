@@ -202,6 +202,23 @@ public class VoidParameterServer {
                         port = voidConfiguration.getUnicastPort();
                     }
 
+                    // if we're Shard here, we should define shardIndex
+                    if (nodeRole == NodeRole.SHARD && voidConfiguration.getShardAddresses().size() > 1) {
+                        short cnt = 0;
+                        for (String shard: voidConfiguration.getShardAddresses()) {
+                            String lIp = null;
+                            if (shard.contains(":")) {
+                                String[] split = ipAndPort.split(":");
+                                lIp = split[0];
+                            } else lIp = shard;
+
+                            if (lIp.equals(ip)) {
+                                shardIndex = cnt;
+                            }
+                            cnt++;
+                        }
+                    }
+
                     this.transport.init(voidConfiguration, clipboard, nodeRole, ip, port, shardIndex);
 
                 } else {
