@@ -362,8 +362,8 @@ public class RoutedTransport extends BaseTransport {
 
 //        log.info("sI_{} received message: {}", shardIndex, message.getClass().getSimpleName());
 
-        if (messages.size() > 500)
-            log.info("sI_{} got {} messages", shardIndex, messages.size());
+        //if (messages.size() > 500)
+        //    log.info("sI_{} got {} messages", shardIndex, messages.size());
 
         if (message instanceof MeaningfulMessage) {
             MeaningfulMessage msg = (MeaningfulMessage) message;
