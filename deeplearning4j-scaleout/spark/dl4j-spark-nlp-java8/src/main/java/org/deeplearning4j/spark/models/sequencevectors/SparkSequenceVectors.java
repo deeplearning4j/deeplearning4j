@@ -271,6 +271,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
 
         // FIXME: probably we need to reconsider this approach
         JavaRDD<T> vocabRDD = corpus.flatMap(new VocabRddFunction<T>(configurationBroadcast, paramServerConfigurationBroadcast)).distinct();
+        vocabRDD.count();
 
         /**
          * now we initialize Shards with values. That call should be started from driver which is either Client or Shard in standalone mode.
