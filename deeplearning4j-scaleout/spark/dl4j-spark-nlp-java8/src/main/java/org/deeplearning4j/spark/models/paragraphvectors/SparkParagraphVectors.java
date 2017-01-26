@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.models.paragraphvectors;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -26,6 +27,13 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
         return super.getShallowVocabCache();
     }
 
+    @Override
+    protected void validateConfiguration() {
+        super.validateConfiguration();
+
+        if (configuration.getTokenizerFactory() == null)
+            throw new DL4JInvalidConfigException("TokenizerFactory is undefined. Can't train ParagraphVectors without it.");
+    }
 
     /**
      * This method builds ParagraphVectors model, expecting JavaPairRDD with key as label, and value as document-in-a-string.
@@ -36,6 +44,8 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
         /*
             All we want here, is to transform JavaPairRDD into JavaRDD<Sequence<VocabWord>>
          */
+        validateConfiguration();
+
         broadcastEnvironment(new JavaSparkContext(documentsRdd.context()));
 
         JavaRDD<Sequence<VocabWord>> sequenceRdd = documentsRdd.map(new KeySequenceConvertFunction(configurationBroadcast));
@@ -50,6 +60,9 @@ public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
      * @param documentsRdd
      */
     public void fitLabelledDocuments(JavaRDD<LabelledDocument> documentsRdd) {
+
+        validateConfiguration();
+
         broadcastEnvironment(new JavaSparkContext(documentsRdd.context()));
 
         JavaRDD<Sequence<VocabWord>> sequenceRDD = documentsRdd.map(new DocumentSequenceConvertFunction(configurationBroadcast));
