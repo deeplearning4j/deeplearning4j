@@ -192,6 +192,12 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             throw new UnsupportedOperationException("This method isn't supported by Word2Vec");
         }
 
+        @Override
+        public Builder useHierarchicSoftmax(boolean reallyUse) {
+            super.useHierarchicSoftmax(reallyUse);
+            return this;
+        }
+
         /**
          * This method returns you SparkWord2Vec instance ready for training
          *
