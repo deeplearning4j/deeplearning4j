@@ -77,6 +77,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         RequestDescriptor descriptor = RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId());
         if (!chains.containsKey(descriptor)) {
             CbowChain chain = new CbowChain(message);
+            chain.addElement(message);
             chains.put(descriptor, chain);
         }
     }
