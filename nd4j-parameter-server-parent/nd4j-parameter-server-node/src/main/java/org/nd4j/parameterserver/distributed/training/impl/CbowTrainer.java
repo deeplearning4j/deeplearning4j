@@ -63,6 +63,9 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
             message.setNegatives(tempArray);
         }
 
+        if (message.getSyn0rows() == null || message.getSyn0rows().length < 1)
+            throw new RuntimeException("Empty syn0rows!");
+
         DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), row_syn1, message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
         dcdm.setTargetId((short) - 1);
         dcdm.setOriginatorId(message.getOriginatorId());
