@@ -86,7 +86,7 @@ public class VoidConfiguration implements Serializable {
         private int streamId = 119;
         private int unicastPort = 49876;
         private int multicastPort = 59876;
-        private int numberOfShards = -1;
+        private int numberOfShards = 1;
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
         private long retransmitTimeout = 1000;
         private long responseTimeframe = 500;
