@@ -37,6 +37,8 @@ public class SkipGramRequestMessage extends BaseVoidMessage implements TrainingM
     protected int[] points;
     protected byte[] codes;
 
+    protected int[] negatives;
+
     protected short negSamples;
 
     protected long nextRandom;

@@ -2,7 +2,10 @@ package org.nd4j.parameterserver.distributed.training.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.RequestDescriptor;
@@ -15,6 +18,7 @@ import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMes
 import org.nd4j.parameterserver.distributed.training.BaseTrainer;
 import org.nd4j.parameterserver.distributed.training.chains.SkipGramChain;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +65,28 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             int row_syn0[] = new int[0]; //replicate(message.getW2(), message.getPoints().length);
 
+            int row_syn1[] = message.getPoints();
+
+            if (message.getNegSamples() > 0) {
+                int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
+                int tempArray[] = new int[message.getNegSamples() + 1];
+                tempArray[0] = message.getW1();
+
+                for (int e = 1; e < message.getNegSamples() + 1; e++) {
+                    while (true) {
+                        int rnd = RandomUtils.nextInt(0, rows);
+                        if (rnd != message.getW1()) {
+                            tempArray[e] = rnd;
+                            break;
+                        }
+                    }
+                }
+
+                row_syn1 = ArrayUtils.addAll(row_syn1, tempArray);
+
+                message.setNegatives(tempArray);
+            }
+
             if (message.getPoints().length != message.getCodes().length)
                 throw new RuntimeException("Mismatiching points/codes lengths here!");
 
@@ -68,7 +94,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             // FIXME: taskId should be real here, since it'll be used for task chain tracking
             // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
-            DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, message.getPoints(),
+            DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, row_syn1,
                     message.getW1(),
                     message.getW2(),
                     message.getCodes(),
@@ -150,7 +176,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         INDArray syn1 = storage.getArray(WordVectorStorage.SYN_1);
         INDArray syn1Neg = storage.getArray(WordVectorStorage.SYN_1_NEGATIVE);
 
-        INDArray neu1e = Nd4j.create(syn1.columns());
+        INDArray neu1e = Nd4j.create(syn0.columns());
 
         int e = 0;
 
@@ -204,8 +230,8 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
                 }
 
                 updated = true;
-                Nd4j.getBlasWrapper().axpy(new Double(g), syn1Neg.getRow(sgrm.getPoints()[e]), neu1e);
-                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1Neg.getRow(sgrm.getPoints()[e]));
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn1Neg.getRow(sgrm.getNegatives()[cnt]), neu1e);
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn0.getRow(sgrm.getW2()), syn1Neg.getRow(sgrm.getNegatives()[cnt]));
             }
         }
 

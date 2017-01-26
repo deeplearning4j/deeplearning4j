@@ -13,6 +13,8 @@ import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
+import java.util.Arrays;
+
 /**
  * @author raver119@gmail.com
  */
@@ -76,6 +78,11 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
         //log.info("sI_{} Processing DistributedDotMessage taskId: {}", transport.getShardIndex(), getTaskId());
 
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
+        if (negSamples > 0) {
+            // unfortunately we have to get copy of negSamples here
+            int negatives[] = Arrays.copyOfRange(rowsB, codes.length, rowsB.length);
+            sgrm.setNegatives(negatives);
+        }
         sgrm.setTaskId(this.taskId);
         sgrm.setOriginatorId(this.getOriginatorId());
 
