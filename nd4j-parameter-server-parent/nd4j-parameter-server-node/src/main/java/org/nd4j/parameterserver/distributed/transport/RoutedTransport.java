@@ -160,10 +160,10 @@ public class RoutedTransport extends BaseTransport {
     protected void sendCoordinationCommand(VoidMessage message) {
 
 //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+
+        // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
             try {
-//                log.info("Redirecting message to local endpoint: {}; messages: {}", message.getClass().getSimpleName(), messages.size());
-//                message.setTargetId((short) -1);
                 messages.put(message);
                 return;
             } catch (Exception e) {
@@ -171,6 +171,7 @@ public class RoutedTransport extends BaseTransport {
             }
         }
 
+        final DirectBuffer buffer = message.asUnsafeBuffer();
 
         // TODO: check which approach is faster, lambda, direct roll through list, or queue approach
         shards.parallelStream().forEach((rc) ->{
@@ -178,9 +179,20 @@ public class RoutedTransport extends BaseTransport {
             long retr = 0;
             boolean delivered = false;
 
+            long address = StringUtils.getLongHash(getIp() + ":" + getPort());
+            if (originatorId == address) {
+                // this is local delivery
+                try {
+                    messages.put(message);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                return;
+            }
+
             while (!delivered) {
                 synchronized (rc.locker) {
-                    res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(message.asUnsafeBuffer()));
+                    res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));
                 }
 
                 switch (res) {
