@@ -1,9 +1,12 @@
 package org.deeplearning4j.spark.models.word2vec;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -12,6 +15,7 @@ import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
 import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
 import org.deeplearning4j.spark.models.sequencevectors.functions.TokenizerFunction;
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
+import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLearningAlgorithm;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -19,6 +23,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
 
     protected SparkWord2Vec() {
@@ -134,6 +139,58 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder setStorageLevel(StorageLevel level) {
+            super.setStorageLevel(level);
+            return this;
+        }
+
+        @Override
+        public Builder minWordFrequency(int num) {
+            super.minWordFrequency(num);
+            return this;
+        }
+
+        @Override
+        public Builder setLearningRate(double lr) {
+            super.setLearningRate(lr);;
+            return this;
+        }
+
+        @Override
+        public Builder setParameterServerConfiguration(@NonNull VoidConfiguration configuration) {
+            super.setParameterServerConfiguration(configuration);
+            return this;
+        }
+
+        @Override
+        public Builder iterations(int num) {
+            super.iterations(num);
+            return this;
+        }
+
+        @Override
+        public Builder subsampling(double rate) {
+            super.subsampling(rate);
+            return this;
+        }
+
+        @Override
+        public Builder negativeSampling(long samples) {
+            super.negativeSampling(samples);
+            return this;
+        }
+
+        @Override
+        public Builder setElementsLearningAlgorithm(@NonNull SparkElementsLearningAlgorithm ela) {
+            super.setElementsLearningAlgorithm(ela);
+            return this;
+        }
+
+        @Override
+        public Builder setSequenceLearningAlgorithm(@NonNull SparkSequenceLearningAlgorithm sla) {
+            throw new UnsupportedOperationException("This method isn't supported by Word2Vec");
+        }
 
         /**
          * This method returns you SparkWord2Vec instance ready for training
