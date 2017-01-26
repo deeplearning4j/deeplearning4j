@@ -55,6 +55,14 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
             // negTable will be initalized at driver level and will be shared via message
             Nd4j.getRandom().setSeed(seed * (shardIndex + 1));
 
+            if (voidConfiguration.getNumberOfShards() - 1 == shardIndex) {
+                int modulo = vectorLength % voidConfiguration.getNumberOfShards();
+                if (modulo != 0) {
+                    columnsPerShard += modulo;
+                    log.info("Got inequal split. using higher number of elements: {}", columnsPerShard);
+                }
+            }
+
             int[] shardShape = new int[]{numWords, columnsPerShard};
 
             syn0 = Nd4j.rand(shardShape, 'c').subi(0.5).divi(vectorLength);
