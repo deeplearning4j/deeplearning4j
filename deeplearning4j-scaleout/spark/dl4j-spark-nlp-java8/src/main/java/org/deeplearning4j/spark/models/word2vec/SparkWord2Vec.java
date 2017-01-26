@@ -210,6 +210,12 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder layerSize(int layerSize) {
+            super.layerSize(layerSize);
+            return this;
+        }
+
         /**
          * This method returns you SparkWord2Vec instance ready for training
          *

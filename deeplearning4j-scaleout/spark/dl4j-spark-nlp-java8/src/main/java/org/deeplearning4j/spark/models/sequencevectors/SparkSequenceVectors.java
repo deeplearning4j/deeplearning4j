@@ -490,6 +490,14 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             return this;
         }
 
+        public Builder<T> layerSize(int layerSize) {
+            if (layerSize < 1)
+                throw new DL4JInvalidConfigException("LayerSize should be positive value");
+
+            configuration.setLayersSize(layerSize);
+            return this;
+        }
+
 
         public SparkSequenceVectors<T> build() {
             if (modelExporter == null)
