@@ -9,6 +9,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
@@ -28,6 +29,7 @@ import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.NetworkInformation;
 import org.deeplearning4j.spark.models.sequencevectors.utils.NetworkOrganizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
@@ -88,6 +90,17 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         throw new UnsupportedOperationException("To use fit() method, please consider using standalone implementation");
     }
 
+    protected void validateConfiguration(){
+        if (!configuration.isUseHierarchicSoftmax() && configuration.getNegative() == 0)
+            throw new DL4JInvalidConfigException("Both HierarchicSoftmax and NegativeSampling are disabled. Nothing to learn here.");
+
+        if (configuration.getElementsLearningAlgorithm() == null && configuration.getSequenceLearningAlgorithm() == null)
+            throw new DL4JInvalidConfigException("No LearningAlgorithm was set. Nothing to learn here.");
+
+        if (exporter == null)
+            throw new DL4JInvalidConfigException("SparkModelExporter is undefined. No sense for training, if model won't be exported.");
+    }
+
     protected void broadcastEnvironment(JavaSparkContext context) {
         if (!isEnvironmentReady) {
             configurationBroadcast = context.broadcast(configuration);
@@ -126,6 +139,8 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
          * in this case all classes extending SeqVec, like deepwalk or word2vec will be just building their RDD<Sequence<T>>,
          * and calling this method for training, instead implementing own routines
          */
+
+        validateConfiguration();
 
         if (ela == null) {
             try {

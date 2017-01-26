@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -43,6 +44,14 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
     }
 
 
+    @Override
+    protected void validateConfiguration() {
+        super.validateConfiguration();
+
+        if (configuration.getTokenizerFactory() == null)
+            throw new DL4JInvalidConfigException("TokenizerFactory is undefined. Can't train Word2Vec without it.");
+    }
+
     /**
      * PLEASE NOTE: This method isn't supported for Spark implementation. Consider using fitLists() or fitSequences() instead.
      */
@@ -56,6 +65,9 @@ public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
         /**
          * Basically all we want here is tokenization, to get JavaRDD<Sequence<VocabWord>> out of Strings, and then we just go  for SeqVec
          */
+
+        validateConfiguration();
+
         final JavaSparkContext context = new JavaSparkContext(sentences.context());
 
         broadcastEnvironment(context);
