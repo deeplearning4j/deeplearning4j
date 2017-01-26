@@ -4,7 +4,7 @@ layout: cn-default
 ---
 <p><h1>配置自动化构建工具</h1></p>
 <p>我们一般鼓励Deeplearning4j、ND4J和DataVec的用户选择Maven，但也有必要介绍如何为Ivy、Gradle和SBT等其他工具配置构建文件，这尤其是因为考虑到Google推荐使用Gradle而非Maven来构建Android项目。</p>
-<p>以下操作指南适用于DL4J和ND4J的所有子模块，包括deeplearning4j-api、deeplearning4j-scaleout和ND4J后端。所有项目及子模块的<strong>最新版本</strong>均可以在<a href="https://search.maven.org/" target="_blank">Maven中央仓库</a>中找到。截止到2016年10月，最新版本为<code>0.6.0</code>。如用源码构建，最新版本是<code>0.6.1-SNAPSHOT</code>。</p>
+<p>以下操作指南适用于DL4J和ND4J的所有子模块，包括deeplearning4j-api、deeplearning4j-scaleout和ND4J后端。所有项目及子模块的<strong>最新版本</strong>均可以在<a href="https://search.maven.org/" target="_blank">Maven中央仓库</a>中找到。截止到2017年1月，最新版本为<code>0.7.2</code>。如用源码构建，最新版本是<code>0.7.3-SNAPSHOT</code>。</p>
 <br />
 
 <p><h2>Maven</h2></p>
@@ -19,6 +19,7 @@ layout: cn-default
   &lt;/dependency&gt;
 &lt;/dependencies&gt;
 </code></pre>
+<p></p><strong>注意</strong>：Deeplearning4j将依赖 <a href="http://nd4j.org/cn" target="_blank">ND4J</a> 和<a href="datavec">DataVec</a>。如要参考正确的 MAVEN 配置，可以参考我们的<a href="http://github.com/deeplearning4j/dl4j-examples" target="_blank">示例</a>
 <br />
 
 <p><h2>Ivy</h2></p>
