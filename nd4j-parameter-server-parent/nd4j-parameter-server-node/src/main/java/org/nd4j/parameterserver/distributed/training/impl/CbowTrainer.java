@@ -1,6 +1,8 @@
 package org.nd4j.parameterserver.distributed.training.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
@@ -39,7 +41,29 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
 
         chains.put(RequestDescriptor.createDescriptor(message.getOriginatorId(), message.getTaskId()), chain);
 
-        DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), message.getSyn1rows(), message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
+        int row_syn1[] = message.getSyn1rows();
+
+        if (message.getNegSamples() > 0) {
+            int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
+            int tempArray[] = new int[message.getNegSamples() + 1];
+            tempArray[0] = message.getW1();
+
+            for (int e = 1; e < message.getNegSamples() + 1; e++) {
+                while (true) {
+                    int rnd = RandomUtils.nextInt(0, rows);
+                    if (rnd != message.getW1()) {
+                        tempArray[e] = rnd;
+                        break;
+                    }
+                }
+            }
+
+            row_syn1 = ArrayUtils.addAll(row_syn1, tempArray);
+
+            message.setNegatives(tempArray);
+        }
+
+        DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), row_syn1, message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
         dcdm.setTargetId((short) - 1);
         dcdm.setOriginatorId(message.getOriginatorId());
         transport.sendMessage(dcdm);
@@ -93,7 +117,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         INDArray words = Nd4j.pullRows(storage.getArray(WordVectorStorage.SYN_0), 1, cbr.getSyn0rows(), 'c' );
         INDArray neue = words.mean(0);
 
-        INDArray neu1e = Nd4j.create(syn1.columns());
+        INDArray neu1e = Nd4j.create(syn0.columns());
 
         int e = 0;
 
@@ -121,6 +145,32 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
                 updated = true;
                 Nd4j.getBlasWrapper().axpy(new Double(g), syn1.getRow(cbr.getSyn1rows()[e]), neu1e);
                 Nd4j.getBlasWrapper().axpy(new Double(g), neue, syn1.getRow(cbr.getSyn1rows()[e]));
+            }
+        }
+
+        if (cbr.getNegSamples() > 0) {
+            int cnt = 0;
+            for (; e < cbr.getNegSamples() + 1; e++, cnt++) {
+                float dot = dots.getFloat(e);
+
+                float code = cnt == 0 ? 1.0f : 0.0f;
+                double g = 0.0f;
+
+                if (dot > HS_MAX_EXP)
+                    g = (code - 1 ) * alpha;
+                else if (dot <- HS_MAX_EXP)
+                    g = (code - 0 ) * alpha;
+                else {
+                    int idx = (int) ((dot + HS_MAX_EXP) * (expTable.length() / HS_MAX_EXP / 2.0));
+                    if (idx >= expTable.length() || idx < 0)
+                        continue;
+
+                    g = (code - expTable.getDouble(idx)) * alpha;
+                }
+
+                updated = true;
+                Nd4j.getBlasWrapper().axpy(new Double(g), syn1Neg.getRow(cbr.getNegatives()[cnt]), neu1e);
+                Nd4j.getBlasWrapper().axpy(new Double(g), neue, syn1Neg.getRow(cbr.getNegatives()[cnt]));
             }
         }
 

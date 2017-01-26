@@ -28,6 +28,8 @@ public class CbowRequestMessage extends BaseVoidMessage implements TrainingMessa
     protected int negSamples;
     protected byte[] codes;
 
+    protected int[] negatives;
+
     public CbowRequestMessage(@NonNull int[] syn0rows, @NonNull int[] syn1rows, int w1, byte[] codes, int negSamples, double alpha, long nextRandom) {
         this.syn0rows = syn0rows;
         this.syn1rows = syn1rows;
