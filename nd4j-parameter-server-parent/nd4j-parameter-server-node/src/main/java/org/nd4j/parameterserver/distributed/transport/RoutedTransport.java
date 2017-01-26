@@ -421,7 +421,7 @@ public class RoutedTransport extends BaseTransport {
         super.launch(threading);
 
         // send introductory message
-        if (nodeRole == NodeRole.CLIENT) {
+//        if (nodeRole == NodeRole.CLIENT) {
 //            shards.parallelStream().forEach((rc) -> {
                 IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
                 irm.setTargetId((short) -1);
@@ -429,7 +429,7 @@ public class RoutedTransport extends BaseTransport {
 
 //            });
 
-        }
+//        }
     }
 
     @Override

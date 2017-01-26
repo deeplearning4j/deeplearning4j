@@ -81,6 +81,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
             int negatives[] = Arrays.copyOfRange(rowsB, codes.length, rowsB.length);
             cbrm.setNegatives(negatives);
         }
+        cbrm.setFrameId(-119L);
         cbrm.setTaskId(this.taskId);
         cbrm.setOriginatorId(this.getOriginatorId());
 

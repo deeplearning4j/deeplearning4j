@@ -203,7 +203,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
                 }
             }
         } else {
-            log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
+            //log.info("sI_{} isn't tracking this frame: Originator: {}, frameId: {}, taskId: {}", transport.getShardIndex(), chain.getOriginatorId(), chain.getFrameId(), taskId );
         }
 
 
