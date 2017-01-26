@@ -78,6 +78,9 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
                 windowWords[x] = intsList.get(x);
             }
 
+            if (windowWords.length < 1)
+                throw new RuntimeException("empty windowWords");
+
             iterateSample(currentWord, windowWords, nextRandom, learningRate, false, 0, true, null);
         }
 
