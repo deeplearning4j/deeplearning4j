@@ -39,6 +39,8 @@ public class RoutedTransport extends BaseTransport {
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
     @Getter @Setter protected ClientRouter router;
 
+    protected long originatorId;
+
     public RoutedTransport(){
         //
     }
@@ -146,6 +148,7 @@ public class RoutedTransport extends BaseTransport {
         }
 
         router.init(voidConfiguration, this);
+        this.originatorId = StringUtils.getLongHash(this.getIp() + ":" + this.getPort());
     }
 
     /**
@@ -224,6 +227,12 @@ public class RoutedTransport extends BaseTransport {
          */
         // TODO: discard message if it's not sent for enough time?
         long targetAddress = message.getOriginatorId();
+
+        if (targetAddress == originatorId) {
+            completed.put(message.getTaskId(), (MeaningfulMessage) message);
+            return;
+        }
+
         RetransmissionHandler.TransmissionStatus result;
 
         //log.info("sI_{} trying to send back {}", shardIndex, message.getClass().getSimpleName());
@@ -299,6 +308,19 @@ public class RoutedTransport extends BaseTransport {
 
     @Override
     protected void sendCommandToShard(VoidMessage message) {
+        // fastpath for local Shard
+        if (nodeRole == NodeRole.SHARD && message instanceof TrainingMessage) {
+            router.setOriginator(message);
+            message.setTargetId(getShardIndex());
+
+            try {
+                messages.put(message);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
         RetransmissionHandler.TransmissionStatus result;
 
         int targetShard = router.assignTarget(message);

@@ -17,4 +17,6 @@ public interface ClientRouter {
     int assignTarget(TrainingMessage message);
 
     int assignTarget(VoidMessage message);
+
+    void setOriginator(VoidMessage message);
 }

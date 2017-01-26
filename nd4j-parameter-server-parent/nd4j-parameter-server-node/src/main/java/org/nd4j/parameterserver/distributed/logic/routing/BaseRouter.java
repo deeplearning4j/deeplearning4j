@@ -24,7 +24,8 @@ public abstract class BaseRouter implements ClientRouter {
         this.transport = transport;
     }
 
-    protected void setOriginator(VoidMessage message) {
+    @Override
+    public void setOriginator(VoidMessage message) {
         if (originatorIdx == 0)
             originatorIdx = StringUtils.getLongHash(transport.getIp() + ":" + transport.getPort());
 
