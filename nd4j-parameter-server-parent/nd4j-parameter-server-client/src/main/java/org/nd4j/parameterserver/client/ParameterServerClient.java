@@ -15,7 +15,6 @@ import org.nd4j.parameterserver.model.ServerTypeJson;
 import org.nd4j.parameterserver.model.SubscriberState;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 

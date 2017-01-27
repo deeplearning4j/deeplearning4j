@@ -11,7 +11,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-
 import static org.junit.Assert.assertEquals;
 
 /**

@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.buffer.pointer;
 
 import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.nd4j.linalg.api.buffer.util.LibUtils;

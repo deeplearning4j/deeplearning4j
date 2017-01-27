@@ -23,7 +23,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.nio.Buffer;
-import java.nio.ByteBuffer;
 
 /**
  * A Jcuda buffer

@@ -9,7 +9,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.*;
 
-
 import static org.junit.Assert.*;
 
 /**

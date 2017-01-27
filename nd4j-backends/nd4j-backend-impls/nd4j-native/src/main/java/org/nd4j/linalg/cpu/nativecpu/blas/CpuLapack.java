@@ -2,8 +2,9 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import java.nio.FloatBuffer;
+
 import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 
 import static org.bytedeco.javacpp.openblas.*;
 

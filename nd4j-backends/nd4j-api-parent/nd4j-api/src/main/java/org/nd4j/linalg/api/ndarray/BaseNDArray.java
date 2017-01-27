@@ -21,28 +21,29 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
-import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -51,19 +52,16 @@ import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.NDArrayMath;
-import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.lang.Iterable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.IntBuffer;
 import java.util.*;
-import java.util.Set;
 
-import static org.nd4j.linalg.factory.Nd4j.compressDebug;
-import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
-import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
+import static org.nd4j.linalg.factory.Nd4j.*;
 
 
 /**
@@ -171,7 +169,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer,offset,ArrayUtil.prodLong(shape)) : buffer;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride,offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
         init(shape,stride);
-//        Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
     }
 
@@ -796,15 +794,70 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        INDArray toTad = doTad(index,dimension);
-      /*  DataBuffer shapeInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension).getFirst();
-        int eWS = Shape.elementWiseStride(toTad.shapeInfoDataBuffer());
-        toTad.shapeInfoDataBuffer().assign(shapeInfo);
-        int length2 = Shape.shapeInfoLength(Shape.rank(shapeInfo));
-        //if (1 > 0) throw new RuntimeException("setElementWiseStride called: [" + elementWiseStride + "], buffer: " + buffer);
-        toTad.shapeInfoDataBuffer().put(length2 - 2, eWS);*/
+        if(dimension == null || dimension.length == 0)
+            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
+
+        if(dimension.length >= rank())
+            return this;
+        for(int i = 0; i < dimension.length; i++)
+            if(dimension[i] < 0)
+                dimension[i] += rank();
+
+        if(dimension.length > 1)
+            Arrays.sort(dimension);
+
+        int tads = tensorssAlongDimension(dimension);
+        if(index >= tads)
+            throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
+
+
+        if(dimension.length == 1) {
+            if(dimension[0] == 0 && isColumnVector()) {
+                return this.transpose();
+            } else if(dimension[0] == 1 && isRowVector()) {
+                return this;
+            }
+        }
+
+        Pair<DataBuffer,DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
+        DataBuffer shapeInfo = tadInfo.getFirst();
+        int[] shape = Shape.shape(shapeInfo);
+        int[] stride = Shape.stride(shapeInfo).asInt();
+        int offset = offset() + tadInfo.getSecond().getInt(index);
+        INDArray toTad = Nd4j.create(data(),shape,stride,offset);
+        BaseNDArray baseNDArray = (BaseNDArray) toTad;
+
+        //preserve immutability
+        char newOrder = Shape.getOrder(shape,stride,1);
+
+        int ews = baseNDArray.shapeInfoDataBuffer().getInt(baseNDArray.shapeInfoDataBuffer().length() - 2);
+
+        //TAD always calls permute. Permute EWS is always -1. This is not true for row vector shapes though.
+        if(!Shape.isRowVectorShape(baseNDArray.shapeInfoDataBuffer()))
+            ews = -1;
+
+        // we create new shapeInfo with possibly new ews & order
+        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
+
         return toTad;
     }
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public INDArray javaTensorAlongDimension(int index, int... dimension) {
+        return doTad(index,dimension);
+    }
+
+    private void setShapeInformation(DataBuffer shapeInfo) {
+        this.shapeInformation = shapeInfo;
+    }
+
 
     private INDArray doTad(int index,int...dimension) {
         if(dimension == null || dimension.length == 0)
@@ -816,14 +869,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(dimension[i] < 0)
                 dimension[i] += rank();
 
-        Arrays.sort(dimension);
+        if(dimension.length > 1)
+            Arrays.sort(dimension);
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
 
 
-        if(dimension.length == 1){
+        if(dimension.length == 1) {
             if(dimension[0] == 0 && isColumnVector()) {
                 return this.transpose();
             } else if(dimension[0] == 1 && isRowVector()) {
@@ -842,8 +896,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
 
         INDArray ret2 = permuted.slice(sliceIdx);
-        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()){
+        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length()) {
             if(dimension.length == 1 && ret2.isRowVector()) return ret2;
+            if(finalPermuteDims.length != ret2.rank()) {
+                finalPermuteDims = new int[ret2.rank()];
+                int count = 0;
+                for(int i = finalPermuteDims.length - 1; i >= 0; i--)
+                    finalPermuteDims[count++] = i;
+            }
             return ret2.permutei(finalPermuteDims);
         }
 
@@ -1975,11 +2035,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
+        char newOrder = Shape.getOrder(shape,stride,1);
+
         return create(
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
-                , offset, ordering()
+                , offset, newOrder
         );
     }
 
@@ -2208,7 +2270,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
         //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
-        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)){
+        if(!rowVector.isRowVector() || this.size(1) != rowVector.size(1)) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape()) + ", row vector shape =" + Arrays.toString(rowVector.shape()) + ")");
         }
 
@@ -3013,7 +3075,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        LinAlgExceptions.assertSameLength(other,result);
+        LinAlgExceptions.assertSameShape(other,result);
 
         Nd4j.getExecutioner().exec(new AddOp(this, other, result));
 
@@ -3199,12 +3261,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(shapeInformation) == 0) {
+        if (Shape.rank(shapeInformation) == 0 || isRowVector()) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
-            else
-                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+            else if(isRowVector())
+                return createScalarForIndex(slice,true);
 
+            else {
+                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+            }
         }
 
 
@@ -4501,18 +4566,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             this.attemptedToFindElementWiseStride = true;
         }
-        if (shapeInfo.get(2*rank + 2) > 0) {
+
+        if (shapeInfo.get(2 * rank + 2) > 0) {
             //for the backend to work - no ews for permutei
+            //^^ not true anymore? Not sure here. Marking this for raver
             this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, this.offset(), -1 , newOrder);
         }
+
+        this.shape = null;
+        this.stride = null;
 
         this.rows = size(0);
         this.columns = size(1);
         this.numLeadingOnes = -1;
         this.numTrailingOnes = -1;
-
-        this.shape = null;
-        this.stride = null;
 
         return this;
     }

@@ -21,11 +21,7 @@ package org.nd4j.linalg.factory;
 
 
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.blas.Blas;
-import org.nd4j.linalg.api.blas.Lapack;
-import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.blas.Level2;
-import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;

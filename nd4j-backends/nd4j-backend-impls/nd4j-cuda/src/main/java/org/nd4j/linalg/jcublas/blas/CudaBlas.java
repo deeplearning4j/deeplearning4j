@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import org.nd4j.nativeblas.Nd4jBlas;
+
 import static org.bytedeco.javacpp.cublas.*;
 
 /**

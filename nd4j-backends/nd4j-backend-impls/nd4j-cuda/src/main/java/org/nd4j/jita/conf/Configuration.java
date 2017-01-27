@@ -160,13 +160,13 @@ public class Configuration implements Serializable {
     private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
     private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
     private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
-    private static final String DEBUG_ENABLED = "ND4J_CUDA_DEBUG";
+    private static final String DEBUG_ENABLED = "ND4J_DEBUG";
+    private static final String VERBOSE = "ND4J_VERBOSE";
     private static final String USE_PREALLOCATION = "ND4J_CUDA_USE_PREALLOCATION";
     private static final String MAX_DEVICE_CACHE = "ND4J_CUDA_MAX_DEVICE_CACHE";
     private static final String MAX_HOST_CACHE = "ND4J_CUDA_MAX_HOST_CACHE";
     private static final String MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
     private static final String FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
-    private static final String VERBOSE = "ND4J_CUDA_VERBOSE";
 
 
     private void parseEnvironmentVariables() {

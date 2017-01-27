@@ -16,7 +16,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -165,6 +166,11 @@ public class ConcatTestsC extends BaseNd4jTest {
 
         //Concat, dim 1
         second = Nd4j.linspace(24, 32, 8).reshape('c', 2, 1, 4);
+        for(int i = 0; i < second.tensorssAlongDimension(1); i++) {
+            INDArray secondTad = second.javaTensorAlongDimension(i,1);
+            System.out.println(second.tensorAlongDimension(i, 1));
+        }
+
         third = Nd4j.linspace(32, 48, 16).reshape('c', 2, 2, 4);
         exp = Nd4j.create(2, 3 + 1 + 2, 4);
         exp.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0, 3), NDArrayIndex.all()}, first);

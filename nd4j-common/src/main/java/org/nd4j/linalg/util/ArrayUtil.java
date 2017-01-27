@@ -25,7 +25,6 @@ import org.apache.commons.lang3.RandomUtils;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -735,7 +734,7 @@ public class ArrayUtil {
             throw new IllegalStateException("Illegal remove: indexes.length > data.length");
         int offset = 0;
         /*
-            workaround for non-existant indexes (such as Integer.MAX_VALUE)
+            workaround for non-existent indexes (such as Integer.MAX_VALUE)
 
 
         for (int i = 0; i < index.length; i ++) {

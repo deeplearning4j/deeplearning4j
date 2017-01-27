@@ -10,7 +10,6 @@ import org.nd4j.camel.kafka.Nd4jKafkaConsumer;
 import org.nd4j.camel.kafka.Nd4jKafkaProducer;
 import org.nd4j.camel.kafka.Nd4jKafkaRoute;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 

@@ -1,7 +1,5 @@
 package org.nd4j.jita.allocator.garbage;
 
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 import java.lang.ref.ReferenceQueue;

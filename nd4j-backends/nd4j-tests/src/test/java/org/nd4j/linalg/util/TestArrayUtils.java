@@ -1,12 +1,13 @@
 package org.nd4j.linalg.util;
 
-import static org.junit.Assert.*;
-
-import java.util.Random;
-
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.Random;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class TestArrayUtils extends BaseNd4jTest {
 

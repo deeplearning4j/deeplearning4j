@@ -19,8 +19,6 @@
 
 package org.nd4j.linalg;
 
-import static org.junit.Assert.*;
-
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.Pair;
@@ -42,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests comparing Nd4j ops to other libraries
@@ -78,6 +76,16 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     @Override
     public char ordering() {
         return 'f';
+    }
+
+    @Test
+    public void testCrash() {
+        INDArray array3d = Nd4j.ones(1, 10, 10);
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[]{0});
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[]{1});
+
+        INDArray array4d = Nd4j.ones(1, 10, 10, 10);
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, new int[]{0});
     }
 
     @Test

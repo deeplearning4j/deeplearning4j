@@ -6,7 +6,6 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import net.bytebuddy.jar.asm.MethodVisitor;
-import org.nd4j.bytebuddy.util.OpCodeUtil;
 
 /**
  * Load a reference on the method stack

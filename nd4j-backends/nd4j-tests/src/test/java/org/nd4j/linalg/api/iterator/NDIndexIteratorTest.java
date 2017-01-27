@@ -9,7 +9,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author Adam Gibson

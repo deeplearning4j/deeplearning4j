@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.nativeblas.Nd4jBlas;
+
 import static org.bytedeco.javacpp.openblas.*;
 
 /**

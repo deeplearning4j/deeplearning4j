@@ -20,21 +20,14 @@
 package org.nd4j.linalg.jcublas.buffer.factory;
 
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.*;
-import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

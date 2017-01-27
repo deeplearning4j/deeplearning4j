@@ -1,5 +1,4 @@
 package org.nd4j.linalg.shape;
-import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,6 +8,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.NDArrayMath;
+
+import static org.junit.Assert.assertEquals;
 
 
 /**

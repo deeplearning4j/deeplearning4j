@@ -1,8 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor.serializer;
 
 import lombok.NonNull;
-import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.stats.MinMaxStats;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;

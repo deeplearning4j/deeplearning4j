@@ -3,9 +3,9 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.DistributionStats;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
-import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerStandardizeSerializer;
 
 import java.io.File;
 import java.io.IOException;

@@ -224,6 +224,15 @@ public interface INDArray extends Serializable  {
      */
     INDArray tensorAlongDimension(int index, int...dimension);
 
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
+     * @return the vector along a particular dimension
+     */
+    INDArray javaTensorAlongDimension(int index, int...dimension);
+
 
     /**
      * Cumulative sum along a dimension

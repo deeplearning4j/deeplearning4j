@@ -19,16 +19,16 @@
 
 package org.nd4j.linalg.factory;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.PrivilegedActionException;
-import java.util.*;
-
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.PrivilegedActionException;
+import java.util.*;
 
 /**
  * An ND4j backend.
@@ -210,7 +210,7 @@ public abstract class Nd4jBackend {
 
         }
 
-        Collections.sort(backends, new Comparator<Nd4jBackend>() {
+        Collections.sort(reflectionBackends, new Comparator<Nd4jBackend>() {
             @Override
             public int compare(Nd4jBackend o1, Nd4jBackend o2) {
                 // high-priority first

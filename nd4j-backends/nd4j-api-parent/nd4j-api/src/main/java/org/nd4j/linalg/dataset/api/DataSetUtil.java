@@ -5,7 +5,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
@@ -73,7 +72,7 @@ public class DataSetUtil {
             as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
 
-        if(mask == null){
+        if(mask == null) {
             return as2d;
         }
 

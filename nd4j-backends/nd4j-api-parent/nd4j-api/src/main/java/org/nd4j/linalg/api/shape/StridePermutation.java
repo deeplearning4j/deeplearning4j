@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.shape;
 
-import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

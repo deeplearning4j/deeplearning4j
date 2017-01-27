@@ -1,6 +1,5 @@
 package org.nd4j.jita.allocator.context;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

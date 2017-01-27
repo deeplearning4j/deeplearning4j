@@ -9,7 +9,7 @@ import org.nd4j.bytebuddy.method.integer.LoadIntParamImplementation;
 import org.nd4j.bytebuddy.returnref.ReturnAppender;
 import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Adam Gibson

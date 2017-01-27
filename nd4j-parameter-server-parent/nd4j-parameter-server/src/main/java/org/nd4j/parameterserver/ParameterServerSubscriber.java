@@ -15,7 +15,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.apache.http.HttpEntity;
 import org.json.JSONObject;
 import org.nd4j.aeron.ipc.AeronNDArraySubscriber;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -35,7 +34,6 @@ import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.util.CheckSocket;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -4,18 +4,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,4 +141,20 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println(b);
     }
 
+    @Test
+    public void testTad() {
+        int[] someShape = {2,1,3,3};
+        INDArray a = Nd4j.linspace(1,18,18).reshape(someShape);
+        assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
+    }
+
+    @Test(expected =  IllegalStateException.class)
+    public void opsNotAllowed() {
+        INDArray A = Nd4j.ones(2,3,1);
+        INDArray B = Nd4j.ones(2,3);
+
+        System.out.println(A.add(B));
+        System.out.println(B.add(A));
+
+    }
 }

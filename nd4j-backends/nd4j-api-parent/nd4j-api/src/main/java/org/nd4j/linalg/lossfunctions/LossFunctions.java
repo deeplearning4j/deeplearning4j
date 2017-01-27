@@ -20,12 +20,7 @@
 package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.impl.*;
-
-import java.util.Arrays;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 
 /**
