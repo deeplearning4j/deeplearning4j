@@ -397,6 +397,70 @@ public class Word2VecTests {
         restoredVec.fit();
     }
 
+    @Test
+    public void testUnknown1() throws Exception {
+        // Strip white space before and after for each line
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(10)
+                .useUnknown(true)
+                .unknownElement(new VocabWord(1.0, "PEWPEW"))
+                .iterations(1)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .seed(42)
+                .learningRate(0.025)
+                .minLearningRate(0.001)
+                .sampling(0)
+                .elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .epochs(1)
+                .windowSize(5)
+                .useHierarchicSoftmax(true)
+                .allowParallelTokenization(true)
+                .modelUtils(new FlatModelUtils<VocabWord>())
+                .iterate(iter)
+                .tokenizerFactory(t)
+                .build();
+
+        vec.fit();
+
+        assertTrue(vec.hasWord("PEWPEW"));
+        assertTrue(vec.getVocab().containsWord("PEWPEW"));
+
+        INDArray unk = vec.getWordVectorMatrix("PEWPEW");
+        assertNotEquals(null, unk);
+
+        File tempFile = File.createTempFile("temp","file");
+        tempFile.deleteOnExit();
+
+        WordVectorSerializer.writeWord2VecModel(vec, tempFile);
+
+        log.info("Original configuration: {}", vec.getConfiguration());
+
+        Word2Vec restored = WordVectorSerializer.readWord2VecModel(tempFile);
+
+        assertTrue(restored.hasWord("PEWPEW"));
+        assertTrue(restored.getVocab().containsWord("PEWPEW"));
+        INDArray unk_restored = restored.getWordVectorMatrix("PEWPEW");
+
+        assertEquals(unk, unk_restored);
+
+
+
+        // now we're getting some junk word
+        INDArray random = vec.getWordVectorMatrix("hhsd7d7sdnnmxc_SDsda");
+        INDArray randomRestored = restored.getWordVectorMatrix("hhsd7d7sdnnmxc_SDsda");
+
+        log.info("Restored configuration: {}", restored.getConfiguration());
+
+        assertEquals(unk, random);
+        assertEquals(unk, randomRestored);
+    }
+
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to ["+target+"]:");
         for (String word: list) {
