@@ -111,7 +111,7 @@ SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
     sparkNet.setListeners(remoteUIRouter, Collections.singletonList(new StatsListener(null)));
 </code></pre><br>
 <p>为避免与Spark发生依赖项冲突，应当使用<code>deeplearning4j-ui-model</code>依赖项来获取<code>StatsListener</code>，<em>而不是</em>完整的<code>deeplearning4j-ui_2.10</code>用户界面依赖项。</p>
-<p>注意：您应当将UI_MACHINE_IP替换为运行用户界面实例的计算机的IP地址。</p><br>
+<p>注意：您应当将<code>UI_MACHINE_IP</code>替换为运行用户界面实例的计算机的IP地址。</p><br>
 
 <p><h2><a name="usingui">用UI调试网络</a></h2></p>
 <p><a href="https://cs231n.github.io/neural-networks-3/#baby" target="_blank">Andrej Karpathy的这个网页</a>对神经网络定型的可视化作了很透彻的介绍，值得一读，不妨先将其中的内容消化一下。</p>
