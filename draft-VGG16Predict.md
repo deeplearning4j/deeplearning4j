@@ -22,7 +22,7 @@ The network will certainly fail to identify you, images of cats and dogs it will
 
 ## Live Demo
 
-<iframe src="http://54.67.56.24:4567/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
+<iframe src="https://54.67.56.24/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
 
 ## Using VGG16 pretrained for your use case
 
