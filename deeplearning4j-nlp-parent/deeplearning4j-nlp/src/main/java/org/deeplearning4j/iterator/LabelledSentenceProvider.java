@@ -18,8 +18,10 @@ public interface LabelledSentenceProvider {
      */
     Pair<String,String> nextSentence();
 
+    void reset();
+
     List<String> allLabels();
 
-    int numLabels();
+    int numLabelClasses();
 
 }
