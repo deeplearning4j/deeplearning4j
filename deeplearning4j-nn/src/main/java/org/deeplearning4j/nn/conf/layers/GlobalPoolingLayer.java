@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,7 +35,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@Data
+@Data @NoArgsConstructor
 public class GlobalPoolingLayer extends Layer {
 
     private PoolingType poolingType;
