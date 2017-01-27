@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -16,17 +15,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Imports a Dense layer from Keras.
+ * Imports an Embedding layer from Keras.
  *
  * @author dave@skymind.io
  */
 @Slf4j
 public class KerasEmbedding extends KerasLayer {
 
+    public static final String LAYER_FIELD_INPUT_DIM = "input_dim";
+
     /* Keras layer parameter names. */
-    //TODO: double check these!
     public static final String KERAS_PARAM_NAME_W = "W";
-    public static final String KERAS_PARAM_NAME_B = "B";
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -51,21 +50,31 @@ public class KerasEmbedding extends KerasLayer {
     public KerasEmbedding(Map<String,Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+
+        int inputDim = getInputDimFromConfig(layerConfig);
+        int[] inputShapeOld = this.inputShape;
+        this.inputShape = new int[inputShapeOld.length+1];
+        this.inputShape[0] = inputShapeOld[0];
+        this.inputShape[1] = inputDim;
+        /* TODO: what about mask_zero field? */
+
+        /* TODO: fix this once we have a solution for fixing layer parameters. */
+        if (enforceTrainingConfig)
+            throw new UnsupportedKerasConfigurationException("DL4J EmbeddingLayer includes bias but Keras Embedding does not");
+        else
+            log.warn("DL4J EmbeddingLayer includes bias but Keras Embedding does not.");
+
         this.layer = new EmbeddingLayer.Builder()
             .name(this.layerName)
+            .nIn(inputDim)
             .nOut(getNOutFromConfig(layerConfig))
             .dropOut(this.dropout)
-            .activation(Activation.IDENTITY) // TODO: double check this
+            .activation(Activation.IDENTITY)
             .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig))
-            .biasInit(0.0) // TODO: double check this
+            .biasInit(0.0)
             .l1(this.weightL1Regularization)
             .l2(this.weightL2Regularization)
             .build();
-        /* TODO:
-         * - look for other fields in Keras Embedding layer config we might care about
-         * - what about mask_zero?
-         * - do embedding layers have a bias?
-         */
     }
 
     /**
@@ -113,16 +122,27 @@ public class KerasEmbedding extends KerasLayer {
             this.weights.put(DefaultParamInitializer.WEIGHT_KEY, weights.get(KERAS_PARAM_NAME_W));
         else
             throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-        if (weights.containsKey(KERAS_PARAM_NAME_B))
-            this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
-        else
-            throw new InvalidKerasConfigurationException("Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
+
+        log.warn("Setting DL4J EmbeddingLayer bias to zero.");
+
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(KERAS_PARAM_NAME_W);
-            paramNames.remove(KERAS_PARAM_NAME_B);
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: " + unknownParamNames.substring(1, unknownParamNames.length()-1));
         }
+    }
+
+    /**
+     * Get Keras input shape from Keras layer configuration.
+     *
+     * @param layerConfig       dictionary containing Keras layer configuration
+     * @return                  input dim as int
+     */
+    private int getInputDimFromConfig(Map<String,Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        if (!innerConfig.containsKey(LAYER_FIELD_INPUT_DIM))
+            throw new InvalidKerasConfigurationException("Keras Embedding layer config missing " + LAYER_FIELD_INPUT_DIM + " field");
+        return (int)innerConfig.get(LAYER_FIELD_INPUT_DIM);
     }
 }
