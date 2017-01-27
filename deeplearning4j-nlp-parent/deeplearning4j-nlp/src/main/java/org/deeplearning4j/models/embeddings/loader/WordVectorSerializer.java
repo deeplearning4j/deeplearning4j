@@ -240,6 +240,8 @@ public class WordVectorSerializer {
             syn0 = Nd4j.create(words, size);
             cache = new AbstractCache<>();
 
+            printOutProjectedMemoryUse(words, size, 1);
+
             lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                     .cache(cache)
                     .useHierarchicSoftmax(false)
@@ -1731,9 +1733,9 @@ public class WordVectorSerializer {
                 // we should check for something that looks like proper word vectors here. i.e: 1 word at the 0 position, and bunch of floats further
                 String[] split = line.split(" ");
                 try {
-                    int[] header = new int[split.length];
+                    long[] header = new long[split.length];
                     for (int x = 0; x < split.length; x++) {
-                        header[x] = Integer.parseInt(split[x]);
+                        header[x] = Long.parseLong(split[x]);
                     }
                     if (split.length < 4) hasHeader = true;
                     // now we know, if that's all ints - it's just a header
@@ -1742,6 +1744,8 @@ public class WordVectorSerializer {
                     // [2] - number of documents <-- DL4j-only value
                     if (split.length == 3)
                         cache.incrementTotalDocCount(header[2]);
+
+                    printOutProjectedMemoryUse(header[0], (int) header[1], 1);
 
                     hasHeader = true;
 
@@ -2682,5 +2686,25 @@ public class WordVectorSerializer {
                 throw new RuntimeException(e);
             }
         } else return word;
+    }
+
+    public static void printOutProjectedMemoryUse(long numWords, int vectorLength, int numTables) {
+        double memSize = numWords * vectorLength * Nd4j.sizeOfDataType() * numTables;
+
+        String sfx;
+        double value;
+        if (memSize < 1024 * 1024L) {
+            sfx = "KB";
+            value = memSize / 1024;
+        } if (memSize < 1024 * 1024L * 1024L) {
+            sfx = "MB";
+            value = memSize / 1024 / 1024;
+        } else {
+            sfx = "GB";
+            value = memSize / 1024 / 1024 / 1024;
+        }
+
+        log.info("Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
+
     }
 }
