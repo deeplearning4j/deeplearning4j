@@ -106,7 +106,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     public void incrementWordCount(String word, int increment) {
         T element = extendedVocabulary.get(word);
         if (element != null) {
-            extendedVocabulary.increaseElementFrequency(increment);
+            element.increaseElementFrequency(increment);
             totalWordCount.addAndGet(increment);
         }
     }
