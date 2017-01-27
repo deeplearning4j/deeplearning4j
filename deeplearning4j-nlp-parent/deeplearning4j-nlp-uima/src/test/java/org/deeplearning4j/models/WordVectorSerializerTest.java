@@ -31,6 +31,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -205,12 +206,18 @@ public class WordVectorSerializerTest {
 
         vec.fit();
 
+        VocabCache orig = vec.getVocab();
+
         File tempFile = File.createTempFile("temp", "w2v");
         tempFile.deleteOnExit();
 
         WordVectorSerializer.writeWordVectors(vec, tempFile);
 
         WordVectors vec2 = WordVectorSerializer.loadTxtVectors(tempFile);
+
+        VocabCache rest = vec2.vocab();
+
+        assertEquals(orig.totalNumberOfDocs(), rest.totalNumberOfDocs());
 
         for (VocabWord word: vec.getVocab().vocabWords()) {
             INDArray array1 = vec.getWordVectorMatrix(word.getLabel());
@@ -698,6 +705,11 @@ public class WordVectorSerializerTest {
         ParagraphVectors vectors = WordVectorSerializer.readParagraphVectors("C:\\Users\\raver\\Downloads\\10kNews.zip");
     }
 
+    @Test
+    public void testVocabPeristence() throws Exception {
+        // we build vocab save it, and confirm equality
+
+    }
 
     @Test
     public void testMalformedLabels1() throws Exception {

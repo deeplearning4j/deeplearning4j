@@ -104,11 +104,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void incrementWordCount(String word, int increment) {
-        if (extendedVocabulary.containsKey(word)) {
-            extendedVocabulary.get(word).increaseElementFrequency(increment);
+        T element = extendedVocabulary.get(word);
+        if (element != null) {
+            extendedVocabulary.increaseElementFrequency(increment);
             totalWordCount.addAndGet(increment);
         }
-
     }
 
     /**
@@ -120,8 +120,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     @Override
     public int wordFrequency(@NonNull String word) {
         // TODO: proper wordFrequency impl should return long, instead of int
-        if (extendedVocabulary.containsKey(word))
-            return (int) extendedVocabulary.get(word).getElementFrequency();
+        T element = extendedVocabulary.get(word);
+        if (element != null)
+            return (int) element.getElementFrequency();
         return 0;
     }
 
@@ -280,9 +281,9 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param howMuch
      */
     @Override
-    public void incrementDocCount(String word, int howMuch) {
+    public void incrementDocCount(String word, long howMuch) {
         if (extendedVocabulary.containsKey(word)) {
-            extendedVocabulary.get(word).setSequencesCount(vocabulary.get(word).getSequencesCount() + 1);
+            extendedVocabulary.get(word).setSequencesCount(extendedVocabulary.get(word).getSequencesCount() + 1);
         }
     }
 
@@ -295,7 +296,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param count the count of the word
      */
     @Override
-    public void setCountForDoc(String word, int count) {
+    public void setCountForDoc(String word, long count) {
         if (extendedVocabulary.containsKey(word)) {
             extendedVocabulary.get(word).setSequencesCount(count);
         }
@@ -307,7 +308,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @return
      */
     @Override
-    public int totalNumberOfDocs() {
+    public long totalNumberOfDocs() {
         return documentsCounter.intValue();
     }
 
@@ -323,7 +324,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * Increment total number of documents observed by specified value
      */
     @Override
-    public void incrementTotalDocCount(int by) {
+    public void incrementTotalDocCount(long by) {
         documentsCounter.addAndGet(by);
     }
 
@@ -394,6 +395,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         for (T element: vocabCache.vocabWords()) {
             this.addToken(element);
         }
+        //logger.info("Current state: {}; Adding value: {}", this.documentsCounter.get(), vocabCache.totalNumberOfDocs());
         this.documentsCounter.addAndGet(vocabCache.totalNumberOfDocs());
     }
 

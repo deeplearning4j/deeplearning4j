@@ -12,11 +12,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
-import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.*;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -341,7 +337,7 @@ public class TestGraphNodes {
     @Test
     public void testL2Node(){
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex l2 = new L2Vertex(null,"",-1);
+        GraphVertex l2 = new L2Vertex(null,"",-1, 1e-8);
 
         INDArray in1 = Nd4j.rand(5,2);
         INDArray in2 = Nd4j.rand(5,2);

@@ -40,6 +40,8 @@ public class VectorsConfiguration implements Serializable {
     private int[] variableWindows;
 
     private boolean hugeModelExpected = false;
+    private boolean useUnknown = false;
+
     private int scavengerActivationThreshold = 2000000;
     private int scavengerRetentionDelay = 3;
 
