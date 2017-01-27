@@ -1,9 +1,12 @@
 package org.deeplearning4j.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.keras.api.*;
 import org.deeplearning4j.keras.api.sequential.*;
 import org.deeplearning4j.keras.hdf5.HDF5MiniBatchDataSetIterator;
 import org.deeplearning4j.keras.model.KerasModelSerializer;
+import org.deeplearning4j.keras.model.KerasModelType;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -22,20 +25,29 @@ public class DeepLearning4jEntryPoint {
 
     private final KerasModelSerializer kerasModelSerializer = new KerasModelSerializer();
 
+    /*
+        Model serialization.
+     */
+
     /**
      * Converts a Keras model to a DL4J reference.
      *
-     * @param modelRef Reference to temporary model serialized on disk.
+     * @param modelRef Reference to sequential model serialized on disk.
      */
-    public MultiLayerNetwork convert_to_dl4j(SequentialModelRef modelRef) throws Exception {
+    public MultiLayerNetwork sequential_to_multilayernetwork(KerasModelRef modelRef) throws Exception {
         MultiLayerNetwork model;
         try {
-            model = kerasModelSerializer.readSequential(modelRef.getModelFilePath(), modelRef.getType());
+            if (KerasModelType.SEQUENTIAL.equals(modelRef.getType())) {
+                model = kerasModelSerializer.readSequential(modelRef.getModelFilePath(), modelRef.getType());
+            }
+            else {
+                throw new IllegalArgumentException("Only SEQUENTIAL and FUNCTIONAL model types are supported.");
+            }
 
-            log.info("model.convert_to_dl4j() operation complete.");
+            log.info("model.sequential_to_multilayernetwork() operation complete.");
 
         } catch (Throwable e) {
-            log.error("Error while performing model.convert_to_dl4j()", e);
+            log.error("Error while performing model.sequential_to_multilayernetwork()", e);
             throw e;
         }
 
@@ -43,11 +55,42 @@ public class DeepLearning4jEntryPoint {
     }
 
     /**
+     * Converts a Keras model to a DL4J reference.
+     *
+     * @param modelRef Reference to functional model serialized on disk.
+     */
+    public ComputationGraph functional_to_computationgraph(KerasModelRef modelRef) throws Exception {
+        ComputationGraph model;
+        try {
+            if(KerasModelType.FUNCTIONAL.equals(modelRef.getType())) {
+                model = kerasModelSerializer.readFunctional(modelRef.getModelFilePath(), modelRef.getType());
+            }
+            else {
+                throw new IllegalArgumentException("Only SEQUENTIAL and FUNCTIONAL model types are supported.");
+            }
+
+            log.info("model.functional_to_computationgraph() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.functional_to_computationgraph()", e);
+            throw e;
+        }
+
+        return model;
+    }
+
+
+
+    /*
+        Sequential model methods.
+     */
+
+    /**
      * Performs fitting of the model which is referenced in the parameters according to learning parameters specified.
      *
      * @param fitParams Parameters for a fit operation
      */
-    public void fit(FitParams fitParams) throws Exception {
+    public void sequentialFit(FitParams fitParams) throws Exception {
         try {
             MultiLayerNetwork model = fitParams.getModel();
 
@@ -75,7 +118,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param evaluateParams Parameters for a Keras evaluate operation
      */
-    public void evaluate(EvaluateParams evaluateParams) throws Exception {
+    public void sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
             MultiLayerNetwork model = evaluateParams.getModel();
 
@@ -99,7 +142,7 @@ public class DeepLearning4jEntryPoint {
      *
      * @param predictParams A single feature and associated parameters
      */
-    public void predict(PredictParams predictParams) throws Exception {
+    public void sequentialPredict(PredictParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getModel();
 
@@ -116,9 +159,9 @@ public class DeepLearning4jEntryPoint {
     /**
      * Predict the labels of features in a dataset.
      *
-     * @param predictParams A dataset and assocated parameters
+     * @param predictParams A dataset and associated parameters
      */
-    public void predict_on_batch(PredictOnBatchParams predictParams) throws Exception {
+    public void sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
             MultiLayerNetwork model = predictParams.getModel();
 
@@ -133,35 +176,15 @@ public class DeepLearning4jEntryPoint {
     }
 
     /**
-     * Load a Keras model config into the current model.
-     *
-     * @param configParams Keras model config and associated parameters.
-     */
-    public MultiLayerNetwork from_config(FromConfigParams configParams) throws Exception {
-        MultiLayerNetwork model;
-        try {
-            model = kerasModelSerializer.readConfig(configParams);
-
-            log.info("model.from_config() operation complete.");
-
-        } catch (Throwable e) {
-            log.error("Error while performing model.from_config()", e);
-            throw e;
-        }
-
-        return model;
-    }
-
-    /**
      * Save a model into the DL4J format.
      *
-     * @param saveParams Current model in scope and assocaited save parameters
+     * @param saveParams Current model in scope and associated save parameters
      * @throws Exception
      */
-    public void save_model(SaveParams saveParams) throws Exception {
+    public void sequentialSave(SaveParams saveParams) throws Exception {
         try {
             ModelSerializer.writeModel(
-                saveParams.getModel(),
+                saveParams.getSequentialModel(),
                 new File(writeParams.getWritePath()),
                 true
             );
@@ -172,15 +195,122 @@ public class DeepLearning4jEntryPoint {
         }
     }
 
+
+
+    /*
+        Functional model methods.
+     */
+
     /**
-     * Keras compile is hijacked to return a DL4J Model instance.
+     * Performs fitting of the model which is referenced in the parameters according to learning parameters specified.
      *
-     * @param compileParams Parameters for the model compile operation
+     * @param fitParams Parameters for a fit operation
+     */
+    public void functionalFit(FitParams fitParams) throws Exception {
+        try {
+            ComputationGraph model = fitParams.getModel();
+
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                fitParams.getTrainFeaturesDirectory(),
+                fitParams.getTrainLabelsDirectory()
+            );
+
+            for (int i = 0; i < fitParams.getNbEpoch(); i++) {
+                log.info("Fitting: " + i);
+
+                model.fit(dataSetIterator);
+            }
+
+            log.info("model.fit() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.fit()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Evaluates a model using a given dataset.
+     *
+     * @param evaluateParams Parameters for a Keras evaluate operation
+     */
+    public void functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
+        try {
+            ComputationGraph model = evaluateParams.getModel();
+
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                fitParams.getTrainFeaturesDirectory(),
+                fitParams.getTrainLabelsDirectory()
+            );
+
+            model.evaluate(dataSetIterator);
+
+            log.info("model.evaluate() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.evaluate()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Predict the label of a single feature.
+     *
+     * @param predictParams A single feature and associated parameters
+     */
+    public void functionalPredict(PredictParams predictParams) throws Exception {
+        try {
+            ComputationGraph model = predictParams.getModel();
+
+            model.predict(x);
+
+            log.info("model.predict() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Predict the labels of features in a dataset.
+     *
+     * @param predictParams A dataset and associated parameters
+     */
+    public void functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+        try {
+            ComputationGraph model = predictParams.getModel();
+
+            model.predict(dataSet);
+
+            log.info("model.predict_on_batch() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict_on_batch()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Save a model into the DL4J format.
+     *
+     * @param saveParams Current model in scope and associated save parameters
      * @throws Exception
      */
-    public void compile(CompileParams compileParams) throws Exception {
-        // TODO
-        MultiLayerNetwork multiLayerNetwork = kerasModelSerializer.readSequential(writeParams.getModelFilePath(), writeParams.getType());
+    public void functionalSave(SaveParams saveParams) throws Exception {
+        try {
+            ModelSerializer.writeModel(
+                saveParams.getFunctionalModel(),
+                new File(writeParams.getWritePath()),
+                true
+            );
+
+            log.info("model.save() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.save()", e);
+            throw e;
+        }
     }
 
 }

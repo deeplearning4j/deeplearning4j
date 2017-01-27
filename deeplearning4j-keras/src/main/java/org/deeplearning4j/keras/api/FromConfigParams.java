@@ -1,4 +1,4 @@
-package org.deeplearning4j.keras.api.sequential;
+package org.deeplearning4j.keras.api;
 
 import lombok.Builder;
 import lombok.Data;

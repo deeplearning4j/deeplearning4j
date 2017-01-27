@@ -36,7 +36,7 @@ public class KerasModelSerializer {
         throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         ComputationGraph model;
-        if (KerasModelType.SEQUENTIAL.equals(modelType)) {
+        if (KerasModelType.FUNCTIONAL.equals(modelType)) {
             model = KerasModelImport.importKerasModelAndWeights(modelFilePath);
             model.init();
         } else {
