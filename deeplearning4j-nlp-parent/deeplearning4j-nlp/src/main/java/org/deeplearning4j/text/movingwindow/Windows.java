@@ -19,7 +19,9 @@
 package org.deeplearning4j.text.movingwindow;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.StringUtils;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.tokenization.tokenizer.DefaultStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -33,6 +35,7 @@ import java.util.StringTokenizer;
  * Static utility class for textual based windowing cooccurrences
  * @author Adam Gibson
  */
+@Slf4j
 public class Windows {
 
 
@@ -98,11 +101,16 @@ public class Windows {
      * @param windowSize the window size to generate
      * @return the list of windows for the tokenized string
      */
-    public static List<Window> windows(String words, @NonNull TokenizerFactory tokenizerFactory, int windowSize) {
+    public static List<Window> windows(String words, @NonNull TokenizerFactory tokenizerFactory, int windowSize, WordVectors vectors) {
         Tokenizer tokenizer = tokenizerFactory.create(words);
         List<String> list = new ArrayList<>();
-        while(tokenizer.hasMoreTokens())
-            list.add(tokenizer.nextToken());
+        while(tokenizer.hasMoreTokens()) {
+            String token = tokenizer.nextToken();
+
+            // if we don't have UNK word defined - we have to skip this word
+            if (vectors.getWordVectorMatrix(token) != null)
+                 list.add(token);
+        }
 
         if(list.isEmpty())
             throw new IllegalStateException("No tokens found for windows");
