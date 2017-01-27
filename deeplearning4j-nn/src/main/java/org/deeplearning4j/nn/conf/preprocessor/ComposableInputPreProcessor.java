@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -75,5 +77,15 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
             inputType = p.getOutputType(inputType);
         }
         return inputType;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        for(InputPreProcessor preproc : inputPreProcessors){
+            Pair<INDArray, MaskState> p = preproc.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+            maskArray = p.getFirst();
+            currentMaskState = p.getSecond();
+        }
+        return new Pair<>(maskArray, currentMaskState);
     }
 }

@@ -60,7 +60,8 @@ import java.util.Map;
         @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
         @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
         @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-        @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout")
+        @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
+        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling")
 })
 @Data
 @NoArgsConstructor
@@ -213,8 +214,6 @@ public abstract class Layer implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
-//        @Deprecated
-//        protected String activationFunction = null;
         protected IActivation activationFn = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;

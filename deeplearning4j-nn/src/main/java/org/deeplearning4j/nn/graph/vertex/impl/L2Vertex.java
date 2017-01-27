@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -38,14 +40,16 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Justin Long (crockpotveggies)
  */
 public class L2Vertex extends BaseGraphVertex {
+    private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex){
-        this(graph,name,vertexIndex,null,null);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps){
+        this(graph,name,vertexIndex,null,null,eps);
     }
 
     public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
+                    VertexIndices[] outputVertices, double eps) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
+        this.eps = eps;
     }
 
     @Override
@@ -67,8 +71,6 @@ public class L2Vertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if(!canDoForward()) throw new IllegalStateException("Cannot do forward pass: input not set");
 
-//        System.out.println("l2 vertex input sizes: " + Arrays.toString(inputs[0].shape()) + "\t" + Arrays.toString(inputs[1].shape()));
-
         INDArray a = inputs[0];
         INDArray b = inputs[1];
 
@@ -87,6 +89,7 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
         INDArray out = doForward(tbptt);
+        Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon;      //dL/dlambda aka 'epsilon' - from layer above
 
@@ -119,5 +122,15 @@ public class L2Vertex extends BaseGraphVertex {
     @Override
     public String toString(){
         return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        //No op
+        if(maskArrays == null || maskArrays.length == 0){
+            return null;
+        }
+
+        return new Pair<>(maskArrays[0], currentMaskState);
     }
 }

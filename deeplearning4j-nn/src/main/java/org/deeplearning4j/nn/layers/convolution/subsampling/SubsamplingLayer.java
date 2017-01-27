@@ -18,11 +18,13 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
@@ -51,8 +53,8 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
-    protected static final Logger log = LoggerFactory.getLogger(SubsamplingLayer.class);
 
     protected SubsamplingHelper helper = null;
     protected ConvolutionMode convolutionMode;
@@ -212,11 +214,13 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 }
 
                 INDArray denom = Transforms.pow(pNorm, pnorm-1, false);
+                double eps = layerConf().getEps();
+                Transforms.max(denom, eps, false); // in case of 0
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
                 return new Pair<>(retGradient, epsilon);
-            default: throw new IllegalStateException("Unsupported pooling type");
+            default: throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType());
         }
 
         //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
@@ -228,7 +232,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray outEpsilon = tempEpsilon.permute(1,0,2,3);
         Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth);
 
-        if(layerConf().getPoolingType() == org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType.AVG)
+        if(layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
         return new Pair<>(retGradient,outEpsilon);
     }
@@ -294,6 +298,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 // applying the exponent to the input and recovering the signal by multiplying the kernel of
                 // the pooling layer and then applying the same inverse exponent
                 int pnorm = layerConf().getPnorm();
+
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
