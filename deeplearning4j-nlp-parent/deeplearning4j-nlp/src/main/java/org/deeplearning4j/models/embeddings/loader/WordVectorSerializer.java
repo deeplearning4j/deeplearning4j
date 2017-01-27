@@ -651,7 +651,7 @@ public class WordVectorSerializer {
 
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
-        log.info("Current config: {}", vectors.getConfiguration().toJson());
+        //log.info("Current config: {}", vectors.getConfiguration().toJson());
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
 
         zipfile.flush();
@@ -2311,7 +2311,7 @@ public class WordVectorSerializer {
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
         INDArray syn0;
-        VectorsConfiguration configuration = null;
+        VectorsConfiguration configuration = new VectorsConfiguration();
         // try to load zip format
         try {
             if (extendedModel) {
@@ -2408,7 +2408,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Word2Vec.Builder builder = new Word2Vec.Builder()
+        Word2Vec.Builder builder = new Word2Vec.Builder(configuration)
                 .lookupTable(lookupTable)
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
