@@ -375,6 +375,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         for (T element: vocabCache.vocabWords()) {
             this.addToken(element);
         }
+        //logger.info("Current state: {}; Adding value: {}", this.documentsCounter.get(), vocabCache.totalNumberOfDocs());
         this.documentsCounter.addAndGet(vocabCache.totalNumberOfDocs());
     }
 
