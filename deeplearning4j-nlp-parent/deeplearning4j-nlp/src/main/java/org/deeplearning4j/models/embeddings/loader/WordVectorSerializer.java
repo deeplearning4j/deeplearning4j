@@ -405,7 +405,12 @@ public class WordVectorSerializer {
         VocabCache<T> vocabCache = lookupTable.getVocabCache();
 
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, "UTF-8"));
+        // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+        String str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+        log.debug("Saving header: {}",str);
+        writer.println(str);
 
+        // saving vocab content
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
 
@@ -1617,6 +1622,11 @@ public class WordVectorSerializer {
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
+
+        String str = vec.getVocab().numWords() + " " + vec.getLayerSize() + " " + vec.getVocab().totalNumberOfDocs();
+        log.debug("Saving header: {}",str);
+        writer.write(str + "\n");
+
         for (String word : vec.vocab().words()) {
             if (word == null) {
                 continue;
@@ -1706,7 +1716,7 @@ public class WordVectorSerializer {
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
             throws FileNotFoundException, UnsupportedEncodingException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(vectorsFile), "UTF-8"));
-        VocabCache cache = new AbstractCache<>();
+        AbstractCache cache = new AbstractCache<>();
 
         LineIterator iter = IOUtils.lineIterator(reader);
         String line = null;
@@ -1721,18 +1731,28 @@ public class WordVectorSerializer {
                 // we should check for something that looks like proper word vectors here. i.e: 1 word at the 0 position, and bunch of floats further
                 String[] split = line.split(" ");
                 try {
-                    for (int x = 1; x < split.length; x++) {
-                        double val = Double.parseDouble(split[x]);
+                    int[] header = new int[split.length];
+                    for (int x = 0; x < split.length; x++) {
+                        header[x] = Integer.parseInt(split[x]);
                     }
                     if (split.length < 4) hasHeader = true;
-                } catch (Exception e) {
-                    // if any conversion exception hits - that'll be considered header
+                    // now we know, if that's all ints - it's just a header
+                    // [0] - number of words
+                    // [1] - vectorSize
+                    // [2] - number of documents <-- DL4j-only value
+                    if (split.length == 3)
+                        cache.incrementTotalDocCount(header[2]);
+
                     hasHeader = true;
 
                     try {
                         reader.close();
                     } catch (Exception ex) {
                     }
+                } catch (Exception e) {
+                    // if any conversion exception hits - that'll be considered header
+                    hasHeader = false;
+
                 }
             }
 
@@ -1795,7 +1815,7 @@ public class WordVectorSerializer {
         } catch (Exception e) {
         }
 
-        return new Pair<>(lookupTable, cache);
+        return new Pair<>(lookupTable, (VocabCache) cache);
     }
 
     /**
