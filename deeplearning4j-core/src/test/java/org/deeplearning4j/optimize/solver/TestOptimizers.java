@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize.solver;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -992,5 +993,10 @@ public class TestOptimizers {
 
         @Override
         public INDArray getMaskArray(){ return null; }
+
+        @Override
+        public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -240,6 +240,8 @@ public class WordVectorSerializer {
             syn0 = Nd4j.create(words, size);
             cache = new AbstractCache<>();
 
+            printOutProjectedMemoryUse(words, size, 1);
+
             lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
                     .cache(cache)
                     .useHierarchicSoftmax(false)
@@ -405,7 +407,12 @@ public class WordVectorSerializer {
         VocabCache<T> vocabCache = lookupTable.getVocabCache();
 
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, "UTF-8"));
+        // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+        String str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+        log.debug("Saving header: {}",str);
+        writer.println(str);
 
+        // saving vocab content
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
 
@@ -644,7 +651,7 @@ public class WordVectorSerializer {
 
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
-        log.info("Current config: {}", vectors.getConfiguration().toJson());
+        //log.info("Current config: {}", vectors.getConfiguration().toJson());
         writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
 
         zipfile.flush();
@@ -1617,6 +1624,11 @@ public class WordVectorSerializer {
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException  {
         int words = 0;
+
+        String str = vec.getVocab().numWords() + " " + vec.getLayerSize() + " " + vec.getVocab().totalNumberOfDocs();
+        log.debug("Saving header: {}",str);
+        writer.write(str + "\n");
+
         for (String word : vec.vocab().words()) {
             if (word == null) {
                 continue;
@@ -1706,7 +1718,7 @@ public class WordVectorSerializer {
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
             throws FileNotFoundException, UnsupportedEncodingException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(vectorsFile), "UTF-8"));
-        VocabCache cache = new AbstractCache<>();
+        AbstractCache cache = new AbstractCache<>();
 
         LineIterator iter = IOUtils.lineIterator(reader);
         String line = null;
@@ -1721,18 +1733,30 @@ public class WordVectorSerializer {
                 // we should check for something that looks like proper word vectors here. i.e: 1 word at the 0 position, and bunch of floats further
                 String[] split = line.split(" ");
                 try {
-                    for (int x = 1; x < split.length; x++) {
-                        double val = Double.parseDouble(split[x]);
+                    long[] header = new long[split.length];
+                    for (int x = 0; x < split.length; x++) {
+                        header[x] = Long.parseLong(split[x]);
                     }
                     if (split.length < 4) hasHeader = true;
-                } catch (Exception e) {
-                    // if any conversion exception hits - that'll be considered header
+                    // now we know, if that's all ints - it's just a header
+                    // [0] - number of words
+                    // [1] - vectorSize
+                    // [2] - number of documents <-- DL4j-only value
+                    if (split.length == 3)
+                        cache.incrementTotalDocCount(header[2]);
+
+                    printOutProjectedMemoryUse(header[0], (int) header[1], 1);
+
                     hasHeader = true;
 
                     try {
                         reader.close();
                     } catch (Exception ex) {
                     }
+                } catch (Exception e) {
+                    // if any conversion exception hits - that'll be considered header
+                    hasHeader = false;
+
                 }
             }
 
@@ -1795,7 +1819,7 @@ public class WordVectorSerializer {
         } catch (Exception e) {
         }
 
-        return new Pair<>(lookupTable, cache);
+        return new Pair<>(lookupTable, (VocabCache) cache);
     }
 
     /**
@@ -2287,7 +2311,7 @@ public class WordVectorSerializer {
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
         INDArray syn0;
-        VectorsConfiguration configuration = null;
+        VectorsConfiguration configuration = new VectorsConfiguration();
         // try to load zip format
         try {
             if (extendedModel) {
@@ -2384,7 +2408,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Word2Vec.Builder builder = new Word2Vec.Builder()
+        Word2Vec.Builder builder = new Word2Vec.Builder(configuration)
                 .lookupTable(lookupTable)
                 .useAdaGrad(false)
                 .vocabCache(vocabCache)
@@ -2662,5 +2686,25 @@ public class WordVectorSerializer {
                 throw new RuntimeException(e);
             }
         } else return word;
+    }
+
+    public static void printOutProjectedMemoryUse(long numWords, int vectorLength, int numTables) {
+        double memSize = numWords * vectorLength * Nd4j.sizeOfDataType() * numTables;
+
+        String sfx;
+        double value;
+        if (memSize < 1024 * 1024L) {
+            sfx = "KB";
+            value = memSize / 1024;
+        } if (memSize < 1024 * 1024L * 1024L) {
+            sfx = "MB";
+            value = memSize / 1024 / 1024;
+        } else {
+            sfx = "GB";
+            value = memSize / 1024 / 1024 / 1024;
+        }
+
+        log.info("Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
+
     }
 }

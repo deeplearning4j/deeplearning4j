@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf;
 
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -77,4 +79,7 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @return             Type of input after applying the preprocessor
      */
     InputType getOutputType(InputType inputType);
+
+
+    Pair<INDArray,MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 }

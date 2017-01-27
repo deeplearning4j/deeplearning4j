@@ -46,7 +46,9 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
         @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
         @JsonSubTypes.Type(value = UnstackVertex.class, name = "UnstackVertex"),
-        @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex")
+        @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
+        @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
+        @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")
 })
 public abstract class GraphVertex implements Cloneable, Serializable {
 

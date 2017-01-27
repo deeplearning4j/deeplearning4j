@@ -33,8 +33,7 @@ import java.io.InputStream;
  *
  * @author dave@skymind.io
  *
- * @deprecated Use {@link org.deeplearning4j.nn.modelimport.keras.KerasModel} and
- *             {@link org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel} instead.
+ * @deprecated Use {@link KerasModelImport} instead.
  */
 @Deprecated
 @Slf4j
@@ -51,6 +50,7 @@ public class ModelConfiguration {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
+    @Deprecated
     public static MultiLayerConfiguration importSequentialModelConfigFromInputStream(InputStream inputStream)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -66,6 +66,7 @@ public class ModelConfiguration {
      * @return               DL4J ComputationGraphConfiguration
      * @throws IOException
      */
+    @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfigFromInputStream(InputStream inputStream)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
