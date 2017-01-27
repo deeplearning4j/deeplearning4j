@@ -34,7 +34,7 @@ public class TSNEStandardExample {
         VocabCache cache = vectors.getSecond();
         INDArray weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
 
-        for(int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
+        for(int i = 0; i &lt; cache.numWords(); i++)   //seperate strings of words into their own list
             cacheList.add(cache.wordAtIndex(i));
 
         //STEP 3: build a dual-tree tsne to use later
@@ -60,13 +60,12 @@ public class TSNEStandardExample {
 
 
 }
-
 </code></pre>
 
 Here is an image of the tsne-standard-coords.csv file plotted using gnuplot.
 
 
-![Tsne data plot](../img/tsne_output.png)
+![Tsne data plot](./img/tsne_output.png)
 
 <!-- was this??
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/tsne/TsneExample.java?slice=14:27"></script>
