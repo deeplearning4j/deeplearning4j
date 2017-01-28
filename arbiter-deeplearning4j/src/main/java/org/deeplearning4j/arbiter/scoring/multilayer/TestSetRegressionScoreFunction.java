@@ -36,7 +36,7 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
             DataSet next = testSet.next();
 
             if (eval == null) {
-                eval = new RegressionEvaluation(next.getLabels().columns());
+                eval = new RegressionEvaluation(next.getLabels().size(1));
             }
 
             INDArray out;
