@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -146,4 +147,6 @@ public interface GraphVertex extends Serializable {
      * @param backpropGradientsViewArray
      */
     void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
+
+    Pair<INDArray,MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
 }
