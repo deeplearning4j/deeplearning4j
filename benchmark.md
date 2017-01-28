@@ -3,7 +3,7 @@ title: Deeplearning4j Benchmarks
 layout: default
 ---
 
-# Deeplearning4j Benchmarks
+# How to Run Deeplearning4j Benchmarks
 
 Total training time is always ETL plus computation. That is, both the data pipeline and the matrix manipulations determine how long a neural network takes to train on a dataset. 
 
@@ -16,7 +16,7 @@ The JVM has knobs to tune, and if you know how to tune them, you can make it a v
 * Make ETL asynchronous
 * Presave datasets (aka pickling)
 
-## Heap Space
+## Setting Heap Space
 
 Users have to reconfigure their JVMs themselves, including setting the heap space. We can't give it to you preconfigured, but we can show you how to do it. Here are the two most important knobs for heap space.
 
@@ -39,20 +39,90 @@ It may seem coutnerintuitive, but you want the min and max to be the same; i.e. 
 
 IntelliJ will automatically specify the [Java main class](https://docs.oracle.com/javase/tutorial/getStarted/application/) in question.
 
-* To increase heap space, you'll need to find and alter your hidden `.bash_profile` file, which adds environmental variables to bash. To see those variables, enter `env` in the command line. To add more heap space, enter this command in your console:
+Another way to do this is by setting your environmental variables. Here, you would alter your hidden `.bash_profile` file, which adds environmental variables to bash. To see those variables, enter `env` in the command line. To add more heap space, enter this command in your console:
 
 		echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
 
-
+We need to increase heap space because Deeplearning4j loads data in the background, which means we're taking more RAM in memory. By allowing more heap space for the JVM, we can cache more data in memory. 
 
 ## Garbage Collection
 
+A garbage collector is a program which runs on the JVM and gets rid of objects no longer used by a Java application. It is automatic memory management. Creating a new object in Java takes on-heap memory: A new Java object takes up 8 bytes of memory by default. So every new `DatasetIterator` you create takes another 8 bytes. 
+
+You may need to alter the garbage collection algorithm that Java is using. This can be done via the command line like so:
+
+		java -XX:+UseG1GC
+
+Better garbage collection increases throughput. For a more detailed exploration of the issue, please read this [InfoQ article](https://www.infoq.com/articles/Make-G1-Default-Garbage-Collector-in-Java-9).
+
+DL4J is tightly linked to the garbage collector. [JavaCPP](https://github.com/bytedeco/javacpp), the bridge between the JVM and C++, adheres to the heap space you set with `Xmx` and works extensively with off-heap memory. The off-heap memory will not surpass the amount of heap space you specify. 
+
+JavaCPP, created by a Skymind engineer, relies on the garbage collector to tell it what has been done. We rely on the Java GC to tell us what to collect; the Java GC points at things, and we know how to de-allocate them with JavaCPP. This applies equally to how we work with GPUs. 
+
+The larger the batch size you use, the more RAM you’re taking in memory. 
+
 ## ETL & Asynchronous ETL
 
-In our dl4j-examples repo, we don't make the ETL asynchronous, because the point of examples is to keep them simple. But for real-world problems, you need to do so.
+In our `dl4j-examples` repo, we don't make the ETL asynchronous, because the point of examples is to keep them simple. But for real-world problems, you need asynchronous ETL, and we'll show you how to do it with examples. 
+
+Data is stored on disk and disk is slow. That’s the default. So you run into bottlenecks when loading data onto your harddrive. When optimizing throughput, the slowest component is always the bottleneck. For example, a distributed Spark job using three GPU workers and one CPU worker will have a bottleneck with the CPU. The GPUs have to wait for that CPU to finish. 
+
+The Deeplearning4j class `DatasetIterator` hides the complexity of loading data on disk. 
+
+* one loads from disk 
+* one loads asynchronously
+* one loads pre-saved from RAM
+
+You can optimize by using an asychronous loader in the background. Java can do real multi-threading. It can load data in the background while other threads take care of compute. So you load data into the GPU at the same time that compute is being run. The neural net trains even as you grab new data from memory.
+
+This is the [relevant code](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelWrapper.java#L136), in particular the third line:
+
+        MultiDataSetIterator iterator;
+        if (prefetchSize > 0 && source.asyncSupported()) {
+            iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+        } else iterator = source;
+
+There are actually two types of asynchronous dataset iterators. The `AsyncDataSetIterator` is what you would use most of the time. It's described in the [Javadoc here](https://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/AsyncDataSetIterator.html).
+
+For special cases such as recurrent neural nets applied to time series, or for computation graphs, you would use a `AsyncMultiDataSetIterator`, described in the [Javadoc here](https://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/AsyncMultiDataSetIterator.html).
+
+Notice in the code above that `prefetchSize` is another parameter to set. Normal batch size might be 1000 examples, but if you set `prefetchSize` to 3, it would pre-fetch 3,000 instances.
 
 ## ETL: Comparing Python frameworks With Deeplearning4j
 
 In Python, programmers are converting their data into [pickles](https://docs.python.org/2/library/pickle.html), or binary data objects. And if they're working with a smallish toy dataset, they're loading all those pickles into RAM. So they're effectively sidestepping a major task in dealing with larger datasets. At the same time, when benchmarking against Dl4j, they're not loading all the data onto RAM. So they're effectively comparing Dl4j speed for training computations + ETL against only training computation time for Python frameworks. 
 
 But Java has robust tools for moving big data, and if compared correctly, is much faster than Python. The Deeplearning4j community has reported up to 3700% increases in speed over Python frameworks, when ETL and computation are optimized.
+
+We use DataVec. We don’t force a particular format for dataset, unlike the python frameworks. Caffe forces you to use hdf5. 
+https://support.hdfgroup.org/HDF5/
+
+We try to be more flexible than that; we can take in more data sources than most frameworks. But that comes with performance tradeoffs. There are ways to make it just as fast. You can pre-save the datasets, then we would be equivalent to python. 
+
+Python loading to disk from one file that’s pre-cooked. Pickles are pre-formatted data.
+
+Here’s how you pre-save the datasets. 
+https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/PreSave.java
+
+Your ETL pipeline. You can point DL4J at raw photos, and it will on the fly load the image, run the transforms and put it into an NDArray to generate a dataset. 
+
+You can create the datasets on the fly. If your training pipeline is doing that every time, you’ll be about 10x slower if you do that, because you’re spending your time creating datasets. But we allow that to happen for ease of use. 
+
+They should use asynchronous and pre-save their datasets.
+
+When you call fit, you’re recreating the datasets over and over again. 
+
+when they pre-save the dataset. you create a separate class.
+use datavec with a recordreaderdatasetiterator. talks to datavec and outputs datasets for dl4j. that’s where you run a pre-save. 
+
+If you see the Mnistdatasetiterator here
+
+here’s how to use and load the pre-saved datasets
+https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/LoadPreSavedLenetMnistExample.java
+
+line 90  is where you see asynch. you wrap the pre-saved iterator. and then the asynch handles loading it in the background. 
+
+Training will be 10x faster. 
+
+the code for using any datasetiterator will always be the same. invoking it is the same. but they work differently.
+
