@@ -94,15 +94,33 @@ public class DeepLearning4jEntryPoint {
         try {
             MultiLayerNetwork model = fitParams.getModel();
 
-            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                fitParams.getTrainFeaturesDirectory(),
-                fitParams.getTrainLabelsDirectory()
+            DataSetIterator trainIterator;
+            DataSetIterator testIterator;
+
+            trainIterator = new HDF5MiniBatchDataSetIterator(
+                fitParams.getTrainXPath(),
+                fitParams.getTrainYPath()
             );
 
-            for (int i = 0; i < fitParams.getNbEpoch(); i++) {
-                log.info("Fitting: " + i);
+            if(fitParams.getDoValidation()) {
+                testIterator = new HDF5MiniBatchDataSetIterator(
+                    fitParams.getValidationXPath(),
+                    fitParams.getValidationYPath()
+                );
+            } else {
+                testIterator = null;
+            }
 
-                model.fit(dataSetIterator);
+            // loop through specified epochs
+            for (int i = 0; i < fitParams.getNbEpoch(); i++) {
+                log.info("Fitting epoch: " + i);
+
+                model.fit(trainIterator);
+
+                if(fitParams.getDoValidation()) {
+                    log.info("Evaluating epoch: " + i);
+                    model.evaluate(testIterator);
+                }
             }
 
             log.info("model.fit() operation complete.");
@@ -123,8 +141,9 @@ public class DeepLearning4jEntryPoint {
             MultiLayerNetwork model = evaluateParams.getModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                fitParams.getTrainFeaturesDirectory(),
-                fitParams.getTrainLabelsDirectory()
+                fitParams.getFeaturesDirectory(),
+                fitParams.getLabelsDirectory(),
+                fitParams.getBatchSize()
             );
 
             model.evaluate(dataSetIterator);
@@ -210,15 +229,33 @@ public class DeepLearning4jEntryPoint {
         try {
             ComputationGraph model = fitParams.getModel();
 
-            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                fitParams.getTrainFeaturesDirectory(),
-                fitParams.getTrainLabelsDirectory()
+            DataSetIterator trainIterator;
+            DataSetIterator testIterator;
+
+            trainIterator = new HDF5MiniBatchDataSetIterator(
+                fitParams.getTrainXPath(),
+                fitParams.getTrainYPath()
             );
 
-            for (int i = 0; i < fitParams.getNbEpoch(); i++) {
-                log.info("Fitting: " + i);
+            if(fitParams.getDoValidation()) {
+                testIterator = new HDF5MiniBatchDataSetIterator(
+                    fitParams.getValidationXPath(),
+                    fitParams.getValidationYPath()
+                );
+            } else {
+                testIterator = null;
+            }
 
-                model.fit(dataSetIterator);
+            // loop through specified epochs
+            for (int i = 0; i < fitParams.getNbEpoch(); i++) {
+                log.info("Fitting epoch: " + i);
+
+                model.fit(trainIterator);
+
+                if(fitParams.getDoValidation()) {
+                    log.info("Evaluating epoch: " + i);
+                    model.evaluate(testIterator);
+                }
             }
 
             log.info("model.fit() operation complete.");

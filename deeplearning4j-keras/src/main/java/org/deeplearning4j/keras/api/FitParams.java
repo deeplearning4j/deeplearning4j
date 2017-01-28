@@ -14,11 +14,12 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 public class FitParams {
     private MultiLayerNetwork sequentialModel;
     private ComputationGraph functionalModel;
-    private String trainFeaturesDirectory;
-    private String trainLabelsDirectory;
+    private String trainXPath;
+    private String trainYPath;
     private int batchSize;
     private long nbEpoch;
-    private String validationXFilePath;
-    private String validationYFilePath;
+    private String validationXPath;
+    private String validationYPath;
     private String dimOrdering;
+    private boolean doValidation;
 }
