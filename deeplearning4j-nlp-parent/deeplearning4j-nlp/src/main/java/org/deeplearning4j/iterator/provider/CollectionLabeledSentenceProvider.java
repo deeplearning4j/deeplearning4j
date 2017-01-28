@@ -8,7 +8,9 @@ import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import java.util.*;
 
 /**
- * Created by Alex on 28/01/2017.
+ * Iterate over a set of sentences/documents, where the sentences and labels are provided in lists.
+ *
+ * @author Alex Black
  */
 public class CollectionLabeledSentenceProvider implements LabeledSentenceProvider {
 
@@ -16,8 +18,8 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
     private final List<String> labels;
     private final Random rng;
     private final int[] order;
+    private final List<String> allLabels;
 
-    private List<String> allLabels;
     private int cursor = 0;
 
     public CollectionLabeledSentenceProvider(@NonNull List<String> sentences, @NonNull List<String> labelsForSentences) {
