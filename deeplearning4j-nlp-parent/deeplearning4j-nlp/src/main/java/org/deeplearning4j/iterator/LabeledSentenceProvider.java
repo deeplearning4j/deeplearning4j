@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Created by Alex on 27/01/2017.
  */
-public interface LabelledSentenceProvider {
+public interface LabeledSentenceProvider {
 
 
     boolean hasNext();
@@ -19,6 +19,11 @@ public interface LabelledSentenceProvider {
     Pair<String,String> nextSentence();
 
     void reset();
+
+    /**
+     * Return the total number of sentences, or -1 if not available
+     */
+    int totalNumSentences();
 
     List<String> allLabels();
 
