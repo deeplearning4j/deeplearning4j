@@ -20,13 +20,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Alex on 27/01/2017.
+ * A DataSetIterator that provides data for training a CNN sentence classification models (though can of course
+ * be used for general documents, not just sentences. The iterator handles conversion of sentences to training data for
+ * CNNs, where each word is encoded using the word vector from the specified WordVectors (i.e., word2vec etc) model.<br>
+ * Labels are encoded using a one-hot representation and are 2d - i.e., are intended to be used with a model that
+ * utilizes global pooling.<br>
+ * <p>
+ * Specifically:<br>
+ * - Features have shape [minibatchSize, 1, maxSentenceLength, wordVectorSize] OR [minibatchSize, 1, wordVectorSize, maxSentenceLength]
+ *   depending on the configuration (for sentencesAlongHeight = true/false respectively)<br>
+ * - Labels are a 2d array with shape [minibatchSize, numLabels].<br>
+ *
+ * Sentences and labels are provided by a {@link LabeledSentenceProvider} - different implementations of this provide different
+ * ways of loading sentences/documents with labels - for example, from files, etc.
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class CnnSentenceDataSetIterator implements DataSetIterator {
-
     public enum UnknownWordHandling {RemoveWord, UseUnknownVector}
-
     private static final String UNKNOWN_WORD_SENTINEL = "UNKNOWN_WORD_SENTINEL";
 
     private LabeledSentenceProvider sentenceProvider = null;
@@ -75,6 +87,76 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         this.wordVectorSize = wordVectors.lookupTable().layerSize();
     }
 
+    /**
+     * Generally used post training time to load a single sentence for predictions
+     */
+    public INDArray loadSingleSentence(String sentence){
+        List<String> tokens = tokenizeSentence(sentence);
+
+        int[] featuresShape = new int[]{1,1,0,0};
+        if (sentencesAlongHeight) {
+            featuresShape[2] = Math.min(maxSentenceLength, tokens.size());
+            featuresShape[3] = wordVectorSize;
+        } else {
+            featuresShape[2] = wordVectorSize;
+            featuresShape[3] = Math.min(maxSentenceLength, tokens.size());
+        }
+
+        INDArray features = Nd4j.create(featuresShape);
+        int length = (sentencesAlongHeight ? featuresShape[2] : featuresShape[3]);
+        for( int i=0; i<length; i++ ){
+            INDArray vector = getVector(tokens.get(i));
+
+            INDArrayIndex[] indices = new INDArrayIndex[4];
+            indices[0] = NDArrayIndex.point(0);
+            indices[1] = NDArrayIndex.point(0);
+            if(sentencesAlongHeight){
+                indices[2] = NDArrayIndex.point(i);
+                indices[3] = NDArrayIndex.all();
+            } else {
+                indices[2] = NDArrayIndex.all();
+                indices[3] = NDArrayIndex.point(i);
+            }
+
+            features.put(indices, vector);
+        }
+
+        return features;
+    }
+
+    private INDArray getVector(String word){
+        INDArray vector;
+        if (unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL) {    //Yes, this *should* be using == for the sentinal String here
+            vector = unknown;
+        } else {
+            if (useNormalizedWordVectors) {
+                vector = wordVectors.getWordVectorMatrixNormalized(word);
+            } else {
+                vector = wordVectors.getWordVectorMatrix(word);
+            }
+        }
+        return vector;
+    }
+
+    private List<String> tokenizeSentence(String sentence){
+        Tokenizer t = tokenizerFactory.create(sentence);
+
+        List<String> tokens = new ArrayList<>();
+        while (t.hasMoreTokens()) {
+            String token = t.nextToken();
+            if (!wordVectors.hasWord(token)) {
+                switch (unknownWordHandling) {
+                    case RemoveWord:
+                        continue;
+                    case UseUnknownVector:
+                        token = UNKNOWN_WORD_SENTINEL;
+                }
+            }
+            tokens.add(token);
+        }
+        return tokens;
+    }
+
     @Override
     public boolean hasNext() {
         if (sentenceProvider == null) {
@@ -100,20 +182,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         int minLength = Integer.MAX_VALUE; //Track to we know if we can skip mask creation for "all same length" case
         for (int i = 0; i < num && sentenceProvider.hasNext(); i++) {
             Pair<String, String> p = sentenceProvider.nextSentence();
-            List<String> tokens = new ArrayList<>();
-            Tokenizer t = tokenizerFactory.create(p.getFirst());
-            while (t.hasMoreTokens()) {
-                String token = t.nextToken();
-                if (!wordVectors.hasWord(token)) {
-                    switch (unknownWordHandling) {
-                        case RemoveWord:
-                            continue;
-                        case UseUnknownVector:
-                            token = UNKNOWN_WORD_SENTINEL;
-                    }
-                }
-                tokens.add(token);
-            }
+            List<String> tokens = tokenizeSentence(p.getFirst());
 
             maxLength = Math.max(maxLength, tokens.size());
             tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
@@ -152,17 +221,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             List<String> currSentence = tokenizedSentences.get(i).getFirst();
 
             for (int j = 0; j < currSentence.size() && j <maxSentenceLength; j++) {
-                String word = currSentence.get(j);
-                INDArray vector;
-                if(unknownWordHandling == UnknownWordHandling.UseUnknownVector && word == UNKNOWN_WORD_SENTINEL){    //Yes, this *should* be using == for the sentinal String here
-                    vector = unknown;
-                } else {
-                    if(useNormalizedWordVectors){
-                        vector = wordVectors.getWordVectorMatrixNormalized(word);
-                    } else {
-                        vector = wordVectors.getWordVectorMatrix(word);
-                    }
-                }
+                INDArray vector = getVector(currSentence.get(j));
 
                 INDArrayIndex[] indices = new INDArrayIndex[4];
                 //TODO REUSE
@@ -282,52 +341,86 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         private boolean sentencesAlongHeight = true;
         private DataSetPreProcessor dataSetPreProcessor;
 
+        /**
+         * Specify how the (labelled) sentences / documents should be provided
+         */
         public Builder labelledSentenceProvider(LabeledSentenceProvider labelledSentenceProvider) {
             this.sentenceProvider = labelledSentenceProvider;
             return this;
         }
 
+        /**
+         * Provide the WordVectors instance that should be used for training
+         */
         public Builder wordVectors(WordVectors wordVectors) {
             this.wordVectors = wordVectors;
             return this;
         }
 
+        /**
+         * The {@link TokenizerFactory} that should be used. Defaults to {@link DefaultTokenizerFactory}
+         */
         public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
             this.tokenizerFactory = tokenizerFactory;
             return this;
         }
 
+        /**
+         * Specify how unknown words (those that don't have a word vector in the provided WordVectors instance) should be
+         * handled. Default: remove/ignore unknown words.
+         */
         public Builder unknownWordHandling(UnknownWordHandling unknownWordHandling) {
             this.unknownWordHandling = unknownWordHandling;
             return this;
         }
 
+        /**
+         * Minibatch size to use for the DataSetIterator
+         */
         public Builder minibatchSize(int minibatchSize) {
             this.minibatchSize = minibatchSize;
             return this;
         }
 
+        /**
+         * Whether normalized word vectors should be used. Default: true
+         */
         public Builder useNormalizedWordVectors(boolean useNormalizedWordVectors){
             this.useNormalizedWordVectors = useNormalizedWordVectors;
             return this;
         }
 
+        /**
+         * Maximum sentence/document length. If sentences exceed this, they will be truncated to this length by
+         * taking the first 'maxSentenceLength' known words.
+         */
         public Builder maxSentenceLength(int maxSentenceLength) {
             this.maxSentenceLength = maxSentenceLength;
             return this;
         }
 
+        /**
+         * If true (default): output features data with shape [minibatchSize, 1, maxSentenceLength, wordVectorSize]<br>
+         * If false: output features with shape [minibatchSize, 1, wordVectorSize, maxSentenceLength]
+         */
         public Builder sentencesAlongHeight(boolean sentencesAlongHeight) {
             this.sentencesAlongHeight = sentencesAlongHeight;
             return this;
         }
 
+        /**
+         * Optional DataSetPreProcessor
+         */
         public Builder dataSetPreProcessor(DataSetPreProcessor dataSetPreProcessor) {
             this.dataSetPreProcessor = dataSetPreProcessor;
             return this;
         }
 
         public CnnSentenceDataSetIterator build() {
+            if(wordVectors == null){
+                throw new IllegalStateException("Cannot build CnnSentenceDataSetIterator without a WordVectors instance");
+            }
+
             return new CnnSentenceDataSetIterator(this);
         }
 
