@@ -84,7 +84,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             }
         }
 
-        this.wordVectorSize = wordVectors.lookupTable().layerSize();
+        this.wordVectorSize = wordVectors.getWordVector(wordVectors.vocab().wordAtIndex(0)).length;
     }
 
     /**
@@ -344,8 +344,8 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         /**
          * Specify how the (labelled) sentences / documents should be provided
          */
-        public Builder labelledSentenceProvider(LabeledSentenceProvider labelledSentenceProvider) {
-            this.sentenceProvider = labelledSentenceProvider;
+        public Builder sentenceProvider(LabeledSentenceProvider labeledSentenceProvider) {
+            this.sentenceProvider = labeledSentenceProvider;
             return this;
         }
 

@@ -84,7 +84,7 @@ public class TestCnnSentenceDataSetIterator {
 
             LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
             CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder()
-                    .labelledSentenceProvider(p)
+                    .sentenceProvider(p)
                     .wordVectors(w2v)
                     .maxSentenceLength(256)
                     .minibatchSize(32)
