@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor.custom;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,5 +31,10 @@ public class MyCustomPreprocessor implements InputPreProcessor {
     @Override
     public InputType getOutputType(InputType inputType) {
         return inputType;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        throw new UnsupportedOperationException();
     }
 }
