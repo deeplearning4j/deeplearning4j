@@ -170,7 +170,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word the word to increment by
      * @param howMuch
      */
-    void incrementDocCount(String word,int howMuch);
+    void incrementDocCount(String word, long howMuch);
 
 
     /**
@@ -178,13 +178,13 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param word the word to set the count for
      * @param count the count of the word
      */
-    void setCountForDoc(String word,int count);
+    void setCountForDoc(String word,long count);
 
     /**
      * Returns the total of number of documents encountered in the corpus
      * @return the total number of docs in the corpus
      */
-    int totalNumberOfDocs();
+    long totalNumberOfDocs();
 
 
     /**
@@ -196,7 +196,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * Increment the doc count
      * @param  by the number to increment by
      */
-    void incrementTotalDocCount(int by);
+    void incrementTotalDocCount(long by);
 
     /**
      * All of the tokens in the cache, (not necessarily apart of the vocab)

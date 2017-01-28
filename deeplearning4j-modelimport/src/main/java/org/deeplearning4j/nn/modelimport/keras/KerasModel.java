@@ -20,30 +20,32 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 
@@ -68,41 +70,19 @@ public class KerasModel {
 
     /* Training configuration field. */
     public static final String TRAINING_CONFIG_FIELD_LOSS = "loss";
+    public static final String HDF5_MODEL_WEIGHTS_ROOT = "model_weights";
+    public static final String HDF5_MODEL_CONFIG_ATTRIBUTE = "model_config";
+    public static final String HDF5_TRAINING_CONFIG_ATTRIBUTE = "training_config";
 
-    /* Default setting for truncated BPTT. */
-    public static final int DO_NOT_USE_TRUNCATED_BPTT = -123456789;
-
-    /* Keras layer parameter names. */
-    public static final String PARAM_NAME_GAMMA = "gamma";
-    public static final String PARAM_NAME_BETA = "beta";
-    public static final String PARAM_NAME_RUNNING_MEAN = "running_mean";
-    public static final String PARAM_NAME_RUNNING_STD = "running_std";
-    public static final String PARAM_NAME_W = "W";
-    public static final String PARAM_NAME_U = "U";
-    public static final String PARAM_NAME_B = "b";
-    public static final String PARAM_NAME_W_C = "W_c";
-    public static final String PARAM_NAME_W_F = "W_f";
-    public static final String PARAM_NAME_W_I = "W_i";
-    public static final String PARAM_NAME_W_O = "W_o";
-    public static final String PARAM_NAME_U_C = "U_c";
-    public static final String PARAM_NAME_U_F = "U_f";
-    public static final String PARAM_NAME_U_I = "U_i";
-    public static final String PARAM_NAME_U_O = "U_o";
-    public static final String PARAM_NAME_B_C = "b_c";
-    public static final String PARAM_NAME_B_F = "b_f";
-    public static final String PARAM_NAME_B_I = "b_i";
-    public static final String PARAM_NAME_B_O = "b_o";
-
-    protected String className;               // Keras model class name
-    protected List<String> layerNamesOrdered; // ordered list of layer names
-    protected Map<String,KerasLayer> layers;  // map from layer name to KerasLayer
-    protected ArrayList<String> inputLayerNames;   // list of input layer names
-    protected ArrayList<String> outputLayerNames;  // list of output layer names
-    protected Map<String,Set<String>> inputToOutput; // graph of input-to-output relationships
-    protected Map<String,Set<String>> outputToInput; // graph of output-to-input relationships
-    protected int truncatedBPTT = DO_NOT_USE_TRUNCATED_BPTT;   // truncated BPTT value
-    protected Map<String,Map<String,INDArray>> weights = null; // map from layer to parameter to weights
-    protected boolean train;                  // whether to build model in training mode
+    protected String className;                   // Keras model class name
+    protected boolean enforceTrainingConfig;      // whether to build model in training mode
+    protected List<KerasLayer> layersOrdered;     // ordered list of layers
+    protected Map<String,KerasLayer> layers;      // map from layer name to KerasLayer
+    protected Map<String,InputType> outputTypes;  // inferred output types for all layers
+    protected ArrayList<String> inputLayerNames;  // list of input layers
+    protected ArrayList<String> outputLayerNames; // list of output layers
+    protected boolean useTruncatedBPTT = false;   // whether to use truncated BPTT
+    protected int truncatedBPTT = 0;              // truncated BPTT value
 
     /**
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
@@ -113,64 +93,79 @@ public class KerasModel {
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasModel(ModelBuilder modelBuilder) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
-        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.trainingJson, modelBuilder.weights, modelBuilder.train);
+        this(modelBuilder.modelJson, modelBuilder.modelYaml, modelBuilder.weightsArchive, modelBuilder.weightsRoot,
+             modelBuilder.trainingJson, modelBuilder.trainingArchive, modelBuilder.enforceTrainingConfig);
     }
 
     /**
      * (Not recommended) Constructor for (Functional API) Model from model configuration
      * (JSON or YAML), training configuration (JSON), weights, and "training mode"
      * boolean indicator. When built in training mode, certain unsupported configurations
-     * (e.g., unknown regularizers) will throw Exceptions. When train=false, these
+     * (e.g., unknown regularizers) will throw Exceptions. When enforceTrainingConfig=false, these
      * will generate warnings but will be otherwise ignored.
      *
-     * @param modelJson       model configuration JSON string
-     * @param modelYaml       model configuration YAML string
-     * @param trainingJson    training configuration JSON string
-     * @param weights         map from layer to parameter to weights
-     * @param train           whether to build model for training
+     * @param modelJson                 model configuration JSON string
+     * @param modelYaml                 model configuration YAML string
+     * @param enforceTrainingConfig     whether to enforce training-related configurations
      * @throws IOException
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasModel(String modelJson, String modelYaml, String trainingJson, Map<String, Map<String,INDArray>> weights, boolean train)
+    protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
+                         String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String,Object> classNameAndLayerLists;
+        Map<String,Object> modelConfig;
         if (modelJson != null)
-            classNameAndLayerLists = parseJsonString(modelJson);
+            modelConfig = parseJsonString(modelJson);
         else if (modelYaml != null)
-            classNameAndLayerLists = parseYamlString(modelYaml);
+            modelConfig = parseYamlString(modelYaml);
         else
-            throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
+            throw new InvalidKerasConfigurationException("Requires model configuration not found.");
 
-        this.className = (String) checkAndGetModelField(classNameAndLayerLists, MODEL_FIELD_CLASS_NAME);
+        /* Whether to enforce training-related configurations. */
+        this.enforceTrainingConfig = enforceTrainingConfig;
+
+        /* Determine model configuration type. */
+        if (!modelConfig.containsKey(MODEL_FIELD_CLASS_NAME))
+            throw new InvalidKerasConfigurationException("Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
+        this.className = (String)modelConfig.get(MODEL_FIELD_CLASS_NAME);
         if (!this.className.equals(MODEL_CLASS_NAME_MODEL))
-            throw new InvalidKerasConfigurationException("Expected model class name Model (found " + this.className + ")");
-        this.train = train;
+            throw new InvalidKerasConfigurationException("Expected model class name " + MODEL_CLASS_NAME_MODEL + " (found " + this.className + ")");
 
-        Map<String,Object> layerLists = (Map<String,Object>) checkAndGetModelField(classNameAndLayerLists, MODEL_FIELD_CONFIG);
+        /* Retrieve lists of input and output layers, layer configurations. */
+        if (!modelConfig.containsKey(MODEL_FIELD_CONFIG))
+            throw new InvalidKerasConfigurationException("Could not find model configuration details (no " + MODEL_FIELD_CONFIG + " in model config)");
+        Map<String,Object> layerLists = (Map<String,Object>)modelConfig.get(MODEL_FIELD_CONFIG);
 
-        /* Convert layer configuration objects into KerasLayers. */
-        helperPrepareLayers((List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_LAYERS));
-
-        /* Construct lists of input and output layer names. */
-        this.inputLayerNames = new ArrayList();
-        for (Object inputLayerNameObj : (List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_INPUT_LAYERS))
+        /* Construct list of input layers. */
+        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_INPUT_LAYERS))
+            throw new InvalidKerasConfigurationException("Could not find list of input layers (no " + MODEL_CONFIG_FIELD_INPUT_LAYERS + " field found)");
+        this.inputLayerNames = new ArrayList<String>();
+        for (Object inputLayerNameObj : (List<Object>)layerLists.get(MODEL_CONFIG_FIELD_INPUT_LAYERS))
             this.inputLayerNames.add((String)((List<Object>)inputLayerNameObj).get(0));
-        this.outputLayerNames = new ArrayList();
-        for (Object outputLayerNameObj : (List<Object>) checkAndGetModelField(layerLists, MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
+
+        /* Construct list of output layers. */
+        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
+            throw new InvalidKerasConfigurationException("Could not find list of output layers (no " + MODEL_CONFIG_FIELD_OUTPUT_LAYERS + " field found)");
+        this.outputLayerNames = new ArrayList<String>();
+        for (Object outputLayerNameObj : (List<Object>)layerLists.get(MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
             this.outputLayerNames.add((String)((List<Object>)outputLayerNameObj).get(0));
 
-        /* Construct graph. */
-        helperPrepareGraph();
+        /* Process layer configurations. */
+        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_LAYERS))
+            throw new InvalidKerasConfigurationException("Could not find layer configurations (no " + MODEL_CONFIG_FIELD_LAYERS + " field found)");
+        helperPrepareLayers((List<Object>)layerLists.get(MODEL_CONFIG_FIELD_LAYERS));
 
         /* Import training configuration. */
         if (trainingJson != null)
             helperImportTrainingConfiguration(trainingJson);
 
-        /* Store weights map (even if null).
-         * TODO: should we copy these to prevent user from changing them?
-         */
-        this.weights = weights;
+        /* Infer output types for each layer. */
+        helperInferOutputTypes();
+
+        /* Store weights in layers. */
+        if (weightsArchive != null)
+            helperImportWeights(weightsArchive, weightsRoot);
     }
 
     /**
@@ -181,33 +176,28 @@ public class KerasModel {
      */
     protected void helperPrepareLayers(List<Object> layerConfigs)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this.layersOrdered = new ArrayList<KerasLayer>();
         this.layers = new HashMap<String, KerasLayer>();
-        this.layerNamesOrdered = new ArrayList<String>();
+        DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
-            KerasLayer layer = new KerasLayer((Map<String, Object>) layerConfig, this.train);
-            this.layerNamesOrdered.add(layer.getName());
-            this.layers.put(layer.getName(), layer);
+            KerasLayer layer = KerasLayer.getKerasLayerFromConfig((Map<String, Object>)layerConfig, this.enforceTrainingConfig);
+            if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE) // determine dimension order, if any
+                dimOrder = layer.getDimOrder();
+            this.layersOrdered.add(layer);
+            this.layers.put(layer.getLayerName(), layer);
+            if (layer instanceof KerasLstm)
+                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLstm)layer).getUnroll();
         }
-    }
 
-    /**
-     * Helper method called from constructor. Builds input-to-output
-     * and output-to-input graphs based on inbound layer lists.
-     */
-    protected void helperPrepareGraph() {
-        this.outputToInput = new HashMap<String,Set<String>>();
-        this.inputToOutput = new HashMap<String,Set<String>>();
-        for (String childName : this.layerNamesOrdered) {
-            if (!outputToInput.containsKey(childName))
-                outputToInput.put(childName, new HashSet<String>());
-            for (String parentName : this.layers.get(childName).getInboundLayerNames()) {
-                outputToInput.get(childName).add(parentName);
-                if (!inputToOutput.containsKey(parentName))
-                    inputToOutput.put(parentName, new HashSet<String>());
-                inputToOutput.get(parentName).add(childName);
-            }
-            if (!inputToOutput.containsKey(childName))
-                inputToOutput.put(childName, new HashSet<String>());
+        /* Set dimension ordering for all layers to dimOrder found above.
+         * NOTE: this currently assumes that only one dimension ordering is used
+         * throughout the model.
+         */
+        for (KerasLayer layer : this.layersOrdered) {
+            if (layer.getDimOrder() == DimOrder.NONE)
+                layer.setDimOrder(dimOrder);
+            else if (layer.getDimOrder() != dimOrder)
+                throw new UnsupportedKerasConfigurationException("Keras layer " + layer.getLayerName() + " has conflicting dim_ordering " + layer.getDimOrder() + " (vs. dimOrder)");
         }
     }
 
@@ -225,42 +215,135 @@ public class KerasModel {
         Map<String,Object> trainingConfig = parseJsonString(trainingConfigJson);
 
         /* Add loss layers for each loss function. */
-        Map<String,KerasLayer> lossLayers = new HashMap<String,KerasLayer>();
-        Object kerasLossObj = checkAndGetTrainingField(trainingConfig, TRAINING_CONFIG_FIELD_LOSS);
+        List<KerasLayer> lossLayers = new ArrayList<KerasLayer>();
+        if (!trainingConfig.containsKey(TRAINING_CONFIG_FIELD_LOSS))
+            throw new InvalidKerasConfigurationException("Could not determine training loss function (no " + TRAINING_CONFIG_FIELD_LOSS + " field found in training config)");
+        Object kerasLossObj = trainingConfig.get(TRAINING_CONFIG_FIELD_LOSS);
         if (kerasLossObj instanceof String) {
             String kerasLoss = (String)kerasLossObj;
             for (String outputLayerName : this.outputLayerNames)
-                lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", kerasLoss));
-            this.outputLayerNames.clear();
+                lossLayers.add(new KerasLoss(outputLayerName + "_loss", outputLayerName, kerasLoss));
         } else if (kerasLossObj instanceof Map) {
             Map<String,Object> kerasLossMap = (Map<String,Object>)kerasLossObj;
             for (String outputLayerName : kerasLossMap.keySet()) {
-                this.outputLayerNames.remove(outputLayerName);
                 Object kerasLoss = kerasLossMap.get(outputLayerName);
                 if (kerasLoss instanceof String)
-                    lossLayers.put(outputLayerName, KerasLayer.createLossLayer(outputLayerName + "_loss", (String)kerasLoss));
+                    lossLayers.add(new KerasLoss(outputLayerName + "_loss", outputLayerName, (String)kerasLoss));
                 else
                     throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
             }
         }
+        this.outputLayerNames.clear();
 
         /* Add loss layers to output layer list and layer graph. */
-        for (String outputLayerName : lossLayers.keySet()) {
-            KerasLayer lossLayer = lossLayers.get(outputLayerName);
-            this.layers.put(lossLayer.getName(), lossLayer);
-            String lossLayerName = lossLayer.getName();
-            outputLayerNames.add(lossLayerName);
-            this.layerNamesOrdered.add(lossLayerName);
-            if (!this.inputToOutput.containsKey(outputLayerName))
-                this.inputToOutput.put(outputLayerName, new HashSet<String>());
-            this.inputToOutput.get(outputLayerName).add(lossLayerName);
-            if (!this.outputToInput.containsKey(lossLayerName))
-                this.outputToInput.put(lossLayerName, new HashSet<String>());
-            this.outputToInput.get(lossLayerName).add(outputLayerName);
+        for (KerasLayer lossLayer : lossLayers) {
+            this.layersOrdered.add(lossLayer);
+            this.layers.put(lossLayer.getLayerName(), lossLayer);
+            this.outputLayerNames.add(lossLayer.getLayerName());
         }
 
         /* TODO: handle other configs (loss weights, sample weights). */
         /* TODO: handle optimizer configuration. */
+    }
+
+    /**
+     * Helper method called from constructor. Infers and records output type
+     * for every layer.
+     */
+    protected void helperInferOutputTypes() throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this.outputTypes = new HashMap<String, InputType>();
+        for (KerasLayer layer : this.layersOrdered) {
+            InputType outputType = null;
+            if (layer instanceof KerasInput) {
+                outputType = layer.getOutputType();
+                /*
+                 * TODO: figure out how to infer truncated BPTT value for non-sequence inputs
+                 *
+                 * In Keras, truncated BPTT is specified implicitly by specifying a fixed
+                 * size input and by passing in the "unroll" argument to recurrent layers.
+                 * Currently, the only setting in which we can confidently determine the
+                 * value of truncated BPTT is if the original input has two dimensions,
+                 * the first of which is sequence length. Hypothetically, we should be
+                 * able to do this for other types of inputs, but that's less straightforward.
+                 */
+                this.truncatedBPTT = ((KerasInput)layer).getTruncatedBptt();
+            } else {
+                InputType[] inputTypes = new InputType[layer.getInboundLayerNames().size()];
+                int i = 0;
+                for (String inboundLayerName : layer.getInboundLayerNames())
+                    inputTypes[i++] = this.outputTypes.get(inboundLayerName);
+                outputType = layer.getOutputType(inputTypes);
+            }
+            this.outputTypes.put(layer.getLayerName(), outputType);
+        }
+    }
+
+    /**
+     * Store weights to import with each associated Keras layer.
+     *
+     * @param weightsArchive    Hdf5Archive
+     * @param weightsRoot
+     * @throws InvalidKerasConfigurationException
+     */
+    protected void helperImportWeights(Hdf5Archive weightsArchive, String weightsRoot)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        List<String> layerGroups = weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
+        /* Set weights in KerasLayer for each entry in weights map. */
+        for (String layerName : layerGroups) {
+            if (!this.layers.containsKey(layerName))
+                throw new InvalidKerasConfigurationException("Found weights for layer not in model (named " + layerName + ")");
+            Map<String, INDArray> weights = new HashMap<String,INDArray>();
+            List<String> layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName) : weightsArchive.getDataSets(layerName);
+            for (String layerParamName : layerParamNames) {
+                /* TODO: push this logic into KerasLayer subclasses. Layers know what
+                 * parameters they have and should be looking for, so let them handle
+                 * it in a layer-specific manner.
+                 */
+
+                /* Keras parameter names are typically formatted as [layer name]_[parameter]. For
+                 * example, the weight matrix in the first Dense layer with the TensorFlow backend
+                 * will be named "dense_1_W:0."
+                 */
+                Matcher layerNameMatcher = Pattern.compile(layerName).matcher(layerParamName);
+                if (!layerNameMatcher.find())
+                    throw new InvalidKerasConfigurationException("Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
+                String paramName = layerNameMatcher.replaceFirst("");
+
+                /* Usually layer name is separated from parameter name by an underscore. */
+                Matcher paramNameMatcher = Pattern.compile("^_(.+)$").matcher(paramName);
+                if (paramNameMatcher.find())
+                    paramName = paramNameMatcher.group(1);
+
+                /* TensorFlow backend often appends ":" followed by one or more digits to parameter
+                 * names. We strip it off here.
+                 */
+                Matcher tfSuffixMatcher = Pattern.compile(":\\d+?$").matcher(paramName);
+                if (tfSuffixMatcher.find())
+                    paramName = tfSuffixMatcher.replaceFirst("");
+
+                /* TensorFlow backend also may append "_" followed by one or more digits to parameter
+                 * names. We strip it off here.
+                 */
+                Matcher tfParamNbMatcher = Pattern.compile("_\\d+$").matcher(paramName);
+                if (tfParamNbMatcher.find())
+                    paramName = tfParamNbMatcher.replaceFirst("");
+
+                INDArray paramValue = weightsRoot != null ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName) : weightsArchive.readDataSet(layerParamName, layerName);
+                weights.put(paramName, paramValue);
+            }
+            KerasLayer layer = this.layers.get(layerName);
+            if (!layer.hasWeights() && weights.size() > 0)
+                throw new InvalidKerasConfigurationException("Found weights for layer that has no parameters (named " + layerName + ")");
+            this.layers.get(layerName).setWeights(weights);
+        }
+
+        /* Look for layers in model with no corresponding entries in weights map. */
+        Set<String> layerNames = new HashSet<String>(this.layers.keySet());
+        layerNames.removeAll(layerGroups);
+        for (String layerName : layerNames) {
+            if (this.layers.get(layerName).hasWeights())
+                throw new InvalidKerasConfigurationException("Could not find weights required for layer " + layerName);
+         }
     }
 
     protected KerasModel() {}
@@ -276,53 +359,71 @@ public class KerasModel {
             throw new InvalidKerasConfigurationException("Keras model class name " + this.className + " incompatible with ComputationGraph");
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
 
-        /* Build String array of input layer names. */
-        String[] inputLayerArray = new String[this.inputLayerNames.size()];
-        this.inputLayerNames.toArray(inputLayerArray);
+        ComputationGraphConfiguration.GraphBuilder graphBuilder = modelBuilder.graphBuilder();
 
-        /* Build InputType array of input layer types. */
-        List<InputType> inputTypes = new ArrayList<InputType>();
+        /* Build String array of input layer names, add to ComputationGraph. */
+        String[] inputLayerNameArray = new String[this.inputLayerNames.size()];
+        this.inputLayerNames.toArray(inputLayerNameArray);
+        graphBuilder.addInputs(inputLayerNameArray);
+
+        /* Build InputType array of input layer types, add to ComputationGraph. */
+        List<InputType> inputTypeList = new ArrayList<InputType>();
         for (String inputLayerName : this.inputLayerNames)
-            inputTypes.add(inferInputType(inputLayerName));
-        InputType[] inputTypeArray = new InputType[inputTypes.size()];
-        inputTypes.toArray(inputTypeArray);
+            inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
+        InputType[] inputTypeArray = new InputType[inputTypeList.size()];
+        inputTypeList.toArray(inputTypeArray);
+        graphBuilder.setInputTypes(inputTypeArray);
 
-        /* Build String array of output layer names. */
-        String[] outputLayerArray = new String[this.outputLayerNames.size()];
-        this.outputLayerNames.toArray(outputLayerArray);
+        /* Build String array of output layer names, add to ComputationGraph. */
+        String[] outputLayerNameArray = new String[this.outputLayerNames.size()];
+        this.outputLayerNames.toArray(outputLayerNameArray);
+        graphBuilder.setOutputs(outputLayerNameArray);
 
-        /* Build ComputationGraph. Add input names and types and output names. */
-        ComputationGraphConfiguration.GraphBuilder graphBuilder = modelBuilder.graphBuilder()
-                .addInputs(inputLayerArray)
-                .setInputTypes(inputTypeArray)
-                .setOutputs(outputLayerArray);
+        /* Add layersOrdered one at a time. */
+        for (KerasLayer layer : this.layersOrdered) {
+            /* Get inbound layer names. */
+            List<String> inboundLayerNames = layer.getInboundLayerNames();
+            String[] inboundLayerNamesArray = new String[inboundLayerNames.size()];
+            inboundLayerNames.toArray(inboundLayerNamesArray);
+            if (layer.usesRegularization())
+                modelBuilder.setUseRegularization(true);
 
-        /* Add layerNamesOrdered one at a time. */
-        for (String layerName : this.layerNamesOrdered) {
-            KerasLayer layer = this.layers.get(layerName);
-            if (layer.isDl4jLayer()) { // Ignore "preprocessor" layers for now
-                /* Get inbound layer names. */
-                List<String> inboundLayerNames = inferInboundLayerNames(layerName);
-                String[] inboundLayerArray = new String[inboundLayerNames.size()];
-                inboundLayerNames.toArray(inboundLayerArray);
+            if (layer.isLayer()) {
                 /* Add DL4J layer. */
-                graphBuilder.addLayer(layerName, layer.getDl4jLayer(), inboundLayerArray);
+                graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output layer " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
+            } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
+                /* Add DL4J vertex. */
+                graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getVertex() instanceof IOutputLayer))
+                    log.warn("Model cannot be trained: output vertex " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
+            } else if (layer.isInputPreProcessor()){
+                /* Add DL4J preprocessor vertex. */
+                List<InputType> inboundTypeList = new ArrayList<InputType>();
+                for (String layerName : inboundLayerNames)
+                    inboundTypeList.add(this.outputTypes.get(layerName));
+                InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
+                inboundTypeList.toArray(inboundTypeArray);
+
+                /* Get InputPreProcessor type. */
+                InputPreProcessor preprocessor = layer.getInputPreprocessor(inputTypeArray);
+                if (preprocessor == null)
+                    throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName() + " could not be mapped to Layer, Vertex, or InputPreProcessor");
+                graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor), inboundLayerNamesArray);
+
+                if (this.outputLayerNames.contains(layer.getLayerName()))
+                    log.warn("Model cannot be trained: output " + layer.getLayerName() + " is not an IOutputLayer (no loss function specified)");
             }
         }
 
-        /* Handle truncated BPTT:
-         * - less than zero if no recurrent layerNamesOrdered found
-         * - greater than zero if found recurrent layer and truncation length was set
-         * - equal to zero if found recurrent layer but no truncation length set (e.g., the
-         *   model was built with Theano backend and used scan symbolic loop instead of
-         *   unrolling the RNN for a fixed number of steps).
-         */
-        if (this.truncatedBPTT <= 0)
-            graphBuilder.backpropType(BackpropType.Standard);
-        else if (this.truncatedBPTT > 0)
+        /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
+        if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
             graphBuilder.backpropType(BackpropType.TruncatedBPTT)
-                    .tBPTTForwardLength(truncatedBPTT)
-                    .tBPTTBackwardLength(truncatedBPTT);
+                                .tBPTTForwardLength(truncatedBPTT)
+                                .tBPTTBackwardLength(truncatedBPTT);
+        else
+            graphBuilder.backpropType(BackpropType.Standard);
         return graphBuilder.build();
     }
 
@@ -347,29 +448,53 @@ public class KerasModel {
         ComputationGraph model = new ComputationGraph(getComputationGraphConfiguration());
         model.init();
         if (importWeights)
-            model = (ComputationGraph)copyWeightsToModel(model, this.weights, this.layers);
+            model = (ComputationGraph)helperCopyWeightsToModel(model);
         return model;
     }
 
     @Data
     static class ModelBuilder implements Cloneable {
-        protected String modelJson;
-        protected String modelYaml;
+        protected String modelJson = null;
+        protected String modelYaml = null;
         protected String trainingJson = null;
-        protected Map<String,Map<String,INDArray>> weights = null;
-        protected boolean train = false;
+        protected Hdf5Archive weightsArchive = null;
+        protected String weightsRoot = null;
+        protected Hdf5Archive trainingArchive = null;
+        protected boolean enforceTrainingConfig = false;
 
         public ModelBuilder() {}
 
         public ModelBuilder modelJson(String modelJson) {
             this.modelJson = modelJson;
-            this.modelYaml = null;
+            return this;
+        }
+
+        public ModelBuilder modelJsonFilename(String modelJsonFilename) throws IOException {
+            this.modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));;
+            return this;
+        }
+
+        public ModelBuilder modelJsonInputStream(InputStream modelJsonInputStream) throws IOException {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(modelJsonInputStream, byteArrayOutputStream);
+            this.modelJson = new String(byteArrayOutputStream.toByteArray());
             return this;
         }
 
         public ModelBuilder modelYaml(String modelYaml) {
             this.modelYaml = modelYaml;
-            this.modelJson = null;
+            return this;
+        }
+
+        public ModelBuilder modelYamlFilename(String modelYamlFilename) throws IOException {
+            this.modelJson = new String(Files.readAllBytes(Paths.get(modelYamlFilename)));
+            return this;
+        }
+
+        public ModelBuilder modelYamlInputStream(InputStream modelYamlInputStream) throws IOException {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(modelYamlInputStream, byteArrayOutputStream);
+            this.modelJson = new String(byteArrayOutputStream.toByteArray());
             return this;
         }
 
@@ -378,13 +503,28 @@ public class KerasModel {
             return this;
         }
 
-        public ModelBuilder weights(Map<String,Map<String,INDArray>> weights) {
-            this.weights = weights;
+        public ModelBuilder trainingJsonInputStream(InputStream trainingJsonInputStream) throws IOException {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(trainingJsonInputStream, byteArrayOutputStream);
+            this.trainingJson = new String(byteArrayOutputStream.toByteArray());
             return this;
         }
 
-        public ModelBuilder train(boolean train) {
-            this.train = train;
+        public ModelBuilder modelHdf5Filename(String modelHdf5Filename) throws UnsupportedKerasConfigurationException {
+            this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
+            this.weightsRoot = HDF5_MODEL_WEIGHTS_ROOT;
+            this.modelJson = this.weightsArchive.readAttributeAsJson(HDF5_MODEL_CONFIG_ATTRIBUTE);
+            this.trainingJson = this.weightsArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
+            return this;
+        }
+
+        public ModelBuilder weightsHdf5Filename(String weightsHdf5Filename) {
+            this.weightsArchive = new Hdf5Archive(weightsHdf5Filename);
+            return this;
+        }
+
+        public ModelBuilder enforceTrainingConfig(boolean enforceTrainingConfig) {
+            this.enforceTrainingConfig = enforceTrainingConfig;
             return this;
         }
 
@@ -401,116 +541,6 @@ public class KerasModel {
                 throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
             return new KerasSequentialModel(this);
         }
-    }
-
-    /**
-     * Infer InputType for input layer.
-     *
-     * @param inputLayerName    name of input layer
-     * @return                  InputType of input layer
-     */
-    protected InputType inferInputType(String inputLayerName)
-            throws UnsupportedOperationException, UnsupportedKerasConfigurationException {
-        if (!this.inputLayerNames.contains(inputLayerName))
-            throw new UnsupportedOperationException("Cannot infer input type for non-input layer " + inputLayerName);
-
-        KerasLayer inputLayer = this.layers.get(inputLayerName);
-        InputType inputType = null;
-        List<String> layerNameQueue = new ArrayList<String>(this.inputToOutput.get(inputLayerName));
-        KerasLayer nextLayer;
-//        inferFromLaterLayer(this.layers.get(inputLayerName),nextLayer);
-        int inputShapeLength = inputLayer.getKerasInputShape().length;
-
-        while (inputType == null && !layerNameQueue.isEmpty()) {
-            nextLayer = this.layers.get(layerNameQueue.remove(0));
-            if (nextLayer.isDl4jLayer()) {
-                Layer dl4jLayer = nextLayer.getDl4jLayer();
-                if (dl4jLayer instanceof BaseRecurrentLayer) {
-                    if (inputShapeLength != 2) // recurrent inputs should have rank 2 (# steps, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Recurrent layer must have rank 2 (found " + inputShapeLength + ")");
-                    int[] inputShape = inputLayer.getDl4jInputShape();
-                    inputType = InputType.recurrent(inputShape[1]);
-                    this.truncatedBPTT = inputShape[0];
-                } else if (dl4jLayer instanceof ConvolutionLayer || dl4jLayer instanceof SubsamplingLayer) {
-                    if (inputShapeLength != 3) // convolutional inputs should have rank 3 (# rows, # cols, # channels)
-                        throw new UnsupportedKerasConfigurationException("Input to Convolutional layer must have rank 3 (found " + inputShapeLength + ")");
-                    if (inputLayer.getDimOrder() == DimOrder.NONE) {
-                        DimOrder nextLayerDimOrder = nextLayer.getDimOrder();
-                        if (nextLayerDimOrder == DimOrder.NONE)
-                            throw new UnsupportedKerasConfigurationException("Invalid dim_ordering " + nextLayerDimOrder + " Convolutional layer must have rank 3 (found ");
-                        this.layers.get(inputLayerName).setDimOrder(nextLayerDimOrder);
-                    }
-                    int[] inputShape = inputLayer.getDl4jInputShape();
-                    inputType = InputType.convolutional(inputShape[0], inputShape[1], inputShape[2]);
-                } else {
-                    if (inputShapeLength != 1) // other inputs should be flat vectors
-                        throw new UnsupportedKerasConfigurationException("Input to FeedForward layer must have rank 1 (found " + inputShapeLength + ")");
-                    int[] inputShape = inputLayer.getDl4jInputShape();
-                    inputType = InputType.feedForward(inputShape[0]);
-                }
-            }
-            layerNameQueue.addAll(this.inputToOutput.get(nextLayer.getName()));
-        }
-        if (inputType == null)
-            throw new UnsupportedKerasConfigurationException("Could not infer InputType for input layer " + inputLayerName);
-        return inputType;
-    }
-
-//    protected void inferFromLaterLayer(KerasLayer thisLayer, KerasLayer nextLayer) {
-//        thisLayer.overrideLayerShape(nextLayer.getConfiguration());
-//    }
-
-    /**
-     * Infer list of inbound layers for (i.e., layer inputs to) given layer.
-     * @param layerName     name of layer
-     * @return              list of inbound layer names
-     */
-    protected List<String> inferInboundLayerNames(String layerName) {
-        ArrayList<String> inboundLayerNames = new ArrayList<String>(this.outputToInput.get(layerName));
-        for (int i = 0; i < inboundLayerNames.size(); i++) {
-            KerasLayer nextLayer = this.layers.get(inboundLayerNames.get(i));
-            if (!nextLayer.isValidInboundLayer()) {
-                String nextLayerName = inboundLayerNames.remove(i);
-                inboundLayerNames.addAll(i--, this.outputToInput.get(nextLayerName));
-            }
-        }
-        return inboundLayerNames;
-    }
-
-    /**
-     * Convenience function for checking whether a map contains a key,
-     * throwing an error if it does not, and returning the corresponding
-     * value if it does. We do this over and over again with the maps
-     * created by parsing Keras model configuration JSON strings.
-     *
-     * @param map   Nested (key,value) map of arbitrary depth representing JSON
-     * @param key   Key to check for in map
-     * @return      Keras configuration object
-     * @throws InvalidKerasConfigurationException
-     */
-    protected static Object checkAndGetModelField(Map<String,Object> map, String key)
-            throws InvalidKerasConfigurationException {
-        if (!map.containsKey(key))
-            throw new InvalidKerasConfigurationException("Field " + key + " missing from model config");
-        return map.get(key);
-    }
-
-    /**
-     * Convenience function for checking whether a map contains a key,
-     * throwing an error if it does not, and returning the corresponding
-     * value if it does. We do this over and over again with the maps
-     * created by parsing Keras training configuration JSON strings.
-     *
-     * @param map   Nested (key,value) map of arbitrary depth representing JSON
-     * @param key   Key to check for in map
-     * @return      Keras configuration object
-     * @throws InvalidKerasConfigurationException
-     */
-    protected static Object checkAndGetTrainingField(Map<String,Object> map, String key)
-        throws InvalidKerasConfigurationException {
-        if (!map.containsKey(key))
-            throw new InvalidKerasConfigurationException("Field " + key + " missing from training config");
-        return map.get(key);
     }
 
     /**
@@ -542,229 +572,35 @@ public class KerasModel {
     /**
      * Helper function to import weights from nested Map into existing model. Depends critically
      * on matched layer and parameter names. In general this seems to be straightforward for most
-     * Keras models and layerNamesOrdered, but there may be edge cases.
+     * Keras models and layersOrdered, but there may be edge cases.
      *
      * @param model             DL4J Model interface
-     * @param weights           nested Map from layer names to parameter names to INDArrays
-     * @param kerasLayers       Map from layerName to layerConfig
      * @return                  DL4J Model interface
      * @throws InvalidKerasConfigurationException
-     *
-     * TODO: try to refactor this -- it's really messy with a lot of one-off "If layer type is X, do Y" logic.
      */
-    protected static org.deeplearning4j.nn.api.Model copyWeightsToModel(org.deeplearning4j.nn.api.Model model,
-                                                                        Map<String, Map<String, INDArray>> weights,
-                                                                        Map<String,KerasLayer> kerasLayers)
+    protected org.deeplearning4j.nn.api.Model helperCopyWeightsToModel(org.deeplearning4j.nn.api.Model model)
             throws InvalidKerasConfigurationException {
-        /* TODO: how might this break?
-         * - mismatch between layer/parameter names?
-         * If a computational graph dense connected layers W,b are stored separately not under one name
-         * Better to do this backwards - from the layers to the weights?
-         */
-        for (String layerName : weights.keySet()) {
-            org.deeplearning4j.nn.api.Layer layer = null;
-            KerasLayer kerasLayer = kerasLayers.get(layerName);
-            if (model instanceof MultiLayerNetwork) {
-                layer = ((MultiLayerNetwork) model).getLayer(layerName);
-            }
-            else {
-                if (kerasLayer!=null) {
-                    layer = ((ComputationGraph) model).getLayer(layerName);
+        /* Get list if layers from model. */
+        org.deeplearning4j.nn.api.Layer[] layersFromModel;
+        if (model instanceof MultiLayerNetwork)
+            layersFromModel = ((MultiLayerNetwork)model).getLayers();
+        else
+            layersFromModel = ((ComputationGraph)model).getLayers();
 
-                }
-                else {
-                    /* TODO: remove this once commit 61906bc is fully tested.
-                     * Commit: https://github.com/deeplearning4j/deeplearning4j/pull/2566/commits/61906bc81912a3cfc6d011f39feb4f42cc9128c7
-                     */
-                    String layerNameMod;
-                    layerNameMod = layerName.replaceAll("_(W|b)$","");
-                    layer = ((ComputationGraph) model).getLayer(layerNameMod);
-                }
-            }
+        /* Iterate over layers in model, setting weights when relevant. */
+        Set<String> layerNames = new HashSet<String>(this.layers.keySet());
+        for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
+            String layerName = layer.conf().getLayer().getLayerName();
+            if (!this.layers.containsKey(layerName))
+                throw new InvalidKerasConfigurationException("No weights found for layer in model (named " + layerName + ")");
+            this.layers.get(layerName).copyWeightsToLayer(layer);
+            layerNames.remove(layerName);
+        }
 
-            for (String kerasParamName : weights.get(layerName).keySet()) {
-                INDArray kerasParamValue = weights.get(layerName).get(kerasParamName);
-                String dl4JParamName;
-                INDArray dl4jParamValue = kerasParamValue;
-                if (!kerasParamName.equals("")) {
-                    dl4JParamName = mapParameterName(kerasParamName);
-                }
-                else {
-                    //remove _W and _b and map
-                    String[] parts = layerName.split("_");
-                    kerasParamName = parts[parts.length-1];
-                    dl4JParamName = mapParameterName(kerasParamName);
-                    dl4jParamValue = kerasParamValue;
-                }
-                if (layer instanceof org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) {
-                    if (dl4JParamName.equals(ConvolutionParamInitializer.WEIGHT_KEY)) {
-                        /* Theano and TensorFlow backends store convolutional weights
-                         * with a different dimensional ordering than DL4J so we need
-                         * to permute them to match.
-                         *
-                         * DL4J: (# outputs, # inputs, # rows, # cols)
-                         */
-                        switch (kerasLayer.getDimOrder()) {
-                            case TENSORFLOW:
-                                /* TensorFlow convolutional weights: # rows, # cols, # inputs, # outputs */
-                                kerasParamValue = kerasParamValue.permute(3, 2, 0, 1);
-                                break;
-                            case THEANO:
-                                /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols
-                                   However the default is for theano to rotate the filters by 180 degree before applying them
-                                 */
-                                for (int i = 0; i<kerasParamValue.tensorssAlongDimension(2,3); i++) {
-                                    //dup required since we only want data from the view not the whole array
-                                    INDArray copyFilter = kerasParamValue.tensorAlongDimension(i,2,3).dup();
-                                    double [] flattenedFilter = copyFilter.ravel().data().asDouble();
-                                    ArrayUtils.reverse(flattenedFilter);
-                                    INDArray newFilter = Nd4j.create(flattenedFilter,copyFilter.shape());
-                                    //manipulating weights in place to save memory
-                                    INDArray inPlaceFilter = kerasParamValue.tensorAlongDimension(i,2,3);
-                                    inPlaceFilter.muli(0).addi(newFilter);
-                                }
-                                break;
-                            case NONE:
-                                throw new InvalidKerasConfigurationException("Unknown keras backend " + kerasLayer.getDimOrder());
-                        }
-                    }
-                    dl4jParamValue = kerasParamValue;
-                } else if (layer instanceof org.deeplearning4j.nn.layers.recurrent.GravesLSTM) {
-                    /* Keras stores LSTM parameters in distinct arrays (e.g., the recurrent weights
-                     * are stored in four matrices: U_c, U_f, U_i, U_o) while DL4J stores them
-                     * concatenated into one matrix (e.g., U = [ U_c U_f U_o U_i ]). Thus we have
-                     * to map the Keras weight matrix to its corresponding DL4J weight submatrix.
-                     */
-
-                    if (kerasParamName.startsWith(PARAM_NAME_W)) {
-                        dl4jParamValue = layer.getParam(dl4JParamName);
-                        int nIn = ((BaseRecurrentLayer)layer.conf().getLayer()).getNIn();
-                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
-                        switch (kerasParamName) {
-                            case PARAM_NAME_W_C:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                                          NDArrayIndex.interval(0, nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_W_F:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                                          NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_W_O:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_W_I:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nIn),
-                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
-                                break;
-                        }
-                    } else if (kerasParamName.startsWith(PARAM_NAME_U)) {
-                        dl4jParamValue = layer.getParam(dl4JParamName);
-                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
-                        switch (kerasParamName) {
-                            case PARAM_NAME_U_C:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(0, nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_U_F:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_U_O:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_U_I:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                          NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
-                                break;
-                        }
-                        /* DL4J has three additional columns in its recurrent weights matrix that don't appear
-                         * in Keras LSTMs. These are for peephole connections. Since Keras doesn't use them,
-                         * we zero them out.
-                         */
-                        dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.interval(0, nOut),
-                                                  NDArrayIndex.interval(4*nOut, 4*nOut+3)}, Nd4j.zeros(nOut, 3));
-                    } else if (kerasParamName.startsWith(PARAM_NAME_B)) {
-                        dl4jParamValue = layer.getParam(dl4JParamName);
-                        int nOut = ((BaseRecurrentLayer)layer.conf().getLayer()).getNOut();
-                        switch (kerasParamName) {
-                            case PARAM_NAME_B_C:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(0, nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_B_F:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(nOut, 2*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_B_O:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(2*nOut, 3*nOut)}, kerasParamValue);
-                                break;
-                            case PARAM_NAME_B_I:
-                                dl4jParamValue.put(new INDArrayIndex[]{NDArrayIndex.point(0),
-                                        NDArrayIndex.interval(3*nOut, 4*nOut)}, kerasParamValue);
-                                break;
-                        }
-                    }
-                }
-                if (!layer.paramTable().keySet().contains(dl4JParamName))
-                    throw new InvalidKerasConfigurationException("Layer " + layerName + ": Keras param " + kerasParamName + " maps to unknown param " + dl4JParamName);
-                layer.setParam(dl4JParamName, dl4jParamValue);
-            }
+        for (String layerName : layerNames) {
+            if (this.layers.get(layerName).hasWeights())
+                throw new InvalidKerasConfigurationException("Attemping to copy weights layer not in model (named " + layerName + ")");
         }
         return model;
-    }
-
-    /**
-     * Helper function to map (typical) Keras layer parameter names to
-     * (typical) DL4J parameter names. This could be brittle.
-     *
-     * @param kerasParamName        Keras parameter name
-     * @return                      DL4J parameter name
-     *
-     * TODO: should this be moved into KerasLayer?
-     */
-    private static String mapParameterName(String kerasParamName) {
-        String paramName = null;
-        switch (kerasParamName) {
-            case PARAM_NAME_GAMMA:
-                paramName = BatchNormalizationParamInitializer.GAMMA;
-                break;
-            case PARAM_NAME_BETA:
-                paramName = BatchNormalizationParamInitializer.BETA;
-                break;
-            case PARAM_NAME_RUNNING_MEAN:
-                paramName = BatchNormalizationParamInitializer.GLOBAL_MEAN;
-                break;
-            case PARAM_NAME_RUNNING_STD:
-                paramName = BatchNormalizationParamInitializer.GLOBAL_VAR;
-                break;
-            case PARAM_NAME_W:
-                paramName = DefaultParamInitializer.WEIGHT_KEY;
-                break;
-            case PARAM_NAME_B:
-                paramName = DefaultParamInitializer.BIAS_KEY;
-                break;
-            case PARAM_NAME_W_C:
-            case PARAM_NAME_W_F:
-            case PARAM_NAME_W_I:
-            case PARAM_NAME_W_O:
-                paramName = GravesLSTMParamInitializer.INPUT_WEIGHT_KEY;
-                break;
-            case PARAM_NAME_U_C:
-            case PARAM_NAME_U_F:
-            case PARAM_NAME_U_I:
-            case PARAM_NAME_U_O:
-                paramName = GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY;
-                break;
-            case PARAM_NAME_B_C:
-            case PARAM_NAME_B_F:
-            case PARAM_NAME_B_I:
-            case PARAM_NAME_B_O:
-                paramName = GravesLSTMParamInitializer.BIAS_KEY;
-                break;
-        }
-        return paramName;
     }
 }
