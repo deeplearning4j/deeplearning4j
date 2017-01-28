@@ -92,7 +92,7 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
             idx = order[cursor++];
         }
         File f = new File(filePaths.get(idx));
-        String label = allLabels.get(idx);
+        String label = allLabels.get(fileLabelIndexes[idx]);
 
         String sentence;
         try{
