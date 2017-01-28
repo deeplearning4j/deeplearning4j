@@ -36,7 +36,7 @@ function loadDoc() {
      document.getElementById("demo").innerHTML = this.responseText;
     }
   };
-  xhttp.open("GET", "http://54.67.56.24:4567/VGGpredict", true);
+  xhttp.open("GET", "https://54.67.56.24:4567/hello", true);
   xhttp.send();
 }
 </script>
