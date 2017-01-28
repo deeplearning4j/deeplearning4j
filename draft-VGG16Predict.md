@@ -29,3 +29,8 @@ The network will certainly fail to identify you, images of cats and dogs it will
 Modifying this trained network for your use case would involve either "transfer learning" a feature we are working on, 
 or loading the model and then performing additional training on your dataset. 
 
+<div id="demo">
+  <h2>Let AJAX change this text</h2>
+  <button type="button" onclick="loadDoc()">Change Content</button>
+</div>
+
