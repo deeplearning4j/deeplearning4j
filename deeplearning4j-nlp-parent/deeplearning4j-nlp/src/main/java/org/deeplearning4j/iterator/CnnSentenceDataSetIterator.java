@@ -1,8 +1,16 @@
 package org.deeplearning4j.iterator;
 
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.iterator.provider.LabelAwareConverter;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.text.documentiterator.LabelAwareDocumentIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -348,6 +356,31 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             this.sentenceProvider = labeledSentenceProvider;
             return this;
         }
+
+        /**
+         * Specify how the (labelled) sentences / documents should be provided
+         */
+        public Builder sentenceProvider(LabelAwareIterator iterator, @NonNull List<String> labels) {
+            LabelAwareConverter converter = new LabelAwareConverter(iterator, labels);
+            return sentenceProvider(converter);
+        }
+
+        /**
+         * Specify how the (labelled) sentences / documents should be provided
+         */
+        public Builder sentenceProvider(LabelAwareDocumentIterator iterator, @NonNull List<String> labels) {
+            DocumentIteratorConverter converter = new DocumentIteratorConverter(iterator);
+            return sentenceProvider(converter, labels);
+        }
+
+        /**
+         * Specify how the (labelled) sentences / documents should be provided
+         */
+        public Builder sentenceProvider(LabelAwareSentenceIterator iterator, @NonNull List<String> labels) {
+            SentenceIteratorConverter converter = new SentenceIteratorConverter(iterator);
+            return sentenceProvider(converter, labels);
+        }
+
 
         /**
          * Provide the WordVectors instance that should be used for training
