@@ -460,9 +460,7 @@ public class RoutedTransport extends BaseTransport {
                 IntroductionRequestMessage irm = new IntroductionRequestMessage(getIp(), getPort());
                 irm.setTargetId((short) -1);
                 sendCoordinationCommand(irm);
-
 //            });
-
 //        }
     }
 

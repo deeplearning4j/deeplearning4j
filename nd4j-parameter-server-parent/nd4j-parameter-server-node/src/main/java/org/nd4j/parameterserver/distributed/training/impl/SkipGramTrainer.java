@@ -5,20 +5,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.RequestDescriptor;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.messages.complete.FrameCompleteMessage;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSgDotMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.BaseTrainer;
 import org.nd4j.parameterserver.distributed.training.chains.SkipGramChain;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -92,7 +91,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
             // FIXME: taskId should be real here, since it'll be used for task chain tracking
             // as result, we'll have aggregated dot as single ordered column, which might be used for gradient calculation
-            DistributedDotMessage ddm = new DistributedDotMessage(message.getTaskId(), WordVectorStorage.SYN_0, WordVectorStorage.SYN_1, row_syn0, row_syn1,
+            DistributedSgDotMessage ddm = new DistributedSgDotMessage(message.getTaskId(), row_syn0, row_syn1,
                     message.getW1(),
                     message.getW2(),
                     message.getCodes(),
@@ -104,10 +103,13 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
             ddm.setOriginatorId(message.getOriginatorId());
 
 
-//            log.info("sI_{} is trying to send DistributedDotMessage...", transport.getShardIndex());
-            transport.sendMessage(ddm);
-      //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
+            if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+                transport.putMessage(ddm);
+            } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+                transport.sendMessage(ddm);
+            }
 
+      //  } //else log.info("sI_{} Skipping step: {}", transport.getShardIndex(), chain.getTaskId());
 
     }
 

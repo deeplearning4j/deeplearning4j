@@ -4,8 +4,8 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
@@ -20,9 +20,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
-public class DistributedDotMessage extends BaseVoidMessage implements DistributedMessage {
-    protected Integer keyA;
-    protected Integer keyB;
+public class DistributedSgDotMessage extends BaseVoidMessage implements DistributedMessage {
     protected int[] rowsA;
     protected int[] rowsB;
 
@@ -33,30 +31,26 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
     protected float alpha;
     protected byte[] codes;
 
-    public DistributedDotMessage() {
+    public DistributedSgDotMessage() {
         messageType = 22;
     }
 
     @Deprecated
-    public DistributedDotMessage(long taskId, Integer keyA, Integer keyB, int rowA, int rowB) {
-        this(taskId, keyA, keyB, new int[]{rowA}, new int[]{rowB}, 0, 0, new byte[]{}, false, (short) 0, 0.001f);
+    public DistributedSgDotMessage(long taskId, int rowA, int rowB) {
+        this(taskId, new int[]{rowA}, new int[]{rowB}, 0, 0, new byte[]{}, false, (short) 0, 0.001f);
     }
 
-    public DistributedDotMessage(long taskId,
-                                 @NonNull Integer keyA,
-                                 @NonNull Integer keyB,
-                                 @NonNull int[] rowsA,
-                                 @NonNull int[] rowsB,
-                                 int w1,
-                                 int w2,
-                                 @NonNull byte[] codes,
-                                 boolean useHS,
-                                 short negSamples,
-                                 float alpha
+    public DistributedSgDotMessage(long taskId,
+                                   @NonNull int[] rowsA,
+                                   @NonNull int[] rowsB,
+                                   int w1,
+                                   int w2,
+                                   @NonNull byte[] codes,
+                                   boolean useHS,
+                                   short negSamples,
+                                   float alpha
                                  ) {
         this();
-        this.keyA = keyA;
-        this.keyB = keyB;
         this.rowsA = rowsA;
         this.rowsB = rowsB;
         this.taskId = taskId;
@@ -75,7 +69,7 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
     @Override
     public void processMessage() {
         // this only picks up new training round
-        //log.info("sI_{} Processing DistributedDotMessage taskId: {}", transport.getShardIndex(), getTaskId());
+        //log.info("sI_{} Processing DistributedSgDotMessage taskId: {}", transport.getShardIndex(), getTaskId());
 
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(w1, w2, rowsB, codes, negSamples, alpha, 119 );
         if (negSamples > 0) {
@@ -100,20 +94,28 @@ public class DistributedDotMessage extends BaseVoidMessage implements Distribute
         INDArray result = Nd4j.createUninitialized(resultLength, 1);
         int e = 0;
         for (; e < codes.length; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(keyA).getRow(w2), storage.getArray(keyB).getRow(rowsB[e]));
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2), storage.getArray(WordVectorStorage.SYN_1).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 
         // negSampling round
         for (; e< resultLength; e++) {
-            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(keyA).getRow(w2), storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
+            double dot = Nd4j.getBlasWrapper().dot(storage.getArray(WordVectorStorage.SYN_0).getRow(w2), storage.getArray(WordVectorStorage.SYN_1_NEGATIVE).getRow(rowsB[e]));
             result.putScalar(e, dot);
         }
 
-        // send this message to everyone
-        DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
-        dot.setTargetId((short) -1);
-        dot.setOriginatorId(getOriginatorId());
-        transport.sendMessage(dot);
+        if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+            // just local bypass
+            DotAggregation dot = new DotAggregation(taskId, (short) 1, shardIndex, result);
+            dot.setTargetId((short) -1);
+            dot.setOriginatorId(getOriginatorId());
+            transport.putMessage(dot);
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED){
+            // send this message to everyone
+            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
+            dot.setTargetId((short) -1);
+            dot.setOriginatorId(getOriginatorId());
+            transport.sendMessage(dot);
+        }
     }
 }

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
@@ -55,11 +56,17 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
             // negTable will be initalized at driver level and will be shared via message
             Nd4j.getRandom().setSeed(seed * (shardIndex + 1));
 
-            if (voidConfiguration.getNumberOfShards() - 1 == shardIndex) {
-                int modulo = vectorLength % voidConfiguration.getNumberOfShards();
-                if (modulo != 0) {
-                    columnsPerShard += modulo;
-                    log.info("Got inequal split. using higher number of elements: {}", columnsPerShard);
+            if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+                // each shard has full own copy
+                columnsPerShard = vectorLength;
+            } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+                // each shard will have only part of the data
+                if (voidConfiguration.getNumberOfShards() - 1 == shardIndex) {
+                    int modulo = vectorLength % voidConfiguration.getNumberOfShards();
+                    if (modulo != 0) {
+                        columnsPerShard += modulo;
+                        log.info("Got inequal split. using higher number of elements: {}", columnsPerShard);
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ package org.nd4j.parameterserver.distributed.conf;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 
@@ -25,6 +26,7 @@ public class VoidConfiguration implements Serializable {
     private int multicastPort;
     private int numberOfShards;
     private FaultToleranceStrategy faultToleranceStrategy;
+    private ExecutionMode executionMode;
     private List<String> shardAddresses = new ArrayList<>();
     private List<String> backupAddresses = new ArrayList<>();
 
@@ -80,6 +82,10 @@ public class VoidConfiguration implements Serializable {
         }
     }
 
+    public void setExecutionMode(@NonNull ExecutionMode executionMode) {
+        this.executionMode = executionMode;
+    }
+
     public static class VoidConfigurationBuilder {
         private String multicastNetwork = "224.0.1.1";
         private int ttl = 4;
@@ -88,6 +94,7 @@ public class VoidConfiguration implements Serializable {
         private int multicastPort = 59876;
         private int numberOfShards = 1;
         private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
+        private ExecutionMode executionMode = ExecutionMode.DISTRIBUTED;
         private long retransmitTimeout = 1000;
         private long responseTimeframe = 500;
         private long responseTimeout = 30000;

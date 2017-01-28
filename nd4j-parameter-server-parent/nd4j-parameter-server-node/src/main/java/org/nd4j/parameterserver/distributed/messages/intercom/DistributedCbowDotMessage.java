@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
@@ -110,10 +111,17 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
             result.putScalar(e, dot);
         }
 
-        // send this message to everyone
-        DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
-        dot.setTargetId((short) -1);
-        dot.setOriginatorId(getOriginatorId());
-        transport.sendMessage(dot);
+        if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+            DotAggregation dot = new DotAggregation(taskId, (short) 1, shardIndex, result);
+            dot.setTargetId((short) -1);
+            dot.setOriginatorId(getOriginatorId());
+            transport.putMessage(dot);
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+            // send this message to everyone
+            DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex, result);
+            dot.setTargetId((short) -1);
+            dot.setOriginatorId(getOriginatorId());
+            transport.sendMessage(dot);
+        }
     }
 }

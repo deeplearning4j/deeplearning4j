@@ -17,7 +17,7 @@ import org.nd4j.parameterserver.distributed.messages.requests.InitializationRequ
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.VectorRequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedDotMessage;
+import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSgDotMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedSolidMessage;
 import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
@@ -390,7 +390,7 @@ public class VoidParameterServerTest {
             shards[t].handleMessage(new DistributedAssignMessage(WordVectorStorage.SYN_1_NEGATIVE,2, 2.0));
         }
 
-        DistributedDotMessage ddot = new DistributedDotMessage(2L, WordVectorStorage.SYN_0, WordVectorStorage.SYN_1_NEGATIVE, new int[]{0, 1, 2}, new int[]{0, 1, 2}, 0, 1, new byte[]{0, 1}, true, (short) 0, 0.01f);
+        DistributedSgDotMessage ddot = new DistributedSgDotMessage(2L, new int[]{0, 1, 2}, new int[]{0, 1, 2}, 0, 1, new byte[]{0, 1}, true, (short) 0, 0.01f);
         for (int t = 0; t < threads.length; t++) {
             shards[t].handleMessage(ddot);
         }

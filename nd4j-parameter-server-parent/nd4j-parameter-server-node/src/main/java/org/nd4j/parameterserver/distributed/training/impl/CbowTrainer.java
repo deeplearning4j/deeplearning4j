@@ -5,6 +5,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.RequestDescriptor;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
@@ -69,7 +70,12 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         DistributedCbowDotMessage dcdm = new DistributedCbowDotMessage(message.getTaskId(), message.getSyn0rows(), row_syn1, message.getW1(), message.getCodes(), message.getCodes().length > 0, (short) message.getNegSamples(), (float) message.getAlpha());
         dcdm.setTargetId((short) - 1);
         dcdm.setOriginatorId(message.getOriginatorId());
-        transport.sendMessage(dcdm);
+
+        if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
+            transport.putMessage(dcdm);
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+            transport.sendMessage(dcdm);
+        }
     }
 
     @Override
