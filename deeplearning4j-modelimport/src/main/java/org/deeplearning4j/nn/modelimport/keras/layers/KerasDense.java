@@ -23,6 +23,7 @@ import java.util.Set;
 public class KerasDense extends KerasLayer {
 
     /* Keras layer parameter names. */
+    public static final int NUM_TRAINABLE_PARAMS = 2;
     public static final String KERAS_PARAM_NAME_W = "W";
     public static final String KERAS_PARAM_NAME_B = "b";
 
@@ -91,13 +92,13 @@ public class KerasDense extends KerasLayer {
     }
 
     /**
-     * Indicates that layer has trainable weights.
+     * Returns number of trainable parameters in layer.
      *
-     * @return  true
+     * @return          number of trainable parameters (2)
      */
     @Override
-    public boolean hasWeights() {
-        return true;
+    public int getNumParams() {
+        return NUM_TRAINABLE_PARAMS;
     }
 
     /**

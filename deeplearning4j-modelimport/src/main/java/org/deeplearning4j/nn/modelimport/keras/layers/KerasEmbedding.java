@@ -25,6 +25,7 @@ public class KerasEmbedding extends KerasLayer {
     public static final String LAYER_FIELD_INPUT_DIM = "input_dim";
 
     /* Keras layer parameter names. */
+    public static final int NUM_TRAINABLE_PARAMS = 1;
     public static final String KERAS_PARAM_NAME_W = "W";
 
     /**
@@ -101,13 +102,13 @@ public class KerasEmbedding extends KerasLayer {
     }
 
     /**
-     * Indicates that layer has trainable weights.
+     * Returns number of trainable parameters in layer.
      *
-     * @return  true
+     * @return          number of trainable parameters (1)
      */
     @Override
-    public boolean hasWeights() {
-        return true;
+    public int getNumParams() {
+        return NUM_TRAINABLE_PARAMS;
     }
 
     /**
