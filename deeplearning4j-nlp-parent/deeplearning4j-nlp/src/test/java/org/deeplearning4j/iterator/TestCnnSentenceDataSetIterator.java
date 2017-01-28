@@ -7,18 +7,14 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 28/01/2017.
@@ -33,8 +29,7 @@ public class TestCnnSentenceDataSetIterator {
 
         int vectorSize = w2v.lookupTable().layerSize();
 
-        Collection<String> words = w2v.lookupTable().getVocabCache().words();
-
+//        Collection<String> words = w2v.lookupTable().getVocabCache().words();
 //        for(String s : words){
 //            System.out.println(s);
 //        }
@@ -88,7 +83,7 @@ public class TestCnnSentenceDataSetIterator {
 
 
             LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
-            DataSetIterator dsi = new CnnSentenceDataSetIterator.Builder()
+            CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder()
                     .labelledSentenceProvider(p)
                     .wordVectors(w2v)
                     .maxSentenceLength(256)
@@ -103,6 +98,22 @@ public class TestCnnSentenceDataSetIterator {
             assertEquals(expLabels, ds.getLabels());
             assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
             assertNull(ds.getLabelsMaskArray());
+
+            INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
+            INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
+            INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0,0,true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray sub2;
+            if(alongHeight){
+
+                sub2 = ds.getFeatures().get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.interval(0,3), NDArrayIndex.all());
+            } else {
+                sub2 = ds.getFeatures().get(NDArrayIndex.interval(1,1,true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,3));
+            }
+
+            assertArrayEquals(sub1.shape(), s1F.shape());
+            assertArrayEquals(sub2.shape(), s2F.shape());
+            assertEquals(sub1, s1F);
+            assertEquals(sub2, s2F);
         }
     }
 }
