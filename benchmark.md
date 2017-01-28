@@ -24,7 +24,7 @@ Users have to reconfigure their JVMs themselves re:heap space. We can't give it 
 
 ## ETL
 
-On our examples, we don't make the ETL asynchronous, because the point of examples is to keep them simple. But for real world problems, you need to do that. Asynchronous ETL means TK...
+On our examples, we don't make the ETL asynchronous, because the point of examples is to keep them simple. But for real world problems, you need to do that. 
 
 ## Python
 
