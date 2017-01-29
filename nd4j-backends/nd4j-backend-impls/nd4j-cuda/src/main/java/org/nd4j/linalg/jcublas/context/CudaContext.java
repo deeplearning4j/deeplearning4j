@@ -72,7 +72,7 @@ public class CudaContext {
 
 
     public CudaContext() {
-     //   ContextHolder.getInstance().setContext();
+        //   ContextHolder.getInstance().setContext();
     }
 
     /**
@@ -111,7 +111,7 @@ public class CudaContext {
     }
 
 
-public void syncSolverStream() {
+    public void syncSolverStream() {
         if (solverStream != null) {
             nativeOps.streamSynchronize(solverStream);
         } else throw new IllegalStateException("cuBLAS stream isnt set");

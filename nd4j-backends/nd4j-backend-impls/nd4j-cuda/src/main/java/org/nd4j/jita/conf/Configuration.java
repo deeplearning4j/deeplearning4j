@@ -2,12 +2,12 @@ package org.nd4j.jita.conf;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -18,8 +18,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Configuration implements Serializable {
-    private static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     public enum ExecutionModel {
         SEQUENTIAL,
@@ -157,6 +157,10 @@ public class Configuration implements Serializable {
         this.initialized.compareAndSet(false, true);
     }
 
+    /**
+     * Environment variables for
+     * controlling cuda.
+     */
     private static final String MAX_BLOCK_SIZE = "ND4J_CUDA_MAX_BLOCK_SIZE";
     private static final String MIN_BLOCK_SIZE = "ND4J_CUDA_MIN_BLOCK_SIZE";
     private static final String MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
@@ -177,7 +181,7 @@ public class Configuration implements Serializable {
                 int var = Integer.parseInt(env.get(MAX_BLOCK_SIZE));
                 setMaximumBlockSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, env.get(MAX_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, env.get(MAX_BLOCK_SIZE));
             }
         }
 
@@ -186,7 +190,7 @@ public class Configuration implements Serializable {
                 int var = Integer.parseInt(env.get(MIN_BLOCK_SIZE));
                 setMinimumBlockSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, env.get(MIN_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, env.get(MIN_BLOCK_SIZE));
             }
         }
 
@@ -195,7 +199,7 @@ public class Configuration implements Serializable {
                 int var = Integer.parseInt(env.get(MAX_GRID_SIZE));
                 setMaximumGridSize(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_GRID_SIZE, env.get(MAX_GRID_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_GRID_SIZE, env.get(MAX_GRID_SIZE));
             }
         }
 
@@ -204,7 +208,7 @@ public class Configuration implements Serializable {
                 boolean var = Boolean.parseBoolean(env.get(DEBUG_ENABLED));
                 enableDebug(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
+                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
             }
         }
 
@@ -213,7 +217,7 @@ public class Configuration implements Serializable {
                 boolean var = Boolean.parseBoolean(env.get(FORCE_SINGLE_GPU));
                 allowMultiGPU(!var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, env.get(FORCE_SINGLE_GPU));
+                log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, env.get(FORCE_SINGLE_GPU));
             }
         }
 
@@ -222,7 +226,7 @@ public class Configuration implements Serializable {
                 boolean var = Boolean.parseBoolean(env.get(VERBOSE));
                 setVerbose(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
+                log.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
             }
         }
 
@@ -231,7 +235,7 @@ public class Configuration implements Serializable {
                 boolean var = Boolean.parseBoolean(env.get(USE_PREALLOCATION));
                 allowPreallocation(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", USE_PREALLOCATION, env.get(USE_PREALLOCATION));
+                log.error("Can't parse {}: [{}]", USE_PREALLOCATION, env.get(USE_PREALLOCATION));
             }
         }
 
@@ -240,7 +244,7 @@ public class Configuration implements Serializable {
                 long var = Long.parseLong(env.get(MAX_DEVICE_CACHE));
                 setMaximumDeviceCache(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, env.get(MAX_DEVICE_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, env.get(MAX_DEVICE_CACHE));
             }
         }
 
@@ -250,7 +254,7 @@ public class Configuration implements Serializable {
                 long var = Long.parseLong(env.get(MAX_HOST_CACHE));
                 setMaximumHostCache(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_HOST_CACHE, env.get(MAX_HOST_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_HOST_CACHE, env.get(MAX_HOST_CACHE));
             }
         }
 
@@ -259,7 +263,7 @@ public class Configuration implements Serializable {
                 long var = Long.parseLong(env.get(MAX_DEVICE_ALLOCATION));
                 setMaximumSingleDeviceAllocation(var);
             } catch (Exception e) {
-                logger.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, env.get(MAX_DEVICE_ALLOCATION));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, env.get(MAX_DEVICE_ALLOCATION));
             }
         }
 
@@ -408,7 +412,7 @@ public class Configuration implements Serializable {
         List<Integer> usableDevices = new ArrayList<>();
         for (int device: devices) {
             if (!availableDevices.contains(device)) {
-                logger.warn("Non-existent device [{}] requested, ignoring...", device);
+                log.warn("Non-existent device [{}] requested, ignoring...", device);
             } else {
                 if (!usableDevices.contains(device))
                     usableDevices.add(device);
@@ -432,7 +436,7 @@ public class Configuration implements Serializable {
     public Configuration setMaximumZeroAllocation(long max) {
         long xmx = Runtime.getRuntime().maxMemory();
         if (max < xmx)
-            logger.warn("Setting maximum memory below -Xmx value can cause problems");
+            log.warn("Setting maximum memory below -Xmx value can cause problems");
 
         if (max <= 0)
             throw new IllegalStateException("You can't set maximum host memory <= 0");
