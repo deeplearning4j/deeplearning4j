@@ -67,11 +67,18 @@ In our `dl4j-examples` repo, we don't make the ETL asynchronous, because the poi
 
 Data is stored on disk and disk is slow. That’s the default. So you run into bottlenecks when loading data onto your harddrive. When optimizing throughput, the slowest component is always the bottleneck. For example, a distributed Spark job using three GPU workers and one CPU worker will have a bottleneck with the CPU. The GPUs have to wait for that CPU to finish. 
 
-The Deeplearning4j class `DatasetIterator` hides the complexity of loading data on disk. 
+The Deeplearning4j class `DatasetIterator` hides the complexity of loading data on disk. The code for using any Datasetiterator will always be the same, invoking looks the same, but they work differently. 
 
 * one loads from disk 
 * one loads asynchronously
 * one loads pre-saved from RAM
+
+Here's how the DatasetIterator is uniformly invoked for MNIST:
+
+            while(mnistTest.hasNext()){
+	                DataSet ds = mnistTest.next();
+	                INDArray output = model.output(ds.getFeatureMatrix(), false);
+	                eval.eval(ds.getLabels(), output);
 
 You can optimize by using an asychronous loader in the background. Java can do real multi-threading. It can load data in the background while other threads take care of compute. So you load data into the GPU at the same time that compute is being run. The neural net trains even as you grab new data from memory.
 
@@ -94,35 +101,18 @@ In Python, programmers are converting their data into [pickles](https://docs.pyt
 
 But Java has robust tools for moving big data, and if compared correctly, is much faster than Python. The Deeplearning4j community has reported up to 3700% increases in speed over Python frameworks, when ETL and computation are optimized.
 
-We use DataVec. We don’t force a particular format for dataset, unlike the python frameworks. Caffe forces you to use hdf5. 
-https://support.hdfgroup.org/HDF5/
+Deeplearning4j uses DataVec as it ETL and vectorization library. Unlike other deep-learning tools, DataVec does not force a particular format on your dataset. (Caffe forces you to use [hdf5](https://support.hdfgroup.org/HDF5/), for example.)
 
-We try to be more flexible than that; we can take in more data sources than most frameworks. But that comes with performance tradeoffs. There are ways to make it just as fast. You can pre-save the datasets, then we would be equivalent to python. 
+We try to be more flexible. That means you can point DL4J at raw photos, and it will load the image, run the transforms and put it into an NDArray to generate a dataset on the fly. 
 
-Python loading to disk from one file that’s pre-cooked. Pickles are pre-formatted data.
+But if your training pipeline is doing that every time, Deeplearning4j will seem about 10x slower than other frameworks, because you’re spending your time creating datasets. Every time you call `fit`, you're recreating a dataset, over and over again. We allow it to happen for ease of use, but we can show you how to speed things up. There are ways to make it just as fast. 
 
-Here’s how you pre-save the datasets. 
-https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/PreSave.java
+One way is to pre-save the datasets, in a manner similar to the Python frameworks. (Pickles are pre-formatted data.) When you pre-save the dataset, you create a separate class.
 
-Your ETL pipeline. You can point DL4J at raw photos, and it will on the fly load the image, run the transforms and put it into an NDArray to generate a dataset. 
+Here’s how you [pre-save datasets](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/PreSave.java).
 
-You can create the datasets on the fly. If your training pipeline is doing that every time, you’ll be about 10x slower if you do that, because you’re spending your time creating datasets. But we allow that to happen for ease of use. 
+A `Recordreaderdatasetiterator` talks to Datavec and outputs datasets for DL4J. 
 
-They should use asynchronous and pre-save their datasets.
+Here’s how you [load a pre-saved dataset](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/LoadPreSavedLenetMnistExample.java).
 
-When you call fit, you’re recreating the datasets over and over again. 
-
-when they pre-save the dataset. you create a separate class.
-use datavec with a recordreaderdatasetiterator. talks to datavec and outputs datasets for dl4j. that’s where you run a pre-save. 
-
-If you see the Mnistdatasetiterator here
-
-here’s how to use and load the pre-saved datasets
-https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/LoadPreSavedLenetMnistExample.java
-
-line 90  is where you see asynch. you wrap the pre-saved iterator. and then the asynch handles loading it in the background. 
-
-Training will be 10x faster. 
-
-the code for using any datasetiterator will always be the same. invoking it is the same. but they work differently.
-
+Line 90 is where you see the asynchronous ETL. In this case, it's wrapping the pre-saved iterator, so you're taking advantage of both methods, with the asynch loading the pre-saved data in the background as the net trains. 
