@@ -803,8 +803,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(dimension[i] < 0)
                 dimension[i] += rank();
 
-        if(dimension.length > 1)
+        if(dimension.length > 1) {
             Arrays.sort(dimension);
+        }
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)

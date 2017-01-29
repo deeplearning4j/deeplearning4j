@@ -7,6 +7,7 @@ import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -1164,11 +1165,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public Properties getEnvironmentInformation() {
         Properties properties = super.getEnvironmentInformation();
-
-        properties.put("backend","CPU");
-        properties.put("omp.threads", loop.ompGetMaxThreads());
-        properties.put("blas.threads", Nd4j.factory().blas().getMaxThreads());
-        properties.put("blas.vendor", ((Nd4jBlas)Nd4j.factory().blas()).getBlasVendor().toString());
+        properties.put(Nd4jEnvironment.BACKEND_KEY,"CPU");
+        properties.put(Nd4jEnvironment.OMP_THREADS_KEY, loop.ompGetMaxThreads());
+        properties.put(Nd4jEnvironment.BLAS_THREADS_KEY, Nd4j.factory().blas().getMaxThreads());
+        properties.put(Nd4jEnvironment.BLAS_VENDOR_KEY, ((Nd4jBlas)Nd4j.factory().blas()).getBlasVendor().toString());
 
         return properties;
     }

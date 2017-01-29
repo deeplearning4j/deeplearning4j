@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -32,6 +33,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -50,8 +52,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -66,12 +66,12 @@ import java.util.*;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
 //    private static final Allocator allocator = AtomicAllocator.getInstance();
-    private static Logger log = LoggerFactory.getLogger(CudaExecutioner.class);
 
     @Getter protected static TADManager tadManager = new DeviceTADManager();
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
@@ -2332,7 +2332,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     /**
-     * This method return set of key/value and key/key/value objects, describing current environment
+     * This method return set of key/value
+     * and key/key/value objects,
+     * describing current environment
      *
      * @return
      */
@@ -2348,19 +2350,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                 CudaPointer devPtr = new CudaPointer(i);
 
-                deviceProps.put("cuda.deviceName", nativeOps.getDeviceName(devPtr));
-                deviceProps.put("cuda.freeMemory", nativeOps.getDeviceFreeMemory(devPtr));
-                deviceProps.put("cuda.totalMemory", nativeOps.getDeviceTotalMemory(devPtr));
-                deviceProps.put("cuda.deviceMajor", (long) nativeOps.getDeviceMajor(devPtr));
-                deviceProps.put("cuda.deviceMinor", (long) nativeOps.getDeviceMinor(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(devPtr));
 
                 devicesList.add(i, deviceProps);
             }
 
-            props.put("backend", "CUDA");
-            props.put("cuda.availableDevices", nativeOps.getAvailableDevices());
-            props.put("cuda.devicesInformation", devicesList);
-            props.put("blas.vendor", Nd4jBlas.Vendor.CUBLAS.toString());
+            props.put(Nd4jEnvironment.BACKEND_KEY, "CUDA");
+            props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, nativeOps.getAvailableDevices());
+            props.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
+            props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, Nd4jBlas.Vendor.CUBLAS.toString());
 
 
             properties = props;
