@@ -1,97 +1,96 @@
 ---
-title: Running Deep Learning on Distributed GPUs With Spark
+title: 基于Spark的多GPU分布式深度学习
 layout: cn-default
 ---
 
-# Running Deep Learning on Distributed GPUs With Spark
+# 基于Spark的多GPU分布式深度学习
 
-Deeplearning4j trains deep neural networks on distributed GPUs using Spark. Specifically, we show the use of Spark to load data and GPUs to process images with cuDNN. 
+Deeplearning4j可以利用Spark在多个GPU上开展分布式的深度神经网络定型。本页将具体介绍如何使用Spark加载数据，以及如何用cuDNN进行基于GPU的图像处理。 
 
-Deeplearning4j includes libraries for the automatic tuning of neural networks, deployment of those neural-net models, visualization and integrations with other data pipeline tools that make dealing with data on production clusters much easier. 
+Deeplearning4j提供的多种库可实现神经网络自动调试、神经网络模型部署、可视化以及与其他数据加工管道工具的集成，大幅简化基于生产集群的数据处理。 
 
-This post is a simple introduction to each of those technologies, which we'll define below. It looks at each individually, and at the end it shows with code how Deeplearning4j pulls them together in an image-processing example.
+本页将依次简要介绍这些技术，具体定义将在下文中给出。在分别介绍各项技术之后，文章最后将用一个图像处理的代码示例来说明Deeplearning4j如何将这些技术结合起来。
 
-In this post, we will cover the below technologies and their interactions:
+本页将介绍下列各项技术及其之间的互动关系：
  
  1. Apache Spark
  2. CUDA
  3. cuDNN
- 4. DL4J Ecosystem (Deeplearning4j,ND4J,DataVec,JavaCPP)
+ 4. DL4J生态系统 （Deeplearning4j、ND4J、DataVec、JavaCPP）
 
-![Alt text](./img/dl4j-diagram.png)
+![Alt text](../img/dl4j-diagram.png)
 
 ## Apache Spark
 
-As an open-source, distributed run-time, Spark can orchestrate multiple host threads. It was the Apache Foundation’s most popular project last year. Deeplearning4j only relies on Spark as a data-access layer for a cluster, since we have heavy computation needs that require more speed and capacity than Spark currently provides. It’s basically fast ETL (extract transform load) or data storage and access for the hadoop ecosystem (HDFS or hadoop file system). The goal is to leverage hadoop's data locality mechanisms while speeding up compute with native computations.
+作为一种开源的分布式运行时，Spark可以安排多个主机线程。它是Apache软件基金会去年最受欢迎的项目。Deeplearning4j仅把Spark作为集群的数据访问层，因为我们的计算需求很大，而Spark目前无法完全满足我们的速度和容量需求 。Spark基本上就是Hadoop生态系统（HDFS或Hadoop文件系统）的快速ETL（提取、转换、加载）或数据存储与访问工具。我们的目的是利用Hadoop的数据本地化机制，用本地计算来加快计算速度。
 
-Spark accomplishes this via a construct called an RDD, or Resilient Distributed Dataset. The RDD construct provides us a functional interface to data partitioned across a cluster. Below you will see us use RDDs for loading data and passing
-a RDD of Dataset (a DL4J construct containing a feature matrix and a label matrix).
+Spark采用名为分布式弹性数据集（RDD）的构造来实现这种设计。RDD为处理集群上各个分区的数据提供了函数接口。下文将演示如何用RDD加载数据，以及如何遍历Dataset（包含一个特征矩阵和一个标签矩阵的DL4J构造）的RDD。
 
 
 ## CUDA
 
-Now, CUDA is NVIDIA's parallel computing platform and API model, a software layer that gives access to GPUs' lower-level instructions, and which works with C, C++ and FORTRAN. Deeplearning4j interacts with the GPU and CUDA via a mix of custom CUDA kernels and Java Native Interface.
+CUDA是NVIDIA的并行计算平台和API模型，它是一个可以让用户使用GPU的较低层次指令的软件层，与C、C++和FORTRAN相兼容。Deeplearning4j通过自定义CUDA核函数以及Java本地接口（Java Native Interface）来与GPU和CUDA互动。
 
 ## cuDNN
-cuDNN stands for the CUDA Deep Neural Network Library, and it was created by the GPU maker NVIDIA. cuDNN is a library of primitives for standard deep learning routines: forward and backward convolution, pooling, normalization, and activation layers. 
+cuDNN的全称是CUDA深度神经网络库，由GPU制造商NVIDIA推出。cuDNN是用于实现正向和反向卷积、池化、标准化以及激活层等标准深度学习例程的基元库。 
 
-cuDNN is one of the fastest libraries for deep convolutional networks (and more recently, for recurrent nets). It ranks at or near the top of several [image-processing benchmarks](https://github.com/soumith/convnet-benchmarks) conducted by Soumith Chintala of Facebook. Deeplearning4j wraps cuDNN via Java Native Interface, and gives the Java community easy access to it. 
+对于深度卷积网络（以及近来的循环网络）而言，cuDNN是速度最快的库之一。在Facebook的Soumith Chintala开展的[图像处理对标](https://github.com/soumith/convnet-benchmarks)中，cuDNN名列前茅。Deeplearning4j用Java本地接口包装cuDNN，方便Java用户使用。 
 
-## Deeplearning4j, ND4J, DataVec and JavaCPP
+## Deeplearning4j、ND4J、DataVec和JavaCPP
 
-[Deeplearning4j](http://deeplearning4j.org/) is the most widely used open-source deep learning tool for the JVM, including the Java, Scala and Clojure communities. Its aim is to bring deep learning to the production stack, integrating tightly with popular big data frameworks like Hadoop and Spark. DL4J works with all major data types – images, text, time series and sound – and includes algorithms such as convolutional nets, recurrent nets like LSTMs, NLP tools like Word2Vec and Doc2Vec, and various types of autoencoders.
+[Deeplearning4j](http://deeplearning4j.org/)是应用最广泛的JVM开源深度学习工具，面向Java、Scala和Clojure用户群。它旨在将深度学习引入生产栈，与Hadoop与Spark等主流大数据框架紧密集成。DL4J能处理图像、文本、时间序列和声音等所有主要数据类型，提供的算法包括卷积网络、LSTM等循环网络、Word2Vec和Doc2Vec等NLP工具以及各类自动编码器。
 
-Deeplearning4j is part of a set of open source libraries for building deep learning applications on the Java Virtual Machine. It is one of several open-source libraries maintained by Skymind engineers. 
+Deeplearning4j是用于在Java虚拟机上构建深度学习应用的系列开源库之一。它也是由Skymind工程团队负责维护的几个开源库之一。 
 
-* [ND4J](http://nd4j.org/), or n-dimensional arrays for Java, is the scientific computing library that performs the linear algebra and calculus necessary to train neural nets for DL4J. 
-* [libnd4j](https://github.com/deeplearning4j/libnd4j) is the C++ library that accelerates ND4J. 
-* [DataVec](https://github.com/deeplearning4j/DataVec) is used to vectorize all types of data.
-* [JavaCPP](https://github.com/bytedeco/javacpp) is the glue code that creates a bridge between Java and C++. DL4J talks to cuDNN using JavaCPP.
-
-
-
-## Spark and DL4J
-
-Deeplearning4j also comes with built in Spark integration for handling distributed training of neural nets across a cluster. We use data parallelism (explained below) to scale out training on multiple computers leveraging a GPU (or 4) on each node. We use Spark for data access. We do this by training on Spark RDD partitions (portions of the data stored across a cluster)
-
-A distributed file system combined with an easy interface allows us to move compute to the data rather than the other way around, allowing us to benefit from an easy to setup way of doing distributed training without having to do a lot of
-the harder work ourselves.
+* [ND4J](http://nd4j.org/)是为Java编写的N维数组，它是为DL4J神经网络定型进行必要的线性代数和微积分运算的科学计算库。 
+* [libnd4j](https://github.com/deeplearning4j/libnd4j)是加速ND4J的C++库。 
+* [DataVec](https://github.com/deeplearning4j/DataVec)用于将各类数据向量化。
+* [JavaCPP](https://github.com/bytedeco/javacpp)是在Java和C++之间搭起桥梁的粘合代码。DL4J借由JavaCPP与cuDNN互动。
 
 
-## Java & C++ Communication: Doesn't Java Slow Down CUDA?
 
-Usually. But we optimized communication by putting operations off heap. JavaCPP implements a `Pointer` class that makes it easy to do [off-heap operations](https://dzone.com/articles/heap-vs-heap-memory-usage) (i.e. data doesn't hit the garbage collector). This allows us to benefit from lower latency and memory management while benefiting from the managed garbage collector where it matters. This is the approach taken by many distributed systems frameworks and databases such as such as Apache Flink, Spark and Hbase.
+## Spark与DL4J
 
-Java isn't good at linear algebra operations. They should be handled by C++, where we can benefit from hardware acceleration of floating-point operations. That's what libnd4j is for.
+Deeplearning4j自带内置Spark集成，用于处理在集群上开展的分布式神经网络定型。我们采用数据并行（说明见下文）来将网络定型向外扩展至多台计算机，每个节点靠一个（或四个）GPU运行。我们用Spark访问数据。具体方法是在Spark RDD分区（存储于集群各处的不同数据部分）上进行定型。
 
-## Distributed Deep Learning With Parameter Averaging
+我们将分布式文件系统与简单易用的接口相结合，让计算能到数据所在地点进行，而不是将数据转移至计算地点，如此我们既能以便于设置的方式开展分布式定型，又不需要自己从事大量
+较为困难的工作。
 
-There are two main methods for the distributed training of neural networks: data parallelism and model parallelism. 
 
-With data parallelism, you subdivide a very large dataset into batches, and distribute those batches to parallel models running on separate hardware to train simultaneously. 
+## Java与C++之间的通信：Java不会让CUDA变慢吗？
 
-Imagine training on an encyclopedia, subdividing it into batches of 10 pages, and distributing 10 batches to 10 models to train, then averaging the parameters of those trained models in one master model, and pushing the updated weights of the master model out to the distributed models. The model parameters are then averaged at the end of training to yield a single model.
+通常会。但是，我们会通过在堆外进行运算来优化通信。JavaCPP用`Pointer`类来实现简便易行的[堆外运算](https://dzone.com/articles/heap-vs-heap-memory-usage)（即数据不会进入垃圾回收器）。如此一来，我们将因为延迟及内存管理负担降低而获益；同时垃圾回收器会得到控制，其运行会更有针对性，而这也将带来益处。Apache Flink、Spark和Hbase等许多分布式系统框架和数据库都采用了这种方法。
 
-Deeplearning4j relies on data parallelism and uses Spark for distributed host thread orchestration across a cluster.
+Java不擅长线性代数运算。线性代数运算应当由C++来处理，如此便可以充分利用浮点运算的硬件加速。这也正是libnd4j的用途。
 
-Here is a visualization:
+## 进行参数平均化的分布式深度学习
+
+分布式神经网络定型的开展方法有两种：数据并行和模型并行。 
+
+数据并行指将一个非常大的数据集细分为多个批次，然后把这些批次分发给在不同硬件上并行运行的模型，同时进行定型。 
+
+试想用一套百科全书来定型：每10页分为一批，将10个批次分发给10个模型进行定型，然后把定型得到的模型参数平均化，形成一个主模型，再将更新后的主模型权重推送至各个分布式模型。定型结束时，将所有的模型参数平均化，产生一个最终模型。
+
+Deeplearning4j主要依靠数据并行模式，利用Spark来安排集群中的分布式主机线程。
+
+示意图如下：
  
-![Alt text](./img/mapreduce_v_iterative.png)
+![Alt text](../img/mapreduce_v_iterative.png)
 
 
 
-## Does Parameter Averaging work?
-See references at the bottom of this post for some papers to dig in to.
+## 参数平均化是否有效？
+请参阅本页底部参考资料列表中的论文。
 
-## Code Example
+## 代码示例
 
-Here’s an example of Deeplearning4j code that runs LeNet on Spark using GPUs.
+以下是在Spark上用GPU运行LeNet的Deeplearning4j代码示例。
 
-First we configure Spark and load the data:
+首先配置Spark并加载数据：
 
     public static void main(String[] args) throws Exception {
 
-        //Create spark context, and load data into memory
+        //创建spark上下文，将数据载入内存
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[*]");
         sparkConf.setAppName("MNIST");
@@ -106,13 +105,13 @@ First we configure Spark and load the data:
         Collections.shuffle(trainData,new Random(12345));
         while(mnistTest.hasNext()) testData.add(mnistTest.next());
 
-        //Get training data. Note that using parallelize isn't recommended for real problems
+        //获取定型数据。注意不建议对实际问题使用parallelize
         JavaRDD<DataSet> train = sc.parallelize(trainData);
         JavaRDD<DataSet> test = sc.parallelize(testData);
 
-Then we configure the neural network:
+然后配置神经网络：
 
-        //Set up network configuration (as per standard DL4J networks)
+        //设置网络配置（按标准的DL4J网络配置）
         int nChannels = 1;
         int outputNum = 10;
         int iterations = 1;
@@ -162,88 +161,72 @@ Then we configure the neural network:
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-Here is a diagram of the neural net above:
-![Alt text](./img/flow2.png)
+以下是上述神经网络的示意图：
+![Alt text](../img/flow2.png)
 
 
-Note that above, we also have a more complex (but versatile) [Computation Graph API](http://deeplearning4j.org/compgraph) for those familiar with other frameworks.
+熟悉其他框架的用户也可以使用我们的另一个更复杂（但功能更多）的[计算图API](http://deeplearning4j.org/cn/compgraph)。
 
-Also of note here is the builder pattern being used. Since Java doesn't have key word args, the fluent builder
-pattern is known as a best practice in Java land due to the complimenting tools such as IntelliJ for handling
-code completion. Despite its verbose nature, its also very easy to wrap in a more concise language such as 
-Clojure or Scala.
+另外，请注意此处使用的builder（构建器）模式。Java没有关键字参数，流式builder模式是Java语言中的最佳实践，因为IntelliJ等配套工具可用于处理代码完成。虽然它有些冗长，但可以用Clojure或Scala等更简洁的语言将其包装起来，而这种操作也很简单。
 
-We are going to release a Scala wrapper very similar to the Keras framework taking advantage of some of the nicer constructs of the scala language which should help usability quite a bit.
+我们将会发布一项与Keras框架非常相似的Scala包装，利用Scala语言中一些更优越的构造，这样应当会大大提升可用性。
 
-These configurations can also be defined via YAML or JSON.
+上述配置也可以通过YAML或JSON来指定。
 
-## Distributed Training with Spark
+## 基于Spark的分布式定型
 
-Then we tell Spark how to perform parameter averaging:
+然后，我们为Spark指定参数平均化的运行方式：
 
-        //Create Spark multi layer network from configuration
+        //按配置建立Spark多层网络
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
                 .workerPrefetchNumBatches(0)
-                .saveUpdater(true) //save things like adagrad squared gradient histories
-                .averagingFrequency(5) //Do 5 minibatch fit operations per worker, then average and redistribute parameters
-                .batchSizePerWorker(examplesPerDataSetObject) //Number of examples that each worker uses per fit operation
+                .saveUpdater(true) //保存adagrad的梯度平方等历史记录 
+                .averagingFrequency(5) //每个工作节点进行5个微批次的定型操作，然后将参数平均化并重新分发
+                .batchSizePerWorker(examplesPerDataSetObject) //每个工作节点每次定型操作时使用的样例数
                 .build();
-
+                
         SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net, tm);
-
-And finally, we train the network by calling `.fit()` on `sparkNetwork`.
-
-
+        
+最后，我们对`sparkNetwork`调用`.fit()`，定型网络。
 
 
-        //Train network
+
+
+        //定型网络
         log.info("--- Starting network training ---");
         int nEpochs = 5;
         for( int i = 0; i < nEpochs; i++ ){
             sparkNetwork.fit(train);
             System.out.println("----- Epoch " + i + " complete -----");
 
-            //Evaluate using Spark:
+            //用Spark进行评估：
             Evaluation evaluation = sparkNetwork.evaluate(test);
             System.out.println(evaluation.stats());
         }
 
-## Getting Started with Data Parallel GPUs on Spark
+## 开始建立基于Spark的多GPU数据并行框架
 
-Finally if you want to go further:
+最后，如果您希望进一步探索：
 
-To begin training deep neural networks on distributed GPUs on Spark, you will need to do two things.
+在用基于Spark的分布式GPU框架定型深度神经网络之前，您需要做两件准备工作。
 
-1. Set up DL4J using our [quickstart guide](http://deeplearning4j.org/quickstart).
-2. Configure Spark and view code examples using [these instructions](http://deeplearning4j.org/spark).
+1. 按[快速入门指南](http://deeplearning4j.org/cn/quickstart)安装DL4J。
+2. 按[相关指南](http://deeplearning4j.org/cn/spark)配置Spark并查看代码示例。
 
-Join us on gitter as well if you'd like to speak to any of us live:
+如果您希望直接与我们讨论，请在Gitter上加入我们：
 https://gitter.im/deeplearning4j/deeplearning4j
 
 
-## References
+## 参考资料
 
-[1] Training with intra-block parallel optimization and blockwise model-update filtering. In 2016
+[1] 《Training with intra-block parallel optimization and blockwise model-update filtering》；2016年IEEE国际声学、语音与信号处理会议（ICASSP）论丛，第5880～5884页；IEEE，2016。
 
-IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), pages
+[2] Jeffrey Dean、Greg Corrado、Rajat Monga、Kai Chen、Matthieu Devin、Mark Mao、Andrew Senior、Paul Tucker、Ke Yang、Quoc V Le等：《Large scale distributed deep networks》；神经信息处理系统进展大会（Advances inNeural Information Processing Systems）论丛，第1223～1231页，2012。
 
-5880–5884. IEEE, 2016.
+[3] Augustus Odena：《Faster asynchronous sgd》；arXiv预印本，arXiv：1601.04033，2016。
 
-[2] Jeffrey Dean, Greg Corrado, Rajat Monga, Kai Chen, Matthieu Devin, Mark Mao, Andrew Senior,
+[4] Nikko Strom：《Scalable distributed dnn training using commodity gpu cloud computing》；国际语音通信协会（International Speech Communication Association）第十六届年会，2015；http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf.
 
-Paul Tucker, Ke Yang, Quoc V Le, et al. Large scale distributed deep networks. In Advances in
+[5] Wei Zhang、Suyog Gupta、Xiangru Lian和Ji Liu：《Staleness-aware async-sgd for distributed deep learning》；CoRR，abs/1511.05950，2015； http://arxiv.org/abs/1511.05950
 
-Neural Information Processing Systems, pages 1223–1231, 2012.
-
-[3] Augustus Odena. Faster asynchronous sgd. arXiv preprint arXiv:1601.04033, 2016.
-
-[4] Nikko Strom. Scalable distributed dnn training using commodity gpu cloud computing. In Six-
-teenth Annual Conference of the International Speech Communication Association, 2015. http:
-
-//nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf.
-
-[5] Wei Zhang, Suyog Gupta, Xiangru Lian, and Ji Liu. Staleness-aware async-sgd for distributed
-
-deep learning. CoRR, abs/1511.05950, 2015. http://arxiv.org/abs/1511.05950.
-
-[6]: http://arxiv.org/abs/1404.5997
+[6] http://arxiv.org/abs/1404.5997
