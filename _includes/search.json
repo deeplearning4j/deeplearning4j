@@ -19,307 +19,307 @@
 },
 {
 "url": "https://deeplearning4j.org/cn/artificialintelligence",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "人工智能资源",
+"description": "介绍了初步学习人工智能和深度学习的资源。对于那些想进入人工智能领域却又不知从何开始的初学者来说，这绝对非常有用。",
+"tags": ["资源", "初学者", "人工智能学材", "如何开始", "学习深度学习"]
 },
 {
 "url": "https://deeplearning4j.org/cn/bagofwords-tf-idf",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Bag of Words & TF-IDF",
+"description": "Bag of Words (BoW) is an algorithm that counts how many times a word appears in a document. ",
+"tags": ["bow", "bag of words", "TF-IDF", "word2vec", "doc2vec"]
 },
 {
 "url": "https://deeplearning4j.org/cn/buildinglocally",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "用源码进行本地构建",
+"description": "如果开发者和工程师想使用Deeplearning4j 的最新版本，或者希望用派生项目构建自己的版本，那么请参考本页的指南来构建和安装Deeplearning4j。",
+"tags": ["本地构建", "安装", "构建", "本地搭建", "个人版本"]
 },
 {
 "url": "https://deeplearning4j.org/cn/buildtools",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "配置自动化构建工具",
+"description": "这里的操作指南适用于DL4J和ND4J的所有子模块，包括deeplearning4j-api、deeplearning4j-scaleout和ND4J后端。",
+"tags": ["操作指南", "自动构建", "自动搭建", "maven", "pom.xml"]
 },
 {
 "url": "https://deeplearning4j.org/cn/canova",
-"title": "Sample title 2",
-"description": "Sample description ",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Canova 先称为 DataVec",
+"description": "版本0.4.0之后，Canova库已合并到 DataVec with release 0.4.0",
+"tags": ["canova", "datavec", "etl"]
 },
 {
 "url": "https://deeplearning4j.org/cn/career",
-"title": "Sample title 3",
-"description": "Sample description 3",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "有关Deeplearning4j的招聘信息",
+"description": "为求职者提供职位招聘信息；为企业提供人才招聘",
+"tags": ["招聘", "人才", "职业", "事业", "工作"]
 },
 {
 "url": "https://deeplearning4j.org/cn/compare-dl4j-torch7-pylearn",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DL4J与Torch、Theano、Caffe、TensorFlow的比较",
+"description": "Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。",
+"tags": ["tensor flow", "torch", "python", "caffe", "cntk", "比较"]
 },
 {
 "url": "https://deeplearning4j.org/cn/convolutionalnets",
-"title": "Sample title",
-"description": "Sample description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "卷积网络（Convolutional Neural Networks）",
+"description": "卷积网络对图像进行物体辨识，可识别人脸、人类个体、道路标志、茄子、鸭嘴兽以及视觉数据中诸多其他方面的内容。",
+"tags": ["卷积网络", "cnn", "Convolutional Neural Networks", "人脸识别", "图像识别"]
 },
 {
 "url": "https://deeplearning4j.org/cn/csv-deep-learning",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/customdatasets",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/data-for-deep-learning",
-"title": "Sample title 2",
-"description": "Sample description ",
+"title": "Sample_Title 2",
+"description": "Sample_description ",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/data-sets-ml",
-"title": "Sample title 3",
-"description": "Sample description 3",
+"title": "Sample_Title 3",
+"description": "Sample_description 3",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/datavec",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deepautoencoder",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deeplearningforbeginners",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/denoisingautoencoder",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deprecated-list",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/earlystopping",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/eigenvector",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/gettingstarted",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/image-data-pipeline",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/iterativereduce",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/keras",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/lstm",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/maven",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/mnist-for-beginners",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/mnist-tutorial",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/model-zoo",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/modelpersistence",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/multinetwork",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/multinetwork",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/opendata",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/output",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/overview",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/questions",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/quickstart",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/recurrentnetwork",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/releasenotes",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/restrictedboltzmannmachine",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/simple-image-load-transform",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/spark",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/stackeddenoisingautoencoder",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/troubleshootingneuralnets",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/tsne-visualization",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/tutorials",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/updater",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/use_cases",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/usingrnns",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/visualization",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/welldressed-recommendation-engine",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
 {
 "url": "https://deeplearning4j.org/cn/word2vec",
-"title": "Sample title",
-"description": "Sample description",
+"title": "Sample_Title",
+"description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 }]
