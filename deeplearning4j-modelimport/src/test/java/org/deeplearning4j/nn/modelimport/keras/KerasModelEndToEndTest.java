@@ -17,33 +17,28 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for end-to-end Keras model import.
  *
+ * TODO: find a more elegant fix for the per-layer activation comparisons
+ * since some layers (e.g., ActivationLayer) overwrite previous
+ * layer's activations when run in train=false mode.
+ *
+ * TODO: ndarray.equalsWithEps(ndarray) appears to be broken
+ *
  * @author dave@skymind.io
  */
 @Slf4j
 public class KerasModelEndToEndTest {
-    static {
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
-    }
-
     public static final String GROUP_ATTR_INPUTS = "inputs";
     public static final String GROUP_ATTR_OUTPUTS = "outputs";
     public static final String GROUP_PREDICTIONS = "predictions";
     public static final String GROUP_ACTIVATIONS = "activations";
-    public static final String GROUP_SCORES = "scores";
     public static final String TEMP_OUTPUTS_FILENAME = "tempOutputs";
     public static final String TEMP_MODEL_FILENAME = "tempModel";
     public static final String H5_EXTENSION = ".h5";
 
     public static final double EPS = 1E-6;
 
-    public static enum PerformanceMetric {
-        ACCURACY, MSE, AUC, MX_AUC;
-    };
-
     @Test
     public void importMnistMlpTensorFlowEndToEndModelTest() throws Exception {
-
-
         ClassPathResource modelResource = new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_model.h5",
                 KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
@@ -61,16 +56,13 @@ public class KerasModelEndToEndTest {
         Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath());
 
         INDArray input = getInputs(outputsArchive, true)[0];
-        log.info(input.toString());
-        log.info(model.getLayer(0).getParam("W").toString());
-        log.info(model.getLayer(0).getParam("b").toString());
-
-        List<INDArray> activationsDl4j = model.feedForward(input, false);
         Map<String, INDArray> activationsKeras = getActivations(outputsArchive, true);
         for (int i = 0; i < model.getLayers().length; i++) {
             String layerName = model.getLayerNames().get(i);
-            if (activationsKeras.containsKey(layerName))
-                compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j.get(i+1), EPS);
+            if (activationsKeras.containsKey(layerName)) {
+                INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i+1);
+                compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
+            }
         }
 
         INDArray predictionsKeras = getPredictions(outputsArchive, true)[0];
@@ -129,6 +121,7 @@ public class KerasModelEndToEndTest {
         INDArray diff = a.sub(b);
         double min = diff.minNumber().doubleValue();
         double max = diff.maxNumber().doubleValue();
+        boolean eq = a.equalsWithEps(b, eps);
 //        log.info(label + ": " + a.equalsWithEps(b, eps) + ", " + min + ", " + max);
 //        assert(a.equalsWithEps(b, eps));
     }
