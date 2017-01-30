@@ -95,6 +95,11 @@ A more in depth discussion of RNN's including configuring your code to use RNN's
 
 [View the tutorial](http://deeplearning4j.org/usingrnns)
 
+### Building a Web Application using VGG-16 for image classification
+
+An overview of loading VGG-16, testing and deploying as a web application
+
+[View the tutorial](Build_VGG_Webapp)
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 

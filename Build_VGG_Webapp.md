@@ -1,0 +1,385 @@
+---
+title: Building image classification Web Application using VGG-16 and DeepLearning4J
+layout: default
+---
+
+# Building image classification Web Application using VGG-16 and DeepLearning4J
+
+Neural Networks have had great success in the field of image recognition. This page describes how to build a web based application to use a well known network VGG-16 for inference or prediction of classification labels with user supplied images. 
+
+**Contents**
+
+* [What is VGG-16](#VGG-16)
+* [Using VGG-16 for your applications](#Using VGG-16)
+* [Load the Pre-Trained Model](#Load the Pre-Trained Model)
+* [Configure a Data Pipeline for Testing](#Configure a Data Pipeline for Testing)
+* [Test Pre-Trained Model](#Test Pre-Trained Model)
+* [Save model with ModelSerializer](#Save model with ModelSerializer)
+* [Build Web App to take input images](#Build Web App to take input image)
+* [Tie Webapp front end to Neural Net Backend](#Tie Webapp front end to Neural Net Backend)
+
+
+
+## <a name="VGG-16"> What is VGG-16</a>
+
+Each year since 2010, [ImageNet](http://image-net.org/) hosts a [challenge](http://www.image-net.org/challenges/LSVRC/) where research teams present solutions to classification and other tasks against the ImageNet dataset. ImageNet currently has millions of labelled images. The Visual Geometry group at the University of Oxford had great success in 2014 with two networks, VGG-16 a 16 layer convolutional Neural Network, and VGG-19 a 19 layer Convolutional Neural Network. 
+
+Here are the results 
+
+[VGG-16](http://www.image-net.org/challenges/LSVRC/2014/results#clsloc) ILSVRC-14
+
+
+VGG-16 also performed well on two other image classification benchmarks, VOC and Caltech. Results [here](http://www.robots.ox.ac.uk/~vgg/research/very_deep/)
+
+## <a name="Using VGG-16">Using VGG-16 for your applications</a>
+
+When a neural network is built the first step is training. During training the network is fed input and the output generated is compared against expected results. With each run through the data, or a subset of the data the network weights are modified to lessen the error rate. 
+
+Training a large network of millions of images can take a lot of computing resources. 
+
+Once trained the network can be used for inference of prediction. Inference is a much less compute intensive process. 
+For VGG-16 and other commonly used models the pre-trained model with weights is available. Loading the pre-trained models and using the model for prediction is relatively straightforward and described here. 
+
+Loading the pre-trained models for further training is a process we will describe in a later tutorial.
+
+## <a name="Load the Pre-Trained Model">Load the Pre-Trained Model </a>
+
+Recent versions of Deeplearning4J starting in the fall of 2016 have included tools to import models from Keras. Keras is a popular Deep Learning framework for Python. The model description and trained weights for VGG-16 are readilly available. Model Import functionality is described [here](model-import-keras)
+
+There are two options for loading the pretrained model. 
+
+1. Load into Keras, save and Load into DeepLearning4J
+2. Load directly into DeepLearning4J using helper fundctions to retrieve model from internet
+
+### OPTION 1: 
+
+Load model into Keras, Save and Load into DeepLearning4J
+
+ModelImport can be used directly, you could start Keras, Load VGG16, save the model and weights locally and then load the model into DeepLearning4J. 
+
+### The code to load the model would look something like this
+
+```
+ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFilename, weightsHdf5Filename, enforceTrainingConfig);
+
+```
+
+If you want to import a pre-trained model ONLY for inference, then you should set enforceTrainingConfig=false. Unsupported training-only configurations generate warnings but model import will proceed.
+
+### OPTION 2: 
+
+Import VGG-16 directly from online sources using helper functions
+
+For significant and commonly used models DeepLearning4J provides helper functions. In the case of VGG-16 we can ask the helper function, "TrainedModelHelper" to download the model configuration and the weights for us, and then build the DeepLearning4J version of the model. 
+
+### The code to load VGG-16 using helper functions
+
+```
+TrainedModelHelper helper = new TrainedModelHelper(TrainedModels.VGG16);
+ComputationGraph vgg16 = helper.loadModel();
+
+```
+
+## <a name=">Configure a Data Pipeline for Testing">Configure a Data Pipeline for Testing</a>
+
+With Data ingest and pre-processing you can choose a manual process or you can choose to use the helper functions. The helper functions for VGG-16 style image processing are "TrainedModels.VGG16.getPreProcessor" and "VGG16ImagePreProcessor()". 
+
+The important detail to remember is that the images must be processed in the same way for inference as they were processed for training. 
+
+VGG-16 image processing pipeline steps.
+
+1. Scale to 224 * 224 3 layers (RGB images)
+2. Mean scaling, subtract the mean pixel value from each pixel
+
+Scaling can be handled with DataVec's native image loader. 
+
+Mean subtraction can be done manually or with convenient helper functions. 
+
+### Code examples for scaling images to 224 height 224 width 3 layers.
+
+#### If reading a directory of images you would use DataVec's ImageRecordReader
+
+```
+ImageRecordReader rr = new ImageRecordReader(224,224,3);
+```
+
+
+#### If loading a single image you would use DataVec's NativeImageLoader
+
+```
+NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
+INDArray image = loader.asMatrix(file);
+```
+
+
+### Code Examples for mean subtraction
+
+#### If loading a directory through DataVec's RecordReader
+
+```
+ DataSetPreProcessor preProcessor = TrainedModels.VGG16.getPreProcessor();
+ dataIter.setPreProcessor(preProcessor);
+```
+
+#### If loading an image using NativeImageLoader
+
+```
+DataNormalization scaler = new VGG16ImagePreProcessor();
+scaler.transform(image);
+```
+
+
+
+## <a name="Test Pre-Trained Model">Test Pre-Trained Model</a>
+
+Once your network is loaded you should verify that it works as expected. Note that ImageNet was not designed for face recognition. It is better to test with picture of an elephant, or a dog, or a cat. 
+
+You may want to compare with Kera output. Load the model in keras and DeepLearning4J and compare the output of each, it should be similar.  Note we do not consider the difference between keras output of 35.00094% likelihood image is Elephant vs DeepLearning4j output 35.00104% likelihood image is Elephant to be an error, a small percentage variation is expected.
+
+
+### Code to test a directory of images.
+
+
+
+```
+
+while (dataIter.hasNext()) {
+            //prediction array
+            DataSet next = dataIter.next();
+            INDArray features = next.getFeatures();
+            INDArray[] outputA = vgg16.output(false,features);
+            INDArray output = Nd4j.concat(0,outputA);
+
+            //print top 5 predictions for each image in the dataset
+            List<RecordMetaData> trainMetaData = next.getExampleMetaData(RecordMetaData.class);
+            int batch = 0;
+            for(RecordMetaData recordMetaData : trainMetaData){
+                System.out.println(recordMetaData.getLocation());
+                System.out.println(TrainedModels.VGG16.decodePredictions(output.getRow(batch)));
+                batch++;
+            }
+
+```
+ 
+
+
+### Code to test image input from command line prompt
+
+
+```
+
+//Buffered stream reader to provide prompt requesting file path of 
+// image to be tested
+InputStreamReader r = new InputStreamReader(System.in);
+BufferedReader br = new BufferedReader(r);
+for (; ; ){
+    System.out.println("type EXIT to close");
+    System.out.println("Enter Image Path to predict with VGG16");
+    System.out.print("File Path: ");
+    String path = br.readLine();
+    if ("EXIT".equals(path))
+        break;
+    System.out.println("You typed" + path);
+
+
+	// Code to convert submitted image to INDArray
+	// apply mean subtraction and run inference
+    File file = new File(path);
+    NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
+    INDArray image = loader.asMatrix(file);
+    DataNormalization scaler = new VGG16ImagePreProcessor();
+    scaler.transform(image);
+    INDArray[] output = vgg16.output(false,image);
+    System.out.println(TrainedModels.VGG16.decodePredictions(output[0]));
+
+```
+
+## <a name="Save model with ModelSerializer">Save model with ModelSerializer</a>
+
+Once we have loaded and tested the model save it using DeepLearning4J's ModelSerializer. Loading a model from ModelSerializer is less resource intensive than loading from Keras. Our advice is to load once, then save in DeepLearning4J format for later use. 
+
+### Code to save Model to file
+
+```
+File locationToSave = new File("vgg16.zip");
+ModelSerializer.writeModel(model,locationToSave,saveUpdater);
+		
+```		
+
+### Code to Load saved model from file
+
+```
+File locationToSave = new File("/Users/tomhanlon/SkyMind/java/Class_Labs/vgg16.zip");
+ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave);
+
+```
+
+
+## <a name="Build Web App to take input image">Build Web App to take input images</a>
+
+The following html for a form element will present the user with a page to select and upload or "post" an image to our server. 
+
+<pre>
+<form method='post' action='getPredictions' enctype='multipart/form-data'>
+    <input type='file' name='uploaded_file'>
+    <button>Upload picture</button>
+</form>
+</pre>
+
+The action attribute of the form element is the url the user selected image will be posted to. 
+
+I used [spark java](http://sparkjava.com/) for the web application because it was really straightforward in my case I could just add the spark java code to the class I had already written. There are many  other choices available. 
+
+Whatever Java web framework you choose the steps are the same. 
+
+1. Build a form 
+2. Test the form 
+3. Make sure the file upload works, write some java that tests for access to the file as a java File object, or the string for the Path. 
+4. Connect the web app functionality as input into the Neural network
+
+
+
+## <a name="Tie Webapp front end to Neural Net Backend">Tie Webapp front end to Neural Net Backend</a>
+
+Here is the final working code. 
+
+When this class is running it will launch a Jetty webserver listening on port 4567. 
+
+Starting the web app will take as long as it takes to load the Neural Network. In this case VGG-16 takes about 4 minutes to load. 
+
+Once running it seems to take take incrementally more RAM in about 60MB chunks till it hits 4G and garbage Collection cleans things up and then repeat. I was able to run VGG-16 on an AWS t2-large instance, I tested it for about a week and it was stable. It may be possible to use an even smaller AMI.  
+
+### Full code example
+
+```
+
+package org.deeplearning4j.VGGwebDemo;
+
+import org.datavec.image.loader.NativeImageLoader;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.trainedmodels.TrainedModels;
+import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
+import javax.servlet.MultipartConfigElement;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import static spark.Spark.*;
+
+/**
+ * Created by tomhanlon on 1/25/17.
+ */
+public class VGG16SparkJavaWebApp {
+    public static void main(String[] args) throws Exception {
+
+        // Set locations for certificates for https encryption
+        String keyStoreLocation = "clientkeystore";
+        String keyStorePassword = "skymind";
+        secure(keyStoreLocation, keyStorePassword, null,null );
+
+        // Load the trained model
+        File locationToSave = new File("vgg16.zip");
+        ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave);
+
+
+        // make upload directory for user submitted images
+        // Images are uploaded, processed and then deleted
+        File uploadDir = new File("upload");
+        uploadDir.mkdir(); // create the upload directory if it doesn't exist
+
+        // form this string displays an html form to select and upload an image
+        String form = "<form method='post' action='getPredictions' enctype='multipart/form-data'>\n" +
+                "    <input type='file' name='uploaded_file'>\n" +
+                "    <button>Upload picture</button>\n" +
+                "</form>";
+
+
+        // Spark Java configuration to handle requests
+        // test request, the url /hello should return "hello world"
+        get("/hello", (req, res) -> "Hello World");
+
+        // Request for VGGpredict returns the form to submit an image
+        get("VGGpredict", (req, res) -> form);
+
+        // a Post request (note the form uses http post) for
+        // getPredictions (note the action attribute or the form)
+        // Page prints results and then another form
+
+        post("/getPredictions", (req, res) -> {
+
+            Path tempFile = Files.createTempFile(uploadDir.toPath(), "", "");
+
+            req.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
+
+            try (InputStream input = req.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
+                Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+
+            // The user submitted file is tempFile, convert to Java File "file"
+            File file = tempFile.toFile();
+
+            // Convert file to INDArray
+            NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
+            INDArray image = loader.asMatrix(file);
+
+            // delete the physical file, if left our drive would fill up over time
+            file.delete();
+
+            // Mean subtraction pre-processing step for VGG
+            DataNormalization scaler = new VGG16ImagePreProcessor();
+            scaler.transform(image);
+
+            //Inference returns array of INDArray, index[0] has the predictions
+            INDArray[] output = vgg16.output(false,image);
+
+            // convert 1000 length numeric index of probabilities per label
+            // to sorted return top 5 convert to string using helper function VGG16.decodePredictions
+            // "predictions" is string of our results
+            String predictions = TrainedModels.VGG16.decodePredictions(output[0]);
+
+            // return results along with form to run another inference
+            return "<h4> '" + predictions  + "' </h4>" +
+                    "Would you like to try another" +
+                    form;
+            //return "<h1>Your image is: '" + tempFile.getName(1).toString() + "' </h1>";
+
+        });
+
+
+    }
+
+}
+
+```
+
+## Example predictions
+
+For this picture of my cat that certainly VGG-16 has not seen before. 
+
+
+![Alt text](./../img/cat.jpeg)
+
+16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
+
+For this dog that I found on the internet, that VGG-16 may have seen during training
+
+![Alt text](./../img/dog_320x240.png)
+
+53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'
+
+Amazing !!
+
+
+
+
+
+
+
+
+
+
