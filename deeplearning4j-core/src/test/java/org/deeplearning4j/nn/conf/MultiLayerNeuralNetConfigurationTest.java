@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -124,6 +126,27 @@ public class MultiLayerNeuralNetConfigurationTest {
         String json = conf.toJson();
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf, conf2);
+    }
+
+    @Test
+    public void testGlobalPoolingJson(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .regularization(false)
+                .updater(Updater.NONE)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                .seed(12345L)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nOut(5).build())
+                .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(3).build())
+                .pretrain(false).backprop(true)
+                .setInputType(InputType.convolutional(32, 32, 1))
+                .build();
+
+        String str = conf.toJson();
+        MultiLayerConfiguration fromJson = conf.fromJson(str);
+
+        assertEquals(conf, fromJson);
     }
 
 

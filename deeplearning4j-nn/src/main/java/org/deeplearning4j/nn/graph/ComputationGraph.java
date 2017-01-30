@@ -26,6 +26,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
@@ -2123,7 +2124,7 @@ public class ComputationGraph implements Serializable, Model {
      * @see #clearLayerMaskArrays()
      */
     public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        //Complication with mask arrays: dense layers before recurrent layers: need to be masked
+        this.clearLayerMaskArrays();
         this.inputMaskArrays = featureMaskArrays;
         this.labelMaskArrays = labelMaskArrays;
 
@@ -2131,49 +2132,44 @@ public class ComputationGraph implements Serializable, Model {
             if (featureMaskArrays.length != numInputArrays) {
                 throw new IllegalArgumentException("Invalid number of feature mask arrays");
             }
-            for (int i = 0; i < featureMaskArrays.length; i++) {
-                if (featureMaskArrays[i] == null) {
-                    // This input doesn't have a mask, we can skip it.
-                    continue;
+
+            int minibatchSize = -1;
+            for(INDArray i : featureMaskArrays){
+                if(i != null){
+                    minibatchSize = i.size(0);
                 }
-                String inputName = configuration.getNetworkInputs().get(i);
+            }
 
-                //feedforward layers below a RNN layer: need the input (features) mask
-                //Reason: even if the time series input is zero padded, the output from the dense layers are
-                // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
-                //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
-                // so we don't need to do anything for the recurrent layer
+            //Here: need to do forward pass through the network according to the topological ordering of the network
 
-                //How this is done: do a forward pass from each input, setting masks on dense/cnn layers as we go
-                //This is basically a depth-first search starting at each input vertex
+            Map<Integer,Pair<INDArray,MaskState>> map = new HashMap<>();
+            for( int i=0; i<topologicalOrder.length; i++ ){
+                GraphVertex current = vertices[topologicalOrder[i]];
 
-                INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featureMaskArrays[i]);
-                LinkedList<String> stack = new LinkedList<>();
-                GraphVertex gv = verticesMap.get(inputName);
-                VertexIndices[] outputsFromThisInput = gv.getOutputVertices();
-                for (VertexIndices v : outputsFromThisInput) {
-                    stack.addLast(vertices[v.getVertexIndex()].getVertexName());
-                }
+                if(current.isInputVertex()){
+                    INDArray fMask = featureMaskArrays[current.getVertexIndex()];
+                    map.put(current.getVertexIndex(), new Pair<>(fMask, MaskState.Active));
+                } else {
+                    VertexIndices[] inputVertices = current.getInputVertices();
 
-                while (!stack.isEmpty()) {
-                    String nextVertexName = stack.removeLast();
-                    GraphVertex nextVertex = verticesMap.get(nextVertexName);
-                    if (nextVertex.hasLayer()) {
-                        Layer l = nextVertex.getLayer();
-                        if (l instanceof RecurrentLayer) {
-                            //terminate this part of the depth-first search
-                            continue;
-                        } else if (l.type() == Layer.Type.FEED_FORWARD || l.type() == Layer.Type.CONVOLUTIONAL) {
-                            l.setMaskArray(reshapedFeaturesMask);
+                    //Now: work out the mask arrays to feed forward...
+                    INDArray[] inputMasks = null;   //new INDArray[inputVertices.length];
+                    MaskState maskState = null;
+                    for(int j=0; j<inputVertices.length; j++ ){
+                        Pair<INDArray,MaskState> p = map.get(inputVertices[j].getVertexIndex());
+                        if(p != null){
+                            if(inputMasks == null){
+                                inputMasks = new INDArray[inputVertices.length];
+                            }
+                            inputMasks[j] = p.getFirst();
+                            if(maskState == null || maskState == MaskState.Passthrough){
+                                maskState = p.getSecond();
+                            }
                         }
                     }
 
-                    outputsFromThisInput = nextVertex.getOutputVertices();
-                    if (outputsFromThisInput != null) {
-                        for (VertexIndices v : outputsFromThisInput) {
-                            stack.addLast(vertices[v.getVertexIndex()].getVertexName());
-                        }
-                    }
+                    Pair<INDArray,MaskState> outPair = current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
+                    map.put(topologicalOrder[i], outPair);
                 }
             }
         }

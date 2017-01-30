@@ -19,6 +19,7 @@
 package org.deeplearning4j.models.word2vec.iterator;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.inputsanitation.InputHomogenization;
 import org.deeplearning4j.text.movingwindow.Window;
@@ -43,6 +44,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Word2VecDataSetIterator implements DataSetIterator {
     private Word2Vec vec;
     private LabelAwareSentenceIterator iter;
@@ -141,7 +143,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
                 String sentence = iter.nextSentence();
                 if(sentence.isEmpty())
                     continue;
-                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
+                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow(), vec);
                 if(windows.isEmpty() && !sentence.isEmpty())
                     throw new IllegalStateException("Empty window on sentence");
                 for(Window w : windows)
@@ -160,7 +162,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
                 String sentence = iter.nextSentence();
                 if(sentence.isEmpty())
                     continue;
-                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
+                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow(), vec);
                 for(Window w : windows)
                     w.setLabel(iter.currentLabel());
                 cachedWindow.addAll(windows);

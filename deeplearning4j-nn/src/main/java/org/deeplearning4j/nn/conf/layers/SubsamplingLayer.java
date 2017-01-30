@@ -29,7 +29,7 @@ import java.util.Map;
 public class SubsamplingLayer extends Layer {
 
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;          //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
-    protected PoolingType poolingType;
+    protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType;
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
@@ -37,7 +37,23 @@ public class SubsamplingLayer extends Layer {
     protected double eps;
 
     public enum PoolingType {
-        MAX, AVG, SUM, PNORM, NONE
+        MAX, AVG, SUM, PNORM, NONE;
+
+        public org.deeplearning4j.nn.conf.layers.PoolingType toPoolingType(){
+            switch (this){
+                case MAX:
+                    return org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+                case AVG:
+                    return org.deeplearning4j.nn.conf.layers.PoolingType.AVG;
+                case SUM:
+                    return org.deeplearning4j.nn.conf.layers.PoolingType.SUM;
+                case PNORM:
+                    return org.deeplearning4j.nn.conf.layers.PoolingType.PNORM;
+                case NONE:
+                    return org.deeplearning4j.nn.conf.layers.PoolingType.NONE;
+            }
+            throw new UnsupportedOperationException("Unknown/not supported pooling type: " + this);
+        }
     }
 
     private SubsamplingLayer(Builder builder) {
@@ -133,7 +149,7 @@ public class SubsamplingLayer extends Layer {
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
-        private PoolingType poolingType = PoolingType.MAX;
+        private org.deeplearning4j.nn.conf.layers.PoolingType poolingType = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
         private int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
         private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
         private int[] padding = new int[] {0, 0};
@@ -142,17 +158,29 @@ public class SubsamplingLayer extends Layer {
         private double eps = 1e-8;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
-            this.poolingType = poolingType;
+            this.poolingType = poolingType.toPoolingType();
             this.kernelSize = kernelSize;
             this.stride = stride;
         }
 
         public Builder(PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType;
+            this.poolingType = poolingType.toPoolingType();
             this.kernelSize = kernelSize;
         }
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
+            this.poolingType = poolingType.toPoolingType();
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+        }
+
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
+            this.poolingType = poolingType;
+            this.kernelSize = kernelSize;
+        }
+
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding){
             this.poolingType = poolingType;
             this.kernelSize = kernelSize;
             this.stride = stride;
@@ -175,6 +203,10 @@ public class SubsamplingLayer extends Layer {
         }
 
         public Builder(PoolingType poolingType) {
+            this.poolingType = poolingType.toPoolingType();
+        }
+
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
             this.poolingType = poolingType;
         }
 
@@ -194,11 +226,13 @@ public class SubsamplingLayer extends Layer {
         @Override
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
+            if(poolingType==org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+
             return new SubsamplingLayer(this);
         }
 
         public Builder poolingType(PoolingType poolingType){
-            this.poolingType = poolingType;
+            this.poolingType = poolingType.toPoolingType();
             return this;
         }
 

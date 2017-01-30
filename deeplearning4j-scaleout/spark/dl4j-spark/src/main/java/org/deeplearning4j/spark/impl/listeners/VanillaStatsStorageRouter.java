@@ -52,4 +52,23 @@ public class VanillaStatsStorageRouter implements StatsStorageRouter {
     public void putUpdate(Collection<? extends Persistable> updates) {
         this.updates.addAll(updates);
     }
+
+
+    public List<StorageMetaData> getStorageMetaData(){
+        //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
+        // synchronized lists, throwing an obscure null pointer exception
+        return new ArrayList<>(storageMetaData);
+    }
+
+    public List<Persistable> getStaticInfo(){
+        //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
+        // synchronized lists, throwing an obscure null pointer exception
+        return new ArrayList<>(staticInfo);
+    }
+
+    public List<Persistable> getUpdates(){
+        //We can't return synchronized lists list this for Kryo: with default config, it will fail to deserialize the
+        // synchronized lists, throwing an obscure null pointer exception
+        return new ArrayList<>(updates);
+    }
 }

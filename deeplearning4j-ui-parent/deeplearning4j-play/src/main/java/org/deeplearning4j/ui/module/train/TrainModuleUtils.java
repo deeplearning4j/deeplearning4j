@@ -196,7 +196,7 @@ public class TrainModuleUtils {
             for( int i=0; i<decLayerSizes.length; i++ ){
                 String name = "decoder_" + i;
                 vertexNames.add(name);
-                originalVertexName.add("e"+i);
+                originalVertexName.add("d"+i);
                 String layerType = "VAE-Decoder";
                 layerTypes.add(layerType);
                 layerInputs.add(Collections.singletonList(layerIndex-1));
