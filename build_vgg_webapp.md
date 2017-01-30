@@ -3,7 +3,7 @@ title: Building an Image Classification Web Application Using VGG-16
 layout: default
 ---
 
-# Building an Image Classification Web Application Using VGG-16 & DeepLearning4J
+# How to Build an Image Classification Web App With VGG-16 & DL4J
 
 Neural networks have had great success in the field of image recognition. This page describes how to build a web based application to use a well known network VGG-16 for inference or prediction of classification labels with user supplied images. 
 
