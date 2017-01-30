@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.environment;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,7 @@ import java.util.Properties;
 @Data
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Nd4jEnvironment implements Serializable {
     private long ram;
     private int numCores;
