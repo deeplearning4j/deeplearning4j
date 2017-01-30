@@ -552,7 +552,7 @@ public class KerasModel {
      * @return        Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    protected static Map<String,Object> parseJsonString(String json) throws IOException {
+    public static Map<String,Object> parseJsonString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
@@ -565,7 +565,7 @@ public class KerasModel {
      * @return        Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    protected static Map<String,Object> parseYamlString(String json) throws IOException {
+    public static Map<String,Object> parseYamlString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TypeReference<HashMap<String,Object>> typeRef = new TypeReference<HashMap<String,Object>>() {};
         return mapper.readValue(json, typeRef);
