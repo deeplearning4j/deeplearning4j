@@ -73,12 +73,7 @@ public class LossFunctionWrapper implements ReconstructionDistribution {
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
         //Loss functions: not probabilistic -> not random
         INDArray out = preOutDistributionParams.dup();
-        //if(!"identity".equals(activationFn)){
-        if(activationFn instanceof ActivationIdentity){
-            //out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, out));
-            out = activationFn.getActivation(out,true);
-        }
-        return out;
+        return activationFn.getActivation(out,true);
     }
 
     @Override
