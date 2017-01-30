@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.*;
 import org.deeplearning4j.nn.api.Layer;
@@ -679,16 +680,14 @@ public class ModelSerializer {
         if (!overwrite && to.exists() && to.length() > 0)
             throw new IOException("File ["+ to.getAbsolutePath()+"] already exists");
 
-        try(FileOutputStream fos = new FileOutputStream(to); BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+
+        try(FileOutputStream fos = new FileOutputStream(to); BufferedOutputStream bos = new BufferedOutputStream(fos); CloseShieldInputStream cis = new CloseShieldInputStream(is); BufferedInputStream bis = new BufferedInputStream(cis)) {
             byte[] data = new byte[4096];
             int read = 0;
-            while ((read = is.read(data)) != -1) {
+            while ((read = bis.read(data)) != -1) {
                     if (read > 0)
                         bos.write(data, 0, read);
             }
-
-            bos.flush();
-            fos.flush();
         }
     }
 }
