@@ -150,6 +150,7 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 2. Read the [introduction to deep neural networks](./neuralnet-overview) or [one of our detailed tutorials](./tutorials). 
 3. Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Browse the [DL4J documentation](./documentation).
+5. **Python folks**: If you plan to run benchmarks on Deeplearning4j comparing it to well-known Python framework [x], please read [these instructions](https://deeplearning4j.org/benchmark) on how to optimize heap space, garbage collection and ETL on the JVM. By following them, you will see at least a *10x speedup in training time*. 
 
 ### Additional links
 
