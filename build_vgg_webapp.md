@@ -3,20 +3,20 @@ title: Building an Image Classification Web Application Using VGG-16
 layout: default
 ---
 
-# How to Build an Image Classification Web App With VGG-16 & DL4J
+# How to Build an Image Classification Web App With VGG-16
 
 Neural networks have had great success in the field of image recognition. This page describes how to build a web based application to use a well known network VGG-16 for inference or prediction of classification labels with user supplied images. 
 
 **Contents**
 
 * [What is VGG-16?](#VGG-16)
-* [Using VGG-16 for your applications](#Using VGG-16)
-* [Load the Pre-Trained Model](#Load the Pre-Trained Model)
-* [Configure a Data Pipeline for Testing](#Configure a Data Pipeline for Testing)
-* [Test Pre-Trained Model](#Test Pre-Trained Model)
-* [Save Model with ModelSerializer](#Save model with ModelSerializer)
-* [Build Web App to Take Input Images](#Build Web App to take input image)
-* [Tie Web App front-end to Neural Net Backend](#Tie Webapp front end to Neural Net Backend)
+* [Using VGG-16 for Web Applications](#Using VGG-16)
+* [Loading Pre-Trained Models](#Loading Pre-Trained Models)
+* [Configuring Data Pipelines for Testing](#Configure Data Pipelines for Testing)
+* [Testing Pre-Trained Models](#Testing Pre-Trained Models)
+* [Saving Models with ModelSerializer](#Save Model with ModelSerializer)
+* [Building Web Apps to Take Input Images](#Build Web App to Take Input Image)
+* [Tie Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
 
 ## <a name="VGG-16"> What is VGG-16?</a>
 
@@ -36,16 +36,16 @@ Once trained, the network can be used for inference, or making predictions about
 
 Loading the pre-trained models for further training is a process we will describe in a later tutorial.
 
-## <a name="Load the Pre-Trained Model">Load the Pre-Trained Model </a>
+## <a name="Loading Pre-Trained Models">Load the Pre-Trained Model </a>
 
-Recent versions of Deeplearning4J include tools to import models from the Python-based deep-learning framework Keras. Model import functionality is described [here](model-import-keras). Keras, in turn, is able to import models from Caffe, TensorFlow, Torch and Theano, so it serves as a bridge to models created in any of those frameworks, which allows developers and researchers to preserve their work when they switch to Deeplearning4j. 
+Deeplearning4J lets you import models from the Python-based deep-learning framework [Keras](https://keras.io/), which itself provides an intuitive, higher-level API over Theano and TensorFlow. DL4J's model import functionality is described [here](model-import-keras). Keras, for its part, is able to import models from Caffe, TensorFlow, Torch and Theano, so it serves as a bridge to import models created in any of those frameworks, which allows developers and researchers to preserve their work when they switch to Deeplearning4j for production-grade tasks and JVM environments. 
 
 There are two options for loading the pretrained model:
 
 1. Load into Keras, save and Load into DeepLearning4J
 2. Load directly into DeepLearning4J using helper fundctions to retrieve model from internet
 
-### OPTION 1
+### Option 1
 
 Load a model into Keras, then save and load into DeepLearning4J.
 
@@ -60,7 +60,7 @@ ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFi
 
 If you want to import a pre-trained model *for inference only*, then you should set `enforceTrainingConfig=false`. Unsupported training-only configurations generate warnings, but model import will proceed.
 
-### OPTION 2
+### Option 2
 
 Import VGG-16 directly from online sources using helper functions.
 
@@ -74,11 +74,11 @@ ComputationGraph vgg16 = helper.loadModel();
 
 ```
 
-## <a name=">Configure a Data Pipeline for Testing">Configure a Data Pipeline for Testing</a>
+## <a name=">Configure Data Pipelines for Testing">Configure a Data Pipeline for Testing</a>
 
 With data ingest and pre-processing, you can choose a manual process or the helper functions. The helper functions for VGG-16 style image processing are `TrainedModels.VGG16.getPreProcessor` and `VGG16ImagePreProcessor()`. (Remember that the images must be processed in the same way for inference as they were processed for training.) 
 
-### VGG-16 image processing pipeline steps:
+### VGG-16 image processing pipeline steps
 
 1. Scale to 224 * 224 3 layers (RGB images)
 2. Mean scaling, subtract the mean pixel value from each pixel
@@ -89,14 +89,13 @@ Mean subtraction can be done manually or with the helper functions.
 
 ### Code examples for scaling images to 224 height 224 width 3 layers.
 
-#### If reading a directory of images you would use DataVec's ImageRecordReader
+#### If reading a directory of images, use DataVec's ImageRecordReader
 
 ```
 ImageRecordReader rr = new ImageRecordReader(224,224,3);
 ```
 
-
-#### If loading a single image you would use DataVec's NativeImageLoader
+#### If loading a single image, use DataVec's NativeImageLoader
 
 ```
 NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
@@ -120,16 +119,13 @@ DataNormalization scaler = new VGG16ImagePreProcessor();
 scaler.transform(image);
 ```
 
-## <a name="Test Pre-Trained Model">Test Pre-Trained Model</a>
+## <a name="Testing Pre-Trained Models">Test Pre-Trained Model</a>
 
-Once your network is loaded you should verify that it works as expected. Note that ImageNet was not designed for face recognition. It is better to test with picture of an elephant, or a dog, or a cat. 
+Once your network is loaded, you should verify that it works as expected. Note that ImageNet was not designed for face recognition. It is better to test with a picture of an elephant, a dog, or a cat. 
 
-You may want to compare with Kera output. Load the model in keras and DeepLearning4J and compare the output of each, it should be similar.  Note we do not consider the difference between keras output of 35.00094% likelihood image is Elephant vs DeepLearning4j output 35.00104% likelihood image is Elephant to be an error, a small percentage variation is expected.
+If you want to compare the results with Keras output, load the model in Keras and DeepLearning4J and compare the output of each. It should be quite similar.  If Keras outputs a 35.00094% likelihood that the image is Elephant while DeepLearning4j outputs a 35.00104% likelihood that the image is Elephant, that is probably a rounding error rather than a true divergence in models.
 
-
-### Code to test a directory of images.
-
-
+### Code to test a directory of images
 
 ```
 
@@ -152,8 +148,7 @@ while (dataIter.hasNext()) {
 ```
  
 
-
-### Code to test image input from command line prompt
+### Code to test image input from command-line prompt
 
 
 ```
@@ -184,9 +179,9 @@ for (; ; ){
 
 ```
 
-## <a name="Save model with ModelSerializer">Save model with ModelSerializer</a>
+## <a name="Save Model with ModelSerializer">Save model with ModelSerializer</a>
 
-Once we have loaded and tested the model save it using DeepLearning4J's ModelSerializer. Loading a model from ModelSerializer is less resource intensive than loading from Keras. Our advice is to load once, then save in DeepLearning4J format for later use. 
+Once you've loaded and tested the model, save it using DeepLearning4J's `ModelSerializer`. Loading a model from ModelSerializer is less resource intensive than loading from Keras. Our advice is to load once, then save in the DeepLearning4J format for later re-use. 
 
 ### Code to save Model to file
 
@@ -204,8 +199,7 @@ ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave)
 
 ```
 
-
-## <a name="Build Web App to take input image">Build Web App to take input images</a>
+## <a name="Build Web App to Take Input Image">Build Web App to take input images</a>
 
 The following html for a form element will present the user with a page to select and upload or "post" an image to our server. 
 
@@ -216,28 +210,26 @@ The following html for a form element will present the user with a page to selec
 </form>
 </pre>
 
-The action attribute of the form element is the url the user selected image will be posted to. 
+The action attribute of the form element is the URL that the user-selected image will be posted to. 
 
-I used [spark java](http://sparkjava.com/) for the web application because it was really straightforward in my case I could just add the spark java code to the class I had already written. There are many  other choices available. 
+We used [Spark Java](http://sparkjava.com/) for the web application as it was straightforward. Just add the Spark Java code to a class that's already written. There are many other choices available. 
 
-Whatever Java web framework you choose the steps are the same. 
+Whichever Java web framework you choose, the following steps are the same. 
 
 1. Build a form 
 2. Test the form 
-3. Make sure the file upload works, write some java that tests for access to the file as a java File object, or the string for the Path. 
-4. Connect the web app functionality as input into the Neural network
+3. Make sure the file upload works, write some Java that tests for access to the file as a Java File object, or the string for the Path. 
+4. Connect the web app functionality as input into the neural network
 
+## <a name="Tie Web App Front End to Neural Net Backend">Tie Webapp Front End to Neural Net Backend</a>
 
+The final working code is below. 
 
-## <a name="Tie Webapp front end to Neural Net Backend">Tie Webapp front end to Neural Net Backend</a>
+When this class is running, it will launch a Jetty webserver listening on port 4567. 
 
-Here is the final working code. 
+Starting the web app will take as much time as it takes to load the neural network. VGG-16 takes about four minutes to load. 
 
-When this class is running it will launch a Jetty webserver listening on port 4567. 
-
-Starting the web app will take as long as it takes to load the Neural Network. In this case VGG-16 takes about 4 minutes to load. 
-
-Once running it seems to take take incrementally more RAM in about 60MB chunks till it hits 4G and garbage Collection cleans things up and then repeat. I was able to run VGG-16 on an AWS t2-large instance, I tested it for about a week and it was stable. It may be possible to use an even smaller AMI.  
+Once running, it uses incrementally more RAM in about 60MB chunks until it hits 4G and garbage collection cleans things up. We ran VGG-16 on an AWS t2-large instance, testing it for about a week. It was stable. It may be possible to use an even smaller AMI.  
 
 ### Full code example
 
@@ -349,27 +341,14 @@ public class VGG16SparkJavaWebApp {
 
 ## Example predictions
 
-For this picture of my cat that certainly VGG-16 has not seen before. 
-
+Here are the results given on a photo of one of the Skymind cats, which VGG-16 has certainly never seen before. 
 
 ![Alt text](./../img/cat.jpeg)
 
-16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
+	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
 
-For this dog that I found on the internet, that VGG-16 may have seen during training
+For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise
 
 ![Alt text](./../img/dog_320x240.png)
 
-53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'
-
-Amazing !!
-
-
-
-
-
-
-
-
-
-
+	53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'
