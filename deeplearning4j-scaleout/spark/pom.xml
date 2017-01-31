@@ -23,8 +23,8 @@
         <version>0.7.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>spark_2.10</artifactId>
+    <version>0.7.3_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -37,6 +37,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spark.major.version>1</spark.major.version>
+        <spark.version>1.6.2</spark.version>
+        <hadoop.version>2.2.0</hadoop.version>
+        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>
     </properties>
 
 
@@ -79,10 +83,6 @@
         </plugins>
     </build>
 
-
-
-
-
     <dependencies>
 
         <!-- ND4J Shaded Jackson Dependency -->
@@ -119,32 +119,6 @@
 
     <profiles>
         <profile>
-            <id>spark-default</id>
-            <activation>
-                <property>
-                    <name>!spark.major.version</name>
-                </property>
-            </activation>
-            <properties>
-                <spark.version>1.6.2</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-                <spark.major.version>1</spark.major.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>spark-1</id>
-            <activation>
-                <property>
-                    <name>spark.major.version</name>
-                    <value>1</value>
-                </property>
-            </activation>
-            <properties>
-                <spark.version>1.6.2</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
-        </profile>
-        <profile>
           <id>spark-2</id>
             <activation>
                 <property>
@@ -152,14 +126,10 @@
                     <value>2</value>
                 </property>
             </activation>
-            <properties>
-                <spark.version>2.1.0</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>com.typesafe.akka</groupId>
-                    <artifactId>akka-remote_2.11</artifactId>
+                    <artifactId>akka-remote_2.10</artifactId>
                     <version>2.3.11</version>
                 </dependency>
             </dependencies>

@@ -20,12 +20,10 @@
     <parent>
         <artifactId>spark_2.10</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.7.3-SNAPSHOT</version>
+        <version>0.7.3_spark_1-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
-
+    <modelVersion>4.0.0</modelVersion>    
     <artifactId>dl4j-spark-nlp_2.10</artifactId>
-    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>dl4j-spark-nlp</name>
@@ -48,7 +46,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nlp</artifactId>
-            <version>${parent.version}</version>
+            <version>${deeplearning4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -63,7 +61,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark_2.10</artifactId>
-            <version>${project.version}</version>
+            <version>${datavec.spark.version}</version>
         </dependency>
     </dependencies>
 </project>
