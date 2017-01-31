@@ -125,12 +125,22 @@ template<typename OpType>
 					}
 				}
 				else {
-					int rank = shape::rank(xShapeInfo);
+				    __shared__ int rank;
+				    __shared__ int *xShape;
+				    __shared__ int *xStride;
+				    if (threadIdx.x == 0) {
+                        rank = shape::rank(xShapeInfo);
+                        xShape = shape::shapeOf(xShapeInfo);
+                        xStride = shape::stride(xShapeInfo);
+				    }
+				    __syncthreads();
+
 					int ind2sub[MAX_RANK];
 
 					for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x) {
-						shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
-						int offset = shape::getOffset(0, shape::shapeOf(xShapeInfo), shape::stride(xShapeInfo), ind2sub, rank);
+						shape::ind2subC(rank, xShape, i, ind2sub);
+
+						int offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
 						__syncthreads();
 					}
