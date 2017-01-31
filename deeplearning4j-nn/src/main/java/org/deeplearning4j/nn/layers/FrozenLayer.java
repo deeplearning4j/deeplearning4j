@@ -23,11 +23,18 @@ import java.util.Map;
 public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     private LayerT insideLayer;
+    private boolean logUpdate = false ;
+    private boolean logFit = false;
+    private boolean logTestMode = false;
+    private boolean logGradient = false;
     private Gradient zeroGradient;
 
     protected static final Logger log = LoggerFactory.getLogger(FrozenLayer.class);
 
     public FrozenLayer(LayerT insideLayer) {
+        if (insideLayer instanceof OutputLayer) {
+            throw new IllegalArgumentException("Output Layers are not allowed to be frozen");
+        }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
         for(String paramType : insideLayer.paramTable().keySet()) {
@@ -53,6 +60,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public Gradient error(INDArray input) {
+        if (!logGradient) {
+            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            logGradient = true;
+        }
         return zeroGradient;
     }
 
@@ -89,31 +100,55 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return insideLayer.preOutput(x,TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(TrainingMode training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return insideLayer.activate(TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return insideLayer.activate(input,TrainingMode.TEST);
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return preOutput(x,TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(boolean training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return insideLayer.activate(false);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
+        if (!logTestMode) {
+            log.info("Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            logTestMode = true;
+        }
         return insideLayer.activate(input,false);
     }
 
@@ -132,9 +167,9 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         return insideLayer.transpose();
     }
 
-    //FIXME - what should this even be?
     @Override
     public Layer clone() {
+        log.info("Frozen layers are cloned as their original versions.");
         return insideLayer.clone();
     }
 
@@ -150,16 +185,28 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public void fit() {
-        log.info("Frozen layers cannot be fit.");
+        if(!logFit) {
+            log.info("Frozen layers cannot be fit. Warning will be issued only once per instance");
+            logFit = true;
+        }
+        //no op
     }
 
     @Override
     public void update(Gradient gradient) {
+        if (!logUpdate) {
+            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            logUpdate = true;
+        }
         //no op
     }
 
     @Override
     public void update(INDArray gradient, String paramType) {
+        if (!logUpdate) {
+            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            logUpdate = true;
+        }
         //no op
     }
 
@@ -170,6 +217,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public void computeGradientAndScore() {
+        if (!logGradient) {
+            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            logGradient = true;
+        }
         insideLayer.score();
         //no op
     }
@@ -206,6 +257,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
+        if (!logGradient) {
+            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            logGradient = true;
+        }
         //no-op
     }
 
@@ -216,7 +271,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public void fit(INDArray data) {
-        log.info("Frozen layers cannot be fit.");
+        if (!logFit) {
+            log.info("Frozen layers cannot be fit.Warning will be issued only once per instance");
+            logFit = true;
+        }
     }
 
     //FIXME - what is iterate
@@ -233,6 +291,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     //FIXME
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
+        if (!logGradient) {
+            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            logGradient = true;
+        }
         return new Pair<>(zeroGradient,insideLayer.score());
     }
 
