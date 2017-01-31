@@ -26,7 +26,7 @@ The network will certainly fail to identify you, images of cats and dogs it will
 <iframe src="https://54.67.56.24/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
 -->
 
-<iframe src="https://demo.skymind.io:8001/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
+<iframe src="https://52.174.183.106/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">test </iframe>
 
 ## Using VGG16 pretrained for your use case
 
