@@ -18,9 +18,7 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.MultiLayerSpace;
-import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
-import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
-import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -30,9 +28,7 @@ import org.deeplearning4j.arbiter.util.CollectionUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -201,5 +197,34 @@ public class TestMultiLayerSpace {
 
     }
 
+    @Test
+    public void testGlobalPoolingBasic(){
+
+        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .list()
+                .layer(0, new GravesLSTM.Builder().nIn(10).nOut(10).build())
+                .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.SUM).pnorm(7).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .addLayer(new GravesLSTMLayerSpace.Builder().nIn(10).nOut(10).build()) //2 identical layers
+                .addLayer(new GlobalPoolingLayerSpace.Builder().poolingType(PoolingType.SUM).pNorm(7).build())
+                .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        int nParams = mls.numParameters();
+        assertEquals(0,nParams);
+
+        MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
+
+        assertEquals(expected, conf);
+    }
 
 }

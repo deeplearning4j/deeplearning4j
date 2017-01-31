@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class GlobalPoolingLayerSpace implements ParameterSpace<GlobalPoolingLayer> {
+public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
 
     protected ParameterSpace<int[]> poolingDimensions;
     protected ParameterSpace<Boolean> collapseDimensions;
@@ -25,6 +25,7 @@ public class GlobalPoolingLayerSpace implements ParameterSpace<GlobalPoolingLaye
     private final int numParameters;
 
     private GlobalPoolingLayerSpace(Builder builder){
+        super(builder);
         this.poolingDimensions = builder.poolingDimensions;
         this.collapseDimensions = builder.collapseDimensions;
         this.poolingType = builder.poolingType;
@@ -36,6 +37,7 @@ public class GlobalPoolingLayerSpace implements ParameterSpace<GlobalPoolingLaye
     @Override
     public GlobalPoolingLayer getValue(double[] parameterValues) {
         GlobalPoolingLayer.Builder builder = new GlobalPoolingLayer.Builder();
+        super.setLayerOptionsBuilder(builder, parameterValues);
         if(poolingDimensions != null) builder.poolingDimensions(poolingDimensions.getValue(parameterValues));
         if(collapseDimensions != null) builder.collapseDimensions(collapseDimensions.getValue(parameterValues));
         if(poolingType != null) builder.poolingType(poolingType.getValue(parameterValues));
@@ -50,7 +52,7 @@ public class GlobalPoolingLayerSpace implements ParameterSpace<GlobalPoolingLaye
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> out = new ArrayList<>();
+        List<ParameterSpace> out = super.collectLeaves();
         if(poolingDimensions != null) out.addAll(poolingDimensions.collectLeaves());
         if(collapseDimensions != null) out.addAll(collapseDimensions.collectLeaves());
         if(poolingType != null) out.addAll(poolingType.collectLeaves());
@@ -70,7 +72,7 @@ public class GlobalPoolingLayerSpace implements ParameterSpace<GlobalPoolingLaye
 
 
 
-    public static class Builder {
+    public static class Builder extends LayerSpace.Builder<Builder> {
 
         protected ParameterSpace<int[]> poolingDimensions;
         protected ParameterSpace<Boolean> collapseDimensions;

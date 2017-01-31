@@ -58,10 +58,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
                 }
             } else {
                 throw new UnsupportedOperationException("Not yet implemented");
-//                //Generate N indepedent configs
-//                for( int i=0; i<n; i++ ){
-//                    layers.add(c.layerSpace.randomLayer());
-//                }
             }
         }
 
@@ -73,6 +69,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         //TODO This won't work for all cases (at minimum: cast is an issue)
         int lastNOut = ((FeedForwardLayer) layers.get(0)).getNOut();
         for (int i = 1; i < layers.size(); i++) {
+            if(!(layers.get(i) instanceof FeedForwardLayer)) continue;
             FeedForwardLayer ffl = (FeedForwardLayer) layers.get(i);
             ffl.setNIn(lastNOut);
             lastNOut = ffl.getNOut();
