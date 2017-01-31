@@ -342,13 +342,13 @@ public class VGG16SparkJavaWebApp {
 ```
 ## <a name="example">Example predictions</a>
 
-Here are the results given on a photo of one of the Skymind cats, which VGG-16 has certainly never seen before. 
+Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.)
 
 ![Alt text](./../img/cat.jpeg)
 
 	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
 
-For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise
+For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise.
 
 ![Alt text](./../img/dog_320x240.png)
 
