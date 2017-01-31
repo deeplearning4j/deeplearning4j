@@ -16,13 +16,13 @@ Neural networks are setting new accuracy records for image recognition. This pag
 * [Testing Pre-Trained Models](#Testing Pre-Trained Models)
 * [Saving Models with ModelSerializer](#Save Model with ModelSerializer)
 * [Building Web Apps to Take Input Images](#Build Web App to Take Input Image)
-* [Tie Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
+* [Tying Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
 * [Just Show Me the Code](#code)
 * [Example Predictions (Cats! Dogs!)](#example)
 
 ## <a name="VGG-16"> What is VGG-16?</a>
 
-Since 2010, [ImageNet](http://image-net.org/) has hosted an annual [challenge](http://www.image-net.org/challenges/LSVRC/) where research teams present solutions to image classification and other tasks by training on the ImageNet dataset. ImageNet currently has millions of labelled images. The Visual Geometry group at the University of Oxford had great success in 2014 with two network architectures: VGG-16, a 16-layer convolutional Neural Network, and VGG-19, a 19-layer Convolutional Neural Network. 
+Since 2010, [ImageNet](http://image-net.org/) has hosted an annual [challenge](http://www.image-net.org/challenges/LSVRC/) where research teams present solutions to image classification and other tasks by training on the ImageNet dataset. ImageNet currently has millions of labeled images; it's one of the largest high-quality image datasets in the world. The Visual Geometry group at the University of Oxford did really well in 2014 with two network architectures: VGG-16, a 16-layer convolutional Neural Network, and VGG-19, a 19-layer Convolutional Neural Network. 
 
 Here are the results:
 
