@@ -20,12 +20,12 @@ to one of 1000 possible labels. You will see the top 5.
 If you submit a picture of yourself, please note that this competition was not for facial recognition. 
 The network will certainly fail to identify you, images of cats and dogs it will do much better with. 
 
-## Live Demo !!
+## Live Demo !!!!!
 
 
-<iframe src="https://54.67.56.24/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
 
-<iframe src="https://52.174.183.106/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">test </iframe>
+
+<iframe src="https://52.174.183.106:8001/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">test </iframe>
 
 ## Using VGG16 pretrained for your use case
 
