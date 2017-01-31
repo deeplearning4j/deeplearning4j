@@ -803,8 +803,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(dimension[i] < 0)
                 dimension[i] += rank();
 
-        if(dimension.length > 1)
+        if(dimension.length > 1) {
             Arrays.sort(dimension);
+        }
 
         int tads = tensorssAlongDimension(dimension);
         if(index >= tads)
@@ -837,7 +838,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ews = -1;
 
         // we create new shapeInfo with possibly new ews & order
-        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
+        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset, ews, newOrder));
 
         return toTad;
     }

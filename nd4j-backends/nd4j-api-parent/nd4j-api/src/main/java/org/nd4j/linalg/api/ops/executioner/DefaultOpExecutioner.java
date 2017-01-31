@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -42,7 +43,8 @@ import java.util.Properties;
 
 /**
  * Basic op executioner. Knows how to iterate over
- * the buffers of each respective ndarray and apply transformations
+ * the buffers of each
+ * respective ndarray and apply transformations
  *
  * @author Adam Gibson
  */
@@ -585,23 +587,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Properties getEnvironmentInformation() {
         Properties environment = new Properties();
-
-        environment.put("cores", Runtime.getRuntime().availableProcessors());
-        environment.put("memory.available", Runtime.getRuntime().maxMemory());
-        environment.put("os", System.getProperty("os.name"));
-
-
+        environment.put(Nd4jEnvironment.CPU_CORES_KEY, Runtime.getRuntime().availableProcessors());
+        environment.put(Nd4jEnvironment.RAM_KEY, Runtime.getRuntime().maxMemory());
+        environment.put(Nd4jEnvironment.OS_KEY, System.getProperty("os.name"));
         return environment;
     }
 
     @Override
     public void printEnvironmentInformation() {
         Properties env = getEnvironmentInformation();
-
-
         double memory = ((Long) env.get("memory.available")) / (double) 1024 / 1024 / 1024;
         String fm = String.format("%.1f", memory) ;
-
         log.info("Backend used: [{}]; OS: [{}]", env.get("backend"),  env.get("os"));
         log.info("Cores: [{}]; Memory: [{}GB];", env.get("cores"), fm);
         log.info("Blas vendor: [{}]", env.get("blas.vendor"));

@@ -218,7 +218,9 @@ public interface OpExecutioner {
     INDArray exec(RandomOp op, Random rng);
 
     /**
-     * This method return set of key/value and key/key/value objects, describing current environment
+     * This method return set of key/value and
+     * key/key/value objects,
+     * describing current environment
      *
      * @return
      */
