@@ -21,7 +21,7 @@ public abstract class UIServer {
      *
      * @return UI instance for this JVM
      */
-    public static synchronized UIServer getInstance(){
+    public static synchronized UIServer getInstance() {
         if(uiServer == null) uiServer = new PlayUIServer();
         return uiServer;
     }

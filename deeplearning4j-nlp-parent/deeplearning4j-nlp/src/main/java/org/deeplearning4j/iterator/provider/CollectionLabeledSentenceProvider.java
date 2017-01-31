@@ -1,14 +1,15 @@
 package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
-import org.datavec.api.util.RandomUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 
 import java.util.*;
+import org.datavec.api.util.RandomUtils;
 
 /**
- * Iterate over a set of sentences/documents, where the sentences and labels are provided in lists.
+ * Iterate over a set of sentences/documents,
+ * where the sentences and labels are provided in lists.
  *
  * @author Alex Black
  */
@@ -39,9 +40,10 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
             order = null;
         } else {
             order = new int[sentences.size()];
-            for( int i=0; i<sentences.size(); i++ ){
+            for( int i = 0; i < sentences.size(); i++ ){
                 order[i] = i;
             }
+
             RandomUtils.shuffleInPlace(order, rng);
         }
 
