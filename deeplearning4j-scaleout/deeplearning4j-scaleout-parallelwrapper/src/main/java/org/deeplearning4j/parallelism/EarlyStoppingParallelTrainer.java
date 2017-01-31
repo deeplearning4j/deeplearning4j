@@ -19,6 +19,7 @@
 package org.deeplearning4j.parallelism;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -46,9 +47,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Justin Long (crockpotveggies)
  */
+@Slf4j
 public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 
-    private static Logger log = LoggerFactory.getLogger(EarlyStoppingParallelTrainer.class);
 
     protected T model;
 
@@ -93,13 +94,13 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
             Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
             Collection<IterationListener> newListeners = new LinkedList<>(listeners);
             newListeners.add(trainerListener);
-            ((MultiLayerNetwork) model).setListeners(newListeners);
+            model.setListeners(newListeners);
 
         } else if (model instanceof ComputationGraph) {
             Collection<IterationListener> listeners = ((ComputationGraph) model).getListeners();
             Collection<IterationListener> newListeners = new LinkedList<>(listeners);
             newListeners.add(trainerListener);
-            ((ComputationGraph) model).setListeners(newListeners);
+            model.setListeners(newListeners);
         }
 
         this.wrapper = new ParallelWrapper.Builder<>(model)
