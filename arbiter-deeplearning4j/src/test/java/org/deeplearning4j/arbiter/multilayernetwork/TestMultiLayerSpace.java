@@ -144,7 +144,7 @@ public class TestMultiLayerSpace {
         }
 
 
-        int[] nLayerCounts = new int[4];
+        int[] nLayerCounts = new int[3];
         int reluCount = 0;
         int tanhCount = 0;
 
