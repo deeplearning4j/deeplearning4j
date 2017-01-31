@@ -340,6 +340,7 @@ public class VGG16SparkJavaWebApp {
 }
 
 ```
+
 ## <a name="example">Example predictions</a>
 
 Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.)
