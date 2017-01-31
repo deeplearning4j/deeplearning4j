@@ -84,7 +84,9 @@ public class PlayUIServer extends UIServer {
     private boolean enableRemote;
 
 
-    private int port;
+    @Parameter(names={"--uiPort"}
+            , description = "Whether to enable remote or not", arity = 1)
+    private int port = DEFAULT_UI_PORT;
 
     public PlayUIServer() {
 
@@ -155,21 +157,11 @@ public class PlayUIServer extends UIServer {
             }
         }
 
-        String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
-        int port = DEFAULT_UI_PORT;
-        if(portProperty != null){
-            try{
-                port = Integer.parseInt(portProperty);
-            }
-            catch(NumberFormatException e) {
-                log.warn("Could not parse {} property: NumberFormatException for property value \"{}\". Defaulting to port {}. Set property to 0 for random port",
-                        UI_SERVER_PORT_PROPERTY, portProperty, port);
-            }
-        }
+
+
 
         Router router = routingDsl.build();
         server = Server.forRouter(router, Mode.DEV, port);
-        this.port = port;
 
         String addr = server.mainAddress().toString();
         if(addr.startsWith("/0:0:0:0:0:0:0:0")){

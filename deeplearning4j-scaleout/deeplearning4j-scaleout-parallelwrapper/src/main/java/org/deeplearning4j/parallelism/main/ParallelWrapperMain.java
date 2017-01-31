@@ -3,20 +3,17 @@ package org.deeplearning4j.parallelism.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelGuesser;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
-import java.util.Collections;
 
 /**
  * Parallelwrapper main class.
@@ -72,8 +69,7 @@ public class ParallelWrapperMain {
     private String modelOutputPath = null;
     @Parameter(names={"--uiUrl"},
             description = "The host:port of the ui to use (optional)"
-            , arity = 1,
-            required = true)
+            , arity = 1)
     private String uiUrl = null;
 
 
