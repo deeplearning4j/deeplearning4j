@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.movingwindow;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +34,7 @@ import java.util.List;
  * @author Adam Gibson    
  *
  */
+@Slf4j
 public class WindowConverter {
 
 
@@ -96,6 +98,10 @@ public class WindowConverter {
         INDArray[] data = new INDArray[window.getWords().size()];
         for(int i = 0; i < data.length; i++) {
             data[i] = vec.getWordVectorMatrix(window.getWord(i));
+
+            // if there's null elements
+            if (data[i] == null)
+                data[i] = Nd4j.zeros(vec.getLayerSize());
         }
 		return Nd4j.hstack(data);
 	}
