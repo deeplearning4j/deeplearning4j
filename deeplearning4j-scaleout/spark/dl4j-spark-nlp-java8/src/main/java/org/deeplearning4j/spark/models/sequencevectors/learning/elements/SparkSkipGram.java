@@ -27,7 +27,7 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     protected transient AtomicLong counter;
     protected transient ThreadLocal<Frame<SkipGramRequestMessage>> frame;
 
-    TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
+    protected TrainingDriver<SkipGramRequestMessage> driver = new SkipGramTrainer();
 
     @Override
     public Frame<? extends TrainingMessage> frameSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate) {
