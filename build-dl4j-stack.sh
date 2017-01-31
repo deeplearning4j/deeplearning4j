@@ -70,6 +70,8 @@ if [ "$SCALAV" == "2.11" ]; then
   SCALA="2.11.7"
 fi
 
+cd ..
+
 # removes any existing repositories to ensure a clean build
 find . -maxdepth 1 -iname "libnd4j" -exec rm -rf "{}" \;
 find . -maxdepth 1 -iname "nd4j" -exec rm -rf "{}" \;
