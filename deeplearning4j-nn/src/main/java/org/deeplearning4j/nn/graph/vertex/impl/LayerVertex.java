@@ -30,8 +30,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -43,7 +43,7 @@ import java.util.Arrays;
 @Data
 public class LayerVertex extends BaseGraphVertex {
 
-    private final Layer layer;
+    private Layer layer;
     private final InputPreProcessor layerPreProcessor;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
@@ -75,6 +75,10 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public boolean hasLayer() {
         return true;
+    }
+
+    public void setLayerAsFrozen() {
+        this.layer = new FrozenLayer<>(this.layer);
     }
 
     @Override

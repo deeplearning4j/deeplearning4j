@@ -149,4 +149,11 @@ public interface GraphVertex extends Serializable {
     void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray);
 
     Pair<INDArray,MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
+
+    /**
+     * Only applies to layer vertices. Will throw exceptions on others.
+     * If applied to a layer vertex it will treat the parameters of the layer within it as constant.
+     * Activations through these will be calculated as they would as test time regardless of training mode
+     */
+    void setLayerAsFrozen();
 }

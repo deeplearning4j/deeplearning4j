@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
@@ -175,4 +176,11 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public abstract String toString();
+
+    @Override
+    public void setLayerAsFrozen() {
+        if (!(this instanceof LayerVertex)) {
+            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
+        }
+    }
 }
