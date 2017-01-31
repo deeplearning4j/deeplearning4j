@@ -846,17 +846,7 @@ __device__ void concatKernelGeneric(int dimension,
 		__shared__ int yLength;
 		__shared__ char yOrder;
 		__shared__ int yEWS;
-/*
-		if (threadIdx.x == 0) {
-			tDim[0] = dimension;
-			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength) // (manager->getTADSpace())
-			tad->setExternalBuffers((void *) manager);
-			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
-			tad->init(resultShapeInfo, tDim, 1);
-			tad->createTadOnlyShapeInfo();
-		}
-		__syncthreads();
-*/
+
 		char zOrder = shape::order(resultShapeInfo);
 
 		int zEWS = shape::elementWiseStride(resultShapeInfo);
@@ -947,9 +937,6 @@ __device__ void concatKernelGeneric(int dimension,
 					}
 				} else {
 					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-
-						// FIXME: this is bad
-
 						if (threadIdx.x == 0) {
 							baseIdx = 0;
 							for (int f = 0; f < r; f++) {
@@ -975,6 +962,7 @@ __device__ void concatKernelGeneric(int dimension,
 						}
 						__syncthreads();
 					} else {
+
 						int yIdx[MAX_RANK];
 						int yRank = shape::rank(currentTad);
 						int tadRank = shape::rank(zTadShape);
