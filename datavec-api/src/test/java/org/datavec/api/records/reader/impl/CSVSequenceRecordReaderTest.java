@@ -29,6 +29,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -149,6 +150,26 @@ public class CSVSequenceRecordReaderTest {
                 throw new RuntimeException(e);
             }
             return arr;
+        }
+
+        @Override
+        public Iterator<URI> locationsIterator() {
+            return Arrays.asList(locations()).iterator();
+        }
+
+        @Override
+        public Iterator<String> locationsPathIterator() {
+            URI[] loc = locations();
+            String[] arr = new String[loc.length];
+            for(int i=0; i<loc.length; i++ ){
+                arr[i] = loc[i].getPath();
+            }
+            return Arrays.asList(arr).iterator();
+        }
+
+        @Override
+        public void reset() {
+            //No op
         }
 
         @Override

@@ -18,6 +18,8 @@ package org.datavec.api.split;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Collections;
+import java.util.Iterator;
 
 /**
  *
@@ -76,6 +78,21 @@ public class InputStreamInputSplit implements InputSplit {
     @Override
     public URI[] locations() {
         return location;
+    }
+
+    @Override
+    public Iterator<URI> locationsIterator() {
+        return Collections.singletonList(location[0]).iterator();
+    }
+
+    @Override
+    public Iterator<String> locationsPathIterator() {
+        return Collections.singletonList(location[0].getPath()).iterator();
+    }
+
+    @Override
+    public void reset() {
+        //No op
     }
 
     @Override

@@ -92,9 +92,6 @@ import java.util.List;
 })
 public interface Transform extends Serializable,ColumnOp {
 
-
-
-
     /**
      * Transform a writable
      * in to another writable

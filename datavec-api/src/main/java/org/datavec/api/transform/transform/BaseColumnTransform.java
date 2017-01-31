@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -34,9 +35,10 @@ import java.util.List;
  */
 @Data
 @JsonIgnoreProperties({"inputSchema","columnNumber"})
+@NoArgsConstructor
 public abstract class BaseColumnTransform extends BaseTransform implements ColumnOp {
 
-    protected final String columnName;
+    protected  String columnName;
     protected int columnNumber = -1;
     private static final long serialVersionUID = 0L;
 

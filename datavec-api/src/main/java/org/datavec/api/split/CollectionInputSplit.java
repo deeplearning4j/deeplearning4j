@@ -16,6 +16,8 @@
 
 package org.datavec.api.split;
 
+import org.nd4j.linalg.collection.CompactHeapStringList;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -30,17 +32,20 @@ import java.util.Collection;
 public class CollectionInputSplit extends BaseInputSplit {
 
     public CollectionInputSplit(Collection<URI> list){
-        this.locations = list.toArray(new URI[list.size()]);
+        uriStrings = new CompactHeapStringList();
+        for(URI uri : list){
+            uriStrings.add(uri.toString());
+        }
     }
 
     @Override
     public long length() {
-        return locations.length;
+        return uriStrings.size();
     }
 
     @Override
-    public URI[] locations() {
-        return locations;
+    public void reset() {
+        //No op
     }
 
     @Override
