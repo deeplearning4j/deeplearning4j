@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by Alex on 08/10/2016.
  */
@@ -36,7 +38,18 @@ public class TestPlayUI {
 
         StatsStorage ss = new InMemoryStatsStorage();
 
-        UIServer uiServer = UIServer.getInstance();
+        PlayUIServer uiServer = (PlayUIServer) UIServer.getInstance();
+        assertEquals(9000,uiServer.getPort());
+        uiServer.stop();
+        PlayUIServer playUIServer = new PlayUIServer();
+        playUIServer.runMain(new String[]{
+                "--uiPort","9100","-r","true"
+        });
+
+        assertEquals(9100,playUIServer.getPort());
+        playUIServer.stop();
+
+
 //        uiServer.attach(ss);
 //
 //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
