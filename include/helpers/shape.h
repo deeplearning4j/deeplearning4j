@@ -1481,6 +1481,10 @@ namespace shape {
             this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
             this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
             this->tadStride = shape::stride(this->tadOnlyShapeInfo);
+            if(tadIndex > 0) {
+                this->createOffsets();
+                this->tadOnlyShapeInfo[shape::shapeInfoLength(shape::rank(this->tadOnlyShapeInfo)) - 3] = this->tadOffsets[tadIndex];
+            }
         }
 
 
