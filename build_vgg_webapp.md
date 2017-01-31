@@ -51,7 +51,7 @@ Load a model into Keras, then save and load into DeepLearning4J.
 
 `ModelImport` can be used directly. You can start Keras, load VGG16, save the model and weights locally, and then load that model into DeepLearning4J. 
 
-### The code to load the model would look something like this
+### Code to load the model would look something like this
 
 ```
 ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFilename, weightsHdf5Filename, enforceTrainingConfig);
@@ -66,7 +66,7 @@ Import VGG-16 directly from online sources using helper functions.
 
 For important and widely used neural net models, DeepLearning4J provides helper functions. In the case of VGG-16, we can ask the helper function `TrainedModelHelper` to download the model configuration and the weights for us, and then build a DeepLearning4J version of the model. 
 
-### The Code to Load VGG-16 with Helper Functions
+### Code to Load VGG-16 with Helper Functions
 
 ```
 TrainedModelHelper helper = new TrainedModelHelper(TrainedModels.VGG16);
@@ -78,7 +78,7 @@ ComputationGraph vgg16 = helper.loadModel();
 
 With data ingest and pre-processing, you can choose a manual process or the helper functions. The helper functions for VGG-16 style image processing are `TrainedModels.VGG16.getPreProcessor` and `VGG16ImagePreProcessor()`. (Remember that the images must be processed in the same way for inference as they were processed for training.) 
 
-### VGG-16 image processing pipeline steps
+### VGG-16 image-processing pipeline steps
 
 1. Scale to 224 * 224 3 layers (RGB images)
 2. Mean scaling, subtract the mean pixel value from each pixel
@@ -87,15 +87,15 @@ Scaling can be handled with DataVec's native image loader.
 
 Mean subtraction can be done manually or with the helper functions. 
 
-### Code examples for scaling images to 224 height 224 width 3 layers.
+### Code Examples for scaling images to 224 height 224 width, 3 layers
 
-#### If reading a directory of images, use DataVec's ImageRecordReader
+If reading a directory of images, use DataVec's ImageRecordReader
 
 ```
 ImageRecordReader rr = new ImageRecordReader(224,224,3);
 ```
 
-#### If loading a single image, use DataVec's NativeImageLoader
+If loading a single image, use DataVec's NativeImageLoader
 
 ```
 NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
@@ -105,14 +105,14 @@ INDArray image = loader.asMatrix(file);
 
 ### Code Examples for mean subtraction
 
-#### If loading a directory through DataVec's RecordReader
+If loading a directory through DataVec's RecordReader
 
 ```
  DataSetPreProcessor preProcessor = TrainedModels.VGG16.getPreProcessor();
  dataIter.setPreProcessor(preProcessor);
 ```
 
-#### If loading an image using NativeImageLoader
+If loading an image using NativeImageLoader
 
 ```
 DataNormalization scaler = new VGG16ImagePreProcessor();
