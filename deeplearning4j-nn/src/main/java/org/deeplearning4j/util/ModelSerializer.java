@@ -3,7 +3,6 @@ package org.deeplearning4j.util;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang3.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -21,7 +20,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Enumeration;
 import java.util.HashMap;
