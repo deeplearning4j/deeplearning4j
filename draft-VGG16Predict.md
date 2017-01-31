@@ -22,26 +22,16 @@ The network will certainly fail to identify you, images of cats and dogs it will
 
 ## Live Demo
 
+<!-- 
 <iframe src="https://54.67.56.24/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
+-->
+
+<iframe src="https://demo.skymind.io:8001/VGGpredict" width="400" height="300" style="display:block; margin: 0 auto;">&nbsp;</iframe>
 
 ## Using VGG16 pretrained for your use case
 
 Modifying this trained network for your use case would involve either "transfer learning" a feature we are working on, 
 or loading the model and then performing additional training on your dataset. 
-<script>
-function loadDoc() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-     document.getElementById("demo").innerHTML = this.responseText;
-    }
-  };
-  xhttp.open("GET", "https://54.67.56.24:4567/hello", true);
-  xhttp.send();
-}
-</script>
-<div id="demo">
-  <h2>Let AJAX change this text</h2>
-  <button type="button" onclick="loadDoc()">Change Content</button>
-</div>
+
+
 
