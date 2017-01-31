@@ -29,6 +29,10 @@ case $key in
     CHIP="$2"
     shift # past argument
     ;;
+    -cc|--compute)
+    COMPUTE="$2"
+    shift # past argument
+    ;;
     -a|--march)
     NATIVE="$2"
     shift # past argument
@@ -55,6 +59,8 @@ done
 if [ -z "$CHIP" ]; then
  CHIP="cpu"
 fi
+
+
 # adjust scala versions
 if [ "$SCALAV" == "2.10" ]; then
   SCALA="2.10.6"
@@ -78,7 +84,14 @@ if [ -z "$NATIVE" ]; then
 else
     checkexit bash buildnativeoperations.sh "$@"
 fi
-#bash buildnativeoperations.sh -c cuda
+
+if [ "$CHIP" == "cuda"]
+    if [-z "$COMPUTE"]
+        checkexit bash buildnativeoperations.sh -c cuda
+    else
+        checkexit bash buildnativeoperations.sh -c cuda --cc $COMPUTE
+    fi
+fi
 export LIBND4J_HOME=`pwd`
 cd ..
 
