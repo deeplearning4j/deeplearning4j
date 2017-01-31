@@ -5,7 +5,7 @@ layout: default
 
 # How to Build an Image Classification Web App With VGG-16
 
-Neural networks have had great success in the field of image recognition. This page describes how to build a web based application to use a well known network VGG-16 for inference or prediction of classification labels with user supplied images. 
+Neural networks are setting new accuracy records for image recognition. This page describes how to build a web-based application to use a well-known network, VGG-16, for inference to classify images uploaded by the app's users. 
 
 **Contents**
 
