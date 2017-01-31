@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -26,8 +27,10 @@ import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParame
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
@@ -111,6 +114,8 @@ public class TestMultiLayerSpace {
                 .learningRate(new ContinuousParameterSpace(0.0001,0.1))
                 .regularization(true)
                 .l2(new ContinuousParameterSpace(0.2,0.5))
+                .convolutionMode(ConvolutionMode.Same)
+                .addLayer(new ConvolutionLayerSpace.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build())
                 .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10)
                         .activation(new DiscreteParameterSpace<>("relu","tanh"))
                         .build(),
@@ -139,7 +144,7 @@ public class TestMultiLayerSpace {
         }
 
 
-        int[] nLayerCounts = new int[3];
+        int[] nLayerCounts = new int[4];
         int reluCount = 0;
         int tanhCount = 0;
 
@@ -156,10 +161,10 @@ public class TestMultiLayerSpace {
             assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getConfs().size();
-            assertTrue(nLayers >= 2 && nLayers <= 4);   //1-3 dense layers + 1 output layer: 2 to 4
+            assertTrue(nLayers >= 3 && nLayers <= 5);   //1 conv + 1-3 dense layers + 1 output layer: 2 to 4
 
             int nLayersExOutputLayer = nLayers - 1;
-            nLayerCounts[nLayersExOutputLayer-1]++;
+            nLayerCounts[nLayersExOutputLayer-2]++;
 
             for( int j=0; j<nLayers; j++ ){
                 NeuralNetConfiguration layerConf = conf.getConf(j);
@@ -170,8 +175,14 @@ public class TestMultiLayerSpace {
                 double l2 = layerConf.getLayer().getL2();
                 assertTrue( l2 >= 0.2 && l2 <= 0.5);
 
-                if(j == nLayers-1){ //Output layer
-                    assertEquals("softmax",layerConf.getLayer().getActivationFn().toString());
+                if(j == nLayers-1) { //Output layer
+                    assertEquals("softmax", layerConf.getLayer().getActivationFn().toString());
+                } else if(j == 0){
+                    //Conv layer
+                    ConvolutionLayer cl = (ConvolutionLayer) layerConf.getLayer();
+                    assertEquals(3, cl.getNIn());
+                    assertEquals(3, cl.getNOut());
+                    assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
                 } else {
                     String actFn = layerConf.getLayer().getActivationFn().toString();
                     assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
