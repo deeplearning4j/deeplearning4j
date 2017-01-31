@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Sets;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.berkeley.Pair;
@@ -48,6 +49,7 @@ import static play.mvc.Results.ok;
  * @author Alex Black
  */
 @Slf4j
+@Data
 public class PlayUIServer extends UIServer {
 
     /**
@@ -89,7 +91,10 @@ public class PlayUIServer extends UIServer {
     private int port = DEFAULT_UI_PORT;
 
     public PlayUIServer() {
+        this(DEFAULT_UI_PORT);
+    }
 
+    public PlayUIServer(int port) {
         RoutingDsl routingDsl = new RoutingDsl();
 
         //Set up index page and assets routing
@@ -190,7 +195,8 @@ public class PlayUIServer extends UIServer {
             System.exit(1);
         }
 
-        PlayUIServer server = new PlayUIServer();
+        PlayUIServer server = new PlayUIServer(port);
+
         if(enableRemote)
             server.enableRemoteListener();
     }
