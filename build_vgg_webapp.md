@@ -17,6 +17,7 @@ Neural networks are setting new accuracy records for image recognition. This pag
 * [Saving Models with ModelSerializer](#Save Model with ModelSerializer)
 * [Building Web Apps to Take Input Images](#Build Web App to Take Input Image)
 * [Tie Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
+* [Just Show Me the Code](#code)
 
 ## <a name="VGG-16"> What is VGG-16?</a>
 
@@ -230,7 +231,8 @@ Starting the web app will take as much time as it takes to load the neural netwo
 
 Once running, it uses incrementally more RAM in about 60MB chunks until it hits 4G and garbage collection cleans things up. We ran VGG-16 on an AWS t2-large instance, testing it for about a week. It was stable. It may be possible to use an even smaller AMI.  
 
-### Full code example
+## <a name="code">Full code example</a>
+
 
 ```
 
