@@ -95,91 +95,7 @@ public class PlayUIServer extends UIServer {
     }
 
     public PlayUIServer(int port) {
-        RoutingDsl routingDsl = new RoutingDsl();
-
-        //Set up index page and assets routing
-        //The definitions and FunctionUtil may look a bit weird here... this is used to translate implementation independent
-        // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
-        //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
-        // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
-        routingDsl.GET("/setlang/:to").routeTo(FunctionUtil.function(new I18NRoute()));
-        routingDsl.GET("/lang/getCurrent").routeTo(() -> ok(I18NProvider.getInstance().getDefaultLanguage()));
-        routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
-
-        uiModules.add(new DefaultModule());         //For: navigation page "/"
-        uiModules.add(new HistogramModule());
-        uiModules.add(new TrainModule());
-        uiModules.add(new ConvolutionalListenerModule());
-        uiModules.add(new FlowListenerModule());
-        uiModules.add(new TsneModule());
-        remoteReceiverModule = new RemoteReceiverModule();
-        uiModules.add(remoteReceiverModule);
-
-        //Check if custom UI modules are enabled...
-        String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
-        boolean useCustomModules = false;
-        if(customModulePropertyStr != null){
-            useCustomModules = Boolean.parseBoolean(customModulePropertyStr);
-        }
-
-        if(useCustomModules){
-            List<Class<?>> excludeClasses = new ArrayList<>();
-            for(UIModule u : uiModules){
-                excludeClasses.add(u.getClass());
-            }
-            List<UIModule> list = getCustomUIModules(excludeClasses);
-            uiModules.addAll(list);
-        }
-
-
-        for (UIModule m : uiModules) {
-            List<Route> routes = m.getRoutes();
-            for (Route r : routes) {
-                RoutingDsl.PathPatternMatcher ppm = routingDsl.match(r.getHttpMethod().name(), r.getRoute());
-                switch (r.getFunctionType()) {
-                    case Supplier:
-                        ppm.routeTo(FunctionUtil.function0(r.getSupplier()));
-                        break;
-                    case Function:
-                        ppm.routeTo(FunctionUtil.function(r.getFunction()));
-                        break;
-                    case BiFunction:
-                    case Function3:
-                    default:
-                        throw new RuntimeException("Not yet implemented");
-                }
-            }
-
-            //Determine which type IDs this module wants to receive:
-            List<String> typeIDs = m.getCallbackTypeIDs();
-            for (String typeID : typeIDs) {
-                List<UIModule> list = typeIDModuleMap.get(typeID);
-                if (list == null) {
-                    list = Collections.synchronizedList(new ArrayList<>());
-                    typeIDModuleMap.put(typeID, list);
-                }
-                list.add(m);
-            }
-        }
-
-
-
-
-        Router router = routingDsl.build();
-        server = Server.forRouter(router, Mode.DEV, port);
-
-        String addr = server.mainAddress().toString();
-        if(addr.startsWith("/0:0:0:0:0:0:0:0")){
-            int last = addr.lastIndexOf(':');
-            if(last > 0) {
-                addr = "http://localhost:" + addr.substring(last+1);
-            }
-        }
-        log.info("UI Server started at {}", addr);
-
-        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
-        uiEventRoutingThread.setDaemon(true);
-        uiEventRoutingThread.start();
+        this.port = port;
     }
 
 
@@ -289,6 +205,8 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void enableRemoteListener() {
+        if(remoteReceiverModule == null)
+            remoteReceiverModule = new RemoteReceiverModule();
         if(remoteReceiverModule.isEnabled()) return;
         enableRemoteListener(new InMemoryStatsStorage(), true);
     }
@@ -297,7 +215,7 @@ public class PlayUIServer extends UIServer {
     public void enableRemoteListener(StatsStorageRouter statsStorage, boolean attach) {
         remoteReceiverModule.setEnabled(true);
         remoteReceiverModule.setStatsStorage(statsStorage);
-        if(attach && statsStorage instanceof StatsStorage){
+        if(attach && statsStorage instanceof StatsStorage) {
             attach((StatsStorage)statsStorage);
         }
     }
@@ -314,7 +232,8 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void stop() {
-        server.stop();
+        if(server != null)
+            server.stop();
     }
 
 
@@ -339,7 +258,7 @@ public class PlayUIServer extends UIServer {
                 events.add(sse);
                 eventQueue.drainTo(events); //Non-blocking
 
-                for(UIModule m : uiModules){
+                for(UIModule m : uiModules) {
 
                     List<String> callbackTypes = m.getCallbackTypeIDs();
                     List<StatsStorageEvent> out = new ArrayList<>();
