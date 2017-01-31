@@ -201,7 +201,7 @@ ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave)
 
 ## <a name="Build Web App to Take Input Image">Build Web App to take input images</a>
 
-The following html for a form element will present the user with a page to select and upload or "post" an image to our server. 
+The following HTML for a form element will present the user with a page to select and upload or "post" an image to our server. This one itself is not hooked. (WIP!) 
 
 <pre>
 <form method='post' action='getPredictions' enctype='multipart/form-data'>
