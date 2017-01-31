@@ -203,28 +203,42 @@ template<typename OpType>
 
 					sPartials[threadIdx.x] = startingVal;
 				} else {
-					int *xShape = shape::shapeOf(xShapeInfo);
-					int *xStride = shape::stride(xShapeInfo);
-					int *yStride = shape::stride(yShapeInfo);
+				    __shared__ int *xShape;
+				    __shared__ int *yShape;
+				    __shared__ int *xStride;
+				    __shared__ int *yStride;
+				    __shared__ int xElementWiseStride;
+				    __shared__ int yElementWiseStride;
+				    __shared__ int rank;
+				    __shared__ Nd4jIndex length;
+				    if (threadIdx.x == 0) {
+
+					    xShape = shape::shapeOf(xShapeInfo);
+					    yShape = shape::shapeOf(yShapeInfo);
+					    xStride = shape::stride(xShapeInfo);
+					    yStride = shape::stride(yShapeInfo);
+					    xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+					    yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+					    rank = shape::rank(xShapeInfo);
+					    length = shape::length(xShapeInfo);
+					}
+					__syncthreads();
 					T startingVal = OpType::startingValue(dx);
 
 					T *sPartials = (T *) manager->getSharedReductionBuffer();
 
-					Nd4jIndex length = shape::length(xShapeInfo);
-					int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-					int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
-					char xOrder = shape::order(xShapeInfo);
-					char yOrder = shape::order(yShapeInfo);
-
-					int rank = shape::rank(xShapeInfo);
-					int idx[MAX_RANK];
+					int xCoords[MAX_RANK];
+					int yCoords[MAX_RANK];
 
 					sPartials[threadIdx.x] = startingVal;
 
 					for(unsigned int i = tid ;i < length; i += gridDim.x * blockDim.x) {
-						shape::ind2sub(rank,shape::shapeOf(xShapeInfo),i,idx);
-						Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
-						Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
+						shape::ind2subC(rank,xShape,i,xCoords);
+						shape::ind2subC(rank,yShape,i,yCoords);
+
+						Nd4jIndex offset = shape::getOffset(0, xShape, xStride, xCoords,rank);
+						Nd4jIndex yOffset = shape::getOffset(0,yShape, yStride, yCoords,rank);
+
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 					}
 				}

@@ -785,10 +785,7 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
             int xCoord[MAX_RANK];
 
             for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-  //              if (tadOrder == 'c')
-//                    shape::ind2subC(tadRank,tadShape, e, xCoord);
-                //else
-                    shape::ind2sub(tadRank,tadShape, e, xCoord);
+                shape::ind2subC(tadRank,tadShape, e, xCoord);
 
                 Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
@@ -823,7 +820,7 @@ __device__ void concatKernelGeneric(int dimension,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
 									T *result,
-									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, int *zTadShape, int *zOffsets) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
 	__shared__ UnifiedSharedMemory *manager;
@@ -843,27 +840,17 @@ __device__ void concatKernelGeneric(int dimension,
 	int **tadOffsets = (int **) offsetPointers;
 
 
-    __shared__ int tDim[1];
+    //__shared__ int tDim[1];
     __shared__ int baseIdx;
 
-		__shared__ shape::TAD *tad;
 		__shared__ int yLength;
 		__shared__ char yOrder;
 		__shared__ int yEWS;
-		if (threadIdx.x == 0) {
-			tDim[0] = dimension;
-			tad = new shape::TAD(); //(xShapeInfo,dimension,dimensionLength) // (manager->getTADSpace())
-			tad->setExternalBuffers((void *) manager);
-			//    tad->initWithExternalTAD(manager->getT1ShapeBuffer(), manager->getXShapeBuffer(), dimension, dimensionLength);
-			tad->init(resultShapeInfo, tDim, 1);
-			tad->createTadOnlyShapeInfo();
-		}
-		__syncthreads();
 
 		char zOrder = shape::order(resultShapeInfo);
 
 		int zEWS = shape::elementWiseStride(resultShapeInfo);
-		int tadEWS = shape::elementWiseStride(tad->tadOnlyShapeInfo);
+		int tadEWS = shape::elementWiseStride(zTadShape);
 		int zLength = shape::length(resultShapeInfo);
 
         __shared__ int arrOffset;
@@ -914,12 +901,6 @@ __device__ void concatKernelGeneric(int dimension,
 
 
 			if (threadIdx.x == 0) {
-				//inputTAD = new((unsigned char *)managerInput->getTADSpace()) shape::TAD(); //(xShapeInfo,dimension,dimensionLength)
-				//inputTAD->setExternalBuffers((void *) managerInput);
-				//inputTAD->initWithExternalTAD(currentTad, currentShape, tDim, 1);
-				//inputTAD->init(shapeInfoPointers[r], &dimension, 1);
-				//inputTAD->createTadOnlyShapeInfo();
-
 				yLength = shape::length(currentTad);
 				yOrder = shape::order(currentTad);
 				yEWS = shape::elementWiseStride(currentTad);
@@ -938,15 +919,15 @@ __device__ void concatKernelGeneric(int dimension,
 
 			for (int j = 0; j < numTads; j++) {
 				int inputOffset = currentOffsets[j];
-				int resultOffset = tad->tadOffset(j);
+				int resultOffset = zOffsets[j];
 
 				T *dataTAD = currentData + inputOffset;
 				T *resultTAD = result + resultOffset;
 
                 int sub[MAX_RANK];
 
-				shape::ind2subC(shape::rank(tad->tadOnlyShapeInfo),shape::shapeOf(tad->tadOnlyShapeInfo),arrOffset, sub);
-				Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(tad->tadOnlyShapeInfo),shape::stride(tad->tadOnlyShapeInfo), sub, shape::rank(tad->tadOnlyShapeInfo));
+				shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+				Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
 				resultTAD += baseOffset;
 
@@ -956,9 +937,6 @@ __device__ void concatKernelGeneric(int dimension,
 					}
 				} else {
 					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-
-						// FIXME: this is bad
-
 						if (threadIdx.x == 0) {
 							baseIdx = 0;
 							for (int f = 0; f < r; f++) {
@@ -976,7 +954,7 @@ __device__ void concatKernelGeneric(int dimension,
 							int yRank = shape::rank(currentTad);
 
 							for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-								shape::ind2sub(yRank, shape::shapeOf(currentTad), i, yIdx);
+								shape::ind2subC(yRank, shape::shapeOf(currentTad), i, yIdx);
 								int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
 
 								resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
@@ -984,15 +962,16 @@ __device__ void concatKernelGeneric(int dimension,
 						}
 						__syncthreads();
 					} else {
+
 						int yIdx[MAX_RANK];
 						int yRank = shape::rank(currentTad);
-						int tadRank = shape::rank(tad->tadOnlyShapeInfo);
+						int tadRank = shape::rank(zTadShape);
 
 						for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-							shape::ind2sub(yRank, shape::shapeOf(currentTad), i,yIdx);
+							shape::ind2subC(yRank, shape::shapeOf(currentTad), i,yIdx);
 
 							int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
-							int resultOffset = shape::getOffset(0, shape::shapeOf(tad->tadOnlyShapeInfo), shape::stride(tad->tadOnlyShapeInfo), yIdx, tadRank);
+							int resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
 
 							resultTAD[resultOffset] =  dataTAD[yOffset];
 						}
@@ -1006,10 +985,10 @@ __device__ void concatKernelGeneric(int dimension,
 //				delete inputTAD;
 		}
 
-		__syncthreads();
+		//__syncthreads();
 
-		if (threadIdx.x == 0 && tad != NULL)
-			delete tad;
+		//if (threadIdx.x == 0 && tad != NULL)
+		//	delete tad;
 }
 
 template <typename T>
@@ -1217,8 +1196,8 @@ extern "C" __global__ void concatKernelDouble(int dimension,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
 											  double *result,
-											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+											  int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, int *zTadShape, int *zOffsets) {
+	concatKernelGeneric<double>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
 
 extern "C" __global__ void concatKernelFloat(int dimension,
@@ -1226,8 +1205,8 @@ extern "C" __global__ void concatKernelFloat(int dimension,
 											 Nd4jPointer *data,
 											 Nd4jPointer *inputShapeInfo,
 											 float *result,
-											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, int *zTadShape, int *zOffsets) {
+	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
 
 extern "C" __global__ void concatKernelHalf(int dimension,
@@ -1235,8 +1214,8 @@ extern "C" __global__ void concatKernelHalf(int dimension,
 											 Nd4jPointer *data,
 											 Nd4jPointer *inputShapeInfo,
 											 float16 *result,
-											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-	concatKernelGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
+											 int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, int *zTadShape, int *zOffsets) {
+	concatKernelGeneric<float16>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
 
 
