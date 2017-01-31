@@ -1,10 +1,15 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+
+import java.util.Arrays;
 
 /**
  * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
@@ -70,5 +75,19 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent)inputType;
         return InputType.feedForward(rnn.getSize());
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Assume mask array is 2d for time series (1 value per time step)
+        if(maskArray == null){
+            return new Pair<>(maskArray, currentMaskState);
+        } else if(maskArray.rank() == 2){
+            //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
+        } else {
+            throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank() + "; expected rank 2 mask array. Mask array shape: "
+                    + Arrays.toString(maskArray.shape()));
+        }
     }
 }
