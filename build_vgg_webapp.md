@@ -24,9 +24,8 @@ Since 2010, [ImageNet](http://image-net.org/) has hosted an annual [challenge](h
 
 Here are the results:
 
-[VGG-16](http://www.image-net.org/challenges/LSVRC/2014/results#clsloc) ILSVRC-14
-
-VGG-16 also performed well on two other image classification benchmarks, VOC and Caltech. Those results are [here](http://www.robots.ox.ac.uk/~vgg/research/very_deep/).
+* [VGG-16 ILSVRC-14](http://www.image-net.org/challenges/LSVRC/2014/results#clsloc) 
+* VGG-16 also performed well on two other image classification benchmarks: VOC and Caltech. Those results are [here](http://www.robots.ox.ac.uk/~vgg/research/very_deep/).
 
 ## <a name="Using VGG-16">Using VGG-16 in Web Applications</a>
 
