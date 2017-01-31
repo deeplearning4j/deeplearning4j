@@ -18,6 +18,7 @@ Neural networks are setting new accuracy records for image recognition. This pag
 * [Building Web Apps to Take Input Images](#Build Web App to Take Input Image)
 * [Tie Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
 * [Just Show Me the Code](#code)
+* [Example Predictions (Cats! Dogs!)](#example)
 
 ## <a name="VGG-16"> What is VGG-16?</a>
 
@@ -339,8 +340,7 @@ public class VGG16SparkJavaWebApp {
 }
 
 ```
-
-## Example predictions
+## <a name="example">Example predictions</a>
 
 Here are the results given on a photo of one of the Skymind cats, which VGG-16 has certainly never seen before. 
 
