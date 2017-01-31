@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape.concat;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class ConcatTests extends BaseNd4jTest {
 
