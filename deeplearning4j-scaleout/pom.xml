@@ -26,7 +26,6 @@
         <version>0.7.3-SNAPSHOT</version>
     </parent>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j-scaleout-parent</name>
 

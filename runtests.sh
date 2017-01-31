@@ -35,7 +35,9 @@ mvn clean test >> $BUILD_OUTPUT 2>&1
 dump_output
 
 # Repeat for Spark 2
+./change-spark-versions.sh 2
 mvn clean test -Dspark.major.version=2 >> $BUILD_OUTPUT 2>&1
+./change-spark-versions.sh 1
 
 # The build finished without returning an error so dump a tail of the output
 dump_output

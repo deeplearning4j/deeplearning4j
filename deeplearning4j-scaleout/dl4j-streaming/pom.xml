@@ -6,7 +6,7 @@
 
     <artifactId>dl4j-streaming_2.10</artifactId>
     <packaging>jar</packaging>
-    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
+    <version>0.7.3_spark_1-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
@@ -16,6 +16,10 @@
 
     <properties>
         <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+        <spark.major.version>1</spark.major.version>
+        <spark.version>1.6.2</spark.version>
+        <hadoop.version>2.2.0</hadoop.version>
+        <datavec.spark.version>0.7.3_spark_${spark.major.version}-SNAPSHOT</datavec.spark.version>        
     </properties>
 
     <name>Dl4j Streaming</name>
@@ -26,7 +30,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-camel</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
@@ -133,11 +137,6 @@
                     <name>!spark.major.version</name>
                 </property>
             </activation>
-            <properties>
-                <spark.major.version>1</spark.major.version>
-                <spark.version>1.6.2</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.spark</groupId>
@@ -154,10 +153,6 @@
                     <value>1</value>
                 </property>
             </activation>
-            <properties>
-                <spark.version>1.6.2</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.spark</groupId>
@@ -174,10 +169,6 @@
                     <value>2</value>
                 </property>
             </activation>
-            <properties>
-                <spark.version>2.1.0</spark.version>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.apache.spark</groupId>
