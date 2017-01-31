@@ -13,9 +13,6 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.parallelism.main.ParallelWrapperMain;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -88,9 +85,6 @@ public class ParallelWrapperMainTest {
                 .backprop(true).pretrain(false);
         // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
         new ConvolutionLayerSetup(builder,28,28,1);
-        UIServer uiServer = UIServer.getInstance();
-        uiServer.attach(new InMemoryStatsStorage());
-        uiServer.enableRemoteListener();
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();

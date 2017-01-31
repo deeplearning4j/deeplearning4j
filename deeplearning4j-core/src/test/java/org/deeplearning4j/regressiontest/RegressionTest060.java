@@ -153,7 +153,7 @@ public class RegressionTest060 {
         assertArrayEquals(new int[]{2,2}, l1.getKernelSize());
         assertArrayEquals(new int[]{1,1}, l1.getStride());
         assertArrayEquals(new int[]{0,0}, l1.getPadding());
-        assertEquals(l1.getPoolingType(), SubsamplingLayer.PoolingType.MAX);
+        assertEquals(PoolingType.MAX, l1.getPoolingType());
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate);        //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         OutputLayer l2 = (OutputLayer)conf.getConf(2).getLayer();

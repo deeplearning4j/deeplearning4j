@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
@@ -151,6 +153,12 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             default:
                 throw new IllegalStateException("Invalid input type: got " + inputType);
         }
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
+        return new Pair<>(maskArray, currentMaskState);
     }
 
 }
