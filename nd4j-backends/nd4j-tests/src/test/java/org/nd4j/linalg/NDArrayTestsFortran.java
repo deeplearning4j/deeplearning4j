@@ -416,6 +416,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray column2 = Nd4j.create(new float[]{3, 4});
         INDArray testColumn = n.getColumn(0);
         INDArray testColumn1 = n.getColumn(1);
+        log.info("testColumn shape: {}", Arrays.toString(testColumn.shapeInfoDataBuffer().asInt()));
         assertEquals(column, testColumn);
         assertEquals(column2, testColumn1);
 
