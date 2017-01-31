@@ -785,10 +785,7 @@ __device__ void fillDimensionalIsMaxGeneric(T *dX, int *xShapeInfo, T *dZ, int *
             int xCoord[MAX_RANK];
 
             for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-  //              if (tadOrder == 'c')
-//                    shape::ind2subC(tadRank,tadShape, e, xCoord);
-                //else
-                    shape::ind2sub(tadRank,tadShape, e, xCoord);
+                shape::ind2subC(tadRank,tadShape, e, xCoord);
 
                 Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
