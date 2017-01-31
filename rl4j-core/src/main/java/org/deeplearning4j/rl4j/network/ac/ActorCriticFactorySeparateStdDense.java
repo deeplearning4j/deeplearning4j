@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import lombok.Builder;
 import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -117,6 +118,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
     }
 
     @Value
+    @Builder
     public static class Configuration {
 
         int numLayer;

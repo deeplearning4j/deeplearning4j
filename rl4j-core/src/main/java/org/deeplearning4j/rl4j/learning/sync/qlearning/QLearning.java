@@ -114,6 +114,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     @AllArgsConstructor
+    @Builder
     @Value
     public static class QLStatEntry implements StatEntry {
         int stepCounter;
@@ -127,6 +128,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     @AllArgsConstructor
+    @Builder
     @Value
     public static class QLStepReturn<O> {
         Double maxQ;
@@ -137,6 +139,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     @Data
     @AllArgsConstructor
+    @Builder
     @EqualsAndHashCode(callSuper = false)
     public static class QLConfiguration implements LConfiguration {
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
+import lombok.Builder;
 import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -71,6 +72,7 @@ public class DQNFactoryStdDense implements DQNFactory {
     }
 
     @Value
+    @Builder
     public static class Configuration {
 
         int numLayer;
