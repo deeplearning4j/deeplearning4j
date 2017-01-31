@@ -17,7 +17,8 @@ import java.util.Collection;
  */
 public class ParameterAveragingElementCombineFunction implements Function2<ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple> {
     @Override
-    public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple v1, ParameterAveragingAggregationTuple v2) throws Exception {
+    public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple v1,
+                                                   ParameterAveragingAggregationTuple v2) throws Exception {
         if(v1 == null) return v2;
         else if(v2 == null) return v1;
 
