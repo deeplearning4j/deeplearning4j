@@ -22,7 +22,7 @@
         <version>0.7.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>0.7.3_spark_${spark.major.version}-SNAPSHOT</version>
+    <version>0.7.3_spark_1-SNAPSHOT</version>
     <artifactId>datavec-spark_2.10</artifactId>
 
     <build>
