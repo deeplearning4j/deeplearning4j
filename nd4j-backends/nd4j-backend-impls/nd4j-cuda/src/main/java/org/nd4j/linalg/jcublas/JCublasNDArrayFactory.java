@@ -604,6 +604,10 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         }
 
+        // getting tadOnlyShape for result
+        Pair<DataBuffer, DataBuffer> zBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[]{dimension});
+
+
         //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
 
         Pointer dZ = AtomicAllocator.getInstance().getPointer(ret, context);
@@ -639,7 +643,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 context.getBufferSpecial(),
                 AddressRetriever.retrieveHostPointer(toConcat[0].shapeInfoDataBuffer()),
                 AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
-                new LongPointer(hostShapeInfoPointers)
+                new LongPointer(hostShapeInfoPointers),
+                AtomicAllocator.getInstance().getPointer(zBuffers.getFirst(), context), // getting zTADShape
+                AtomicAllocator.getInstance().getPointer(zBuffers.getSecond(), context) // getting zOffset
         );
 
         if(ret.data().dataType() == DataBuffer.Type.DOUBLE) {
