@@ -14,8 +14,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.3.13</akka.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
+
     </properties>
 
     <build>
