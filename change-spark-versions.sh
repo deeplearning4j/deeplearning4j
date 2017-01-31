@@ -71,15 +71,15 @@ echo "Updating Spark versions in pom.xml files to Spark $1";
 
 BASEDIR=$(dirname $0)
 
-#Scala maven plugin, <spark.major.version>2.10</spark.major.version>
+# <spark.major.version>2</spark.major.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(spark.major.version>\)'$FROM_BINARY'<\/spark.major.version>/\1'$TO_BINARY'<\/spark.major.version>/g' {}" \;
 
-#Scala maven plugin, <spark.version>2.10</spark.version>
+# <spark.version>1.6.2</spark.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(spark.version>\)'$FROM_VERSION'<\/spark.version>/\1'$TO_VERSION'<\/spark.version>/g' {}" \;
 
-#Scala versions, like <artifactId>scala-library</artifactId> <version>2.10.6</version>
+#Spark versions, like <version>xxx_spark_2-SNAPSHOT</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(version>.*_spark_\)'$FROM_BINARY'\(.*\)<\/version>/\1'$TO_BINARY'\2<\/version>/g' {}" \;
 
