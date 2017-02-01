@@ -214,12 +214,17 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray denominator = labels.sum(0).addi(1.0).transpose();
 
         INDArray deltaC;
-        if(!layerConf().getGradientCheck()) {
-            deltaC = numerator.diviColumnVector(denominator).divi(2);
+        if(layerConf().getGradientCheck()) {
+            double lambda = layerConf().getLambda();
+            //For gradient checks: need to multiply dLc/dcj by lambda to get dL/dcj
+            deltaC = numerator.muli(lambda);
         } else {
-            deltaC = numerator.divi(2);
+            deltaC = numerator.diviColumnVector(denominator);
         }
         centersGradView.assign(deltaC);
+
+
+
 
         // other standard calculations
         Nd4j.gemm(input,delta,weightGradView,true,false,1.0,0.0);    //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
