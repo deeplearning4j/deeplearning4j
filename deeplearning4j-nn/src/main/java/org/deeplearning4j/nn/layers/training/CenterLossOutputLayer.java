@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossL2;
 
 
 /**
@@ -74,17 +75,22 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray preOut = preOutput2d(training);
 
         // center loss has two components
-        // the first enforces inter-class dissimilarity, the second intra-class dissimilarity
-        // we use these two functions to compute both
+        // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
         ILossFunction interClassLoss = layerConf().getLossFn();
-        ILossFunction intraClassLoss = LossFunctions.LossFunction.L2.getILossFunction();
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
 
-        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
-        intraClassScore = intraClassScore * layerConf().getLambda() / 2;
+//        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
+        INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
+        norm2DifferenceSquared.muli(norm2DifferenceSquared);
+
+        double sum = norm2DifferenceSquared.sumNumber().doubleValue();
+        double lambda = layerConf().getLambda();
+        double intraClassScore = lambda / 2.0 * sum;
+
+//        intraClassScore = intraClassScore * layerConf().getLambda() / 2;
         if(System.getenv("PRINT_CENTERLOSS")!=null) {
             System.out.println("Center loss is "+intraClassScore);
         }
@@ -167,7 +173,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray dLcdai = input.sub(centersForExamples);
 
         INDArray epsilonNext = params.get(CenterLossParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        epsilonNext.addi(dLcdai.muli(layerConf().getLambda())); // add center loss here
+        double lambda = layerConf().getLambda();
+        epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
         return new Pair<>(pair.getFirst(),epsilonNext);
     }
 
