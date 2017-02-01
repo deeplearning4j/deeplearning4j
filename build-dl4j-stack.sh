@@ -76,7 +76,7 @@ cd ..
 find . -maxdepth 1 -iname "libnd4j" -exec rm -rf "{}" \;
 find . -maxdepth 1 -iname "nd4j" -exec rm -rf "{}" \;
 find . -maxdepth 1 -iname "datavec" -exec rm -rf "{}" \;
-find . -maxdepth 1 -iname "deeplearning4j" -exec rm -rf "{}" \;
+#find . -maxdepth 1 -iname "deeplearning4j" -exec rm -rf "{}" \;
 
 # compile libnd4j
 checkexit git clone https://github.com/deeplearning4j/libnd4j.git
@@ -118,7 +118,7 @@ fi
 cd ..
 
 # build and install deeplearning4j
-checkexit git clone https://github.com/deeplearning4j/deeplearning4j.git
+#checkexit git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 if [ "$SCALAV" == "" ]; then
   if [ "$CHIP" == "cpu" ]; then
