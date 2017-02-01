@@ -67,49 +67,49 @@
 },
 {
 "url": "https://deeplearning4j.org/cn/csv-deep-learning",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "从CSV文件加载数据",
+"description": "本页将介绍如何把来自CSV文件的数据加载到神经网络中，这是很有用的信息，尤其是在处理时间序列数据时。",
+"tags": ["csv", "数据加载", "数据处理", "CSV文件", "数据导入"]
 },
 {
 "url": "https://deeplearning4j.org/cn/customdatasets",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "自定义数据集",
+"description": "深度学习网络的一切输入，无论是文字、图像或其他数据，都必须转换为数值组成的向量，这一过程称为向量化。",
+"tags": ["etl", "数据处理", "datavec", "向量化", "数据转换"]
 },
 {
 "url": "https://deeplearning4j.org/cn/data-for-deep-learning",
-"title": "Sample_Title 2",
-"description": "Sample_description ",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习所需的数据",
+"description": "成功应用深度学习的最低数据要求取决于您想要解决什么问题。在这里我们会为您讲解深度学习所需要的数据",
+"tags": ["数据类型", "深度学习的数据", "数据属性", "数据样本", "应用案例"]
 },
 {
 "url": "https://deeplearning4j.org/cn/data-sets-ml",
-"title": "Sample_Title 3",
-"description": "Sample_description 3",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "数据集与机器学习",
+"description": "深度学习领域最难解决的问题之一和神经网络本身没有关系：这个问题就是如何获取格式恰当的合适数据。",
+"tags": ["数据集", "机器学习", "定型集", "开发集", "测试集"]
 },
 {
 "url": "https://deeplearning4j.org/cn/datavec",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DataVec：向量化及表达式模板库",
+"description": "DataVec帮助克服机器学习及深度学习实现过程中最重大的障碍之一：将数据转化为神经网络能够识别的格式。",
+"tags": ["数据处理", "预处理数据", "数据链", "数据转化", "向量化"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deepautoencoder",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度自动编码器",
+"description": "深度自动编码器由两个对称的深度置信网络组成，其中一个深度置信网络通常有四到五个浅层，构成负责编码的部分，另一个四到五层的网络则是解码部分。",
+"tags": ["deep autoencoder", "受限玻尔兹曼机", "restricted boltzmann machines", "mnist", "神经网络"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deeplearningforbeginners",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习如何入门？",
+"description": "要理解并应用深度学习，必须先掌握线性代数、微积分和统计学，还应当具备编程及机器学习的知识。",
+"tags": ["新手", "初学者", "教材", "学习", "课程"]
 },
 {
 "url": "https://deeplearning4j.org/cn/denoisingautoencoder",
-"title": "Sample_Title",
+"title": "降噪自动编码器",
 "description": "Sample_description",
 "tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
 },
