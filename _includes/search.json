@@ -99,7 +99,7 @@
 "url": "https://deeplearning4j.org/cn/deepautoencoder",
 "title": "深度自动编码器",
 "description": "深度自动编码器由两个对称的深度置信网络组成，其中一个深度置信网络通常有四到五个浅层，构成负责编码的部分，另一个四到五层的网络则是解码部分。",
-"tags": ["deep autoencoder", "受限玻尔兹曼机", "restricted boltzmann machines", "mnist", "神经网络"]
+"tags": ["deep autoencoder", "受限玻尔兹曼机", "restricted boltzmann machines", "mnist", "神经网络", "无监督"]
 },
 {
 "url": "https://deeplearning4j.org/cn/deeplearningforbeginners",
@@ -111,7 +111,7 @@
 "url": "https://deeplearning4j.org/cn/denoisingautoencoder",
 "title": "降噪自动编码器",
 "description": "自动编码器是一种用于降维的神经网络，这也就是说，它可以用于特征选择和提取。",
-"tags": ["denoising autoencoder", "自动编码器", "autoencoder", "mnist", "污染"]
+"tags": ["denoising autoencoder", "自动编码器", "autoencoder", "mnist", "污染", "无监督"]
 },
 {
 "url": "https://deeplearning4j.org/cn/earlystopping",
@@ -217,69 +217,75 @@
 },
 {
 "url": "https://deeplearning4j.org/cn/quickstart",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "快速入门指南",
+"description": "本页将向您全面介绍如何运行DL4J示例，启动您自己的项目。",
+"tags": ["入门", "初学者", "新手", "运行", "示例"]
 },
 {
 "url": "https://deeplearning4j.org/cn/recurrentnetwork",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "循环网络和LSTM教程",
+"description": "循环网络是一类功能强大的人工神经网络算法，特别适用于处理声音、时间序列（传感器）数据或书面自然语言等序列数据。",
+"tags": ["lstm", "循环网络", "rnn", "recurrent network", "传感器"]
 },
 {
 "url": "https://deeplearning4j.org/cn/releasenotes",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Deeplearning4j最新更新",
+"description": "在这里你可以找到Deeplearning4j最新的版本以及更新内容",
+"tags": ["更新", "update", "changelog", "latest", "最新"]
 },
 {
 "url": "https://deeplearning4j.org/cn/restrictedboltzmannmachine",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "受限玻尔兹曼机基础教程",
+"description": "受限玻尔兹曼机（RBM）由Geoff Hinton发明，是一种用于降维、分类、回归、协同过滤、特征学习和主题建模的算法。",
+"tags": ["rbm", "受限玻尔兹曼机", "restricted boltzmann machine", "hinton", "神经网络"]
 },
 {
 "url": "https://deeplearning4j.org/cn/simple-image-load-transform",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "针对图像等数据的定制数据加工管道",
+"description": "本页的教程将介绍如何加载图像数据集并对其进行转换操作。",
+"tags": ["图像", "数据处理", "etl", "数据加工", "datavec"]
+},
+{
+"url": "https://deeplearning4j.org/cn/spark-gpus",
+"title": "基于Spark的多GPU分布式深度学习",
+"description": "本页将具体介绍如何使用Spark加载数据，以及如何用cuDNN进行基于GPU的图像处理。",
+"tags": ["gpu", "spark", "多gpu", "分布式", "定型"]
 },
 {
 "url": "https://deeplearning4j.org/cn/spark",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "基于Spark的Deeplearning4j",
+"description": "Deeplearning4j依靠Spark来实现数据并行，以并行方式定型模型，对这些模型产生的参数进行迭代式平均化，得到一个中央模型。",
+"tags": ["spark", "数据并行", "分布式", "kryo", "yarn"]
 },
 {
 "url": "https://deeplearning4j.org/cn/stackeddenoisingautoencoder",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "堆叠式降噪自动编码器",
+"description": "堆叠式降噪自动编码器（SDA）的关键功能之一是随着输入的传递逐层进行无监督预定型，更广义地来看，这也是深度学习的关键功能之一。",
+"tags": ["自动编码器", "stacked denoising autoencoder", "无监督", "autoencoder", "神经网络"]
 },
 {
 "url": "https://deeplearning4j.org/cn/troubleshootingneuralnets",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "神经网络定型问题排查",
+"description": "神经网络的调试可能比较困难。如果网络超参数设定不当，那么学习速度可能会偏慢，甚至完全没有进展。本页旨在介绍网络调试中应当使用的一些基本步骤。",
+"tags": ["问题", "调试", "调模", "troubleshoot", "困难"]
 },
 {
 "url": "https://deeplearning4j.org/cn/tsne-visualization",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "t-SNE的数据可视化",
+"description": "t-分布邻域嵌入算法（t-SNE）是代尔夫特理工大学的Laurens van der Maaten发明的数据可视化工具。",
+"tags": ["t-SNE", "Laurens van der Maaten", "mnist", "标记数据", "可视化"]
 },
 {
 "url": "https://deeplearning4j.org/cn/tutorials",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习教程",
+"description": "欢迎来到教程主页。以下的教程专门为刚开始接触深度学习和DeepLearning4J的用户介绍相关概念，还会提供图像识别、文本处理、分类的示例。",
+"tags": ["教程", "教学", "学习", "新手", "初学者"]
 },
 {
 "url": "https://deeplearning4j.org/cn/updater",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Deeplearning4j更新器介绍",
+"description": "本页内容主要面向已经了解随机梯度下降原理的读者。本篇介绍各种更新器之间最主要的区别是对于学习速率的处理方式。",
+"tags": ["更新", "学习速率", "updater", "梯度下降", "动量", "Adagrad", "RMSProp", "AdaDelta"]
 },
 {
 "url": "https://deeplearning4j.org/cn/use_cases",
