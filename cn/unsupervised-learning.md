@@ -45,19 +45,19 @@ This algorithm serves the purposes of classification and regression, and relies 
 
 Let your input and training examples be vectors. Training vectors might be arranged in a binary tree like so:
 
-![Alt text](./img/kd-tree-root-leaves.png) 
+![Alt text](../img/kd-tree-root-leaves.png) 
 
 If you were to visualize those nodes in two dimensions, partitioning space at each branch, then the kd-tree would look like this:
 
-![Alt text](./img/kd-tree-hyperplanes.png) 
+![Alt text](../img/kd-tree-hyperplanes.png) 
 
 Now, let's saw you place a new input, X, in the tree's partitioned space. This allows you to identify both the parent and child of that space within the tree. The X then constitutes the center of a circle whose radius is the distance to the child node of that space. By definition, only other nodes within the circle's circumference can be nearer. 
 
-![Alt text](./img/kd-tree-nearest.png) 
+![Alt text](../img/kd-tree-nearest.png) 
 
 And finally, if you want to make art with kd-trees, you could do a lot worse than this:
 
-![Alt text](./img/kd-tree-mondrian.png) 
+![Alt text](../img/kd-tree-mondrian.png) 
 
 *(Hat tip to [Andrew Moore of CMU](http://www.autonlab.org/autonweb/14665/version/2/part/5/data/moore-tutorial.pdf?branch=main&language=en) for his excellent diagrams.)*
 
