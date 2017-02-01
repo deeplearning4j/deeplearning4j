@@ -289,31 +289,31 @@
 },
 {
 "url": "https://deeplearning4j.org/cn/use_cases",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习应用案例",
+"description": "深度学习擅长识别非结构化数据中的模式，而大多数人熟知的图像、声音、视频、文本等媒体均属于此类数据。 下表列出了我们已知的应用类型及与之相关的行业。",
+"tags": ["案列", "例子", "行业", "自然语言处理", "图像识别"]
 },
 {
 "url": "https://deeplearning4j.org/cn/usingrnns",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DL4J中的循环网络",
+"description": "页将简要介绍循环网络的具体定型功能，以及如何在DeepLearning4J中实际运用这些功能。",
+"tags": ["循环网络", "rnn", "Recurrent Neural Networks", "lstm", "神经网络"]
 },
 {
 "url": "https://deeplearning4j.org/cn/visualization",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "神经网络学习的可视化、监测及调试方法",
+"description": "L4J提供的用户界面可以在浏览器中实现当前网络状态以及定型进展的（实时）可视化。该用户界面通常用于调试神经网络，亦即通过选择合适的超参数（例如学习速率）来提高网络性能。",
+"tags": ["可视化", "界面", "ui", "用户界面", "模型训练"]
 },
 {
 "url": "https://deeplearning4j.org/cn/welldressed-recommendation-engine",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "WellDressed推荐引擎",
+"description": "关于Stephan Duquesnoy 的 WellDressed 的推荐引擎",
+"tags": ["推荐引擎", "Stephan Duquesnoy", "WellDressed", "例子", "教程"]
 },
 {
 "url": "https://deeplearning4j.org/cn/word2vec",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Word2Vec",
+"description": "Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。",
+"tags": ["自然 语言处理", "文本处理", "nlp", "自然语句", "神经词向量"]
 }]
