@@ -157,4 +157,18 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println(B.add(A));
 
     }
+
+    @Test
+    //broken at a threshold
+    public void testArgMax() {
+        int max = 63;
+        INDArray A = Nd4j.linspace(1,max,max).reshape(1,max);
+        int currentArgMax = Nd4j.argMax(A).getInt(0,0);
+        assertTrue(currentArgMax == max - 1);
+
+        max = 64;
+        A = Nd4j.linspace(1,max,max).reshape(1,max);
+        currentArgMax = Nd4j.argMax(A).getInt(0,0);
+        assertTrue(currentArgMax == max - 1);
+    }
 }
