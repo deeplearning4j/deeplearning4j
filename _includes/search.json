@@ -315,5 +315,11 @@
 "url": "https://deeplearning4j.org/cn/word2vec",
 "title": "Word2Vec",
 "description": "Word2vec是一个用于处理文本的双层神经网络。它的输入是文本语料，输出则是一组向量：该语料中词语的特征向量。",
-"tags": ["自然 语言处理", "文本处理", "nlp", "自然语句", "神经词向量"]
+"tags": ["自然语言处理", "文本处理", "nlp", "自然语句", "神经词向量"]
+},
+{
+"url": "https://deeplearning4j.org/cn/linear-regression",
+"title": "神经网络与回归",
+"description": "总体而言，神经网络的用途包括无监督学习、分类和回归。具体来说，这些用途分别指将未标记的数据聚类、判定数据的类别以及在有监督定型后对连续值进行预测。",
+"tags": ["回归", "regression", "神经网络", "示例", "教程"]
 }]
