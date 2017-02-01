@@ -1,6 +1,6 @@
 ---
 title: Deploying Deeplearning4j to Android
-layout: cn-default
+layout: default
 ---
 <title>How to Use Deeplearning4J in Android Apps</title>
 <meta property="og:title" content="How to Use Deeplearning4J in Android Apps" />
