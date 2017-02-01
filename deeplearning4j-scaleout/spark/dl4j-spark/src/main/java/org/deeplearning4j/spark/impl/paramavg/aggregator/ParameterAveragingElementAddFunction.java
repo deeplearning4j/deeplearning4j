@@ -21,8 +21,13 @@ public class ParameterAveragingElementAddFunction implements Function2<Parameter
     @Override
     public ParameterAveragingAggregationTuple call(ParameterAveragingAggregationTuple tuple, ParameterAveragingTrainingResult result) throws Exception {
         if (tuple == null) {
-            return new ParameterAveragingAggregationTuple(result.getParameters(), result.getUpdaterState(), result.getScore(), 1,
-                    result.getSparkTrainingStats(), result.getListenerMetaData(), result.getListenerStaticInfo(), result.getListenerUpdates());
+            // return new ParameterAveragingAggregationTuple(result.getParameters(), result.getUpdaterState(), result.getScore(), 1,
+            //             result.getSparkTrainingStats(), result.getListenerMetaData(), result.getListenerStaticInfo(), result.getListenerUpdates());
+            return ParameterAveragingAggregationTuple.builder()
+                    .parametersSum(result.getParameters()).updaterStateSum(result.getUpdaterState())
+                    .listenerMetaData(result.getListenerMetaData()).listenerStaticInfo(result.getListenerStaticInfo())
+                    .listenerUpdates(result.getListenerUpdates())
+                    .scoreSum(result.getScore()).sparkTrainingStats(result.getSparkTrainingStats()).build();
         }
 
         INDArray params = tuple.getParametersSum().addi(result.getParameters());
