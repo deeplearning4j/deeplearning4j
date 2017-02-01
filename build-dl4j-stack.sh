@@ -78,6 +78,15 @@ find . -maxdepth 1 -iname "nd4j" -exec rm -rf "{}" \;
 find . -maxdepth 1 -iname "datavec" -exec rm -rf "{}" \;
 #find . -maxdepth 1 -iname "deeplearning4j" -exec rm -rf "{}" \;
 
+# Report argument values
+echo BUILD      = "${BUILD}"
+echo PACKAGING  = "${PACKAGING}"
+echo CHIP       = "${CHIP}"
+echo COMPUTE    = "${COMPUTE}"
+echo NATIVE     = "${NATIVE}"
+echo LIBTYPE    = "${LIBTYPE}"
+echo SCALAV     = "${SCALAV}"
+
 # compile libnd4j
 checkexit git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
@@ -87,8 +96,8 @@ else
     checkexit bash buildnativeoperations.sh "$@"
 fi
 
-if [ "$CHIP" == "cuda"]
-    if [-z "$COMPUTE"]
+if [ "$CHIP" == "cuda" ]; then
+    if [ -z "$COMPUTE" ]; then
         checkexit bash buildnativeoperations.sh -c cuda
     else
         checkexit bash buildnativeoperations.sh -c cuda --cc $COMPUTE
