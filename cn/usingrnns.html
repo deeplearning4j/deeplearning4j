@@ -32,7 +32,7 @@ redirect_from: /zh-usingrnns
 <img class="img-responsive center-block" src="../img/rnn_data.png" alt="deeplearning4j"><br>
 
 <p><h3>RnnOutputLayer</h3></p>
-<p>RnnOutputLayer是在许多循环网络系统（用于回归分析和分类任务）中使用的最终层。RnnOutputLayer可处理计分运算、基于给定损失函数的误差计算（预测与实际值对比）等。从功能上看，它与&ldquo;标准&rdquo;的OutputLayer类（用于前馈网络）十分相似；但RnnOutputLayer的输出（以及标签/目标）均为三维时间序列数据集。</p>
+<p>RnnOutputLayer是在许多循环网络系统（用于回归和分类任务）中使用的最终层。RnnOutputLayer可处理计分运算、基于给定损失函数的误差计算（预测与实际值对比）等。从功能上看，它与&ldquo;标准&rdquo;的OutputLayer类（用于前馈网络）十分相似；但RnnOutputLayer的输出（以及标签/目标）均为三维时间序列数据集。</p>
 <p>RnnOutputLayer配置与其他层采取相同的设计：例如，将MultiLayerNetwork的第三层设置为RnnOutputLayer，用于分类：</p>
 <pre class="line-numbers"><code class="language-java">
 .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
@@ -178,7 +178,7 @@ DataSetIterator iter = new SequenceRecordReaderDataSetIterator(featureReader, la
       <li>标签数据会被自动转换为one-hot表示方法</li>
     </ul>
   </li>
-  <li>回归分析问题中，不使用numPossibleLabels（可任意指定值），应指定regression = true。
+  <li>回归问题中，不使用numPossibleLabels（可任意指定值），应指定regression = true。
     <ul>
       <li>可以处理任意数量的输入与标签值（与分类不同，可以处理任意数量的输出）</li>
       <li>指定regression = true时不会对标签进行处理</li>
@@ -197,11 +197,11 @@ reader.initialize(new NumberedFileInputSplit("/path/to/data/myData_%d.csv", 0, 9
 DataSetIterator iterClassification = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, numPossibleLabels, labelIndex, false);
 </code></pre>
 <p><code>miniBatchSize</code>和<code>numPossibleLabels</code>与前一例相同。此处的labelIndex指定标签所在的列。 比如，若标签在第五列，则指定labelIndex = 4（即列的索引值为0到numColumns-1）。</p>
-<p>在单一输出值的回归分析中，我们使用：</p>
+<p>在单一输出值的回归中，我们使用：</p>
 <pre><code class="language-java">
 DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader, miniBatchSize, -1, labelIndex, true);
 </code></pre>
-<p>如前文所述，回归分析中不使用numPossibleLabels参数。</p><br>
+<p>如前文所述，回归中不使用numPossibleLabels参数。</p><br>
 
 
 <p><h3>示例3：不等长时间序列（多对多）</h3></p>
