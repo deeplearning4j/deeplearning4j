@@ -32,6 +32,18 @@ VGG16 and other pre-trained models are widely used for demonstration purposes an
 
 In addition to being able to import pre-trained Keras models, DeepLearning4j will actively add models to our own model zoo.
 
+## Configuring your IDE to have access to the modelimport classes
+
+Edit your Pom.xml adding the following dependency
+
+```
+<dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-modelimport</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+```
+
 ## Available Methods
 
 Using the Keras Model Import feature you have the following options. Note that Keras has two types of networks, Sequential and Functional. Keras Sequential model is equivalent to DeepLeanring4J's MultiLayerNetwork. Keras functional model is equivalent to DeepLearning4J's Computation Graph.  
@@ -90,6 +102,15 @@ The network would be ready to use for inference by passing it input data, format
 MultiLayerNetwork network = KerasModelImport.importKerasSequentialModelAndWeights("PATH TO YOUR JSON FILE","PATH TO YOUR H5 FILE")
 
 ```
+
+## Additional Options
+
+The modelimport feature includes an enforceTrainingConfig parameter.
+
+If you want to import a pre-trained model ONLY for inference, then you should set enforceTrainingConfig=false. Unsupported training-only configurations generate warnings but model import will proceed.
+
+If you want to import a model for training and want to ensure the resulting model matches a trained Keras model as closely as possible, then you should set enforceTrainingConfig=true. In that case, unsupported training-only configurations will throw an UnsupportedKerasConfigurationException and stop model import.
+
 
 
 ## Keras Model Import
