@@ -58,7 +58,9 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     @Override
     public Double getValue(double[] input) {
-        if (index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        if (index == -1){
+            throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        }
         return distribution.inverseCumulativeProbability(input[index]);
     }
 
@@ -79,7 +81,9 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     @Override
     public void setIndices(int... indices) {
-        if (indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        if (indices == null || indices.length != 1){
+            throw new IllegalArgumentException("Invalid index");
+        }
         this.index = indices[0];
     }
 

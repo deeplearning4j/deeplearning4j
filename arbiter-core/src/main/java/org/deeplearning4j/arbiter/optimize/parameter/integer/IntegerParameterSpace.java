@@ -64,7 +64,9 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @Override
     public Integer getValue(double[] input) {
-        if (index == -1) throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        if (index == -1){
+            throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
+        }
         return distribution.inverseCumulativeProbability(input[index]);
     }
 
