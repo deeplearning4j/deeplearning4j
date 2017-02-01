@@ -8,6 +8,7 @@ import org.deeplearning4j.keras.model.KerasModelType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.io.File;
@@ -91,7 +92,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void sequentialFit(FitParams fitParams) throws Exception {
         try {
-            MultiLayerNetwork model = fitParams.getModel();
+            MultiLayerNetwork model = fitParams.getSequentialModel();
 
             DataSetIterator trainIterator;
             DataSetIterator testIterator;
@@ -101,7 +102,7 @@ public class DeepLearning4jEntryPoint {
                 fitParams.getTrainYPath()
             );
 
-            if(fitParams.getDoValidation()) {
+            if(fitParams.isDoValidation()) {
                 testIterator = new HDF5MiniBatchDataSetIterator(
                     fitParams.getValidationXPath(),
                     fitParams.getValidationYPath()
@@ -116,7 +117,7 @@ public class DeepLearning4jEntryPoint {
 
                 model.fit(trainIterator);
 
-                if(fitParams.getDoValidation()) {
+                if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);
                     model.evaluate(testIterator);
                 }
@@ -140,8 +141,8 @@ public class DeepLearning4jEntryPoint {
             MultiLayerNetwork model = evaluateParams.getSequentialModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                fitParams.getFeaturesDirectory(),
-                fitParams.getLabelsDirectory()
+                evaluateParams.getFeaturesDirectory(),
+                evaluateParams.getLabelsDirectory()
             );
 
             model.evaluate(dataSetIterator);
@@ -167,7 +168,10 @@ public class DeepLearning4jEntryPoint {
                 predictParams.getFeaturesDirectory()
             );
 
-            model.output(dataSetIterator);
+            while(dataSetIterator.hasNext()) {
+                DataSet data = dataSetIterator.next();
+                model.output(data.getFeatures());
+            }
 
             log.info("model.predict() operation complete.");
 
@@ -184,11 +188,16 @@ public class DeepLearning4jEntryPoint {
      */
     public void sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
         try {
-            MultiLayerNetwork model = predictParams.getModel();
+            MultiLayerNetwork model = predictParams.getSequentialModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
                 predictParams.getFeaturesDirectory()
             );
+
+            while(dataSetIterator.hasNext()) {
+                DataSet data = dataSetIterator.next();
+                model.output(data.getFeatures());
+            }
 
             model.output(dataSetIterator);
 
@@ -210,7 +219,7 @@ public class DeepLearning4jEntryPoint {
         try {
             ModelSerializer.writeModel(
                 saveParams.getSequentialModel(),
-                new File(writeParams.getWritePath()),
+                new File(saveParams.getWritePath()),
                 true
             );
 
@@ -233,7 +242,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void functionalFit(FitParams fitParams) throws Exception {
         try {
-            ComputationGraph model = fitParams.getModel();
+            ComputationGraph model = fitParams.getFunctionalModel();
 
             DataSetIterator trainIterator;
             DataSetIterator testIterator;
@@ -243,7 +252,7 @@ public class DeepLearning4jEntryPoint {
                 fitParams.getTrainYPath()
             );
 
-            if(fitParams.getDoValidation()) {
+            if(fitParams.isDoValidation()) {
                 testIterator = new HDF5MiniBatchDataSetIterator(
                     fitParams.getValidationXPath(),
                     fitParams.getValidationYPath()
@@ -258,7 +267,7 @@ public class DeepLearning4jEntryPoint {
 
                 model.fit(trainIterator);
 
-                if(fitParams.getDoValidation()) {
+                if(fitParams.isDoValidation()) {
                     log.info("Evaluating epoch: " + i);
                     model.evaluate(testIterator);
                 }
@@ -279,11 +288,11 @@ public class DeepLearning4jEntryPoint {
      */
     public void functionalEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
-            ComputationGraph model = evaluateParams.getModel();
+            ComputationGraph model = evaluateParams.getFunctionalModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-                fitParams.getFeaturesDirectory(),
-                fitParams.getLabelsDirectory()
+                evaluateParams.getFeaturesDirectory(),
+                evaluateParams.getLabelsDirectory()
             );
 
             model.evaluate(dataSetIterator);
@@ -352,7 +361,7 @@ public class DeepLearning4jEntryPoint {
         try {
             ModelSerializer.writeModel(
                 saveParams.getFunctionalModel(),
-                new File(writeParams.getWritePath()),
+                new File(saveParams.getWritePath()),
                 true
             );
 

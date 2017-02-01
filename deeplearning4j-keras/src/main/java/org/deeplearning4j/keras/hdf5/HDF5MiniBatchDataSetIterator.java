@@ -32,6 +32,13 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
     private DataSetPreProcessor preProcessor;
 
 
+    public HDF5MiniBatchDataSetIterator(String trainFeaturesDirectory) {
+        this.trainFeaturesDirectory = new File(trainFeaturesDirectory);
+        this.trainLabelsDirectory = null;
+        this.batchesCount = this.trainFeaturesDirectory.list().length;
+    }
+
+
     public HDF5MiniBatchDataSetIterator(String trainFeaturesDirectory, String trainLabelsDirectory) {
         this.trainFeaturesDirectory = new File(trainFeaturesDirectory);
         this.trainLabelsDirectory = new File(trainLabelsDirectory);
@@ -65,12 +72,20 @@ public class HDF5MiniBatchDataSetIterator implements DataSetIterator {
             log.trace("Reading: " + batchFileName);
         }
 
-        INDArray features = ndArrayHDF5Reader.readFromPath(
+        if(trainLabelsDirectory!=null) {
+            INDArray features = ndArrayHDF5Reader.readFromPath(
                 Paths.get(trainFeaturesDirectory.getAbsolutePath(), batchFileName));
-        INDArray labels = ndArrayHDF5Reader.readFromPath(
+            INDArray labels = ndArrayHDF5Reader.readFromPath(
                 Paths.get(trainLabelsDirectory.getAbsolutePath(), batchFileName));
 
-        return new DataSet(features, labels);
+            return new DataSet(features, labels);
+
+        } else {
+            INDArray features = ndArrayHDF5Reader.readFromPath(
+                Paths.get(trainFeaturesDirectory.getAbsolutePath(), batchFileName));
+
+            return new DataSet(features, null);
+        }
     }
 
     private String fileNameForIdx(int currentIdx) {
