@@ -728,17 +728,10 @@ public class GradientCheckTestsComputationGraph {
                         INDArray f = Nd4j.rand(10, 4);
                         INDArray l = Nd4j.zeros(10, numLabels);
                         for (int j = 0; j < 10; j++) {
-                            labels.putScalar(j, r.nextInt(numLabels), 1.0);
+                            l.putScalar(j, r.nextInt(numLabels), 1.0);
                         }
                         graph.fit(new INDArray[]{f}, new INDArray[]{l});
                     }
-                }
-
-
-                Map<String, INDArray> out = graph.feedForward(new INDArray[]{example}, true);
-
-                for (String s : out.keySet()) {
-                    System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
                 }
 
                 String msg = "testBasicCenterLoss() - lambda = " + lambda + ", trainFirst = " + train;
@@ -751,7 +744,74 @@ public class GradientCheckTestsComputationGraph {
                 boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                         PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{example}, new INDArray[]{labels});
 
-//            assertTrue(msg, gradOK);
+            assertTrue(msg, gradOK);
+            }
+        }
+    }
+
+    @Test
+    public void testCnnPoolCenterLoss(){
+        Nd4j.getRandom().setSeed(12345);
+        int numLabels = 2;
+
+        boolean[] trainFirst = new boolean[]{false, true};
+
+        int inputH = 5;
+        int inputW = 4;
+        int inputDepth = 3;
+
+        for(boolean train : trainFirst ) {
+            for(double lambda : new double[]{0.0, 0.5, 2.0}) {
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .regularization(false)
+                        .updater(Updater.NONE)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                        .seed(12345L)
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
+                        .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
+                        .layer(2, new CenterLossOutputLayer.Builder()
+                                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                                .nOut(numLabels).alpha(1.0).lambda(lambda).gradientCheck(true)
+                                .activation(Activation.SOFTMAX).build())
+                        .pretrain(false).backprop(true)
+                        .setInputType(InputType.convolutional(inputH, inputW, inputDepth))
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                INDArray example = Nd4j.rand(new int[]{150, inputDepth, inputH, inputW});
+
+                INDArray labels = Nd4j.zeros(150, numLabels);
+                Random r = new Random(12345);
+                for (int i = 0; i < 150; i++) {
+                    labels.putScalar(i, r.nextInt(numLabels), 1.0);
+                }
+
+                if (train) {
+                    for (int i = 0; i < 10; i++) {
+                        INDArray f = Nd4j.rand(new int[]{10, inputDepth, inputH, inputW});
+                        INDArray l = Nd4j.zeros(10, numLabels);
+                        for (int j = 0; j < 10; j++) {
+                            l.putScalar(j, r.nextInt(numLabels), 1.0);
+                        }
+                        net.fit(f, l);
+                    }
+                }
+
+                String msg = "testBasicCenterLoss() - trainFirst = " + train;
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < net.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, example, labels);
+
+                assertTrue(msg, gradOK);
             }
         }
     }
@@ -806,69 +866,6 @@ public class GradientCheckTestsComputationGraph {
                     PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2}, new INDArray[]{labels});
 
             assertTrue(testName, gradOK);
-        }
-    }
-
-
-    @Test
-    public void testCnnPoolCenterLoss(){
-        Nd4j.getRandom().setSeed(12345);
-        int numLabels = 2;
-
-        boolean[] trainFirst = new boolean[]{false, true};
-
-        int inputH = 5;
-        int inputW = 4;
-        int inputDepth = 3;
-
-        for(boolean train : trainFirst ) {
-
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .regularization(false)
-                    .updater(Updater.NONE)
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                    .seed(12345L)
-                    .list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nOut(3).build())
-                    .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
-                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(numLabels).build())
-                    .pretrain(false).backprop(true)
-                    .setInputType(InputType.convolutional(inputH, inputW, inputDepth))
-                    .build();
-
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-
-            INDArray example = Nd4j.rand(new int[]{150, inputDepth, inputH, inputW});
-
-            INDArray labels = Nd4j.zeros(150, numLabels);
-            Random r = new Random(12345);
-            for (int i = 0; i < 150; i++) {
-                labels.putScalar(i, r.nextInt(numLabels), 1.0);
-            }
-
-            if(train){
-                for( int i=0; i<10; i++ ){
-                    INDArray f = Nd4j.rand(new int[]{10, inputDepth, inputH, inputW});
-                    INDArray l = Nd4j.zeros(10, numLabels);
-                    for (int j = 0; j < 10; j++) {
-                        labels.putScalar(j, r.nextInt(numLabels), 1.0);
-                    }
-                    net.fit(f, l);
-                }
-            }
-
-            String msg = "testBasicCenterLoss() - trainFirst = " + train;
-            if (PRINT_RESULTS) {
-                System.out.println(msg);
-                for (int j = 0; j < net.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
-            }
-
-            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                    PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, example, labels);
-
-            assertTrue(msg, gradOK);
         }
     }
 
