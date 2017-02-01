@@ -18,6 +18,10 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
  -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
 ```
 
+You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).
+
+For example, a GTX 1080 has compute capability 6.1, for which you would use ```-cc 61``` (note no decimal point).
+
 
 ## OS Specific Requirements
 
