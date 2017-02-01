@@ -838,7 +838,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ews = -1;
 
         // we create new shapeInfo with possibly new ews & order
-        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset, ews, newOrder));
+        /**
+         * NOTE HERE THAT ZERO IS PRESET FOR THE OFFSET AND SHOULD STAY LIKE THAT.
+         * Zero is preset for caching purposes.
+         * We don't actually use the offset defined in the
+         * shape info data buffer.
+         * We calculate and cache the offsets separately.
+         *
+         */
+        baseNDArray.setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
 
         return toTad;
     }
