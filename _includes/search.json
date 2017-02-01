@@ -110,122 +110,110 @@
 {
 "url": "https://deeplearning4j.org/cn/denoisingautoencoder",
 "title": "降噪自动编码器",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
-},
-{
-"url": "https://deeplearning4j.org/cn/deprecated-list",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"description": "自动编码器是一种用于降维的神经网络，这也就是说，它可以用于特征选择和提取。",
+"tags": ["denoising autoencoder", "自动编码器", "autoencoder", "mnist", "污染"]
 },
 {
 "url": "https://deeplearning4j.org/cn/earlystopping",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "早停法",
+"description": "为了获得性能良好的神经网络，网络定型过程中需要进行许多关于所用设置（超参数）的决策。",
+"tags": ["超参数", "网络定型", "设置", "epoch", "拟合"]
 },
 {
 "url": "https://deeplearning4j.org/cn/eigenvector",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "本征向量、PCA和熵的基础教程",
+"description": "本页主要以通俗语言和少量数学公式介绍本征向量及其与矩阵之间的关系，并且在此基础上解释协方差、主成分分析和信息熵。",
+"tags": ["eigenvector", "本征", "pca", "Covariance", "entropy"]
 },
 {
 "url": "https://deeplearning4j.org/cn/gettingstarted",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DL4J安装指南",
+"description": "本页在快速入门指南的基础上介绍更多细节和一些问题解决步骤。建议您在查看本页内容之前先阅读快速入门指南，如此上手DL4J会比较容易。",
+"tags": ["入门", "新手", "安装", "eclipse", "IntelliJ"]
 },
 {
 "url": "https://deeplearning4j.org/cn/image-data-pipeline",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "针对图像等数据的定制数据加工管道",
+"description": "Deeplearning4j示例所使用的基准数据集不会对数据加工管道造成任何障碍，因为我们已通过抽象化将这些障碍去除。",
+"tags": ["图像", "数据处理", "数据加工", "定型", "迭代"]
 },
 {
 "url": "https://deeplearning4j.org/cn/iterativereduce",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DL4J与基于Hadoop和Spark的迭代式归纳",
+"description": "本篇讲解深度学习里的迭代式归纳（Iterative Reduce），与Hadoop的MapReduce比较等",
+"tags": ["iterative reduce", "迭代", "mapreduce", "hadoop", "spark"]
 },
 {
 "url": "https://deeplearning4j.org/cn/keras",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Keras的生产应用：将Python模型导入Deeplearning4j",
+"description": "Keras是目前使用最广泛的为Python编写的开源深度学习工具之一。本篇教你如何导入keras模型",
+"tags": ["keras", "python", "模型导入", "torch", "tensorflow"]
 },
 {
 "url": "https://deeplearning4j.org/cn/lstm",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "LSTM和循环网络基础教程",
+"description": "本页旨在帮助神经网络学习者了解循环网络的运作方式，以及一种主要的循环网络，即LSTM的功能和结构。",
+"tags": ["lstm", "循环神经网络", "word2vec", "长短期记忆", "rnn"]
 },
 {
 "url": "https://deeplearning4j.org/cn/maven",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "面向Python程序员的Maven简介",
+"description": "Maven是Java程序员最常用的自动化构建工具。Python没有功能同Maven完全一致的工具，但可以认为Maven大致相当于pip这样的包管理系统，或者PyBuilder、Distutils。",
+"tags": ["maven", "工具", "管理系统", "pom", "mvn"]
 },
 {
 "url": "https://deeplearning4j.org/cn/mnist-for-beginners",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "MNIST基础教程",
+"description": "本教程将介绍如何对MNIST数据集进行分类，这在机器学习领域是相当于“Hello World”的入门示例。",
+"tags": ["mnist", "手写", "签名", "数字识别", "字体"]
 },
 {
 "url": "https://deeplearning4j.org/cn/mnist-tutorial",
-"title": "Sample_Title",
+"title": "深信度网络的MNIST",
 "description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"tags": ["mnist", "手写", "教程", "数字识别", "字体"]
 },
 {
 "url": "https://deeplearning4j.org/cn/model-zoo",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "DL4J模型库",
+"description": "与Caffe的模型库（model zoo）相类似，DL4J模型库提供了常见的模型配置，目前包括多种计算机视觉网络配置",
+"tags": ["模型库", "预训练模型", "model zoo", "深度学习模型", "caffe"]
 },
 {
 "url": "https://deeplearning4j.org/cn/modelpersistence",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "神经网络的保存和加载",
+"description": "ModelSerializer是用于加载和保存模型的类。保存的方法有两种（见以下示例）： 第一个示例保存的是普通的多层网络，第二个示例保存的是一个计算图。",
+"tags": ["ModelSerializer", "模型保存", "模型加载", "模型应用", "MultiLayer Configuration"]
 },
 {
 "url": "https://deeplearning4j.org/cn/multinetwork",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
-},
-{
-"url": "https://deeplearning4j.org/cn/multinetwork",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "创建深度学习网络",
+"description": "多层网络由单层神经网络堆叠形成。输入层与第一层神经网络和一个前馈网络相连。输入层之后的每一个层都将前一层的输出作为输入。",
+"tags": ["softmax", "多层网络", "逻辑回归", "神经网络", "K个单层网络"]
 },
 {
 "url": "https://deeplearning4j.org/cn/opendata",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习开放数据集",
+"description": "本篇集中了一些非常有用的开放数据集让开发者使用这些数据来测试深度学习",
+"tags": ["开放数据", "open data", "免费数据", "测试", "free data"]
 },
 {
 "url": "https://deeplearning4j.org/cn/output",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "输出解读",
+"description": "神经网络的输出解读起来可能比较困难。您可能会有诸如“我的模型有多准确？”或者“这些数字是什么意思？”这样的问题。不仅如此，各种神经网络的输出类型也各不相同。",
+"tags": ["数据输出", "数据解读", "迭代", "f1", "evaluation"]
 },
 {
 "url": "https://deeplearning4j.org/cn/overview",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "Deeplearning4j 概述",
+"description": "DeepLearning4J（DL4J）是一套基于Java语言的神经网络工具包，可以构建、定型和部署神经网络。",
+"tags": ["概述", "概要", "简介", "组件", "代码"]
 },
 {
 "url": "https://deeplearning4j.org/cn/questions",
-"title": "Sample_Title",
-"description": "Sample_description",
-"tags": ["keyword_1", "keyword_2", "keyword_3", "keyword_4", "keyword_5"]
+"title": "深度学习应用中需要思考的问题",
+"description": "对于下列问题，我们无法给出统一的回答，因为答案取决于您想要解决的具体问题。但是，我们希望本页中列出的各项因素能引导您在初期系统地思考如何选择算法和工具。",
+"tags": ["问题", "应用", "创建神经网络", "新手", "入门"]
 },
 {
 "url": "https://deeplearning4j.org/cn/quickstart",
