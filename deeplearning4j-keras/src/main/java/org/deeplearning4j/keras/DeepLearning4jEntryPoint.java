@@ -137,7 +137,7 @@ public class DeepLearning4jEntryPoint {
      */
     public void sequentialEvaluate(EvaluateParams evaluateParams) throws Exception {
         try {
-            MultiLayerNetwork model = evaluateParams.getModel();
+            MultiLayerNetwork model = evaluateParams.getSequentialModel();
 
             DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
                 fitParams.getFeaturesDirectory(),
@@ -154,43 +154,51 @@ public class DeepLearning4jEntryPoint {
         }
     }
 
-//    /**
-//     * Predict the label of a single feature.
-//     *
-//     * @param predictParams A single feature and associated parameters
-//     */
-//    public void sequentialPredict(PredictParams predictParams) throws Exception {
-//        try {
-//            MultiLayerNetwork model = predictParams.getModel();
-//
-//            model.predict(x);
-//
-//            log.info("model.predict() operation complete.");
-//
-//        } catch (Throwable e) {
-//            log.error("Error while performing model.predict()", e);
-//            throw e;
-//        }
-//    }
+    /**
+     * Predict the label of a single feature.
+     *
+     * @param predictParams A single feature and associated parameters
+     */
+    public void sequentialPredict(PredictParams predictParams) throws Exception {
+        try {
+            MultiLayerNetwork model = predictParams.getSequentialModel();
 
-//    /**
-//     * Predict the labels of features in a dataset.
-//     *
-//     * @param predictParams A dataset and associated parameters
-//     */
-//    public void sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
-//        try {
-//            MultiLayerNetwork model = predictParams.getModel();
-//
-//            model.predict(dataSet);
-//
-//            log.info("model.predict_on_batch() operation complete.");
-//
-//        } catch (Throwable e) {
-//            log.error("Error while performing model.predict_on_batch()", e);
-//            throw e;
-//        }
-//    }
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                predictParams.getFeaturesDirectory()
+            );
+
+            model.output(dataSetIterator);
+
+            log.info("model.predict() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Predict the labels of features in a dataset.
+     *
+     * @param predictParams A dataset and associated parameters
+     */
+    public void sequentialPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+        try {
+            MultiLayerNetwork model = predictParams.getModel();
+
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                predictParams.getFeaturesDirectory()
+            );
+
+            model.output(dataSetIterator);
+
+            log.info("model.predict_on_batch() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict_on_batch()", e);
+            throw e;
+        }
+    }
 
     /**
      * Save a model into the DL4J format.
@@ -295,9 +303,13 @@ public class DeepLearning4jEntryPoint {
 //     */
 //    public void functionalPredict(PredictParams predictParams) throws Exception {
 //        try {
-//            ComputationGraph model = predictParams.getModel();
+//            ComputationGraph model = predictParams.getFunctionalModel();
 //
-//            model.predict(x);
+//            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+//                predictParams.getFeaturesDirectory()
+//            );
+//
+//            model.output(dataSetIterator);
 //
 //            log.info("model.predict() operation complete.");
 //
@@ -314,9 +326,13 @@ public class DeepLearning4jEntryPoint {
 //     */
 //    public void functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
 //        try {
-//            ComputationGraph model = predictParams.getModel();
+//            ComputationGraph model = predictParams.getFunctionalModel();
 //
-//            model.predict(dataSet);
+//            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+//                predictParams.getFeaturesDirectory()
+//            );
+//
+//            model.output(dataSetIterator);
 //
 //            log.info("model.predict_on_batch() operation complete.");
 //
