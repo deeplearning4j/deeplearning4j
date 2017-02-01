@@ -262,7 +262,8 @@ git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
 ./buildnativeoperations.sh
 # 如果使用GPU
-# ./buildnativeoperations.sh -c cuda
+# ./buildnativeoperations.sh -c cuda -cc 请在这里插入您的设备
+# 例如，如果你有 GTX 1070 device, 请使用 -cc 61
 export LIBND4J_HOME=`pwd`
 cd ..
 
@@ -278,12 +279,12 @@ mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:n
 cd ..
 
 # 构建并安装datavec
-checkexit git clone https://github.com/deeplearning4j/datavec.git
+git clone https://github.com/deeplearning4j/datavec.git
 cd datavec
 if [ "$SCALAV" == "" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
+  bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
 else
-  checkexit mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
+  mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
 fi
 cd ..
 
