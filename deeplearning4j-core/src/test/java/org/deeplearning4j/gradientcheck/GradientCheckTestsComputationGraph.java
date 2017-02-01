@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
@@ -678,7 +679,58 @@ public class GradientCheckTestsComputationGraph {
         boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{pos, anc, neg}, new INDArray[]{labels});
 
-        String msg = "testBasicIrisWithMerging()";
+        String msg = "testBasicIrisTripletStackingL2Loss()";
+        assertTrue(msg,gradOK);
+    }
+
+
+    @Test
+    public void testBasicCenterLoss(){
+        Nd4j.getRandom().setSeed(12345);
+        int numLabels = 2;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(12345)
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 1))
+            .updater(Updater.NONE).learningRate(1.0)
+            .graphBuilder()
+            .addInputs("input1")
+            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(), "input1")
+            .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
+                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                .nIn(5).nOut(numLabels).alpha(1.0).lambda(0.5).gradientCheck(true)
+                .activation(Activation.SOFTMAX).build(), "l1")
+            .setOutputs("lossLayer")
+            .pretrain(false).backprop(true)
+            .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray example = Nd4j.rand(150,4);
+
+        INDArray labels = Nd4j.zeros(150,numLabels);
+        Random r = new Random(12345);
+        for( int i=0; i<150; i++ ){
+            labels.putScalar(i,r.nextInt(numLabels),1.0);
+        }
+
+
+        Map<String,INDArray> out = graph.feedForward(new INDArray[]{example}, true);
+
+        for(String s : out.keySet()){
+            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
+        }
+
+        if( PRINT_RESULTS ){
+            System.out.println("testBasicCenterLoss()" );
+            for( int j=0; j<graph.getNumLayers(); j++ ) System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{example}, new INDArray[]{labels});
+
+        String msg = "testBasicCenterLoss()";
         assertTrue(msg,gradOK);
     }
 
