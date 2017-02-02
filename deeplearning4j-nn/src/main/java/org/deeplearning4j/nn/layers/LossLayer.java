@@ -105,7 +105,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
-        //INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFunction(),maskArray);
         INDArray scoreArray = lossFunction.computeScoreArray(getLabels2d(),preOut,layerConf().getActivationFn(),maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if(l1l2 != 0.0){
@@ -146,7 +145,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
-        //INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(getLabels2d(),preOut,layerConf().getActivationFn(), maskArray);
 
         // grab the empty gradient
