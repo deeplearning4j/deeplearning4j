@@ -468,18 +468,14 @@ template<typename OpType>
 									for (Nd4jIndex j = 0; j < itemsToLoop; j++) {
 										IndexValue<T> curr;
 										curr.value = chunk[j];
-										curr.index = j;
+										curr.index = newOffset + j;
 										local = OpType::update(local, curr, extraParams);
 									}
 
-
 #pragma omp critical
 									{
-										startingIndex = OpType::update(startingIndex, local,
-															   extraParams);
+										startingIndex = OpType::update(startingIndex, local, extraParams);
 									}
-
-
 								}
 							}
 
