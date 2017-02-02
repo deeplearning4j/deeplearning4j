@@ -79,7 +79,7 @@ Here's how the DatasetIterator is uniformly invoked for MNIST:
 	                DataSet ds = mnistTest.next();
 	                INDArray output = model.output(ds.getFeatureMatrix(), false);
 	                eval.eval(ds.getLabels(), output);
-	    }
+            }
 
 You can optimize by using an asychronous loader in the background. Java can do real multi-threading. It can load data in the background while other threads take care of compute. So you load data into the GPU at the same time that compute is being run. The neural net trains even as you grab new data from memory.
 
