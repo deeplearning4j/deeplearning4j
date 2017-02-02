@@ -122,7 +122,7 @@ INDArray lastTimeStepIndices = Nd4j.argMax(temp,1);
 <p>无论是哪种情形，接下来的步骤都可以是：</p>
 <pre class="line-numbers"><code class="language-java">
 int numExamples = timeSeriesFeatures.size(0);
-for( int i=0; i<numExamples; i++ ){
+for( int i=0; i&lt;numExamples; i++ ){
     int thisTimeSeriesLastIndex = lastTimeStepIndices.getInt(i);
     INDArray thisExampleProbabilities = timeSeriesOutput.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(thisTimeSeriesLastIndex));
 }
