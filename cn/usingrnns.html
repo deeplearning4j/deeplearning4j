@@ -12,6 +12,9 @@ redirect_from: /zh-usingrnns
     <ul>
       <li><a href="#tbptt">截断式沿时间反向传播</a></li>
       <li><a href="#masking">掩模：一对多、多对一和序列分类</a></li>
+	<ul>
+	  <li><a href="testtimemasking">掩膜与定型后的序列分类</a></li>
+	</ul>
       <li><a href="#otherlayertypes">RNN层与其他神经网络层的结合应用</a></li>
     </ul>
   </li>
@@ -86,6 +89,44 @@ Evaluation.evalTimeSeries(INDArray labels, INDArray predicted, INDArray outputMa
 </code></pre>
 <p>其中labels是实际输出（三维时间序列），predicted是网络的预测（三维时间序列，与labels形状相同），而outputMask则是输出的二维掩模数组。注意评估并不需要输入掩模数组。</p>
 <p>得分计算同样会通过MultiLayerNetwork.score(DataSet)方法用到掩模数组。如前文所述，如果DataSet包括一个输出掩模数组，计算网络得分（损失函数 - 均方差、负对数似然函数等）时就会自动使用掩模。</p><br>
+
+<p><h4><a name="testtimemasking">掩膜与定型后的序列分类</a></h4></p>
+<p>序列分类是掩膜的常见用途之一。之所以采用掩膜，是因为循环网络的输入是序列（时间序列），而我们只需要为整个序列加一个标签（而不是为序列中的每个时间步都加一个标签）。</p>
+<p>但是，根据RNN的设计，网络输出的序列应与输入序列长度相等。有了掩膜，我们在定型用于序列分类的网络时就可以将整个序列的标签置于最后一个时间步——其本质就是让网络知道标签数据<em>实际上</em>只出现在最后一个时间步。</p>
+<p>假设网络已定型完毕，现在我们希望从时间序列的输出数组中获取最后一个时间步的预测结果。该怎样操作呢？</p>
+<p>要获取最后一个时间步的结果，需要考虑两种不同的情形。首先，如果只有单个样例，那我们就不需要使用掩膜数组，可以直接获取输出数组中最后一个时间步的结果：</p>
+<pre class="line-numbers"><code class="language-java">
+INDArray timeSeriesFeatures = ...;
+INDArray timeSeriesOutput = myNetwork.output(timeSeriesFeatures);
+int timeSeriesLength = timeSeriesOutput.size(2);	//时间维度大小
+INDArray lastTimeStepProbabilities = timeSeriesOutput.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(timeSeriesLength-1));
+</code></pre>
+<p>假设现在处理的是分类问题（但回归问题的流程也一样），上述最后一行代码会给出最后一个时间步的概率，亦即序列分类的类别概率。</p>
+<p>另一种更复杂的情形是一个微批次（特征数组）中包含了多个样例，而样例的长度各不相同（如果样例长度相同，则可以使用前一种流程）。</p>
+<p>在样例长度有差异的情形中，我们需要<em>分别获取各个样例</em>在最后一个时间步的结果。如果数据加工管道为我们提供了每个样例的时间序列长度，那就比较好办：只需对样例进行迭代 ，将前文代码中的```timeSeriesLength```换成样例长度即可。</p>
+<p>假如无法直接获取时间序列的长度，我们就需要将其从掩膜数组中提取出来。</p>
+<p>如果有标签掩膜数组（每个时间序列相对应的one-hot向量，形如[0,0,0,1,0]）：</p>
+<pre class="line-numbers"><code class="language-java">
+INDArray labelsMaskArray = ...;
+INDArray lastTimeStepIndices = Nd4j.argMax(labelMaskArray,1);
+</code></pre>
+<p>假如只有特征掩膜，一种比较直截了当的处理方法是：</p>
+<pre class="line-numbers"><code class="language-java">
+INDArray featuresMaskArray = ...;
+int longestTimeSeries = featuresMaskArray.size(1);
+INDArray linspace = Nd4j.linspace(1,longestTimeSeries,longestTimeSeries);
+INDArray temp = featuresMaskArray.mulColumnVector(linspace);
+INDArray lastTimeStepIndices = Nd4j.argMax(temp,1);
+</code></pre>
+<p>可以这样理解上述方法的原理：我们有形如[1,1,1,1,0]的特征掩膜，现在要从中提取出最后一个非零元素。所以我们将[1,1,1,1,0]映射为[1,2,3,4,0]，然后提取其中最大的元素（即最后一个时间步）。</p>
+<p>无论是哪种情形，接下来的步骤都可以是：</p>
+<pre class="line-numbers"><code class="language-java">
+int numExamples = timeSeriesFeatures.size(0);
+for( int i=0; i<numExamples; i++ ){
+    int thisTimeSeriesLastIndex = lastTimeStepIndices.getInt(i);
+    INDArray thisExampleProbabilities = timeSeriesOutput.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(thisTimeSeriesLastIndex));
+}
+</code></pre><br>
 
 <p><h3><a name="otherlayertypes">RNN层与其他神经网络层的结合应用</a></h3></p>
 <p>DL4J中的RNN层可以与其他类型的层结合使用。例如，可以在同一个网络结合使用DenseLayer和GravesLSTM层；或者将卷积（CNN）层与GravesLSTM层结合用于处理视频。</p>
