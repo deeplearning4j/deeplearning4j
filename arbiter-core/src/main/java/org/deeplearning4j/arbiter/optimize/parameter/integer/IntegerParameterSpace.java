@@ -17,9 +17,12 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.integer;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +33,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties("index")
+@EqualsAndHashCode
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     private IntegerDistribution distribution;
@@ -50,7 +55,7 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
      *
      * @param distribution Distribution to use
      */
-    public IntegerParameterSpace(IntegerDistribution distribution) {
+    public IntegerParameterSpace(@JsonProperty("distribution") IntegerDistribution distribution) {
         this.distribution = distribution;
     }
 

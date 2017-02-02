@@ -17,9 +17,12 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.continuous;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +33,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties("index")
+@EqualsAndHashCode
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     private RealDistribution distribution;
@@ -51,7 +56,7 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
      *
      * @param distribution Distribution to sample from
      */
-    public ContinuousParameterSpace(RealDistribution distribution) {
+    public ContinuousParameterSpace(@JsonProperty("distribution") RealDistribution distribution) {
         this.distribution = distribution;
     }
 

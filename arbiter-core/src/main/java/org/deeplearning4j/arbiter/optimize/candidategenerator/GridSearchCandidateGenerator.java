@@ -55,8 +55,6 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
         Sequential, RandomOrder
     }
 
-    ;
-
     private final int discretizationCount;
     private final Mode mode;
 

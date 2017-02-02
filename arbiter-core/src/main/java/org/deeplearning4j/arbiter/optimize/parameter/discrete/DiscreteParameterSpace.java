@@ -17,7 +17,10 @@
  */
 package org.deeplearning4j.arbiter.optimize.parameter.discrete;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
@@ -27,11 +30,13 @@ import java.util.*;
  * @param <P> Parameter type
  * @author Alex Black
  */
+@JsonIgnoreProperties("index")
+@EqualsAndHashCode
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
     private List<P> values;
     private int index = -1;
 
-    public DiscreteParameterSpace(P... values) {
+    public DiscreteParameterSpace(@JsonProperty("values") P... values) {
         this.values = Arrays.asList(values);
     }
 
