@@ -247,7 +247,7 @@ copy mkl_rt.dll libblas3.dll
 
 ### Build Script
 
-A community-provided script [build-dl4j-stack.sh](https://gist.github.com/crockpotveggies/9948a365c2d45adcf96642db336e7df1) written in bash is available that clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
+You can use the [build-dl4j-stack.sh](https://github.com/deeplearning4j/deeplearning4j/blob/master/build-dl4j-stack.sh) script from the deeplearning4j repository to build the whole deeplearning4j stack from source: libndj4, ndj4, datavec, deeplearning4j. It clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
 
 OK, now read the following section carefully. 
 
@@ -262,6 +262,8 @@ If you are using a GPU backend, use this instead:
 ```
 ./build-dl4j-stack.sh -c cuda
 ```
+
+You can speed up your CUDA builds by using the `cc` flag as explained in the [libndj4 README](https://github.com/deeplearning4j/libnd4j).
 
 For Scala users, you can pass your binary version for Spark compatibility:
 
