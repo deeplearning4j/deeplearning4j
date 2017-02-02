@@ -33,7 +33,7 @@ What’s the ideal amount to set `Xmx` to? That depends on how much RAM is on yo
 
 		java -Xmx3g
 
-It may seem coutnerintuitive, but you want the min and max to be the same; i.e. `Xms` should equal `Xmx`. If they are unequal, the JVM will progressively allocate more memory as needed until it reaches the max, and that process of gradual allocation slows things down. You want to pre-allocate it at the beginning. So 
+It may seem counterintuitive, but you want the min and max to be the same; i.e. `Xms` should equal `Xmx`. If they are unequal, the JVM will progressively allocate more memory as needed until it reaches the max, and that process of gradual allocation slows things down. You want to pre-allocate it at the beginning. So 
 
 		java -Xms3g -Xmx3g YourClassNameHere
 
@@ -79,6 +79,7 @@ Here's how the DatasetIterator is uniformly invoked for MNIST:
 	                DataSet ds = mnistTest.next();
 	                INDArray output = model.output(ds.getFeatureMatrix(), false);
 	                eval.eval(ds.getLabels(), output);
+	    }
 
 You can optimize by using an asychronous loader in the background. Java can do real multi-threading. It can load data in the background while other threads take care of compute. So you load data into the GPU at the same time that compute is being run. The neural net trains even as you grab new data from memory.
 
