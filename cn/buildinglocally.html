@@ -180,7 +180,8 @@ make install
 <br />
 
 <p><h2>安装DL4J堆栈</h2></p>
-<p><h3>Lunux 与 OS X</h3></p>
+<p>
+<h3>Linux 与 OS X</h3></p>
 <p><h4>检查环境变量</h4></p>
 <p>在运行构建DL4J堆栈的代码之前，必须确保一些特定的环境变量已设置妥当。不同架构下的具体操作方法如下。 </p>
 <br />
@@ -224,7 +225,7 @@ copy mkl_rt.dll libblas3.dll
 <br />
 
 <p><h2>构建脚本</h2></p>
-<p>Github社区中有一套用bash编写的build-dl4j-stack.sh脚本，可以克隆DL4J stack堆栈，构建所有代码库并将其安装到本地的Maven中。这一脚本在Linux和OS X平台上都可以运行。请仔细阅读下列说明。</p>
+<p>Github社区中有一套用bash编写的<a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/build-dl4j-stack.sh">build-dl4j-stack.sh</a>脚本，可以克隆DL4J 堆栈：libndj4, ND4J, DataVec 和 deeplearning4j，构建所有代码库并将其安装到本地的Maven中。这一脚本在Linux和OS X平台上都可以运行。请仔细阅读下列说明。</p>
 <p>CPU架构请使用以下构建脚本：</p>
 <pre><code class="language-java">
 ./build-dl4j-stack.sh</code></pre>
@@ -234,6 +235,7 @@ copy mkl_rt.dll libblas3.dll
 ./build-dl4j-stack.sh -c cuda
 </code></pre>
 <br />
+<p>你可以使用<code>cc</code>标志加速你的CUDA构建，当中的解释可以在<a href="https://github.com/deeplearning4j/libnd4j">libndj4 README</a>中找到</p>
 <p>Scala用户可以传入二进制版本号，确保与Spark相兼容：</p>
 <pre><code class="language-java">
 ./build-dl4j-stack.sh -c cuda --scalav 2.11
