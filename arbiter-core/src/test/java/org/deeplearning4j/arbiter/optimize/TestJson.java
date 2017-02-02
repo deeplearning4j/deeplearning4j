@@ -77,9 +77,9 @@ public class TestJson {
     public void testCandidateGeneratorJson() throws Exception {
 
         List<CandidateGenerator<?>> l = new ArrayList<>();
-        l.add(new GridSearchCandidateGenerator<>(new IntegerParameterSpace(0,10), 10, GridSearchCandidateGenerator.Mode.Sequential));
-        l.add(new GridSearchCandidateGenerator<>(new IntegerParameterSpace(0,10), 10, GridSearchCandidateGenerator.Mode.RandomOrder));
-        l.add(new RandomSearchGenerator<>(new IntegerParameterSpace(0,10)));
+        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.Sequential));
+        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.RandomOrder));
+        l.add(new RandomSearchGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5)));
 
         for(CandidateGenerator<?> cg : l){
             String strJson = jsonMapper.writeValueAsString(cg);
@@ -92,7 +92,6 @@ public class TestJson {
             assertEquals(cg, fromYaml);
 
         }
-
     }
 
 }

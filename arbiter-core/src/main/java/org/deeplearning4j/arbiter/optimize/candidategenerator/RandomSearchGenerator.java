@@ -17,8 +17,11 @@
  */
 package org.deeplearning4j.arbiter.optimize.candidategenerator;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * RandomSearchGenerator: generates candidates at random.<br>
@@ -29,9 +32,11 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
+@EqualsAndHashCode(exclude = {"order","candidateCounter","rng"})
+@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng"})
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
-    public RandomSearchGenerator(ParameterSpace<T> parameterSpace) {
+    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace) {
         super(parameterSpace);
 
         initialize();
