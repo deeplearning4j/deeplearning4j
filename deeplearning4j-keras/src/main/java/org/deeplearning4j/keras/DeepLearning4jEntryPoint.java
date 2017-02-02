@@ -305,51 +305,57 @@ public class DeepLearning4jEntryPoint {
         }
     }
 
-//    /**
-//     * Predict the label of a single feature.
-//     *
-//     * @param predictParams A single feature and associated parameters
-//     */
-//    public void functionalPredict(PredictParams predictParams) throws Exception {
-//        try {
-//            ComputationGraph model = predictParams.getFunctionalModel();
-//
-//            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-//                predictParams.getFeaturesDirectory()
-//            );
-//
-//            model.output(dataSetIterator);
-//
-//            log.info("model.predict() operation complete.");
-//
-//        } catch (Throwable e) {
-//            log.error("Error while performing model.predict()", e);
-//            throw e;
-//        }
-//    }
-//
-//    /**
-//     * Predict the labels of features in a dataset.
-//     *
-//     * @param predictParams A dataset and associated parameters
-//     */
-//    public void functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
-//        try {
-//            ComputationGraph model = predictParams.getFunctionalModel();
-//
-//            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
-//                predictParams.getFeaturesDirectory()
-//            );
-//
-//            model.output(dataSetIterator);
-//
-//            log.info("model.predict_on_batch() operation complete.");
-//
-//        } catch (Throwable e) {
-//            log.error("Error while performing model.predict_on_batch()", e);
-//            throw e;
-//        }
-//    }
+    /**
+     * Predict the label of a single feature.
+     *
+     * @param predictParams A single feature and associated parameters
+     */
+    public void functionalPredict(PredictParams predictParams) throws Exception {
+        try {
+            ComputationGraph model = predictParams.getFunctionalModel();
+
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                predictParams.getFeaturesDirectory()
+            );
+
+            while(dataSetIterator.hasNext()) {
+                DataSet data = dataSetIterator.next();
+                model.output(data.getFeatures());
+            }
+
+            log.info("model.predict() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict()", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Predict the labels of features in a dataset.
+     *
+     * @param predictParams A dataset and associated parameters
+     */
+    public void functionalPredictOnBatch(PredictOnBatchParams predictParams) throws Exception {
+        try {
+            ComputationGraph model = predictParams.getFunctionalModel();
+
+            DataSetIterator dataSetIterator = new HDF5MiniBatchDataSetIterator(
+                predictParams.getFeaturesDirectory()
+            );
+
+            while(dataSetIterator.hasNext()) {
+                DataSet data = dataSetIterator.next();
+                model.output(data.getFeatures());
+            }
+
+            log.info("model.predict_on_batch() operation complete.");
+
+        } catch (Throwable e) {
+            log.error("Error while performing model.predict_on_batch()", e);
+            throw e;
+        }
+    }
 
     /**
      * Save a model into the DL4J format.
