@@ -1,6 +1,6 @@
 ---
 title: Deploying Deeplearning4j to Android
-layout: default
+layout: cn-default
 ---
 <title>How to Use Deeplearning4J in Android Apps</title>
 <meta property="og:title" content="How to Use Deeplearning4J in Android Apps" />
@@ -26,13 +26,6 @@ layout: default
 </script>
 <!-- End Jekyll SEO tag -->
   <body>
-    <nav class="navbar navbar-default navbar-fixed-top">
-      <div class="container">
-        <div class="navbar-header">
-        </div>
-      </div>
-    </nav>
-
 
 <div class="container">
     <div class="row">
