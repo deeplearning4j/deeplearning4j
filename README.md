@@ -92,5 +92,35 @@ Footer html file located at **"_includes/footer.html"**
 
 **NOTE:** You shouldn't edit this file unless needed. 
 
+---
+
+##STYLING (Standard)
+
+###For Image Use the following code:
+
+&lt;img class="img-responsive center-block" src="../img/**your-image-name-here.png**" alt="deeplearning4j"&gt;
+
+###If you are putting up the dl4j or other code, use the following:
+
+**More than one line:**
+
+&lt;pre class="line-numbers"&gt;&lt;code class="language-java"&gt;
+
+*your code here*
+
+*your code here*
+
+*...*
+
+&lt;/code&gt;&lt;/pr&gt;
 
 
+**Only one line:** 
+
+&lt;pre&gt;&lt;code class="language-java"&gt;
+
+*your code here*
+
+&lt;/code&gt;&lt;/pr&gt;
+
+**NOTE**: Please use **&amp;lt;** for **&lt;**, and **&amp;gt;** for **&gt;** in order not to mess up with the html coding. 
