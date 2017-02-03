@@ -92,7 +92,8 @@ public class CpuBlas extends Nd4jBlas {
         return blas_get_num_threads();
     }
 
-    @Override public int getVendor() {
+    @Override
+    public int getBlasVendorId() {
         return blas_get_vendor();
     }
 }

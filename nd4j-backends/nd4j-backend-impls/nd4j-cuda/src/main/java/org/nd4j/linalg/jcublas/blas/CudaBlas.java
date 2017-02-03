@@ -93,8 +93,15 @@ public class CudaBlas extends Nd4jBlas {
         return 0;
     }
 
-    @Override public int getVendor() {
-        // 1 - cuBLAS
+    /**
+     * Returns the BLAS library vendor id
+     *
+     * 1 - CUBLAS
+     *
+     * @return the BLAS library vendor id
+     */
+    @Override
+    public int getBlasVendorId() {
         return 1;
     }
 }
