@@ -47,7 +47,7 @@ public class NGramTokenizer implements Tokenizer {
             for (int i = minN; i < min; i++) {
                 for (int j = 0; j < nOriginalTokens - i + 1; j++) {
                     List<String> originalTokensSlice = this.originalTokens.subList(j, j+ i);
-                    this.tokens.add(StringUtils.join(" ", originalTokensSlice));
+                    this.tokens.add(StringUtils.join(originalTokensSlice, " "));
                 }
             }
         }
