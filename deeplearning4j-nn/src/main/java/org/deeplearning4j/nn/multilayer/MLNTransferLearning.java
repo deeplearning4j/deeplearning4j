@@ -40,6 +40,7 @@ import java.util.Map;
  get a "nano net" that converges fast and then they can "fineTune" to their heart's content without wondering about having disruptive gradients
  flowing backward to the unfrozen layers.
  - And then adapting this for computation graphs (yikes)
+ - Also a summary of the model before and after to show how many new params were added/deleted and how many are learnable and how many are frozen etc..
  */
 public class MLNTransferLearning {
 
