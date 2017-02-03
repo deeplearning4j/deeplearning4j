@@ -16,8 +16,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 /**
- * Created by susaneraly on 2/2/17.
+ * The API usage(WIP):
+ *
+ *  MLNTransferLearning.Builder(MultiLayerNetwork origModel)
+     .setFeatureExtractor(int layerNum)
+            //which layerNum and below to freeze, probably better to take a negative number so you can say "freeze everything but the last n layers"
+     .finetuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder)
+            //same as the global config in neuralnetconfiguration - will override whatever is in the origModel's config
+     .nOutReplace(int layerNum, int nOut, WeightInit scheme)
+            //helper to tweak nOut of a given layer
+     .nInReplace(int layerNum, WeightInit scheme)
+            //helper to set weight init scheme for the next layer
+     .popFromLayer(int layerNum)
+            //will delete all layers from this to output
+     .addLayer(Layer layer)
+            // each layer must be explicitly added and will use the "global config" from finetuneConfigu..
+     .build()
+            //will return a MLN, init with a view of the olderParams+whatever newer params
+ Other things to consider:
+ - There really should be a way to featurize and save to disk and then train from the featurized data. This will help users iterate quicker and
+ get a "nano net" that converges fast and then they can "fineTune" to their heart's content without wondering about having disruptive gradients
+ flowing backward to the unfrozen layers.
+ - And then adapting this for computation graphs (yikes)
  */
 public class MLNTransferLearning {
 
