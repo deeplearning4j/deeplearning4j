@@ -20,8 +20,6 @@ import java.io.IOException;
 @Slf4j
 public class KerasModelSerializer {
 
-    private INDArray init = Nd4j.create(1); // ensures ND4J is on classpath
-
     public MultiLayerNetwork readSequential(String modelFilePath, KerasModelType modelType)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
