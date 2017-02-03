@@ -152,6 +152,9 @@ public class MLNTransferLearning {
         public Builder addLayer(Layer layer) {
             // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get a N
             editedConfs.add(globalConfig.clone().layer(layer).build());
+            //instantiate dummy layer
+            org.deeplearning4j.nn.api.Layer dummyLayer = editedConfs.get(editedConfs.size()-1).getLayer().instantiate(globalConfig.build(),....)
+            appendParams.add(dummyLayer.params());
             return this;
         }
 
