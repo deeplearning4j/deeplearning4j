@@ -7,6 +7,8 @@ import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationExceptio
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
@@ -17,6 +19,8 @@ import java.io.IOException;
  */
 @Slf4j
 public class KerasModelSerializer {
+
+    private INDArray init = Nd4j.create(1); // ensures ND4J is on classpath
 
     public MultiLayerNetwork readSequential(String modelFilePath, KerasModelType modelType)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
