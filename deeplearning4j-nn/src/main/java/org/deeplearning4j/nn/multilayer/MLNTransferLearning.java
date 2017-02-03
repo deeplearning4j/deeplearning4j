@@ -163,9 +163,9 @@ public class MLNTransferLearning {
                 editedModel = origModel;
             }
             else {
-                editedModel = new MultiLayerNetwork(editConf());
+                editedModel = new MultiLayerNetwork(editConf(),constructParams());
             }
-            editedModel.setParams(constructParams());
+            //editedModel.setParams(constructParams());
             org.deeplearning4j.nn.api.Layer [] layers = editedModel.getLayers();
             for (int i=frozenTill;i>=0;i--) {
                 layers[i] = new FrozenLayer(layers[i]);
