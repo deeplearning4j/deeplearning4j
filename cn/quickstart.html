@@ -152,6 +152,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 <li>加入<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=5d3891e980a3a1d54f72dbe3e9831df9237be11634766440e8fbe2bdf4836748">Deeplearning4j QQ 交流群</a></li>
 <li>阅读<a href="neuralnet-overview">深度神经网络简介</a>或其他详细教程。</li>
 <li>浏览<a href="documentation">DL4J文档</a>。 </li>	
+<li><strong>Python用户</strong>：如果您计划对Deeplearning4j运行对标，将其与知名的Python框架[x]进行比较，那么请先阅读<a href="https://deeplearning4j.org/cn/benchmark">相关指南</a>，了解如何在JVM上优化堆空间、垃圾回收和ETL。若按其中的指示操作，您至少能将<em>定型速度提高10倍</em></li>
 </ul>
 
 <br />
@@ -168,3 +169,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 <p><strong>问：</strong>我遇到了这个错误：<code>Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll</code>，导致JVM故障（不会崩溃，只是停止运行……）。</p>
 
 <strong>答：</strong>Maven Central当前的rc3.10版本中，<code>libnd4j</code>库在路径中发现英特尔的MKL时无法将其正确加载。解决方法是添加 <code>System.loadLibrary("mkl_rt")</code>。
+
+<br />
+<p><h3>在不使用Maven的前提下用Eclipse进行设置</h3></p>
+<p>我们推荐使用Maven和Intellij。如果您更青睐Eclipse且不想使用Maven，请参考<a href="http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html">这篇博文</a>中的Eclipse配置详解。</p>
