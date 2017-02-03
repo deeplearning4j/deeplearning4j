@@ -17,31 +17,12 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.10</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-kafka</artifactId>
             <version>${camel.version}</version>
-            <!-- Exclude Kafka 2.11, for 2.10. Using property here so it isn't replaced by change-scala-versions.sh -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.kafka</groupId>
-                    <artifactId>kafka_${kafka.scala.exclusion.version}</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.10.6</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -54,7 +35,7 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test</artifactId>
-            <version>2.17.1</version>
+            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

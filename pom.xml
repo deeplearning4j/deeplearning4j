@@ -262,6 +262,7 @@
     </modules>
 
     <properties>
+        <camel.version>2.18.2</camel.version>
         <unirest.version>1.4.9</unirest.version>
         <mapdb.version>3.0.2</mapdb.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>

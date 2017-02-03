@@ -6,8 +6,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
-import org.nd4j.shade.serde.jackson.ndarray.NDArrayDeSerializer;
-import org.nd4j.shade.serde.jackson.ndarray.NDArraySerializer;
+import org.nd4j.shade.serde.jackson.shaded.NDArrayDeSerializer;
+import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
+
 
 import static org.junit.Assert.assertEquals;
 
