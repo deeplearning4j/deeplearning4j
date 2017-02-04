@@ -24,6 +24,7 @@ import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.compression.impl.NoOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -2382,6 +2383,9 @@ public class WordVectorSerializer {
                 }
             }
         } catch (Exception e) {
+            if (1 > 0)
+                throw new ND4JIllegalStateException(e);
+
             // let's try to load this file as csv file
             try {
                 log.debug("Trying CSV model restoration...");
