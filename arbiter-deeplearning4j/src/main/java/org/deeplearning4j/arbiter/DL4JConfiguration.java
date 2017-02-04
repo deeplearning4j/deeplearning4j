@@ -19,6 +19,8 @@ package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -40,8 +42,6 @@ public class DL4JConfiguration implements Serializable {
     private MultiLayerConfiguration multiLayerConfiguration;
     private EarlyStoppingConfiguration earlyStoppingConfiguration;
     private Integer numEpochs;
-    private static ObjectMapper objectMapper = new ObjectMapper();
-    private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
 
     /**
@@ -50,7 +50,7 @@ public class DL4JConfiguration implements Serializable {
      */
     public String toYaml() {
         try {
-            return yamlMapper.writeValueAsString(this);
+            return YamlMapper.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -62,7 +62,7 @@ public class DL4JConfiguration implements Serializable {
      */
     public  String toJson() {
         try {
-            return objectMapper.writeValueAsString(this);
+            return JsonMapper.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

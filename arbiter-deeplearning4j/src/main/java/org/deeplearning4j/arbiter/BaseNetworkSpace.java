@@ -20,12 +20,15 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.ui.misc.YamlMapper;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -743,6 +746,32 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
 
         public abstract <E extends BaseNetworkSpace> E build();
+    }
+
+    /**
+     * Return a json configuration of this configuration space.
+     *
+     * @return
+     */
+    public String toJson() {
+        try {
+            return JsonMapper.getMapper().writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Return a yaml configuration of this configuration space.
+     *
+     * @return
+     */
+    public String toYaml() {
+        try {
+            return YamlMapper.getMapper().writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
