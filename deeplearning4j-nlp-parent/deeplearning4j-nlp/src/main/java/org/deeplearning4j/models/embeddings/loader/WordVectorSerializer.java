@@ -2259,7 +2259,7 @@ public class WordVectorSerializer {
      * @param file
      * @return
      */
-    public static Word2Vec readWord2VecModel(File file) {
+    public static Word2Vec readWord2VecModel(@NonNull File file) {
         return readWord2VecModel(file, false);
     }
 
@@ -2307,12 +2307,16 @@ public class WordVectorSerializer {
      * @param extendedModel if TRUE, we'll try to load HS states & Huffman tree info, if FALSE, only weights will be loaded
      * @return
      */
-    public static Word2Vec readWord2VecModel(File file, boolean extendedModel) {
+    public static Word2Vec readWord2VecModel(@NonNull File file, boolean extendedModel) {
         InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable<>();
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
         Word2Vec vec;
         INDArray syn0;
         VectorsConfiguration configuration = new VectorsConfiguration();
+
+        if (!file.exists() || !file.isFile())
+            throw new ND4JIllegalStateException("File ["+ file.getAbsolutePath() + "] doesn't exist");
+
         // try to load zip format
         try {
             if (extendedModel) {
@@ -2383,8 +2387,6 @@ public class WordVectorSerializer {
                 }
             }
         } catch (Exception e) {
-            if (1 > 0)
-                throw new ND4JIllegalStateException(e);
 
             // let's try to load this file as csv file
             try {
