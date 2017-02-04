@@ -28,6 +28,7 @@ import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.ui.resources.*;
@@ -56,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Main class for the Arbiter UI
  */
+@Slf4j
 public class ArbiterUIServer extends Application<ArbiterUIConfig> {
     /* Design details: How the UI System and server actually works.
     UI system is web-based, running via a HTTP server. Java code posts information to server; Javascript (UI code in browser)
@@ -108,7 +110,6 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
       TODO: Work out how to support cancelling of tasks from UI
      */
 
-    private static final Logger log = LoggerFactory.getLogger(ArbiterUIServer.class);
     private static ArbiterUIServer instance;
     private Client client = ClientProvider.getClient();
 
@@ -131,7 +132,7 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
         return instance != null;
     }
 
-    public static synchronized ArbiterUIServer getInstance(){
+    public static synchronized ArbiterUIServer getInstance() {
         if(instance == null){
             File f = null;
             try{
@@ -324,7 +325,8 @@ public class ArbiterUIServer extends Application<ArbiterUIConfig> {
                 try{
                     toReturn[count] = Integer.parseInt(token);
                     count++;
-                }catch(NumberFormatException e ){ }
+                }
+                catch(NumberFormatException e ){ }
             }
             if(count == 2 ) return toReturn;
         }

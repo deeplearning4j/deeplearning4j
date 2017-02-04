@@ -54,7 +54,11 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>jackson</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
