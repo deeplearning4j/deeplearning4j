@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -42,10 +43,28 @@ public class NGramTokenizerTest {
         while (tokenizer.hasMoreTokens()) {
             assertEquals(tokenizer.nextToken(), tokenizer2.nextToken());
         }
+
         int stringCount = factory.create(toTokenize).countTokens();
-        assertEquals(9, stringCount);
-        factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 2, 2);
         List<String> tokens = factory.create(toTokenize).getTokens();
+        assertEquals(9, stringCount);
+
+        assertTrue(tokens.contains("Mary"));
+        assertTrue(tokens.contains("had"));
+        assertTrue(tokens.contains("a"));
+        assertTrue(tokens.contains("little"));
+        assertTrue(tokens.contains("lamb."));
+        assertTrue(tokens.contains("Mary had"));
+        assertTrue(tokens.contains("had a"));
+        assertTrue(tokens.contains("a little"));
+        assertTrue(tokens.contains("little lamb."));
+
+        factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 2, 2);
+        tokens = factory.create(toTokenize).getTokens();
         assertEquals(4,tokens.size());
+
+        assertTrue(tokens.contains("Mary had"));
+        assertTrue(tokens.contains("had a"));
+        assertTrue(tokens.contains("a little"));
+        assertTrue(tokens.contains("little lamb."));
     }
 }
