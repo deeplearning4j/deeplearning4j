@@ -21,6 +21,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.Serializable;
 
@@ -34,9 +37,36 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Data
 public class DL4JConfiguration implements Serializable {
-
     private MultiLayerConfiguration multiLayerConfiguration;
     private EarlyStoppingConfiguration earlyStoppingConfiguration;
     private Integer numEpochs;
+    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+
+
+    /**
+     * Yaml mapping
+     * @return
+     */
+    public String toYaml() {
+        try {
+            return yamlMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Json mapping
+     * @return
+     */
+    public  String toJson() {
+        try {
+            return objectMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 }
