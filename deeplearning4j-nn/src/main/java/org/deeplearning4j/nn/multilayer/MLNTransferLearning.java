@@ -26,9 +26,6 @@ import java.util.*;
  */
 public class MLNTransferLearning {
 
-    private MultiLayerConfiguration origConf;
-    private INDArray origParams;
-
     public static class Builder {
 
         private INDArray origParams;
@@ -66,8 +63,6 @@ public class MLNTransferLearning {
             this.tbpttFwdLength = origConf.getTbpttFwdLength();
             this.tbpttBackLength = origConf.getTbpttBackLength();
             //this.inputType = new InputType.Type()?? //FIXME
-
-            this.editedConfs.addAll(origConf.getConfs());
         }
 
         public Builder setTbpttFwdLength(int l) {
@@ -96,6 +91,7 @@ public class MLNTransferLearning {
         }
 
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
+            editedLayers.add(layerNum);
             editedLayersMap.put(layerNum,new ImmutableTriple<>(nOut,scheme,schemeNext));
             return this;
         }
@@ -135,6 +131,10 @@ public class MLNTransferLearning {
         //unchecked?
         public MultiLayerNetwork build() {
 
+            if (!prepDone) {
+                doPrep();
+            }
+
             editedModel = new MultiLayerNetwork(constructConf(), constructParams());
             if (frozenTill != -1) {
                 org.deeplearning4j.nn.api.Layer[] layers = editedModel.getLayers();
@@ -152,9 +152,8 @@ public class MLNTransferLearning {
             fineTuneConfigurationBuild();
 
             //editParams gets original model params
-            editedParams = new ArrayList<>(origModel.getnLayers());
             for (int i=0;i<origModel.getnLayers();i++) {
-                editedParams.set(i,origModel.getLayer(i).params());
+                editedParams.add(origModel.getLayer(i).params());
             }
             //apply changes to nout/nin if any in sorted order and save to editedParams
             if(!editedLayers.isEmpty()) {
@@ -205,7 +204,7 @@ public class MLNTransferLearning {
                 layerConfImpl.setGradientNormalization(GradientNormalization.None);
                 layerConfImpl.setGradientNormalizationThreshold(1.0);
 
-                editedConfs.set(i, globalConfig.clone().layer(layerConfImpl).build());
+                editedConfs.add(globalConfig.clone().layer(layerConfImpl).build());
             }
         }
 
@@ -262,8 +261,13 @@ public class MLNTransferLearning {
 
         private INDArray constructParams() {
             INDArray keepView = Nd4j.hstack(editedParams);
-            INDArray appendView = Nd4j.hstack(appendParams);
-            return Nd4j.hstack(keepView, appendView);
+            if (!appendParams.isEmpty()) {
+                INDArray appendView = Nd4j.hstack(appendParams);
+                return Nd4j.hstack(keepView, appendView);
+            }
+            else {
+                return keepView;
+            }
         }
 
         private MultiLayerConfiguration constructConf() {
