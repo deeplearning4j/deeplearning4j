@@ -204,7 +204,6 @@ public abstract class BaseOp implements Op {
 
 
     public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
-        this.n = n;
         init(x, y, z, n);
     }
 

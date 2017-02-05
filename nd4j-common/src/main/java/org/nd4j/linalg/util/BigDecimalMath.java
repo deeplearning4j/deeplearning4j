@@ -18,7 +18,7 @@
  */
 
 package org.nd4j.linalg.util;
-// Code 
+// Code
 
 import org.apache.commons.math3.util.FastMath;
 
@@ -186,7 +186,7 @@ public class BigDecimalMath {
                  * 4^n*(2n+1) means divion through roughly 2^(2n+1)
                  */
                 BigDecimal c = zeta(2 * n + 1, mcloc).subtract(BigDecimal.ONE);
-                BigInteger fourn = new BigInteger("" + (2 * n + 1));
+                BigInteger fourn = BigInteger.valueOf(2 * n + 1);
                 fourn = fourn.shiftLeft(2 * n);
                 c = divideRound(c, fourn);
                 resul = resul.subtract(c);
@@ -371,7 +371,7 @@ public class BigDecimalMath {
                  */
                 MathContext mcTay = new MathContext(err2prec(1., xUlpDbl / TAYLOR_NTERM));
                 for (int i = 1; i <= TAYLOR_NTERM; i++) {
-                    ifac = ifac.multiply(new BigInteger("" + i));
+                    ifac = ifac.multiply(BigInteger.valueOf(i));
                     xpowi = xpowi.multiply(x);
                     final BigDecimal c = xpowi.divide(new BigDecimal(ifac), mcTay);
                     resul = resul.add(c);
@@ -739,7 +739,7 @@ public class BigDecimalMath {
                 /* pi<x<=2pi: sin(x)= - sin(x-pi)
                  */
                 return sin(subtractRound(res, p)).negate();
-            } else if (res.multiply(new BigDecimal("2")).compareTo(p) > 0) {
+            } else if (res.multiply(new BigDecimal(2)).compareTo(p) > 0) {
                 /* pi/2<x<=pi: sin(x)= sin(pi-x)
                  */
                 return sin(subtractRound(p, res));
@@ -747,10 +747,10 @@ public class BigDecimalMath {
                 /* for the range 0<=x<Pi/2 one could use sin(2x)=2sin(x)cos(x)
                  * to split this further. Here, use the sine up to pi/4 and the cosine higher up.
                  */
-                if (res.multiply(new BigDecimal("4")).compareTo(p) > 0) {
+                if (res.multiply(new BigDecimal(4)).compareTo(p) > 0) {
                     /* x>pi/4: sin(x) = cos(pi/2-x)
                      */
-                    return cos(subtractRound(p.divide(new BigDecimal("2")), res));
+                    return cos(subtractRound(p.divide(new BigDecimal(2)), res));
                 } else {
                     /* Simple Taylor expansion, sum_{i=1..infinity} (-1)^(..)res^(2i+1)/(2i+1)! */
                     BigDecimal resul = res;
@@ -771,8 +771,8 @@ public class BigDecimalMath {
                     for (int i = 1; ; i++) {
                         /* TBD: at which precision will 2*i or 2*i+1 overflow?
                          */
-                        ifac = ifac.multiply(new BigInteger("" + (2 * i)));
-                        ifac = ifac.multiply(new BigInteger("" + (2 * i + 1)));
+                        ifac = ifac.multiply(BigInteger.valueOf(2 * i));
+                        ifac = ifac.multiply(BigInteger.valueOf(2 * i + 1));
                         xpowi = xpowi.multiply(res).multiply(res).negate();
                         BigDecimal corr = xpowi.divide(new BigDecimal(ifac), mcTay);
                         resul = resul.add(corr);
@@ -813,7 +813,7 @@ public class BigDecimalMath {
                 /* pi<x<=2pi: cos(x)= - cos(x-pi)
                  */
                 return cos(subtractRound(res, p)).negate();
-            } else if (res.multiply(new BigDecimal("2")).compareTo(p) > 0) {
+            } else if (res.multiply(new BigDecimal(2)).compareTo(p) > 0) {
                 /* pi/2<x<=pi: cos(x)= -cos(pi-x)
                  */
                 return cos(subtractRound(p, res)).negate();
@@ -822,10 +822,10 @@ public class BigDecimalMath {
                  * to split this further, or use the cos up to pi/4 and the sine higher up.
                 throw new ProviderException("Unimplemented cosine ") ;
                  */
-                if (res.multiply(new BigDecimal("4")).compareTo(p) > 0) {
+                if (res.multiply(new BigDecimal(4)).compareTo(p) > 0) {
                     /* x>pi/4: cos(x) = sin(pi/2-x)
                      */
-                    return sin(subtractRound(p.divide(new BigDecimal("2")), res));
+                    return sin(subtractRound(p.divide(new BigDecimal(2)), res));
                 } else {
                     /* Simple Taylor expansion, sum_{i=0..infinity} (-1)^(..)res^(2i)/(2i)! */
                     BigDecimal resul = BigDecimal.ONE;
@@ -845,8 +845,8 @@ public class BigDecimalMath {
                     for (int i = 1; ; i++) {
                         /* TBD: at which precision will 2*i-1 or 2*i overflow?
                          */
-                        ifac = ifac.multiply(new BigInteger("" + (2 * i - 1)));
-                        ifac = ifac.multiply(new BigInteger("" + (2 * i)));
+                        ifac = ifac.multiply(BigInteger.valueOf(2 * i - 1));
+                        ifac = ifac.multiply(BigInteger.valueOf(2 * i));
                         xpowi = xpowi.multiply(res).multiply(res).negate();
                         BigDecimal corr = xpowi.divide(new BigDecimal(ifac), mcTay);
                         resul = resul.add(corr);
@@ -892,28 +892,28 @@ public class BigDecimalMath {
             } else {
                 final BigDecimal xhighpr = scalePrec(res, 2);
                 final BigDecimal xhighprSq = multiplyRound(xhighpr, xhighpr);
-                BigDecimal resul = xhighpr.plus();
+                BigDecimal result = xhighpr.plus();
                 /* x^(2i+1) */
                 BigDecimal xpowi = xhighpr;
                 Bernoulli b = new Bernoulli();
                 /* 2^(2i) */
-                BigInteger fourn = new BigInteger("4");
+                BigInteger fourn = BigInteger.valueOf(4);
                 /* (2i)! */
-                BigInteger fac = new BigInteger("2");
+                BigInteger fac = BigInteger.valueOf(2);
                 for (int i = 2; ; i++) {
                     Rational f = b.at(2 * i).abs();
                     fourn = fourn.shiftLeft(2);
-                    fac = fac.multiply(new BigInteger("" + (2 * i))).multiply(new BigInteger("" + (2 * i - 1)));
+                    fac = fac.multiply(BigInteger.valueOf(2 * i)).multiply(BigInteger.valueOf(2 * i - 1));
                     f = f.multiply(fourn).multiply(fourn.subtract(BigInteger.ONE)).divide(fac);
                     xpowi = multiplyRound(xpowi, xhighprSq);
                     BigDecimal c = multiplyRound(xpowi, f);
-                    resul = resul.add(c);
+                    result = result.add(c);
                     if (Math.abs(c.doubleValue()) < 0.1 * eps) {
                         break;
                     }
                 }
-                MathContext mc = new MathContext(err2prec(resul.doubleValue(), eps));
-                return resul.round(mc);
+                MathContext mc = new MathContext(err2prec(result.doubleValue(), eps));
+                return result.round(mc);
             }
         }
     } /* BigDecimalMath.tan */
@@ -947,12 +947,12 @@ public class BigDecimalMath {
             BigDecimal xpowi = xhighpr;
             Bernoulli b = new Bernoulli();
             /* 2^(2i) */
-            BigInteger fourn = new BigInteger("4");
+            BigInteger fourn = BigInteger.valueOf(4);
             /* (2i)! */
             BigInteger fac = BigInteger.ONE;
             for (int i = 1; ; i++) {
                 Rational f = b.at(2 * i);
-                fac = fac.multiply(new BigInteger("" + (2 * i))).multiply(new BigInteger("" + (2 * i - 1)));
+                fac = fac.multiply(BigInteger.valueOf(2 * i)).multiply(BigInteger.valueOf(2 * i - 1));
                 f = f.multiply(fourn).divide(fac);
                 BigDecimal c = multiplyRound(xpowi, f);
                 if (i % 2 == 0) {
@@ -1017,8 +1017,8 @@ public class BigDecimalMath {
 
 
             for (int i = 1; ; i++) {
-                ifacN = ifacN.multiply(new BigInteger("" + (2 * i - 1)));
-                ifacD = ifacD.multiply(new BigInteger("" + i));
+                ifacN = ifacN.multiply(BigInteger.valueOf(2 * i - 1));
+                ifacD = ifacD.multiply(BigInteger.valueOf(i));
 
 
                 if (i == 1) {
@@ -1027,7 +1027,7 @@ public class BigDecimalMath {
                     xpowi = multiplyRound(xpowi, xhighprV);
                 }
                 BigDecimal c = divideRound(multiplyRound(xpowi, ifacN),
-                        ifacD.multiply(new BigInteger("" + (2 * i + 1))));
+                        ifacD.multiply(BigInteger.valueOf(2 * i + 1)));
                 resul = resul.add(c);
                 /* series started 1+x/12+... which yields an estimate of the sum’s error
                  */
@@ -1068,11 +1068,11 @@ public class BigDecimalMath {
 
 
             for (int i = 1; ; i++) {
-                ifacN = ifacN.multiply(new BigInteger("" + (2 * i - 1)));
-                ifacD = ifacD.multiply(new BigInteger("" + (2 * i)));
+                ifacN = ifacN.multiply(BigInteger.valueOf(2 * i - 1));
+                ifacD = ifacD.multiply(BigInteger.valueOf(2 * i));
                 xpowi = multiplyRound(xpowi, xhighprSq);
                 BigDecimal c = divideRound(multiplyRound(xpowi, ifacN),
-                        ifacD.multiply(new BigInteger("" + (2 * i + 1))));
+                        ifacD.multiply(BigInteger.valueOf(2 * i + 1)));
                 resul = resul.add(c);
 
 
@@ -1241,8 +1241,8 @@ public class BigDecimalMath {
                 for (int i = 1; ; i++) {
                     /* TBD: at which precision will 2*i-1 or 2*i overflow?
                      */
-                    ifac = ifac.multiply(new BigInteger("" + (2 * i - 1)));
-                    ifac = ifac.multiply(new BigInteger("" + (2 * i)));
+                    ifac = ifac.multiply(BigInteger.valueOf(2 * i - 1));
+                    ifac = ifac.multiply(BigInteger.valueOf(2 * i));
                     xpowi = xpowi.multiply(xhighpr).multiply(xhighpr);
                     BigDecimal corr = xpowi.divide(new BigDecimal(ifac), mcTay);
                     resul = resul.add(corr);
@@ -1326,8 +1326,8 @@ public class BigDecimalMath {
                 for (int i = 1; ; i++) {
                     /* TBD: at which precision will 2*i or 2*i+1 overflow?
                      */
-                    ifac = ifac.multiply(new BigInteger("" + (2 * i)));
-                    ifac = ifac.multiply(new BigInteger("" + (2 * i + 1)));
+                    ifac = ifac.multiply(BigInteger.valueOf(2 * i));
+                    ifac = ifac.multiply(BigInteger.valueOf(2 * i + 1));
                     xpowi = xpowi.multiply(xhighpr).multiply(xhighpr);
                     BigDecimal corr = xpowi.divide(new BigDecimal(ifac), mcTay);
                     resul = resul.add(corr);
@@ -1848,7 +1848,7 @@ public class BigDecimalMath {
                      * reassessment of its error.
                      */
                     c = powRound(exp2p, npr).subtract(BigDecimal.ONE);
-                    c = multiplyRound(c, (new BigInteger("" + npr)).pow(n));
+                    c = multiplyRound(c, (BigInteger.valueOf(npr)).pow(n));
                     c = divideRound(1, c);
                     exps = exps.add(c);
 
@@ -1880,7 +1880,7 @@ public class BigDecimalMath {
                 for (int npr = 2; npr
                         <= kmax; npr++) {
                     c = powRound(exp2p, npr).subtract(BigDecimal.ONE);
-                    c = multiplyRound(c, (new BigInteger("" + npr)).pow(n));
+                    c = multiplyRound(c, (BigInteger.valueOf(npr)).pow(n));
                     BigDecimal d = divideRound(1, exp2p.pow(npr));
                     d = BigDecimal.ONE.subtract(d);
                     d = divideRound(twop, d).multiply(new BigDecimal(2 * npr));
@@ -2033,7 +2033,7 @@ public class BigDecimalMath {
 
             for (int k = 0; k
                     < 8; k++) {
-                Rational tmp = new Rational(new BigInteger("" + a[k]), (new BigInteger("" + (1 + 8 * c + k))).pow(n));
+                Rational tmp = new Rational(BigInteger.valueOf(a[k]), BigInteger.valueOf((1 + 8 * c + k)).pow(n));
                 /* floor( (pk+p)/2)
                  */
 

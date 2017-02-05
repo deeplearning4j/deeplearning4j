@@ -13,14 +13,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Nd4jBlas implements Blas {
 
-    public enum Vendor {
-        UNKNOWN,
-        CUBLAS,
-        OPENBLAS,
-        MKL,
-    }
-
-
     private static Logger logger = LoggerFactory.getLogger(Nd4jBlas.class);
 
     public Nd4jBlas() {
@@ -74,15 +66,20 @@ public abstract class Nd4jBlas implements Blas {
     }
 
     /**
-     * This method returns BLAS library vendor
+     * Returns the BLAS library vendor
      *
-     * @return
+     * @return the BLAS library vendor
      */
+    @Override
     public Vendor getBlasVendor() {
-        if (getVendor() > 3)
+        int vendor = getBlasVendorId();
+        boolean isUnknowVendor
+                = ((vendor > Vendor.values().length - 1)
+                || (vendor <= 0));
+        if (isUnknowVendor) {
             return Vendor.UNKNOWN;
-
-        return Vendor.values()[getVendor()];
+        }
+        return Vendor.values()[vendor];
     }
 
     private boolean isOdd(int value) {
