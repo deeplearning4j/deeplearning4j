@@ -225,6 +225,7 @@ public class MLNTransferLearning {
                 editedParams.remove(editedParams.size()-1);
                 i++;
             }
+            prepDone = true;
 
         }
 
