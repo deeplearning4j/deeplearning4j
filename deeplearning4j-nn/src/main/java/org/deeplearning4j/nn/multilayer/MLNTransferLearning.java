@@ -9,15 +9,11 @@ import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -36,19 +32,20 @@ public class MLNTransferLearning {
     public static class Builder {
 
         private INDArray origParams;
-        private int tillIndex = -1;
-        private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
         private MultiLayerConfiguration origConf;
         private MultiLayerNetwork origModel;
+
         private MultiLayerNetwork editedModel;
         private NeuralNetConfiguration.Builder globalConfig;
-
         private int frozenTill = -1;
-        private int popFrom = -1;
+        private int popFrom = 0;
         private boolean prepDone = false;
         private List<Integer> editedLayers = new ArrayList<>();
         private Map<Integer, Triple<Integer,WeightInit,WeightInit>> editedLayersMap = new HashMap<>();
+        private List<INDArray> editedParams = new ArrayList<>();
         private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
+        private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
+        private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
 
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean pretrain = false;
@@ -88,7 +85,7 @@ public class MLNTransferLearning {
             return this;
         }
 
-        public Builder finetuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
+        public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
             this.globalConfig = newDefaultConfBuilder;
             return this;
         }
@@ -104,13 +101,13 @@ public class MLNTransferLearning {
         }
 
         public Builder popOutputLayer() {
-            popFrom = origConf.getConfs().size()-1;
+            popFrom = origConf.getConfs().size()-1; //index of the very last layer
             return this;
         }
 
         public Builder popFromOutput(int layerNum) {
-            if(popFrom == -1) {
-                popFrom = layerNum;
+            if(popFrom == 0) {
+                popFrom = origConf.getConfs().size() - layerNum;
             }
             else {
                 throw new IllegalArgumentException("Pop from can only be called once");
@@ -125,24 +122,62 @@ public class MLNTransferLearning {
             }
             // Use the fineTune NeuralNetConfigurationBuilder and the layerConf to get the NeuralNetConfig
             //instantiate dummy layer to get the params
-            editedConfs.add(globalConfig.clone().layer(layer).build());
-            org.deeplearning4j.nn.api.Layer dummyLayer = editedConfs.get(editedConfs.size() - 1).getLayer().instantiate(globalConfig.build(),....)
-            appendParams.add(dummyLayer.params());
+            NeuralNetConfiguration layerConf = globalConfig.clone().layer(layer).build();
+            Layer layerImpl = layerConf.getLayer();
+            int numParams = layerImpl.initializer().numParams(layerConf);
+            INDArray params = Nd4j.create(1, numParams);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            appendConfs.add(someLayer.conf());
+            appendParams.add(someLayer.params());
             return this;
         }
 
-        private void doPrep() {
-            //first set finetune configs on all layers in model
-            finetuneConfigurationBuild();
-            //apply changes to nout/nin if any in sorted order
-            if(!editedLayers.isEmpty()) {
+        //unchecked?
+        public MultiLayerNetwork build() {
 
-
+            editedModel = new MultiLayerNetwork(constructConf(), constructParams());
+            if (frozenTill != -1) {
+                org.deeplearning4j.nn.api.Layer[] layers = editedModel.getLayers();
+                for (int i = frozenTill; i >= 0; i--) {
+                    layers[i] = new FrozenLayer(layers[i]);
+                }
+                editedModel.setLayers(layers);
             }
+            return editedModel;
+        }
+
+        private void doPrep() {
+
+            //first set finetune configs on all layers in model
+            fineTuneConfigurationBuild();
+
+            //editParams gets original model params
+            editedParams = new ArrayList<>(origModel.getnLayers());
+            for (int i=0;i<origModel.getnLayers();i++) {
+                editedParams.set(i,origModel.getLayer(i).params());
+            }
+            //apply changes to nout/nin if any in sorted order and save to editedParams
+            if(!editedLayers.isEmpty()) {
+                Integer[] editedLayersSorted = editedLayers.toArray(new Integer[editedLayers.size()]);
+                Arrays.sort(editedLayersSorted);
+                for (int i = 0; i < editedLayersSorted.length; i++) {
+                    int layerNum = editedLayersSorted[i];
+                    nOutReplaceBuild(layerNum, editedLayersMap.get(layerNum).getLeft(), editedLayersMap.get(layerNum).getMiddle(), editedLayersMap.get(layerNum).getRight());
+                }
+            }
+
+            //finally pop layers specified
+            int i = 0;
+            while (i < popFrom) {
+                editedConfs.remove(editedConfs.size()-1);
+                editedParams.remove(editedParams.size()-1);
+                i++;
+            }
+
         }
 
 
-        private void finetuneConfigurationBuild() {
+        private void fineTuneConfigurationBuild() {
 
             for (int i = 0; i < origConf.getConfs().size(); i++) {
 
@@ -176,99 +211,71 @@ public class MLNTransferLearning {
 
         private void nOutReplaceBuild(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
 
-            for (int i = 0; i < editedConfs.size(); i++) {
-                NeuralNetConfiguration layerConf = editedConfs.get(i);
-                Layer layerImpl = layerConf.getLayer();
+            NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
+            Layer layerImpl = layerConf.getLayer();
 
-                if (i < layerNum && tillIndex < 0) {
-                    //first edit to architecture
-                    tillIndex += layerImpl.initializer().numParams(layerConf);
-                }
-                else if (i == layerNum) {
-                    layerImpl.setWeightInit(scheme);
-                    String layerConfJson = layerConf.toJson();
-                    NeuralNetConfiguration newLayerConf = layerConf.clone();
-                    //FIXME: This is a hack via json to change nOut, Could expose nIn and nOut via setters instead?
-                    ObjectMapper mapper = new ObjectMapper();
-                    try {
-                        JsonNode root = mapper.readTree(layerConfJson);
-                        JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
-                        ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nout", nOut);
-                        newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
-                        editedConfs.set(i, newLayerConf);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    int numParams = layerImpl.initializer().numParams(newLayerConf);
-                    INDArray params = Nd4j.create(1, numParams);
-                    org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
-                    appendParams.add(someLayer.params());
-
-                }
-                else if (i == layerNum + 1) {
-                    layerImpl.setWeightInit(schemeNext);
-                    String layerConfJson = layerConf.toJson();
-                    NeuralNetConfiguration newLayerConf = layerConf.clone();
-                    //FIXME: This is a hack via json to change nIn, Could expose nIn and nOut via setters instead?
-                    ObjectMapper mapper = new ObjectMapper();
-                    try {
-                        JsonNode root = mapper.readTree(layerConfJson);
-                        JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
-                        ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nin", nOut);
-                        newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
-                        editedConfs.set(i, newLayerConf);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    int numParams = layerImpl.initializer().numParams(newLayerConf);
-                    INDArray params = Nd4j.create(1, numParams);
-                    org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
-                    appendParams.add(someLayer.params());
-                }
-                else {
-                    org.deeplearning4j.nn.api.Layer origLayer = origModel.getLayer(i);
-                    appendParams.add(origLayer.params());
-                }
-            }
-        }
-
-        public void popFromOutputToBuild(int layerNum) {
-            for (int i = layerNum; i < origConf.getConfs().size(); i++) {
-                editedConfs.remove(i);
-            }
-        }
-
-        //unchecked?
-        public MultiLayerNetwork build() {
-            if (editConf() == null) {
-                editedModel = origModel;
-            } else {
-                editedModel = new MultiLayerNetwork(editConf(), constructParams());
+            layerImpl.setWeightInit(scheme);
+            String layerConfJson = layerConf.toJson();
+            NeuralNetConfiguration newLayerConf = layerConf.clone();
+            //FIXME: This is a hack via json to change nOut, Could expose nIn and nOut via setters instead?
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                JsonNode root = mapper.readTree(layerConfJson);
+                JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
+                ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nout", nOut);
+                newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
+                editedConfs.set(layerNum, newLayerConf);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
-            org.deeplearning4j.nn.api.Layer[] layers = editedModel.getLayers();
-            for (int i = frozenTill; i >= 0; i--) {
-                layers[i] = new FrozenLayer(layers[i]);
+            int numParams = layerImpl.initializer().numParams(newLayerConf);
+            INDArray params = Nd4j.create(1, numParams);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            editedParams.set(layerNum,someLayer.params());
+
+            if (editedConfs.size() < layerNum + 1) {
+                layerConf = editedConfs.get(layerNum+1);
+                layerImpl = layerConf.getLayer();
+                layerImpl.setWeightInit(schemeNext);
+                layerConfJson = layerConf.toJson();
+                newLayerConf = layerConf.clone();
+                //FIXME: This is a hack via json to change nIn, Could expose nIn and nOut via setters instead?
+                mapper = new ObjectMapper();
+                try {
+                    JsonNode root = mapper.readTree(layerConfJson);
+                    JsonNode layerRoot = root.path("layer").path(root.path("layer").fieldNames().next());
+                    ((org.nd4j.shade.jackson.databind.node.ObjectNode) layerRoot).put("nin", nOut);
+                    newLayerConf = mapper.readValue(root.toString(), NeuralNetConfiguration.class);
+                    editedConfs.set(layerNum+1, newLayerConf);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                numParams = layerImpl.initializer().numParams(newLayerConf);
+                params = Nd4j.create(1, numParams);
+                someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                editedParams.set(layerNum+1,someLayer.params());
             }
-            editedModel.setLayers(layers);
-            return editedModel;
+
         }
 
         private INDArray constructParams() {
-            INDArray keepView = origParams.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, tillIndex, true));
+            INDArray keepView = Nd4j.hstack(editedParams);
             INDArray appendView = Nd4j.hstack(appendParams);
             return Nd4j.hstack(keepView, appendView);
         }
 
-        private MultiLayerConfiguration editConf() {
+        private MultiLayerConfiguration constructConf() {
             //use the editedConfs list to make a new config
+            List<NeuralNetConfiguration> allConfs = new ArrayList<>();
+            allConfs.addAll(editedConfs);
+            allConfs.addAll(appendConfs);
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
                     pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                     .tBPTTBackwardLength(tbpttBackLength)
                     .setInputType(this.inputType)
-                    .confs(editedConfs).build();
+                    .confs(allConfs).build();
         }
     }
 }
