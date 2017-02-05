@@ -80,27 +80,62 @@ public class MLNTransferLearning {
             return this;
         }
 
+        /**
+         * NeuralNetConfiguration builder to set options (learning rate, updater etc..) for learning
+         * Note that this will clear and override all other learning related settings in non frozen layers
+         * @param newDefaultConfBuilder
+         * @return
+         */
         public Builder fineTuneConfiguration(NeuralNetConfiguration.Builder newDefaultConfBuilder) {
             this.globalConfig = newDefaultConfBuilder;
             return this;
         }
 
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         * @param layerNum The index of the layer to change nOut of
+         * @param nOut  Value of nOut to change to
+         * @param scheme Weight Init scheme to use for params
+         * @return
+         */
         public Builder noutReplace(int layerNum, int nOut, WeightInit scheme) {
             nOutReplace(layerNum, nOut, scheme, scheme);
             return this;
         }
 
+        /**
+         * Modify the architecture of a layer by changing nOut
+         * Note this will also affect the layer that follows the layer specified, unless it is the output layer
+         * Can specify different weight init schemes for the specified layer and the layer that follows it.
+         * @param layerNum The index of the layer to change nOut of
+         * @param nOut  Value of nOut to change to
+         * @param scheme Weight Init scheme to use for params in the layerNum
+         * @param schemeNext Weight Init scheme to use for params in the layerNum+1
+         * @return
+         */
         public Builder nOutReplace(int layerNum, int nOut, WeightInit scheme, WeightInit schemeNext) {
             editedLayers.add(layerNum);
             editedLayersMap.put(layerNum,new ImmutableTriple<>(nOut,scheme,schemeNext));
             return this;
         }
 
+        /**
+         * Helper method to remove the outputLayer of the net.
+         * Only one of the two - popOutputLayer() or popFromOutput(layerNum) - can be specified
+         * When layers are popped at the very least an output layer should be added with .addLayer(...)
+         * @return
+         */
         public Builder popOutputLayer() {
             popFrom = origConf.getConfs().size()-1; //index of the very last layer
             return this;
         }
 
+        /**
+         * Pop last "n" layers of the net
+         * @param layerNum number of layers to pop, 1 will pop output layer only and so on...
+         * @return
+         */
         public Builder popFromOutput(int layerNum) {
             if(popFrom == 0) {
                 popFrom = origConf.getConfs().size() - layerNum;
@@ -111,6 +146,14 @@ public class MLNTransferLearning {
             return this;
         }
 
+        /**
+         * Add layers to the net
+         * Required if layers are popped. Can be called multiple times and layers will be added in the order with which they were called.
+         * At the very last an outputLayer must be added (output layer should be added last - as per the note on order)
+         * Learning configs like updaters, learning rate etc specified per layer, here will be honored
+         * @param layer layer conf to add
+         * @return
+         */
         public Builder addLayer(Layer layer) {
 
             if(!prepDone) {
@@ -129,6 +172,12 @@ public class MLNTransferLearning {
         }
 
         //unchecked?
+
+        /**
+         * Returns a model with the fine tune configuration and specified architecture changes.
+         * .init() need not be called. Can be directly fit.
+         * @return
+         */
         public MultiLayerNetwork build() {
 
             if (!prepDone) {
