@@ -94,11 +94,18 @@ public class TfidfVectorizer extends BaseTextVectorizer {
      */
     @Override
     public INDArray transform(String text) {
-        INDArray ret = Nd4j.create(1, vocabCache.numWords());
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
 
         // build document words count
+        return transform(tokens);
+    }
+
+
+    @Override
+    public INDArray transform(List<String> tokens) {
+        INDArray ret = Nd4j.create(1, vocabCache.numWords());
+
         Map<String, AtomicLong> counts = new HashMap<>();
         for (String token: tokens) {
             if (!counts.containsKey(token))
@@ -118,9 +125,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         return ret;
     }
 
-
-
-    private double tfidfWord(String word, long wordCount, long documentLength) {
+    public double tfidfWord(String word, long wordCount, long documentLength) {
         //log.info("word: {}; TF: {}; IDF: {}", word, tfForWord(wordCount, documentLength), idfForWord(word));
         return MathUtils.tfidf(tfForWord(wordCount, documentLength),idfForWord(word));
     }
