@@ -148,6 +148,10 @@ public class MLNTransferLearning {
 
         private void doPrep() {
 
+            if (globalConfig == null) {
+                throw new IllegalArgumentException("FineTrain config must be set with .fineTuneConfiguration");
+            }
+
             //first set finetune configs on all layers in model
             fineTuneConfigurationBuild();
 
